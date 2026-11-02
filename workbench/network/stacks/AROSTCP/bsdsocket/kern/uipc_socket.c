@@ -1168,8 +1168,12 @@ struct mbuf *m0;
             struct ifnet *ifp = NULL;
             int n;
 
+            /* IPv4 and IPv6 sockets share struct inpcb, and its inp_boundif
+             * is also an IPv6 socket's zone (netinet6/in6_pcb.c) */
             if(so->so_proto == NULL || so->so_proto->pr_domain == NULL ||
-                    so->so_proto->pr_domain->dom_family != AF_INET || so->so_pcb == NULL) {
+                    (so->so_proto->pr_domain->dom_family != AF_INET &&
+                     so->so_proto->pr_domain->dom_family != AF_INET6) ||
+                    so->so_pcb == NULL) {
                 error = ENOPROTOOPT;
                 goto bad;
             }

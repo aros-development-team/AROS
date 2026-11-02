@@ -658,7 +658,11 @@ chosen source address lives on — so a link-local send leaves the correct link 
 
 A link-scope address (`fe80::/10`, `ff01::/16`, `ff02::/16`) names a link only together with its zone
 (RFC 4007), the interface index in `sin6_scope_id`; the zone is never embedded in the address. A
-socket's zone is `inp_boundif`, the interface `SO_BINDTODEVICE` also sets. `in6_pcbbind()` accepts
+socket's zone is `inp_boundif`, the interface `SO_BINDTODEVICE` also sets (on IPv6 sockets as on
+IPv4 ones; `ENXIO` for an interface no one has, an empty name removes it). A `sendto()` to a
+link-scope destination with no zone goes to the socket's zone, and one with another zone is refused
+with `EINVAL`, as for `connect()`. A socket bound to an interface only hears what arrives there,
+unicast (`in6_pcblookup()` given the receiving interface) as multicast. `in6_pcbbind()` accepts
 only one of our addresses (or a group, or `::`), a link-scope one only in its zone, and sets the
 socket's zone; `in6_pcbconnect()` takes the zone from the peer's `sin6_scope_id` (`ENXIO` if no
 interface has that index, `EINVAL` if the socket is in another zone) and picks the source on that

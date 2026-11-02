@@ -540,6 +540,38 @@ tcp_prr_ack(struct tcpcb *tp, u_long delivered)
 }
 
 /*
+ * The IPv4 lookups do not know interfaces. When the socket they found is
+ * bound to another interface than the one the segment came in by
+ * (SO_BINDTODEVICE), take a socket
+ * on the port bound to this interface, else one bound to none - as
+ * udp_input() does - else none. (in6_pcblookup() is given the interface.)
+ */
+static struct inpcb *
+tcp_boundif_pcb(const struct tcpiphdr *ti, const struct ifnet *rcvif)
+{
+    struct inpcb *t, *unbound = NULL;
+
+    for(t = tcb.lh_first; t != NULL; t = t->inp_list.le_next) {
+        if(in_pcbisipv6(t) || t->inp_lport != ti->ti_dport)
+            continue;
+        if(t->inp_laddr.s_addr != INADDR_ANY &&
+                t->inp_laddr.s_addr != ti->ti_dst.s_addr)
+            continue;
+        if(t->inp_faddr.s_addr != INADDR_ANY &&
+                (t->inp_faddr.s_addr != ti->ti_src.s_addr ||
+                 t->inp_fport != ti->ti_sport))
+            continue;
+        if(t->inp_boundif == rcvif)
+            return t;
+        if(t->inp_boundif == NULL && (unbound == NULL ||
+                                      (unbound->inp_faddr.s_addr == INADDR_ANY &&
+                                       t->inp_faddr.s_addr != INADDR_ANY)))
+            unbound = t;
+    }
+    return unbound;
+}
+
+/*
  * TCP input routine, follows pages 65-76 of the
  * protocol specification dated September, 1981 very closely.
  */
@@ -759,7 +791,7 @@ findpcb:
          * wildcard/listen cases in a single priority-ordered pass.
          */
         inp = in6_pcblookup(&tcb, &src6, ti->ti_sport,
-                            &dst6, ti->ti_dport);
+                            &dst6, ti->ti_dport, m->m_pkthdr.rcvif);
     } else
 #endif
     {
@@ -775,6 +807,8 @@ findpcb:
         inp = in_pcblookup(&tcb, ti->ti_src, ti->ti_sport,
                            ti->ti_dst, ti->ti_dport, INPLOOKUP_WILDCARD);
     }
+    if(inp != NULL && inp->inp_boundif && inp->inp_boundif != m->m_pkthdr.rcvif)
+        inp = tcp_boundif_pcb(ti, m->m_pkthdr.rcvif);
     }
 
     /*

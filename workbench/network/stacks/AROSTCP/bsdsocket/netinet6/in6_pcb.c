@@ -57,7 +57,7 @@
 
 /* Defined later in this file. */
 struct inpcb *in6_pcblookup(struct inpcbhead *, struct in6_addr *, u_int,
-                            struct in6_addr *, u_int);
+                            struct in6_addr *, u_int, const struct ifnet *);
 
 /* netinet/in_pcb.c - stack internal, not part of the public in_pcb.h */
 int in_pcbisipv6(struct inpcb *);
@@ -144,7 +144,7 @@ in6_porttaken(struct inpcb *inp, u_short lport, void *arg)
 
     bzero(&wild, sizeof(wild));
     return in6_pcblookup(inp->inp_pcbinfo->listhead, &wild, 0,
-                         (struct in6_addr *)arg, lport) != NULL;
+                         (struct in6_addr *)arg, lport, NULL) != NULL;
 }
 
 /* ------------------------------------------------------------------ *
@@ -223,7 +223,7 @@ in6_pcbbind(struct inpcb *inp, struct mbuf *nam)
 
                 bzero(&wildf, sizeof(wildf));
                 if(in6_pcblookup(head, &wildf, 0,
-                                 &sin6->sin6_addr, sin6->sin6_port) != NULL)
+                                 &sin6->sin6_addr, sin6->sin6_port, NULL) != NULL)
                     return EADDRINUSE;
             }
         }
@@ -397,7 +397,7 @@ in6_setpeeraddr(struct inpcb *inp, struct mbuf *nam)
 struct inpcb *
 in6_pcblookup(struct inpcbhead *head,
               struct in6_addr *faddr, u_int fport_arg,
-              struct in6_addr *laddr, u_int lport_arg)
+              struct in6_addr *laddr, u_int lport_arg, const struct ifnet *ifp)
 {
     struct inpcb *inp, *match = NULL;
     int matchwild = 3;
@@ -409,6 +409,10 @@ in6_pcblookup(struct inpcbhead *head,
         /* IPv4 PCBs share this list and leave the IPv6 addresses zeroed,
            which would make them look like wildcard IPv6 sockets here */
         if(!in_pcbisipv6(inp))
+            continue;
+        /* with the interface the packet came in by: a socket bound to
+         * another one (SO_BINDTODEVICE, its zone) does not hear it */
+        if(ifp != NULL && inp->inp_boundif && inp->inp_boundif != ifp)
             continue;
 
         int wildcard = 0;

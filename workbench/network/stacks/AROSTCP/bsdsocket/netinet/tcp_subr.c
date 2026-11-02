@@ -842,7 +842,7 @@ tcp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
         if(ip6cp == NULL || !ip6cp->ip6c_haveseq)
             return;
         inp = in6_pcblookup(&tcb, &sin6->sin6_addr, ip6cp->ip6c_dport,
-                            &ip6cp->ip6c_src, ip6cp->ip6c_sport);
+                            &ip6cp->ip6c_src, ip6cp->ip6c_sport, NULL);
         if(inp == NULL || (tp = intotcpcb(inp)) == NULL)
             return;
         /* only for a segment that is still unacknowledged: anything else

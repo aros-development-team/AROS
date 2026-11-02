@@ -80,7 +80,7 @@ extern void in6_setpeeraddr(struct inpcb *, struct mbuf *);
 extern u_int32_t in6_rcvzone(struct mbuf *, const struct in6_addr *);
 extern struct inpcb *in6_pcblookup(struct inpcbhead *,
                                    struct in6_addr *, u_int,
-                                   struct in6_addr *, u_int);
+                                   struct in6_addr *, u_int, const struct ifnet *);
 extern struct in6_ifaddr *in6_ifawithifp(struct ifnet *, struct in6_addr *);
 extern int  ip6_defhlim;
 
@@ -167,8 +167,27 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
         }
         m_freem(control);
     }
-    if(addr_m && oindex == 0 && addr_m->m_len >= (int)sizeof(struct sockaddr_in6))
-        oindex = mtod(addr_m, struct sockaddr_in6 *)->sin6_scope_id;
+    if(addr_m && oindex == 0 && addr_m->m_len >= (int)sizeof(struct sockaddr_in6)) {
+        const struct sockaddr_in6 *d6 = mtod(addr_m, struct sockaddr_in6 *);
+
+        oindex = d6->sin6_scope_id;
+        /*
+         * A socket bound to an interface (SO_BINDTODEVICE, or a link-scope
+         * bind() or connect()) is in that zone: a link-scope destination
+         * with no zone is on its link, and one with another zone is an
+         * error, as in6_pcbconnect() has it (and Linux's udpv6_sendmsg()).
+         */
+        if(inp->inp_boundif && (IN6_IS_ADDR_LINKLOCAL(&d6->sin6_addr) ||
+                                IN6_IS_ADDR_MC_LINKLOCAL(&d6->sin6_addr) ||
+                                IN6_IS_ADDR_MC_NODELOCAL(&d6->sin6_addr))) {
+            if(oindex == 0)
+                oindex = inp->inp_boundif->if_index;
+            else if(oindex != (unsigned int)inp->inp_boundif->if_index) {
+                error = EINVAL;
+                goto release;
+            }
+        }
+    }
     if(oindex != 0) {
         extern struct ifnet *ifnet;
 
@@ -522,7 +541,7 @@ udp6_input(void *args, ...)
 
     /* Find matching socket */
     inp = in6_pcblookup(&udb, &src6.sin6_addr, uh->uh_sport,
-                        &dst6.sin6_addr, uh->uh_dport);
+                        &dst6.sin6_addr, uh->uh_dport, m->m_pkthdr.rcvif);
     if(inp == NULL) {
         /* No socket: Destination Unreachable, port unreachable (RFC 4443
          * section 3.1), as udp_input() does for IPv4; icmp6_error() takes
