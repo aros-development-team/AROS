@@ -763,7 +763,25 @@ static LONG PartitionGPTSetPartitionAttrs(struct Library *PartitionBase, struct 
 static ULONG PartitionGPTDestroyPartitionTable(struct Library *PartitionBase,
     struct PartitionHandle *root)
 {
-    return PartitionMBRDestroyPartitionTable(PartitionBase, root);
+    ULONG size = root->de.de_SizeBlock << 2;
+    APTR zero = AllocMem(size, MEMF_CLEAR);
+    LONG error;
+
+    if (!zero)
+        return ERROR_NO_FREE_STORE;
+    /* GPT's table->data is a GPT header, not an MBR. Invalidate both
+     * headers as well as the protective MBR so reopening cannot recover
+     * the deliberately deleted table from its backup. */
+    struct GPTHeader *hdr = root->table->data;
+    UQUAD backup = AROS_LE2QUAD(hdr->CurrentBlock) == 1 ?
+        AROS_LE2QUAD(hdr->BackupBlock) : AROS_LE2QUAD(hdr->CurrentBlock);
+    error = WritePartitionDataQ(root, zero, size, backup);
+    if (!error)
+        error = WritePartitionDataQ(root, zero, size, 1);
+    if (!error)
+        error = WritePartitionDataQ(root, zero, size, 0);
+    FreeMem(zero, size);
+    return deviceError(error);
 }
 
 static const struct PartitionAttribute PartitionGPTPartitionTableAttrs[]=
