@@ -32,3 +32,36 @@ not require an SDK, Moira checkout or VM and do not establish a complete
 host-suite, linked library, AROS runtime or application-level pass.
 The optional sanitizer target uses ASan/UBSan; leak detection is disabled
 by default and can be configured with `ASAN_OPTIONS`.
+
+
+## First-load version checks with Moira
+
+Initialize the same submodule used by the full host suite, then run:
+
+```sh
+git submodule update --init rom/m68kemu/Moira
+make -C developer/debug/test/m68kemu_host test-library-loading-versions
+make -C developer/debug/test/m68kemu_host test-library-loading-versions-sanitize
+```
+
+The test compiles the production loader, InitStruct interpreter and memory
+accessors with recording DOS/heap/hunk-placement collaborators. The loader
+itself generates the init/Open sequences; the checked-out Moira executes
+those actual bytes, the fixture's 68k init function and its Open vector.
+Native file I/O and hunk parsing are not tested by these collaborators.
+The CPU is an M68000 and this is a host instruction test, not an AROS VM.
+
+Cases cover no init function, InitStruct version overrides, init raising
+or lowering the version, failed init, unsigned 16-bit boundaries, A6/stack
+restoration and reopening an initialized library after an excessive first
+request was rejected. Rejection occurs before calling Open, after init has
+established the actual version. A full-width internal request above 65535
+is refused before native file or heap activity, without truncation.
+The entry-point fixture also checks version rejection on native-provided
+libraries, including zero and high-bit version values.
+
+`LIBRARY_LOADING_ARGS` forwards options such as `--build-dir /tmp/loading`.
+`--source-root` selects a control tree and `--moira-root` can provide its
+matching initialized core separately. The ordinary CPU regression is also
+a prerequisite of the normal host `test` target. These checks remain
+separate from a full linked library or application acceptance run.

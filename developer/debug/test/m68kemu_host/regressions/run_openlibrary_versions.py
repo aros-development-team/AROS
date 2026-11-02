@@ -13,14 +13,14 @@ import subprocess  # nosec B404 - this developer test must run a compiler
 import tempfile
 
 
-def extract_function(source, name):
+def extract_function(source, name, filename="m68kemu_thunks.c"):
     masked = re.sub(
         r'//[^\n]*|/\*[\s\S]*?\*/|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'',
         lambda match: ''.join('\n' if c == '\n' else ' ' for c in match[0]),
         source,
     )
     match = re.search(
-        r'(?m)^static IPTR\s+' + re.escape(name) +
+        r'(?m)^[^\n;{}]*\b' + re.escape(name) +
         r'\s*\([^;{}]*\)[^;{}]*\{', masked)
     if not match:
         raise ValueError(f'definition of {name} not found')
@@ -30,7 +30,7 @@ def extract_function(source, name):
         depth += (masked[end] == '{') - (masked[end] == '}')
         end += 1
     line = source[:match.start()].count('\n') + 1
-    return f'#line {line} "m68kemu_thunks.c"\n' + source[match.start():end] + '\n'
+    return f'#line {line} "{filename}"\n' + source[match.start():end] + '\n'
 
 
 def run(args, output):

@@ -173,7 +173,8 @@ static IPTR open_library(struct M68KEmuContext *ctx, void *cpu, UWORD version)
     if (!name) return 0;
 
     ULONG base = M68KEmu_OpenLibrary(ctx, name);
-    if (base) return (IPTR)base;
+    if (base)
+        return m68k_read16(ctx, base + M68K_LIB_VERSION) >= version ? (IPTR)base : 0;
 
     /* a native BOOPSI class library */
     base = m68k_open_class_library(ctx, name, version);
