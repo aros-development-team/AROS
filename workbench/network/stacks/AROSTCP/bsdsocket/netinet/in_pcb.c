@@ -445,6 +445,34 @@ struct inpcb *inp;
         in_pcbdetach(inp);
 }
 
+/*
+ * in_pcbifgone - interface ifp is going away (if_detach()), and with it
+ * the struct ifnet the PCBs of head may name: no socket may go on doing
+ * so. A socket bound to it (SO_BINDTODEVICE, or an IPv6 zone) stays bound
+ * to it gone, INP_BOUNDGONE: what it sends fails with ENXIO and it hears
+ * nothing, as a Linux socket bound to a device that went away does, until
+ * it is bound again. A multicast interface chosen for it is forgotten: it
+ * was a preference, and the default applies again.
+ */
+void
+in_pcbifgone(const struct inpcbhead *head, const struct ifnet *ifp)
+{
+    struct inpcb *inp;
+
+    for(inp = head->lh_first; inp != NULL; inp = inp->inp_list.le_next) {
+        if(inp->inp_boundif == ifp) {
+            inp->inp_boundif = NULL;
+            inp->inp_flags |= INP_BOUNDGONE;
+        }
+        if(inp->inp_moptions && inp->inp_moptions->imo_multicast_ifp == ifp)
+            inp->inp_moptions->imo_multicast_ifp = NULL;
+#if INET6
+        if(inp->in6p_moptions && inp->in6p_moptions->im6o_multicast_ifp == ifp)
+            inp->in6p_moptions->im6o_multicast_ifp = NULL;
+#endif
+    }
+}
+
 void
 in_pcbdetach(inp)
 struct inpcb *inp;

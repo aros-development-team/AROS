@@ -540,6 +540,39 @@ tcp_prr_ack(struct tcpcb *tp, u_long delivered)
 }
 
 /*
+ * The IPv4 lookups do not know interfaces. When the socket they found is
+ * bound to another interface than the one the segment came in by
+ * (SO_BINDTODEVICE), or to one that went away (INP_BOUNDGONE), take a socket
+ * on the port bound to this interface, else one bound to none - as
+ * udp_input() does - else none. (in6_pcblookup() is given the interface.)
+ */
+static struct inpcb *
+tcp_boundif_pcb(const struct tcpiphdr *ti, const struct ifnet *rcvif)
+{
+    struct inpcb *t, *unbound = NULL;
+
+    for(t = tcb.lh_first; t != NULL; t = t->inp_list.le_next) {
+        if(in_pcbisipv6(t) || t->inp_lport != ti->ti_dport ||
+                (t->inp_flags & INP_BOUNDGONE))
+            continue;
+        if(t->inp_laddr.s_addr != INADDR_ANY &&
+                t->inp_laddr.s_addr != ti->ti_dst.s_addr)
+            continue;
+        if(t->inp_faddr.s_addr != INADDR_ANY &&
+                (t->inp_faddr.s_addr != ti->ti_src.s_addr ||
+                 t->inp_fport != ti->ti_sport))
+            continue;
+        if(t->inp_boundif == rcvif)
+            return t;
+        if(t->inp_boundif == NULL && (unbound == NULL ||
+                                      (unbound->inp_faddr.s_addr == INADDR_ANY &&
+                                       t->inp_faddr.s_addr != INADDR_ANY)))
+            unbound = t;
+    }
+    return unbound;
+}
+
+/*
  * TCP input routine, follows pages 65-76 of the
  * protocol specification dated September, 1981 very closely.
  */
@@ -759,7 +792,7 @@ findpcb:
          * wildcard/listen cases in a single priority-ordered pass.
          */
         inp = in6_pcblookup(&tcb, &src6, ti->ti_sport,
-                            &dst6, ti->ti_dport);
+                            &dst6, ti->ti_dport, m->m_pkthdr.rcvif);
     } else
 #endif
     {
@@ -775,6 +808,9 @@ findpcb:
         inp = in_pcblookup(&tcb, ti->ti_src, ti->ti_sport,
                            ti->ti_dst, ti->ti_dport, INPLOOKUP_WILDCARD);
     }
+    if(inp != NULL && ((inp->inp_flags & INP_BOUNDGONE) ||
+                       (inp->inp_boundif && inp->inp_boundif != m->m_pkthdr.rcvif)))
+        inp = tcp_boundif_pcb(ti, m->m_pkthdr.rcvif);
     }
 
     /*
@@ -2439,9 +2475,11 @@ short rtt;
  * Determine a reasonable value for maxseg size.
  * If the route is known, check route for mtu.
  * If none, use an mss that can be handled on the outgoing
- * interface without forcing IP to fragment; if bigger than
- * an mbuf cluster (mbconf.mclbytes), round down to nearest multiple of mbconf.mclbytes
- * to utilize large mbufs.  If no route is found, route has no mtu,
+ * interface without forcing IP to fragment - the whole of it: 4.4BSD
+ * rounded it down to a multiple of the mbuf cluster (8948 to 8192 on a
+ * 9000-byte path) to fill whole clusters, which FreeBSD has dropped and
+ * Linux never did; tcp_setmtu() (path MTU) never rounded either.  If no
+ * route is found, route has no mtu,
  * or the destination isn't local, use a default, hopefully conservative
  * size (usually 512 or the default IP max size, but no more than the mtu
  * of the interface), as we can't discover anything about intervening
@@ -2606,17 +2644,6 @@ int offer;
              (tp->t_flags & TF_RCVD_CC) == TF_RCVD_CC))
         mss -= TCPOLEN_CC_APPA;
 
-    if((mbconf.mclbytes & (mbconf.mclbytes - 1)) == 0) {
-        if(mss > mbconf.mclbytes)
-            mss &= ~(mbconf.mclbytes - 1);
-    } else {
-        if(mss > mbconf.mclbytes)
-            /*
-            * DO NOT REMOVE THIS! A side effect is rounding.
-            * Read the function description for more info
-            */
-            mss = mss / mbconf.mclbytes * mbconf.mclbytes;
-    }
     /*
      * If there's a pipesize, change the socket buffer
      * to that size.  Make the socket buffers an integral

@@ -78,6 +78,9 @@ The resolver (`res_search()`) searches as BIND 4.9's and resolv.conf(5) say, wit
 with a dot is first tried as it is, and one not found that way, or one without a dot, is tried in
 each domain of the search list in turn (`RES_DNSRCH` is in `RES_DEFAULT`) - the static `DOMAIN`
 entries first, then the dynamic ones (DHCP, Router Advertisements); a final dot means only as it is.
+A `NAMESERVER` line in the NetDB takes an IPv4 or an IPv6 address; a link-local IPv6 server needs a
+zone, which the line has no room for, and goes with its interface instead (`DNS6=`, or learned from
+a Router Advertisement).
 The networks table (`db/networks`) holds each network's number in host order, as
 `getnetent(3)` and the autodoc say, read with `inet_network()`'s rules (`__inet_network()`: "10.1"
 is 0x0a01), so `getnetbyaddr(127, AF_INET)` finds `loop 127`.
@@ -342,7 +345,9 @@ overlay), so header building and the state machine are shared; only the family e
   destination, so for IPv6 `tcp_rtlookup6()` looks the route up each time and the caller releases it;
   the link is the connection's zone for a link-local peer. The MSS is the route's path MTU, else the
   link MTU, less the headers, at most `tcp_v6mssdflt` (1220) towards a destination off the link with
-  no path MTU known, and never more than the peer's MSS option, also when no route is found. The
+  no path MTU known, and never more than the peer's MSS option, also when no route is found. It is
+not rounded down to a multiple of the mbuf cluster, as 4.4BSD did (FreeBSD has dropped that, Linux
+never did it): a 9000-byte link carries 8948-byte segments, not 8192. The
   syncache's SYN-ACK advertises the same for IPv6 (`tcp_mssopt6()`), and a peer that sends no MSS is
   taken to accept 1220 (RFC 9293 §3.7.1). `in6_localaddr()` counts an address on one of our prefixes
   as local, as `in_localaddr()` does for IPv4.
@@ -352,10 +357,12 @@ overlay), so header building and the state machine are shared; only the family e
 - **UDP6** is a separate path (`udp6_usrreq`/`udp6_output`/`udp6_input`) reusing the shared `inpcb`.
   `if_loop.c loconfig()` configures `lo0` with `::1` (and `127.0.0.1`); `::1` is in `in6_ifaddr` so
   `ip6_input` treats it as "ours". `IPV6_V6ONLY` and `IPV6_UNICAST_HOPS` round-trip. A `sendto()`
-on an unconnected socket chooses the source for that datagram only (the bound address, an
-`IPV6_PKTINFO` source, the asked-for interface's address, or the route's; for a group with no
-interface named, the `IPV6_MULTICAST_IF` one's), as `udp_output()` does for
-IPv4: the socket keeps its bound address, and only a missing port is bound for good. When the
+on an unconnected socket chooses the source for that datagram only (an `IPV6_PKTINFO` source,
+which wins over the bound address as RFC 3542 §6.1 says; the bound address; the asked-for
+interface's address; or the route's; for a group with no interface named, the `IPV6_MULTICAST_IF`
+one's), as `udp_output()` does for IPv4: the socket keeps its bound address, and only a missing port
+is bound for good. An `IPV6_PKTINFO` source that is not a usable address of ours is refused with
+`EADDRNOTAVAIL`; a connected socket keeps its connection's source. When the
   `IN6P_HOPLIMIT` (`IPV6_RECVHOPLIMIT`, or the RFC 2292 `IPV6_HOPLIMIT`) or `IN6P_PKTINFO`
   (`IPV6_RECVPKTINFO`) flag is set, `udp6_input` delivers the received hop limit and/or a
   `struct in6_pktinfo` (public in `<netinet/in.h>`: destination address + receiving interface index)
@@ -406,6 +413,11 @@ dispatches ICMPv6, and `in6.c` performs link-local autoconfiguration and joins t
 group via `in6_addmulti` → `S2_ADDMULTICASTADDRESS`, mapping `ff02::X` → `33:33:XX:XX:XX:XX`.
 `nd6_lookup` returns a neighbour route with its reference **held** (KAME semantics); every caller
 `rtfree()`s it when done.
+Neighbor Solicitations follow RFC 4861 §7.2.2 and §7.3.3 (`nd6_solicit()`): to resolve an address
+they go to its solicited-node group, to probe a neighbour in PROBE to the neighbour itself, at the
+link-layer address cached; at most three, a RetransTimer apart (the interface's, from Router
+Advertisements, 1 s by default), counted in `nd6_timer()`'s half-second ticks (`ln_ntick`). The
+packets waiting meanwhile are queued, not answered with solicitations of their own.
 
 A route through a router (`RTF_GATEWAY`) is not a neighbour: `nd6_rtrequest()` leaves it alone and
 its gateway stays the router's IPv6 address. When a packet follows it, `nd6_resolve()` resolves the
@@ -423,7 +435,9 @@ equals (`defrouter_choose()`). With none known reachable, the one in use stays, 
 is taken; when neighbour unreachability detection gives up on the one in use, the next one in the
 list is (round robin, `defrouter_unreachable()`). A more preferred router passed over is probed with
 a Neighbor Solicitation once a minute at most (RFC 4191 §3.5, `nd6_probe()`), and its answer
-(`defrouter_reachable()`) brings the default route back to it. A Route
+(`defrouter_reachable()`) brings the default route back to it. A router whose Neighbor Advertisement clears the
+Router flag leaves the list, with the routes through it, its Route Information routes among them
+(RFC 4861 §7.2.5, `defrouter_notrouter()`, as FreeBSD's `defrouter_del()` flushes them). A Route
 Information Option installs a route to its prefix through the advertising router, on the interface
 it was heard on, one entry per (prefix, router) with its own lifetime and preference: the most
 preferred router for a prefix gets the route, and between prefixes the routing table's longest match
@@ -438,7 +452,13 @@ address added with `SIOCAIFADDR_IN6` - SLAAC, temporary or configured by hand - 
 can multicast. The first Router Solicitation follows the link-local's DAD; later addresses do not
 send another. An address's `IN6_IFF_*` flags are kept in `ia6_ifaflags`, apart from the generic
 `ifa_flags` (`ia6_flags`) where `IFA_ROUTE` records the prefix route `in6_ifscrub()` removes with
-the address. A prefix gets one temporary address (RFC 4941) at a time: another is made when a Router
+the address. Applications read them with `SIOCGIFAFLAG_IN6` (KAME; `ifru_flags6`, `EADDRNOTAVAIL` for
+an address the interface does not have). When DAD ends, passed or duplicated, the address is
+announced again as when it was added (`nd6_dad_announce()`: `RTM_NEWADDR` and the
+`SBTC_SIG_ADDRESS_CHANGE_MASK` signal), after its flags have changed, so a program woken by it finds
+it usable or `IN6_IFF_DUPLICATED`. The stack task does not wait to send that signal
+(`api_sendaddrchange()`): a task opening or closing the library may hold the list it walks and wait
+for the stack; the signal then goes from the next `nd6_timer()` tick. A prefix gets one temporary address (RFC 4941) at a time: another is made when a Router
 Advertisement repeats the prefix after the current one is deprecated.
 
 A prefix is on-link on the link it is advertised on: the prefix list has an entry per (prefix,
@@ -480,7 +500,12 @@ touched and come first; a DHCP client's update (`ClearDynNameServ()`, `ClearDynD
 only what DHCP gave, not what an interface or a router did. The stack task only attempts the
 database's lock for them (`AttemptSemaphore()`): an application may hold it from `ClearDynNameServ()`
 to `EndDynNameServ()` for as long as it likes, and an option heard meanwhile is taken from the next
-advertisement, as `ndb_ra_timer()` takes the expiries on its next tick.
+advertisement, as `ndb_ra_timer()` takes the expiries on its next tick. What the stack task must change in it
+without the lock - an interface's `DNS=` servers, its entries as it goes down or away, everything
+for a reload - is queued and applied in order by the next holder before its own change
+(`ndb_ops_locked()`: the application's own next call, or `ndb_ra_timer()` within a tick). The
+entries name their interface by index (`nsn_OwnerIndex`, `dn_OwnerIndex`), which is never reused,
+so those of an interface already gone cannot dangle meanwhile.
 
 An in-place reload deletes every address of every interface, the link-local included, and forgets
 the routers and prefixes heard on it (`nd6_purge_routers()`, `nd6_purge_prefixes()`). For an
@@ -656,12 +681,26 @@ chosen source address lives on — so a link-local send leaves the correct link 
 
 A link-scope address (`fe80::/10`, `ff01::/16`, `ff02::/16`) names a link only together with its zone
 (RFC 4007), the interface index in `sin6_scope_id`; the zone is never embedded in the address. A
-socket's zone is `inp_boundif`, the interface `SO_BINDTODEVICE` also sets. `in6_pcbbind()` accepts
+socket's zone is `inp_boundif`, the interface `SO_BINDTODEVICE` also sets (on IPv6 sockets as on
+IPv4 ones; `ENXIO` for an interface no one has, an empty name removes it). A `sendto()` to a
+link-scope destination with no zone goes to the socket's zone, and one with another zone is refused
+with `EINVAL`, as for `connect()`. A socket bound to an interface only hears what arrives there,
+unicast (`in6_pcblookup()` given the receiving interface) as multicast, a TCP listener of either
+family as UDP (`tcp_input()`: for IPv4, `tcp_boundif_pcb()` when the lookup found one bound
+elsewhere). When an interface goes
+away (`if_detach()`), no socket goes on naming its `struct ifnet`: one bound to it, either family,
+is left bound to it gone (`INP_BOUNDGONE`, `in_pcbifgone()`) - what it sends fails with `ENXIO`, it
+hears nothing, until it is bound again - a TCP connection on it is closed with `ENXIO`, without a
+reset (`tcp_ifgone()`), and an `IP_MULTICAST_IF`/`IPV6_MULTICAST_IF` naming it is forgotten. `in6_pcbbind()` accepts
 only one of our addresses (or a group, or `::`), a link-scope one only in its zone, and sets the
 socket's zone; `in6_pcbconnect()` takes the zone from the peer's `sin6_scope_id` (`ENXIO` if no
 interface has that index, `EINVAL` if the socket is in another zone) and picks the source on that
-link. Without a zone the routing table picks the link, as RFC 4007 section 6 allows for a default
-zone. `getsockname()`/`getpeername()`/`accept()` report the zone of link-scope addresses (for an
+link. A group with no zone is reached by the `IPV6_MULTICAST_IF` interface, as each datagram to it
+is, so a socket connected to it takes its source there (without being bound to it). Otherwise,
+without a zone, the routing table picks the link, as RFC 4007 section 6 allows for a default zone;
+for a group datagram with neither a zone nor `IPV6_MULTICAST_IF`, `ip6_output()` takes the link its
+source address is on, or else the first interface that is up.
+`getsockname()`/`getpeername()`/`accept()` report the zone of link-scope addresses (for an
 accepted connection, the link its link-local address is on), and `recvfrom()` the link a link-scope
 source arrived on. A packet sent to one of our own link-local addresses is looped back through
 `lo0` but received on the interface the address belongs to, as KAME's `origifp` does, so the zone

@@ -600,6 +600,29 @@ struct inpcb *inp;
 }
 
 /*
+ * tcp_ifgone - interface ifp is going away. A connection bound to it (an
+ * IPv6 zone, SO_BINDTODEVICE) has lost its link: it is closed with ENXIO,
+ * without a reset, which could only leave by another link. A listening
+ * socket bound to it hears nothing more (in_pcbifgone()).
+ */
+void
+tcp_ifgone(struct ifnet *ifp)
+{
+    struct inpcb *inp, *next;
+
+    for(inp = tcb.lh_first; inp != NULL; inp = next) {
+        struct tcpcb *tp = intotcpcb(inp);
+
+        next = inp->inp_list.le_next;
+        if(inp->inp_boundif != ifp || tp == NULL || tp->t_state == TCPS_LISTEN)
+            continue;
+        inp->inp_socket->so_error = ENXIO;
+        tcp_close(tp);
+    }
+    in_pcbifgone(&tcb, ifp);
+}
+
+/*
  * Drop a TCP connection, reporting
  * the specified error.  If connection is synchronized,
  * then send a RST to peer.
@@ -842,7 +865,7 @@ tcp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
         if(ip6cp == NULL || !ip6cp->ip6c_haveseq)
             return;
         inp = in6_pcblookup(&tcb, &sin6->sin6_addr, ip6cp->ip6c_dport,
-                            &ip6cp->ip6c_src, ip6cp->ip6c_sport);
+                            &ip6cp->ip6c_src, ip6cp->ip6c_sport, NULL);
         if(inp == NULL || (tp = intotcpcb(inp)) == NULL)
             return;
         /* only for a segment that is still unacknowledged: anything else

@@ -50,9 +50,23 @@ struct rtentry *rtalloc1(struct sockaddr *, int);
 int ip6_output(void *, ...);
 
 #include <protos/netinet/in_cksum_protos.h>
+#include <protos/net/rtsock_protos.h>
 
 /* DAD queue - singly-linked list */
 static struct dadq *dadq_head = NULL;
+
+/*
+ * Duplicate address detection has ended for ia, passed or duplicated: say
+ * so as when the address was added (RTM_NEWADDR, and the
+ * SBTC_SIG_ADDRESS_CHANGE_MASK signal), as Linux does, so that a program
+ * woken by it finds the address usable - or IN6_IFF_DUPLICATED - with
+ * SIOCGIFAFLAG_IN6. The flags are changed first.
+ */
+static void
+nd6_dad_announce(struct in6_ifaddr *ia)
+{
+    rt_newaddrmsg(RTM_NEWADDR, &ia->ia_ifa, 0, NULL);
+}
 
 /* ------------------------------------------------------------------
  * nd6_ns_output - send a Neighbor Solicitation.
@@ -64,7 +78,7 @@ static struct dadq *dadq_head = NULL;
  * ------------------------------------------------------------------ */
 void
 nd6_ns_output(struct ifnet *ifp, struct in6_addr *src,
-              struct in6_addr *tgt, struct llinfo_nd6 *ln, int dad)
+              struct in6_addr *tgt, const struct llinfo_nd6 *ln, int dad)
 {
     struct mbuf *m;
     struct ip6_hdr *ip6;
@@ -113,15 +127,23 @@ nd6_ns_output(struct ifnet *ifp, struct in6_addr *src,
     ip6->ip6_hlim = 255;			/* required by RFC 4861 */
     ip6->ip6_plen = htons(icmp6len + optlen);
 
-    /* destination: solicited-node multicast ff02::1:ffXX:XXXX */
-    bzero(&ip6->ip6_dst, sizeof(ip6->ip6_dst));
-    ip6->ip6_dst.s6_addr[0]  = 0xff;
-    ip6->ip6_dst.s6_addr[1]  = 0x02;
-    ip6->ip6_dst.s6_addr[11] = 0x01;
-    ip6->ip6_dst.s6_addr[12] = 0xff;
-    ip6->ip6_dst.s6_addr[13] = tgt->s6_addr[13];
-    ip6->ip6_dst.s6_addr[14] = tgt->s6_addr[14];
-    ip6->ip6_dst.s6_addr[15] = tgt->s6_addr[15];
+    /*
+     * destination: the solicited-node group ff02::1:ffXX:XXXX, to resolve
+     * an address; the neighbour itself, at the link-layer address cached,
+     * to probe its reachability (RFC 4861 section 7.3.3)
+     */
+    if(ln != NULL && ln->ln_state == ND6_LLINFO_PROBE && !dad) {
+        ip6->ip6_dst = *tgt;
+    } else {
+        bzero(&ip6->ip6_dst, sizeof(ip6->ip6_dst));
+        ip6->ip6_dst.s6_addr[0]  = 0xff;
+        ip6->ip6_dst.s6_addr[1]  = 0x02;
+        ip6->ip6_dst.s6_addr[11] = 0x01;
+        ip6->ip6_dst.s6_addr[12] = 0xff;
+        ip6->ip6_dst.s6_addr[13] = tgt->s6_addr[13];
+        ip6->ip6_dst.s6_addr[14] = tgt->s6_addr[14];
+        ip6->ip6_dst.s6_addr[15] = tgt->s6_addr[15];
+    }
 
     /* source address */
     if(dad) {
@@ -441,6 +463,7 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
                 ia->ia6_ifaflags |= IN6_IFF_DUPLICATED;
                 ia->ia6_ifaflags &= ~IN6_IFF_TENTATIVE;
                 nd6_dad_stop(ia);
+                nd6_dad_announce(ia);
                 nd6stat.nd6s_dad_dup++;
                 __log(LOG_ERR,
                       "nd6_na_input: DAD duplicate for %s on %s%d\n",
@@ -537,6 +560,8 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
             GetSysTime(&_tv);
             ln->ln_expire = _tv.tv_sec + ND6_REACHABLE_TIME / 1000;
         }
+        if(ln->ln_router && !is_router)
+            defrouter_notrouter(&tgt, ifp);
         ln->ln_router = is_router;
 
         /* if it is a router not in use, it may be the better one now */
@@ -582,8 +607,10 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
 
         /* router flag change handling (RFC 4861 §7.2.5 last para) */
         if(ln->ln_router && !is_router) {
-            /* neighbor is no longer a router */
+            /* neighbor is no longer a router: it leaves the default
+             * router list, and its routes with it */
             ln->ln_router = 0;
+            defrouter_notrouter(&tgt, ifp);
         } else {
             ln->ln_router = is_router;
         }
@@ -710,6 +737,7 @@ nd6_dad_timer(void)
             /* received NS for our tentative addr = duplicate */
             dp->ia->ia6_ifaflags |= IN6_IFF_DUPLICATED;
             dp->ia->ia6_ifaflags &= ~IN6_IFF_TENTATIVE;
+            nd6_dad_announce(dp->ia);
             nd6stat.nd6s_dad_dup++;
             __log(LOG_ERR,
                   "nd6_dad_timer: DAD duplicate detected on %s%d\n",
@@ -725,6 +753,7 @@ nd6_dad_timer(void)
             D(bug("[AROSTCP:ND6] %s: DAD complete for %s%d, sending RS\n",
                   __func__, dp->ifp->if_name, dp->ifp->if_unit));
             dp->ia->ia6_ifaflags &= ~IN6_IFF_TENTATIVE;
+            nd6_dad_announce(dp->ia);
             /*
              * The interface can ask for routers once its link-local address
              * is valid (RFC 4861 section 6.3.7); other addresses, checked
