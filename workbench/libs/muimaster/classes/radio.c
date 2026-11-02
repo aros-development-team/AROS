@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <clib/alib_protos.h>
@@ -20,8 +20,108 @@
 #include "support_classes.h"
 #include "radio_private.h"
 
+/****** Radio.mui/MUIC_Radio ************
+*
+*   NAME
+*       MUIC_Radio
+*
+*   SUPERCLASS
+*       Group.mui
+*
+*   DESCRIPTION
+*       Display a set of mutually exclusive choices as groups of a radio image
+*       and text label. Each image and label uses immediate input and routes
+*       every Selected notification to the containing Radio's Active setter with
+*       its own index. Clicking the label or image therefore selects the same
+*       choice. The class owns the constructed child groups and an array of
+*       child pointers.
+*       Construction requires Entries. Each Text child copies its label; Radio
+*       does not retain the input array. Initial Active defaults to zero and an
+*       out-of-range value is replaced by zero. Child construction and
+*       notification registration do not have comprehensive individual failure
+*       checks. A NULL Entries argument follows an early disposal/failure path
+*       before superclass construction; provide a valid nonempty array.
+*       Setup delegates first, returns FALSE on superclass failure, then sets
+*       horizontal and vertical Group spacing from the radio-button preferences
+*       and returns TRUE. Dispose frees the pointer array and delegates child
+*       disposal to Group. Serialize setters and child callbacks with disposal;
+*       no additional lifetime or locking mechanism is provided.
+*
+*   METHODS
+*       With a nonzero ObjectID, Export writes one LONG containing the current
+*       selection to the supplied Dataspace. Import looks up that ID and sets
+*       Active from the first LONG of the returned record. Both return zero and
+*       ignore operation status; ObjectID zero performs no access. Use a live
+*       Dataspace with a correctly sized LONG record: Import does not check the
+*       stored length. Imported invalid indices follow the ordinary setter
+*       behavior, including notification forwarding.
+*
+*/
+/****** Radio.mui/MUIA_Radio_Entries ************
+*
+*   NAME
+*       MUIA_Radio_Entries
+*
+*   FUNCTION
+*       Create a radio choice for each supplied label.
+*
+*   INPUTS
+*       Initialize only; pointer to a NULL-terminated array of pointers to
+*       terminated strings. Required; no default array, local setter or local
+*       getter.
+*
+*   NOTES
+*       The array is read during construction and the Text children copy each
+*       string. After successful construction the caller may release the array
+*       and source strings. Radio owns the child groups; do not dispose them
+*       separately. Replacing Entries on an existing Radio does not rebuild its
+*       choices.
+*       Supply at least one entry and a count representable by the constructor
+*       allocations. An empty array does not produce a useful selected choice,
+*       and zero-size allocation behavior can affect construction. Count
+*       arithmetic and child allocation failures are not fully checked. Return
+*       NULL from construction is not a guarantee that every intermediate
+*       allocation was reclaimed.
+*
+*/
+/****** Radio.mui/MUIA_Radio_Active ************
+*
+*   NAME
+*       MUIA_Radio_Active
+*
+*   FUNCTION
+*       Select a radio choice or return its stored zero-based index.
+*
+*   INPUTS
+*       Initialize, set and get, LONG. Default zero. Valid indices are zero
+*       through the number of entries minus one. No Next/Prev sentinel values
+*       are implemented.
+*
+*   NOTES
+*       Construction replaces invalid indices with zero. Set ignores an invalid
+*       or unchanged index locally. For a valid change it sends NoNotifySet
+*       Selected FALSE to the old child group and TRUE to the new one, then
+*       stores the new index. Group forwarding updates the image and text
+*       without recursively delivering their Selected notifications.
+*       The original Active tag is still passed to Group even when no selection
+*       changes. Notifications can therefore report an invalid or unchanged
+*       requested value; MUIV_TriggerValue is not proof of the current
+*       selection. Read Active to obtain the stored index. Get stores that index
+*       and returns TRUE. Set returns the superclass result and supplies no
+*       separate change/error status.
+*
+*/
+
 extern struct Library *MUIMasterBase;
 
+/*
+ * Read required NULL-terminated nonempty Entries and initial Active; create
+ * owned choice children and pointer array, then register selection routing.
+ * Labels are copied by Text children; input array is not retained. Return
+ * object or zero on failure, with incomplete checks/rollback for
+ * intermediate child creation. NULL Entries takes a pre-super disposal
+ * path.
+ */
 IPTR Radio__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Radio_DATA *data;
@@ -131,6 +231,12 @@ IPTR Radio__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Free local child-pointer array if present, then delegate owned child
+ * disposal to Group and return its result. Requires no concurrent selection
+ * callbacks. Does not free caller Entries storage because it was not
+ * retained.
+ */
 IPTR Radio__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Radio_DATA *data = INST_DATA(cl, obj);
@@ -139,6 +245,13 @@ IPTR Radio__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
+/*
+ * For a changed in-range index, NoNotifySet old/new child group selection
+ * and store Active. Invalid/unchanged values leave local state intact but
+ * original tags still reach Group notifications. Requires live children and
+ * valid tag list; return superclass result, not a selection-change
+ * indication.
+ */
 IPTR Radio__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Radio_DATA *data;
@@ -169,6 +282,12 @@ IPTR Radio__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Store current Active through writable opg_Storage and return TRUE;
+ * delegate other attributes to Group. There is no local Entries getter.
+ * Reading Active does not prove a corresponding child exists when
+ * construction produced no entries.
+ */
 IPTR Radio__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Radio_DATA *data = INST_DATA(cl, obj);
@@ -184,6 +303,12 @@ IPTR Radio__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Delegate Setup and return FALSE if it fails. Otherwise synchronously set
+ * Group horizontal/vertical spacing from global radio preferences and
+ * return TRUE. Requires connected render/global context; setters may notify
+ * and their results are ignored.
+ */
 IPTR Radio__MUIM_Setup(struct IClass *cl, Object *obj, Msg msg)
 {
     if (!DoSuperMethodA(cl, obj, msg))
@@ -200,6 +325,11 @@ IPTR Radio__MUIM_Setup(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  MUIM_Export - to export an object's "contents" to a dataspace object.
 **************************************************************************/
+/*
+ * For nonzero ObjectID, synchronously copy one stack LONG selection into
+ * live Dataspace via Add. Return zero regardless of Add result; do nothing
+ * for ID zero. Caller owns Dataspace and must keep it alive through return.
+ */
 IPTR Radio__MUIM_Export(struct IClass *cl, Object *obj,
     struct MUIP_Export *msg)
 {
@@ -218,6 +348,12 @@ IPTR Radio__MUIM_Export(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Import - to import an object's "contents" from a dataspace object.
 **************************************************************************/
+/*
+ * For nonzero ObjectID, find a borrowed record in live Dataspace and set
+ * Active from its first LONG when present. Requires at least sizeof(LONG)
+ * readable bytes; no length check. Return zero even for no record or
+ * rejected index; setter can notify synchronously.
+ */
 IPTR Radio__MUIM_Import(struct IClass *cl, Object *obj,
     struct MUIP_Import *msg)
 {
@@ -236,6 +372,12 @@ IPTR Radio__MUIM_Import(struct IClass *cl, Object *obj,
 }
 
 #if ZUNE_BUILTIN_RADIO
+/*
+ * Dispatch local class overrides and return handler results; delegate other
+ * messages to Group. Requires ABI-correct message and live object except
+ * construction. Child ownership, event callbacks and any popup resources
+ * follow the class lifecycle contract.
+ */
 BOOPSI_DISPATCHER(IPTR, Radio_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)

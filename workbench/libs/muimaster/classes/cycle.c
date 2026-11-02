@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <graphics/gfx.h>
@@ -21,6 +21,128 @@
 #include "support.h"
 #include "prefs.h"
 #include "textengine.h"
+
+/****** Cycle.mui/MUIC_Cycle ************
+*
+*   NAME
+*       MUIC_Cycle
+*
+*   SUPERCLASS
+*       Group.mui
+*
+*   DESCRIPTION
+*       Select one entry using a cycling button and, when preferences permit, a
+*       popup menu. The class creates an image and a PageGroup of Text children.
+*       Children belong to the group; the entry array and its strings remain
+*       borrowed because popup rendering reads them again. Omitted Entries
+*       selects a static array containing one empty string. Initial Active
+*       defaults to zero.
+*       Use the normal Setup, Show, Hide and Cleanup lifecycle. Setup registers
+*       a window event handler after successful superclass setup. Hide closes an
+*       open popup; Cleanup removes the handler and delegates. There is no local
+*       Dispose override and Cleanup does not independently close the popup.
+*       Keep the object, parent window and entry storage alive during
+*       synchronous event and notification processing.
+*
+*   METHODS
+*       Releasing the button advances the selection and wraps to zero. The
+*       cycle-menu minimum-entry preference controls whether a popup can open.
+*       Keyboard Press opens it when eligible; otherwise, or if opening fails,
+*       Press advances as Down does. Without a popup, Up and Down wrap;
+*       Top/PageUp and Bottom/PageDown select the first and last entry. With a
+*       popup, these keys change its provisional highlight; Press accepts a
+*       highlight other than -1, and Window Close cancels.
+*       A mouse press to the right of the cycle image opens an eligible popup
+*       when drawing is permitted. Pointer motion changes its highlight.
+*       SELECTUP or a subsequent SELECTDOWN accepts a highlight other than -1;
+*       other closing mouse codes cancel. The popup is a nonactivating,
+*       borderless Intuition window on the object's screen. Preferences control
+*       its position and recessed entries; a menu larger than the screen is
+*       refused, not scrolled.
+*       With a nonzero ObjectID, Export writes the current selection as one LONG
+*       to the supplied Dataspace. Import finds that ID and sets Active from its
+*       first LONG. Both return zero and ignore storage/set failures. Import
+*       does not validate record size; provide a matching LONG record and a live
+*       Dataspace. With ObjectID zero, neither performs data access.
+*
+*   BUGS
+*       Popup allocation failures are not fully rolled back. Failure to allocate
+*       the last popup text can evade the count check because the index is
+*       incremented before allocation. OpenWindow failure leaves popup
+*       text/background resources allocated; Hide only calls popup cleanup when
+*       a window exists, and a retry can overwrite retained resources. No
+*       complete allocation-failure cleanup guarantee is provided.
+*       The initial popup highlight is -1, not the current selection. Up tests
+*       the highlight for nonzero and can decrement this sentinel to -2; this is
+*       not a valid selection. The Active setter interprets -2 as Prev, so
+*       accepting this invalid highlight can move the selection backward. Popup
+*       geometry uses WORD fields without overflow checks; avoid entry counts
+*       and text dimensions that overflow these calculations.
+*
+*/
+/****** Cycle.mui/MUIA_Cycle_Entries ************
+*
+*   NAME
+*       MUIA_Cycle_Entries
+*
+*   FUNCTION
+*       Replace the available entries and rebuild the text pages.
+*
+*   INPUTS
+*       Initialize and set; pointer to a NULL-terminated array of pointers to
+*       terminated strings. No local getter. Omitted at construction: one empty
+*       entry. NULL or an array whose first element is NULL creates no pages.
+*
+*   NOTES
+*       The array and strings are borrowed and must remain readable and
+*       unchanged until replacement or disposal. Text children copy their
+*       labels, but popup text is later built from the original strings. Do not
+*       free or edit the input after construction merely because the closed
+*       gadget displays copied text.
+*       Set closes the popup, disposes old pages, builds new pages within Group
+*       InitChange/ExitChange, then resets Active to zero. This reset does not
+*       generate a separate Cycle_Active tag notification. Multiple Entries and
+*       Active tags take effect in tag order. Use a nonempty array when a
+*       meaningful selected entry is required: with no pages, Get Active still
+*       returns zero.
+*       Page allocation failure stops construction at the successfully created
+*       prefix; no aggregate failure is returned and old pages are not restored.
+*       Member-add results are ignored. The build counter is UWORD, so the
+*       terminating NULL must be reached before it wraps. Keep the much smaller
+*       popup geometry limits in mind as well.
+*
+*/
+/****** Cycle.mui/MUIA_Cycle_Active ************
+*
+*   NAME
+*       MUIA_Cycle_Active
+*
+*   FUNCTION
+*       Select an entry or return the stored zero-based index.
+*
+*   INPUTS
+*       Initialize, set and get, LONG. Default zero. At construction, an index
+*       outside the created page range becomes zero. For Set only,
+*       MUIV_Cycle_Active_Next (-1) and MUIV_Cycle_Active_Prev (-2) advance or
+*       reverse with wrapping.
+*
+*   NOTES
+*       Set changes the page only for a valid index different from the stored
+*       value. An unchanged or invalid request is rewritten to TAG_IGNORE in the
+*       caller's tag list, suppressing that tag's notification. Supply writable
+*       tags and rebuild ignored tags before reusing a list. The special values
+*       are resolved only for selection: ti_Data is not replaced with the
+*       resulting index. A notification using MUIV_TriggerValue therefore
+*       receives the original Next/Prev token; read Active to obtain the
+*       resulting index.
+*       When the list contains only Cycle Entries/Active tags, the superclass
+*       call prepends Group_Forward FALSE, preventing child forwarding without
+*       suppressing notifications. Mixed tag lists use normal Group forwarding.
+*       Get returns TRUE and stores the current index, including zero for an
+*       empty entry list. Setter return values come from Group and do not
+*       certify a selection change.
+*
+*/
 
 extern struct Library *MUIMasterBase;
 
@@ -56,9 +178,29 @@ CONST_STRPTR default_entries[] =
     (CONST_STRPTR) NULL
 };
 
+/*
+ * Forward declaration. Close popup and release its transient resources,
+ * remove/dispose old Text pages, then create copied labels from borrowed
+ * entries. Requires live PageGroup and NULL-terminated readable array if
+ * non-NULL. Stop on Text allocation failure, retain successful prefix,
+ * ignore member-add results. UWORD counter must not wrap; no result or
+ * rollback.
+ */
 static void UpdateEntries(Object *obj, struct MUI_CycleData *data);
+/*
+ * Forward declaration. Close existing popup, hide/clean background, and
+ * destroy consecutive non-NULL child UserData text pointers, clearing each.
+ * Requires owned popup text and a live parent Window when mouse-move events
+ * are enabled. Stop at first missing text; remove/re-add handler without
+ * mouse motion. No status; does not reset highlight.
+ */
 static void KillPopupWin(Object *obj, struct MUI_CycleData *data);
 
+/*
+ * Advance current selection and wrap to zero through Cycle_Active. Requires
+ * live Cycle object and hook class pointer; msg is unused. Synchronous
+ * setter notifications may run; no status or ownership transfer.
+ */
 void PressedHookFunc(struct Hook *hook, Object *obj, APTR msg)
 {
     struct MUI_CycleData *data;
@@ -77,6 +219,13 @@ void PressedHookFunc(struct Hook *hook, Object *obj, APTR msg)
 /**************************************************************************
 OM_NEW
 **************************************************************************/
+/*
+ * Create owned image/PageGroup children, retain borrowed entry array, build
+ * pages and initialize selection. Return object or zero on superclass
+ * failure; page-build failures can leave a successful partial object.
+ * Install release hook; caller must keep source strings/array alive for
+ * future popup use.
+ */
 IPTR Cycle__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_CycleData *data;
@@ -155,6 +304,13 @@ IPTR Cycle__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
 OM_SET
 **************************************************************************/
+/*
+ * Process Entries and Active in tag order, rebuilding pages or selecting
+ * valid indices. Requires writable tags: invalid/unchanged Active tags
+ * become TAG_IGNORE. Preserve original ti_Data for notifications, including
+ * Next/Prev. Delegate with forwarding disabled only for a pure Cycle tag
+ * list; return Group result, not change status.
+ */
 IPTR Cycle__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_CycleData *data;
@@ -236,6 +392,12 @@ IPTR Cycle__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
 OM_GET
 **************************************************************************/
+/*
+ * Store current Active through writable opg_Storage and return TRUE;
+ * delegate other attributes to Group. There is no local Entries getter.
+ * Reading Active does not prove a corresponding child exists when
+ * construction produced no entries.
+ */
 IPTR Cycle__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_CycleData *data = INST_DATA(cl, obj);
@@ -254,6 +416,12 @@ IPTR Cycle__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
 MUIM_Setup
 **************************************************************************/
+/*
+ * Delegate setup, then register priority-one GUI-mode mouse-button/raw-key
+ * handler with parent Window. Requires connected object and valid render
+ * context. Return zero on superclass failure, otherwise one; handler-add
+ * result is not checked.
+ */
 IPTR Cycle__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
@@ -278,6 +446,12 @@ IPTR Cycle__MUIM_Setup(struct IClass *cl, Object *obj,
 /**************************************************************************
 MUIM_Cleanup
 **************************************************************************/
+/*
+ * Remove the registered event handler from the live parent Window and
+ * return superclass cleanup result. Requires paired Setup and prior Hide
+ * for an open popup; does not independently free popup resources or
+ * retained entry storage.
+ */
 IPTR Cycle__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
@@ -288,6 +462,13 @@ IPTR Cycle__MUIM_Cleanup(struct IClass *cl, Object *obj,
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Close popup and release its transient resources, remove/dispose old Text
+ * pages, then create copied labels from borrowed entries. Requires live
+ * PageGroup and NULL-terminated readable array if non-NULL. Stop on Text
+ * allocation failure, retain successful prefix, ignore member-add results.
+ * UWORD counter must not wrap; no result or rollback.
+ */
 static void UpdateEntries(Object *obj, struct MUI_CycleData *data)
 {
     struct MinList *childlist = NULL;
@@ -325,6 +506,13 @@ static void UpdateEntries(Object *obj, struct MUI_CycleData *data)
     data->entries_num = i;
 }
 
+/*
+ * Close existing popup, hide/clean background, and destroy consecutive non-
+ * NULL child UserData text pointers, clearing each. Requires owned popup
+ * text and a live parent Window when mouse-move events are enabled. Stop at
+ * first missing text; remove/re-add handler without mouse motion. No
+ * status; does not reset highlight.
+ */
 static void KillPopupWin(Object *obj, struct MUI_CycleData *data)
 {
     struct MinList *childlist = NULL;
@@ -370,6 +558,13 @@ static void KillPopupWin(Object *obj, struct MUI_CycleData *data)
 
 }
 
+/*
+ * Draw requested popup row using borrowed child UserData text and temporary
+ * popup RastPort substitution. Requires live setup object and open popup;
+ * missing child/text returns without drawing. Caller supplies valid row;
+ * negative values are not explicitly rejected. Restore original RastPort
+ * before return; no ownership transfer.
+ */
 static void RenderPopupItem(Object *obj, struct MUI_CycleData *data,
     WORD which)
 {
@@ -449,6 +644,14 @@ static void RenderPopupItem(Object *obj, struct MUI_CycleData *data,
 
 }
 
+/*
+ * Build popup text/background and nonactivating screen window using live
+ * setup/render context and borrowed entries. Return FALSE for excessive
+ * screen size or detected allocation/open failure, TRUE after rendering.
+ * Allocation rollback is incomplete, including last-text failure detection
+ * and OpenWindow failure. Set highlight -1 on success; no selected-row
+ * prehighlight.
+ */
 static BOOL MakePopupWin(Object *obj, struct MUI_CycleData *data)
 {
     const struct ZuneFrameGfx *zframe;
@@ -613,6 +816,13 @@ static BOOL MakePopupWin(Object *obj, struct MUI_CycleData *data)
 /**************************************************************************
 MUIM_HandleEvent
 **************************************************************************/
+/*
+ * Handle MUI keys and eligible mouse events, updating popup highlight or
+ * synchronously setting Active. Requires live object, valid message and
+ * setup context; imsg may be NULL for keys. Return Eat for consumed events,
+ * otherwise zero. Notifications may reenter; popup Up can decrement -1
+ * sentinel to the Prev token.
+ */
 IPTR Cycle__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUIP_HandleEvent *msg)
 {
@@ -839,6 +1049,11 @@ IPTR Cycle__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 /**************************************************************************
 MUIM_Hide
 **************************************************************************/
+/*
+ * If a popup window exists, close it and free popup resources before
+ * delegating Hide. Return superclass result. Failed popup creation with no
+ * window is not cleaned by this guard; entry array remains borrowed.
+ */
 IPTR Cycle__MUIM_Hide(struct IClass *cl, Object *obj,
     struct MUIP_Hide *msg)
 {
@@ -855,6 +1070,11 @@ IPTR Cycle__MUIM_Hide(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Export - to export an object's "contents" to a dataspace object.
 **************************************************************************/
+/*
+ * For nonzero ObjectID, synchronously copy one stack LONG selection into
+ * live Dataspace via Add. Return zero regardless of Add result; do nothing
+ * for ID zero. Caller owns Dataspace and must keep it alive through return.
+ */
 IPTR Cycle__MUIM_Export(struct IClass *cl, Object *obj,
     struct MUIP_Export *msg)
 {
@@ -873,6 +1093,12 @@ IPTR Cycle__MUIM_Export(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Import - to import an object's "contents" from a dataspace object.
 **************************************************************************/
+/*
+ * For nonzero ObjectID, find a borrowed record in live Dataspace and set
+ * Active from its first LONG when present. Requires at least sizeof(LONG)
+ * readable bytes; no length check. Return zero even for no record or
+ * rejected index; setter can notify synchronously.
+ */
 IPTR Cycle__MUIM_Import(struct IClass *cl, Object *obj,
     struct MUIP_Import *msg)
 {
@@ -890,6 +1116,12 @@ IPTR Cycle__MUIM_Import(struct IClass *cl, Object *obj,
     return 0;
 }
 
+/*
+ * Dispatch local class overrides and return handler results; delegate other
+ * messages to Group. Requires ABI-correct message and live object except
+ * construction. Child ownership, event callbacks and any popup resources
+ * follow the class lifecycle contract.
+ */
 BOOPSI_DISPATCHER(IPTR, Cycle_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
