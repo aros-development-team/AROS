@@ -53,6 +53,7 @@ struct FileSysNode
     ULONG blockbytes;                /* size of each stored LSEG block */
     ULONG segmentid;                 /* LSEG, or BOOT for the OS4 boot chain */
     ULONG filesize;                  /* sum of the encoded LSEG payload sizes */
+    char name[85];                  /* terminated copy of the on-disk name */
     struct FileSysHeaderBlock fhb; /* last: allocation includes the rest of the sector */
 };
 
@@ -405,7 +406,9 @@ struct FileSysNode *fn;
             CopyMem(buffer, &fn->fhb, fn->blockbytes);
 
             /* Fill in common part of the handle */
-            fn->h.ln.ln_Name = fn->fhb.fhb_FileSysName;
+            CopyMem(fn->fhb.fhb_FileSysName, fn->name, sizeof(fn->fhb.fhb_FileSysName));
+            fn->name[sizeof(fn->fhb.fhb_FileSysName)] = 0;
+            fn->h.ln.ln_Name = fn->name;
             fn->h.ln.ln_Pri  = 0;
             fn->h.handler    = &FilesystemRDB;
 
@@ -1361,7 +1364,7 @@ struct Node *PartitionRDBFindFileSystem(struct Library *PartitionBase, struct Pa
 
         if (nameTag)
         {
-            if (strcmp(fn->fhb.fhb_FileSysName, (char *)nameTag->ti_Data))
+            if (strcmp(fn->h.ln.ln_Name, (char *)nameTag->ti_Data))
                 continue;
         }
 
@@ -1391,7 +1394,7 @@ static LONG PartitionRDBGetFileSystemAttr(struct Library *PartitionBase, struct 
         return TRUE;
 
     case FST_NAME:
-        *((STRPTR *)tag->ti_Data) = fhb->fhb_FileSysName;
+        *((STRPTR *)tag->ti_Data) = fn->ln.ln_Name;
         return TRUE;
 
     case FST_FSENTRY:
