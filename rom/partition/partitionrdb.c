@@ -336,7 +336,12 @@ struct PartitionHandle *ph;
                         nameLength = sizeof(pblock->pb_DriveName) - 1;
                     CopyMem(pblock->pb_DriveName+1, ph->ln.ln_Name, nameLength);
                     ph->ln.ln_Name[nameLength]=0;
-                    CopyBE2HostDosEnvec(pblock->pb_Environment, (SIPTR *)&ph->de, AROS_BE2LONG(pblock->pb_Environment[DE_TABLESIZE])+1);
+                    /* Keep the full disk block, but expose only fields AROS knows. */
+                    ULONG tableSize = AROS_BE2LONG(pblock->pb_Environment[DE_TABLESIZE]);
+                    if (tableSize >= sizeof(ph->de) / sizeof(IPTR))
+                        tableSize = sizeof(ph->de) / sizeof(IPTR) - 1;
+                    CopyBE2HostDosEnvec(pblock->pb_Environment, (SIPTR *)&ph->de, tableSize + 1);
+                    ph->de.de_TableSize = tableSize;
                     PartitionRDBUpdateGeometry(ph);
                     return ph;
                 }
@@ -959,6 +964,13 @@ static LONG PartitionRDBSetPartitionAttrs(struct Library *PartitionBase, struct 
 
     while ((tag = NextTagItem((struct TagItem **)&check)))
     {
+        if (tag->ti_Tag == PT_DOSENVEC)
+        {
+            struct DosEnvec *de = (struct DosEnvec *)tag->ti_Data;
+
+            if (de->de_TableSize < DE_NUMBUFFERS || de->de_TableSize >= sizeof(*de) / sizeof(IPTR))
+                return ERROR_BAD_NUMBER;
+        }
         if (tag->ti_Tag == PT_NAME && strlen((STRPTR)tag->ti_Data) >= sizeof(data->pb_DriveName))
             return ERROR_BAD_NUMBER;
     }
