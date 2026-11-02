@@ -468,7 +468,7 @@ struct mbuf *nam;
         soisconnecting(so);
         tcpstat.tcps_connattempt++;
         tp->t_state = TCPS_SYN_SENT;
-        tp->t_timer[TCPT_KEEP] = TCPTV_KEEP_INIT;
+        tp->t_timer[TCPT_KEEP] = TP_KEEPINIT(tp);
         tp->iss = tcp_new_isn(inp);
         tcp_sendseqinit(tp);
         tp->cc_send = CC_INC(tcp_ccgen);
@@ -525,7 +525,7 @@ struct mbuf *nam;
     soisconnecting(so);
     tcpstat.tcps_connattempt++;
     tp->t_state = TCPS_SYN_SENT;
-    tp->t_timer[TCPT_KEEP] = TCPTV_KEEP_INIT;
+    tp->t_timer[TCPT_KEEP] = TP_KEEPINIT(tp);
     tp->iss = tcp_new_isn(inp);
     tcp_sendseqinit(tp);
     tp->cc_send = CC_INC(tcp_ccgen);
@@ -615,6 +615,50 @@ struct mbuf **mp;
                 tp->t_flags &= ~TF_NOPUSH;
             break;
 
+        /*
+         * Keepalive per connection, as FreeBSD: times in seconds, the count
+         * in probes; 0 gives back the system value. A change re-arms the
+         * timer it concerns. Up to TCP_KEEP_MAXSECS, which the 16-bit
+         * slow-tick timers hold.
+         */
+        case TCP_KEEPIDLE:
+        case TCP_KEEPINTVL:
+        case TCP_KEEPINIT:
+        case TCP_KEEPCNT:
+            if(m == NULL || m->m_len < sizeof(int) || (i = *mtod(m, int *)) < 0 ||
+                    i > (optname == TCP_KEEPCNT ? 32767 : TCP_KEEP_MAXSECS)) {
+                error = EINVAL;
+                break;
+            }
+            switch(optname) {
+            case TCP_KEEPIDLE:
+                tp->t_keepidle = i * PR_SLOWHZ;
+                if(tp->t_state >= TCPS_ESTABLISHED && tp->t_state <= TCPS_CLOSING)
+                    tp->t_timer[TCPT_KEEP] = TP_KEEPIDLE(tp);
+                break;
+            case TCP_KEEPINIT:
+                tp->t_keepinit = i * PR_SLOWHZ;
+                if(tp->t_state == TCPS_SYN_SENT || tp->t_state == TCPS_SYN_RECEIVED)
+                    tp->t_timer[TCPT_KEEP] = TP_KEEPINIT(tp);
+                break;
+            default:
+                if(optname == TCP_KEEPINTVL)
+                    tp->t_keepintvl = i * PR_SLOWHZ;
+                else
+                    tp->t_keepcnt = i;
+                if(tp->t_state == TCPS_FIN_WAIT_2 && tp->t_timer[TCPT_2MSL])
+                    tp->t_timer[TCPT_2MSL] = TP_MAXIDLE(tp);
+                break;
+            }
+            break;
+
+        case TCP_USER_TIMEOUT:      /* ms, RFC 5482; 0 is off */
+            if(m == NULL || m->m_len < sizeof(int) || *mtod(m, int *) < 0)
+                error = EINVAL;
+            else
+                tp->t_uto_ms = (u_int)*mtod(m, int *);
+            break;
+
         default:
             error = ENOPROTOOPT;
             break;
@@ -643,6 +687,21 @@ struct mbuf **mp;
             break;
         case TCP_NOPUSH:
             *mtod(m, int *) = tp->t_flags & TF_NOPUSH;
+            break;
+        case TCP_KEEPIDLE:          /* what the connection uses */
+            *mtod(m, int *) = TP_KEEPIDLE(tp) / PR_SLOWHZ;
+            break;
+        case TCP_KEEPINTVL:
+            *mtod(m, int *) = TP_KEEPINTVL(tp) / PR_SLOWHZ;
+            break;
+        case TCP_KEEPINIT:
+            *mtod(m, int *) = TP_KEEPINIT(tp) / PR_SLOWHZ;
+            break;
+        case TCP_KEEPCNT:
+            *mtod(m, int *) = TP_KEEPCNT(tp);
+            break;
+        case TCP_USER_TIMEOUT:
+            *mtod(m, int *) = (int)tp->t_uto_ms;
             break;
         default:
             error = ENOPROTOOPT;

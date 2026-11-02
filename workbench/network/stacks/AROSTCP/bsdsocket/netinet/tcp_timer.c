@@ -138,15 +138,32 @@ tcp_slowtimo()
         tp = intotcpcb(ip);
         if(tp == 0)
             continue;
+        /*
+         * TCP_USER_TIMEOUT (RFC 5482): data sent and unacknowledged, or
+         * held back by a shut window, for that long - whichever timer is
+         * running, retransmission or persist.
+         */
+        if(TCP_UTO_EXPIRED(tp)) {
+            tcpstat.tcps_timeoutdrop++;
+            (void) tcp_drop(tp, ETIMEDOUT);
+            continue;
+        }
+        /*
+         * tcp_timers() gives the connection back, or NULL once it is gone.
+         * (tcp_usrreq(PRU_SLOWTIMO) returns 0 for success, and the test
+         * here took that for "gone": every tick on which one of a
+         * connection's timers went off skipped its other timers and its
+         * idle, duration and RTT clocks - keepalive probes counted at half
+         * speed.)
+         */
         for(i = 0; i < TCPT_NTIMERS; i++) {
             if(tp->t_timer[i] && --tp->t_timer[i] == 0) {
-                if(tcp_usrreq(tp->t_inpcb->inp_socket,
-                              PRU_SLOWTIMO, (struct mbuf *)0,
-                              (struct mbuf *)i, (struct mbuf *)0) == 0)
+                if((tp = tcp_timers(tp, i)) == NULL)
                     goto tpgone;
             }
         }
-        tp->t_idle++;
+        if(tp->t_idle < 32767)      /* a short: saturate, never wrap */
+            tp->t_idle++;
         tp->t_duration++;
         if(tp->t_rtt)
             tp->t_rtt++;
@@ -194,8 +211,8 @@ int timer;
      */
     case TCPT_2MSL:
         if(tp->t_state != TCPS_TIME_WAIT &&
-                tp->t_idle <= tcp_maxidle)
-            tp->t_timer[TCPT_2MSL] = tcp_keepintvl;
+                tp->t_idle <= TP_MAXIDLE(tp))
+            tp->t_timer[TCPT_2MSL] = TP_KEEPINTVL(tp);
         else
             tp = tcp_close(tp);
         break;
@@ -211,7 +228,13 @@ int timer;
               __func__, tp, tp->t_state, tp->t_rxtshift,
               (unsigned long)tp->snd_una, (unsigned long)tp->snd_nxt,
               (unsigned long)tp->snd_max));
-        if(++tp->t_rxtshift > TCP_MAXRXTSHIFT) {
+        /*
+         * The connection gives up after TCP_MAXRXTSHIFT retransmissions;
+         * with TCP_USER_TIMEOUT it goes on at the longest interval, and
+         * tcp_slowtimo() gives up when its data has waited that long
+         * (RFC 5482; as Linux, the user timeout replaces the count).
+         */
+        if(++tp->t_rxtshift > TCP_MAXRXTSHIFT && tp->t_uto_ms == 0) {
             D(bug("[AROSTCP:TCP] %s: REXMT max retries exceeded, dropping\n", __func__));
             tp->t_rxtshift = TCP_MAXRXTSHIFT;
             tcpstat.tcps_timeoutdrop++;
@@ -219,6 +242,8 @@ int timer;
                           tp->t_softerror : ETIMEDOUT);
             break;
         }
+        if(tp->t_rxtshift > TCP_MAXRXTSHIFT)
+            tp->t_rxtshift = TCP_MAXRXTSHIFT;   /* go on at the longest */
         tcpstat.tcps_rexmttimeo++;
         rexmt = TCP_REXMTVAL(tp) * tcp_backoff[tp->t_rxtshift];
         TCPT_RANGESET(tp->t_rxtcur, rexmt,
@@ -310,7 +335,21 @@ int timer;
             goto dropit;
         if(tp->t_inpcb->inp_socket->so_options & SO_KEEPALIVE &&
                 tp->t_state <= TCPS_CLOSE_WAIT) {
-            if(tp->t_idle >= tcp_keepidle + tcp_maxidle)
+            /* idle past the probes: keepalive time plus count x interval,
+             * as far as the 16-bit idle counter reaches */
+            int limit = TP_KEEPIDLE(tp) + TP_MAXIDLE(tp);
+
+            if(limit > 32767)
+                limit = 32767;
+            /* with TCP_USER_TIMEOUT, as Linux: a probe already sent, and
+             * nothing heard for that long, instead of the probe count.
+             * t_idle is advanced after the timers each tick, so on this
+             * tick it is one short of the time idle. */
+            if(tp->t_uto_ms != 0) {
+                if(tp->t_idle > TP_KEEPIDLE(tp) &&
+                        (u_long)tp->t_idle + 1 >= TP_UTO_TICKS(tp))
+                    goto dropit;
+            } else if(tp->t_idle >= limit)
                 goto dropit;
             /*
              * Send a packet designed to force a response
@@ -338,9 +377,9 @@ int timer;
                         tp->rcv_nxt, tp->snd_una - 1, 0,
                         0, NULL, NULL);
 #endif
-            tp->t_timer[TCPT_KEEP] = tcp_keepintvl;
+            tp->t_timer[TCPT_KEEP] = TP_KEEPINTVL(tp);
         } else
-            tp->t_timer[TCPT_KEEP] = tcp_keepidle;
+            tp->t_timer[TCPT_KEEP] = TP_KEEPIDLE(tp);
         break;
 dropit:
         tcpstat.tcps_keepdrops++;

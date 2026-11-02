@@ -498,7 +498,8 @@ restart:
             if((atomic && resid > so->so_snd.sb_hiwat) ||
                     clen > so->so_snd.sb_hiwat)
                 snderr(EMSGSIZE);
-            if(so->so_state & SS_NBIO)
+            /* a non-blocking socket, or this call only (MSG_DONTWAIT) */
+            if((so->so_state & SS_NBIO) || (flags & MSG_DONTWAIT))
                 snderr(EWOULDBLOCK);
             sbunlock(&so->so_snd);
             error = sbwait(&so->so_snd, uio->uio_procp);
@@ -792,7 +793,8 @@ restart:
         if(uio->uio_resid == 0)
             goto release;
 
-        if(so->so_state & SS_NBIO) {
+        /* a non-blocking socket, or this call only (MSG_DONTWAIT) */
+        if((so->so_state & SS_NBIO) || (flags & MSG_DONTWAIT)) {
             error = EWOULDBLOCK;
             goto release;
         }
@@ -1109,6 +1111,50 @@ struct mbuf *m0;
                 so->so_options &= ~optname;
             break;
 
+        /*
+         * The receive time of each datagram (FreeBSD's SO_TIMESTAMP and
+         * SO_TS_CLOCK): SO_TS_REALTIME_MICRO (the default) gives
+         * SCM_TIMESTAMP, a struct timeval of the time gettimeofday() gives;
+         * SO_TS_MONOTONIC gives SCM_MONOTONIC, a struct timespec of
+         * CLOCK_MONOTONIC's. The other clocks are not implemented
+         * (EOPNOTSUPP, an AROS choice). The daemon reads both when a
+         * datagram comes in, so they change at splnet.
+         */
+        case SO_TIMESTAMP:
+            if(m == NULL || m->m_len < sizeof(int)) {
+                error = EINVAL;
+                goto bad;
+            }
+            {
+                spl_t s = splnet();
+
+                if(*mtod(m, int *))
+                    so->so_options |= SO_TIMESTAMP;
+                else
+                    so->so_options &= ~SO_TIMESTAMP;
+                splx(s);
+            }
+            break;
+
+        case SO_TS_CLOCK:
+            if(m == NULL || m->m_len < sizeof(int) ||
+                    *mtod(m, int *) < 0 || *mtod(m, int *) > SO_TS_CLOCK_MAX) {
+                error = EINVAL;
+                goto bad;
+            }
+            if(*mtod(m, int *) != SO_TS_REALTIME_MICRO &&
+                    *mtod(m, int *) != SO_TS_MONOTONIC) {
+                error = EOPNOTSUPP;
+                goto bad;
+            }
+            {
+                spl_t s = splnet();
+
+                so->so_ts_clock = *mtod(m, int *);
+                splx(s);
+            }
+            break;
+
         case SO_BINDTODEVICE:
             /*
              * Tie the socket to one interface: what it sends leaves there
@@ -1265,7 +1311,12 @@ struct mbuf **mp;
         case SO_BROADCAST:
         case SO_OOBINLINE:
         case SO_NOSIGPIPE:
+        case SO_TIMESTAMP:
             *mtod(m, int *) = so->so_options & optname;
+            break;
+
+        case SO_TS_CLOCK:
+            *mtod(m, int *) = so->so_ts_clock;
             break;
 
         case SO_TYPE:

@@ -221,6 +221,24 @@ struct tcpcb {
 	u_short	t_pmtud_saved_maxseg;
 	u_short	t_pmtud_saved_maxopd;
 
+/*
+ * Keepalive per connection (TCP_KEEPINIT, TCP_KEEPIDLE, TCP_KEEPINTVL,
+ * TCP_KEEPCNT, as FreeBSD): slow ticks, or a count; 0 is the system value.
+ */
+	int	t_keepinit;
+	int	t_keepidle;
+	int	t_keepintvl;
+	int	t_keepcnt;
+
+/*
+ * TCP_USER_TIMEOUT (RFC 5482, as Linux): how long data may stay sent and
+ * unacknowledged, or waiting on a zero window, before the connection is
+ * dropped; 0 is off. t_acktime is tcp_now when that wait began or last made
+ * progress, 0 while nothing waits.
+ */
+	u_int	t_uto_ms;
+	u_long	t_acktime;
+
 /* TUBA stuff */
 	caddr_t	t_tuba_pcb;		/* next level down pcb for TCP over z */
 };
@@ -428,6 +446,28 @@ extern	struct inpcbinfo tcbinfo;
 extern	struct tcpstat tcpstat;	/* tcp statistics */
 extern	int tcp_do_rfc1323;	/* XXX */
 extern	int tcp_do_rfc1644;	/* XXX */
+/* a connection's keepalive values: its own, else the system's */
+#define TP_KEEPINIT(tp)	((tp)->t_keepinit ? (tp)->t_keepinit : TCPTV_KEEP_INIT)
+#define TP_KEEPIDLE(tp)	((tp)->t_keepidle ? (tp)->t_keepidle : tcp_keepidle)
+#define TP_KEEPINTVL(tp)	((tp)->t_keepintvl ? (tp)->t_keepintvl : tcp_keepintvl)
+#define TP_KEEPCNT(tp)	((tp)->t_keepcnt ? (tp)->t_keepcnt : TCPTV_KEEPCNT)
+/* count x interval, as far as the 16-bit timers and the saturating idle
+ * counter reach: below 32767, so a connection idle that long is past it */
+#define TP_MAXIDLE(tp)	(TP_KEEPCNT(tp) * TP_KEEPINTVL(tp) > 32766 ? 32766 : \
+			 TP_KEEPCNT(tp) * TP_KEEPINTVL(tp))
+/* TCP_USER_TIMEOUT in slow ticks, rounded up */
+/* (divided first: no overflow of a large timeout on 32-bit targets) */
+#define TP_UTO_TICKS(tp)	((tp)->t_uto_ms / (1000 / PR_SLOWHZ) + \
+			 ((tp)->t_uto_ms % (1000 / PR_SLOWHZ) != 0))
+/* data now waits for an ACK or a window: the user timeout runs from here */
+#define TCP_UTO_START(tp)	do { if((tp)->t_acktime == 0) (tp)->t_acktime = tcp_now ? tcp_now : 1; } while(0)
+/* an ACK took snd_una forward: progress, or nothing left waiting */
+#define TCP_UTO_PROGRESS(tp)	((tp)->t_acktime = ((tp)->snd_una == (tp)->snd_max) ? 0 : (tcp_now ? tcp_now : 1))
+/* the user timeout has run out */
+#define TCP_UTO_EXPIRED(tp)	((tp)->t_uto_ms != 0 && (tp)->t_acktime != 0 && \
+				 tcp_now - (tp)->t_acktime >= TP_UTO_TICKS(tp))
+/* the largest keepalive time a 16-bit slow-tick timer holds, in seconds */
+#define TCP_KEEP_MAXSECS	(32767 / PR_SLOWHZ)
 extern	int tcp_do_pmtud;		/* IPv4 path MTU discovery */
 extern	int tcp_do_pmtud_blackhole;	/* black-hole detection */
 extern	int tcp_mssdflt;	/* XXX */
