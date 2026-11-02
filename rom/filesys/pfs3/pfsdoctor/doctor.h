@@ -478,6 +478,7 @@ cachedblock_t *GetBuildBlock(uint16 bloktype, uint32 seqnr);
 error_t GetResBlock(cachedblock_t *blok, uint16 bloktype, uint32 seqnr, bool fix);
 error_t ReadAnode(canode_t *anode, uint32 anodenr, bool fix);
 bool GetAnode(canode_t *anode, uint32 anodenr, bool fix);
+error_t WriteAnode(canode_t *anode, uint32 nr);
 bool SaveAnode(canode_t *anode, uint32 nr);
 
 /* standardsscan.c */

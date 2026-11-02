@@ -266,8 +266,9 @@ bool GetAnode(canode_t *anode, uint32 anodenr, bool fix)
 	return ReadAnode(anode, anodenr, fix) == e_none;
 }
 
-bool SaveAnode(canode_t *anode, uint32 nr)
+error_t WriteAnode(canode_t *anode, uint32 nr)
 {
+	error_t error;
 	uint16 seqnr = nr >> 16;
 	uint16 offset = nr;
 	c_anodeblock_t ablk;
@@ -275,17 +276,21 @@ bool SaveAnode(canode_t *anode, uint32 nr)
 
 	tablk.data = NULL;			/* kill anode read cache */
 	ablk.data = (anodeblock_t *)buffer;
-	if (GetResBlock((cachedblock_t *)&ablk, ABLKID, seqnr, false))
-		return false;
+	if ((error = GetResBlock((cachedblock_t *)&ablk, ABLKID, seqnr, false)))
+		return error;
 
 	if (offset >= ANODES_PER_BLOCK)
-		return false;
+		return e_number_error;
 
 	ablk.data->nodes[offset].clustersize = anode->clustersize;
 	ablk.data->nodes[offset].blocknr     = anode->blocknr;
 	ablk.data->nodes[offset].next        = anode->next;
-	volume.writeblock((cachedblock_t *)&ablk);
-	return true;
+	return volume.writeblock((cachedblock_t *)&ablk);
+}
+
+bool SaveAnode(canode_t *anode, uint32 nr)
+{
+	return WriteAnode(anode, nr) == e_none;
 }
 
 ULONG GetDEFileSize(struct direntry *direntry, struct extrafields *extra, ULONG *high)

@@ -2027,39 +2027,30 @@ static error_t DeleteAnode(uint32 anodechain, uint32 node)
 {
 	canode_t prev_node, next_node;
 	uint32 previous;
+	error_t error;
 
-	/* node is head */
+	if ((error = ReadAnode(&next_node, node, false)))
+		return error;
 	if (anodechain == node)
 	{
-		if (!GetAnode(&next_node, node, false))
-			return e_anode_error;
-
-		if (!next_node.next || !GetAnode(&next_node, next_node.next, false))
-			return e_anode_error;
-
-		SaveAnode(&next_node, node);
+		if (!next_node.next)
+			return e_empty;
+		if ((error = ReadAnode(&next_node, next_node.next, false)))
+			return error;
+		return WriteAnode(&next_node, node);
 	}
-	else
+
+	for (previous = anodechain; previous; previous = prev_node.next)
 	{
-		/* find previous */
-		previous = anodechain;
-		while (true)
+		if ((error = ReadAnode(&prev_node, previous, false)))
+			return error;
+		if (prev_node.next == node)
 		{
-			if (!GetAnode(&prev_node, previous, false))
-				return e_anode_error;
-
-			if (prev_node.next == node) 
-				break;		// we found it
-
-			previous = prev_node.next;
+			prev_node.next = next_node.next;
+			return WriteAnode(&prev_node, previous);
 		}
-
-		GetAnode(&next_node, prev_node.next, false);
-		prev_node.next = next_node.next;
-		SaveAnode(&prev_node, prev_node.nr);
 	}
-	
-	return e_none;
+	return e_anode_error;
 }
 
 /* Get the directory entry extension fields
@@ -2136,7 +2127,8 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 		{
 			fixedfileerror("invalid hardlink");
 			linknode.clustersize = parent;
-			SaveAnode(&linknode, linknode.nr);
+			if ((error = WriteAnode(&linknode, linknode.nr)))
+				return error;
 		}
 
 		// check linkdir left to HardLink::Check
@@ -2145,12 +2137,14 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 		if (!type)
 		{
 			fixedfileerror("dangling hardlink");
-			if ((error = DeleteAnode(extra.link, linknode.nr))
-				 && (linknode.nr == extra.link))
+			error = DeleteAnode(extra.link, linknode.nr);
+			if (error == e_empty && linknode.nr == extra.link)
 			{
 				extra.link = 0;
-				SetExtraFields(&extra, de, dirblk);
+				return SetExtraFields(&extra, de, dirblk);
 			}
+			if (error)
+				return error;
 		}
 
 		if (!linknode.next)
