@@ -262,9 +262,29 @@ static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
          * another trap has no task context to give the crash to.
          */
         if ((KRN_TRAPDEPTH == 1) && getKernelBase() &&
-            (code < sizeof(exc_trap)) && (exc_trap[code] != -1) &&
-            core_Trap(exc_trap[code], ctx))
-            return TRAP_DONE;
+            (code < sizeof(exc_trap)) && (exc_trap[code] != -1))
+        {
+            /*
+             * Say so on serial before exec takes over: the Alert()
+             * requester may never appear (input.device itself may be
+             * the crashed task), and then this line is the only trace.
+             */
+            struct Task *t = SysBase ? FindTask(NULL) : NULL;
+
+            krnSBIPutStr("[trap] task '");
+            krnSBIPutStr((t && t->tc_Node.ln_Name) ? t->tc_Node.ln_Name : "<unknown>");
+            krnSBIPutStr("' ");
+            krnSBIPutStr(name ? name : "exception");
+            krnSBIPutStr(" sepc=");
+            krnSBIPutHex(ctx->pc);
+            krnSBIPutStr(" stval=");
+            krnSBIPutHex(stval);
+            krnSBIPutStr(" ra=");
+            krnSBIPutHex(ctx->x[0]);
+            krnSBIPutStr(" -> exec\n");
+            if (core_Trap(exc_trap[code], ctx))
+                return TRAP_DONE;
+        }
 
         krnSBIPutStr("\n[trap] ");
         if (name)

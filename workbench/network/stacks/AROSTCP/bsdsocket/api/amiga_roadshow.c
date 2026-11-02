@@ -973,16 +973,56 @@ AROS_LH1(void, ReleaseInterfaceList,
          struct SocketBase *, libPtr, 76, UL)
 {
     AROS_LIBFUNC_INIT
-    __log(LOG_CRIT, "ReleaseInterfaceList() is not implemented");
+    struct Node *n;
+
+    if(list == NULL)
+        return;
+    while((n = RemHead(list)) != NULL)
+        FreeVec(n);
+    FreeVec(list);
     AROS_LIBFUNC_EXIT
 }
 
+/*
+ * ObtainInterfaceList - Roadshow's list of the interfaces: one struct Node
+ * per interface, its name ("eth0", "lo0": what QueryInterfaceTagList() and
+ * the ioctls take) in ln_Name, the name stored with the node. Free it with
+ * ReleaseInterfaceList(). NULL with ENOMEM when memory runs out.
+ */
 AROS_LH0(struct List *, ObtainInterfaceList,
          struct SocketBase *, libPtr, 77, UL)
 {
     AROS_LIBFUNC_INIT
-    __log(LOG_CRIT, "ObtainInterfaceList() is not implemented");
-    return NULL;
+    extern struct ifnet *ifnet;
+    struct ifnet *ifp;
+    struct List *list;
+    spl_t s;
+
+    if((list = AllocVec(sizeof(*list), MEMF_PUBLIC | MEMF_CLEAR)) == NULL) {
+        writeErrnoValue(libPtr, ENOMEM);
+        return NULL;
+    }
+    NewList(list);
+    s = splnet();
+    for(ifp = ifnet; ifp; ifp = ifp->if_next) {
+        struct Node *n = AllocVec(sizeof(*n) + IFNAMSIZ + 4, MEMF_PUBLIC | MEMF_CLEAR);
+
+        if(n == NULL) {
+            struct Node *f;
+
+            splx(s);
+            while((f = RemHead(list)) != NULL)
+                FreeVec(f);
+            FreeVec(list);
+            writeErrnoValue(libPtr, ENOMEM);
+            return NULL;
+        }
+        n->ln_Name = (char *)(n + 1);
+        snprintf(n->ln_Name, IFNAMSIZ + 4, "%s%d", ifp->if_name, ifp->if_unit);
+        AddTail(list, n);
+    }
+    splx(s);
+    return list;
     AROS_LIBFUNC_EXIT
 }
 

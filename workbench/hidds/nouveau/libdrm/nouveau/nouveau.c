@@ -758,6 +758,17 @@ nouveau_bo_del(struct nouveau_bo *bo)
    struct nouveau_device_priv *nvdev = nouveau_device(bo->device);
    struct nouveau_bo_priv *nvbo = nouveau_bo(bo);
 
+   /*
+    * AROS: the kernel finds the mapping by handle and keeps a pointer to this
+    * bo for its unmap notification (drm_nouveau_check_userspace_mapped ->
+    * nouveau_bo_unmapped writes bo->map = NULL). Unmapping after the handle
+    * is closed silently did nothing, and the delayed delete on the 'ttm'
+    * task later stored NULL into whatever had reused this bo's memory -
+    * the SMP heap corruption of 2026-11-01. Unmap first.
+    */
+   if (bo->map)
+      drmMUnmap(drm->fd, bo->handle);
+
    if (nvbo->head.next) {
       simple_mtx_lock(&nvdev->lock);
       if (p_atomic_read(&nvbo->refcnt) == 0) {
@@ -768,8 +779,6 @@ nouveau_bo_del(struct nouveau_bo *bo)
    } else {
       drmCloseBufferHandle(drm->fd, bo->handle);
    }
-   if (bo->map)
-      drmMUnmap(drm->fd, bo->handle);
    free(nvbo);
 }
 

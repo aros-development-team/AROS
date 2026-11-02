@@ -13,6 +13,10 @@
 #include <exec/interrupts.h>
 #include <exec/ports.h>
 #include <exec/tasks.h>
+#include <aros/types/spinlock_s.h>
+#include <proto/exec.h>
+#include <proto/execlock.h>
+#include <resources/execlock.h>
 #include <devices/sana2.h>
 #include <devices/sana2specialstats.h>
 
@@ -120,6 +124,7 @@
 /* DMA channel 0 - the only one used */
 #define DWMAC_DMA_CH0_BASE              (DWMAC_DMA_BASE + 0x0100)
 #define DWMAC_DMA_CH0_CONTROL           (DWMAC_DMA_CH0_BASE + 0x00)
+#define DWMAC_DMA_CH0_DSL_SHIFT         18          /* descriptor skip length, in bus words */
 #define DWMAC_DMA_CH0_TX_CONTROL        (DWMAC_DMA_CH0_BASE + 0x04)
 #define DWMAC_DMA_CH0_RX_CONTROL        (DWMAC_DMA_CH0_BASE + 0x08)
 #define DWMAC_DMA_CH0_TXDESC_HI         (DWMAC_DMA_CH0_BASE + 0x10)
@@ -170,6 +175,22 @@ struct dwmac_desc
     ULONG               des2;
     ULONG               des3;
 };
+
+/*
+ * The engine's DMA is not coherent with the CPU caches on the boards this
+ * runs on (the Titan's tree gives dma-coherent to its PCIe roots and not
+ * to the MAC), so every descriptor gets a cache line of its own: the CPU
+ * cleans a line after writing it and invalidates one before reading what
+ * the engine wrote back, and with four 16-byte descriptors per line those
+ * operations would clobber the neighbours (a clean writes a stale OWN
+ * back over an engine's completion - seen as a ring "full" of descriptors
+ * the engine had long finished, TX dead). The engine steps 64 bytes too,
+ * through the channel's descriptor skip length (DSL, counted in bus
+ * words, so the bus width is probed at start-up: dwu_DSL).
+ */
+#define DWMAC_DESC_STRIDE               64
+#define DWMAC_TXD(unit, i)  ((volatile struct dwmac_desc *)((UBYTE *)(unit)->dwu_TXDesc + (i) * DWMAC_DESC_STRIDE))
+#define DWMAC_RXD(unit, i)  ((volatile struct dwmac_desc *)((UBYTE *)(unit)->dwu_RXDesc + (i) * DWMAC_DESC_STRIDE))
 
 /* Transmit, as prepared */
 #define DWMAC_TDES2_IOC                 (1UL << 31)
@@ -356,8 +377,9 @@ struct DWMACUnit
     /* Rings and their buffers, one contiguous allocation each */
     APTR                dwu_DescMem;
     ULONG               dwu_DescMemSize;
-    struct dwmac_desc  *dwu_TXDesc;
+    struct dwmac_desc  *dwu_TXDesc;     /* DWMAC_DESC_STRIDE apart, see DWMAC_TXD() */
     struct dwmac_desc  *dwu_RXDesc;
+    ULONG               dwu_DSL;        /* descriptor skip length in use (0: probing failed) */
     APTR                dwu_BufMem;
     ULONG               dwu_BufMemSize;
     UBYTE              *dwu_TXBuf;
@@ -371,6 +393,7 @@ struct DWMACUnit
      */
     ULONG               dwu_TXHead;
     ULONG               dwu_TXTail;
+    spinlock_t          dwu_ListLock;       /* dwu_Openers and dwu_TypeTrackers */
     ULONG               dwu_RXCurrent;
 };
 
@@ -379,6 +402,7 @@ struct DWMACBase
     struct Device       dwm_Device;
     APTR                dwm_KernelBase;
     APTR                dwm_UtilityBase;
+    APTR                dwm_ExecLockBase;   /* execlock.resource, for the port and list locks */
     struct dwmac_hw     dwm_HW;
     BOOL                dwm_Found;
     struct DWMACUnit   *dwm_Unit;
@@ -421,5 +445,64 @@ BOOL DWMAC_RemMulticastRange(struct DWMACBase *base, struct DWMACUnit *unit,
 
 /* dwmac_handler.c */
 void DWMAC_HandleRequest(struct DWMACBase *base, struct IOSana2Req *request);
+
+
+/*
+ * The interrupt and the soft interrupt run on whichever CPU takes them;
+ * requests are queued and aborted from any other. Disable() only stops
+ * this CPU, so every list they share is guarded by a spinlock as well:
+ * the MsgPort's own (the one exec's PutMsg/GetMsg take) for the request
+ * queues, dwu_ListLock for the openers and type trackers. Disable()
+ * stays, so this CPU's interrupt cannot spin on a lock its task holds.
+ */
+static inline void DWMAC_SpinLock(struct DWMACBase *base, spinlock_t *lock)
+{
+    Disable();
+#if defined(__AROSEXEC_SMP__)
+    if (base->dwm_ExecLockBase)
+    {
+        APTR ExecLockBase = base->dwm_ExecLockBase;
+        ObtainLock(lock, SPINLOCK_MODE_WRITE, 0);
+    }
+#else
+    (void)base; (void)lock;
+#endif
+}
+
+static inline void DWMAC_SpinUnlock(struct DWMACBase *base, spinlock_t *lock)
+{
+#if defined(__AROSEXEC_SMP__)
+    if (base->dwm_ExecLockBase)
+    {
+        APTR ExecLockBase = base->dwm_ExecLockBase;
+        ReleaseLock(lock, 0);
+    }
+#else
+    (void)base; (void)lock;
+#endif
+    Enable();
+}
+
+#define DWMAC_PORT_LOCK(base, port)     DWMAC_SpinLock((base), &(port)->mp_SpinLock)
+#define DWMAC_PORT_UNLOCK(base, port)   DWMAC_SpinUnlock((base), &(port)->mp_SpinLock)
+#define DWMAC_LIST_LOCK(base, unit)     DWMAC_SpinLock((base), &(unit)->dwu_ListLock)
+#define DWMAC_LIST_UNLOCK(base, unit)   DWMAC_SpinUnlock((base), &(unit)->dwu_ListLock)
+
+/* The queue a request sits on while it waits */
+static inline struct MsgPort *DWMAC_QueuePort(struct DWMACUnit *unit, struct IOSana2Req *req)
+{
+    struct Opener *opener = req->ios2_BufferManagement;
+
+    switch (req->ios2_Req.io_Command)
+    {
+    case CMD_READ:          return opener ? &opener->read_port : NULL;
+    case CMD_WRITE:
+    case S2_BROADCAST:
+    case S2_MULTICAST:      return unit->dwu_RequestPorts[WRITE_QUEUE];
+    case S2_ONEVENT:        return unit->dwu_RequestPorts[EVENT_QUEUE];
+    case S2_READORPHAN:     return unit->dwu_RequestPorts[ADOPT_QUEUE];
+    default:                return unit->dwu_InputPort;
+    }
+}
 
 #endif /* DWMAC_H */

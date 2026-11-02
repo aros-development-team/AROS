@@ -5,6 +5,7 @@
 */
 
 
+#include <aros/config.h>
 #include <proto/exec.h>
 #include <proto/poseidon.h>
 
@@ -44,10 +45,31 @@ UBYTE xhciEndpointIDFromIndex(UWORD wIndex)
     return epid;
 }
 
+/* Alignment mask for DMA buffers: bounce buffers own whole cache lines */
+static inline IPTR xhciDMAAlignMask(struct PCIController *hc)
+{
+#if defined(XHCI_NONCOHERENT_DMA)
+    return xhciGetHCPrivate(hc)->xhc_DMALine - 1;
+#else
+    (void)hc;
+    return 0;
+#endif
+}
+
+/* The data in a bounce allocation starts at its first aligned address */
+static inline APTR xhciBounceData(struct PCIController *hc, APTR bounce)
+{
+    IPTR mask = xhciDMAAlignMask(hc);
+
+    return (APTR)(((IPTR)bounce + mask) & ~mask);
+}
+
 APTR xhciPrepareDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
                           ULONG *dmalen, UWORD effdir, APTR *bounceOut)
 {
     APTR data = ioreq->iouh_Data;
+    IPTR mask = xhciDMAAlignMask(hc);
+    BOOL needbounce = FALSE;
 
     if(bounceOut)
         *bounceOut = NULL;
@@ -56,32 +78,89 @@ APTR xhciPrepareDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
         return data;
 
 #if __WORDSIZE == 64
-    APTR bounce = NULL;
-    if(!(hc->hc_Flags & HCF_ADDR64)) {
-        if((((IPTR)data + *dmalen - 1) >> 32) != 0) {
-            bounce = AllocVec(*dmalen, MEMF_31BIT | MEMF_PUBLIC);
-            if(!bounce)
-                return NULL;
-
-            if(effdir == UHDIR_OUT)
-                CopyMem(data, bounce, *dmalen);
-
-            if(bounceOut)
-                *bounceOut = bounce;
-        }
-    }
-    data = bounce ? bounce : data;
+    if(!(hc->hc_Flags & HCF_ADDR64) && ((((IPTR)data + *dmalen - 1) >> 32) != 0))
+        needbounce = TRUE;
 #endif
+    /* An IN buffer that shares a cache line with other data */
+    if((effdir == UHDIR_IN) && ((((IPTR)data | *dmalen) & mask) != 0))
+        needbounce = TRUE;
+
+    if(needbounce) {
+        /* room to align the start, and for the last line to be whole */
+        APTR bounce = AllocVec(*dmalen + 2 * mask,
+                               (hc->hc_Flags & HCF_ADDR64) ? MEMF_PUBLIC : (MEMF_31BIT | MEMF_PUBLIC));
+        if(!bounce)
+            return NULL;
+
+        data = xhciBounceData(hc, bounce);
+        if(effdir == UHDIR_OUT)
+            CopyMem(ioreq->iouh_Data, data, *dmalen);
+
+        if(bounceOut)
+            *bounceOut = bounce;
+    }
     CachePreDMA(data, dmalen,
                 (effdir == UHDIR_IN) ? DMAFLAGS_PREREAD : DMAFLAGS_PREWRITE);
 
     return data;
 }
 
+/*
+ * A transfer's bounce buffer is released where the transfer completes,
+ * in the controller's interrupt, but exec's allocator may not be entered
+ * from an interrupt: on SMP the task it interrupted can hold the memory
+ * header's spinlock, and the CPU then spins on it for good. The buffer
+ * goes on a list instead, linked through its first word (an AllocVec
+ * block is never shorter than a pointer), and the event ring task frees
+ * it when the completion wakes it.
+ */
+static void xhciDeferBounceFree(struct PCIController *hc, APTR bounce)
+{
+    struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
+#if defined(__AROSEXEC_SMP__)
+    /* The interrupt and the task may be on different CPUs */
+    APTR head = __atomic_load_n(&xhcic->xhc_FreeBounce, __ATOMIC_RELAXED);
+
+    do
+        *(APTR *)bounce = head;
+    while(!__atomic_compare_exchange_n(&xhcic->xhc_FreeBounce, &head, bounce, TRUE,
+                                       __ATOMIC_RELEASE, __ATOMIC_RELAXED));
+#else
+    Disable();
+    *(APTR *)bounce = xhcic->xhc_FreeBounce;
+    xhcic->xhc_FreeBounce = bounce;
+    Enable();
+#endif
+}
+
+/* Free the deferred bounce buffers - task context only */
+void xhciFreeDeferredBounces(struct PCIController *hc)
+{
+    struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
+    APTR bounce;
+
+    if(!xhcic)
+        return;
+#if defined(__AROSEXEC_SMP__)
+    bounce = __atomic_exchange_n(&xhcic->xhc_FreeBounce, NULL, __ATOMIC_ACQUIRE);
+#else
+    Disable();
+    bounce = xhcic->xhc_FreeBounce;
+    xhcic->xhc_FreeBounce = NULL;
+    Enable();
+#endif
+    while(bounce) {
+        APTR next = *(APTR *)bounce;
+
+        FreeVec(bounce);
+        bounce = next;
+    }
+}
+
 void xhciReleaseDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
                           ULONG actual, UWORD effdir, APTR bounceBuf)
 {
-    APTR data = bounceBuf ? bounceBuf : ioreq->iouh_Data;
+    APTR data = bounceBuf ? xhciBounceData(hc, bounceBuf) : ioreq->iouh_Data;
     ULONG postlen = actual;
 
     if(data && actual) {
@@ -91,11 +170,9 @@ void xhciReleaseDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
 
     if(bounceBuf) {
         if((effdir == UHDIR_IN) && actual)
-            CopyMem(bounceBuf, ioreq->iouh_Data, actual);
-        FreeVec(bounceBuf);
+            CopyMem(data, ioreq->iouh_Data, actual);
+        xhciDeferBounceFree(hc, bounceBuf);
     }
-
-    (void)hc;
 }
 
 static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *ioreq,

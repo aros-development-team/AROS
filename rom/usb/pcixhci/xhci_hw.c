@@ -15,6 +15,7 @@
 
 #include "uhwcmd.h"
 #include "xhciproto.h"
+#include "xhci_schedule.h"
 
 #undef base
 #define base (hc->hc_Device)
@@ -533,6 +534,8 @@ AROS_UFH0(void, xhciEventRingTask)
         if(xhcictsigs & (1 << xhcic->xhc_EventTask.xet_ProcessEventsSignal)) {
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Processing pending HC work" DEBUGCOLOR_RESET" \n");
             xhciHandleFinishedTDs(hc, xhcic->xhc_EventTask.xet_TimerReq);
+            /* what the interrupt could not free (xhciReleaseDMABuffer) */
+            xhciFreeDeferredBounces(hc);
 
             if(hc->hc_IntXFerQueue.lh_Head->ln_Succ)
                 xhciScheduleIntTDs(hc);

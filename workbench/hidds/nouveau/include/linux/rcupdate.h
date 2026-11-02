@@ -18,10 +18,17 @@
 #include <linux/rcupdate_trace.h>
 
 /*
- * A read-side critical section is a Forbid() window, so a writer can never
- * run while a reader holds a pointer; freeing "after a grace period" is
- * therefore just freeing.
+ * A read-side critical section is a Forbid() window. That keeps the reader
+ * from being rescheduled, but on SMP a writer on another CPU runs anyway:
+ * freeing "after a grace period" has to be a real deferral, or an unlocked
+ * walker (dma_resv_iter_walk_unlocked) reads a freed fence table, finds
+ * fences with no references and restarts for ever inside Forbid() - the
+ * Titan 'ttm' task spinning Forbid()den, 2026-11-01. linux_rcu.c holds the
+ * objects for RCU_GRACE_MS and frees them from the system workqueue.
  */
+void nouveau_rcu_free(void *ptr);
+void nouveau_call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *));
+void nouveau_rcu_synchronize(void);
 static inline void rcu_read_lock(void)      { Forbid(); }
 static inline void rcu_read_unlock(void)    { Permit(); }
 #define rcu_read_lock_bh()              rcu_read_lock()
@@ -35,7 +42,7 @@ static inline void rcu_read_unlock(void)    { Permit(); }
 #define rcu_lockdep_assert(c, s)        do { } while (0)
 #define RCU_LOCKDEP_WARN(c, s)          do { } while (0)
 #define rcu_sleep_check()               do { } while (0)
-#define synchronize_rcu()               do { Forbid(); Permit(); } while (0)
+#define synchronize_rcu()               nouveau_rcu_synchronize()
 #define synchronize_rcu_expedited()     synchronize_rcu()
 #define rcu_barrier()                   synchronize_rcu()
 #define rcu_dereference(p)              (p)
@@ -51,11 +58,11 @@ static inline void rcu_read_unlock(void)    { Permit(); }
 #define rcu_replace_pointer(rp, p, c)   ({ typeof(rp) __r = (rp); rcu_assign_pointer(rp, p); __r; })
 #define rcu_swap_protected(rp, p, c)    do { typeof(p) __t = (rp); rcu_assign_pointer(rp, p); (p) = __t; } while (0)
 #define unrcu_pointer(p)                (p)
-#define kfree_rcu(ptr, ...)             kfree(ptr)
-#define kvfree_rcu(ptr, ...)            kvfree(ptr)
-#define kfree_rcu_mightsleep(ptr)       kfree(ptr)
+#define kfree_rcu(ptr, ...)             nouveau_rcu_free(ptr)
+#define kvfree_rcu(ptr, ...)            nouveau_rcu_free(ptr)
+#define kfree_rcu_mightsleep(ptr)       nouveau_rcu_free(ptr)
 typedef void (*rcu_callback_t)(struct rcu_head *head);
-static inline void call_rcu(struct rcu_head *head, rcu_callback_t func) { func(head); }
+static inline void call_rcu(struct rcu_head *head, rcu_callback_t func) { nouveau_call_rcu(head, func); }
 #define init_rcu_head(h)                do { } while (0)
 #define destroy_rcu_head(h)             do { } while (0)
 #define init_rcu_head_on_stack(h)       do { } while (0)

@@ -200,6 +200,15 @@ nouveau_gem_object_close(struct drm_gem_object *gem, struct drm_file *file_priv)
 	if (ret)
 		return;
 
+	/*
+	 * AROS: the only user of this object's handle is the hidd's libdrm bo,
+	 * which is freed right after the close. Its unmap notification must
+	 * never be called again, whatever happens to the mapping later.
+	 */
+	nvbo->was_gpu_unmapped = true;
+	nvbo->gpu_unmapped = NULL;
+	nvbo->gpu_unmapped_data = NULL;
+
 	vma = nouveau_vma_find(nvbo, vmm);
 	if (vma) {
 		if (--vma->refs == 0) {

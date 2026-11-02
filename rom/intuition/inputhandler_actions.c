@@ -701,9 +701,12 @@ void HandleIntuiActions(struct IIHData *iihdata,
 
         if (am->task)
         {
+            /* am is on the waiter's stack; done = TRUE lets it go */
+            struct Task *waiter = am->task;
+
             Forbid();
             am->done = TRUE;
-            Signal(am->task, SIGF_INTUITION);
+            Signal(waiter, SIGF_INTUITION);
             Permit();
         }
         else

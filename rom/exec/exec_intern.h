@@ -75,6 +75,14 @@ struct SupervisorAlertTask
 /*
    AROS specific private portion of ExecBase
  */
+/*
+ * Private soft interrupt node states (cause.c). NT_SOFTINT means queued;
+ * these two mean "a CPU is running it" and "running, run it again when
+ * done". Cause() treats anything else as free.
+ */
+#define NT_SOFTINT_RUNNING  (NT_USER - 2)
+#define NT_SOFTINT_PENDING  (NT_USER - 3)
+
 struct IntExecBase
 {
     struct ExecBase             pub;

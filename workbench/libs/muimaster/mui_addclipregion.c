@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/graphics.h>
@@ -25,20 +25,36 @@
         struct Library *, MUIMasterBase, 30, MUIMaster)
 
 /*  FUNCTION
+        Push a region onto the rendering context's clipping stack and install
+        it on the window layer, or the RastPort layer when no window exists.
+        If another MUI clip is active, intersect r with that region first.
 
     INPUTS
+        mri - Non-NULL initialized rendering context. When mri_Window is
+              NULL, mri_RastPort must be valid.
+        r - Region whose ownership is transferred to this call, or NULL.
 
     RESULT
+        The previous layer clip-region pointer as a removal token, including
+        NULL when no previous region exists. Returns (APTR)-1 if r or the
+        target layer is NULL or the 20-entry MUI clipping stack is full.
 
     NOTES
-
-    EXAMPLE
+        The function modifies r and disposes of it on rejection. After a
+        successful push, MUI_RemoveClipRegion() disposes of it. Do not free
+        or modify the region after passing it here.
+        Remove successful pushes in reverse order using the same rendering
+        context. Preserve the layer and context until all clips are removed.
+        Refresh processing is temporarily suspended and resumed when needed.
 
     BUGS
+        Failure of the region intersection is not checked. Removal restores
+        the previous MUI stack entry, not an arbitrary pre-existing layer
+        clip region represented by the returned token. Do not mix this
+        stack with independently installed layer clip regions.
 
     SEE ALSO
-
-    INTERNALS
+        MUI_RemoveClipRegion(), MUI_AddClipping(), layers.library/InstallClipRegion()
 
 *****************************************************************************/
 {

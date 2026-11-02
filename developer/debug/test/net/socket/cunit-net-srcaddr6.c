@@ -4,10 +4,15 @@
     CUnit tests for the source address the stack chooses on an interface that
     has a link-local and a wider-scope address. A destination of link scope
     gets the link-local source and a global destination a global one
-    (RFC 6724 section 5, rule 2); MLD messages always come from the
+    (RFC 6724 section 5, rule 2); of several global-scope addresses, the one
+    whose label matches the destination's (rule 6: a ULA for a ULA) and,
+    of those, the one with the longest prefix in common with it (rule 8),
+    whichever order they were added in and whatever other addresses (a
+    temporary one, say) the interface has; MLD messages always come from the
     link-local address, whatever the group's scope (RFC 3810 section 5).
 
-    The test adds fd00:4d54:61::1/64 to the interface. Sources are read with
+    The test adds 2001:db8:4d54:62::1/64, fd00:4d54:63::1/64 and
+    fd00:4d54:61::1/64 to the interface, in that order. Sources are read with
     getsockname() after connect(); MLD reports are watched with the
     bsdsocket BPF calls. It needs a multicast-capable interface (on hosted
     AROS, tap.device attached to a host tap). Usage:  cunit-net-srcaddr6
@@ -27,11 +32,13 @@ struct Library *SocketBase = NULL;
 
 static const char *ifname = "eth0";
 static unsigned ifindex;
-static struct in6_addr linklocal, ula;
+static struct in6_addr linklocal, ula, ula2;
 static int ready;
 static long bpf = -1;
 
 #define ULA "fd00:4d54:61::1"
+#define GLB "2001:db8:4d54:62::1"
+#define ULA2 "fd00:4d54:63::1"
 
 static void sa6(struct sockaddr_in6 *a, const char *addr)
 {
@@ -184,6 +191,19 @@ void testSRC6_GLOBAL_DESTINATION(void)
     CU_ASSERT(memcmp(&src, &ula, sizeof(src)) == 0);
 }
 
+/* Of several global-scope addresses, a ULA destination gets a ULA (rule 6),
+ * and of the two ULAs the one of its own prefix (rule 8) - not whichever
+ * happens to come first. */
+void testSRC6_LONGEST_PREFIX(void)
+{
+    struct in6_addr src;
+    NEED_IF();
+    CU_ASSERT_EQUAL(source_for("fd00:4d54:61::2", 0, &src), 0);
+    CU_ASSERT(memcmp(&src, &ula, sizeof(src)) == 0);
+    CU_ASSERT_EQUAL(source_for("fd00:4d54:63::2", 0, &src), 0);
+    CU_ASSERT(memcmp(&src, &ula2, sizeof(src)) == 0);
+}
+
 /* An MLD report for a link-scope group comes from the link-local address. */
 void testSRC6_MLD_LINKSCOPE_GROUP(void)
 {
@@ -242,9 +262,19 @@ static int setup(void)
             }
     }
     CloseSocket(s);
-    if (!found || bpf_start() != 0 || addr6(1, ULA) != 0)
+    if (!found || bpf_start() != 0 || addr6(1, GLB) != 0)
         return 0;
+    if (addr6(1, ULA2) != 0) {
+        addr6(0, GLB);
+        return 0;
+    }
+    if (addr6(1, ULA) != 0) {
+        addr6(0, ULA2);
+        addr6(0, GLB);
+        return 0;
+    }
     inet_pton(AF_INET6, ULA, &ula);
+    inet_pton(AF_INET6, ULA2, &ula2);
     Delay(3 * 50);      /* a new address is tentative until DAD completes */
     return 1;
 }
@@ -272,6 +302,7 @@ int main(int argc, char **argv)
     if (p == NULL ||
         !CU_add_test(p, "a link-scope destination gets the link-local source", testSRC6_LINKSCOPE_DESTINATION) ||
         !CU_add_test(p, "a global destination gets a global source", testSRC6_GLOBAL_DESTINATION) ||
+        !CU_add_test(p, "of several global addresses, label then prefix decide", testSRC6_LONGEST_PREFIX) ||
         !CU_add_test(p, "MLD for a link-scope group comes from the link-local", testSRC6_MLD_LINKSCOPE_GROUP) ||
         !CU_add_test(p, "MLD for a wider group comes from the link-local", testSRC6_MLD_WIDER_GROUP))
     {
@@ -287,8 +318,11 @@ int main(int argc, char **argv)
     CU_automated_enable_junit_xml(CU_TRUE);
     CU_automated_run_tests();
     CU_cleanup_registry();
-    if (ready)
+    if (ready) {
         addr6(0, ULA);
+        addr6(0, ULA2);
+        addr6(0, GLB);
+    }
     if (bpf >= 0)
         bpf_close(bpf);
     CloseLibrary(SocketBase);

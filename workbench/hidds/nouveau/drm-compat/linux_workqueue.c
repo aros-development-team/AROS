@@ -15,6 +15,8 @@
 #include <linux/sched.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
+#include <linux/spinlock_types.h>
+#include <proto/kernel.h>
 
 /* Helper-process start-up handshake (linux_sched.c). */
 struct compat_startup {
@@ -28,9 +30,18 @@ void compat_startup_wait(struct compat_startup *s, const char *what);
 
 /*
  * A workqueue is one worker process with a message port. Queued work
- * items are linked on the queue's list under Disable(); the worker pops
+ * items are linked on the queue's list under the queue's kernel spinlock
+ * (Disable() alone is per-CPU on SMP: two CPUs queueing at once, or one
+ * queueing while the worker pops, tore the exec list); the worker pops
  * and runs them. Delayed work parks on a kernel timer whose expiry queues
  * the item. The system queues share one worker.
+ *
+ * As in Linux, a work item belongs to its function once that runs: the
+ * function may re-queue it or free the memory it lives in
+ * (ttm_bo_delayed_delete frees the buffer object that embeds it), so the
+ * worker never touches *work after func() returns. The SMP display stress
+ * of 2026-11-01 showed exactly that write into freed memory as TLSF
+ * free-list corruption on the 'Nouveau WorkQueue' task.
  */
 
 enum {
@@ -42,6 +53,7 @@ enum {
 struct workqueue_struct {
     char name[32];
     struct MinList items;
+    struct nouveau_krnspin lock;    /* guards items and the work states */
     struct Process *worker;
     struct Task *creator;
     ULONG sigbit;
@@ -52,6 +64,20 @@ struct workqueue_struct {
     volatile BOOL stopping;
     struct compat_startup su;
 };
+
+static inline void wq_lock(struct workqueue_struct *wq)
+{
+    Disable();
+    if (KernelBase)
+        KrnSpinLock((void *)&wq->lock, NULL, SPINLOCK_MODE_WRITE);
+}
+
+static inline void wq_unlock(struct workqueue_struct *wq)
+{
+    if (KernelBase)
+        KrnSpinUnLock((void *)&wq->lock);
+    Enable();
+}
 
 struct workqueue_struct *system_wq = NULL;
 struct workqueue_struct *system_highpri_wq = NULL;
@@ -79,26 +105,28 @@ static void worker_main(void)
             break;
 
         for (;;) {
-            Disable();
+            work_func_t func = NULL;
+
+            wq_lock(wq);
             node = (struct MinNode *)REMHEAD(&wq->items);
             work = node ? container_of(node, struct work_struct, node) : NULL;
             if (work) {
-                work->state = WORK_RUNNING;
+                /* no longer pending: it may be re-queued from inside func */
+                work->state = WORK_IDLE;
                 wq->running = work;
+                func = work->func;
             }
-            Enable();
+            wq_unlock(wq);
             if (!work)
                 break;
 
-            work->func(work);
+            func(work);
+            /* *work may be gone now - see the note above */
 
-            Disable();
-            /* the function may have queued itself again */
-            if (work->state == WORK_RUNNING)
-                work->state = WORK_IDLE;
+            wq_lock(wq);
             wq->running = NULL;
             wq->done_generation = wq->generation;
-            Enable();
+            wq_unlock(wq);
         }
     }
     FreeSignal(wq->sigbit);
@@ -118,6 +146,8 @@ struct workqueue_struct *alloc_workqueue(const char *fmt, unsigned int flags, in
     va_end(ap);
 
     NEWLIST(&wq->items);
+    wq->lock.lock = 0;
+    wq->lock.s_Owner = NULL;
     InitSemaphore(&wq->flush_lock);
     wq->creator = FindTask(NULL);
     wq->sigbit = (ULONG)-1;
@@ -183,7 +213,7 @@ bool queue_work(struct workqueue_struct *wq, struct work_struct *work)
     if (!wq || !work)
         return false;
 
-    Disable();
+    wq_lock(wq);
     if (work->state != WORK_QUEUED) {
         work->state = WORK_QUEUED;
         work->wq = wq;
@@ -191,7 +221,7 @@ bool queue_work(struct workqueue_struct *wq, struct work_struct *work)
         wq->generation++;
         queued = true;
     }
-    Enable();
+    wq_unlock(wq);
 
     if (queued)
         Signal((struct Task *)wq->worker, 1UL << wq->sigbit);
@@ -270,7 +300,8 @@ bool flush_work(struct work_struct *work)
     if (FindTask(NULL) == (struct Task *)wq->worker)
         return false;
 
-    while (work->state != WORK_IDLE) {
+    /* queued, or being run right now */
+    while (work->state == WORK_QUEUED || wq->running == work) {
         waited = true;
         udelay(100);
     }
@@ -286,9 +317,9 @@ void flush_workqueue(struct workqueue_struct *wq)
     if (FindTask(NULL) == (struct Task *)wq->worker)
         return;
 
-    Disable();
+    wq_lock(wq);
     gen = wq->generation;
-    Enable();
+    wq_unlock(wq);
     while (!IsListEmpty((struct List *)&wq->items) || wq->running != NULL || (LONG)(wq->done_generation - gen) < 0) {
         if (IsListEmpty((struct List *)&wq->items) && wq->running == NULL)
             break;
@@ -316,14 +347,17 @@ bool flush_rcu_work(struct rcu_work *rwork)
 bool cancel_work(struct work_struct *work)
 {
     bool ret = false;
+    struct workqueue_struct *wq = work->wq ? work->wq : system_wq;
 
-    Disable();
+    if (!wq)
+        return false;
+    wq_lock(wq);
     if (work->state == WORK_QUEUED) {
         REMOVE((struct Node *)&work->node);
         work->state = WORK_IDLE;
         ret = true;
     }
-    Enable();
+    wq_unlock(wq);
     return ret;
 }
 

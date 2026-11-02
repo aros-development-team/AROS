@@ -160,6 +160,18 @@ struct ip6_moptions {
 /* IN6P socket flags (stored in in6p_flags) */
 #define IN6P_PKTINFO	0x01		/* receive packet info (RECVPKTINFO) */
 #define IN6P_HOPLIMIT	0x02		/* receive hop limit (RECVHOPLIMIT) */
+#define IN6P_RECVPATHMTU 0x04		/* IPV6_RECVPATHMTU */
+#define IN6P_DONTFRAG	0x08		/* IPV6_DONTFRAG */
+#define IN6P_MINMTU	0x10		/* IPV6_USE_MIN_MTU 1 */
+#define IN6P_PMTU	0x20		/* IPV6_USE_MIN_MTU 0 (neither: -1) */
+#define IN6P_TCLASS	0x40		/* receive the traffic class (RECVTCLASS) */
+
+/* ip6_output() flags: the RFC 3542 section 11 options for one datagram */
+#define IPV6_OUT_MINMTU	0x01		/* send at most IPV6_MMTU bytes a packet */
+#define IPV6_OUT_DONTFRAG 0x02		/* do not fragment; EMSGSIZE above the link MTU */
+/* a socket's IPV6_USE_MIN_MTU: -1, 0 or 1 */
+#define IN6P_MINMTU_OPT(inp) (((inp)->in6p_flags & IN6P_MINMTU) ? 1 : \
+                              ((inp)->in6p_flags & IN6P_PMTU) ? 0 : -1)
 
 #ifdef KERNEL
 extern struct ip6stat ip6stat;
@@ -224,6 +236,9 @@ void in6_pcbnotify(struct inpcbhead *, const struct sockaddr_in6 *, u_int,
                    const struct in6_addr *, u_int, int,
                    void (*)(struct inpcb *, int));
 void udp6_ctlinput(int, struct sockaddr *, void *);
+int  ip6_outflags(int, int, const struct in6_addr *);
+void ip6_notify_pmtu(const struct inpcb *, const struct sockaddr_in6 *, u_int32_t);
+u_int32_t ip6_pathmtu(const struct inpcb *);
 void tcp6_ctlinput(int, struct sockaddr *, void *);
 
 /* Privacy extensions (RFC 4941) */

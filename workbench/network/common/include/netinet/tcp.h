@@ -199,6 +199,7 @@ __tcp_set_flags(struct tcphdr *th, uint16_t flags)
 #define	TCP_NOPUSH		4	/* don't push last block of write */
 #define	TCP_NOOPT		8	/* don't use TCP options */
 #define	TCP_MD5SIG		16	/* use MD5 digests (RFC2385) */
+#define	TCP_USER_TIMEOUT	18	/* u_int; ms unacknowledged before the connection is dropped (RFC 5482; Linux's number) */
 #define	TCP_INFO		32	/* retrieve tcp_info structure */
 #define	TCP_STATS		33	/* retrieve stats blob structure */
 #define	TCP_LOG			34	/* configure event logging for connection */

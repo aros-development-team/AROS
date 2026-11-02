@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <stdio.h>
@@ -28,35 +28,28 @@
         struct Library *, MUIMasterBase, 13, MUIMaster)
 
 /*  FUNCTION
-        Get a pointer to a MUI Class.
-
-        The main use for this function is to retrieve the pointer to a MUI class
-        for use by intuition.library/MakeClass() as superclass pointer. However,
-        this function is obsolete since MUI V8, so DO NOT USE IT, use
-        MUI_CreateCustomClass() instead.
+        Look up a built-in MUI class or load an external class module.
+        Built-in class names are compared case-sensitively. If no built-in
+        class is found, the loader tries Zune/<classid>,
+        Classes/Zune/<classid>, and MUI/<classid>, in that order, using
+        exec.library/OpenLibrary().
 
     INPUTS
-        classid - the ID of the class whose pointer is to be retrieved.
+        classid - NUL-terminated class identifier, or NULL.
 
     RESULT
-        The class pointer is returned. DO NOT use it for any other reason that
-        as an argument of intuition.library/MakeClass(). DO NOT assume anything
-        about its content.
+        The class pointer, or NULL for a NULL identifier or failed lookup.
 
     NOTES
-        Once the pointer is not needed anymore, do not forget to call MUI_FreeClass().
-
-        This function is OBSOLETE, don't use it, use MUI_CreateCustomClass instead.
-
-    EXAMPLE
-
-    BUGS
+        This legacy superclass lookup interface is deprecated in favor of
+        MUI_CreateCustomClass(). Pair a successful lookup with
+        MUI_FreeClass() when the class is no longer needed.
+        Loading an external class can perform file I/O and execute the
+        module's initialization and MCC_Query entrypoint. Do not call this
+        interface from an interrupt handler.
 
     SEE ALSO
         MUI_FreeClass(), MUI_CreateCustomClass(), MUI_DeleteCustomClass()
-
-
-    INTERNALS
 
 *****************************************************************************/
 {

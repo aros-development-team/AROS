@@ -32,6 +32,28 @@ static struct KernelBase *irqKernelBase;
 ULONG __irq_counts[KRN_MAX_IRQ_SOURCES];
 
 /*
+ * Sources krnHandleExternalIRQ() throttled for storming; the boot hart's
+ * timer tick re-enables them (krnIRQUnthrottle). Masking one for good
+ * silently killed the Titan's Ethernet: a level line a gigabit NIC
+ * re-asserts before every completion looks exactly like a stuck one.
+ */
+static volatile UBYTE __irq_throttled[KRN_MAX_IRQ_SOURCES];
+
+void krnIRQUnthrottle(void)
+{
+    unsigned int n;
+
+    for (n = 1; n < KRN_MAX_IRQ_SOURCES; n++)
+    {
+        if (__irq_throttled[n])
+        {
+            __irq_throttled[n] = 0;
+            krnPLICEnable(n, 1);
+        }
+    }
+}
+
+/*
  * Sources above the controller's own are raised by whoever owns them
  * (see allocirq.c) and have nothing to unmask - a bridge receiving
  * message interrupts calls KrnRunIRQ() for them once its own line has
@@ -118,12 +140,15 @@ void krnHandleExternalIRQ(void)
         spins = (src == last) ? spins + 1 : 0;
         last = src;
 
-        if (spins > 1024)
+        if (spins > 65536)
         {
+            /* Throttle, never mask for good: the next tick re-enables it */
             krnPLICEnable(src, 0);
+            if (src < KRN_MAX_IRQ_SOURCES)
+                __irq_throttled[src] = 1;
             krnSBIPutStr("[irq] source ");
             krnSBIPutDec(src);
-            krnSBIPutStr(" will not clear - masked\n");
+            krnSBIPutStr(" storming - throttled until the next tick\n");
             break;
         }
     }

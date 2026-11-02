@@ -4289,8 +4289,14 @@ VOID Compositor__Hidd_Compositor__DetachSurface(OOP_Class *cl, OOP_Object *o, st
 
     UNLOCK_COMPOSITOR
     HIDDCompositorFireHooks(compdata, &fires);
-    if (pending)
+    /* SIGF_SINGLE is shared with other waits; only firing == 0 means done */
+    while (pending)
+    {
         Wait(SIGF_SINGLE);
+        ObtainSemaphore(&compdata->hooksem);
+        pending = cs->firing;
+        ReleaseSemaphore(&compdata->hooksem);
+    }
 
     FreeMem(cs, sizeof(struct ClientSurface));
 }

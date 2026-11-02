@@ -33,10 +33,31 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
     (void)failhook;
 
 #if defined(__AROSEXEC_SMP__)
+#if defined(RISCV_KRNWATCHDOG)
+    tls_t *tls = TLS_PTR_GET();
+    APTR prevwait = NULL, prevcaller = NULL;
+    UQUAD prevsince = 0;
+    BOOL waited = FALSE;
+#endif
+
     if (mode == SPINLOCK_MODE_WRITE)
     {
         while (!krnRVSpinTryWrite(lock))
         {
+#if defined(RISCV_KRNWATCHDOG)
+            if (!waited)
+            {
+                /* Leave a trail for the watchdog (kernel_watchdog.c); an
+                   interrupt's wait can nest inside this one */
+                waited = TRUE;
+                prevwait = tls->SpinWait;
+                prevcaller = tls->SpinCaller;
+                prevsince = tls->SpinSince;
+                asm volatile("rdtime %0" : "=r"(tls->SpinSince));
+                tls->SpinCaller = __builtin_return_address(0);
+                tls->SpinWait = lock;
+            }
+#endif
             /* Wait with plain loads, off the reservation */
             while (lock->lock != SPINLOCK_UNLOCKED)
                 krnRVPause();
@@ -47,10 +68,31 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
     {
         while (!krnRVSpinTryRead(lock))
         {
+#if defined(RISCV_KRNWATCHDOG)
+            if (!waited)
+            {
+                waited = TRUE;
+                prevwait = tls->SpinWait;
+                prevcaller = tls->SpinCaller;
+                prevsince = tls->SpinSince;
+                asm volatile("rdtime %0" : "=r"(tls->SpinSince));
+                tls->SpinCaller = __builtin_return_address(0);
+                tls->SpinWait = lock;
+            }
+#endif
             while (lock->lock & SPINLOCK_BUSY_FOR_READ)
                 krnRVPause();
         }
     }
+
+#if defined(RISCV_KRNWATCHDOG)
+    if (waited)
+    {
+        tls->SpinWait = prevwait;
+        tls->SpinCaller = prevcaller;
+        tls->SpinSince = prevsince;
+    }
+#endif
 #else
     (void)mode;
 #endif

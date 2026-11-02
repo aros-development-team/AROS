@@ -117,77 +117,885 @@ struct timerequest_ext
     struct MUI_InputHandlerNode *ihn;
 };
 
-/*
- * Application class is the master class for all
- * MUI applications. It serves as a kind of anchor
- * for all input, either coming from the user or
- * somewhere from the system, e.g. commodities
- * or ARexx messages. (hemm forget theses last 2 for Zune :)
- *
- * An application can have any number of sub windows,
- * these windows are the children of the application.
- * (FYI, it delegates child handling to a Family object).
- */
-
-/*
-MUIA_Application_Active [ISG]             done
-MUIA_Application_Author [I.G]             done
-MUIA_Application_Base [I.G]               done
-MUIA_Application_Broker [..G]             done
-MUIA_Application_BrokerHook [ISG]         done
-MUIA_Application_BrokerPort [..G]         done
-MUIA_Application_BrokerPri [I.G]          done
-MUIA_Application_Commands [ISG]           done
-MUIA_Application_Copyright [I.G]          done
-MUIA_Application_Description [I.G]        done
-MUIA_Application_DiskObject [ISG]         done
-MUIA_Application_DoubleStart [..G]        triggered; OM_GET value todo
-MUIA_Application_DropObject [IS.]         todo
-MUIA_Application_ForceQuit [..G]          not triggered yet
-MUIA_Application_HelpFile [ISG]           stored; otherwise unused
-MUIA_Application_Iconified [.SG]          done
-MUIA_Application_Menu [I.G]               unimplemented (OBSOLETE)
-MUIA_Application_MenuAction [..G]         done
-MUIA_Application_MenuHelp [..G]           not triggered yet
-MUIA_Application_Menustrip [I..]          done
-MUIA_Application_RexxHook [ISG]           done
-MUIA_Application_RexxMsg [..G]            done
-MUIA_Application_RexxString [.S.]         done
-MUIA_Application_SingleTask [I..]         done
-MUIA_Application_Sleep [.S.]              done
-MUIA_Application_Title [I.G]              done
-MUIA_Application_UseCommodities [I..]     done
-MUIA_Application_UseRexx [I..]            done
-MUIA_Application_Version [I.G]            done
-MUIA_Application_Window [I..]             done
-MUIA_Application_WindowList [..G]         done
-
-OM_ADDMEMBER                              done
-OM_REMMEMBER                              done
-MUIM_Application_AboutMUI                 done
-MUIM_Application_AddInputHandler          done ?
-MUIM_Application_CheckRefresh             done
-MUIM_Application_GetMenuCheck             OBSOLETE
-MUIM_Application_GetMenuState             OBSOLETE
-MUIM_Application_Input                    OBSOLETE
-MUIM_Application_InputBuffered            todo: drain all pending window messages
-MUIM_Application_Load
-MUIM_Application_NewInput                 done
-MUIM_Application_OpenConfigWindow
-MUIM_Application_PushMethod
-MUIM_Application_RemInputHandler          done ?
-MUIM_Application_ReturnID                 done
-MUIM_Application_Save
-MUIM_Application_SetConfigItem
-MUIM_Application_SetMenuCheck
-MUIM_Application_SetMenuState
-MUIM_Application_ShowHelp
-
-Notify.mui/MUIM_FindUData                 done
-Notify.mui/MUIM_GetUData                  done
-Notify.mui/MUIM_SetUData                  done
-Notify.mui/MUIM_SetUDataOnce              done
- */
+/****** Application.mui/MUIC_Application ************
+*
+*   NAME
+*       MUIC_Application
+*
+*   SUPERCLASS
+*       Notify.mui
+*
+*   DESCRIPTION
+*       Own the application window family, optional menustrip, configuration
+*       object, message ports, and event queues. Construction binds the
+*       application to the creating task. Process input and perform ordinary
+*       object mutations in that task; the pushed-method queue has a separate
+*       semaphore but does not protect object lifetimes.
+*       Window tags attach owned children. OM_ADDMEMBER appends through the
+*       internal Family and connects the child to this application; OM_REMMEMBER
+*       disconnects and unlinks without disposing it. Both member methods return
+*       TRUE without checking child results. Supply live, correctly owned
+*       Window-compatible children and remove them before separate disposal.
+*       Application disposal removes and disposes remaining windows, the
+*       menustrip, and configuration data, then releases its own resources.
+*       Caller-supplied metadata strings, hooks, command tables, and DiskObject
+*       remain borrowed unless an attribute explicitly documents copying. Stop
+*       input processing and callbacks, remove input handlers, and resolve
+*       queued methods before disposal.
+*
+*   METHODS
+*       FindUData and GetUData examine the application first, then delegate to
+*       the internal window Family. That Family itself participates in matching
+*       before its children, including its default UserData value zero. GetUData
+*       returns a match result, not the attribute getter's success.
+*       SetUData sets the application on a match, visits the internal Family,
+*       and returns TRUE regardless of matches. SetUDataOnce stops at the
+*       application or first delegated match. The application menustrip is not
+*       traversed by these overrides. Keep membership stable during callbacks.
+*       MUIA_ShowMe is also accepted by the setter and propagated to windows.
+*       The iteration rereads the window list after each setter and assumes that
+*       a processed window does not remove itself. Local MUIA_Version and
+*       MUIA_Revision both return 1.
+*
+*   NOTES
+*       Normal construction returns NULL on required allocation, port, timer,
+*       configuration, or child validation failure. Optional broker or Rexx-port
+*       creation failure does not fail construction. The constructor creates
+*       configuration notification for ENV:zune/<base>.prefs when possible;
+*       failure to watch that file is not reported. NewInput processes changes
+*       and queues configuration replacement.
+*       Disposal can perform configuration-file I/O and wait for timer
+*       completion. Depending on the configured window-position mode, it
+*       snapshots windows and writes ENV preferences; mode 2 also reloads and
+*       saves ENVARC preferences to retain persistent settings while updating
+*       positions.
+*
+*   BUGS
+*       The early disposal path dereferences mgi_Prefs whenever app_Base is
+*       non-NULL. Failure after assigning the base but before preferences are
+*       available can therefore access NULL instead of cleanly returning
+*       construction failure.
+*       Disposal does not drain or free app_MethodQueue and does not enumerate
+*       and remove registered timer handlers. Pending method payloads and
+*       handler resources must not be assumed to be reclaimed by application
+*       disposal. Cross-task queue insertion is not an application-lifetime
+*       guarantee.
+*
+*/
+/****** Application.mui/MUIA_Application_Author ************
+*
+*   NAME
+*       MUIA_Application_Author
+*
+*   FUNCTION
+*       Store the application author string. Default NULL.
+*
+*   INPUTS
+*       STRPTR; initialize and get.
+*
+*   NOTES
+*       The pointer is stored without copying and is not freed. Keep the string
+*       alive while the application uses it; there is no runtime setter for this
+*       attribute.
+*
+*/
+/****** Application.mui/MUIA_Application_Copyright ************
+*
+*   NAME
+*       MUIA_Application_Copyright
+*
+*   FUNCTION
+*       Store the application copyright string. Default NULL.
+*
+*   INPUTS
+*       STRPTR; initialize and get.
+*
+*   NOTES
+*       The pointer is stored without copying and is not freed. Keep the string
+*       alive while the application uses it; there is no runtime setter for this
+*       attribute.
+*
+*/
+/****** Application.mui/MUIA_Application_Description ************
+*
+*   NAME
+*       MUIA_Application_Description
+*
+*   FUNCTION
+*       Store the application description string. Default "?".
+*
+*   INPUTS
+*       STRPTR; initialize and get.
+*
+*   NOTES
+*       The pointer is stored without copying and is not freed. Keep the string
+*       alive while the application uses it; there is no runtime setter for this
+*       attribute.
+*
+*/
+/****** Application.mui/MUIA_Application_Title ************
+*
+*   NAME
+*       MUIA_Application_Title
+*
+*   FUNCTION
+*       Store the application title string. Default "Unnamed".
+*
+*   INPUTS
+*       STRPTR; initialize and get.
+*
+*   NOTES
+*       The pointer is stored without copying and is not freed. Keep the string
+*       alive while the application uses it; there is no runtime setter for this
+*       attribute.
+*
+*/
+/****** Application.mui/MUIA_Application_Version_Number ************
+*
+*   NAME
+*       MUIA_Application_Version_Number
+*
+*   FUNCTION
+*       Store the application version number string. Default NULL.
+*
+*   INPUTS
+*       STRPTR; initialize and get.
+*
+*   NOTES
+*       The pointer is stored without copying and is not freed. Keep the string
+*       alive while the application uses it; there is no runtime setter for this
+*       attribute. This value participates in version-string construction only
+*       when Version is explicitly NULL; Date is not format-validated.
+*
+*/
+/****** Application.mui/MUIA_Application_Version_Date ************
+*
+*   NAME
+*       MUIA_Application_Version_Date
+*
+*   FUNCTION
+*       Store the application version date string. Default NULL.
+*
+*   INPUTS
+*       STRPTR; initialize and get.
+*
+*   NOTES
+*       The pointer is stored without copying and is not freed. Keep the string
+*       alive while the application uses it; there is no runtime setter for this
+*       attribute. This value participates in version-string construction only
+*       when Version is explicitly NULL; Date is not format-validated.
+*
+*/
+/****** Application.mui/MUIA_Application_Version_Extra ************
+*
+*   NAME
+*       MUIA_Application_Version_Extra
+*
+*   FUNCTION
+*       Store the application version extra string. Default NULL.
+*
+*   INPUTS
+*       STRPTR; initialize and get.
+*
+*   NOTES
+*       The pointer is stored without copying and is not freed. Keep the string
+*       alive while the application uses it; there is no runtime setter for this
+*       attribute. This value participates in version-string construction only
+*       when Version is explicitly NULL; Date is not format-validated.
+*
+*/
+/****** Application.mui/MUIA_Application_Version ************
+*
+*   NAME
+*       MUIA_Application_Version
+*
+*   FUNCTION
+*       Store the supplied version pointer. If explicitly set to NULL, and both
+*       Title and Version_Number are non-NULL, allocate "$VER: <title> <number>"
+*       with optional " (<date>)" and " [<extra>]" suffixes.
+*
+*   INPUTS
+*       STRPTR; initialize and get.
+*
+*   NOTES
+*       A supplied string is borrowed. An automatically generated string is
+*       owned by the application and freed at disposal. The getter returns a
+*       borrowed pointer in either case. Failed generation leaves NULL without
+*       failing construction.
+*
+*   BUGS
+*       Omission does not request generation: the constructor initializes
+*       Version to "Unnamed 0.0". This differs from the header comment that
+*       promises generation when the attribute is unspecified.
+*
+*/
+/****** Application.mui/MUIA_Application_Base ************
+*
+*   NAME
+*       MUIA_Application_Base
+*
+*   FUNCTION
+*       Choose the base name for application registration, Rexx port naming, and
+*       configuration paths. Default "UNNAMED". NULL or any of : / ( ) # ? * ,
+*       causes construction failure.
+*
+*   INPUTS
+*       STRPTR; initialize and get.
+*
+*   NOTES
+*       The stored result is an allocated copy, freed at application disposal.
+*       With SingleTask FALSE, the constructor tries suffixes .1 through .999
+*       against tracked application bases. SingleTask TRUE uses the supplied
+*       name without a suffix. The getter returns the actual borrowed stored
+*       name.
+*
+*   BUGS
+*       Suffix construction uses a 255-byte buffer and can truncate. Exhaustion
+*       of the suffix search is not rejected; this is not an unconditional
+*       unique-name guarantee. The validation does not make every accepted name
+*       safe as an unquoted shell argument; OpenConfigWindow inserts it without
+*       quoting.
+*
+*/
+/****** Application.mui/MUIA_Application_SingleTask ************
+*
+*   NAME
+*       MUIA_Application_SingleTask
+*
+*   FUNCTION
+*       Use a shared unsuffixed base when true; default FALSE. If a tracked
+*       application already has the base, queue MUIM_Set of DoubleStart=TRUE on
+*       that application and fail this construction.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*       The notification is deferred through the other application's
+*       pushed-method queue. This attribute does not make the application or its
+*       objects safe for concurrent use.
+*
+*   BUGS
+*       The target application's lifetime until the queued notification executes
+*       is not retained. Registration and name lookup do not provide a general
+*       cross-task lifetime guarantee.
+*
+*/
+/****** Application.mui/MUIA_Application_Active ************
+*
+*   NAME
+*       MUIA_Application_Active
+*
+*   FUNCTION
+*       Store a normalized active flag, default TRUE. Activate or deactivate the
+*       Commodities broker when one exists.
+*
+*   INPUTS
+*       BOOL; initialize, set, get.
+*
+*   NOTES
+*       This flag does not disable NewInput processing or put windows to sleep.
+*       The ordinary setter forwards tags to Notify after updating broker state.
+*
+*/
+/****** Application.mui/MUIA_Application_Broker ************
+*
+*   NAME
+*       MUIA_Application_Broker
+*
+*   FUNCTION
+*       Return the application-owned Commodities broker, or NULL if none was
+*       created.
+*
+*   INPUTS
+*       CxObj pointer; get only.
+*
+*   NOTES
+*       Do not delete it. The application destroys it at disposal.
+*       UseCommodities=TRUE does not guarantee a non-NULL result.
+*
+*/
+/****** Application.mui/MUIA_Application_BrokerPort ************
+*
+*   NAME
+*       MUIA_Application_BrokerPort
+*
+*   FUNCTION
+*       Return the application-owned broker message port, or NULL.
+*
+*   INPUTS
+*       MsgPort pointer; get only.
+*
+*   NOTES
+*       Keep the application alive. NewInput consumes and replies to its
+*       messages. Do not delete the port or compete with the event loop for its
+*       messages. A port can exist even when broker creation failed.
+*
+*/
+/****** Application.mui/MUIA_Application_BrokerPri ************
+*
+*   NAME
+*       MUIA_Application_BrokerPri
+*
+*   FUNCTION
+*       Convert the supplied value to BYTE and use it as the broker priority.
+*       Default zero.
+*
+*   INPUTS
+*       LONG in the header; initialize and get.
+*
+*   NOTES
+*       The getter returns the stored BYTE value through IPTR. No setter or
+*       range validation is provided.
+*
+*/
+/****** Application.mui/MUIA_Application_BrokerHook ************
+*
+*   NAME
+*       MUIA_Application_BrokerHook
+*
+*   FUNCTION
+*       Store a borrowed hook, initially NULL, called for each broker message
+*       after default command handling.
+*
+*   INPUTS
+*       Hook pointer; initialize, set, get.
+*
+*   NOTES
+*       CallHookPkt receives the application as object and the CxMsg pointer as
+*       message. Its result is ignored. NewInput replies immediately afterward:
+*       do not retain or reply to the message. Disable/Enable change Active;
+*       Kill sets SIGBREAKF_CTRL_C. Appear/Disappear have no default action.
+*
+*/
+/****** Application.mui/MUIA_Application_UseCommodities ************
+*
+*   NAME
+*       MUIA_Application_UseCommodities
+*
+*   FUNCTION
+*       Request a Commodities broker and message port when commodities.library
+*       is available. Default TRUE.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*       Broker creation failure is tolerated. Inspect Broker if the application
+*       requires it; this attribute has no getter or setter.
+*
+*/
+/****** Application.mui/MUIA_Application_UseRexx ************
+*
+*   NAME
+*       MUIA_Application_UseRexx
+*
+*   FUNCTION
+*       Request a public Rexx message port named from the uppercased actual
+*       Base. Default FALSE.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*       A Commands initialization tag also sets the request to TRUE, even for a
+*       NULL table. Constructor tag order matters: a later UseRexx tag can
+*       override it. Optional port creation failure does not fail the
+*       application. Setting Commands later does not create a missing port.
+*
+*/
+/****** Application.mui/MUIA_Application_Commands ************
+*
+*   NAME
+*       MUIA_Application_Commands
+*
+*   FUNCTION
+*       Store a borrowed command table terminated by an entry whose mc_Name is
+*       NULL. Default NULL. The constructor also enables the Rexx-port request
+*       when this tag occurs.
+*
+*   INPUTS
+*       MUI_Command table pointer; initialize, set, get.
+*
+*   NOTES
+*       Each entry supplies mc_Name, optional ReadArgs mc_Template,
+*       mc_Parameters for the IPTR argument array, and a callable mc_Hook. Keep
+*       the table, strings, and hooks alive during input processing. A matched
+*       hook receives the application and the parsed array, or NULL without a
+*       template. Its return value becomes rm_Result1. RexxMsg exposes the
+*       current request only during the hook.
+*       The dispatcher compares case-insensitively using the length of the
+*       incoming command word, so prefixes can match an earlier longer table
+*       name. Command tables must not assume exact-name matching.
+*
+*   BUGS
+*       Argument-buffer allocation and ReadArgs failure are not reliably checked
+*       before the hook is called. A non-NULL template requires a valid
+*       parameter count and suitable storage. Do not assume that hook invocation
+*       proves successful parsing or that parsed argument pointers remain valid
+*       after the hook.
+*
+*/
+/****** Application.mui/MUIA_Application_RexxHook ************
+*
+*   NAME
+*       MUIA_Application_RexxHook
+*
+*   FUNCTION
+*       Store a borrowed fallback hook for Rexx commands not matched by
+*       Commands. Default NULL.
+*
+*   INPUTS
+*       Hook pointer; initialize, set, get.
+*
+*   NOTES
+*       The hook receives the application and the live RexxMsg; its return value
+*       becomes rm_Result1. Without it, unmatched requests receive RC_ERROR. The
+*       message is replied to after the callback. Keep the hook alive and do not
+*       retain or reply to the message yourself.
+*
+*/
+/****** Application.mui/MUIA_Application_RexxMsg ************
+*
+*   NAME
+*       MUIA_Application_RexxMsg
+*
+*   FUNCTION
+*       Return the current Rexx request during a command or fallback hook; NULL
+*       outside those callbacks.
+*
+*   INPUTS
+*       RexxMsg pointer; get only.
+*
+*   NOTES
+*       The pointer is borrowed and valid only during the callback. NewInput
+*       clears the field before replying to the request.
+*
+*/
+/****** Application.mui/MUIA_Application_RexxString ************
+*
+*   NAME
+*       MUIA_Application_RexxString
+*
+*   FUNCTION
+*       Replace the application-owned copy of the Rexx result string. When
+*       RXFF_RESULT is requested, NewInput creates an Argstring from the current
+*       copy for the reply.
+*
+*   INPUTS
+*       STRPTR; set only.
+*
+*   NOTES
+*       The previous copy is freed before StrDup reads the supplied pointer; do
+*       not pass storage that aliases it. Input must remain valid through the
+*       setter. Copy failure leaves no stored string and is not reported by the
+*       setter.
+*
+*   BUGS
+*       The stored result string is not automatically reset for each incoming
+*       command. Set it deliberately in each callback that supplies a result;
+*       otherwise a prior result can be reused. This attribute does not execute
+*       an ARexx command.
+*
+*/
+/****** Application.mui/MUIA_Application_DiskObject ************
+*
+*   NAME
+*       MUIA_Application_DiskObject
+*
+*   FUNCTION
+*       Store a borrowed icon used when iconifying. Default NULL; a missing icon
+*       triggers fallback lookup when iconification is requested.
+*
+*   INPUTS
+*       DiskObject pointer; initialize, set, get.
+*
+*   NOTES
+*       The application does not free a supplied DiskObject. Keep it alive while
+*       an AppIcon uses it. Iconification writes do_CurrentX and do_CurrentY to
+*       NO_ICON_POSITION in the supplied object. Replacing the attribute does
+*       not rebuild an already installed AppIcon.
+*
+*/
+/****** Application.mui/MUIA_Application_Iconified ************
+*
+*   NAME
+*       MUIA_Application_Iconified
+*
+*   FUNCTION
+*       Treat exactly 1 as iconify and any other value as restore. On a state
+*       change, store the flag, propagate inverse ShowMe to windows, and add or
+*       remove a Workbench AppIcon.
+*
+*   INPUTS
+*       BOOL; set and get.
+*
+*   NOTES
+*       Initially FALSE. Fallback icons are application-owned; supplied
+*       DiskObject remains borrowed. A no-argument AppIcon activation handled by
+*       NewInput restores the application.
+*
+*   BUGS
+*       The flag and window visibility are changed before icon creation
+*       succeeds. Failed fallback lookup or AddAppIcon does not roll back the
+*       iconified state; TRUE is not proof of a visible AppIcon.
+*
+*/
+/****** Application.mui/MUIA_Application_DoubleStart ************
+*
+*   NAME
+*       MUIA_Application_DoubleStart
+*
+*   FUNCTION
+*       A duplicate SingleTask construction queues a setter tag with TRUE on the
+*       existing application, which can trigger Notify registrations.
+*
+*   INPUTS
+*       BOOL event; declared get only.
+*
+*   NOTES
+*       No persistent DoubleStart field is stored by Application.
+*
+*   BUGS
+*       The getter returns TRUE without writing the supplied storage. It cannot
+*       be used to read a defined Boolean value; use the notification event.
+*
+*/
+/****** Application.mui/MUIA_Application_ForceQuit ************
+*
+*   NAME
+*       MUIA_Application_ForceQuit
+*
+*   FUNCTION
+*       Return the app_ForceQuit field. It is initially FALSE and is never set
+*       by this implementation.
+*
+*   INPUTS
+*       BOOL; get only.
+*
+*   NOTES
+*       Commodities Kill sets SIGBREAKF_CTRL_C instead. Do not wait for this
+*       attribute as an implemented quit event.
+*
+*/
+/****** Application.mui/MUIA_Application_HelpFile ************
+*
+*   NAME
+*       MUIA_Application_HelpFile
+*
+*   FUNCTION
+*       Store a borrowed help-file pointer, initially NULL.
+*
+*   INPUTS
+*       STRPTR; initialize, set, get.
+*
+*   NOTES
+*       The class does not open it. ShowHelp is not implemented. Keep the string
+*       alive while stored; it is not copied or freed.
+*
+*/
+/****** Application.mui/MUIA_Application_MenuAction ************
+*
+*   NAME
+*       MUIA_Application_MenuAction
+*
+*   FUNCTION
+*       Store and return the last application menu-action value, initially zero.
+*       The window menu-pick path sets it from the selected item's UserData.
+*
+*   INPUTS
+*       ULONG; declared get only; also accepted by OM_SET.
+*
+*   NOTES
+*       The setter forwards the tag to Notify, so repeated values can trigger
+*       notifications. The same window path also queues ReturnID. Values are
+*       converted to the ULONG field; this is not pointer-sized storage on
+*       64-bit targets.
+*
+*/
+/****** Application.mui/MUIA_Application_Menustrip ************
+*
+*   NAME
+*       MUIA_Application_Menustrip
+*
+*   FUNCTION
+*       Supply the application-wide menu tree, initially NULL. The constructor
+*       connects it to this application, and application disposal disposes it.
+*
+*   INPUTS
+*       Object pointer; initialize; getter also implemented.
+*
+*   NOTES
+*       Ownership transfers when the constructor stores the tag. Do not attach
+*       the same owned object elsewhere. There is no setter for replacement. The
+*       getter returns a borrowed pointer.
+*
+*/
+/****** Application.mui/MUIA_Application_Sleep ************
+*
+*   NAME
+*       MUIA_Application_Sleep
+*
+*   FUNCTION
+*       Set Window_Sleep to TRUE for each current window when the value is
+*       nonzero, or FALSE when it is zero.
+*
+*   INPUTS
+*       BOOL; set only.
+*
+*   NOTES
+*       No application-level sleep flag is stored and no getter is implemented.
+*       Newly added windows do not inherit a remembered application sleep state.
+*       Callback-driven membership changes during this traversal are not
+*       protected.
+*
+*/
+/****** Application.mui/MUIA_Application_Window ************
+*
+*   NAME
+*       MUIA_Application_Window
+*
+*   FUNCTION
+*       Append a non-NULL Window-compatible child through OM_ADDMEMBER and
+*       connect it to the application.
+*
+*   INPUTS
+*       Object pointer; initialize only; repeatable.
+*
+*   NOTES
+*       The application owns attached windows. A NULL Window tag marks
+*       construction failure; after processing tags, disposal removes and
+*       disposes attached windows. Earlier construction failure can occur before
+*       child tags are processed. Runtime changes use OM_ADDMEMBER and
+*       OM_REMMEMBER. Neither operation validates existing membership or
+*       propagates child failure results.
+*
+*/
+/****** Application.mui/MUIA_Application_WindowList ************
+*
+*   NAME
+*       MUIA_Application_WindowList
+*
+*   FUNCTION
+*       Return the borrowed child list of the internal window Family.
+*
+*   INPUTS
+*       Pointer to an Exec list; get only.
+*
+*   NOTES
+*       Use NextObject for traversal. Do not free or modify the links directly.
+*       Keep the application and membership stable during iteration; the list
+*       becomes invalid at disposal.
+*
+*/
+/****** Application.mui/MUIA_Application_UsedClasses ************
+*
+*   NAME
+*       MUIA_Application_UsedClasses
+*
+*   FUNCTION
+*       For each class name, call MUI_GetClass and, if it succeeds,
+*       MUI_FreeClass. A NULL array is ignored.
+*
+*   INPUTS
+*       NULL-terminated STRPTR array; initialize only.
+*
+*   NOTES
+*       No class list is retained or returned. Individual failures do not abort
+*       construction. Keep the array and strings valid during construction; this
+*       is not a guarantee that every named class remains loaded.
+*
+*/
+/****** Application.mui/MUIA_Application_Configdata ************
+*
+*   NAME
+*       MUIA_Application_Configdata
+*
+*   FUNCTION
+*       Queue MUIM_Application_SetConfigdata on this application with the
+*       supplied pointer. This setter does not immediately install the object.
+*
+*   INPUTS
+*       Object pointer; set only.
+*
+*   NOTES
+*       Supply a live, distinct Configdata-compatible object and keep it alive
+*       until the queued method adopts it. Subsequent replacement and disposal
+*       destroy the installed object. The old configuration remains active until
+*       execution.
+*
+*   BUGS
+*       Queue failure is ignored by OM_SET, and pending pushed methods are not
+*       reclaimed by application disposal. Do not infer successful transfer of
+*       ownership from the setter return value. Use the direct method when
+*       controlling installation synchronously.
+*
+*/
+/****** Application.mui/MUIA_Application_SearchWinId ************
+*
+*   NAME
+*       MUIA_Application_SearchWinId
+*
+*   FUNCTION
+*       Store the window identifier used by the next GetWinPos query. Initial
+*       value zero.
+*
+*   INPUTS
+*       ULONG; set only.
+*
+*   NOTES
+*       This is mutable shared query state, not a parameter to GetWinPos.
+*       Serialize the set/get pair. Identifier zero is never searched.
+*
+*/
+/****** Application.mui/MUIA_Application_SetWinPos ************
+*
+*   NAME
+*       MUIA_Application_SetWinPos
+*
+*   FUNCTION
+*       Copy a position record into the first matching occupied slot or the
+*       first empty slot. An occupied slot has nonzero w1.
+*
+*   INPUTS
+*       Pointer to struct windowpos; set only.
+*
+*   NOTES
+*       Supply a non-NULL readable record. The first 299 slots of the
+*       MAXWINS=300 array are examined. A full examined range silently ignores a
+*       new ID. A zero w1 marks the stored slot empty and can terminate later
+*       scans. The record is copied, not retained.
+*
+*/
+/****** Application.mui/MUIA_Application_GetWinPos ************
+*
+*   NAME
+*       MUIA_Application_GetWinPos
+*
+*   FUNCTION
+*       Find SearchWinId in occupied slots until the first empty slot and return
+*       a borrowed record pointer, or NULL when absent or the query ID is zero.
+*
+*   INPUTS
+*       Pointer to struct windowpos; get only.
+*
+*   NOTES
+*       The getter returns TRUE even for NULL. Records live inside the
+*       application and can change through SetWinPos or CopyWinPosToApp; do not
+*       free them.
+*
+*/
+/****** Application.mui/MUIA_Application_GetWinPosSize ************
+*
+*   NAME
+*       MUIA_Application_GetWinPosSize
+*
+*   FUNCTION
+*       Count occupied records until the first zero w1 in the first 299 slots.
+*       Return zero for none, otherwise sizeof(LONG) plus the record bytes, and
+*       store that size in the serialized header.
+*
+*   INPUTS
+*       LONG byte count; get only.
+*
+*   NOTES
+*       This getter mutates winposused. Call it before using GetWinPosAddr to
+*       obtain a current serialized header; there is no lock around the pair.
+*
+*/
+/****** Application.mui/MUIA_Application_GetWinPosAddr ************
+*
+*   NAME
+*       MUIA_Application_GetWinPosAddr
+*
+*   FUNCTION
+*       Return a borrowed pointer to the LONG winposused field immediately
+*       preceding the internal position array.
+*
+*   INPUTS
+*       APTR; get only.
+*
+*   NOTES
+*       The payload begins with a 32-bit LONG size even on 64-bit systems,
+*       followed by native struct windowpos records. Query GetWinPosSize first.
+*       No copy or byte-order conversion is made. Keep the application alive and
+*       prevent position changes while consuming the bytes.
+*
+*/
+/****** Application.mui/MUIA_Application_CopyWinPosToApp ************
+*
+*   NAME
+*       MUIA_Application_CopyWinPosToApp
+*
+*   FUNCTION
+*       If non-NULL, read the first LONG as a byte count and CopyMem that many
+*       bytes into the application beginning at winposused. NULL does nothing.
+*
+*   INPUTS
+*       CONST_APTR; set only.
+*
+*   NOTES
+*       The caller retains the source. Only use a trusted native-format block
+*       with a valid nonnegative size, readable source extent, and size no
+*       greater than the LONG header plus the 300-record destination array.
+*
+*   BUGS
+*       There is no size, sign, format, or record validation. A malformed block
+*       can overwrite instance data; this is not a checked import interface.
+*
+*/
+/****** Application.mui/MUIA_Application_DropObject ************
+*
+*   NAME
+*       MUIA_Application_DropObject
+*
+*   FUNCTION
+*       This attribute is declared but has no Application implementation.
+*
+*   INPUTS
+*       Object pointer; declared initialize and set.
+*
+*   NOTES
+*       The constructor ignores it and the getter has no matching case. Setter
+*       tags are forwarded to Notify without an Application state change. The
+*       legacy Menu attribute is not an alias for Menustrip.
+*
+*/
+/****** Application.mui/MUIA_Application_MenuHelp ************
+*
+*   NAME
+*       MUIA_Application_MenuHelp
+*
+*   FUNCTION
+*       This attribute is declared but has no Application implementation.
+*
+*   INPUTS
+*       ULONG; declared get only.
+*
+*   NOTES
+*       The constructor ignores it and the getter has no matching case. Setter
+*       tags are forwarded to Notify without an Application state change. The
+*       legacy Menu attribute is not an alias for Menustrip.
+*
+*/
+/****** Application.mui/MUIA_Application_Menu ************
+*
+*   NAME
+*       MUIA_Application_Menu
+*
+*   FUNCTION
+*       This attribute is declared but has no Application implementation.
+*
+*   INPUTS
+*       NewMenu pointer; declared initialize and get only when MUI_OBSOLETE is
+*       enabled.
+*
+*   NOTES
+*       The constructor ignores it and the getter has no matching case. Setter
+*       tags are forwarded to Notify without an Application state change. The
+*       legacy Menu attribute is not an alias for Menustrip.
+*
+*/
 
 static const int __version = 1;
 static const int __revision = 1;
@@ -219,6 +1027,11 @@ struct FilePrefHeader
 /*
  * Allocates an MethodQueue Method
  */
+/* Allocate one cleared queue node plus count IPTR words and initialize the
+ * embedded message pointer. Return owned storage or NULL. count must be
+ * nonnegative and fit the allocation arithmetic; this helper does not
+ * validate it.
+ */
 static struct MQNode *CreateMQNode(LONG count)
 {
     struct MQNode *mq;
@@ -236,6 +1049,10 @@ static struct MQNode *CreateMQNode(LONG count)
 /*
  * Free an IQ Method got from CreateIQMethod()
  */
+/* Free an owned queue-node allocation after it has been removed or
+ * executed. Do not free its borrowed destination or referenced argument
+ * storage. No result is returned.
+ */
 static void DeleteMQNode(struct MQNode *mq)
 {
     mui_free(mq);
@@ -252,6 +1069,10 @@ struct RIDNode
 };
 
 
+/* Allocate a cleared return-ID node, store the ULONG value, and return
+ * owned storage or NULL. data is unused; insertion is the caller's
+ * responsibility.
+ */
 static struct RIDNode *CreateRIDNode(struct MUI_ApplicationData *data,
     ULONG retid)
 {
@@ -265,6 +1086,9 @@ static struct RIDNode *CreateRIDNode(struct MUI_ApplicationData *data,
 }
 
 
+/* Free a removed owned return-ID node. data is unused. No result or
+ * retained state is produced.
+ */
 static void DeleteRIDNode(struct MUI_ApplicationData *data,
     struct RIDNode *rid)
 {
@@ -275,6 +1099,12 @@ static void DeleteRIDNode(struct MUI_ApplicationData *data,
 /**************************************************************************
  Process a pushed method.
 **************************************************************************/
+/* Remove one FIFO node while holding the method semaphore, release the
+ * semaphore, execute the message on its borrowed destination, and free the
+ * node. Return TRUE if work was executed, FALSE if the queue was empty. The
+ * caller must ensure destination and application lifetime; method results
+ * are discarded.
+ */
 static BOOL application_do_pushed_method(struct MUI_ApplicationData *data)
 {
     struct MQNode *mq;
@@ -293,6 +1123,11 @@ static BOOL application_do_pushed_method(struct MUI_ApplicationData *data)
     return FALSE;
 }
 
+/* Search tracked applications under ZuneSemaphore by exact strcmp of non-
+ * NULL Base strings. Return a borrowed matching application or NULL. base
+ * must be readable and NUL-terminated. Releasing the semaphore does not
+ * retain the returned object.
+ */
 static Object *find_application_by_base(struct IClass *cl, Object *obj,
     STRPTR base)
 {
@@ -326,6 +1161,11 @@ static Object *find_application_by_base(struct IClass *cl, Object *obj,
  and handed to the application, so the new settings are applied
  immediately without restarting the application.
 **************************************************************************/
+/* Construct a Configdata bound to this application and queue its
+ * installation through the Configdata attribute if allocation succeeds.
+ * Return no status. A queue failure is not checked and can leave the new
+ * configuration unowned.
+ */
 static void Application_ReloadConfigdata(struct IClass *cl, Object *obj)
 {
     Object *cfg;
@@ -336,6 +1176,11 @@ static void Application_ReloadConfigdata(struct IClass *cl, Object *obj)
         set(obj, MUIA_Application_Configdata, cfg);
 }
 
+/* Create owned port/name resources and start DOS message notification for
+ * the bounded ENV:zune/<base>.prefs path. On local allocation or
+ * StartNotify failure, release those resources and leave notification
+ * disabled. There is no return status.
+ */
 static void Application_SetupConfigNotify(struct IClass *cl, Object *obj)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
@@ -376,6 +1221,13 @@ static void Application_SetupConfigNotify(struct IClass *cl, Object *obj)
 /**************************************************************************
  OM_NEW
 **************************************************************************/
+/* Construct Notify and application resources, parse initialization tags,
+ * attach owned windows, and register the application. Return the object or
+ * attempt cleanup and return zero on required failure. Optional broker,
+ * Rexx port, watcher, and generated-version failures are tolerated. Early
+ * cleanup assumes preferences exist whenever Base is non-NULL; see the
+ * class BUGS contract.
+ */
 static IPTR Application__OM_NEW(struct IClass *cl, Object *obj,
     struct opSet *msg)
 {
@@ -778,6 +1630,12 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj,
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
+/* After callbacks and external users have stopped, snapshot and optionally
+ * save positions, remove and dispose child windows, and release owned
+ * application resources before calling Notify disposal. Return the
+ * superclass result. This can block on I/O/timer work; it neither frees
+ * pending method-queue nodes nor unregisters each timer handler.
+ */
 static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj,
     Msg msg)
 {
@@ -986,6 +1844,12 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj,
 /**************************************************************************
  OM_SET
 **************************************************************************/
+/* Apply supported attribute operations in tag order, including copying
+ * trusted position data, deferred configuration installation, iconification
+ * and window broadcasts. Then forward the same tags to Notify and return
+ * its result. No general failure status is collected; pointer ownership
+ * follows each attribute contract.
+ */
 static IPTR Application__OM_SET(struct IClass *cl, Object *obj,
     struct opSet *msg)
 {
@@ -1261,6 +2125,11 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj,
 /*
  * OM_GET
  */
+/* Write recognized application fields through writable opg_Storage, or
+ * delegate WindowList to the internal Family and unknown IDs to Notify.
+ * Pointer results are borrowed. DoubleStart returns TRUE without writing
+ * storage; GetWinPosSize updates the serialized size header.
+ */
 static IPTR Application__OM_GET(struct IClass *cl, Object *obj,
     struct opGet *msg)
 {
@@ -1434,6 +2303,11 @@ static IPTR Application__OM_GET(struct IClass *cl, Object *obj,
 /**************************************************************************
  OM_ADDMEMBER
 **************************************************************************/
+/* Forward membership insertion to the internal Family, connect the supplied
+ * live Window-compatible child to this application, and return TRUE
+ * regardless of child results. The window becomes owned when attached;
+ * membership and NULL input are not validated here.
+ */
 static IPTR Application__OM_ADDMEMBER(struct IClass *cl, Object *obj,
     struct opMember *msg)
 {
@@ -1452,6 +2326,10 @@ static IPTR Application__OM_ADDMEMBER(struct IClass *cl, Object *obj,
 /**************************************************************************
  OM_REMMEMBER
 **************************************************************************/
+/* Disconnect the live attached window, forward removal to the internal
+ * Family, and return TRUE regardless of child results. The child is not
+ * disposed; the caller must manage its later lifetime.
+ */
 static IPTR Application__OM_REMMEMBER(struct IClass *cl, Object *obj,
     struct opMember *msg)
 {
@@ -1468,9 +2346,42 @@ static IPTR Application__OM_REMMEMBER(struct IClass *cl, Object *obj,
 
 
 
-/**************************************************************************
- MUIM_Application_AddInputHandler
-**************************************************************************/
+/****** Application.mui/MUIM_Application_AddInputHandler ************
+*
+*   NAME
+*       MUIM_Application_AddInputHandler
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_AddInputHandler,
+*       (IPTR)ihnode);
+*
+*   FUNCTION
+*       Register a borrowed MUI_InputHandlerNode for signal callbacks or start a
+*       repeating timer when MUIIHNF_TIMER is set.
+*
+*   INPUTS
+*       ihnode - Non-NULL, stable, writable node not already registered. Set
+*       ihn_Object to a live target and ihn_Method to its no-argument method.
+*       For signals set ihn_Signals; for timers set ihn_Millis (UWORD
+*       milliseconds).
+*
+*   RESULT
+*       Always TRUE, including timer-request allocation failure.
+*
+*   NOTES
+*       Signal nodes are linked directly into the application list. Timer
+*       registration stores an allocated timer-request pointer in
+*       ihn_Node.mln_Pred; do not overwrite it. NewInput restarts a completed
+*       timer before calling its target. Keep node and target alive until
+*       removal has completed.
+*
+*   BUGS
+*       Timer allocation failure leaves no valid registered timer request but
+*       still reports TRUE. A later RemInputHandler cannot safely assume success
+*       from this return value. No duplicate-registration or interval validation
+*       is performed.
+*
+*/
 static IPTR Application__MUIM_AddInputHandler(struct IClass *cl,
     Object *obj, struct MUIP_Application_AddInputHandler *msg)
 {
@@ -1503,9 +2414,37 @@ static IPTR Application__MUIM_AddInputHandler(struct IClass *cl,
 }
 
 
-/**************************************************************************
- MUIM_Application_RemInputHandler
-**************************************************************************/
+/****** Application.mui/MUIM_Application_RemInputHandler ************
+*
+*   NAME
+*       MUIM_Application_RemInputHandler
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_RemInputHandler,
+*       (IPTR)ihnode);
+*
+*   FUNCTION
+*       Unlink a registered signal node, or abort if necessary, wait for, and
+*       free its timer request.
+*
+*   INPUTS
+*       ihnode - The same node successfully registered with AddInputHandler. Its
+*       flags and internal timer pointer must remain intact.
+*
+*   RESULT
+*       Always TRUE after removal.
+*
+*   NOTES
+*       Timer removal can wait for I/O completion. The caller owns the node and
+*       target. A timer callback can remove itself because NewInput resubmits
+*       before invoking it.
+*
+*   BUGS
+*       An unregistered node, repeated removal, or a failed timer registration
+*       is not checked. Signal-list iteration does not protect a callback that
+*       removes its current node and frees it before NewInput advances.
+*
+*/
 static IPTR Application__MUIM_RemInputHandler(struct IClass *cl,
     Object *obj, struct MUIP_Application_RemInputHandler *msg)
 {
@@ -1526,11 +2465,39 @@ static IPTR Application__MUIM_RemInputHandler(struct IClass *cl,
 }
 
 
+/* Window event consumer defined in window.c. Pass a dequeued live
+ * IntuiMessage; reply behavior depends on the Window path. GADGETUP and an
+ * eaten IDCMPUPDATE currently lack a reply. Do not reuse a possibly replied
+ * message or issue a speculative second reply.
+ */
 void _zune_window_message(struct IntuiMessage *imsg);   /* from window.c */
 
-/*
- * MUIM_Application_InputBuffered : process all pending events
- */
+/****** Application.mui/MUIM_Application_InputBuffered ************
+*
+*   NAME
+*       MUIM_Application_InputBuffered
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_InputBuffered);
+*
+*   FUNCTION
+*       Drain pushed methods, then process at most one queued window
+*       IntuiMessage.
+*
+*   INPUTS
+*       No arguments beyond MethodID.
+*
+*   RESULT
+*       Always TRUE.
+*
+*   NOTES
+*       Reply behavior follows the Window event path. GADGETUP and an eaten
+*       IDCMPUPDATE currently lack a reply. This method does not
+*       drain all window events, process timer/Rexx/broker/AppMessage sources,
+*       or return queued ReturnIDs. Continuously self-replenishing pushed
+*       methods can prevent completion.
+*
+*/
 static IPTR Application__MUIM_InputBuffered(struct IClass *cl, Object *obj,
     struct MUIP_Application_InputBuffered *msg)
 {
@@ -1546,14 +2513,49 @@ static IPTR Application__MUIM_InputBuffered(struct IClass *cl, Object *obj,
     if (imsg != NULL)
     {
         /* Let window object process message */
-        _zune_window_message(imsg);     /* will reply the message */
+        _zune_window_message(imsg);     /* reply follows Window path */
     }
     return TRUE;
 }
 
-/**************************************************************************
- MUIM_Application_NewInput : application main loop
-**************************************************************************/
+/****** Application.mui/MUIM_Application_NewInput ************
+*
+*   NAME
+*       MUIM_Application_NewInput
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_NewInput, (IPTR)signals);
+*
+*   FUNCTION
+*       Process pending pushed methods, handle selected event sources, drain
+*       newly pushed methods, and remove at most one ReturnID from its FIFO.
+*
+*   INPUTS
+*       signals - Non-NULL readable and writable ULONG pointer. On entry supply
+*       the signals returned by Wait, or zero for polling all current sources.
+*       On return it contains the computed wait mask.
+*       obj - Live application processed in its creating task.
+*
+*   RESULT
+*       The next queued ULONG ReturnID, or zero when none is queued. A queued
+*       zero is indistinguishable from no ID.
+*
+*   NOTES
+*       This method itself does not call Wait. Callbacks and invoked operations
+*       can still block. A zero input mask treats all registered signal sources
+*       as signaled, including user handlers; it does not test which handler
+*       signals actually occurred.
+*       The wait mask is computed before event callbacks and the final queue
+*       drain. Callback changes to registrations are not reflected until a later
+*       call. Pending ReturnIDs do not themselves force a zero wait mask. A
+*       pushed method can enqueue more work, extending the drain indefinitely.
+*
+*   BUGS
+*       Do not dispose of this application while NewInput is active. Keep
+*       handler and window traversals valid through callbacks. The command-table
+*       path has unchecked allocation/parsing failures; see Commands.
+*
+*/
 static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj,
     struct MUIP_Application_NewInput *msg)
 {
@@ -1619,7 +2621,7 @@ static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj,
                         mgi_WindowsPort)))
             {
                 /* Let window object process message */
-                _zune_window_message(imsg);     /* will reply the message */
+                _zune_window_message(imsg);     /* reply follows Window path */
             }
         }
 
@@ -1873,10 +2875,33 @@ static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/**************************************************************************
- MUIM_Application_Input : application main loop
- This method shouldn't be used in any new program. As it polls all signals.
-**************************************************************************/
+/****** Application.mui/MUIM_Application_Input ************
+*
+*   NAME
+*       MUIM_Application_Input
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_Input, (IPTR)signals);
+*
+*   FUNCTION
+*       Construct a polling mask and invoke NewInput. This is the legacy input
+*       method.
+*
+*   INPUTS
+*       signals - Writable ULONG pointer; the incoming value is replaced.
+*
+*   RESULT
+*       The ReturnID result from NewInput; the location receives its wait mask.
+*
+*   NOTES
+*       Use NewInput for signal-driven processing.
+*
+*   BUGS
+*       This implementation combines handler flags rather than ihn_Signals and
+*       omits the broker signal from its constructed mask. It does not
+*       faithfully poll every registered source.
+*
+*/
 static IPTR Application__MUIM_Input(struct IClass *cl, Object *obj,
     struct MUIP_Application_Input *msg)
 {
@@ -1908,10 +2933,44 @@ static IPTR Application__MUIM_Input(struct IClass *cl, Object *obj,
     return Application__MUIM_NewInput(cl, obj, (APTR) msg);
 }
 
-/**************************************************************************
- MUIM_Application_PushMethod: Add a method in the method FIFO. Will
- be executed in the next event loop.
-**************************************************************************/
+/****** Application.mui/MUIM_Application_PushMethod ************
+*
+*   NAME
+*       MUIM_Application_PushMethod
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_PushMethod, (IPTR)dest,
+*       count, ...);
+*
+*   FUNCTION
+*       Copy message words into a FIFO entry, enqueue it under the method
+*       semaphore, and signal the creating task using the window-port signal.
+*
+*   INPUTS
+*       dest - Live destination object to keep alive until execution or
+*       cancellation.
+*       count - LONG whose low four bits specify the number of following IPTR
+*       words, including MethodID. Use 1 through 15.
+*       ... - Destination MethodID followed by its message arguments.
+*
+*   RESULT
+*       An opaque IPTR queue-entry token, or zero on allocation failure. The
+*       token is valid only while that entry remains queued.
+*
+*   NOTES
+*       Only words are copied; referenced storage and objects remain borrowed.
+*       NewInput and InputBuffered execute queued messages outside the semaphore
+*       and discard their results. There is no completion acknowledgement.
+*       Cancel pending work before destroying its target; cancellation cannot
+*       stop a method already dequeued.
+*
+*   BUGS
+*       Count is masked with 0xf, not range-checked. Zero creates an entry
+*       without a MethodID; 16 becomes zero. The source explicitly notes that
+*       extracting words after count is broken on 64-bit big-endian systems.
+*       Disposal does not free outstanding queue entries.
+*
+*/
 static IPTR Application__MUIM_PushMethod(struct IClass *cl, Object *obj,
     struct MUIP_Application_PushMethod *msg)
 {
@@ -1944,10 +3003,32 @@ static IPTR Application__MUIM_PushMethod(struct IClass *cl, Object *obj,
     return (IPTR)mq;
 }
 
-/**************************************************************************
- MUIM_Application_UnpushMethod: Removes a method which was added by
- MUIM_Application_PushMethod.
-**************************************************************************/
+/****** Application.mui/MUIM_Application_UnpushMethod ************
+*
+*   NAME
+*       MUIM_Application_UnpushMethod
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_UnpushMethod, (IPTR)dest,
+*       methodid, method);
+*
+*   FUNCTION
+*       Remove and free every queued method matching all supplied filters.
+*
+*   INPUTS
+*       dest - Destination pointer or NULL for any destination.
+*       methodid - Queue-entry token from PushMethod, or zero for any token.
+*       method - Destination MethodID, or zero for any method.
+*
+*   RESULT
+*       Number of queued entries removed.
+*
+*   NOTES
+*       The queue is locked while filtering. This neither waits for nor cancels
+*       an entry already dequeued for execution. Freed tokens may be reused by
+*       allocation; do not retain them as permanent identifiers.
+*
+*/
 static IPTR Application__MUIM_UnpushMethod(struct IClass *cl, Object *obj,
     struct MUIP_Application_UnpushMethod *msg)
 {
@@ -1983,10 +3064,31 @@ static IPTR Application__MUIM_UnpushMethod(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_Application_ReturnID : Tell MUI to return the given id with
- * the next call to MUIM_Application_NewInput. kinda obsolete :)
- */
+/****** Application.mui/MUIM_Application_ReturnID ************
+*
+*   NAME
+*       MUIM_Application_ReturnID
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_ReturnID, retid);
+*
+*   FUNCTION
+*       Append a ULONG return value to the application ReturnID FIFO.
+*
+*   INPUTS
+*       retid - ULONG value; MUIV_Application_ReturnID_Quit is the conventional
+*       quit value.
+*
+*   RESULT
+*       TRUE if allocation and insertion succeed; FALSE on allocation failure.
+*
+*   NOTES
+*       NewInput removes one ID per call. This method neither signals the
+*       application task nor locks the ReturnID queue. Use it in the application
+*       task; external tasks can request it through PushMethod while separately
+*       ensuring object lifetime.
+*
+*/
 static IPTR Application__MUIM_ReturnID(struct IClass *cl, Object *obj,
     struct MUIP_Application_ReturnID *msg)
 {
@@ -2008,9 +3110,9 @@ static IPTR Application__MUIM_ReturnID(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_FindUData : tests if the MUIA_UserData of the object
- * contains the given <udata> and returns the object pointer in this case.
+/* Match the application UserData first, otherwise delegate to the internal
+ * Family including its own UserData. Return a borrowed match pointer or
+ * zero. The menustrip is not traversed by this override.
  */
 static IPTR Application__MUIM_FindUData(struct IClass *cl, Object *obj,
     struct MUIP_FindUData *msg)
@@ -2024,10 +3126,10 @@ static IPTR Application__MUIM_FindUData(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_GetUData : This method tests if the MUIA_UserData of the object
- * contains the given <udata> and gets <attr> to <storage> for itself
- * in this case.
+/* On an application UserData match, get attr into writable storage and
+ * return TRUE without checking the getter result; otherwise delegate to the
+ * internal Family. The comparison field is ULONG and the menustrip is not
+ * traversed.
  */
 static IPTR Application__MUIM_GetUData(struct IClass *cl, Object *obj,
     struct MUIP_GetUData *msg)
@@ -2043,9 +3145,9 @@ static IPTR Application__MUIM_GetUData(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_SetUData : This method tests if the MUIA_UserData of the object
- * contains the given <udata> and sets <attr> to <val> for itself in this case.
+/* Set the application on a UserData match and forward to the internal
+ * Family, then return TRUE regardless of setter results or matches. Keep
+ * traversal stable through synchronous notifications.
  */
 static IPTR Application__MUIM_SetUData(struct IClass *cl, Object *obj,
     struct MUIP_SetUData *msg)
@@ -2060,9 +3162,9 @@ static IPTR Application__MUIM_SetUData(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_SetUDataOnce : This method tests if the MUIA_UserData of the object
- * contains the given <udata> and sets <attr> to <val> for itself in this case.
+/* Set the application and return TRUE on a UserData match, ignoring setter
+ * success; otherwise delegate to the internal Family and return its first-
+ * match result. Keep traversal stable through callbacks.
  */
 static IPTR Application__MUIM_SetUDataOnce(struct IClass *cl, Object *obj,
     struct MUIP_SetUDataOnce *msg)
@@ -2078,28 +3180,34 @@ static IPTR Application__MUIM_SetUDataOnce(struct IClass *cl, Object *obj,
 }
 
 
-/****** Application.mui/MUIM_Application_AboutMUI ****************************
+
+/****** Application.mui/MUIM_Application_AboutMUI ************
 *
 *   NAME
-*       MUIM_Application_AboutMUI (V14)
+*       MUIM_Application_AboutMUI
 *
 *   SYNOPSIS
-*       DoMethod(obj, MUIM_Application_AboutMUI, Object refwindow);
+*       IPTR result = DoMethod(obj, MUIM_Application_AboutMUI, (IPTR)refwindow);
 *
 *   FUNCTION
-*       Show Zune's About window.
+*       Create the Aboutmui window on first use, cache it, and request that it
+*       open. Later calls reuse the same window.
 *
 *   INPUTS
-*       refwindow - the window object relative to which the About window will
-*           be placed.
+*       refwindow - Optional live Window object used as the reference during
+*       first construction; NULL omits the reference tag.
 *
-*   SEE ALSO
-*       MUIA_Window_RefWindow.
+*   RESULT
+*       Always zero, including construction or opening failure.
 *
-******************************************************************************
+*   NOTES
+*       The Aboutmui constructor attaches the window to this application, which
+*       owns it. Later refwindow arguments do not reposition the cached window.
+*       Keep a supplied reference window alive while the cached window uses it.
+*       Do not dispose of the cached window separately and leave this
+*       application alive.
 *
 */
-
 static IPTR Application__MUIM_AboutMUI(struct IClass *cl, Object *obj,
     struct MUIP_Application_AboutMUI *msg)
 {
@@ -2122,6 +3230,12 @@ static IPTR Application__MUIM_AboutMUI(struct IClass *cl, Object *obj,
 }
 
 
+/* Close each currently open window and try to collect its borrowed pointer
+ * in ln_Name of an owned AllocVec node/list. Return that list or NULL.
+ * List/node allocation failure does not stop closing and can lose reopening
+ * information. The eventual OpenWindows call consumes the allocations; keep
+ * all referenced windows alive.
+ */
 static struct List *Application__CloseWindows(struct IClass *cl, Object *obj)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
@@ -2162,6 +3276,40 @@ static struct List *Application__CloseWindows(struct IClass *cl, Object *obj)
     return windows;
 }
 
+/****** Application.mui/MUIM_Application_SetConfigdata ************
+*
+*   NAME
+*       MUIM_Application_SetConfigdata
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_SetConfigdata,
+*       (IPTR)configdata);
+*
+*   FUNCTION
+*       Close currently open windows, dispose of the old configuration, install
+*       the new object, read its ZunePrefs pointer, and queue reopening.
+*
+*   INPUTS
+*       configdata - Live Configdata-compatible object, distinct from the
+*       currently installed object. Ownership transfers to the application when
+*       installed.
+*
+*   RESULT
+*       Always zero, without an installation or reopening success indication.
+*
+*   NOTES
+*       Previously borrowed configuration/prefs pointers become invalid. The
+*       method closes windows immediately but reopens them through PushMethod.
+*       The new configuration must provide valid ZunePrefs.
+*
+*   BUGS
+*       No NULL, identity, or getter-success check is performed before adopting
+*       the replacement. Passing the old object disposes it before reuse. If
+*       saving the open-window list fails, NULL later means reopen all windows;
+*       failed node allocation can omit individual windows. Queue failure can
+*       leave windows closed and leak the saved list.
+*
+*/
 static IPTR Application__MUIM_SetConfigdata(struct IClass *cl, Object *obj,
     struct MUIP_Application_SetConfigdata *msg)
 {
@@ -2183,6 +3331,55 @@ static IPTR Application__MUIM_SetConfigdata(struct IClass *cl, Object *obj,
     return 0;
 }
 
+/****** Application.mui/MUIM_Application_SetConfigItem ************
+*
+*   NAME
+*       MUIM_Application_SetConfigItem
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_SetConfigItem, item,
+*       (IPTR)data);
+*
+*   FUNCTION
+*       Set a supported string-valued configuration item with
+*       MUIM_Configdata_SetString. Other item IDs do nothing.
+*
+*   INPUTS
+*       item - One of the supported identifiers listed below.
+*       data - Non-NULL readable NUL-terminated string.
+*       Supported IDs: MUICFG_Keyboard_Press, MUICFG_Keyboard_Toggle,
+*       MUICFG_Keyboard_Up, MUICFG_Keyboard_Down, MUICFG_Keyboard_PageUp,
+*       MUICFG_Keyboard_PageDown, MUICFG_Keyboard_Top, MUICFG_Keyboard_Bottom,
+*       MUICFG_Keyboard_Left, MUICFG_Keyboard_Right, MUICFG_Keyboard_WordLeft,
+*       MUICFG_Keyboard_WordRight, MUICFG_Keyboard_LineStart,
+*       MUICFG_Keyboard_LineEnd, MUICFG_Keyboard_NextGadget,
+*       MUICFG_Keyboard_PrevGadget, MUICFG_Keyboard_GadgetOff,
+*       MUICFG_Keyboard_CloseWindow, MUICFG_Keyboard_NextWindow,
+*       MUICFG_Keyboard_PrevWindow, MUICFG_Keyboard_Help, MUICFG_Keyboard_Popup,
+*       MUICFG_Drag_LMBModifier, MUICFG_Drag_MMBModifier,
+*       MUICFG_Iconification_Hotkey, MUICFG_Font_Normal, MUICFG_Font_List,
+*       MUICFG_Font_Tiny, MUICFG_Font_Fixed, MUICFG_Font_Title, MUICFG_Font_Big,
+*       MUICFG_Font_Button, MUICFG_Font_Knob, MUICFG_String_Background,
+*       MUICFG_String_Text, MUICFG_String_ActiveBackground,
+*       MUICFG_String_ActiveText, MUICFG_String_Cursor,
+*       MUICFG_String_MarkedBackground, MUICFG_String_MarkedText,
+*       MUICFG_ActiveObject_Color, MUICFG_PublicScreen.
+*
+*   RESULT
+*       Always zero, including unsupported IDs or ignored underlying failures.
+*
+*   NOTES
+*       Keyboard bindings, drag modifiers, and the iconification hotkey are set
+*       directly. Font IDs, String color/pen IDs, ActiveObject_Color, and
+*       PublicScreen close currently open windows and queue reopening after the
+*       change. Configdata copies the string or removes a value equal to its
+*       default. This does not save preferences to disk.
+*
+*   BUGS
+*       The close/reopen path shares SetConfigdata's incomplete-allocation and
+*       queue-failure limitations; no rollback or success status is provided.
+*
+*/
 static IPTR Application__MUIM_SetConfigItem(struct IClass *cl, Object *obj,
     struct MUIP_Application_SetConfigItem *msg)
 {
@@ -2292,9 +3489,34 @@ static IPTR Application__MUIM_SetConfigItem(struct IClass *cl, Object *obj,
 }
 
 
-/* MUIM_Application_OpenWindows
- * Opens all windows of an application
- */
+/****** Application.mui/MUIM_Application_OpenWindows ************
+*
+*   NAME
+*       MUIM_Application_OpenWindows
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_OpenWindows,
+*       (IPTR)windows);
+*
+*   FUNCTION
+*       Request opening of selected windows, or all current application windows
+*       when windows is NULL.
+*
+*   INPUTS
+*       windows - NULL, or an owned Exec List allocated with AllocVec whose
+*       nodes were individually allocated with AllocVec and hold live window
+*       pointers in ln_Name.
+*
+*   RESULT
+*       Always zero; window setter results are ignored.
+*
+*   NOTES
+*       A non-NULL list and every removed node are consumed and freed with
+*       FreeVec. Do not pass the borrowed Application_WindowList or stack
+*       storage. The referenced windows are not freed. For NULL, traverse the
+*       internal Family without taking ownership of its list.
+*
+*/
 static IPTR Application__MUIM_OpenWindows(struct IClass *cl, Object *obj,
     struct MUIP_Application_OpenWindows *msg)
 {
@@ -2336,6 +3558,36 @@ static IPTR Application__MUIM_OpenWindows(struct IClass *cl, Object *obj,
 }
 
 
+/****** Application.mui/MUIM_Application_OpenConfigWindow ************
+*
+*   NAME
+*       MUIM_Application_OpenConfigWindow
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_OpenConfigWindow, flags);
+*
+*   FUNCTION
+*       Launch sys:prefs/Zune asynchronously with the application base and
+*       object address on its command line.
+*
+*   INPUTS
+*       flags - ULONG declared in the message; ignored.
+*
+*   RESULT
+*       0 if SystemTagList returns -1; otherwise 1. This does not report whether
+*       the preferences program completed successfully.
+*
+*   NOTES
+*       The command is built in a 255-byte buffer. Child standard input and
+*       output are disabled; the stack size is AROS_STACKSIZE.
+*
+*   BUGS
+*       The base is inserted without shell quoting and may be truncated along
+*       with the command. Accepted Base characters are not a shell-escaping
+*       guarantee. The method does not establish that the externally used
+*       application object remains alive.
+*
+*/
 static IPTR Application__MUIM_OpenConfigWindow(struct IClass *cl,
     Object *obj, struct MUIP_Application_OpenConfigWindow *msg)
 {
@@ -2360,6 +3612,35 @@ static IPTR Application__MUIM_OpenConfigWindow(struct IClass *cl,
     return 1;
 }
 
+/****** Application.mui/MUIM_Application_Execute ************
+*
+*   NAME
+*       MUIM_Application_Execute
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_Execute);
+*
+*   FUNCTION
+*       Run NewInput and Wait repeatedly until the quit ReturnID or
+*       SIGBREAKF_CTRL_C is received.
+*
+*   INPUTS
+*       No arguments beyond MethodID. Call in the application's creating task.
+*
+*   RESULT
+*       Always zero on leaving the loop.
+*
+*   NOTES
+*       The loop waits on the NewInput mask plus Ctrl-C when the mask is
+*       nonzero. It ignores other ReturnIDs, does not dispose of the
+*       application, and has no timeout.
+*
+*   BUGS
+*       It uses an IPTR local for an interface that writes ULONG signals. The
+*       mismatch is not portable to all 64-bit byte orders. Queued non-quit IDs
+*       and callback changes to masks inherit NewInput's limitations.
+*
+*/
 static IPTR Application__MUIM_Execute(Class *CLASS, Object *self,
     Msg message)
 {
@@ -2381,6 +3662,30 @@ static IPTR Application__MUIM_Execute(Class *CLASS, Object *self,
 }
 
 
+/****** Application.mui/MUIM_Application_UpdateMenus ************
+*
+*   NAME
+*       MUIM_Application_UpdateMenus
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_UpdateMenus);
+*
+*   FUNCTION
+*       Send MUIM_Window_UpdateMenu synchronously to every current application
+*       window.
+*
+*   INPUTS
+*       No arguments beyond MethodID. Keep membership stable during traversal.
+*
+*   RESULT
+*       Always zero; window results are ignored.
+*
+*   NOTES
+*       Window menu updates can free native Menu and MenuItem structures before
+*       rebuilding them. Do not retain their pointers across this method. This
+*       is not a success report for menu allocation or attachment.
+*
+*/
 static IPTR Application__MUIM_UpdateMenus(struct IClass *cl, Object *obj,
     Msg message)
 {
@@ -2402,6 +3707,41 @@ static IPTR Application__MUIM_UpdateMenus(struct IClass *cl, Object *obj,
     return 0;
 }
 
+/****** Application.mui/MUIM_Application_Load ************
+*
+*   NAME
+*       MUIM_Application_Load
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_Load, (IPTR)name);
+*
+*   FUNCTION
+*       Read a PREF/MUIO chunk into a temporary Dataspace, then send MUIM_Import
+*       to each application window.
+*
+*   INPUTS
+*       name - Filename, or MUIV_Application_Load_ENV (NULL) for
+*       ENV:Zune/<base>.cfg, or MUIV_Application_Load_ENVARC for
+*       ENVARC:Zune/<base>.cfg. Explicit filenames must be NUL-terminated and
+*       shorter than 1023 bytes.
+*
+*   RESULT
+*       Always zero, including allocation, file, IFF, and child-method failures.
+*
+*   NOTES
+*       Import is attempted even when the file could not be opened or parsed,
+*       using an empty or partially populated dataspace. There is no rollback of
+*       child state.
+*       The temporary dataspace is disposed before return; child methods must
+*       not retain it or borrowed payloads. I/O can block. These .cfg state
+*       files are separate from the .prefs configuration file.
+*
+*   BUGS
+*       Underlying results are ignored. The explicit-name strncpy path does not
+*       append a terminator for an overlong name. The return value cannot
+*       establish successful loading.
+*
+*/
 static IPTR Application__MUIM_Load(struct IClass *cl, Object *obj,
     struct MUIP_Application_Load *message)
 {
@@ -2471,6 +3811,41 @@ static IPTR Application__MUIM_Load(struct IClass *cl, Object *obj,
     return 0;
 }
 
+/****** Application.mui/MUIM_Application_Save ************
+*
+*   NAME
+*       MUIM_Application_Save
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_Save, (IPTR)name);
+*
+*   FUNCTION
+*       Export each window into a temporary Dataspace, then write an IFF PREF
+*       file containing PRHD and MUIO chunks.
+*
+*   INPUTS
+*       name - Filename, or MUIV_Application_Save_ENV (NULL) for
+*       ENV:Zune/<base>.cfg, or MUIV_Application_Save_ENVARC for
+*       ENVARC:Zune/<base>.cfg. Explicit filenames must be NUL-terminated and
+*       shorter than 1023 bytes.
+*
+*   RESULT
+*       Always zero, including allocation, file, IFF, and child-method failures.
+*
+*   NOTES
+*       Opening with MODE_NEWFILE can replace existing content. Output is not
+*       atomic and failures can leave a partial file. Exported state depends on
+*       each child's implementation.
+*       The temporary dataspace is disposed before return; child methods must
+*       not retain it or borrowed payloads. I/O can block. These .cfg state
+*       files are separate from the .prefs configuration file.
+*
+*   BUGS
+*       Underlying results are ignored. The explicit-name strncpy path does not
+*       append a terminator for an overlong name. The return value cannot
+*       establish successful saving.
+*
+*/
 static IPTR Application__MUIM_Save(struct IClass *cl, Object *obj,
     struct MUIP_Application_Save *message)
 {
@@ -2554,57 +3929,32 @@ static IPTR Application__MUIM_Save(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/****** Application.mui/MUIM_Application_CheckRefresh ************************
+
+/****** Application.mui/MUIM_Application_CheckRefresh ************
 *
 *   NAME
-*       MUIM_Application_CheckRefresh (V11)
+*       MUIM_Application_CheckRefresh
 *
 *   SYNOPSIS
-*       DoMethod(obj, MUIM_Application_CheckRefresh);
+*       IPTR result = DoMethod(obj, MUIM_Application_CheckRefresh);
 *
 *   FUNCTION
-*       Redraw any damaged portions within all of the application's windows.
-*       This method is normally only used in hooks that handle Intuition
-*       messages received while modal requesters are open (e.g. ASL file
-*       requesters). If such a hook is not used, a modal requester may damage
-*       the contents of your application windows when the requester is moved.
+*       Send MUIM_Window_Refresh to every window in the internal family.
+*
+*   INPUTS
+*       No arguments beyond MethodID. Keep the application and window list alive
+*       throughout the call.
+*
+*   RESULT
+*       Always zero; child results are ignored.
 *
 *   NOTES
-*       The object attributes needed for the ASL tags in the example below may
-*       not all have valid values unless the parent window is open. Therefore
-*       the tags should not be passed to MUI_AllocAslRequestTags() in an
-*       OM_NEW method (for example), but should instead be passed to
-*       MUI_AslRequestTags() when the requester is shown.
-*
-*   EXAMPLE
-*
-*       \* A hook function to refresh windows when called from asl.library *\
-*       AROS_UFH3(static void, IMsgHook,
-*           AROS_UFHA(struct Hook *, hook, A0),
-*           AROS_UFHA(struct FileRequester *, req, A2),
-*           AROS_UFHA(struct IntuiMessage *, imsg, A1))
-*       {
-*           AROS_USERFUNC_INIT
-*
-*           if (imsg->Class == IDCMP_REFRESHWINDOW)
-*               DoMethod(req->fr_UserData, MUIM_Application_CheckRefresh);
-*
-*           AROS_USERFUNC_EXIT
-*       }
-*
-*       ...
-*
-*       \* Show the requester *\
-*       MUI_AslRequestTags(ASL_FileRequest, req,
-*           ASLFR_Window, XGET(window, MUIA_Window_Window),
-*           ASLFR_IntuiMsgFunc, (IPTR)hook,
-*           ASLFR_UserData, XGET(window, MUIA_ApplicationObject),
-*           TAG_DONE);
-*
-******************************************************************************
+*       This is the refresh entry point used from modal-requester IntuiMessage
+*       hooks. It does not itself dequeue or reply to the hook message. Supply
+*       any native-window requester tags only while that window is open; they
+*       are not necessarily valid during construction.
 *
 */
-
 static IPTR Application__MUIM_CheckRefresh(struct IClass *cl, Object *obj,
     struct MUIP_Application_CheckRefresh *message)
 {
@@ -2623,6 +3973,181 @@ static IPTR Application__MUIM_CheckRefresh(struct IClass *cl, Object *obj,
 
 /*
  * The class dispatcher
+ */
+/****** Application.mui/MUIM_Application_GetMenuCheck ************
+*
+*   NAME
+*       MUIM_Application_GetMenuCheck
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_GetMenuCheck, MenuID);
+*
+*   FUNCTION
+*       Declared in application.h, but not handled by the Application
+*       dispatcher. The message is forwarded through Notify to rootclass without
+*       implementing this operation.
+*
+*   INPUTS
+*       MenuID - ULONG menu identifier.
+*
+*   RESULT
+*       The inherited unhandled-method result is zero. It is not a completion or
+*       menu-state result.
+*
+*   NOTES
+*       Use the implemented attributes and object interfaces only where their
+*       documented behavior meets the need. A method name alone does not
+*       establish compatibility.
+*
+*/
+
+/****** Application.mui/MUIM_Application_GetMenuState ************
+*
+*   NAME
+*       MUIM_Application_GetMenuState
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_GetMenuState, MenuID);
+*
+*   FUNCTION
+*       Declared in application.h, but not handled by the Application
+*       dispatcher. The message is forwarded through Notify to rootclass without
+*       implementing this operation.
+*
+*   INPUTS
+*       MenuID - ULONG menu identifier.
+*
+*   RESULT
+*       The inherited unhandled-method result is zero. It is not a completion or
+*       menu-state result.
+*
+*   NOTES
+*       Use the implemented attributes and object interfaces only where their
+*       documented behavior meets the need. A method name alone does not
+*       establish compatibility.
+*
+*/
+
+/****** Application.mui/MUIM_Application_SetMenuCheck ************
+*
+*   NAME
+*       MUIM_Application_SetMenuCheck
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_SetMenuCheck, MenuID,
+*       stat);
+*
+*   FUNCTION
+*       Declared in application.h, but not handled by the Application
+*       dispatcher. The message is forwarded through Notify to rootclass without
+*       implementing this operation.
+*
+*   INPUTS
+*       MenuID - ULONG menu identifier.
+*       stat - LONG state.
+*
+*   RESULT
+*       The inherited unhandled-method result is zero. It is not a completion or
+*       menu-state result.
+*
+*   NOTES
+*       Use the implemented attributes and object interfaces only where their
+*       documented behavior meets the need. A method name alone does not
+*       establish compatibility.
+*
+*/
+
+/****** Application.mui/MUIM_Application_SetMenuState ************
+*
+*   NAME
+*       MUIM_Application_SetMenuState
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_SetMenuState, MenuID,
+*       stat);
+*
+*   FUNCTION
+*       Declared in application.h, but not handled by the Application
+*       dispatcher. The message is forwarded through Notify to rootclass without
+*       implementing this operation.
+*
+*   INPUTS
+*       MenuID - ULONG menu identifier.
+*       stat - LONG state.
+*
+*   RESULT
+*       The inherited unhandled-method result is zero. It is not a completion or
+*       menu-state result.
+*
+*   NOTES
+*       Use the implemented attributes and object interfaces only where their
+*       documented behavior meets the need. A method name alone does not
+*       establish compatibility.
+*
+*/
+
+/****** Application.mui/MUIM_Application_ShowHelp ************
+*
+*   NAME
+*       MUIM_Application_ShowHelp
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Application_ShowHelp, (IPTR)window,
+*       (IPTR)name, (IPTR)node, line);
+*
+*   FUNCTION
+*       Declared in application.h, but not handled by the Application
+*       dispatcher. The message is forwarded through Notify to rootclass without
+*       implementing this operation.
+*
+*   INPUTS
+*       window - Object pointer.
+*       name, node - String pointers.
+*       line - LONG. These fields are declared but unused by Application.
+*
+*   RESULT
+*       The inherited unhandled-method result is zero. It is not a completion or
+*       menu-state result.
+*
+*   NOTES
+*       Use the implemented attributes and object interfaces only where their
+*       documented behavior meets the need. A method name alone does not
+*       establish compatibility.
+*
+*/
+
+/****** Application.mui/MUIM_Application_Iconify ************
+*
+*   NAME
+*       MUIM_Application_Iconify
+*
+*   SYNOPSIS
+*       DoMethodA(obj, message);
+*
+*   FUNCTION
+*       Declared in application.h, but not handled by the Application
+*       dispatcher. The message is forwarded through Notify to rootclass without
+*       implementing this operation.
+*
+*   INPUTS
+*       The header defines the MethodID but no corresponding method structure or
+*       implemented argument contract.
+*
+*   RESULT
+*       The inherited unhandled-method result is zero. It is not a completion or
+*       menu-state result.
+*
+*   NOTES
+*       Use the implemented attributes and object interfaces only where their
+*       documented behavior meets the need. A method name alone does not
+*       establish compatibility.
+*
+*/
+
+/* Dispatch supported Application operations and inherited user-data/member
+ * overrides, returning handler results. Forward unknown methods to Notify.
+ * Header-only method IDs are not silently implemented here; messages must
+ * contain the fields required by the selected handler.
  */
 BOOPSI_DISPATCHER(IPTR, Application_Dispatcher, cl, obj, msg)
 {

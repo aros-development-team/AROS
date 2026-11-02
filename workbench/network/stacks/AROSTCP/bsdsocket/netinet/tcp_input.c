@@ -865,7 +865,7 @@ findpcb:
      * Reset idle time and keep-alive timer.
      */
     tp->t_idle = 0;
-    tp->t_timer[TCPT_KEEP] = tcp_keepidle;
+    tp->t_timer[TCPT_KEEP] = TP_KEEPIDLE(tp);
 
     /*
      * Process options if not in LISTEN state,
@@ -874,6 +874,35 @@ findpcb:
     if(optp && tp->t_state != TCPS_LISTEN)
         tcp_dooptions(tp, optp, optlen, ti,
                       &to);
+
+    /*
+     * ECN (RFC 3168 section 6.1), for every segment of a connection that
+     * agreed to it - before header prediction, which in-sequence data and
+     * pure ACKs take, as FreeBSD's tcp_input() does:
+     * - receiving: a CE mark is echoed with ECE on our ACKs until the peer
+     *   says CWR;
+     * - sending: an ECE is congestion, as a loss would be: cwnd is reduced
+     *   at most once per window of data (not in fast recovery, and only
+     *   once the ACK passes the point of the last reduction), and the
+     *   first new data after the reduction carries CWR (section 6.1.2).
+     *   snd_ecn_recover is 0 until the first reduction.
+     */
+    if((tp->t_flagsext & TF_ECN_PERMIT) && !(tiflags & TH_SYN)) {
+        if(tiflags & TH_CWR)
+            tp->t_flagsext &= ~TF_ECN_SND_ECE;
+        if((iptos & IPTOS_ECN_MASK) == IPTOS_ECN_CE)
+            tp->t_flagsext |= TF_ECN_SND_ECE;
+        if((tiflags & (TH_ECE | TH_ACK)) == (TH_ECE | TH_ACK)) {
+            tcpstat.tcps_ecn_ce++;
+            if(!(tp->t_flagsext & TF_IN_FASTRECOV) &&
+                    (tp->snd_ecn_recover == 0 ||
+                     SEQ_GT(ti->ti_ack, tp->snd_ecn_recover))) {
+                CC_ON_ECN(tp);
+                tp->snd_ecn_recover = tp->snd_max;
+                tp->t_flagsext |= TF_ECN_SND_CWR;
+            }
+        }
+    }
 
     /*
      * Header prediction: check for the two common cases
@@ -939,6 +968,7 @@ findpcb:
                 tcpstat.tcps_rcvackbyte += acked;
                 sbdrop(&so->so_snd, acked);
                 tp->snd_una = ti->ti_ack;
+                TCP_UTO_PROGRESS(tp);
                 m_freem(m);
 
                 /*
@@ -1085,11 +1115,11 @@ findpcb:
             if(!(to.to_flag & TOF_SACK_PERMITTED))
                 tp->t_flags &= ~TF_SACK_PERMIT;
             /*
-             * ECN negotiation (RFC 3168):
-             * We sent SYN with ECE+CWR. If the SYN-ACK has ECE
-             * (without CWR), ECN is negotiated.
+             * ECN negotiation (RFC 3168 section 6.1.1): if our SYN asked
+             * with ECE+CWR and the SYN-ACK has ECE without CWR, ECN is
+             * negotiated.
              */
-            if(tcp_do_ecn &&
+            if((tp->t_flagsext & TF_ECN_SYN) &&
                     (tiflags & (TH_ECE | TH_CWR)) == TH_ECE)
                 tp->t_flagsext |= TF_ECN_PERMIT;
             else
@@ -1114,6 +1144,7 @@ findpcb:
 
             tp->rcv_adv += tp->rcv_wnd;
             tp->snd_una++;		/* SYN is acked */
+            TCP_UTO_PROGRESS(tp);   /* the SYN no longer waits */
             /*
              * If there's data, delay ACK; if there's also a FIN
              * ACKNOW will be turned on later.
@@ -1523,24 +1554,6 @@ close:
     case TCPS_TIME_WAIT:
 
         /*
-         * ECN (RFC 3168): If this connection is ECN-capable
-         * and the incoming IP packet has the CE codepoint set,
-         * the network is experiencing congestion. Signal the
-         * sender by setting ECE in our next ACK.
-         */
-        if((tp->t_flagsext & TF_ECN_PERMIT) &&
-                (iptos & IPTOS_ECN_MASK) == IPTOS_ECN_CE) {
-            tp->t_flagsext |= TF_ECN_SND_ECE;
-        }
-        /*
-         * ECN (RFC 3168): The data sender reduces its window on the
-         * congestion signal and sets CWR on its next data segment.
-         * Once we (the data receiver) see CWR we stop echoing ECE.
-         */
-        if((tp->t_flagsext & TF_ECN_PERMIT) && (tiflags & TH_CWR))
-            tp->t_flagsext &= ~TF_ECN_SND_ECE;
-
-        /*
          * SACK (RFC 6675): Fold any SACK blocks carried by this ACK
          * into the scoreboard.  This is pure bookkeeping -- the board
          * only influences transmission when PRR/SACK recovery is
@@ -1764,6 +1777,7 @@ close:
              */
             tp->t_flags &= ~TF_NEEDSYN;
             tp->snd_una++;
+            TCP_UTO_PROGRESS(tp);
         }
 
 process_ACK:
@@ -1805,33 +1819,6 @@ process_ACK:
             goto step6;
 
         /*
-         * ECN (RFC 3168): If the peer sent ECE, it received a
-         * CE-marked packet from the network. Reduce cwnd once
-         * per RTT (like a single loss), and send CWR.
-         */
-        if((tp->t_flagsext & TF_ECN_PERMIT) &&
-                (tiflags & TH_ECE)) {
-            tcpstat.tcps_ecn_ce++;
-            /*
-             * Reduce at most once per window of data: only when we
-             * are not already in fast recovery and this ACK has
-             * advanced past the point recorded at the previous ECN
-             * reduction (snd_ecn_recover).  This prevents repeated
-             * cuts from the burst of ECEs the peer sends in the RTT
-             * before it sees our CWR.  snd_ecn_recover is zero until
-             * the first reduction, so a zero value always permits the
-             * initial reaction regardless of sequence sign.
-             */
-            if(!(tp->t_flagsext & TF_IN_FASTRECOV) &&
-                    (tp->snd_ecn_recover == 0 ||
-                     SEQ_GT(ti->ti_ack, tp->snd_ecn_recover))) {
-                CC_ON_ECN(tp);
-                tp->snd_ecn_recover = tp->snd_max;
-            }
-            tp->t_flagsext |= TF_ECN_SND_CWR;
-        }
-
-        /*
          * When new data is acked, open the congestion window.
          * Delegate to the pluggable congestion control algorithm
          * which handles both slow start and congestion avoidance.
@@ -1853,6 +1840,7 @@ process_ACK:
         if(so->so_snd.sb_flags & SB_NOTIFY)
             sowwakeup(so);
         tp->snd_una = ti->ti_ack;
+        TCP_UTO_PROGRESS(tp);
         if(SEQ_LT(tp->snd_nxt, tp->snd_una))
             tp->snd_nxt = tp->snd_una;
         /*
@@ -1880,7 +1868,7 @@ process_ACK:
                  */
                 if(so->so_state & SS_CANTRCVMORE) {
                     soisdisconnected(so);
-                    tp->t_timer[TCPT_2MSL] = tcp_maxidle;
+                    tp->t_timer[TCPT_2MSL] = TP_MAXIDLE(tp);
                 }
                 tp->t_state = TCPS_FIN_WAIT_2;
             }

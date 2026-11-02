@@ -238,6 +238,10 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
     l->rp->Layer = l;
     l->rp->BitMap = bm;
 
+    InitRastPort(&IL(l)->hookrp);
+    IL(l)->hookrp.Layer  = NULL;
+    IL(l)->hookrp.BitMap = bm;
+
     l->Flags = (WORD) flags;
     l->LayerInfo = li;
     
