@@ -2272,6 +2272,8 @@ error_t RepairAnodeBlock(uint32 *bloknr, uint32 seqnr)
 
 	// get anodeblock
 	ablk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (!ablk.data)
+		return e_out_of_memory;
 	if (*bloknr)
 	{
 		if ((error = GetRepairBlock((cachedblock_t *)&ablk, *bloknr)))
@@ -2469,6 +2471,8 @@ error_t RepairIndexBlock(uint16 bloktype, error_t (*repairchild)(uint32 *, uint3
 	if (!iblk.data)
 	{
 		iblk.data = calloc(1, SIZEOF_RESBLOCK);
+		if (!iblk.data)
+			return e_out_of_memory;
 
 		/* read or build indexblock
 		 */
@@ -2537,23 +2541,27 @@ error_t RepairIndexBlock(uint16 bloktype, error_t (*repairchild)(uint32 *, uint3
 		if ((child_blk_nr = iblk.data->index[i]))
 		{
 			volume.progress(0, 1);
-			switch (repairchild((uint32 *)&iblk.data->index[i], seqnr*LONGS_PER_BMB + i))
-			{
-				case e_none:
-					break;
-
-				default:
-					/* kill block */
-					iblk.data->index[i] = 0;
-					break;
+			error = repairchild((uint32 *)&iblk.data->index[i], seqnr*LONGS_PER_BMB + i);
+			if (IsOperationalError(error) || aborting) {
+				if (iblk.mode == check)
+					free(iblk.data);
+				exitblock();
+				return error ? error : e_aborted;
+			}
+			if (error) {
+				iblk.data->index[i] = 0;
+				error = e_none;
 			}
 
-			if (aborting)
-				return error;
-
 			/* save changes */
-			if (child_blk_nr != iblk.data->index[i] && iblk.mode == check)
-				volume.writeblock((cachedblock_t *)&iblk);
+			if (child_blk_nr != iblk.data->index[i] && iblk.mode == check) {
+				error = volume.writeblock((cachedblock_t *)&iblk);
+				if (error) {
+					free(iblk.data);
+					exitblock();
+					return error;
+				}
+			}
 		}
 	}
 	
