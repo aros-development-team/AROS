@@ -1133,6 +1133,8 @@ AROS_LH1(LONG, AddDomainNameServer,
     nsn->nsn_EntSize = sizeof(nsn->nsn_Ent);
     nsn->nsn_Family = AF_INET;
     nsn->nsn_Ent.ns_addr.s_addr = sa.sin_addr.s_addr;
+    nsn->nsn_Owner = NULL;
+    nsn->nsn_Expire = 0;
 
     ObtainSemaphore(&DynDB.dyn_Lock);
     AddTail((struct List *)&DynDB.dyn_NameServers, (struct Node *)nsn);

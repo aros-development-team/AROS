@@ -45,6 +45,7 @@
 #include <netinet/in_var.h>
 #include <netinet6/in6_var.h>
 #include <netinet6/nd6.h>
+#include <kern/amiga_netdb.h>
 
 /* Forward declarations */
 int ip6_output(void *, ...);
@@ -969,6 +970,85 @@ nd6_rs_input(struct mbuf *m, int off, int icmp6len)
     m_freem(m);
 }
 
+/*
+ * The DNS options of a Router Advertisement (RFC 8106). An RDNSS option is
+ * 3 + 2n units long, n server addresses; a DNSSL option lists the domains
+ * in the DNS's own uncompressed label encoding, padded with zero octets.
+ * An option that does not parse is ignored whole (section 5.1, 5.2).
+ */
+static void
+nd6_rdnss_input(struct ifnet *ifp, const u_int8_t *opt, int optlen)
+{
+    struct in6_addr a;
+    u_int32_t lt;
+    int i;
+
+    if(opt[1] < 3 || (opt[1] & 1) == 0)
+        return;
+    bcopy(opt + 4, &lt, sizeof(lt));
+    for(i = 8; i + (int)sizeof(a) <= optlen; i += sizeof(a)) {
+        bcopy(opt + i, &a, sizeof(a));
+        if(!IN6_IS_ADDR_UNSPECIFIED(&a) && !IN6_IS_ADDR_LOOPBACK(&a) &&
+                !IN6_IS_ADDR_MULTICAST(&a))
+            ndb_ra_server(ifp, &a, ntohl(lt));
+    }
+}
+
+/* One domain from p, as a dotted name into name; the octets it took, or 0
+ * if it is not a well formed host name. */
+static int
+nd6_dnssl_name(const u_int8_t *p, const u_int8_t *end, char *name, int size)
+{
+    const u_int8_t *start = p;
+    int n = 0;
+
+    while(p < end && *p != 0) {
+        int l = *p++, i;
+
+        if(l > 63 || p + l > end || n + l + 2 > size)
+            return 0;
+        if(n > 0)
+            name[n++] = '.';
+        for(i = 0; i < l; i++) {
+            u_int8_t c = p[i];
+
+            if(!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                    (c >= '0' && c <= '9') || c == '-' || c == '_'))
+                return 0;
+            name[n++] = c;
+        }
+        p += l;
+    }
+    if(p >= end || n == 0)
+        return 0;               /* no root label, or the root alone */
+    name[n] = '\0';
+    return p + 1 - start;
+}
+
+static void
+nd6_dnssl_input(struct ifnet *ifp, const u_int8_t *opt, int optlen)
+{
+    const u_int8_t *p, *end = opt + optlen;
+    char name[MAXHOSTNAMELEN + 1];
+    u_int32_t lt;
+    int pass, k;
+
+    if(opt[1] < 2)
+        return;
+    bcopy(opt + 4, &lt, sizeof(lt));
+    /* the first pass checks the whole option, the second takes it */
+    for(pass = 0; pass < 2; pass++) {
+        for(p = opt + 8; p < end && *p != 0; p += k)
+            if((k = nd6_dnssl_name(p, end, name, sizeof(name))) == 0)
+                return;
+            else if(pass == 1)
+                ndb_ra_domain(ifp, name, ntohl(lt));
+        for(; p < end; p++)
+            if(*p != 0)
+                return;         /* something after the padding */
+    }
+}
+
 /* ------------------------------------------------------------------
  * nd6_ra_input - process an inbound Router Advertisement.
  *
@@ -977,6 +1057,7 @@ nd6_rs_input(struct mbuf *m, int off, int icmp6len)
  *   - Manage default router list
  *   - Process prefix information options (on-link + SLAAC)
  *   - Process MTU option
+ *   - Process DNS options (RFC 8106)
  * ------------------------------------------------------------------ */
 void
 nd6_ra_input(struct mbuf *m, int off, int icmp6len)
@@ -1146,6 +1227,14 @@ nd6_ra_input(struct mbuf *m, int off, int icmp6len)
                     rtpref = nd6_rtpref(rio->nd_opt_rti_flags);
                 }
             }
+            break;
+
+        case ND_OPT_RDNSS:
+            nd6_rdnss_input(ifp, opts, optlen);
+            break;
+
+        case ND_OPT_DNSSL:
+            nd6_dnssl_input(ifp, opts, optlen);
             break;
 
         default:

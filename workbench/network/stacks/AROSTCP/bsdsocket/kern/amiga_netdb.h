@@ -74,6 +74,13 @@ struct ifnet;
 void ifnet_set_dns(struct ifnet *ifp, const UBYTE *v4csv, const UBYTE *v6csv);
 void ifnet_clear_dns(struct ifnet *ifp);
 
+/* DNS servers and search domains learned from Router Advertisements
+ * (RDNSS and DNSSL options, RFC 8106), each for its lifetime in seconds. */
+struct in6_addr;
+void ndb_ra_server(struct ifnet *ifp, const struct in6_addr *addr, ULONG lifetime);
+void ndb_ra_domain(struct ifnet *ifp, const char *name, ULONG lifetime);
+void ndb_ra_timer(void);
+
 /* Locking macros for NDB */
 #define LOCK_W_NDB(ndb) (ObtainSemaphore(&ndb_Lock))
 #define LOCK_R_NDB(ndb) (ObtainSemaphoreShared(&ndb_Lock))
@@ -108,7 +115,12 @@ struct NameserventNode {
   struct ifnet   *nsn_Owner;	/* owning interface for per-interface DNS, else NULL */
   UBYTE           nsn_Family;	/* AF_INET or AF_INET6 (0 == AF_INET for old creators) */
   struct in6_addr nsn_Addr6;	/* IPv6 server (nsn_Family == AF_INET6) */
+  ULONG           nsn_Expire;	/* learned from a Router Advertisement: when it
+				 * ends (system time, s), NDB_RA_FOREVER never;
+				 * 0 otherwise */
 };
+
+#define NDB_RA_FOREVER 0xffffffffUL
 
 struct DomainentNode {
   struct MinNode  dn_Node;
@@ -116,6 +128,8 @@ struct DomainentNode {
   struct domainent {
     char *d_name;
   } dn_Ent;
+  struct ifnet   *dn_Owner;	/* the interface it was learned on, else NULL */
+  ULONG           dn_Expire;	/* as nsn_Expire */
 };
 
 /* NetDataBase Nodes */

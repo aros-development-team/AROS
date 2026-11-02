@@ -443,6 +443,17 @@ temporary addresses at the end of their preferred lifetime and removes them at t
 one. An option whose preferred lifetime exceeds its valid one is ignored (§5.5.3 (c)). An address
 deleted by hand comes back with the next advertisement.
 
+The DNS options of a Router Advertisement (RFC 8106) give the resolver servers and search domains:
+the addresses of an RDNSS option and the domains of a DNSSL option go into the dynamic database
+(`ndb_ra_server()`, `ndb_ra_domain()`), tagged with the interface and with when they end. Each
+advertisement renews them, a lifetime of 0 ends them at once, `ndb_ra_timer()` (from `nd6_timer()`)
+drops them when it is up, and taking the interface down drops them with its DNS= servers
+(`ifnet_clear_dns()`). At most three of each are kept per interface; a new one replaces the one that
+ends soonest (§5.3.1). An option that does not parse is ignored whole. A link-local server is asked on
+the interface it was heard on (its zone; see 6.6). The static `NAMESERVER` and `DOMAIN` entries are never
+touched and come first; a DHCP client's update (`ClearDynNameServ()`, `ClearDynDomain()`) replaces
+only what DHCP gave, not what an interface or a router did.
+
 An in-place reload deletes every address of every interface, the link-local included, and forgets
 the routers and prefixes heard on it (`nd6_purge_routers()`, `nd6_purge_prefixes()`). For an
 interface that stays up and running, `addifent()` then makes the link-local again with `in6_if_up()`,
