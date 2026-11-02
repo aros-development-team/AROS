@@ -443,6 +443,13 @@ temporary addresses at the end of their preferred lifetime and removes them at t
 one. An option whose preferred lifetime exceeds its valid one is ignored (§5.5.3 (c)). An address
 deleted by hand comes back with the next advertisement.
 
+A Redirect (`nd6_redirect_input()`) is taken only as RFC 4861 §8.1 says: from a link-local address
+with hop limit 255, code 0, at least 40 octets, options that parse, a target that is link-local or
+the destination itself - and from the router that is the first hop to the destination now, the
+gateway of the route the table uses for it on that interface, so that another node on the link,
+router or not, cannot draw the traffic away. It then routes the destination through the target
+(a host route, replacing one an earlier Redirect made). A router ignores Redirects.
+
 The DNS options of a Router Advertisement (RFC 8106) give the resolver servers and search domains:
 the addresses of an RDNSS option and the domains of a DNSSL option go into the dynamic database
 (`ndb_ra_server()`, `ndb_ra_domain()`), tagged with the interface and with when they end. Each

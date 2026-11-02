@@ -32,6 +32,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-ports \
     cunit-net-raw6 \
     cunit-net-rdnss \
+    cunit-net-redirect6 \
     cunit-net-resolver \
     cunit-net-rio6 \
     cunit-net-route6 \

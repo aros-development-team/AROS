@@ -51,6 +51,7 @@
 int ip6_output(void *, ...);
 
 #include <protos/netinet/in_cksum_protos.h>
+#include <protos/net/route_protos.h>
 
 /* Default router list (singly-linked) */
 static struct nd_defrouter *nd6_defrtrlist = NULL;
@@ -1272,7 +1273,12 @@ bad:
 /* ------------------------------------------------------------------
  * nd6_redirect_input - process an inbound Redirect message.
  *
- * Updates the routing table to use the better next-hop.
+ * A Redirect is valid only as RFC 4861 section 8.1 says: from a link-local
+ * address with hop limit 255, code 0, at least 40 octets, every option of
+ * a length above 0 - and from the router that is now the first hop to the
+ * destination, so that no other node on the link, router or not, can
+ * draw away traffic it does not carry. Then the destination is routed
+ * through the target (section 8.3). A router ignores Redirects.
  * ------------------------------------------------------------------ */
 void
 nd6_redirect_input(struct mbuf *m, int off, int icmp6len)
@@ -1281,8 +1287,15 @@ nd6_redirect_input(struct mbuf *m, int off, int icmp6len)
     struct nd_redirect *rd;
     struct ifnet *ifp = m->m_pkthdr.rcvif;
     struct in6_addr src6, tgt, reddst;
+    struct sockaddr_in6 dst_sa, gw_sa;
+    struct rtentry *rt;
+    union nd_opts ndopts;
+    int first_hop, host;
 
     nd6stat.nd6s_rcv_redirect++;
+
+    if(ip6_forwarding)
+        goto bad;
 
     /* copy source address out of packed header */
     memcpy(&src6, &ip6->ip6_src, sizeof(src6));
@@ -1299,8 +1312,12 @@ nd6_redirect_input(struct mbuf *m, int off, int icmp6len)
         goto bad;
     }
 
-    if(m->m_len < off + (int)sizeof(*rd)) {
-        if((m = m_pullup(m, off + sizeof(*rd))) == NULL) {
+    if(icmp6len < (int)sizeof(*rd)) {
+        nd6stat.nd6s_rcv_badredirect++;
+        goto bad;
+    }
+    if(m->m_len < off + icmp6len) {
+        if((m = m_pullup(m, off + icmp6len)) == NULL) {
             nd6stat.nd6s_rcv_badredirect++;
             return;
         }
@@ -1308,14 +1325,12 @@ nd6_redirect_input(struct mbuf *m, int off, int icmp6len)
     }
 
     rd = (struct nd_redirect *)(mtod(m, u_int8_t *) + off);
-    tgt    = rd->nd_rd_target;
-    reddst = rd->nd_rd_dst;
-
-    /* validate: source must be a known default router */
-    if(defrouter_lookup(&src6, ifp) == NULL) {
+    if(rd->nd_rd_code != 0) {
         nd6stat.nd6s_rcv_badredirect++;
         goto bad;
     }
+    memcpy(&tgt, &rd->nd_rd_target, sizeof(tgt));
+    memcpy(&reddst, &rd->nd_rd_dst, sizeof(reddst));
 
     /* destination must not be multicast */
     if(IN6_IS_ADDR_MULTICAST(&reddst)) {
@@ -1330,50 +1345,60 @@ nd6_redirect_input(struct mbuf *m, int off, int icmp6len)
         goto bad;
     }
 
-    /* update routing table */
-    {
-        struct sockaddr_in6 dst_sa, gw_sa;
-        struct rtentry *rt;
+    /* the options: each of a length above 0, all within the message */
+    nd6_option_init(rd + 1, icmp6len - (int)sizeof(*rd), &ndopts);
+    if(nd6_options(&ndopts) < 0) {
+        nd6stat.nd6s_rcv_badredirect++;
+        goto bad;
+    }
 
-        bzero(&dst_sa, sizeof(dst_sa));
-        dst_sa.sin6_family = AF_INET6;
-        dst_sa.sin6_len    = sizeof(dst_sa);
-        dst_sa.sin6_addr   = reddst;
+    /* the source must be the first hop to the destination now */
+    bzero(&dst_sa, sizeof(dst_sa));
+    dst_sa.sin6_family = AF_INET6;
+    dst_sa.sin6_len    = sizeof(dst_sa);
+    dst_sa.sin6_addr   = reddst;
+    rt = rtalloc1((struct sockaddr *)&dst_sa, 0);
+    first_hop = rt != NULL && rt->rt_ifp == ifp &&
+                (rt->rt_flags & RTF_GATEWAY) && rt->rt_gateway != NULL &&
+                rt->rt_gateway->sa_family == AF_INET6 &&
+                IN6_ARE_ADDR_EQUAL(&((struct sockaddr_in6 *)rt->rt_gateway)->sin6_addr,
+                                   &src6);
+    host = rt != NULL && (rt->rt_flags & RTF_HOST);
+    if(rt)
+        rtfree(rt);
+    if(!first_hop) {
+        nd6stat.nd6s_rcv_badredirect++;
+        goto bad;
+    }
 
-        bzero(&gw_sa, sizeof(gw_sa));
-        gw_sa.sin6_family = AF_INET6;
-        gw_sa.sin6_len    = sizeof(gw_sa);
-        gw_sa.sin6_addr   = tgt;
+    /* route the destination through the target, on this interface */
+    bzero(&gw_sa, sizeof(gw_sa));
+    gw_sa.sin6_family = AF_INET6;
+    gw_sa.sin6_len    = sizeof(gw_sa);
+    gw_sa.sin6_addr   = tgt;
+    if(host)            /* from an earlier Redirect */
+        rtrequest(RTM_DELETE, (struct sockaddr *)&dst_sa,
+                  NULL, NULL, RTF_HOST, NULL);
+    rt = NULL;
+    if(rtrequest(RTM_ADD, (struct sockaddr *)&dst_sa,
+                 (struct sockaddr *)&gw_sa, NULL,
+                 RTF_HOST | RTF_GATEWAY | RTF_DYNAMIC, &rt) == 0 && rt != NULL) {
+        if(rt->rt_ifp != ifp) {
+            struct in6_ifaddr *ia = in6_ifaof_ifpforlinklocal(ifp);
 
-        /* try to update existing route, or add new one */
-        rt = nd6_lookup(&reddst, 0, ifp);
-        if(rt) {
-            /* change gateway */
-            rtrequest(RTM_DELETE, (struct sockaddr *)&dst_sa,
-                      NULL, NULL, RTF_HOST, NULL);
-            rtfree(rt);         /* release the ref held by nd6_lookup */
+            rt->rt_ifp = ifp;
+            if(ia)
+                rt->rt_ifa = &ia->ia_ifa;
         }
-        rtrequest(RTM_ADD, (struct sockaddr *)&dst_sa,
-                  (struct sockaddr *)&gw_sa, NULL,
-                  RTF_HOST | RTF_GATEWAY | RTF_DYNAMIC, NULL);
+        rt->rt_refcnt--;
     }
 
     /* update neighbor cache for the new target */
-    {
-        union nd_opts ndopts;
-        u_int8_t *optstart = (u_int8_t *)(rd + 1);
-        int optbytes = icmp6len - (int)sizeof(*rd);
+    if(ndopts.nd_opts_tgt_lladdr) {
+        char *lladdr = (char *)(ndopts.nd_opts_tgt_lladdr + 1);
 
-        if(optbytes > 0) {
-            nd6_option_init(optstart, optbytes, &ndopts);
-            if(nd6_options(&ndopts) >= 0 &&
-                    ndopts.nd_opts_tgt_lladdr) {
-                char *lladdr = (char *)
-                               (ndopts.nd_opts_tgt_lladdr + 1);
-                nd6_cache_lladdr(ifp, &tgt, lladdr,
-                                 ifp->if_addrlen, ND_REDIRECT, 0);
-            }
-        }
+        nd6_cache_lladdr(ifp, &tgt, lladdr,
+                         ifp->if_addrlen, ND_REDIRECT, 0);
     }
 
     m_freem(m);
