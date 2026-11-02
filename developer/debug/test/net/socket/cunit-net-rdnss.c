@@ -8,6 +8,9 @@
     a lifetime of 0 ends them at once, and they end by themselves when the
     lifetime is up. An option that does not parse is ignored. A DHCP update
     of the dynamic servers (miami.library's ClearDynNameServ()) leaves them.
+    An application holding the dynamic database from ClearDynDomain() to
+    EndDynDomain() does not hold up the stack: an advertisement that comes
+    meanwhile is passed over, and the next one is taken.
 
     The test sends the advertisements itself to the interface's own
     link-local address, router lifetime 0, as cunit-net-slaac6 does; the
@@ -261,6 +264,48 @@ void testRDNSS_DHCP(void)
     forget();
 }
 
+/* Whether a datagram to ourselves over ::1 comes back within 2 s: the
+ * stack task delivers it. */
+static int loopback_works(void)
+{
+    struct sockaddr_storage a;
+    socklen_t len = st_loopback(AF_INET6, &a, 0);
+    char c;
+    int s = socket(AF_INET6, SOCK_DGRAM, 0), ok = 0;
+
+    if (s < 0)
+        return 0;
+    if (bind(s, (struct sockaddr *)&a, len) == 0 &&
+            getsockname(s, (struct sockaddr *)&a, &len) == 0 &&
+            sendto(s, (char *)"x", 1, 0, (struct sockaddr *)&a, len) == 1 &&
+            sock_wait(s, 0, 2) > 0 && recv(s, &c, 1, 0) == 1)
+        ok = 1;
+    CloseSocket(s);
+    return ok;
+}
+
+/* An advertisement while an application holds the dynamic database: the
+ * stack goes on, and takes the option from the next one. */
+void testRDNSS_LOCK_HELD(void)
+{
+    NEED_IF();
+    if (MiamiBase == NULL) {
+        CU_PASS("miami.library not available - skipping");
+        return;
+    }
+    ClearDynDomain();                   /* holds it until EndDynDomain() */
+    ra_begin();
+    ra_rdnss(LIFETIME, 0);
+    ra_send();
+    CU_ASSERT(loopback_works());
+    EndDynDomain();
+    ra_begin();
+    ra_rdnss(LIFETIME, 0);
+    CU_ASSERT_EQUAL_FATAL(ra_send(), 0);
+    CU_ASSERT_EQUAL(dns_lookup("one.rdnss.test"), 77);
+    forget();
+}
+
 int main(int argc, char **argv)
 {
     CU_pSuite p;
@@ -296,7 +341,8 @@ int main(int argc, char **argv)
         !CU_add_test(p, "it ends with its lifetime", testRDNSS_EXPIRES) ||
         !CU_add_test(p, "a domain from a DNSSL option is searched", testRDNSS_DNSSL) ||
         !CU_add_test(p, "options that do not parse are ignored", testRDNSS_MALFORMED) ||
-        !CU_add_test(p, "a DHCP update leaves them", testRDNSS_DHCP))
+        !CU_add_test(p, "a DHCP update leaves them", testRDNSS_DHCP) ||
+        !CU_add_test(p, "a held database does not hold up the stack", testRDNSS_LOCK_HELD))
     {
         CU_cleanup_registry();
         goto out;

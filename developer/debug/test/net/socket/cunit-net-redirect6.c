@@ -7,7 +7,8 @@
     destination has been redirected, not from the router it was redirected
     from - and only with code 0 and options that parse; its target must be
     a link-local address or the destination itself. A valid one routes the
-    destination through its target (section 8.3).
+    destination through its target (section 8.3) - unless the destination
+    has a host route set by hand, which stays as it is (as in FreeBSD).
 
     As cunit-net-rio6, the test sends the Router Advertisements and the
     Redirects itself, from a raw ICMPv6 socket with hop limit 255 to the
@@ -47,6 +48,7 @@ static int ready;
 static const char *const dests[] = {
     "2001:db8:4d54:60::1", "2001:db8:4d54:60::2", "2001:db8:4d54:60::3",
     "2001:db8:4d54:60::4", "2001:db8:4d54:60::5", "2001:db8:4d54:60::6",
+    "2001:db8:4d54:60::7",
 };
 static const u_char none[1];     /* no options */
 
@@ -226,6 +228,36 @@ static void route_del_host(const char *dst)
     CloseSocket(s);
 }
 
+/* Add a static host route for dst through router gw, as route(8) would. */
+static int route_add_host(const char *dst, const struct in6_addr *gw)
+{
+    long buf[256 / sizeof(long)];
+    struct rt_msghdr *h = (struct rt_msghdr *)buf;
+    struct sockaddr_in6 *sa;
+    int s = socket(PF_ROUTE, SOCK_RAW, 0), r;
+
+    if (s < 0)
+        return -1;
+    bzero(buf, sizeof(buf));
+    h->rtm_version = RTM_VERSION;
+    h->rtm_type = RTM_ADD;
+    h->rtm_flags = RTF_UP | RTF_GATEWAY | RTF_HOST | RTF_STATIC;
+    h->rtm_addrs = RTA_DST | RTA_GATEWAY;
+    h->rtm_seq = 1;
+    sa = (struct sockaddr_in6 *)(h + 1);
+    sa->sin6_len = sizeof(*sa);
+    sa->sin6_family = AF_INET6;
+    inet_pton(AF_INET6, (char *)dst, &sa->sin6_addr);
+    sa = (struct sockaddr_in6 *)((char *)sa + ROUNDUP(sizeof(*sa)));
+    sa->sin6_len = sizeof(*sa);
+    sa->sin6_family = AF_INET6;
+    sa->sin6_addr = *gw;
+    h->rtm_msglen = sizeof(*h) + 2 * ROUNDUP(sizeof(*sa));
+    r = send(s, (char *)buf, h->rtm_msglen, 0);
+    CloseSocket(s);
+    return r < 0 ? -1 : 0;
+}
+
 /* ----------------------------------------------------------------- tests */
 
 int init_suite(void)
@@ -305,6 +337,16 @@ void testREDIRECT6_GLOBAL_TARGET(void)
     NEED_IF();
     CU_ASSERT_EQUAL(send_redirect(&r1, 0, dests[5], "2001:db8:4d54:61::9", none, 0), 0);
     CU_ASSERT(via(dests[5], &r1));
+}
+
+/* A host route set by hand stays as it is. */
+void testREDIRECT6_STATIC_HOST(void)
+{
+    NEED_IF();
+    CU_ASSERT_EQUAL_FATAL(route_add_host(dests[6], &r1), 0);
+    CU_ASSERT_FATAL(via(dests[6], &r1));
+    CU_ASSERT_EQUAL(send_redirect(&r1, 0, dests[6], T1, none, 0), 0);
+    CU_ASSERT(via(dests[6], &r1));
 }
 
 /* -------------------------------------------------------------------- setup */
@@ -411,7 +453,8 @@ int main(int argc, char **argv)
         !CU_add_test(p, "nor from the router redirected from", testREDIRECT6_REDIRECTED) ||
         !CU_add_test(p, "nor with a code other than 0", testREDIRECT6_CODE) ||
         !CU_add_test(p, "nor with an option of length 0", testREDIRECT6_BAD_OPTION) ||
-        !CU_add_test(p, "nor with a global target not the destination", testREDIRECT6_GLOBAL_TARGET))
+        !CU_add_test(p, "nor with a global target not the destination", testREDIRECT6_GLOBAL_TARGET) ||
+        !CU_add_test(p, "nor over a host route set by hand", testREDIRECT6_STATIC_HOST))
     {
         CU_cleanup_registry();
         teardown();

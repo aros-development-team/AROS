@@ -465,7 +465,8 @@ with hop limit 255, code 0, at least 40 octets, options that parse, a target tha
 the destination itself - and from the router that is the first hop to the destination now, the
 gateway of the route the table uses for it on that interface, so that another node on the link,
 router or not, cannot draw the traffic away. It then routes the destination through the target
-(a host route, replacing one an earlier Redirect made). A router ignores Redirects.
+(a host route, replacing one an earlier Redirect made, `RTF_DYNAMIC`; a host route set by hand is left
+as it is, as in FreeBSD). A router ignores Redirects.
 
 The DNS options of a Router Advertisement (RFC 8106) give the resolver servers and search domains:
 the addresses of an RDNSS option and the domains of a DNSSL option go into the dynamic database
@@ -476,7 +477,10 @@ drops them when it is up, and taking the interface down drops them with its DNS=
 ends soonest (§5.3.1). An option that does not parse is ignored whole. A link-local server is asked on
 the interface it was heard on (its zone; see 6.6). The static `NAMESERVER` and `DOMAIN` entries are never
 touched and come first; a DHCP client's update (`ClearDynNameServ()`, `ClearDynDomain()`) replaces
-only what DHCP gave, not what an interface or a router did.
+only what DHCP gave, not what an interface or a router did. The stack task only attempts the
+database's lock for them (`AttemptSemaphore()`): an application may hold it from `ClearDynNameServ()`
+to `EndDynNameServ()` for as long as it likes, and an option heard meanwhile is taken from the next
+advertisement, as `ndb_ra_timer()` takes the expiries on its next tick.
 
 An in-place reload deletes every address of every interface, the link-local included, and forgets
 the routers and prefixes heard on it (`nd6_purge_routers()`, `nd6_purge_prefixes()`). For an

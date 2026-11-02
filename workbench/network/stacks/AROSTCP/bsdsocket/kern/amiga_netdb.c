@@ -680,6 +680,12 @@ void ifnet_clear_dns(struct ifnet *ifp)
  * (NAMESERVER, DOMAIN) is never touched, and the resolver keeps trying its
  * entries first.  At most NDB_RA_MAX of each are kept per interface; a new
  * one takes the place of the one that ends soonest (section 5.3.1).
+ *
+ * This runs in the stack task, which must not wait for the lock: an
+ * application holds it from ClearDynNameServ() or ClearDynDomain() until
+ * EndDynNameServ() or EndDynDomain() (miami.library), for as long as it
+ * likes. So the lock is only attempted; without it the option is passed
+ * over and taken from the next advertisement, as ndb_ra_timer() does.
  */
 #define NDB_RA_MAX 3
 
@@ -708,7 +714,8 @@ void ndb_ra_server(struct ifnet *ifp, const struct in6_addr *addr, ULONG lifetim
     struct NameserventNode *nsn, *found = NULL, *soonest = NULL;
     int n = 0, changed = 0;
 
-    ObtainSemaphore(&DynDB.dyn_Lock);
+    if(!AttemptSemaphore(&DynDB.dyn_Lock))
+        return;             /* the next advertisement gives it again */
     for(nsn = (struct NameserventNode *)DynDB.dyn_NameServers.mlh_Head;
             nsn->nsn_Node.mln_Succ;
             nsn = (struct NameserventNode *)nsn->nsn_Node.mln_Succ) {
@@ -753,7 +760,8 @@ void ndb_ra_domain(struct ifnet *ifp, const char *name, ULONG lifetime)
     int n = 0, changed = 0;
     size_t len = strnlen(name, MAXHOSTNAMELEN) + 1;
 
-    ObtainSemaphore(&DynDB.dyn_Lock);
+    if(!AttemptSemaphore(&DynDB.dyn_Lock))
+        return;             /* the next advertisement gives it again */
     for(dn = (struct DomainentNode *)DynDB.dyn_Domains.mlh_Head;
             dn->dn_Node.mln_Succ;
             dn = (struct DomainentNode *)dn->dn_Node.mln_Succ) {
