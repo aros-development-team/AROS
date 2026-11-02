@@ -277,12 +277,8 @@ struct TagItem tags[] = {{PT_TYPE, (IPTR)&type}, {TAG_DONE, 0}};
     {
         if (readBlock(PartitionBase, root, i, rdb) != 0)
             return 0;
-        if (rdb->rdb_ID == AROS_BE2LONG(IDNAME_RIGIDDISK))
-            break;
-    }
-    if (i != RDB_LOCATION_LIMIT)
-    {
-        if (PartitionRDBValidChecksum(rdb, 64, root->de.de_SizeBlock << 2))
+        if (rdb->rdb_ID == AROS_BE2LONG(IDNAME_RIGIDDISK) &&
+            PartitionRDBValidChecksum(rdb, 64, root->de.de_SizeBlock << 2))
             return 1;
     }
     return 0;
@@ -607,16 +603,9 @@ UBYTE i;
                 return 1;
             }
             CopyMem(buffer, &data->rdb, root->de.de_SizeBlock << 2);
-            if (data->rdb.rdb_ID == AROS_BE2LONG(IDNAME_RIGIDDISK))
-            {
-                if (!PartitionRDBValidChecksum(&data->rdb, 64, root->de.de_SizeBlock << 2))
-                {
-                    FreeMem(data, sizeof(*data) + (root->de.de_SizeBlock << 2) - sizeof(data->rdb));
-                    FreeVec(buffer);
-                    return ERROR_NOT_A_DOS_DISK;
-                }
+            if (data->rdb.rdb_ID == AROS_BE2LONG(IDNAME_RIGIDDISK) &&
+                PartitionRDBValidChecksum(&data->rdb, 64, root->de.de_SizeBlock << 2))
                 break;
-            }
         }
         if (i != RDB_LOCATION_LIMIT)
         {
