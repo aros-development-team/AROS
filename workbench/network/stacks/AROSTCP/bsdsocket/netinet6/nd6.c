@@ -51,6 +51,8 @@
 #include <netinet6/nd6.h>
 #include <kern/amiga_netdb.h>
 
+void api_addrchange_retry(void);      /* api/amiga_api.c */
+
 extern void icmp6_error(struct mbuf *, int, int, int);
 
 /* ------------------------------------------------------------------
@@ -901,6 +903,7 @@ nd6_timer(void *arg)
     D(bug("[AROSTCP:ND6] %s: calling nd6_prefix_timer\n", __func__));
     nd6_prefix_timer();
     ndb_ra_timer();             /* DNS servers and domains from RAs */
+    api_addrchange_retry();     /* an address change signal still to send */
     D(bug("[AROSTCP:ND6] %s: sub-timers done\n", __func__));
 
     /* RS retransmission for interfaces still soliciting */

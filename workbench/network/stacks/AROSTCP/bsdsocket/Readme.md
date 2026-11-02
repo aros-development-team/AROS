@@ -440,7 +440,13 @@ address added with `SIOCAIFADDR_IN6` - SLAAC, temporary or configured by hand - 
 can multicast. The first Router Solicitation follows the link-local's DAD; later addresses do not
 send another. An address's `IN6_IFF_*` flags are kept in `ia6_ifaflags`, apart from the generic
 `ifa_flags` (`ia6_flags`) where `IFA_ROUTE` records the prefix route `in6_ifscrub()` removes with
-the address. A prefix gets one temporary address (RFC 4941) at a time: another is made when a Router
+the address. Applications read them with `SIOCGIFAFLAG_IN6` (KAME; `ifru_flags6`, `EADDRNOTAVAIL` for
+an address the interface does not have). When DAD ends, passed or duplicated, the address is
+announced again as when it was added (`nd6_dad_announce()`: `RTM_NEWADDR` and the
+`SBTC_SIG_ADDRESS_CHANGE_MASK` signal), after its flags have changed, so a program woken by it finds
+it usable or `IN6_IFF_DUPLICATED`. The stack task does not wait to send that signal
+(`api_sendaddrchange()`): a task opening or closing the library may hold the list it walks and wait
+for the stack; the signal then goes from the next `nd6_timer()` tick. A prefix gets one temporary address (RFC 4941) at a time: another is made when a Router
 Advertisement repeats the prefix after the current one is deprecated.
 
 A prefix is on-link on the link it is advertised on: the prefix list has an entry per (prefix,

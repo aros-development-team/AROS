@@ -50,9 +50,23 @@ struct rtentry *rtalloc1(struct sockaddr *, int);
 int ip6_output(void *, ...);
 
 #include <protos/netinet/in_cksum_protos.h>
+#include <protos/net/rtsock_protos.h>
 
 /* DAD queue - singly-linked list */
 static struct dadq *dadq_head = NULL;
+
+/*
+ * Duplicate address detection has ended for ia, passed or duplicated: say
+ * so as when the address was added (RTM_NEWADDR, and the
+ * SBTC_SIG_ADDRESS_CHANGE_MASK signal), as Linux does, so that a program
+ * woken by it finds the address usable - or IN6_IFF_DUPLICATED - with
+ * SIOCGIFAFLAG_IN6. The flags are changed first.
+ */
+static void
+nd6_dad_announce(struct in6_ifaddr *ia)
+{
+    rt_newaddrmsg(RTM_NEWADDR, &ia->ia_ifa, 0, NULL);
+}
 
 /* ------------------------------------------------------------------
  * nd6_ns_output - send a Neighbor Solicitation.
@@ -441,6 +455,7 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
                 ia->ia6_ifaflags |= IN6_IFF_DUPLICATED;
                 ia->ia6_ifaflags &= ~IN6_IFF_TENTATIVE;
                 nd6_dad_stop(ia);
+                nd6_dad_announce(ia);
                 nd6stat.nd6s_dad_dup++;
                 __log(LOG_ERR,
                       "nd6_na_input: DAD duplicate for %s on %s%d\n",
@@ -710,6 +725,7 @@ nd6_dad_timer(void)
             /* received NS for our tentative addr = duplicate */
             dp->ia->ia6_ifaflags |= IN6_IFF_DUPLICATED;
             dp->ia->ia6_ifaflags &= ~IN6_IFF_TENTATIVE;
+            nd6_dad_announce(dp->ia);
             nd6stat.nd6s_dad_dup++;
             __log(LOG_ERR,
                   "nd6_dad_timer: DAD duplicate detected on %s%d\n",
@@ -725,6 +741,7 @@ nd6_dad_timer(void)
             D(bug("[AROSTCP:ND6] %s: DAD complete for %s%d, sending RS\n",
                   __func__, dp->ifp->if_name, dp->ifp->if_unit));
             dp->ia->ia6_ifaflags &= ~IN6_IFF_TENTATIVE;
+            nd6_dad_announce(dp->ia);
             /*
              * The interface can ask for routers once its link-local address
              * is valid (RFC 4861 section 6.3.7); other addresses, checked

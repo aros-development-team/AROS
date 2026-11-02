@@ -926,6 +926,8 @@ VOID api_sendreconfig(BOOL begin)
  * on RTM_NEWADDR/RTM_DELADDR, so it covers both IPv4 and IPv6.  A woken consumer
  * re-reads interface addresses (e.g. SIOCGIFCONF).
  */
+static BOOL api_addrchange_pending;
+
 VOID api_sendaddrchange(VOID)
 {
     extern struct List socketBaseList; /* :/ */
@@ -934,7 +936,20 @@ VOID api_sendaddrchange(VOID)
     if(api_state != API_SHOWN)
         return;         /* no external consumers before the API is visible */
 
-    ObtainSemaphoreShared(&baselist_semaphore);
+    /*
+     * The stack task (SLAAC, the end of duplicate address detection) does
+     * not wait for the list: a task opening or closing the library holds it
+     * and may wait for the stack. Without it the signal is left pending, and
+     * api_addrchange_retry() sends it from the stack's next timer tick.
+     */
+    if(FindTask(NULL) == AROSTCP_Task) {
+        if(!AttemptSemaphoreShared(&baselist_semaphore)) {
+            api_addrchange_pending = TRUE;
+            return;
+        }
+    } else
+        ObtainSemaphoreShared(&baselist_semaphore);
+    api_addrchange_pending = FALSE;
     for(libNode = socketBaseList.lh_Head; libNode->ln_Succ;
             libNode = libNode->ln_Succ) {
         struct SocketBase *sb = (struct SocketBase *)libNode;
@@ -942,6 +957,13 @@ VOID api_sendaddrchange(VOID)
             Signal(sb->thisTask, sb->sigAddrChangeMask);
     }
     ReleaseSemaphore(&baselist_semaphore);
+}
+
+/* A change signal the stack task could not send yet (api_sendaddrchange()). */
+VOID api_addrchange_retry(VOID)
+{
+    if(api_addrchange_pending)
+        api_sendaddrchange();
 }
 
 /*

@@ -13,6 +13,7 @@ CUNITEXEDIR := $(AROS_TESTS)/cunit/net/socket
 
 CUNITSOCKETTESTFILES := \
     cunit-net-addr6 \
+    cunit-net-addrflags6 \
     cunit-net-arpqueue \
     cunit-net-bindtodev6 \
     cunit-net-canforward \
