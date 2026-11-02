@@ -13,6 +13,9 @@
 
 /* GLOBALS */
 APTR NouveauMemPool;
+
+/* kernel.resource, for the DRM spinlock emulation (include/linux/spinlock.h) */
+APTR KernelBase;
 struct SignalSemaphore globalLock;
 /* GLOBALS END */
 
@@ -37,6 +40,9 @@ static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
     };
 
     InitSemaphore(&globalLock);
+
+    /* the DRM spinlocks (include/linux/spinlock.h) are kernel spinlocks */
+    KernelBase = OpenResource("kernel.resource");
 
     D(bug("[Nouveau] %s: library init entered\n", __func__));
 

@@ -73,6 +73,7 @@ AROS_DRM_CORE_SOURCES = \
             drm-compat/linux_string \
             drm-compat/linux_time \
             drm-compat/linux_workqueue \
+            drm-compat/linux_rcu \
             drm-aros/drm_drv \
             drm-aros/drm_aros_pci \
             drm-aros/drm_stubs \
