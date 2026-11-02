@@ -312,15 +312,23 @@ int main(void)
     {
         /* Open the existing partition table, or create it if none exists */
         D(bug("[C:Partition] Opening existing root partition table..."));
-        if (OpenPartitionTable(root) != 0)
+        LONG openError = OpenPartitionTable(root);
+        if (openError != 0 && openError != 1 && !ARG(WIPE))
+        {
+            error = openError;
+            PutStr("*** ERROR: Cannot read the existing partition table; it has not been replaced.\n");
+            CloseRootPartition(root);
+            root = NULL;
+        }
+        else if (openError != 0)
         {
             D(bug("failed\n[C:Partition] Creating %s root partition table\n",
                   ARG(SCHEME) ? (char *)ARG(SCHEME) : "MBR"));
 
             /* Create a root partition table */
-            if ((error == 0) && (CreatePartitionTable(root, scheme) != 0))
+            error = CreatePartitionTable(root, scheme);
+            if (error != 0)
             {
-                error = ERROR_UNKNOWN;
                 PutStr("*** ERROR: Creating root partition table failed.\n");
                 CloseRootPartition(root);
                 root = NULL;
