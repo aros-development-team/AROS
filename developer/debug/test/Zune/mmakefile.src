@@ -22,6 +22,7 @@ FILES  := test             \
           graph            \
           loginwindow      \
           busy             \
+          busyspeed        \
           hideshow         \
           settings         \
           dynlist          \
