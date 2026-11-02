@@ -31,6 +31,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-pmtu4 \
     cunit-net-pmtu6 \
     cunit-net-ports \
+    cunit-net-prefix6if \
     cunit-net-raw6 \
     cunit-net-rdnss \
     cunit-net-redirect6 \

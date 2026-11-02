@@ -441,6 +441,13 @@ send another. An address's `IN6_IFF_*` flags are kept in `ia6_ifaflags`, apart f
 the address. A prefix gets one temporary address (RFC 4941) at a time: another is made when a Router
 Advertisement repeats the prefix after the current one is deprecated.
 
+A prefix is on-link on the link it is advertised on: the prefix list has an entry per (prefix,
+interface) (`nd6_prefix_lookup()`), each with the lifetimes heard on its link, as in KAME. The
+routing table holds one route for a prefix: it is put on its entry's interface (`nd6_prefix_onlink()`;
+with a link-local gateway `rtrequest()` would take whichever interface registered fe80::/64 first),
+and when that entry ends - expired, or its interface gone - another interface's entry for the
+prefix gets it (`nd6_prefix_drop()`).
+
 An address SLAAC makes lives by its prefix's lifetimes (RFC 4862 §5.5.3, §5.5.4): each Router
 Advertisement for the prefix renews them (`nd6_slaac_lifetimes()`), but one that would cut the valid
 lifetime below two hours brings it down to two hours at most, so a forged advertisement cannot take

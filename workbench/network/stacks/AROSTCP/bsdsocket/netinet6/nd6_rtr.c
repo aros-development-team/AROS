@@ -601,15 +601,17 @@ nd6_purge_routers(struct ifnet *ifp)
  * ================================================================== */
 
 /* ------------------------------------------------------------------
- * nd6_prefix_lookup - find a prefix entry.
+ * nd6_prefix_lookup - find the entry for a prefix heard on ifp. A prefix
+ * is on-link on the link it is advertised on: each interface it is heard
+ * on has an entry of its own, with its own lifetimes, as in KAME.
  * ------------------------------------------------------------------ */
 struct nd_prefix *
-nd6_prefix_lookup(struct sockaddr_in6 *prefix, int plen)
+nd6_prefix_lookup(struct sockaddr_in6 *prefix, int plen, const struct ifnet *ifp)
 {
     struct nd_prefix *pr;
 
     for(pr = nd6_prefixlist; pr; pr = pr->next) {
-        if(pr->ndpr_plen == plen &&
+        if(pr->ndpr_ifp == ifp && pr->ndpr_plen == plen &&
                 IN6_ARE_ADDR_EQUAL(&pr->ndpr_prefix.sin6_addr,
                                    &prefix->sin6_addr))
             return pr;
@@ -635,7 +637,7 @@ nd6_prefix_add(struct ifnet *ifp, struct nd_opt_prefix_info *pi)
 
     GetSysTime(&_tv);
 
-    pr = nd6_prefix_lookup(&prefix, plen);
+    pr = nd6_prefix_lookup(&prefix, plen, ifp);
     if(pr) {
         /* update lifetimes */
         pr->ndpr_vltime = ntohl(pi->nd_opt_pi_valid_time);
@@ -699,6 +701,7 @@ static void
 nd6_prefix_onlink(struct nd_prefix *pr)
 {
     struct sockaddr_in6 prefix, mask;
+    struct rtentry *rt = NULL;
     struct ifaddr *ifa;
     int i, plen;
 
@@ -736,10 +739,31 @@ nd6_prefix_onlink(struct nd_prefix *pr)
     for(i = 0; i < 16; i++)
         prefix.sin6_addr.s6_addr[i] &= mask.sin6_addr.s6_addr[i];
 
+    /*
+     * The route is put on the prefix's interface: with a link-local address
+     * for gateway, rtrequest() would take whichever interface registered
+     * fe80::/64 first, as for the routes through a router (nd6_router_route()).
+     */
     if(rtrequest(RTM_ADD, (struct sockaddr *)&prefix,
                  ifa->ifa_addr, (struct sockaddr *)&mask,
-                 RTF_UP | RTF_CLONING, NULL) == 0) {
+                 RTF_UP | RTF_CLONING, &rt) == 0) {
         pr->ndpr_onlink = 1;
+        if(rt != NULL) {
+            if(rt->rt_ifp != pr->ndpr_ifp) {
+                rt->rt_ifp = pr->ndpr_ifp;
+                rt->rt_ifa = ifa;
+                /* the link-layer gateway its neighbours are cloned with
+                 * (nd6_rtrequest()) names the interface: edited in place,
+                 * as nd6_lookup() does */
+                if(rt->rt_gateway && rt->rt_gateway->sa_family == AF_LINK) {
+                    struct sockaddr_dl *sdl = (struct sockaddr_dl *)rt->rt_gateway;
+
+                    sdl->sdl_index = pr->ndpr_ifp->if_index;
+                    sdl->sdl_type  = pr->ndpr_ifp->if_type;
+                }
+            }
+            rt->rt_refcnt--;
+        }
     }
 }
 
@@ -777,6 +801,33 @@ nd6_prefix_offlink(struct nd_prefix *pr)
     pr->ndpr_onlink = 0;
 }
 
+/*
+ * nd6_prefix_drop - unlink pr from the list and free it. The routing table
+ * holds one route for a prefix: if pr had it, the entry of another
+ * interface the prefix is heard on gets it, so that the prefix stays
+ * on-link there.
+ */
+static void
+nd6_prefix_drop(struct nd_prefix **pp)
+{
+    struct nd_prefix *pr = *pp, *other;
+    int had_route = pr->ndpr_onlink;
+
+    nd6_prefix_offlink(pr);
+    *pp = pr->next;
+    if(had_route)
+        for(other = nd6_prefixlist; other; other = other->next)
+            if(!other->ndpr_onlink && other->ndpr_plen == pr->ndpr_plen &&
+                    (other->ndpr_flags & ND_OPT_PI_FLAG_ONLINK) &&
+                    IN6_ARE_ADDR_EQUAL(&other->ndpr_prefix.sin6_addr,
+                                       &pr->ndpr_prefix.sin6_addr)) {
+                nd6_prefix_onlink(other);
+                if(other->ndpr_onlink)
+                    break;
+            }
+    FREE(pr, M_PCB);
+}
+
 /* ------------------------------------------------------------------
  * nd6_prefix_timer - expire prefixes (called from nd6_timer).
  * ------------------------------------------------------------------ */
@@ -791,10 +842,7 @@ nd6_prefix_timer(void)
     pp = &nd6_prefixlist;
     while((pr = *pp) != NULL) {
         if(pr->ndpr_expire != 0 && pr->ndpr_expire < _tv.tv_sec) {
-            /* prefix expired */
-            nd6_prefix_offlink(pr);
-            *pp = pr->next;
-            FREE(pr, M_PCB);
+            nd6_prefix_drop(pp);        /* prefix expired */
             continue;
         }
         pp = &pr->next;
@@ -818,9 +866,7 @@ nd6_purge_prefixes(struct ifnet *ifp)
     pp = &nd6_prefixlist;
     while((pr = *pp) != NULL) {
         if(pr->ndpr_ifp == ifp) {
-            nd6_prefix_offlink(pr);
-            *pp = pr->next;
-            FREE(pr, M_PCB);
+            nd6_prefix_drop(pp);
             continue;
         }
         pp = &pr->next;

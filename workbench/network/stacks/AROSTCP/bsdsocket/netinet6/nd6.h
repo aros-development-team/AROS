@@ -251,7 +251,7 @@ void defrouter_select(void);
 void defrouter_unreachable(struct in6_addr *, struct ifnet *);
 void defrouter_reachable(struct in6_addr *, struct ifnet *);
 void nd6_probe(struct ifnet *, struct in6_addr *);
-struct nd_prefix *nd6_prefix_lookup(struct sockaddr_in6 *, int);
+struct nd_prefix *nd6_prefix_lookup(struct sockaddr_in6 *, int, const struct ifnet *);
 void nd6_prefix_timer(void);
 void nd6_defrouter_timer(void);
 void nd6_purge_routers(struct ifnet *);
