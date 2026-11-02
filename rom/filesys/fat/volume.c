@@ -647,7 +647,9 @@ LONG FormatFATVolume(const UBYTE *name, UWORD len, struct Globals *glob)
 
     boot->bpb_sect_per_track = AROS_WORD2LE(de->de_BlocksPerTrack);
     boot->bpb_num_heads = AROS_WORD2LE(de->de_Surfaces);
-    boot->bpb_hidden_sect = AROS_LONG2LE(de->de_Reserved);
+    first_device_sector =
+        de->de_BlocksPerTrack * de->de_Surfaces * de->de_LowCyl;
+    boot->bpb_hidden_sect = AROS_LONG2LE(first_device_sector);
 
     if (type == 32)
     {
@@ -690,8 +692,6 @@ LONG FormatFATVolume(const UBYTE *name, UWORD len, struct Globals *glob)
     boot->bpb_signature[1] = 0xaa;
 
     /* Write the boot sector */
-    first_device_sector =
-        de->de_BlocksPerTrack * de->de_Surfaces * de->de_LowCyl;
 
     D(bug("[fat] boot sector at sector %ld\n", first_device_sector));
 
