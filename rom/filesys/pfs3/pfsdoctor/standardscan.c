@@ -101,7 +101,7 @@ static error_t RepairDeldir(void);
 static error_t dd_CheckBlock(uint32 bloknr, int seqnr, bool *valid);
 static error_t RepairDirTree(void);
 static error_t RepairDir(struct direntry *de, c_dirblock_t *parent);
-static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent);
+static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool discardable);
 static error_t RepairDirEntry(struct direntry *de, c_dirblock_t *dirblk);
 static error_t RepairFile(struct direntry *de, c_dirblock_t *parent);
 static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok);
@@ -162,6 +162,19 @@ static bool IsOperationalError(error_t error)
 		error == e_out_of_memory || error == e_options_error ||
 		error == e_aborted || error == e_alloc_fail || error == e_fatal_error;
 }
+
+static bool DiscardUnreadableBlock(error_t error, const char *kind, uint32 blocknr)
+{
+	char question[256];
+
+	if (error != e_read_error || mode != repair)
+		return false;
+	sprintf(question, "Cannot read %s block %lu.\n"
+		"Discard its contents and continue recovery?\n"
+		"Files referenced only by this block will be lost.", kind, blocknr);
+	return volume.askuser(question, "Discard", "Abort") != 0;
+}
+
 
 static BOOL FileSizeCheck(ULONG low, ULONG high, ULONG numblocks)
 {
@@ -1381,6 +1394,8 @@ static error_t dd_CheckBlock(uint32 bloknr, int seqnr, bool *valid)
 	{
 		adderror("couldn't read deldirblock");
 		free (ddblk.data);
+		if (DiscardUnreadableBlock(error, "deleted-file directory", bloknr))
+			return e_none;
 		return IsOperationalError(error) ? error : e_none;
 	}
 
@@ -1615,7 +1630,8 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 		}
 
 		enterblock(dirnode.blocknr);
-		error = RepairDirBlock(dirnode.blocknr, mainanodenr, parentanodenr);
+		error = RepairDirBlock(dirnode.blocknr, mainanodenr, parentanodenr,
+			de != NULL || anodenr != mainanodenr || dirnode.next != 0);
 		exitblock();
 		switch (error)
 		{
@@ -1644,7 +1660,14 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 						addfileerror("corrupt directory block");
 				}
 				
-				DeleteAnode(mainanodenr, anodenr);
+				error = DeleteAnode(mainanodenr, anodenr);
+				if (error == e_empty)
+					return e_remove;
+				if (error)
+					return error;
+				/* Deleting the head copied its successor into the head. */
+				if (anodenr == mainanodenr)
+					dirnode.next = mainanodenr;
 				break;
 
 			case e_none:
@@ -1665,7 +1688,7 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 	return e_none;
 }
 
-static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent)
+static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool discardable)
 {
 	c_dirblock_t dirblk;
 	struct direntry *entry;
@@ -1678,6 +1701,8 @@ static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent)
 	if ((error = volume.getblock((cachedblock_t *)&dirblk, bloknr)))
 	{
 		free (dirblk.data);
+		if (discardable && DiscardUnreadableBlock(error, "directory", bloknr))
+			return e_remove;
 		return IsOperationalError(error) ? error : e_remove;
 	}
 
@@ -2031,6 +2056,8 @@ static error_t DeleteAnode(uint32 anodechain, uint32 node)
 
 	if ((error = ReadAnode(&next_node, node, false)))
 		return error;
+	if (next_node.next == node)
+		return e_anode_error;
 	if (anodechain == node)
 	{
 		if (!next_node.next)
