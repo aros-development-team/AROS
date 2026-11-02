@@ -136,17 +136,56 @@ void request2(UBYTE *text) {
 
 
 
+/* The req macros store every argument as an IPTR, and RawDoFmt reads a %l
+   conversion at 32 bits. Where an IPTR is wider than that, the conversions
+   are widened to the IPTR size ('i') so each number is read whole and the
+   following arguments stay in step. */
+static UBYTE *widenformat(CONST_STRPTR fmt)
+{
+  CONST_STRPTR s;
+  UBYTE *copy, *d;
+
+  if(sizeof(IPTR)==sizeof(ULONG) || (copy=AllocVec(strlen(fmt)+1,0))==0) {
+    return(0);
+  }
+  for(s=fmt, d=copy; *s!=0; ) {
+    if(*s=='%') {
+      *d++=*s++;
+      if(*s=='%') {
+        *d++=*s++;
+        continue;
+      }
+      while(*s=='-' || *s=='.' || (*s>='0' && *s<='9')) {
+        *d++=*s++;
+      }
+      if(*s=='l') {
+        *d++='i';
+        s++;
+      }
+    }
+    else {
+      *d++=*s++;
+    }
+  }
+  *d=0;
+  return(copy);
+}
+
 LONG requestArgs(UBYTE *title, UBYTE *fmt, UBYTE *gads, APTR params)
 {
   struct EasyStruct es;
+  UBYTE *wide=widenformat(fmt);
+  LONG gadget;
 
   es.es_StructSize=sizeof(struct EasyStruct);
   es.es_Flags=0;
   es.es_Title=title;
-  es.es_TextFormat=fmt;
+  es.es_TextFormat=wide!=0 ? wide : fmt;
   es.es_GadgetFormat=gads;
 
-  return EasyRequestArgs(0, &es, 0, params);
+  gadget=EasyRequestArgs(0, &es, 0, params);
+  FreeVec(wide);
+  return(gadget);
 }
 
 

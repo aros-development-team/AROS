@@ -99,6 +99,9 @@ static UBYTE *errordescription(LONG errorcode)
     else if(errorcode==HFERR_BadStatus || errorcode==HFERR_Phase) {
         return("General device failure.\nThe device is in an invalid state.\n\n");
     }
+    else if(errorcode==IOERR_ABORTED) {
+        return("The device aborted the request.\nIt could not complete this transfer.\n\n");
+    }
 
     return("Unknown error.\n\n");
 }
