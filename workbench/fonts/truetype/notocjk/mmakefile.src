@@ -1,0 +1,31 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+NOTOCJKTAG := Sans2.004
+NOTOCJKSRC := $(PORTSSOURCEDIR)/noto-cjk-$(NOTOCJKTAG)
+NOTOCJKURL := https://github.com/notofonts/noto-cjk/raw/$(NOTOCJKTAG)
+
+#MM- fonts-truetype : fonts-truetype-notocjk
+#MM- fonts-truetype-quick : fonts-truetype-notocjk
+#MM fonts-truetype-notocjk : fonts-truetype-notocjk-fetch fonts-truetype-notocjk-fetch-license
+#MM fonts-truetype-notocjk-fetch : fonts-truetype-notocjk-srcdir
+#MM fonts-truetype-notocjk-fetch-license : fonts-truetype-notocjk-srcdir
+
+%fetch mmake=fonts-truetype-notocjk-fetch archive=NotoSansCJK-Regular.ttc suffixes= \
+    location=$(NOTOCJKSRC) archive_origins="$(NOTOCJKURL)/Sans/OTC"
+
+%fetch mmake=fonts-truetype-notocjk-fetch-license archive=LICENSE suffixes= \
+    location=$(NOTOCJKSRC) archive_origins="$(NOTOCJKURL)"
+
+#MM
+fonts-truetype-notocjk : | $(AROSDIR)/Fonts/TrueType
+	$(CP) $(NOTOCJKSRC)/NotoSansCJK-Regular.ttc $(AROSDIR)/Fonts/TrueType
+	$(CP) $(NOTOCJKSRC)/LICENSE $(AROSDIR)/Fonts/TrueType/LICENSE-NotoCJK.txt
+
+#MM
+fonts-truetype-notocjk-srcdir : | $(NOTOCJKSRC)
+
+%rule_makedirs dirs="$(AROSDIR)/Fonts/TrueType $(NOTOCJKSRC)"
+
+%common
