@@ -500,7 +500,12 @@ touched and come first; a DHCP client's update (`ClearDynNameServ()`, `ClearDynD
 only what DHCP gave, not what an interface or a router did. The stack task only attempts the
 database's lock for them (`AttemptSemaphore()`): an application may hold it from `ClearDynNameServ()`
 to `EndDynNameServ()` for as long as it likes, and an option heard meanwhile is taken from the next
-advertisement, as `ndb_ra_timer()` takes the expiries on its next tick.
+advertisement, as `ndb_ra_timer()` takes the expiries on its next tick. What the stack task must change in it
+without the lock - an interface's `DNS=` servers, its entries as it goes down or away, everything
+for a reload - is queued and applied in order by the next holder before its own change
+(`ndb_ops_locked()`: the application's own next call, or `ndb_ra_timer()` within a tick). The
+entries name their interface by index (`nsn_OwnerIndex`, `dn_OwnerIndex`), which is never reused,
+so those of an interface already gone cannot dangle meanwhile.
 
 An in-place reload deletes every address of every interface, the link-local included, and forgets
 the routers and prefixes heard on it (`nd6_purge_routers()`, `nd6_purge_prefixes()`). For an

@@ -80,6 +80,9 @@ struct in6_addr;
 void ndb_ra_server(struct ifnet *ifp, const struct in6_addr *addr, ULONG lifetime);
 void ndb_ra_domain(struct ifnet *ifp, const char *name, ULONG lifetime);
 void ndb_ra_timer(void);
+/* Apply what the stack task queued for the dynamic database (call with
+ * DynDB.dyn_Lock held, before changing it). */
+int ndb_ops_locked(void);
 
 /* Locking macros for NDB */
 #define LOCK_W_NDB(ndb) (ObtainSemaphore(&ndb_Lock))
@@ -112,7 +115,9 @@ struct NameserventNode {
   struct nameservent {
     struct in_addr ns_addr;	/* IPv4 server (nsn_Family == AF_INET) */
   } nsn_Ent;
-  struct ifnet   *nsn_Owner;	/* owning interface for per-interface DNS, else NULL */
+  ULONG           nsn_OwnerIndex; /* if_index of the interface it is for, else 0:
+				 * an index is never reused, so it outlives the
+				 * interface, as a pointer would not */
   UBYTE           nsn_Family;	/* AF_INET or AF_INET6 (0 == AF_INET for old creators) */
   struct in6_addr nsn_Addr6;	/* IPv6 server (nsn_Family == AF_INET6) */
   ULONG           nsn_Expire;	/* learned from a Router Advertisement: when it
@@ -128,7 +133,7 @@ struct DomainentNode {
   struct domainent {
     char *d_name;
   } dn_Ent;
-  struct ifnet   *dn_Owner;	/* the interface it was learned on, else NULL */
+  ULONG           dn_OwnerIndex;	/* as nsn_OwnerIndex */
   ULONG           dn_Expire;	/* as nsn_Expire */
 };
 
