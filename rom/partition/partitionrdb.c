@@ -108,19 +108,24 @@ static AROS_UFH4(LONG, SeekFunc,
     AROS_USERFUNC_INIT
 
     struct FileSysReader *fsr = (struct FileSysReader*)file;
-    LONG oldpos = fsr->offset;
+    UQUAD size = (UQUAD)fsr->fsn->fsblocks * fsr->size;
+    UQUAD oldpos = (UQUAD)fsr->count * fsr->size + fsr->offset;
+    QUAD newpos = pos;
 
     switch (mode) {
     case OFFSET_BEGINNING: break;
-    case OFFSET_END:       pos = fsr->size - pos; break;
-    case OFFSET_CURRENT:   pos = fsr->offset + pos; break;
+    case OFFSET_END:       newpos += size; break;
+    case OFFSET_CURRENT:   newpos += oldpos; break;
     default: return -1;
     }
 
-    if (pos < 0 || pos >= fsr->size)
+    /* The DOS seek callback returns a signed LONG position. */
+    if (newpos < 0 || newpos > size || newpos > 0x7fffffff ||
+        oldpos > 0x7fffffff || fsr->size == 0)
         return -1;
 
-    fsr->offset = pos;
+    fsr->count = newpos / fsr->size;
+    fsr->offset = newpos % fsr->size;
 
     return oldpos;
 
