@@ -110,6 +110,8 @@
 #include <proto/dos.h>
 #include <proto/partition.h>
 #include <proto/utility.h>
+#include <libraries/uuid.h>
+#include <string.h>
 
 #include <aros/debug.h>
 
@@ -121,7 +123,7 @@
 #define MAX_SFS_SIZE (124L * 1024)
 #define MAX_SIZE(A) (((A) == &sfs0) ? MAX_SFS_SIZE : MAX_FFS_SIZE)
 
-const TEXT version_string[] = "$VER: Partition 42.2 (03.09.2026)";
+const TEXT version_string[] = "$VER: Partition 42.3 (02.11.2026)";
 
 static const struct PartitionType fat32 = { "FAT\2", 4 };
 static const struct PartitionType dos3 = { "DOS\3", 4 };
@@ -149,6 +151,155 @@ static LONG BlockToCyl(struct DosEnvec *de, QUAD block)
 static UQUAD CylToBlock(struct DosEnvec *de, LONG cyl)
 {
     return (UQUAD)(cyl * (de->de_Surfaces * de->de_BlocksPerTrack));
+}
+
+/* GPT has no extended/RDB container. Use named AROS filesystem partitions,
+ * an optional ESP, and space reserved for a conventional GRUB BIOS install.
+ * AROS Install-grub2 currently loads its core from the filesystem instead. */
+static struct PartitionHandle *CreateGPTPartition(struct PartitionHandle *root,
+    UQUAD first, UQUAD blocks, CONST_STRPTR name, const uuid_t *id, BOOL bootable)
+{
+    struct DosEnvec de = root->de;
+    struct PartitionType type;
+
+    if (!blocks || first > 0xffffffffULL || blocks > 0xffffffffULL - first)
+        return NULL;
+    CopyMem(id, type.id, sizeof(*id));
+    type.id_len = sizeof(*id);
+    de.de_Surfaces = 1;
+    de.de_BlocksPerTrack = 1;
+    de.de_LowCyl = first;
+    de.de_HighCyl = first + blocks - 1;
+    de.de_Reserved = 2;
+    de.de_BootPri = 0;
+    return AddPartitionTags(root, PT_DOSENVEC, (IPTR)&de, PT_TYPE, (IPTR)&type,
+        PT_NAME, (IPTR)name, PT_BOOTABLE, bootable, PT_AUTOMOUNT, TRUE, TAG_DONE);
+}
+
+static uuid_t GPTDosType(const struct PartitionType *type)
+{
+    uuid_t id = MAKE_UUID(0, 0xBB67, 0x46C5, 0xAA4A, 0xF502CA018E5EULL);
+    id.time_low = ((ULONG)type->id[0] << 24) | ((ULONG)type->id[1] << 16) |
+        ((ULONG)type->id[2] << 8) | type->id[3];
+    return id;
+}
+
+static LONG CreateGPTLayout(struct PartitionHandle *root, ULONG sysSize,
+    ULONG workSize, const struct PartitionType *sysType, const struct PartitionType *workType)
+{
+    static const uuid_t bios = MAKE_UUID(0x21686148, 0x6449, 0x6E6F, 0x744E, 0x656564454649ULL);
+    static const uuid_t esp = MAKE_UUID(0xC12A7328, 0xF81F, 0x11D2, 0xBA4B, 0x00A0C93EC93BULL);
+    struct PartitionHandle *ph, *next;
+    UQUAD first = 0, last = 0, low = 0, high = 0, candidate;
+    UQUAD blocksize = root->de.de_SizeBlock << 2;
+    UQUAD align, biosblocks, bootblocks = 0, sysblocks, workblocks, available;
+    BOOL hasBIOS = FALSE, hasESP = FALSE;
+    uuid_t sysID = GPTDosType(sysType), workID = GPTDosType(workType);
+    ULONG bootSize = ARG(BOOTSIZE) ? *(LONG *)ARG(BOOTSIZE) : 0;
+
+    if (root->table->type != PHPTT_GPT || blocksize > MB || MB % blocksize)
+        return ERROR_BAD_NUMBER;
+    if (ARG(BOOTSIZE) && (!bootSize || Stricmp((CONST_STRPTR)ARG(BOOTTYPE), "fat32")))
+        return ERROR_BAD_NUMBER;
+    GetPartitionTableAttrsTags(root, PTT_FIRSTUSABLE, (IPTR)&first,
+        PTT_LASTUSABLE, (IPTR)&last, TAG_DONE);
+    if (!first || last < first)
+        return ERROR_NOT_IMPLEMENTED;
+    /* Keep placement within the DosEnvec interface's addressable range. */
+    if (last >= 0xffffffffULL)
+        last = 0xfffffffeULL;
+    if (first > last)
+        return ERROR_DISK_FULL;
+    align = MB / blocksize;
+
+    ForeachNode(&root->table->list, next)
+    {
+        struct PartitionType type = { { 0 }, 0 };
+        GetPartitionAttrsTags(next, PT_TYPE, (IPTR)&type, TAG_DONE);
+        if (type.id_len == sizeof(uuid_t))
+        {
+            if (!memcmp(type.id, &bios, sizeof(bios)))
+                hasBIOS = TRUE;
+            if (!memcmp(type.id, &esp, sizeof(esp)))
+                hasESP = TRUE;
+        }
+    }
+    biosblocks = hasBIOS ? 0 : align;
+
+    /* Find the largest aligned gap; handles need not be ordered by LBA. */
+    candidate = first;
+    for (;;)
+    {
+        UQUAD start = ((candidate + align - 1) / align) * align;
+        UQUAD limit = last + 1;
+        ForeachNode(&root->table->list, next)
+        {
+            UQUAD a = 0, b = 0;
+            GetPartitionAttrsTags(next, PT_STARTBLOCK, (IPTR)&a, PT_ENDBLOCK, (IPTR)&b, TAG_DONE);
+            if (a < start && b >= start)
+                limit = start;
+            else if (a >= start && a < limit)
+                limit = a;
+        }
+        limit = (limit / align) * align;
+        if (limit > start && limit - start > high - low)
+        {
+            low = start;
+            high = limit;
+        }
+        /* Visit each partition end in increasing order, including gaps
+         * before the first partition and after the last. */
+        limit = last + 1;
+        ForeachNode(&root->table->list, next)
+        {
+            UQUAD end = 0;
+            GetPartitionAttrsTags(next, PT_ENDBLOCK, (IPTR)&end, TAG_DONE);
+            if (end >= candidate && end < limit)
+                limit = end;
+        }
+        if (limit == last + 1)
+            break;
+        candidate = limit + 1;
+    }
+    bootblocks = hasESP ? 0 : (UQUAD)bootSize * MB / blocksize;
+    available = high - low;
+    if (available <= biosblocks || bootblocks > available - biosblocks)
+        return ERROR_DISK_FULL;
+    available -= biosblocks + bootblocks;
+    sysblocks = sysSize ? (UQUAD)sysSize * MB / blocksize : available;
+    if (sysblocks > (UQUAD)MAX_SIZE(sysType) * MB / blocksize)
+        sysblocks = (UQUAD)MAX_SIZE(sysType) * MB / blocksize;
+    workblocks = ARG(MAXWORK) && sysblocks <= available ? available - sysblocks :
+        (UQUAD)workSize * MB / blocksize;
+    if (workblocks > (UQUAD)MAX_SIZE(workType) * MB / blocksize)
+        workblocks = (UQUAD)MAX_SIZE(workType) * MB / blocksize;
+    if (sysblocks < MIN_SIZE * MB / blocksize || sysblocks > available ||
+        workblocks > available - sysblocks)
+        return ERROR_DISK_FULL;
+
+    if (biosblocks)
+    {
+        ph = CreateGPTPartition(root, low, biosblocks, "BIOS boot", &bios, FALSE);
+        if (!ph)
+            return ERROR_NO_FREE_STORE;
+        low += biosblocks;
+    }
+    if (bootblocks)
+    {
+        ph = CreateGPTPartition(root, low, bootblocks,
+            ARG(BOOTNAME) ? (CONST_STRPTR)ARG(BOOTNAME) : (CONST_STRPTR)"EFI", &esp, FALSE);
+        if (!ph)
+            return ERROR_NO_FREE_STORE;
+        low += bootblocks;
+    }
+    ph = CreateGPTPartition(root, low, sysblocks, (CONST_STRPTR)ARG(SYSNAME), &sysID, TRUE);
+    if (!ph)
+        return ERROR_NO_FREE_STORE;
+    low += sysblocks;
+    if (workblocks && !CreateGPTPartition(root, low, workblocks,
+        (CONST_STRPTR)ARG(WORKNAME), &workID, FALSE))
+        return ERROR_NO_FREE_STORE;
+    return WritePartitionTable(root);
 }
 
 /*** Functions **************************************************************/
@@ -336,6 +487,24 @@ int main(void)
         }
         else
             D(bug("ok\n"));
+    }
+
+    if (error == 0 && (root->table->type == PHPTT_GPT || scheme == PHPTT_GPT))
+    {
+        if (root->table->type != PHPTT_GPT ||
+            (ARG(SCHEME) && scheme != root->table->type))
+        {
+            PutStr("*** ERROR: The requested scheme differs from the existing partition table. Use WIPE to replace it.\n");
+            error = ERROR_OBJECT_WRONG_TYPE;
+        }
+        else
+            error = CreateGPTLayout(root, sysSize, workSize, sysType, workType);
+        ClosePartitionTable(root);
+        CloseRootPartition(root);
+        if (!ARG(QUIET) && !error)
+            Printf("Partitioning completed\n");
+        PrintFault(error, NULL);
+        return error ? RETURN_FAIL : RETURN_OK;
     }
 
     if ((error == 0) && ARG(BOOTSIZE))
