@@ -129,7 +129,7 @@ static error_t vol_SearchFileSystem(uint32 *result);
 static bitmap_t *bg_InitBitmap(int32 start, int32 stop, int32 step);
 static void bg_KillBitmap(bitmap_t **bm);
 static BOOL bg_IsItemUsed(bitmap_t *bm, uint32 nr);
-int SearchInDir(uint32 diranodenr, uint32 target);
+error_t SearchInDir(uint32 diranodenr, uint32 target, int *result);
 static void AddExtraFields(struct direntry *direntry, struct extrafields *extra);
 static bool MakeMountFile(char *fname);
 static error_t BuildRootBlock_hub(void);
@@ -1567,7 +1567,9 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 		}
 
 		/* repair linkchain, remove if necessary */
-		RepairLinkChain(de, parent);
+		error = RepairLinkChain(de, parent);
+		if (IsOperationalError(error))
+			return error;
 	}
 
 	parentanodenr = parent ? parent->data->anodenr : 0;
@@ -1665,6 +1667,10 @@ static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent)
 	{
 		if ((error = RepairDirEntry(entry, &dirblk)))
 		{
+			if (IsOperationalError(error)) {
+				free(dirblk.data);
+				return error;
+			}
 			if (mode == repair)
 			{
 				redosyntax = true;
@@ -1827,8 +1833,11 @@ static error_t RepairFile(struct direntry *de, c_dirblock_t *parent)
 		}
 	}
 
-	if (extra.link)
-		RepairLinkChain(de, parent);
+	if (extra.link) {
+		error = RepairLinkChain(de, parent);
+		if (IsOperationalError(error))
+			return error;
+	}
 
 	/* bitmap gen */
 	for (anodenr = de->anode; anodenr; anodenr = filenode.next)
@@ -1861,6 +1870,7 @@ static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok)
 	struct extrafields extra;
 	canode_t linknode;
 	error_t error;
+	int type;
 
 	stats.numhardlink++;
 	if ((error = GetExtraFields(&extra, de)))
@@ -1873,8 +1883,8 @@ static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok)
 	}
 
 	/* get linknode */
-	if (!GetAnode (&linknode, de->anode, true))
-		return e_remove;
+	if ((error = ReadAnode(&linknode, de->anode, true)))
+		return IsOperationalError(error) ? error : e_remove;
 
 	/* check linknode linkdir (anode.blocknr) reference (objectdir is
 	 * checked by CheckLinkChain) */
@@ -1890,7 +1900,9 @@ static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok)
 	 * It is not checked if the link itself is infact a link, 
      * just that it exists.
 	 */
-	switch (SearchInDir(linknode.clustersize, extra.link))
+	if ((error = SearchInDir(linknode.clustersize, extra.link, &type)))
+		return error;
+	switch (type)
 	{
 		case 0:
 			addfileerror("dangling hardlink");
@@ -2073,6 +2085,7 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 	struct extrafields extra = { 0 } ;
 	canode_t linknode;
 	error_t error;
+	int type;
 	uint32 parent;
 
 	/* check extra fields */
@@ -2083,8 +2096,8 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 	if (!extra.link)
 		return e_none;
 
-	if (!GetAnode(&linknode, extra.link, false))
-		return e_anode_error;
+	if ((error = ReadAnode(&linknode, extra.link, false)))
+		return IsOperationalError(error) ? error : e_anode_error;
 
 	parent = dirblk->data->anodenr;
 	for (;;)
@@ -2098,7 +2111,9 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 		}
 
 		// check linkdir left to HardLink::Check
-		if (!SearchInDir(linknode.blocknr, linknode.nr))
+		if ((error = SearchInDir(linknode.blocknr, linknode.nr, &type)))
+			return error;
+		if (!type)
 		{
 			fixedfileerror("dangling hardlink");
 			if ((error = DeleteAnode(extra.link, linknode.nr))
@@ -2112,8 +2127,8 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 		if (!linknode.next)
 			return e_none;
 
-		if (!GetAnode (&linknode, linknode.next, false))
-			return e_anode_error;
+		if ((error = ReadAnode(&linknode, linknode.next, false)))
+			return IsOperationalError(error) ? error : e_anode_error;
 	}
 }
 
@@ -2134,42 +2149,49 @@ static error_t CheckAnode(canode_t *anode, uint32 nr, bool fix)
 /* Search file by anodenr in a directory
  * return filetype or 0 for not found
  */
-int SearchInDir(uint32 diranodenr, uint32 target)
+error_t SearchInDir(uint32 diranodenr, uint32 target, int *result)
 {
 	canode_t anode;
 	c_dirblock_t dirblk;
 	struct direntry *de;
-	error_t error = e_none;
-	int ftype;
+	error_t error, read_error = e_none;
 
-	/* Get directory and find object */
 	dirblk.data = calloc(1, SIZEOF_RESBLOCK);
-	while (error == e_none && diranodenr)
+	if (!dirblk.data)
+		return e_out_of_memory;
+	while (diranodenr)
 	{
-		if (!GetAnode(&anode, diranodenr, false))
+		error = ReadAnode(&anode, diranodenr, false);
+		if (error) {
+			if (IsOperationalError(error))
+				goto failed;
 			break;
-		
-		if ((error = volume.getblock((cachedblock_t *)&dirblk, anode.blocknr)) || aborting)
-			break;
-
-		de = FIRSTENTRY(&dirblk);
-		while (de->next)
-		{
-			if (de->anode == target)
-			{
-				ftype = de->type;
-				free (dirblk.data);
-				return ftype;
-			}
-
-			de = NEXTENTRY(de);
 		}
-
+		error = volume.getblock((cachedblock_t *)&dirblk, anode.blocknr);
+		if (aborting) {
+			error = e_aborted;
+			goto failed;
+		}
+		if (error == e_read_error)
+			read_error = error;
+		else if (IsOperationalError(error))
+			goto failed;
+		else if (!error && dirblk.data->id == DBLKID) {
+			for (de = FIRSTENTRY(&dirblk); de->next; de = NEXTENTRY(de))
+				if (de->anode == target) {
+					*result = de->type;
+					free(dirblk.data);
+					return e_none;
+				}
+		}
 		diranodenr = anode.next;
 	}
-
-	free (dirblk.data);
-	return 0;
+	error = read_error;
+	if (!error)
+		*result = 0;
+ failed:
+	free(dirblk.data);
+	return error;
 }
 
 /**************************************
