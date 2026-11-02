@@ -30,6 +30,7 @@
 
 struct RDBData {
     UBYTE rdbblock; /* the block rdb was read from */
+    LONG readerror; /* partial discovery must never be rewritten */
     BOOL newtable;  /* invalidate an earlier header only on initial save */
     struct List badblocklist;
     struct List fsheaderlist;
@@ -392,6 +393,40 @@ static void PartitionRDBFreeFileSystem(struct FileSysHandle *fsh)
     FreeMem(fn, sizeof(*fn) + fn->blockbytes - sizeof(fn->fhb));
 }
 
+/* Track one chain in constant space, without rereading blocks from the device. */
+struct RDBChain
+{
+    ULONG anchor;
+    UQUAD power;
+    UQUAD length;
+};
+
+static BOOL PartitionRDBChainBlock(struct PartitionHandle *root, struct RDBChain *chain, ULONG block)
+{
+    UQUAD blocks = (UQUAD)(root->de.de_HighCyl - root->de.de_LowCyl + 1) *
+        root->de.de_Surfaces * root->de.de_BlocksPerTrack;
+
+    if (block >= blocks)
+        return FALSE;
+    if (!chain->power)
+    {
+        chain->anchor = block;
+        chain->power = 1;
+    }
+    else
+    {
+        if (block == chain->anchor)
+            return FALSE;
+        if (++chain->length == chain->power)
+        {
+            chain->anchor = block;
+            chain->power *= 2;
+            chain->length = 0;
+        }
+    }
+    return TRUE;
+}
+
 ULONG PartitionRDBCalcFSSize
     (
         struct Library *PartitionBase,
@@ -402,11 +437,14 @@ ULONG PartitionRDBCalcFSSize
 {
 ULONG size;
 ULONG block;
+struct RDBChain chain = {0};
 
     size = 0;
     block = AROS_BE2LONG(fn->fhb.fhb_SegListBlocks);
     while (block != (ULONG)-1)
     {
+        if (!PartitionRDBChainBlock(root, &chain, block))
+            return 0;
         size++;
         if (readBlock(PartitionBase, root, block, buffer) !=0)
             return 0;
@@ -486,6 +524,7 @@ UBYTE i;
         for (i=0;i<RDB_LOCATION_LIMIT; i++)
         {
             if (readBlock(PartitionBase, root, i, buffer) != 0) {
+                FreeMem(data, sizeof(*data) + (root->de.de_SizeBlock << 2) - sizeof(data->rdb));
                 FreeVec(buffer);
                 return 1;
             }
@@ -504,9 +543,11 @@ UBYTE i;
         if (i != RDB_LOCATION_LIMIT)
         {
             ULONG block;
+            struct RDBChain chain = {0};
 
             data->rdbblock = i;
             data->newtable = FALSE;
+            data->readerror = 0;
             NEWLIST(&root->table->list);
             NEWLIST(&data->badblocklist);
             NEWLIST(&data->fsheaderlist);
@@ -530,6 +571,11 @@ UBYTE i;
             {
             struct BadBlockNode *bn;
 
+                if (!PartitionRDBChainBlock(root, &chain, block))
+                {
+                    data->readerror = ERROR_NOT_A_DOS_DISK;
+                    break;
+                }
                 if (readBlock(PartitionBase, root, block, buffer)==0)
                 {
                     bn = PartitionRDBNewBadBlock(PartitionBase, root, (struct BadBlockBlock *)buffer);
@@ -539,16 +585,28 @@ UBYTE i;
                         block = AROS_BE2LONG(bn->bbb.bbb_Next);
                     }
                     else
+                    {
+                        data->readerror = ERROR_NOT_A_DOS_DISK;
                         break;
+                    }
                 }
                 else
+                {
+                    data->readerror = ERROR_NOT_A_DOS_DISK;
                     break;
+                }
             }
+            SetMem(&chain, 0, sizeof(chain));
             /* read partition blocks */
             block = AROS_BE2LONG(data->rdb.rdb_PartitionList);
             while (block != (ULONG)-1)
             {
             struct PartitionHandle *ph;
+                if (!PartitionRDBChainBlock(root, &chain, block))
+                {
+                    data->readerror = ERROR_NOT_A_DOS_DISK;
+                    break;
+                }
                 if (readBlock(PartitionBase, root, block, buffer)==0)
                 {
                     ph = PartitionRDBNewHandle(PartitionBase, root, (struct PartitionBlock *)buffer);
@@ -558,17 +616,29 @@ UBYTE i;
                         block = AROS_BE2LONG(((struct PartitionBlock *)ph->data)->pb_Next);
                     }
                     else
+                    {
+                        data->readerror = ERROR_NOT_A_DOS_DISK;
                         break;
+                    }
                 }
                 else
+                {
+                    data->readerror = ERROR_NOT_A_DOS_DISK;
                     break;
+                }
             }
+            SetMem(&chain, 0, sizeof(chain));
             /* read filesystem blocks */
             block = AROS_BE2LONG(data->rdb.rdb_FileSysHeaderList);
             while (block != (ULONG)-1)
             {
             struct FileSysNode *fn;
 
+                if (!PartitionRDBChainBlock(root, &chain, block))
+                {
+                    data->readerror = ERROR_NOT_A_DOS_DISK;
+                    break;
+                }
                 if (readBlock(PartitionBase, root, block, buffer)==0)
                 {
                     fn = PartitionRDBNewFileSys(PartitionBase, root, (struct FileSysHeaderBlock *)buffer);
@@ -579,10 +649,16 @@ UBYTE i;
                         block = AROS_BE2LONG(fn->fhb.fhb_Next);
                     }
                     else
+                    {
+                        data->readerror = ERROR_NOT_A_DOS_DISK;
                         break;
+                    }
                 }
                 else
+                {
+                    data->readerror = ERROR_NOT_A_DOS_DISK;
                     break;
+                }
             }
             FreeVec(buffer);
             return 0;
@@ -683,6 +759,8 @@ static LONG PartitionRDBCheckWriteSize(struct PartitionHandle *root)
         AROS_BE2LONG(data->rdb.rdb_Heads) * AROS_BE2LONG(data->rdb.rdb_Sectors);
     UQUAD limit = (UQUAD)AROS_BE2LONG(data->rdb.rdb_RDBBlocksHi) + 1;
 
+    if (data->readerror)
+        return data->readerror;
     if (data->rdbblock < AROS_BE2LONG(data->rdb.rdb_RDBBlocksLo))
         return ERROR_NOT_A_DOS_DISK;
     if (limit > blocks)
