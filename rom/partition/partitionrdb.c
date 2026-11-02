@@ -70,7 +70,7 @@ static AROS_UFH4(LONG, ReadFunc,
     ULONG outsize = 0;
     UBYTE *outbuf = buffer;
 
-    while (length > 0) {
+    while (length > 0 && fsr->count < fsr->fsn->fsblocks) {
         ULONG size = length;
 
         if (size + fsr->offset > fsr->size)
