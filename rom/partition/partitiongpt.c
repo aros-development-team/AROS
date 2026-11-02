@@ -45,7 +45,7 @@ struct GPTPartitionHandle
 {
     struct PartitionHandle ph;  /* Public part                */
     ULONG entrySize;            /* Size of table entry        */
-    char name[36];              /* Name in ASCII              */
+    char name[37];              /* Name in ASCII              */
                                 /* Actual table entry follows */
 };
 
@@ -638,6 +638,8 @@ static LONG PartitionGPTSetPartitionAttrs(struct Library *PartitionBase, struct 
         {
         case PT_NAME:
             strncpy(GPTH(ph)->name, (char *)tag->ti_Data, 36);
+            GPTH(ph)->name[36] = 0;
+            memset(part->Name, 0, sizeof(part->Name));
             ToUTF16(part->Name, GPTH(ph)->name, 36);
             break;
 
