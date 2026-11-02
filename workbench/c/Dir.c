@@ -127,6 +127,9 @@ int CheckDir(BPTR lock, struct ExAllData *ead, ULONG eadSize,
              struct table *files);
 
 static
+void freeTable(struct table *table);
+
+static
 TEXT* getLine(CONST_STRPTR prompt, TEXT *buffer, LONG buflen);
 
 #define  INTERARG_TEMPLATE  "E=ENTER/S,B=BACK/S,T=TYPE/S,DEL=DELETE/S,Q=QUIT/S,C=COM/S,COMMAND"
@@ -293,6 +296,19 @@ int AddEntry(struct table *table, char *entry)
     table->entries[table->num++] = dup;
 
     return 1;
+}
+
+
+static
+void freeTable(struct table *table)
+{
+    int t;
+
+    for (t = 0; t < table->num; t++)
+    {
+        FreeVec(table->entries[t]);
+    }
+    FreeVec(table->entries);
 }
 
 
@@ -556,9 +572,7 @@ LONG doPatternDir(CONST_STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles, BOOL
         FreeVec(ap);
     }
 
-    for (int i = 0; i < files.num; i++)
-        FreeVec(files.entries[i]);
-    FreeVec(files.entries);
+    freeTable(&files);
 
     SetIoErr(ioerr);
 
@@ -668,31 +682,8 @@ LONG doDir(CONST_STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter)
 
             }
 
-            if (dirs.num != 0)
-            {
-                for (t = 0; t < dirs.num; t++)
-                {
-                    FreeVec(dirs.entries[t]);
-                }
-
-                if (dirs.entries)
-                {
-                    FreeVec(dirs.entries);
-                }
-            }
-
-            if (files.num != 0)
-            {
-                for (t = 0; t < files.num; t++)
-                {
-                    FreeVec(files.entries[t]);
-                }
-
-                if (files.entries)
-                {
-                    FreeVec(files.entries);
-                }
-            }
+            freeTable(&dirs);
+            freeTable(&files);
 
         }
         else
