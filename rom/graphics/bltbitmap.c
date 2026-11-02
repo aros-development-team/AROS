@@ -181,6 +181,21 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
             ySrc = 0;
         }
 
+        /* A negative destination is not clipped by the checks below (unsigned
+           compares) and the chunky blitters do not clip: rows/columns would land
+           in front of the destination buffer. */
+        if(xDest < 0) {
+            xSrc += -xDest;
+            xSize -= -xDest;
+            xDest = 0;
+        }
+
+        if(yDest < 0) {
+            ySrc += -yDest;
+            ySize -= -yDest;
+            yDest = 0;
+        }
+
         /* Clip width and height for source and dest */
         if(ySrc + ySize > srcBitMap->Rows) {
             ySize = srcBitMap->Rows - ySrc;
@@ -287,6 +302,21 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
             yDest += -ySrc;
             ySize -= -ySrc;
             ySrc = 0;
+        }
+
+        /* A negative destination is not clipped by the checks below (unsigned
+           compares) and the chunky blitters do not clip: rows/columns would land
+           in front of the destination buffer. */
+        if(xDest < 0) {
+            xSrc += -xDest;
+            xSize -= -xDest;
+            xDest = 0;
+        }
+
+        if(yDest < 0) {
+            ySrc += -yDest;
+            ySize -= -yDest;
+            yDest = 0;
         }
 
         /* Clip width and height for source and dest */
