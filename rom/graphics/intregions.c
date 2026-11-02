@@ -210,8 +210,8 @@ void _DisposeRegionRectangleList
      * chain runs through Rects[SIZERECTBUF-1].RR.Next, which is not
      * RR->Prev when AndRectRegion unlinked the previous chunk's last
      * slot(s): cut it there as well, or it keeps naming freed chunks and
-     * the next ClearRegion frees them again (SMP display stress 2026-11-01:
-     * input.device disposing a chunk whose pool was long gone).
+     * the next ClearRegion frees them again, disposing chunks whose pool
+     * is long gone.
      */
     if(!Counter(RR) || !RR->Prev) {
         if(RR->Prev)
