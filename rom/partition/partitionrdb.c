@@ -26,6 +26,7 @@
 #include "debug.h"
 
 #include <string.h>
+#include <stddef.h>
 
 struct RDBData {
     struct RigidDiskBlock rdb;
@@ -46,7 +47,13 @@ struct FileSysNode
     struct FileSysHeaderBlock fhb;
     struct LoadSegBlock *filesystem; /* the FS in LSEG blocks */
     ULONG fsblocks;                  /* nr of LSEG blocks for FS */
+    ULONG blockbytes;                /* size of each stored LSEG block */
 };
+
+static struct LoadSegBlock *PartitionRDBFileSysBlock(struct FileSysNode *fn, ULONG block)
+{
+    return (struct LoadSegBlock *)((UBYTE *)fn->filesystem + (IPTR)block * fn->blockbytes);
+}
 
 #define LSEGDATASIZE (123 * sizeof(ULONG))
 
@@ -76,7 +83,7 @@ static AROS_UFH4(LONG, ReadFunc,
         if (size + fsr->offset > fsr->size)
             size = fsr->size - fsr->offset;
         if (size > 0) {
-            UBYTE *inbuf = (UBYTE*)(fsr->fsn->filesystem[fsr->count].lsb_LoadData) + fsr->offset;
+            UBYTE *inbuf = (UBYTE*)PartitionRDBFileSysBlock(fsr->fsn, fsr->count)->lsb_LoadData + fsr->offset;
             CopyMem(inbuf, outbuf, size);
         }
 
@@ -152,7 +159,7 @@ static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
     /* Initialize our stream */
     fakefile.count      = 0;
     fakefile.offset     = 0;
-    fakefile.size       = LSEGDATASIZE;
+    fakefile.size       = node->blockbytes - offsetof(struct LoadSegBlock, lsb_LoadData);
     fakefile.fsn        = node;
 
     /* InternalLoadSeg((BPTR)&fakefile, BNULL, FunctionArray, NULL);
@@ -405,16 +412,19 @@ ULONG block;
     if (size)
     {
         fn->fsblocks = size;
-        fn->filesystem = AllocVec(size*512, MEMF_PUBLIC);
+        fn->blockbytes = root->de.de_SizeBlock << 2;
+        if (size > (ULONG)-1 / fn->blockbytes)
+            return;
+        fn->filesystem = AllocVec(size * fn->blockbytes, MEMF_PUBLIC);
         if (fn->filesystem)
         {
             size = 0;
             block = AROS_BE2LONG(fn->fhb.fhb_SegListBlocks);
             while (block != (ULONG)-1)
             {
-                if (readBlock(PartitionBase, root, block, &fn->filesystem[size]) !=0)
+                if (readBlock(PartitionBase, root, block, PartitionRDBFileSysBlock(fn, size)) !=0)
                     return;
-                block = AROS_BE2LONG(fn->filesystem[size].lsb_Next);
+                block = AROS_BE2LONG(PartitionRDBFileSysBlock(fn, size)->lsb_Next);
                 size++;
             }
         }
@@ -592,11 +602,13 @@ ULONG size;
         size = 0;
         while (size != fn->fsblocks)
         {
-            fn->filesystem[size].lsb_Next = (size+1) != fn->fsblocks ? AROS_LONG2BE(block+1) : (ULONG)-1;
-            fn->filesystem[size].lsb_ChkSum = 0;
-            fn->filesystem[size].lsb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)&fn->filesystem[size], AROS_LONG2BE(fn->filesystem[size].lsb_SummedLongs)));
+            struct LoadSegBlock *lsb = PartitionRDBFileSysBlock(fn, size);
+
+            lsb->lsb_Next = (size+1) != fn->fsblocks ? AROS_LONG2BE(block+1) : (ULONG)-1;
+            lsb->lsb_ChkSum = 0;
+            lsb->lsb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)lsb, AROS_LONG2BE(lsb->lsb_SummedLongs)));
 #if RDB_WRITE
-            if (writeBlock(PartitionBase, root, block++, &fn->filesystem[size]) != 0)
+            if (writeBlock(PartitionBase, root, block++, lsb) != 0)
                 return block;
 #else
             kprintf("RDB-write: block=%ld, type=LSEG\n", block);
