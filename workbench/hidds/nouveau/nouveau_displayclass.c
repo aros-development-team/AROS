@@ -812,8 +812,9 @@ OOP_Object * METHOD(NouveauDisplay, Hidd_Display, CreateObject)
     }
     else if (SD(cl)->basegallium && (msg->cl == SD(cl)->basegallium))
     {
-        /* Create the gallium 3d driver object .. */
-        object = OOP_NewObject(NULL, CLID_Hidd_Gallium_Nouveau, msg->attrList);
+        /* Create the gallium 3d driver object, for cards gallium can drive */
+        if (HIDDNouveauGalliumSupported(&SD(cl)->carddata))
+            object = OOP_NewObject(NULL, CLID_Hidd_Gallium_Nouveau, msg->attrList);
     }
     else if (SD(cl)->basei2c && (msg->cl == SD(cl)->basei2c))
     {

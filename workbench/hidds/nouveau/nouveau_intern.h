@@ -489,6 +489,9 @@ enum DMAObjects
 #define BLENDOP_ALPHA_PREMULT   3
 #define BLENDOP_ALPHA           13
 
+/* nouveau_galliumclass.c */
+BOOL HIDDNouveauGalliumSupported(struct CardData *carddata);
+
 /* nv_accel_common.c */
 BOOL HIDDNouveauAccelCommonInit(struct CardData * carddata);
 VOID HIDDNouveauAccelShutdown(struct CardData *carddata);

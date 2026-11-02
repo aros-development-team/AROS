@@ -98,6 +98,53 @@ HIDDNouveauWrapResource(struct CardData * carddata, struct pipe_resource * resou
 }
 
 
+typedef struct nouveau_screen *(*screen_create_func)(struct nouveau_device *);
+
+/* The gallium screen constructor for the card, NULL when it has none */
+static screen_create_func HIDDNouveauGalliumScreenCreate(struct CardData *carddata)
+{
+    struct nouveau_device *dev = carddata->dev;
+
+    if (!dev)
+        return NULL;
+
+    switch (dev->chipset & 0xff0)
+    {
+    case 0x030:
+    case 0x040:
+    case 0x060:
+        return nv30_screen_create;
+    case 0x050:
+    case 0x080:
+    case 0x090:
+    case 0x0a0:
+        return nv50_screen_create;
+    case 0x0c0:
+    case 0x0d0:
+    case 0x0e0:
+    case 0x0f0:
+    case 0x100:
+    case 0x110:
+    case 0x120:
+    case 0x130:
+    case 0x140:
+    case 0x160:
+    case 0x170:
+    case 0x190:
+        return nvc0_screen_create;
+    }
+    return NULL;
+}
+
+/*
+ * Whether gallium can drive the card: the display creates no gallium
+ * object otherwise, so gallium.library falls back to its software driver.
+ */
+BOOL HIDDNouveauGalliumSupported(struct CardData *carddata)
+{
+    return (HIDDNouveauGalliumScreenCreate(carddata) != NULL);
+}
+
 /* METHODS */
 OOP_Object *METHOD(NouveauGallium, Root, New)
 {
@@ -111,7 +158,7 @@ OOP_Object *METHOD(NouveauGallium, Root, New)
     if(o)
     {
         /* Check if chipset support hardware 3D via gallium */
-        if ((SD(cl)->carddata.dev == NULL) || (SD(cl)->carddata.dev->chipset < 0x30))
+        if (!HIDDNouveauGalliumSupported(&SD(cl)->carddata))
         {
             OOP_MethodID dispose_mid;
             dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
@@ -146,39 +193,13 @@ APTR METHOD(NouveauGallium, Hidd_Gallium, CreatePipeScreen)
 {
     struct HIDDGalliumNouveauData *data = OOP_INST_DATA(cl, o);
     struct nouveau_device *dev = SD(cl)->carddata.dev;
-    struct nouveau_screen *(*init)(struct nouveau_device *);
+    screen_create_func init = HIDDNouveauGalliumScreenCreate(&SD(cl)->carddata);
     struct nouveau_screen *screen = NULL;
 
-    switch (dev->chipset & 0xff0)
+    if (!init)
     {
-    case 0x030:
-    case 0x040:
-    case 0x060:
-        init = nv30_screen_create;
-        break;
-    case 0x050:
-    case 0x080:
-    case 0x090:
-    case 0x0a0:
-        init = nv50_screen_create;
-        break;
-    case 0x0c0:
-    case 0x0d0:
-    case 0x0e0:
-    case 0x0f0:
-    case 0x100:
-    case 0x110:
-    case 0x120:
-    case 0x130:
-    case 0x140:
-    case 0x160:
-    case 0x170:
-    case 0x190:
-        init = nvc0_screen_create;
-        break;
-    default:
         D(bug("%s: unknown chipset nv%02x\n", __func__,
-                 dev->chipset));
+                 dev ? dev->chipset : 0));
         return NULL;
     }
 
