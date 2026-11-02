@@ -31,6 +31,7 @@
 struct RDBData {
     struct RigidDiskBlock rdb;
     UBYTE rdbblock; /* the block rdb was read from */
+    BOOL newtable;  /* invalidate an earlier header only on initial save */
     struct List badblocklist;
     struct List fsheaderlist;
 };
@@ -475,6 +476,7 @@ UBYTE i;
             ULONG block;
 
             data->rdbblock = i;
+            data->newtable = FALSE;
             NEWLIST(&root->table->list);
             NEWLIST(&data->badblocklist);
             NEWLIST(&data->fsheaderlist);
@@ -794,6 +796,27 @@ static LONG PartitionRDBWritePartitionTable(struct Library *PartitionBase, struc
 #else
     kprintf("RDB-write: block=%ld, type=RDSK\n", data->rdbblock);
 #endif
+    /* A newly created header at block 1 must not be hidden by an old one at
+     * block 0. Preserve boot code/MBRs and do not clear the other probe blocks:
+     * they already contain the new table's PART/FSHD/LSEG records. */
+    if (data->newtable)
+    {
+        struct RigidDiskBlock *old = (struct RigidDiskBlock *)root->buffer;
+
+        error = readBlock(PartitionBase, root, 0, root->buffer);
+        if (error != 0)
+            return deviceError(error);
+        if (AROS_BE2LONG(old->rdb_ID) == IDNAME_RIGIDDISK)
+        {
+            old->rdb_ID = 0;
+#if RDB_WRITE
+            error = writeBlock(PartitionBase, root, 0, root->buffer);
+            if (error != 0)
+                return deviceError(error);
+#endif
+        }
+        data->newtable = FALSE;
+    }
     return 0;
 }
 
@@ -852,6 +875,7 @@ LONG PartitionRDBCreatePartitionTable(struct Library *PartitionBase, struct Part
         /* ControllerRevision */
 
         data->rdbblock = 1;
+        data->newtable = TRUE;
         NEWLIST(&data->badblocklist);
         NEWLIST(&data->fsheaderlist);
         NEWLIST(&ph->table->list);
