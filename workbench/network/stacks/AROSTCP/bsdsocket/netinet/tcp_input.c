@@ -542,7 +542,7 @@ tcp_prr_ack(struct tcpcb *tp, u_long delivered)
 /*
  * The IPv4 lookups do not know interfaces. When the socket they found is
  * bound to another interface than the one the segment came in by
- * (SO_BINDTODEVICE), take a socket
+ * (SO_BINDTODEVICE), or to one that went away (INP_BOUNDGONE), take a socket
  * on the port bound to this interface, else one bound to none - as
  * udp_input() does - else none. (in6_pcblookup() is given the interface.)
  */
@@ -552,7 +552,8 @@ tcp_boundif_pcb(const struct tcpiphdr *ti, const struct ifnet *rcvif)
     struct inpcb *t, *unbound = NULL;
 
     for(t = tcb.lh_first; t != NULL; t = t->inp_list.le_next) {
-        if(in_pcbisipv6(t) || t->inp_lport != ti->ti_dport)
+        if(in_pcbisipv6(t) || t->inp_lport != ti->ti_dport ||
+                (t->inp_flags & INP_BOUNDGONE))
             continue;
         if(t->inp_laddr.s_addr != INADDR_ANY &&
                 t->inp_laddr.s_addr != ti->ti_dst.s_addr)
@@ -807,7 +808,8 @@ findpcb:
         inp = in_pcblookup(&tcb, ti->ti_src, ti->ti_sport,
                            ti->ti_dst, ti->ti_dport, INPLOOKUP_WILDCARD);
     }
-    if(inp != NULL && inp->inp_boundif && inp->inp_boundif != m->m_pkthdr.rcvif)
+    if(inp != NULL && ((inp->inp_flags & INP_BOUNDGONE) ||
+                       (inp->inp_boundif && inp->inp_boundif != m->m_pkthdr.rcvif)))
         inp = tcp_boundif_pcb(ti, m->m_pkthdr.rcvif);
     }
 

@@ -662,7 +662,13 @@ socket's zone is `inp_boundif`, the interface `SO_BINDTODEVICE` also sets (on IP
 IPv4 ones; `ENXIO` for an interface no one has, an empty name removes it). A `sendto()` to a
 link-scope destination with no zone goes to the socket's zone, and one with another zone is refused
 with `EINVAL`, as for `connect()`. A socket bound to an interface only hears what arrives there,
-unicast (`in6_pcblookup()` given the receiving interface) as multicast. `in6_pcbbind()` accepts
+unicast (`in6_pcblookup()` given the receiving interface) as multicast, a TCP listener of either
+family as UDP (`tcp_input()`: for IPv4, `tcp_boundif_pcb()` when the lookup found one bound
+elsewhere). When an interface goes
+away (`if_detach()`), no socket goes on naming its `struct ifnet`: one bound to it, either family,
+is left bound to it gone (`INP_BOUNDGONE`, `in_pcbifgone()`) - what it sends fails with `ENXIO`, it
+hears nothing, until it is bound again - a TCP connection on it is closed with `ENXIO`, without a
+reset (`tcp_ifgone()`), and an `IP_MULTICAST_IF`/`IPV6_MULTICAST_IF` naming it is forgotten. `in6_pcbbind()` accepts
 only one of our addresses (or a group, or `::`), a link-scope one only in its zone, and sets the
 socket's zone; `in6_pcbconnect()` takes the zone from the peer's `sin6_scope_id` (`ENXIO` if no
 interface has that index, `EINVAL` if the socket is in another zone) and picks the source on that

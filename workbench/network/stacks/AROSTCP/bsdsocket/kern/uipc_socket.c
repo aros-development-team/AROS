@@ -1188,6 +1188,7 @@ struct mbuf *m0;
                 goto bad;
             }
             sotoinpcb(so)->inp_boundif = ifp;
+            sotoinpcb(so)->inp_flags &= ~INP_BOUNDGONE;
             break;
         }
 

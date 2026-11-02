@@ -130,6 +130,12 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     int oflags;
 
     bzero(&osrc, sizeof(osrc));
+    if(inp->inp_flags & INP_BOUNDGONE) {
+        if(control)
+            m_freem(control);
+        error = ENXIO;                  /* its interface went away */
+        goto release;
+    }
     if(control) {
         struct cmsghdr *cm = mtod(control, struct cmsghdr *);
         int left = control->m_len;
@@ -506,7 +512,8 @@ udp6_input(void *args, ...)
             if(inp->inp_lport != uh->uh_dport || !in_pcbisipv6(inp))
                 continue;
             /* a socket bound to an interface only hears that interface */
-            if(inp->inp_boundif && inp->inp_boundif != m->m_pkthdr.rcvif)
+            if((inp->inp_boundif && inp->inp_boundif != m->m_pkthdr.rcvif) ||
+                    (inp->inp_flags & INP_BOUNDGONE))
                 continue;
             if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6) &&
                     !IN6_ARE_ADDR_EQUAL(&inp->inp_laddr6, &dst6.sin6_addr))

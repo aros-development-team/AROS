@@ -412,7 +412,8 @@ in6_pcblookup(struct inpcbhead *head,
             continue;
         /* with the interface the packet came in by: a socket bound to
          * another one (SO_BINDTODEVICE, its zone) does not hear it */
-        if(ifp != NULL && inp->inp_boundif && inp->inp_boundif != ifp)
+        if(ifp != NULL && ((inp->inp_boundif && inp->inp_boundif != ifp) ||
+                           (inp->inp_flags & INP_BOUNDGONE)))
             continue;
 
         int wildcard = 0;

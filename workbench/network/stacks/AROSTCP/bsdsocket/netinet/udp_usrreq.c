@@ -324,7 +324,8 @@ void udp_input(void *args, ...)
         inp = in_pcblookup(&udb, ip->ip_src, uh->uh_sport, ip->ip_dst,
                            uh->uh_dport, INPLOOKUP_WILDCARD);
     }
-    if(inp != NULL && inp->inp_boundif && inp->inp_boundif != m->m_pkthdr.rcvif) {
+    if(inp != NULL && ((inp->inp_flags & INP_BOUNDGONE) ||
+                       (inp->inp_boundif && inp->inp_boundif != m->m_pkthdr.rcvif))) {
         /*
          * The best match is bound to another interface (SO_BINDTODEVICE):
          * take the socket on this port that listens on the interface the
@@ -341,6 +342,8 @@ void udp_input(void *args, ...)
             if(t->inp_faddr.s_addr != INADDR_ANY &&
                     (t->inp_faddr.s_addr != ip->ip_src.s_addr ||
                      t->inp_fport != uh->uh_sport))
+                continue;
+            if(t->inp_flags & INP_BOUNDGONE)
                 continue;
             if(t->inp_boundif == m->m_pkthdr.rcvif)
                 break;
@@ -447,6 +450,12 @@ udp_output(void *arg, ...)
 
     len = m->m_pkthdr.len;
     tos = inp->inp_ip.ip_tos;
+    if(inp->inp_flags & INP_BOUNDGONE) {
+        if(control)
+            m_freem(control);
+        error = ENXIO;                  /* its interface went away */
+        goto release;
+    }
 
     /*
      * Ancillary data: IP_TOS for this datagram (a byte, as FreeBSD, or an
