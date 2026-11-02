@@ -551,14 +551,24 @@ error_t vol_GetRawBlock(cachedblock_t *blok, ULONG bloknr)
 /*
  * Repair routines need the contents of an overwritten metadata block so they
  * can take their wrong-ID recovery path.  A syntactically invalid metadata
- * block is therefore readable here; actual I/O and bounds errors still fail.
+ * block is therefore readable here. During syntax repair, an unreadable
+ * primary also takes the backup-search path; later passes retain the error.
  */
 static error_t GetRepairBlock(cachedblock_t *block, ULONG blocknr)
 {
 	error_t error = volume.getblock(block, blocknr);
 
 	if (error == e_syntax_error)
-		return vol_GetRawBlock(block, blocknr);
+		error = vol_GetRawBlock(block, blocknr);
+	if (error == e_read_error && mode == repair && ss.stage == syntax)
+	{
+		/* Invalid ID forces the caller to search for a readable backup.
+		 * This placeholder must never be treated as recovered metadata. */
+		memset(block->data, 0, SIZEOF_RESBLOCK);
+		block->blocknr = blocknr;
+		block->mode = check;
+		return e_none;
+	}
 	return error;
 }
 
@@ -657,6 +667,7 @@ static error_t GetRootBlock(void)
 	error_t error = e_none;
 	uint32 bloknr;
 	int okuser;
+	bool unreadable = false;
 
 	enterblock(ROOTBLOCK);
 	volume.showmsg("Checking rootblock\n");
@@ -675,13 +686,23 @@ static error_t GetRootBlock(void)
 		PFS3_METADATA_ROOT)))
 	{
 		adderror("rootblock could not be loaded");
-		return error;
+		if (error != e_read_error || mode != repair)
+			return error;
+		unreadable = true;
+		if (!volume.askuser("The rootblock could not be read.\n"
+			"Try recovery from other metadata?\n"
+			"Backups may be obsolete and recovery may lose files.",
+			"Continue", "Abort"))
+			return e_read_error;
+		/* Offer the normal root search/reconstruction choices. */
+		memset(rbl, 0, MAXRESBLOCKSIZE);
 	}
 
 	// check rootblock type
 	if (!IsRootBlock(rbl))
 	{
-		adderror("not an AFS, PFS-II or PFS-III disk");
+		if (!unreadable)
+			adderror("not an AFS, PFS-II or PFS-III disk");
 		okuser = volume.askuser("Rootblock not found.\n"
 			"Select ok to search for misplaced rootblock.", "ok", "cancel");
 
@@ -690,6 +711,11 @@ static error_t GetRootBlock(void)
 			return error;
 		if (okuser && bloknr)
 		{
+			if (unreadable && !volume.askuser(
+				"A readable rootblock was found. It may be obsolete.\n"
+				"Use this candidate and its partition layout?",
+				"Use", "Abort"))
+				return e_aborted;
 			volume.showmsg("\nRootblock found. Repartitioning .. \n");
 			if ((error = Repartition(bloknr)))
 				return error;
@@ -2866,7 +2892,7 @@ static error_t RepairMainBitmap(void)
 	c_bitmapblock_t bmb;
 	bitmap_t *gbm;
 	error_t error = e_none;
-	bool dirty;
+	bool dirty = false;
 	bitmapblock_t *buffer;
 	cachedblock_t *built;
 	uint32 nuba=0, ubna=0;
