@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <devices/rawkeycodes.h>
@@ -37,11 +37,410 @@ enum numeric_flags
     NUMERIC_CHECKALLSIZES = (1 << 3),
 };
 
+/****** Numeric.mui/MUIC_Numeric ************
+*
+*   NAME
+*       MUIC_Numeric
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       Maintain a signed LONG value, bounds, default and formatting policy for
+*       numeric subclasses. Defaults are Min zero, Max 100, Default zero, Format
+*       %ld and all flags FALSE. Construction uses the explicit Value or
+*       Default, clamped after all initialization tags. Keep Min no greater than
+*       Max and all arithmetic representable; inverted bounds and signed
+*       overflow are not rejected.
+*       Format is borrowed; keep it valid until replacement or disposal.
+*       Stringify returns a per-instance buffer overwritten by the next call.
+*       Numeric owns no separately allocated formatter string.
+*
+*   METHODS
+*       Setup calls Area then registers a raw-key handler; Cleanup removes it
+*       before Area Cleanup. Keyboard arrows change by one, page/word keys by
+*       ten (one when the range span is below ten), endpoint keys select bounds,
+*       Toggle selects Default, and Press/Release are consumed. Reverse and axis
+*       reversal flags affect direction. WordLeft/WordRight use the vertical
+*       reversal branch in this implementation. Wheel up/down inside the object
+*       change by one and consult only Reverse. HandleEvent does not delegate to
+*       Area; when muikey is NONE it dereferences imsg without a NULL check.
+*       Export stores one LONG under nonzero ObjectID; Import reads a matching
+*       LONG without checking stored length and invokes the ordinary Value
+*       setter. Both return zero, ignore delegated results and do not call Area
+*       serialization.
+*
+*   NOTES
+*       The setter processes tags in order. Each bound change immediately clamps
+*       Value; a later bound can therefore change the effect of earlier Value
+*       tags. Value tags are rewritten to the clamped value, or TAG_IGNORE if
+*       unchanged. A value change caused only by Min/Max does not synthesize a
+*       Value notification.
+*       Changed Min, Max or Format pointer requests parent Group
+*       InitChange/ExitChange before superclass setting, then redraws. Mutating
+*       a format string in place does not change that pointer. CheckAllSizes and
+*       reversal changes alone do not request redraw or parent relayout. Numeric
+*       stores CheckAllSizes but does not calculate rendered sizes itself.
+*
+*/
+/****** Numeric.mui/MUIA_Numeric_Value ************
+*
+*   NAME
+*       MUIA_Numeric_Value
+*
+*   FUNCTION
+*       Store the current value, clamped to the current Min/Max.
+*
+*   INPUTS
+*       LONG; initialize, set and get.
+*
+*   NOTES
+*       Construction defaults to Default. Runtime setter rewrites the tag to its
+*       clamp result, or TAG_IGNORE when unchanged. Tag storage must be
+*       writable. Bound changes clamp internally without synthesizing a Value
+*       tag. Getter returns stored state; arithmetic and inverted bounds are not
+*       validated.
+*
+*/
+/****** Numeric.mui/MUIA_Numeric_Min ************
+*
+*   NAME
+*       MUIA_Numeric_Min
+*
+*   FUNCTION
+*       Store the lower bound. Default zero.
+*
+*   INPUTS
+*       LONG; initialize, set and get.
+*
+*   NOTES
+*       Keep Min <= Max. Construction clamps Value after parsing all tags;
+*       runtime setting clamps immediately at this tag. Changed bounds request
+*       parent relayout and redraw, but do not directly invoke a subclass size
+*       calculator. Getter returns stored bound; no range-error status exists.
+*
+*/
+/****** Numeric.mui/MUIA_Numeric_Max ************
+*
+*   NAME
+*       MUIA_Numeric_Max
+*
+*   FUNCTION
+*       Store the upper bound. Default 100.
+*
+*   INPUTS
+*       LONG; initialize, set and get.
+*
+*   NOTES
+*       Keep Min <= Max. Construction clamps Value after parsing all tags;
+*       runtime setting clamps immediately at this tag. Changed bounds request
+*       parent relayout and redraw, but do not directly invoke a subclass size
+*       calculator. Getter returns stored bound; no range-error status exists.
+*
+*/
+/****** Numeric.mui/MUIA_Numeric_Default ************
+*
+*   NAME
+*       MUIA_Numeric_Default
+*
+*   FUNCTION
+*       Store the value used by SetDefault and by construction without explicit
+*       Value. Default zero.
+*
+*   INPUTS
+*       LONG; initialize, set and get.
+*
+*   NOTES
+*       Stored without clamping; SetDefault clamps when applying it. Setting
+*       Default alone does not change Value. Getter can therefore return a value
+*       outside current bounds.
+*
+*/
+/****** Numeric.mui/MUIA_Numeric_Format ************
+*
+*   NAME
+*       MUIA_Numeric_Format
+*
+*   FUNCTION
+*       Choose the snprintf format used by Stringify. Default %ld.
+*
+*   INPUTS
+*       Borrowed string pointer; initialize, set and get.
+*
+*   NOTES
+*       Supply a non-NULL valid format accepting exactly the supplied long
+*       argument, such as %ld. The string is not copied or freed. A changed
+*       pointer requests parent relayout and redraw; in-place edits do not.
+*       Getter returns the borrowed pointer. Formatting is bounded, but
+*       incompatible conversions or missing arguments are not validated.
+*
+*/
+/****** Numeric.mui/MUIA_Numeric_CheckAllSizes ************
+*
+*   NAME
+*       MUIA_Numeric_CheckAllSizes
+*
+*   FUNCTION
+*       Store a size-checking policy flag. Default FALSE.
+*
+*   INPUTS
+*       BOOL; initialize, set and get.
+*
+*   NOTES
+*       Getter normalizes to TRUE/FALSE. Numeric itself does not consume the
+*       flag for size calculation. The AROS Slider implementation scans its
+*       selected range regardless of this flag; changing it alone does not
+*       request relayout.
+*
+*/
+/****** Numeric.mui/MUIA_Numeric_Reverse ************
+*
+*   NAME
+*       MUIA_Numeric_Reverse
+*
+*   FUNCTION
+*       Reverse scale mapping and Numeric input direction. Default FALSE.
+*
+*   INPUTS
+*       BOOL; initialize, set and get.
+*
+*   NOTES
+*       Getter normalizes the flag. Direct Increase/Decrease retain their
+*       arithmetic meaning. Reversal alone does not redraw or invalidate Slider
+*       cached position; arrange a subsequent valid redraw/recalculation when
+*       changing it live.
+*
+*/
+/****** Numeric.mui/MUIA_Numeric_RevLeftRight ************
+*
+*   NAME
+*       MUIA_Numeric_RevLeftRight
+*
+*   FUNCTION
+*       Reverse the horizontal branch of Numeric key handling. Default FALSE.
+*
+*   INPUTS
+*       BOOL; initialize, set and get.
+*
+*   NOTES
+*       Combines with Reverse, so two reversals cancel. Left/Right and endpoint
+*       keys use the horizontal branch; Up/Down, page and word keys use the
+*       vertical branch. Wheel handling ignores these axis flags. Scale methods
+*       also ignore them. Getter returns normalized state; setting alone does
+*       not redraw.
+*
+*/
+/****** Numeric.mui/MUIA_Numeric_RevUpDown ************
+*
+*   NAME
+*       MUIA_Numeric_RevUpDown
+*
+*   FUNCTION
+*       Reverse the vertical branch of Numeric key handling. Default FALSE.
+*
+*   INPUTS
+*       BOOL; initialize, set and get.
+*
+*   NOTES
+*       Combines with Reverse, so two reversals cancel. Left/Right and endpoint
+*       keys use the horizontal branch; Up/Down, page and word keys use the
+*       vertical branch. Wheel handling ignores these axis flags. Scale methods
+*       also ignore them. Getter returns normalized state; setting alone does
+*       not redraw.
+*
+*/
+/****** Numeric.mui/MUIM_Numeric_Increase ************
+*
+*   NAME
+*       MUIM_Numeric_Increase
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Numeric_Increase, amount);
+*
+*   FUNCTION
+*       Compute Value + amount, clamp to Min/Max and set Value if changed.
+*
+*   INPUTS
+*       amount - LONG; signed arithmetic must remain representable.
+*
+*   RESULT
+*       Always one; setter status is ignored.
+*
+*   NOTES
+*       Negative amounts reverse the arithmetic direction. Reverse flags do not
+*       alter this method. Ordinary Value notifications remain enabled. Overflow
+*       happens before clamping and is not prevented by it.
+*
+*/
+/****** Numeric.mui/MUIM_Numeric_Decrease ************
+*
+*   NAME
+*       MUIM_Numeric_Decrease
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Numeric_Decrease, amount);
+*
+*   FUNCTION
+*       Compute Value - amount, clamp to Min/Max and set Value if changed.
+*
+*   INPUTS
+*       amount - LONG; signed arithmetic must remain representable.
+*
+*   RESULT
+*       Always one; setter status is ignored.
+*
+*   NOTES
+*       Negative amounts reverse the arithmetic direction. Reverse flags do not
+*       alter this method. Ordinary Value notifications remain enabled. Overflow
+*       happens before clamping and is not prevented by it.
+*
+*/
+/****** Numeric.mui/MUIM_Numeric_SetDefault ************
+*
+*   NAME
+*       MUIM_Numeric_SetDefault
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Numeric_SetDefault);
+*
+*   FUNCTION
+*       Apply Default through the ordinary Value setter after clamping to
+*       Min/Max.
+*
+*   INPUTS
+*       No arguments beyond MethodID. Valid ordered bounds required.
+*
+*   RESULT
+*       Always zero; setter result is ignored.
+*
+*   NOTES
+*       Notifications follow Value setter behavior, including suppression when
+*       unchanged. Default itself remains unclamped.
+*
+*/
+/****** Numeric.mui/MUIM_Numeric_Stringify ************
+*
+*   NAME
+*       MUIM_Numeric_Stringify
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Numeric_Stringify, value);
+*
+*   FUNCTION
+*       Format the supplied value using Format into a per-instance character
+*       buffer.
+*
+*   INPUTS
+*       value - LONG; not clamped to Numeric bounds. Format must accept the
+*       single long argument.
+*
+*   RESULT
+*       Borrowed string pointer, returned as IPTR.
+*
+*   NOTES
+*       snprintf receives size 49, so at most 48 output characters plus
+*       terminator are produced; byte 49 is also cleared. Formatting status is
+*       ignored. Copy before another Stringify on the same object, and before
+*       disposal. Do not free the returned pointer. Subclasses may override this
+*       conversion.
+*
+*/
+/****** Numeric.mui/MUIM_Numeric_ScaleToValue ************
+*
+*   NAME
+*       MUIM_Numeric_ScaleToValue
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Numeric_ScaleToValue, scalemin,
+*       scalemax, scale);
+*
+*   FUNCTION
+*       Calculate a numeric value from an external scale, swapping numeric
+*       endpoints when Reverse is set.
+*
+*   INPUTS
+*       scalemin, scalemax, scale - LONG values. Use ordered endpoints and
+*       representable differences/products.
+*
+*   RESULT
+*       Calculated LONG carried as IPTR; Value is not changed.
+*
+*   NOTES
+*       The implementation clamps (scale - scalemin) between scalemin and
+*       scalemax, then multiplies by the numeric span, divides by the scale span
+*       when nonzero, and adds the numeric start. This is not a correct general
+*       normalization for nonzero scalemin; a zero-based scale avoids that
+*       particular defect. A zero scale span skips division, not the other
+*       arithmetic. There is no final numeric clamp or overflow protection.
+*
+*/
+/****** Numeric.mui/MUIM_Numeric_ValueToScale ************
+*
+*   NAME
+*       MUIM_Numeric_ValueToScale
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Numeric_ValueToScale, scalemin,
+*       scalemax);
+*
+*   FUNCTION
+*       Map the stored Value to an external scale without changing Value.
+*
+*   INPUTS
+*       scalemin, scalemax - Ordered LONG output bounds; differences/products
+*       must be representable.
+*
+*   RESULT
+*       Calculated scale position, clamped to the supplied scale bounds.
+*
+*   NOTES
+*       Reverse swaps output endpoints. For nonzero numeric span, calculation
+*       adds half the numeric span before integer division; reversed/negative
+*       cases are not guaranteed symmetric rounding. Equal numeric bounds return
+*       the selected starting endpoint. No overflow checking. Use
+*       ValueToScaleExt to map a value other than stored Value.
+*
+*/
+/****** Numeric.mui/MUIM_Numeric_ValueToScaleExt ************
+*
+*   NAME
+*       MUIM_Numeric_ValueToScaleExt
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Numeric_ValueToScaleExt, value,
+*       scalemin, scalemax);
+*
+*   FUNCTION
+*       Map an explicit value to an external scale without changing Value.
+*
+*   INPUTS
+*       value - LONG, clamped to Numeric bounds.
+*       scalemin, scalemax - Ordered LONG output bounds; differences/products
+*       must be representable.
+*
+*   RESULT
+*       Calculated scale position, clamped to the supplied scale bounds.
+*
+*   NOTES
+*       Reverse swaps output endpoints. For nonzero numeric span, calculation
+*       adds half the numeric span before integer division; reversed/negative
+*       cases are not guaranteed symmetric rounding. Equal numeric bounds return
+*       the selected starting endpoint. No overflow checking. This is the public
+*       Zune extension declared in numeric.h.
+*
+*/
+
 extern struct Library *MUIMasterBase;
 
 /**************************************************************************
  OM_NEW
 **************************************************************************/
+/*
+ * Construct Area, initialize numeric defaults and borrow Format. Parse tags
+ * then clamp explicit Value or Default once against final bounds. Return
+ * object or zero on Area failure. Requires ordered bounds and valid
+ * borrowed format; no extra allocation or format validation.
+ */
 IPTR Numeric__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_NumericData *data;
@@ -107,6 +506,14 @@ IPTR Numeric__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
+/*
+ * Apply tags sequentially, clamping at each bound/Value change. Rewrite
+ * Value data or suppress unchanged tag. Changed bounds/format pointer
+ * request parent change cycle; superclass handles notifications, then
+ * redraw if value or dimensions changed. Return superclass status. Writable
+ * tags, valid parent and ordered bounds required; no synthetic Value tag
+ * for bound-induced changes.
+ */
 IPTR Numeric__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
@@ -198,6 +605,11 @@ IPTR Numeric__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
+/*
+ * Write stored numeric fields or normalized flag values through IPTR
+ * storage, returning TRUE; otherwise delegate to Area. Format pointer is
+ * borrowed; getter transfers no ownership.
+ */
 IPTR Numeric__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
@@ -249,6 +661,11 @@ IPTR Numeric__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
+/*
+ * Set up Area then register raw-key handler with this Numeric class. Return
+ * FALSE on Area failure, otherwise TRUE ignoring registration result.
+ * Requires connected window and paired Cleanup.
+ */
 IPTR Numeric__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
@@ -270,6 +687,10 @@ IPTR Numeric__MUIM_Setup(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
+/*
+ * Remove Numeric raw-key handler then return Area Cleanup result. Requires
+ * matching Setup and live window; no separate format ownership.
+ */
 IPTR Numeric__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
@@ -282,6 +703,13 @@ IPTR Numeric__MUIM_Cleanup(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
+/*
+ * Handle Numeric keys and wheel changes using stored bounds/reversal flags,
+ * returning Eat for recognized events or zero otherwise. No Area
+ * delegation. When muikey is NONE, imsg must be non-NULL; wheel hit testing
+ * requires live geometry. Arithmetic can overflow before clamping; word
+ * keys use vertical reversal branch.
+ */
 IPTR Numeric__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUIP_HandleEvent *msg)
 {
@@ -412,6 +840,13 @@ IPTR Numeric__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Numeric_Decrease
 **************************************************************************/
+/*
+ * Implement the public Numeric Decrease contract above with the ABI-defined
+ * message. Requires ordered numeric/scale bounds and representable
+ * arithmetic. No resource ownership is transferred. Return and clamping
+ * semantics are specified in that method contract; delegated setter status
+ * is not propagated.
+ */
 IPTR Numeric__MUIM_Decrease(struct IClass *cl, Object *obj,
     struct MUIP_Numeric_Decrease *msg)
 {
@@ -426,6 +861,13 @@ IPTR Numeric__MUIM_Decrease(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Numeric_Increase
 **************************************************************************/
+/*
+ * Implement the public Numeric Increase contract above with the ABI-defined
+ * message. Requires ordered numeric/scale bounds and representable
+ * arithmetic. No resource ownership is transferred. Return and clamping
+ * semantics are specified in that method contract; delegated setter status
+ * is not propagated.
+ */
 IPTR Numeric__MUIM_Increase(struct IClass *cl, Object *obj,
     struct MUIP_Numeric_Increase *msg)
 {
@@ -442,6 +884,13 @@ IPTR Numeric__MUIM_Increase(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Numeric_ScaleToValue
 **************************************************************************/
+/*
+ * Implement the public Numeric ScaleToValue contract above with the ABI-
+ * defined message. Requires ordered numeric/scale bounds and representable
+ * arithmetic. No resource ownership is transferred. Return and clamping
+ * semantics are specified in that method contract; delegated setter status
+ * is not propagated.
+ */
 IPTR Numeric__MUIM_ScaleToValue(struct IClass *cl, Object *obj,
     struct MUIP_Numeric_ScaleToValue *msg)
 {
@@ -470,6 +919,13 @@ IPTR Numeric__MUIM_ScaleToValue(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Numeric_SetDefault
 **************************************************************************/
+/*
+ * Implement the public Numeric SetDefault contract above with the ABI-
+ * defined message. Requires ordered numeric/scale bounds and representable
+ * arithmetic. No resource ownership is transferred. Return and clamping
+ * semantics are specified in that method contract; delegated setter status
+ * is not propagated.
+ */
 IPTR Numeric__MUIM_SetDefault(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
@@ -483,6 +939,12 @@ IPTR Numeric__MUIM_SetDefault(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  MUIM_Numeric_Stringify
 **************************************************************************/
+/*
+ * Implement the public Numeric Stringify contract above with the ABI-
+ * defined message. Requires ordered numeric/scale bounds and representable
+ * arithmetic. Returns a borrowed per-instance buffer overwritten on the
+ * next call; do not free it.
+ */
 IPTR Numeric__MUIM_Stringify(struct IClass *cl, Object *obj,
     struct MUIP_Numeric_Stringify *msg)
 {
@@ -497,6 +959,13 @@ IPTR Numeric__MUIM_Stringify(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Numeric_ValueToScale
 **************************************************************************/
+/*
+ * Implement the public Numeric ValueToScale contract above with the ABI-
+ * defined message. Requires ordered numeric/scale bounds and representable
+ * arithmetic. No resource ownership is transferred. Return and clamping
+ * semantics are specified in that method contract; delegated setter status
+ * is not propagated.
+ */
 IPTR Numeric__MUIM_ValueToScale(struct IClass *cl, Object *obj,
     struct MUIP_Numeric_ValueToScale *msg)
 {
@@ -526,6 +995,13 @@ IPTR Numeric__MUIM_ValueToScale(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Numeric_ValueToScaleExt
 **************************************************************************/
+/*
+ * Implement the public Numeric ValueToScaleExt contract above with the ABI-
+ * defined message. Requires ordered numeric/scale bounds and representable
+ * arithmetic. No resource ownership is transferred. Return and clamping
+ * semantics are specified in that method contract; delegated setter status
+ * is not propagated.
+ */
 IPTR Numeric__MUIM_ValueToScaleExt(struct IClass *cl, Object *obj,
     struct MUIP_Numeric_ValueToScaleExt *msg)
 {
@@ -557,6 +1033,11 @@ IPTR Numeric__MUIM_ValueToScaleExt(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Export - to export an object's "contents" to a dataspace object.
 **************************************************************************/
+/*
+ * For nonzero ObjectID, pass a stack LONG Value to Dataspace_Add, which
+ * copies it. Ignore result and return zero. Requires valid borrowed
+ * Dataspace; no Area export and no ownership transfer of stack storage.
+ */
 IPTR Numeric__MUIM_Export(struct IClass *cl, Object *obj,
     struct MUIP_Export *msg)
 {
@@ -575,6 +1056,11 @@ IPTR Numeric__MUIM_Export(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Import - to import an object's "contents" from a dataspace object.
 **************************************************************************/
+/*
+ * For nonzero ObjectID, find borrowed Dataspace bytes and read a LONG
+ * without size validation, then set Value normally. Return zero and ignore
+ * setter status. Requires matching stored representation; no Area import.
+ */
 IPTR Numeric__MUIM_Import(struct IClass *cl, Object *obj,
     struct MUIP_Import *msg)
 {
@@ -594,6 +1080,11 @@ IPTR Numeric__MUIM_Import(struct IClass *cl, Object *obj,
 }
 
 
+/*
+ * Dispatch numeric methods, lifecycle, accessors and serialization;
+ * delegate others to Area. Return chosen handler result. Requires ABI-
+ * correct message and live object except construction.
+ */
 BOOPSI_DISPATCHER(IPTR, Numeric_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
