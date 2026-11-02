@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Send a message to a port.
 */
@@ -71,8 +71,8 @@
  *
  * Messages may be sent from interrupts, so the list is protected with
  * Disable() for the local core and a spinlock on SMP. Two SMP rules
- * (heavy4c-04, 2026-11-01: input.device faulted in AddTail on a port the
- * waiter had already freed):
+ * (a waiter that frees its port while the replier is still linking the
+ * message leaves the replier faulting in AddTail):
  *  - the node type (NT_MESSAGE / NT_REPLYMSG) is published AFTER the node
  *    is linked, under the lock. WaitIO()/CheckIO() test ln_Type without
  *    the lock; a waiter woken early (DoSyncAction shares its port's signal
