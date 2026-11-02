@@ -882,6 +882,20 @@ static LONG PartitionRDBCheckWriteSize(struct PartitionHandle *root)
                 end--; /* its head remains before the RDB header */
         }
     }
+    /* Replacement sectors contain live disk data, not free metadata space. */
+    for (bn = (struct BadBlockNode *)data->badblocklist.lh_Head;
+         bn->ln.ln_Succ; bn = (struct BadBlockNode *)bn->ln.ln_Succ)
+    {
+        ULONG *words = (ULONG *)&bn->bbb;
+        ULONG count = AROS_BE2LONG(bn->bbb.bbb_SummedLongs);
+
+        for (i = 7; i < count; i += 2)
+        {
+            ULONG good = AROS_BE2LONG(words[i]);
+            if ((good || words[i - 1]) && good >= data->rdbblock && good < end)
+                return ERROR_DISK_FULL;
+        }
+    }
     return end > limit ? ERROR_DISK_FULL : 0;
 }
 
