@@ -78,7 +78,7 @@ nd6_dad_announce(struct in6_ifaddr *ia)
  * ------------------------------------------------------------------ */
 void
 nd6_ns_output(struct ifnet *ifp, struct in6_addr *src,
-              struct in6_addr *tgt, struct llinfo_nd6 *ln, int dad)
+              struct in6_addr *tgt, const struct llinfo_nd6 *ln, int dad)
 {
     struct mbuf *m;
     struct ip6_hdr *ip6;
@@ -127,15 +127,23 @@ nd6_ns_output(struct ifnet *ifp, struct in6_addr *src,
     ip6->ip6_hlim = 255;			/* required by RFC 4861 */
     ip6->ip6_plen = htons(icmp6len + optlen);
 
-    /* destination: solicited-node multicast ff02::1:ffXX:XXXX */
-    bzero(&ip6->ip6_dst, sizeof(ip6->ip6_dst));
-    ip6->ip6_dst.s6_addr[0]  = 0xff;
-    ip6->ip6_dst.s6_addr[1]  = 0x02;
-    ip6->ip6_dst.s6_addr[11] = 0x01;
-    ip6->ip6_dst.s6_addr[12] = 0xff;
-    ip6->ip6_dst.s6_addr[13] = tgt->s6_addr[13];
-    ip6->ip6_dst.s6_addr[14] = tgt->s6_addr[14];
-    ip6->ip6_dst.s6_addr[15] = tgt->s6_addr[15];
+    /*
+     * destination: the solicited-node group ff02::1:ffXX:XXXX, to resolve
+     * an address; the neighbour itself, at the link-layer address cached,
+     * to probe its reachability (RFC 4861 section 7.3.3)
+     */
+    if(ln != NULL && ln->ln_state == ND6_LLINFO_PROBE && !dad) {
+        ip6->ip6_dst = *tgt;
+    } else {
+        bzero(&ip6->ip6_dst, sizeof(ip6->ip6_dst));
+        ip6->ip6_dst.s6_addr[0]  = 0xff;
+        ip6->ip6_dst.s6_addr[1]  = 0x02;
+        ip6->ip6_dst.s6_addr[11] = 0x01;
+        ip6->ip6_dst.s6_addr[12] = 0xff;
+        ip6->ip6_dst.s6_addr[13] = tgt->s6_addr[13];
+        ip6->ip6_dst.s6_addr[14] = tgt->s6_addr[14];
+        ip6->ip6_dst.s6_addr[15] = tgt->s6_addr[15];
+    }
 
     /* source address */
     if(dad) {

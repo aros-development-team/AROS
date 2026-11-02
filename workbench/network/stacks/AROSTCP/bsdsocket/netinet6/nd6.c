@@ -33,6 +33,7 @@
 #include <sys/mbuf.h>
 #include <sys/socket.h>
 #include <sys/socketvar.h>
+#include <sys/protosw.h>
 #include <sys/errno.h>
 #include <sys/kernel.h>
 #include <sys/synch.h>
@@ -52,6 +53,7 @@
 #include <kern/amiga_netdb.h>
 
 void api_addrchange_retry(void);      /* api/amiga_api.c */
+static void nd6_solicit(struct llinfo_nd6 *, int);
 
 extern void icmp6_error(struct mbuf *, int, int, int);
 
@@ -679,20 +681,16 @@ nd6_resolve_neighbor(struct ifnet *ifp, struct rtentry *rt, struct mbuf *m,
         break;
 
     case ND6_LLINFO_INCOMPLETE:
-        /* queue the packet and send NS */
+        /* queue the packet; nd6_timer() asks again, a RetransTimer apart */
         nd6_hold_add(ln, m);
-        if(ln->ln_asked < ND6_MAX_MULTICAST_SOLICIT) {
-            ln->ln_asked++;
-            nd6_ns_output(ifp, NULL, &sin6->sin6_addr, ln, 0);
-        }
         return EAGAIN;
 
     case ND6_LLINFO_NOSTATE:
     default:
         ln->ln_state = ND6_LLINFO_INCOMPLETE;
-        ln->ln_asked = 1;
+        ln->ln_asked = 0;
         nd6_hold_add(ln, m);
-        nd6_ns_output(ifp, NULL, &sin6->sin6_addr, ln, 0);
+        nd6_solicit(ln, 0);
         return EAGAIN;
     }
 
@@ -764,6 +762,34 @@ nd6_nud_hint(struct rtentry *rt)
  * ================================================================== */
 
 
+/*
+ * nd6_solicit - send ln's neighbour a Neighbor Solicitation, as address
+ * resolution or unreachability detection asks (RFC 4861 sections 7.2.2,
+ * 7.3.3): to its solicited-node group while it is INCOMPLETE, to itself
+ * in PROBE (nd6_ns_output() tells them apart). The next one, if it must be
+ * asked again, is a RetransTimer later (the interface's, from Router
+ * Advertisements, 1 s by default), counted in nd6_timer() ticks - one
+ * more when it is sent between them (from_timer 0), so that the next one
+ * is never sooner.
+ */
+static void
+nd6_solicit(struct llinfo_nd6 *ln, int from_timer)
+{
+    struct ifnet *ifp = ln->ln_rt ? ln->ln_rt->rt_ifp : NULL;
+    const struct nd_ifinfo *ndi;
+    u_int32_t retrans = ND6_RETRANS_TIMER;
+    struct in6_addr dst;
+
+    if(ifp == NULL)
+        return;
+    if((ndi = nd6_ifinfo(ifp)) != NULL && ndi->retrans != 0)
+        retrans = ndi->retrans;
+    dst = ((struct sockaddr_in6 *)rt_key(ln->ln_rt))->sin6_addr;
+    nd6_ns_output(ifp, NULL, &dst, ln, 0);
+    ln->ln_asked++;
+    ln->ln_ntick = (retrans * PR_SLOWHZ + 999) / 1000 + (from_timer ? 0 : 1);
+}
+
 /* The neighbour of ln did not answer: tell the default router list. */
 static void
 nd6_rtr_unreachable(struct llinfo_nd6 *ln)
@@ -790,8 +816,8 @@ nd6_probe(struct ifnet *ifp, struct in6_addr *addr)
     if((rt->rt_flags & RTF_LLINFO) && ln != NULL &&
             ln->ln_state == ND6_LLINFO_NOSTATE) {
         ln->ln_state = ND6_LLINFO_INCOMPLETE;
-        ln->ln_asked = 1;
-        nd6_ns_output(ifp, NULL, addr, ln, 0);
+        ln->ln_asked = 0;
+        nd6_solicit(ln, 0);
     }
     rtfree(rt);
 }
@@ -827,27 +853,16 @@ nd6_timer(void *arg)
 
         switch(ln->ln_state) {
         case ND6_LLINFO_INCOMPLETE:
+            if(--ln->ln_ntick > 0)
+                break;          /* a RetransTimer since the last one */
             if(ln->ln_asked >= ND6_MAX_MULTICAST_SOLICIT) {
                 /* unreachable: free held packet */
                 nd6stat.nd6s_nud_incomplete++;
                 nd6_hold_free(ln, 1);
                 ln->ln_state = ND6_LLINFO_NOSTATE;
                 nd6_rtr_unreachable(ln);
-            } else {
-                /* retransmit NS */
-                if(ln->ln_rt && ln->ln_rt->rt_ifp) {
-                    struct sockaddr_in6 dst;
-                    bzero(&dst, sizeof(dst));
-                    dst.sin6_family = AF_INET6;
-                    dst.sin6_len    = sizeof(dst);
-                    dst.sin6_addr =
-                        ((struct sockaddr_in6 *)
-                         rt_key(ln->ln_rt))->sin6_addr;
-                    nd6_ns_output(ln->ln_rt->rt_ifp,
-                                  NULL, &dst.sin6_addr, ln, 0);
-                }
-                ln->ln_asked++;
-            }
+            } else
+                nd6_solicit(ln, 1);
             break;
 
         case ND6_LLINFO_REACHABLE:
@@ -861,33 +876,24 @@ nd6_timer(void *arg)
 
         case ND6_LLINFO_DELAY:
             if(ln->ln_expire && now > ln->ln_expire) {
+                /* the first probe now, unicast (section 7.3.3) */
                 ln->ln_state = ND6_LLINFO_PROBE;
                 ln->ln_asked = 0;
+                nd6_solicit(ln, 1);
             }
             break;
 
         case ND6_LLINFO_PROBE:
+            if(--ln->ln_ntick > 0)
+                break;
             if(ln->ln_asked >= ND6_MAX_UNICAST_SOLICIT) {
                 /* NUD failed */
                 nd6stat.nd6s_nud_probe++;
                 nd6_hold_free(ln, 0);
                 ln->ln_state = ND6_LLINFO_NOSTATE;
                 nd6_rtr_unreachable(ln);
-            } else {
-                /* send unicast NS */
-                if(ln->ln_rt && ln->ln_rt->rt_ifp) {
-                    struct sockaddr_in6 dst;
-                    bzero(&dst, sizeof(dst));
-                    dst.sin6_family = AF_INET6;
-                    dst.sin6_len    = sizeof(dst);
-                    dst.sin6_addr =
-                        ((struct sockaddr_in6 *)
-                         rt_key(ln->ln_rt))->sin6_addr;
-                    nd6_ns_output(ln->ln_rt->rt_ifp,
-                                  NULL, &dst.sin6_addr, ln, 0);
-                }
-                ln->ln_asked++;
-            }
+            } else
+                nd6_solicit(ln, 1);
             break;
 
         default:

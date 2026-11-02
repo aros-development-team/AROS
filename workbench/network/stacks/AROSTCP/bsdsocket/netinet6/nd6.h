@@ -232,7 +232,7 @@ caddr_t nd6_ifptomac(struct ifnet *);
 /* --- nd6_nbr.c: Neighbor Solicitation / Advertisement + DAD --- */
 void nd6_ns_input(struct mbuf *, int, int);
 void nd6_ns_output(struct ifnet *, struct in6_addr *, struct in6_addr *,
-	struct llinfo_nd6 *, int);
+	const struct llinfo_nd6 *, int);
 void nd6_na_input(struct mbuf *, int, int);
 void nd6_na_output(struct ifnet *, struct in6_addr *, struct in6_addr *,
 	u_long, int, struct sockaddr *);

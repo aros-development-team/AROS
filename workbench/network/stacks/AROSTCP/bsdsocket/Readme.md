@@ -408,6 +408,11 @@ dispatches ICMPv6, and `in6.c` performs link-local autoconfiguration and joins t
 group via `in6_addmulti` → `S2_ADDMULTICASTADDRESS`, mapping `ff02::X` → `33:33:XX:XX:XX:XX`.
 `nd6_lookup` returns a neighbour route with its reference **held** (KAME semantics); every caller
 `rtfree()`s it when done.
+Neighbor Solicitations follow RFC 4861 §7.2.2 and §7.3.3 (`nd6_solicit()`): to resolve an address
+they go to its solicited-node group, to probe a neighbour in PROBE to the neighbour itself, at the
+link-layer address cached; at most three, a RetransTimer apart (the interface's, from Router
+Advertisements, 1 s by default), counted in `nd6_timer()`'s half-second ticks (`ln_ntick`). The
+packets waiting meanwhile are queued, not answered with solicitations of their own.
 
 A route through a router (`RTF_GATEWAY`) is not a neighbour: `nd6_rtrequest()` leaves it alone and
 its gateway stays the router's IPv6 address. When a packet follows it, `nd6_resolve()` resolves the
