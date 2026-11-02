@@ -392,8 +392,19 @@ static void __attribute__((noreturn)) tlsf_fail_corruption(
         KernelBase = OpenResource("kernel.resource");
         if (KernelBase)
         {
+            ULONG i;
+
+            /*
+             * Addresses only: this runs with the heap's spinlock held
+             * (exec takes it around the managed allocator), and the
+             * symbol resolver behind KrnPrintBacktrace() takes
+             * debug.library's semaphore and allocates - on SMP that
+             * re-entered the allocator and spun on this very lock
+             * for good (seen on the Titan, 2026-11-01).
+             */
             depth = KrnBacktraceFromFrame((APTR)__builtin_frame_address(0), pcs, 16);
-            KrnPrintBacktrace("[Kernel:TLSF] ", pcs, depth);
+            for (i = 0; i < depth; i++)
+                bug("[Kernel:TLSF]   %p\n", pcs[i]);
         }
     }
 
