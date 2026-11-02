@@ -331,8 +331,11 @@ struct PartitionHandle *ph;
                     ph->root = root;
                     ph->bd = root->bd;
                     ph->data = pblock;
-                    CopyMem(pblock->pb_DriveName+1, ph->ln.ln_Name, pblock->pb_DriveName[0]);
-                    ph->ln.ln_Name[pblock->pb_DriveName[0]]=0;
+                    ULONG nameLength = pblock->pb_DriveName[0];
+                    if (nameLength >= sizeof(pblock->pb_DriveName))
+                        nameLength = sizeof(pblock->pb_DriveName) - 1;
+                    CopyMem(pblock->pb_DriveName+1, ph->ln.ln_Name, nameLength);
+                    ph->ln.ln_Name[nameLength]=0;
                     CopyBE2HostDosEnvec(pblock->pb_Environment, (SIPTR *)&ph->de, AROS_BE2LONG(pblock->pb_Environment[DE_TABLESIZE])+1);
                     PartitionRDBUpdateGeometry(ph);
                     return ph;
@@ -951,6 +954,15 @@ static LONG PartitionRDBSetPartitionAttrs(struct Library *PartitionBase, struct 
     struct TagItem *tag;
     struct PartitionBlock *data = (struct PartitionBlock *)ph->data;
 
+    /* Validate first so an invalid tag does not leave a partially edited entry. */
+    const struct TagItem *check = taglist;
+
+    while ((tag = NextTagItem((struct TagItem **)&check)))
+    {
+        if (tag->ti_Tag == PT_NAME && strlen((STRPTR)tag->ti_Data) >= sizeof(data->pb_DriveName))
+            return ERROR_BAD_NUMBER;
+    }
+
     while ((tag = NextTagItem((struct TagItem **)&taglist)))
     {
         switch (tag->ti_Tag)
@@ -981,7 +993,6 @@ static LONG PartitionRDBSetPartitionAttrs(struct Library *PartitionBase, struct 
 
                 CopyMem(name, ph->ln.ln_Name, len+1);
                 CopyMem(name, data->pb_DriveName+1, len);
-                data->pb_DriveName[len+1] = 0;
                 data->pb_DriveName[0] = len;
             }
             break;
@@ -1024,7 +1035,13 @@ struct PartitionHandle *PartitionRDBAddPartition(struct Library *PartitionBase, 
                     ph->data = pblock;
                     pblock->pb_ID = AROS_LONG2BE(IDNAME_PARTITION);
                     pblock->pb_SummedLongs = AROS_LONG2BE(sizeof(struct PartitionBlock)/4);
-                    PartitionRDBSetPartitionAttrs(PartitionBase, ph, taglist);
+                    if (PartitionRDBSetPartitionAttrs(PartitionBase, ph, taglist) != 0)
+                    {
+                        FreeMem(pblock, root->de.de_SizeBlock << 2);
+                        FreeVec(ph->ln.ln_Name);
+                        FreeMem(ph, sizeof(*ph));
+                        return NULL;
+                    }
                     oph = (struct PartitionHandle *)root->table->list.lh_Head;
                     while (oph->ln.ln_Succ)
                     {
