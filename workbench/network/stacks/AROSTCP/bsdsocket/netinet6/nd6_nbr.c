@@ -552,6 +552,8 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
             GetSysTime(&_tv);
             ln->ln_expire = _tv.tv_sec + ND6_REACHABLE_TIME / 1000;
         }
+        if(ln->ln_router && !is_router)
+            defrouter_notrouter(&tgt, ifp);
         ln->ln_router = is_router;
 
         /* if it is a router not in use, it may be the better one now */
@@ -597,8 +599,10 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
 
         /* router flag change handling (RFC 4861 §7.2.5 last para) */
         if(ln->ln_router && !is_router) {
-            /* neighbor is no longer a router */
+            /* neighbor is no longer a router: it leaves the default
+             * router list, and its routes with it */
             ln->ln_router = 0;
+            defrouter_notrouter(&tgt, ifp);
         } else {
             ln->ln_router = is_router;
         }

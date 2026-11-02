@@ -425,7 +425,9 @@ equals (`defrouter_choose()`). With none known reachable, the one in use stays, 
 is taken; when neighbour unreachability detection gives up on the one in use, the next one in the
 list is (round robin, `defrouter_unreachable()`). A more preferred router passed over is probed with
 a Neighbor Solicitation once a minute at most (RFC 4191 §3.5, `nd6_probe()`), and its answer
-(`defrouter_reachable()`) brings the default route back to it. A Route
+(`defrouter_reachable()`) brings the default route back to it. A router whose Neighbor Advertisement clears the
+Router flag leaves the list, with the routes through it, its Route Information routes among them
+(RFC 4861 §7.2.5, `defrouter_notrouter()`, as FreeBSD's `defrouter_del()` flushes them). A Route
 Information Option installs a route to its prefix through the advertising router, on the interface
 it was heard on, one entry per (prefix, router) with its own lifetime and preference: the most
 preferred router for a prefix gets the route, and between prefixes the routing table's longest match
