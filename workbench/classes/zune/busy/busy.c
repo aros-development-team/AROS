@@ -23,6 +23,17 @@
 #include "Busy_mcc.h"
 #include "busy_private.h"
 
+/* Without MUI preferences for the bar, MUIV_Busy_Speed_User moves it at
+   a fixed rate. */
+#define BUSY_USER_MILLIS 50
+
+static ULONG Busy_Millis(struct Busy_DATA *data)
+{
+    if (data->speed == MUIV_Busy_Speed_User)
+        return BUSY_USER_MILLIS;
+    return data->speed > 0 ? data->speed : 0;
+}
+
 /*** Methods ****************************************************************/
 IPTR Busy__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
@@ -36,7 +47,8 @@ IPTR Busy__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
     {
         data->flags |= FLG_SHOWHIDEIH;
     }
-    data->speed = 50;
+    data->speed = (LONG)GetTagData(MUIA_Busy_Speed, MUIV_Busy_Speed_User,
+                                   msg->ops_AttrList);
     
     data->ihn.ihn_Flags  = MUIIHNF_TIMER;
     data->ihn.ihn_Method = MUIM_Busy_Move;
@@ -58,14 +70,7 @@ IPTR Busy__OM_SET(Class *cl, Object *obj, struct opSet *msg)
         switch(tag->ti_Tag)
         {
             case MUIA_Busy_Speed:
-                if ((LONG)tag->ti_Data == MUIV_Busy_Speed_User)
-                {
-                    data->speed = 50;
-                }
-                else
-                {
-                    data->speed = tag->ti_Data;
-                }
+                data->speed = (LONG)tag->ti_Data;
 
                 if ((data->flags & FLG_SHOWN) ||
                     ((data->flags & FLG_SETUP) && !(data->flags & FLG_SHOWHIDEIH)))
@@ -75,7 +80,7 @@ IPTR Busy__OM_SET(Class *cl, Object *obj, struct opSet *msg)
                         DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->ihn);
                     }
                     
-                    data->ihn.ihn_Millis = data->speed;
+                    data->ihn.ihn_Millis = Busy_Millis(data);
                     
                     if (data->ihn.ihn_Millis)
                     {
@@ -123,9 +128,9 @@ IPTR Busy__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
     
     if (!DoSuperMethodA(cl, obj, (Msg)msg)) return FALSE;
 
-    if (data->speed && !(data->flags & FLG_SHOWHIDEIH))
+    if (Busy_Millis(data) && !(data->flags & FLG_SHOWHIDEIH))
     {
-        data->ihn.ihn_Millis = data->speed;
+        data->ihn.ihn_Millis = Busy_Millis(data);
         DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR) &data->ihn);
     }
     
@@ -157,9 +162,9 @@ IPTR Busy__MUIM_Show(Class *cl, Object *obj, struct MUIP_Show *msg)
     
     retval = DoSuperMethodA(cl, obj, (Msg)msg);
 
-    if (data->speed && (data->flags & FLG_SHOWHIDEIH))
+    if (Busy_Millis(data) && (data->flags & FLG_SHOWHIDEIH))
     {
-        data->ihn.ihn_Millis = data->speed;
+        data->ihn.ihn_Millis = Busy_Millis(data);
         DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR) &data->ihn);
     }
     
@@ -202,20 +207,23 @@ IPTR Busy__MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 IPTR Busy__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Busy_DATA *data = INST_DATA(cl, obj);
-    WORD              x;
+    WORD              x, end, phase;
     IPTR              retval;
     
     retval = DoSuperMethodA(cl, obj, (Msg)msg);
     
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) return 0;
-        
-    for(x = 0; x < _mwidth(obj); x++)
+
+    /* Stripes 8 pixels wide, one RectFill per stripe. */
+    phase = data->pos % 16;
+    for (x = 0; x < _mwidth(obj); x = end)
     {
-        WORD col;
+        WORD stripe = (x + phase) / 8;
         
-        col = ((x + data->pos) / 8) % 2;
-        SetAPen(_rp(obj), _pens(obj)[col ? MPEN_SHADOW : MPEN_SHINE]);
-        RectFill(_rp(obj), _mleft(obj) + x, _mtop(obj), _mleft(obj) + x, _mbottom(obj));
+        end = stripe * 8 + 8 - phase;
+        if (end > _mwidth(obj)) end = _mwidth(obj);
+        SetAPen(_rp(obj), _pens(obj)[(stripe % 2) ? MPEN_SHADOW : MPEN_SHINE]);
+        RectFill(_rp(obj), _mleft(obj) + x, _mtop(obj), _mleft(obj) + end - 1, _mbottom(obj));
     }
     
     return retval;
