@@ -948,10 +948,12 @@ void DoDiskInsert(struct Globals *glob)
 
             /* Scan volume list for a matching volume (would be better to
              * match by serial number) */
-            dl = LockDosList(LDF_VOLUMES | LDF_WRITE);
-            dl = FindDosEntry(dl, sb->volume.name + 1,
-                LDF_VOLUMES | LDF_WRITE);
-            UnLockDosList(LDF_VOLUMES | LDF_WRITE);
+            /* This is only a lookup. A desktop scanner may hold a shared
+             * DosList lock while waiting for our disk-info reply; taking
+             * an exclusive lock here would deadlock that scan. */
+            dl = LockDosList(LDF_VOLUMES | LDF_READ);
+            dl = FindDosEntry(dl, sb->volume.name + 1, LDF_VOLUMES);
+            UnLockDosList(LDF_VOLUMES | LDF_READ);
 
             if (dl != NULL &&
                 CompareDates(&dl->dol_misc.dol_volume.dol_VolumeDate,
