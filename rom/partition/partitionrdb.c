@@ -26,7 +26,6 @@
 #include "debug.h"
 
 #include <string.h>
-#include <stddef.h>
 
 struct RDBData {
     UBYTE rdbblock; /* the block rdb was read from */
@@ -49,6 +48,7 @@ struct FileSysNode
     struct LoadSegBlock *filesystem; /* the FS in LSEG blocks */
     ULONG fsblocks;                  /* nr of LSEG blocks for FS */
     ULONG blockbytes;                /* size of each stored LSEG block */
+    ULONG filesize;                  /* sum of the encoded LSEG payload sizes */
     struct FileSysHeaderBlock fhb; /* last: allocation includes the rest of the sector */
 };
 
@@ -57,13 +57,16 @@ static struct LoadSegBlock *PartitionRDBFileSysBlock(struct FileSysNode *fn, ULO
     return (struct LoadSegBlock *)((UBYTE *)fn->filesystem + (IPTR)block * fn->blockbytes);
 }
 
-#define LSEGDATASIZE (123 * sizeof(ULONG))
+static ULONG PartitionRDBFileSysPayload(struct FileSysNode *fn, ULONG block)
+{
+    return (AROS_BE2LONG(PartitionRDBFileSysBlock(fn, block)->lsb_SummedLongs) - 5) * sizeof(ULONG);
+}
 
 struct FileSysReader
 {
     ULONG count;
     ULONG offset;
-    ULONG size;
+    ULONG position;
     struct FileSysNode *fsn;
 };
 
@@ -81,20 +84,22 @@ static AROS_UFH4(LONG, ReadFunc,
 
     while (length > 0 && fsr->count < fsr->fsn->fsblocks) {
         ULONG size = length;
+        ULONG payload = PartitionRDBFileSysPayload(fsr->fsn, fsr->count);
 
-        if (size + fsr->offset > fsr->size)
-            size = fsr->size - fsr->offset;
+        if (size > payload - fsr->offset)
+            size = payload - fsr->offset;
         if (size > 0) {
             UBYTE *inbuf = (UBYTE*)PartitionRDBFileSysBlock(fsr->fsn, fsr->count)->lsb_LoadData + fsr->offset;
             CopyMem(inbuf, outbuf, size);
         }
 
         outsize += size;
+        fsr->position += size;
         fsr->offset += size;
         length -= size;
         outbuf += size;
 
-        if (fsr->offset == fsr->size) {
+        if (fsr->offset == payload) {
             fsr->offset = 0;
             fsr->count++;
             if (fsr->count == fsr->fsn->fsblocks)
@@ -117,8 +122,8 @@ static AROS_UFH4(LONG, SeekFunc,
     AROS_USERFUNC_INIT
 
     struct FileSysReader *fsr = (struct FileSysReader*)file;
-    UQUAD size = (UQUAD)fsr->fsn->fsblocks * fsr->size;
-    UQUAD oldpos = (UQUAD)fsr->count * fsr->size + fsr->offset;
+    ULONG size = fsr->fsn->filesize;
+    LONG oldpos = fsr->position;
     QUAD newpos = pos;
 
     switch (mode) {
@@ -129,12 +134,21 @@ static AROS_UFH4(LONG, SeekFunc,
     }
 
     /* The DOS seek callback returns a signed LONG position. */
-    if (newpos < 0 || newpos > size || newpos > 0x7fffffff ||
-        oldpos > 0x7fffffff || fsr->size == 0)
+    if (newpos < 0 || newpos > size || newpos > 0x7fffffff)
         return -1;
 
-    fsr->count = newpos / fsr->size;
-    fsr->offset = newpos % fsr->size;
+    fsr->position = newpos;
+    fsr->count = 0;
+    fsr->offset = newpos;
+    while (fsr->count < fsr->fsn->fsblocks)
+    {
+        ULONG payload = PartitionRDBFileSysPayload(fsr->fsn, fsr->count);
+
+        if (fsr->offset < payload)
+            break;
+        fsr->offset -= payload;
+        fsr->count++;
+    }
 
     return oldpos;
 
@@ -147,14 +161,9 @@ static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
     LONG_FUNC FunctionArray[4];
     struct FileSysReader fakefile;
 
-    if (!node->filesystem || !node->fsblocks)
+    if (!node->filesystem || !node->fsblocks || node->filesize < sizeof(ULONG))
         return BNULL;
 
-#ifndef __mc68000
-    /* Prevent loading hunk files on non-m68k */
-    if (AROS_BE2LONG(node->filesystem[0].lsb_LoadData[0]) == 0x000003f3)
-        return BNULL;
-#endif
 
     FunctionArray[0] = (LONG_FUNC)ReadFunc;
     FunctionArray[1] = (LONG_FUNC)__AROS_GETVECADDR(SysBase,33); /* AllocMem() */
@@ -164,8 +173,21 @@ static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
     /* Initialize our stream */
     fakefile.count      = 0;
     fakefile.offset     = 0;
-    fakefile.size       = node->blockbytes - offsetof(struct LoadSegBlock, lsb_LoadData);
+    fakefile.position   = 0;
     fakefile.fsn        = node;
+
+#ifndef __mc68000
+    /* Skip empty payloads when checking the executable's format word. */
+    {
+        ULONG first = 0;
+
+        while (first < node->fsblocks && PartitionRDBFileSysPayload(node, first) == 0)
+            first++;
+        if (first == node->fsblocks ||
+            AROS_BE2LONG(PartitionRDBFileSysBlock(node, first)->lsb_LoadData[0]) == 0x000003f3)
+            return BNULL;
+    }
+#endif
 
     /* InternalLoadSeg((BPTR)&fakefile, BNULL, FunctionArray, NULL);
      * with A6 = NULL. Check internalloadseg.c for more information
@@ -480,23 +502,30 @@ ULONG block;
     if (fn->filesystem)
     {
         ULONG i;
+        UQUAD bytes = 0;
+        struct RDBChain chain = {0};
 
         block = AROS_BE2LONG(fn->fhb.fhb_SegListBlocks);
         for (i = 0; i < size && block != (ULONG)-1; i++)
         {
             struct LoadSegBlock *lsb = PartitionRDBFileSysBlock(fn, i);
 
-            if (readBlock(PartitionBase, root, block, lsb) != 0 ||
+            if (!PartitionRDBChainBlock(root, &chain, block) ||
+                readBlock(PartitionBase, root, block, lsb) != 0 ||
                 AROS_BE2LONG(lsb->lsb_ID) != IDNAME_LOADSEG ||
                 AROS_BE2LONG(lsb->lsb_SummedLongs) < 5 ||
                 AROS_BE2LONG(lsb->lsb_SummedLongs) > fn->blockbytes / 4 ||
                 calcChkSum((ULONG *)lsb, AROS_BE2LONG(lsb->lsb_SummedLongs)) != 0)
+                break;
+            bytes += (AROS_BE2LONG(lsb->lsb_SummedLongs) - 5) * sizeof(ULONG);
+            if (bytes > 0x7fffffff)
                 break;
             block = AROS_BE2LONG(lsb->lsb_Next);
         }
         if (i == size && block == (ULONG)-1)
         {
             fn->fsblocks = size;
+            fn->filesize = bytes;
             return;
         }
         FreeVec(fn->filesystem);
