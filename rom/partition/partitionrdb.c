@@ -976,7 +976,7 @@ struct Node *PartitionRDBFindFileSystem(struct Library *PartitionBase, struct Pa
     {
         if (idTag)
         {
-            if (fn->fhb.fhb_DosType != idTag->ti_Data)
+            if (AROS_BE2LONG(fn->fhb.fhb_DosType) != idTag->ti_Data)
                 continue;
         }
 
