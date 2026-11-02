@@ -58,6 +58,18 @@ struct IntLayer
     ULONG	    intflags;
     struct RastPort rp;		/* lay.rp */
     /*
+     * The RastPort the backfill hook renders through when its target is a
+     * backing bitmap (a hidden ClipRect's, the surface) rather than the
+     * display. lay.rp is the application's RastPort (intuition: Window->RPort
+     * is Layer->rp) and may be in use on another CPU at any moment: graphics
+     * reads rp->BitMap before it takes the layer lock, so that pointer must
+     * never change, not even for the duration of a hook call - swapping it
+     * sent whole RectFills at screen coordinates into a 50x30 backing bitmap
+     * (the SMP display-stress corruption, 2026-11-01). Used with the layer
+     * locked; Layer is NULL as a backfill hook's RastPort has none.
+     */
+    struct RastPort hookrp;
+    /*
      * The layer's own bitmap, layer relative: the surface of a composited
      * layer (LAYERCOMPOSITED, always), or the backing store of a smart
      * refresh layer (LAYERS_BACKING_SURFACE). NULL otherwise.

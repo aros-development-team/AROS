@@ -798,12 +798,12 @@ void _UpdateSurfaces(struct Layer_Info *li, struct LayersBase *LayersBase)
 static void _BackFillSurface(struct Layer * l, struct Region * r, struct LayersBase * LayersBase)
 {
   struct RegionRectangle * RR;
-  struct BitMap * bm = l->rp->BitMap;
 
   if (NULL == IL(l)->surface)
     return;
 
-  l->rp->BitMap = IL(l)->surface;
+  /* through the layer's hook RastPort: the application's must not change */
+  IL(l)->hookrp.BitMap = IL(l)->surface;
   for (RR = r->RegionRectangle; NULL != RR; RR = RR->Next)
   {
     struct Rectangle bmrect;
@@ -814,14 +814,13 @@ static void _BackFillSurface(struct Layer * l, struct Region * r, struct LayersB
     bmrect.MaxY = RR->bounds.MaxY + r->bounds.MinY - l->bounds.MinY;
 
     _CallLayerHook(l->BackFill,
-                   l->rp,
+                   &IL(l)->hookrp,
                    l,
                    &bmrect,
                    bmrect.MinX + l->Scroll_X,
                    bmrect.MinY + l->Scroll_Y,
                    LayersBase);
   }
-  l->rp->BitMap = bm;
 }
 
 /*
@@ -1033,7 +1032,6 @@ int _CopyClipRectsToClipRects(struct Layer * l,
       for (rr = uncovered->RegionRectangle; NULL != rr; rr = rr->Next)
       {
         struct Rectangle screenrect, bmrect;
-        struct BitMap * bm = l->rp->BitMap;
 
         screenrect.MinX = rr->bounds.MinX + uncovered->bounds.MinX;
         screenrect.MinY = rr->bounds.MinY + uncovered->bounds.MinY;
@@ -1045,15 +1043,14 @@ int _CopyClipRectsToClipRects(struct Layer * l,
         bmrect.MaxX = screenrect.MaxX - _cr->bounds.MinX + CR_BMOFFX(_cr);
         bmrect.MaxY = screenrect.MaxY - _cr->bounds.MinY + CR_BMOFFY(_cr);
 
-        l->rp->BitMap = _cr->BitMap;
+        IL(l)->hookrp.BitMap = _cr->BitMap;
         _CallLayerHook(l->BackFill,
-                       l->rp,
+                       &IL(l)->hookrp,
                        l,
                        &bmrect,
                        screenrect.MinX - l->bounds.MinX + l->Scroll_X,
                        screenrect.MinY - l->bounds.MinY + l->Scroll_Y,
                        LayersBase);
-        l->rp->BitMap = bm;
       }
       DisposeRegion(uncovered);
     }
@@ -1613,7 +1610,6 @@ int _ShowLayer(struct Layer * l, struct LayersBase *LayersBase)
   struct Region *r;
   struct RegionRectangle * rr;
   struct ClipRect * prevcr = NULL;
-  struct BitMap * bm = l->rp->BitMap;
   int invisible = FALSE;
 
   if (IS_COMPOSITED(l))
@@ -1721,15 +1717,14 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
             bmrect.MaxX = bmrect.MinX + cr->bounds.MaxX - cr->bounds.MinX;
             bmrect.MaxY = bmrect.MinY + cr->bounds.MaxY - cr->bounds.MinY;
 
-            l->rp->BitMap = cr->BitMap;
+            IL(l)->hookrp.BitMap = cr->BitMap;
             _CallLayerHook(l->BackFill,
-                           l->rp,
+                           &IL(l)->hookrp,
                            l,
                            &bmrect,
                            cr->bounds.MinX - l->bounds.MinX + l->Scroll_X,
                            cr->bounds.MinY - l->bounds.MinY + l->Scroll_Y,
                            LayersBase);
-            l->rp->BitMap = bm;
           }
         }
       }
