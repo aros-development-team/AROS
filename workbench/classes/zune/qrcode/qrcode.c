@@ -166,7 +166,6 @@ static BOOL updateColours(struct QRCode_DATA *data, Object *obj,
     struct MUI_PenSpec nextForeground = data->foregroundSpec;
     struct MUI_PenSpec nextBackground = data->backgroundSpec;
     BOOL nextTransparent = hasTransparent ? transparent : data->transparent;
-    LONG nextDark, nextLight = -1;
 
     if (hasForeground)
     {
@@ -182,7 +181,8 @@ static BOOL updateColours(struct QRCode_DATA *data, Object *obj,
     }
     if (data->darkPen != -1)
     {
-        nextDark = MUI_ObtainPen(muiRenderInfo(obj), &nextForeground, 0);
+        LONG nextDark = MUI_ObtainPen(muiRenderInfo(obj), &nextForeground, 0);
+        LONG nextLight = -1;
         if (nextDark == -1)
             return FALSE;
         if (!nextTransparent)
