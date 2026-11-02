@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -18,9 +18,65 @@
 #include "poppen_private.h"
 #include "locale.h"
 
+/****** Poppen.mui/MUIC_Poppen ************
+*
+*   NAME
+*       MUIC_Poppen
+*
+*   SUPERCLASS
+*       Pendisplay.mui
+*
+*   DESCRIPTION
+*       Display a pen as a draggable button that opens a Penadjust window when
+*       Pressed becomes FALSE. It inherits Pendisplay color attributes and their
+*       ownership, reference and notification behavior. Constructor defaults
+*       include ButtonFrame, inner spacing four, button background, RelVerify
+*       input mode and Draggable TRUE, followed by caller tags.
+*       MUIA_Window_Title is consumed at construction as a borrowed popup-title
+*       pointer, default NULL. This is not a local set/get attribute: changing
+*       that tag later does not update the saved title. Keep the string valid
+*       for every popup creation. Pen state remains in the inherited Pendisplay
+*       specification.
+*
+*   METHODS
+*       Opening lazily creates a window containing Penadjust and localized
+*       OK/Cancel buttons, adds it to the application and opens it. An existing
+*       popup is reused without resampling the current pen. Creation/open
+*       failure is not reported by the internal open method, which returns one;
+*       failed opening closes the created window with cancellation.
+*       OK reads the editor specification, copies it into Pendisplay and
+*       disposes the popup. Cancel or the window close request discards edits.
+*       Button and close-request notifications enqueue the internal close method
+*       through Application_PushMethod. Hide and DisconnectParent close/dispose
+*       an existing popup without committing edits before delegating to the
+*       superclass.
+*
+*   NOTES
+*       Use a live application connection and keep this object alive until its
+*       queued close calls have run. The private close method assumes an
+*       existing popup and does not guard repeated or stale calls. Hide clears
+*       wnd but leaves the penadjust pointer stale; no independent queue
+*       cancellation occurs here. Do not invoke internal window methods as
+*       public API. There is no local Dispose override to replace normal
+*       Hide/DisconnectParent ordering.
+*       Opening obtains the inherited Spec without checking getter success
+*       before constructing Penadjust. Any Reference must therefore be live and
+*       provide a valid full specification. With Reference attached, OK changes
+*       hidden local Pendisplay state; it does not change the referenced object
+*       or override redirected getters.
+*
+*/
+
 extern struct Library *MUIMasterBase;
 
 
+/*
+ * Construct Pendisplay with button defaults and caller tags, borrow
+ * constructor Window_Title and register release notification for private
+ * MUIM_Poppen_OpenWindow. Return object or zero on superclass failure.
+ * Title must remain valid for future popup creation; registration failure
+ * is ignored.
+ */
 IPTR Poppen__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Poppen_DATA *data;
@@ -58,6 +114,12 @@ IPTR Poppen__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Close, remove and dispose an existing popup without committing edits,
+ * clear wnd and return Pendisplay Hide result. Requires live application
+ * connection. Leaves penadjust stale and does not cancel queued close
+ * calls; retain object until queued work is resolved.
+ */
 IPTR Poppen__MUIM_Hide(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Poppen_DATA *data = INST_DATA(cl, obj);
@@ -72,6 +134,13 @@ IPTR Poppen__MUIM_Hide(struct IClass *cl, Object *obj, struct opGet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Private MUIM_Poppen_OpenWindow: lazily create application-owned editor
+ * window from inherited Spec, install queued close notifications and open
+ * it. Return one even on failure; cancel a created window if open fails.
+ * Requires live application, title and full Spec. Existing popup is reused
+ * without refresh.
+ */
 IPTR Poppen__MUIM_Poppen_OpenWindow(struct IClass *cl, Object *obj,
     Msg msg)
 {
@@ -136,6 +205,12 @@ IPTR Poppen__MUIM_Poppen_OpenWindow(struct IClass *cl, Object *obj,
     return 1;
 }
 
+/*
+ * Private MUIM_Poppen_CloseWindow: close current popup; nonzero ok copies
+ * editor Spec to Pendisplay, zero discards edits. Remove/dispose window,
+ * clear both pointers and return one. Requires an existing live popup and
+ * application; no NULL/repeated-call guard or queue cancellation.
+ */
 IPTR Poppen__MUIM_Poppen_CloseWindow(struct IClass *cl, Object *obj,
     struct MUIP_Poppen_CloseWindow *msg)
 {
@@ -160,6 +235,12 @@ IPTR Poppen__MUIM_Poppen_CloseWindow(struct IClass *cl, Object *obj,
     return 1;
 }
 
+/*
+ * Cancel a live popup through private CloseWindow before delegating and
+ * returning Pendisplay disconnect result. Requires application still
+ * connected for removal. No edit commit; outstanding queued calls are not
+ * canceled.
+ */
 IPTR Poppen__MUIM_DisconnectParent(struct IClass *cl, Object *obj,
     struct MUIP_DisconnectParent *msg)
 {
@@ -171,6 +252,12 @@ IPTR Poppen__MUIM_DisconnectParent(struct IClass *cl, Object *obj,
 }
 
 #if ZUNE_BUILTIN_POPPEN
+/*
+ * Dispatch local methods and return their results, delegating other
+ * messages to the superclass. Requires ABI-correct messages and a live
+ * object except construction. Owned and borrowed resources follow the class
+ * lifecycle contract.
+ */
 BOOPSI_DISPATCHER(IPTR, Poppen_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
