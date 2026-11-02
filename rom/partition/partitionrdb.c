@@ -866,7 +866,8 @@ static LONG PartitionRDBCheckWriteSize(struct PartitionHandle *root)
     for (fn = (struct FileSysNode *)data->fsheaderlist.lh_Head;
          fn->h.ln.ln_Succ; fn = (struct FileSysNode *)fn->h.ln.ln_Succ)
     {
-        if (!fn->filesystem || !fn->fsblocks || fn->blockbytes != root->de.de_SizeBlock * 4)
+        if (fn->blockbytes != root->de.de_SizeBlock * 4 ||
+            ((!fn->filesystem || !fn->fsblocks) && fn->fhb.fhb_SegListBlocks != (ULONG)-1))
             return ERROR_NOT_A_DOS_DISK;
         end += (UQUAD)fn->fsblocks + 1;
     }
@@ -1000,10 +1001,8 @@ static LONG PartitionRDBWritePartitionTable(struct Library *PartitionBase, struc
 
         fshblock = block;
         block++; /* header block will be written later */
-        fn->fhb.fhb_SegListBlocks = AROS_LONG2BE(block);
+        fn->fhb.fhb_SegListBlocks = fn->fsblocks ? AROS_LONG2BE(block) : (ULONG)-1;
         /* write filesystem LSEG blocks */
-        if (!fn->filesystem || !fn->fsblocks)
-            return ERROR_NOT_A_DOS_DISK;
         error = PartitionRDBWriteFileSys(PartitionBase, root, fn, &block, 0);
         if (error != 0)
             return deviceError(error);
