@@ -204,9 +204,18 @@ void _DisposeRegionRectangleList
         RR->Prev->Next = NULL;
     }
 
-    /* Is this the first rectangle in the chunk? */
-    if(!Counter(RR)) {
-        /* If so then this chunk has to be deleted too */
+    /*
+     * First slot of its chunk, or head of the whole list (AndRectRegion may
+     * have unlinked the slots before it): the chunk goes too. The chunk
+     * chain runs through Rects[SIZERECTBUF-1].RR.Next, which is not
+     * RR->Prev when AndRectRegion unlinked the previous chunk's last
+     * slot(s): cut it there as well, or it keeps naming freed chunks and
+     * the next ClearRegion frees them again (SMP display stress 2026-11-01:
+     * input.device disposing a chunk whose pool was long gone).
+     */
+    if(!Counter(RR) || !RR->Prev) {
+        if(RR->Prev)
+            Chunk(RR->Prev)->Rects[SIZERECTBUF - 1].RR.Next = NULL;
         NextChunk = Chunk(RR);
     } else {
         /* otherwise dispose all the chunks starting from the one after this one */
