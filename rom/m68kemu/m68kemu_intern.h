@@ -391,10 +391,18 @@ static inline ULONG m68k_read32(struct M68KEmuContext *ctx, ULONG addr)
 }
 
 
+/* Shared low-memory policy for accessors and transactional metadata writes.
+   Bounds are checked by each caller before applying this address rule. */
+static inline BOOL m68k_write_allowed(struct M68KEmuContext *ctx, ULONG addr)
+{
+    return !ctx->low_guard || addr >= 0x400 || addr == 0x28 || addr == 0x2C ||
+        addr == 0x6C || addr == 0x10 || (addr >= 0x140 && addr < 0x190);
+}
+
 static inline void m68k_write16(struct M68KEmuContext *ctx, ULONG addr, UWORD val)
 {
     if (addr >= ctx->mem_size || ctx->mem_size - addr < 2) return;
-    if (ctx->low_guard && addr < 0x400 && addr != 0x28 && addr != 0x2C && addr != 0x6C && addr != 0x10 && !(addr >= 0x140 && addr < 0x190)) { m68k_low_write_trap(ctx, addr, "thunk"); return; }
+    if (!m68k_write_allowed(ctx, addr)) { m68k_low_write_trap(ctx, addr, "thunk"); return; }
     UBYTE *p = ctx->mem + addr;
     p[0] = (UBYTE)(val >> 8);
     p[1] = (UBYTE)(val);
@@ -403,7 +411,7 @@ static inline void m68k_write16(struct M68KEmuContext *ctx, ULONG addr, UWORD va
 static inline void m68k_write32(struct M68KEmuContext *ctx, ULONG addr, ULONG val)
 {
     if (addr >= ctx->mem_size || ctx->mem_size - addr < 4) return;
-    if (ctx->low_guard && addr < 0x400 && addr != 0x28 && addr != 0x2C && addr != 0x6C && addr != 0x10 && !(addr >= 0x140 && addr < 0x190)) { m68k_low_write_trap(ctx, addr, "thunk"); return; }
+    if (!m68k_write_allowed(ctx, addr)) { m68k_low_write_trap(ctx, addr, "thunk"); return; }
     UBYTE *p = ctx->mem + addr;
     p[0] = (UBYTE)(val >> 24);
     p[1] = (UBYTE)(val >> 16);

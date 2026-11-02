@@ -5494,78 +5494,170 @@ static IPTR thunk_exec_CacheControl_m(struct M68KEmuContext *ctx, void *cpu)
     return old;
 }
 
-/* Allocate() and Deallocate() on a MemHeader the program built in its own
-   memory (C runtimes keep their malloc pools this way): the chunk list is
-   m68k (mc_Next, mc_Bytes) and blocks are 8-byte aligned, as in exec */
+/* Allocate() and Deallocate() on a classic private MemHeader. Its bounds
+   fields need not be initialized: Exec's private-pool example sets only
+   mh_First and mh_Free. Validate the actual chunks in containment instead.
+   A chunk and each rounded allocation are multiples of eight bytes. */
 #define M68K_MEM_BLOCKSIZE 8
+
+static BOOL memheader_range(struct M68KEmuContext *ctx, ULONG addr, ULONG size)
+{
+    return ctx->mem && addr && addr < ctx->mem_size && size <= ctx->mem_size - addr;
+}
+
+static BOOL memheader_write(struct M68KEmuContext *ctx, ULONG addr)
+{
+    return memheader_range(ctx, addr, 4) && m68k_write_allowed(ctx, addr);
+}
+
+/* Both spans have already passed memheader_range(), so their ends fit. */
+static BOOL memheader_overlap(ULONG a, ULONG asize, ULONG b, ULONG bsize)
+{
+    return a < b + bsize && b < a + asize;
+}
+
+struct MemHeaderScan
+{
+    ULONG available;
+    ULONG prev, prev_bytes;
+    ULONG chunk, bytes, next;
+};
+
+/* Find the first fit (block == 0) or free insertion point while validating
+   the list. Keep its neighbours so neither caller walks the list again.
+   The tail is checked before mutation, even after an early fit. */
+static BOOL memheader_scan(struct M68KEmuContext *ctx, ULONG mh,
+                           ULONG size, ULONG block, struct MemHeaderScan *scan)
+{
+    ULONG mc, next, end = 0, sum = 0, prev = 0, prev_bytes = 0;
+    ULONG left = ctx->mem_size / M68K_MEM_BLOCKSIZE;
+    BOOL selected = FALSE;
+
+    if (!memheader_range(ctx, mh, M68K_SIZEOF_MEMHEADER) ||
+        !memheader_write(ctx, mh + M68K_MH_FIRST) ||
+        !memheader_write(ctx, mh + M68K_MH_FREE))
+        return FALSE;
+    memset(scan, 0, sizeof(*scan));
+    scan->available = m68k_read32(ctx, mh + M68K_MH_FREE);
+    for (mc = m68k_read32(ctx, mh + M68K_MH_FIRST); mc; mc = next)
+    {
+        ULONG bytes;
+
+        if (!left || (mc & (M68K_MEM_BLOCKSIZE - 1)) || mc < end ||
+            !memheader_range(ctx, mc, M68K_MEM_BLOCKSIZE))
+            return FALSE;
+        --left;
+        bytes = m68k_read32(ctx, mc + 4);
+        next = m68k_read32(ctx, mc);
+        if (!bytes || (bytes & (M68K_MEM_BLOCKSIZE - 1)) ||
+            !memheader_range(ctx, mc, bytes) ||
+            memheader_overlap(mc, bytes, mh, M68K_SIZEOF_MEMHEADER) ||
+            !memheader_write(ctx, mc) || !memheader_write(ctx, mc + 4) ||
+            bytes > scan->available - sum)
+            return FALSE;
+        sum += bytes;
+        end = mc + bytes;
+        if (!selected && (block ? mc >= block : bytes >= size))
+        {
+            scan->prev = prev;
+            scan->prev_bytes = prev_bytes;
+            scan->chunk = mc;
+            scan->bytes = bytes;
+            scan->next = next;
+            selected = TRUE;
+        }
+        prev = mc;
+        prev_bytes = bytes;
+    }
+    if (!selected)
+    {
+        scan->prev = prev;
+        scan->prev_bytes = prev_bytes;
+    }
+    /* Exec permits an overstated mh_Free. The running sum is bounded by
+       it above; it need not equal it. Preserve the caller's surplus. */
+    return TRUE;
+}
 
 /* exec -186: Allocate(A0=memHeader, D0=byteSize) -> D0=block */
 static IPTR thunk_exec_Allocate_m(struct M68KEmuContext *ctx, void *cpu)
 {
-    ULONG mh = THUNK_A(0), size = THUNK_D(0), prev, mc;
-    int guard = 0;
+    ULONG mh = THUNK_A(0), size = THUNK_D(0), link;
+    struct MemHeaderScan scan;
 
-    if (!mh || !size)
+    if (!size || size > (ULONG)-1 - (M68K_MEM_BLOCKSIZE - 1))
         return 0;
-    size = (size + M68K_MEM_BLOCKSIZE - 1) & ~(M68K_MEM_BLOCKSIZE - 1);
-    if (m68k_read32(ctx, mh + M68K_MH_FREE) < size)
+    size = (size + M68K_MEM_BLOCKSIZE - 1) & ~(ULONG)(M68K_MEM_BLOCKSIZE - 1);
+    if (!memheader_scan(ctx, mh, size, 0, &scan) ||
+        scan.available < size || !scan.chunk)
         return 0;
-    for (prev = mh + M68K_MH_FIRST, mc = m68k_read32(ctx, prev);
-         mc && guard++ < 1000000;
-         prev = mc, mc = m68k_read32(ctx, mc))
+    link = scan.prev ? scan.prev : mh + M68K_MH_FIRST;
+    if (scan.bytes == size)
+        m68k_write32(ctx, link, scan.next);
+    else
     {
-        ULONG bytes = m68k_read32(ctx, mc + 4);
+        ULONG tail = scan.chunk + size;
 
-        if (bytes < size)
-            continue;
-        if (bytes == size)
-            m68k_write32(ctx, prev, m68k_read32(ctx, mc));
-        else
-        {
-            m68k_write32(ctx, mc + size, m68k_read32(ctx, mc));
-            m68k_write32(ctx, mc + size + 4, bytes - size);
-            m68k_write32(ctx, prev, mc + size);
-        }
-        m68k_write32(ctx, mh + M68K_MH_FREE, m68k_read32(ctx, mh + M68K_MH_FREE) - size);
-        return mc;
+        if (!memheader_write(ctx, tail) || !memheader_write(ctx, tail + 4))
+            return 0;
+        m68k_write32(ctx, tail, scan.next);
+        m68k_write32(ctx, tail + 4, scan.bytes - size);
+        m68k_write32(ctx, link, tail);
     }
-    return 0;
+    m68k_write32(ctx, mh + M68K_MH_FREE, scan.available - size);
+    return scan.chunk;
 }
 
-/* exec -192: Deallocate(A0=memHeader, A1=block, D0=byteSize) */
+/* exec -192: Deallocate(A0=memHeader, A1=block, D0=byteSize). As Exec,
+   include the whole caller span when rounding its start down and end up. */
 static IPTR thunk_exec_Deallocate_m(struct M68KEmuContext *ctx, void *cpu)
 {
-    ULONG mh = THUNK_A(0), blk = THUNK_A(1), size = THUNK_D(0), prev, mc, end, freed;
-    int guard = 0;
+    ULONG mh = THUNK_A(0), blk = THUNK_A(1), size = THUNK_D(0), offset;
+    ULONG end, freed, insert, next;
+    struct MemHeaderScan scan;
 
-    if (!mh || !blk || !size)
+    if (!blk || !size)
         return 0;
-    size = (size + (blk & (M68K_MEM_BLOCKSIZE - 1)) + M68K_MEM_BLOCKSIZE - 1) & ~(M68K_MEM_BLOCKSIZE - 1);
-    blk &= ~(M68K_MEM_BLOCKSIZE - 1);
+    offset = blk & (M68K_MEM_BLOCKSIZE - 1);
+    if (size > (ULONG)-1 - offset - (M68K_MEM_BLOCKSIZE - 1))
+        return 0;
+    size = (size + offset + M68K_MEM_BLOCKSIZE - 1) & ~(ULONG)(M68K_MEM_BLOCKSIZE - 1);
+    blk &= ~(ULONG)(M68K_MEM_BLOCKSIZE - 1);
+    if (!memheader_range(ctx, blk, size) ||
+        !memheader_scan(ctx, mh, 0, blk, &scan) ||
+        memheader_overlap(blk, size, mh, M68K_SIZEOF_MEMHEADER) ||
+        size > (ULONG)-1 - scan.available)
+        return 0;
     end = blk + size;
     freed = size;
+    if ((scan.prev && blk < scan.prev + scan.prev_bytes) ||
+        (scan.chunk && end > scan.chunk))
+        return 0;                       /* overlap, including a double free */
 
-    for (prev = mh + M68K_MH_FIRST, mc = m68k_read32(ctx, prev);
-         mc && mc < blk && guard++ < 1000000;
-         prev = mc, mc = m68k_read32(ctx, mc))
-        ;
-    /* merge with the following chunk */
-    if (mc && mc == end)
+    insert = blk;
+    next = scan.chunk;
+    if (scan.chunk && scan.chunk == end)
     {
-        size += m68k_read32(ctx, mc + 4);
-        mc = m68k_read32(ctx, mc);
+        if (scan.bytes > (ULONG)-1 - size)
+            return 0;
+        size += scan.bytes;
+        next = scan.next;
     }
-    m68k_write32(ctx, blk, mc);
-    m68k_write32(ctx, blk + 4, size);
-    /* merge with the preceding chunk */
-    if (prev != mh + M68K_MH_FIRST && prev + m68k_read32(ctx, prev + 4) == blk)
+    if (scan.prev && scan.prev + scan.prev_bytes == blk)
     {
-        m68k_write32(ctx, prev, mc);
-        m68k_write32(ctx, prev + 4, m68k_read32(ctx, prev + 4) + size);
+        if (scan.prev_bytes > (ULONG)-1 - size)
+            return 0;
+        insert = scan.prev;
+        size += scan.prev_bytes;
     }
-    else
-        m68k_write32(ctx, prev, blk);
-    m68k_write32(ctx, mh + M68K_MH_FREE, m68k_read32(ctx, mh + M68K_MH_FREE) + freed);
+    if (!memheader_write(ctx, insert) || !memheader_write(ctx, insert + 4))
+        return 0;
+
+    m68k_write32(ctx, insert, next);
+    m68k_write32(ctx, insert + 4, size);
+    if (insert != scan.prev)
+        m68k_write32(ctx, scan.prev ? scan.prev : mh + M68K_MH_FIRST, insert);
+    m68k_write32(ctx, mh + M68K_MH_FREE, scan.available + freed);
     return 0;
 }
 
