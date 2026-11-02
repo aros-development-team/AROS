@@ -1,9 +1,9 @@
-# Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
+# Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
 BASEICONS := About FixFonts Format FTManager WorkBook Shell
-ADDITIONALICONS := SysMon Snoopy Find VMM
+ADDITIONALICONS := SysMon Snoopy Find VMM Notifications
 
 DISKIMAGESRCS := DiskImageGUI-1.png DiskImageGUI-2.png
 DISKIMAGEICON := DiskImageGUI

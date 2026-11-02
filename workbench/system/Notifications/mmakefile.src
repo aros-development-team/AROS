@@ -1,0 +1,16 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-system : workbench-system-notifications
+#MM- workbench-c : workbench-c-notify
+#MM workbench-system-notifications : includes linklibs workbench-libs-application workbench-libs-decorator-includes workbench-libs-decortheme-includes
+#MM workbench-c-notify : includes linklibs workbench-libs-application
+
+%build_prog progname="Notifications" mmake=workbench-system-notifications \
+    files=notifications targetdir=$(AROS_SYSTEM)
+
+%build_prog progname="Notify" mmake=workbench-c-notify \
+    files=notifycmd targetdir=$(AROS_C)
+
+%common
