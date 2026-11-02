@@ -252,7 +252,7 @@ static void GPT_PatchDosEnvec(struct Library *PartitionBase,
 static LONG GPTCheckHeader(struct Library *PartitionBase, struct PartitionHandle *root, struct GPTHeader *hdr, UQUAD block)
 {
     /* Load the GPT header */
-    if (!readBlock(PartitionBase, root, block, hdr))
+    if (!ReadPartitionDataQ(root, hdr, root->de.de_SizeBlock << 2, block))
     {
         ULONG hdrSize = AROS_LE2LONG(hdr->HeaderSize);
         UQUAD currentblk = AROS_LE2QUAD(hdr->CurrentBlock);
@@ -262,7 +262,8 @@ static LONG GPTCheckHeader(struct Library *PartitionBase, struct PartitionHandle
 
         /* Check signature, header size, and current block number */
         if ((!memcmp(hdr->Signature, GPT_SIGNATURE, sizeof(hdr->Signature))) &&
-            (hdrSize >= GPT_MIN_HEADER_SIZE) && (currentblk == block))
+            (hdrSize >= GPT_MIN_HEADER_SIZE) &&
+            (hdrSize <= (root->de.de_SizeBlock << 2)) && (currentblk == block))
         {
             /*
              * Use zlib routine for CRC32.
@@ -309,15 +310,15 @@ static LONG PartitionGPTCheckPartitionTable(struct Library *PartitionBase, struc
             res = GPTCheckHeader(PartitionBase, root, blk, 1);
 
             /* 2 is a special return code for "bad CRC" */
-            if (res == ERROR_BAD_CRC)
+            if (res != 1)
             {
                 /* Try to read backup header */
-                UQUAD block = AROS_LE2QUAD(((struct GPTHeader *)blk)->BackupBlock);
+                UQUAD block = (UQUAD)root->dg.dg_TotalSectors - 1;
 
                 res = GPTCheckHeader(PartitionBase, root, blk, block);
 
                 /* There's no third backup :( */
-                if (res == ERROR_BAD_CRC)
+                if (res != 1)
                     res = 0;
             }
         }
@@ -342,8 +343,29 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
         struct GPTPartition *table;
         ULONG cnt       = AROS_LE2LONG(hdr->NumEntries);
         ULONG entrysize = AROS_LE2LONG(hdr->EntrySize);
-        ULONG tablesize = AROS_ROUNDUP2(entrysize * cnt, root->de.de_SizeBlock << 2);
+        ULONG blocksize = root->de.de_SizeBlock << 2;
+        ULONG tablesize;
         UQUAD startblk, endblk;
+
+        if (!cnt || entrysize < sizeof(struct GPTPartition) ||
+            (entrysize & (entrysize - 1)) ||
+            cnt > (0xffffffffUL - (blocksize - 1)) / entrysize)
+            return ERROR_NOT_A_DOS_DISK;
+        tablesize = AROS_ROUNDUP2(entrysize * cnt, blocksize);
+        startblk = AROS_LE2QUAD(hdr->StartBlock);
+        /* Geometry can be truncated or saturated. Validate against the
+         * CRC-checked GPT layout instead of its 32-bit sector count. */
+        UQUAD backup = block == 1 ? AROS_LE2QUAD(hdr->BackupBlock) : block;
+        UQUAD arrayblocks = tablesize / blocksize;
+        if (backup <= arrayblocks + 2 ||
+            AROS_LE2QUAD(hdr->DataStart) < 2 + arrayblocks ||
+            AROS_LE2QUAD(hdr->DataStart) > AROS_LE2QUAD(hdr->DataEnd) ||
+            AROS_LE2QUAD(hdr->DataEnd) >= backup - arrayblocks ||
+            startblk < 2 || startblk >= backup || arrayblocks > backup - startblk ||
+            (block == 1 && startblk + arrayblocks > AROS_LE2QUAD(hdr->DataStart)) ||
+            (block != 1 && (AROS_LE2QUAD(hdr->BackupBlock) != 1 ||
+                startblk <= AROS_LE2QUAD(hdr->DataEnd))))
+            return ERROR_NOT_A_DOS_DISK;
 
         DREAD(bug("[GPT] Read: %u entries per %u bytes, %u bytes total\n", cnt, entrysize, tablesize));
 
@@ -397,10 +419,21 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
                     gph = AllocVec(sizeof(struct GPTPartitionHandle) + entrysize, MEMF_CLEAR);
                     if (gph)
                     {
-                        initPartitionHandle(root, &gph->ph, startblk, endblk - startblk + 1);
-
-                        /* Map UUID to a DOSType */
-                        GPT_PatchDosEnvec(PartitionBase, &gph->ph, p);
+                        /* Preserve entries that the 32-bit DosEnvec interface
+                         * cannot represent, without probing or mounting an
+                         * accidentally truncated location. */
+                        if (endblk < 0xffffffffULL && endblk >= startblk &&
+                            startblk >= AROS_LE2QUAD(hdr->DataStart) &&
+                            endblk <= AROS_LE2QUAD(hdr->DataEnd))
+                        {
+                            initPartitionHandle(root, &gph->ph, startblk, endblk - startblk + 1);
+                            GPT_PatchDosEnvec(PartitionBase, &gph->ph, p);
+                        }
+                        else
+                        {
+                            initPartitionHandle(root, &gph->ph, 0, 1);
+                            gph->ph.de.de_DosType = 0;
+                        }
 
                         /* Store the whole entry and convert name into ASCII form */
                         CopyMem(p, &gph[1], entrysize);
@@ -426,6 +459,8 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
                 err = ERROR_BAD_CRC;
         }
 
+        if (res)
+            err = deviceError(res);
         FreeMem(table, tablesize);
     }
 
@@ -459,12 +494,20 @@ static LONG PartitionGPTOpenPartitionTable(struct Library *PartitionBase, struct
     /* Read primary GPT table */
     res = GPTReadPartitionTable(PartitionBase, root, root->table->data, 1);
 
-    if (res == ERROR_BAD_CRC)
+    if (res != 0)
     {
-        /* If CRC failed, read backup table */
+        /* Try the backup even if the primary header could not be read. */
         struct GPTHeader *hdr = root->table->data;
-        UQUAD block = AROS_LE2QUAD(hdr->BackupBlock);
+        UQUAD block = (UQUAD)root->dg.dg_TotalSectors - 1;
+        if (GPTCheckHeader(PartitionBase, root, hdr, 1) == 1)
+            block = AROS_LE2QUAD(hdr->BackupBlock);
 
+        struct PartitionHandle *ph, *next;
+        ForeachNodeSafe(&root->table->list, ph, next)
+        {
+            Remove(&ph->ln);
+            FreeVec(ph);
+        }
         res = GPTReadPartitionTable(PartitionBase, root, hdr, block);
 
         /* There's no third backup... */
@@ -502,7 +545,7 @@ static LONG GPTWriteTable(struct Library *PartitionBase, struct PartitionHandle 
     if (res == 0)
     {
         DWRITE(KPrintF("[GPT] Write header: start block %llu\n", headerblk));
-        res = PartitionWriteBlock(PartitionBase, root, headerblk, hdr);
+        res = WritePartitionDataQ(root, hdr, root->de.de_SizeBlock << 2, headerblk);
 
         DWRITE(bug("[GPT] Write result: %u\n", res));
     }
@@ -517,16 +560,6 @@ static LONG PartitionGPTWritePartitionTable(struct Library *PartitionBase, struc
     ULONG entrysize = AROS_LE2LONG(hdr->EntrySize);
     ULONG tablesize = AROS_ROUNDUP2(entrysize * cnt, root->de.de_SizeBlock << 2);
     struct GPTPartition *table;
-
-    /*
-     * TODO: Update legacy MBR data here when adding/moving is implemented. IntelMacs have
-     * legacy MBR filled in with copies of four first entries in GPT table if at least one
-     * FAT partition is defined on the drive (to support Windows XP).
-     * CHS data for these entries is always set to (c=1023, h=254, s=63), however start and end
-     * block numbers reflect the real position. Apple's disk utility always keeps these entries
-     * in sync with their respective GPT entries. We need to do the same. Also remember to keep
-     * boot code in sector 0.
-     */
 
     DWRITE(bug("[GPT] Write: %u entries per %u bytes, %u bytes total\n", cnt, entrysize, tablesize));
 
@@ -561,6 +594,15 @@ static LONG PartitionGPTWritePartitionTable(struct Library *PartitionBase, struc
             }
             p = (APTR)table + gph->position * entrysize;
             CopyMem(&gph[1], p, gph->entrySize);
+            /* Nonstandard records are retained for inspection, but must not
+             * let a rewrite place metadata over an existing partition. */
+            if (AROS_LE2QUAD(p->StartBlock) < AROS_LE2QUAD(hdr->DataStart) ||
+                AROS_LE2QUAD(p->EndBlock) > AROS_LE2QUAD(hdr->DataEnd) ||
+                AROS_LE2QUAD(p->EndBlock) < AROS_LE2QUAD(p->StartBlock))
+            {
+                FreeMem(table, tablesize);
+                return ERROR_NOT_A_DOS_DISK;
+            }
 
             DWRITE(PRINT_LE_UUID("Type     ", &p->TypeID));
             DWRITE(PRINT_LE_UUID("Partition", &p->PartitionID));
@@ -577,8 +619,15 @@ static LONG PartitionGPTWritePartitionTable(struct Library *PartitionBase, struc
         DWRITE(bug("[GPT] New data CRC 0x%08X\n", crc));
 
         /* First we attempt to write a backup table. It's placed in the end. */
-        backup = root->dg.dg_TotalSectors - 1;
-        res = GPTWriteTable(PartitionBase, root, hdr, table, backup, 1, backup - tablesize, tablesize);
+        backup = AROS_LE2QUAD(hdr->CurrentBlock) == 1 ?
+            AROS_LE2QUAD(hdr->BackupBlock) : AROS_LE2QUAD(hdr->CurrentBlock);
+        if (backup <= tablesize / (root->de.de_SizeBlock << 2) ||
+            AROS_LE2QUAD(hdr->DataEnd) >= backup - tablesize / (root->de.de_SizeBlock << 2))
+        {
+            FreeMem(table, tablesize);
+            return ERROR_NOT_A_DOS_DISK;
+        }
+        res = GPTWriteTable(PartitionBase, root, hdr, table, backup, 1, backup - tablesize / (root->de.de_SizeBlock << 2), tablesize);
 
         if (!res)
         {
@@ -609,9 +658,13 @@ static LONG PartitionGPTGetPartitionAttr(struct Library *PartitionBase,
         return TRUE;
 
     case PT_TYPE:
-        uuid_from_le((uuid_t *)tag->ti_Data, &part->TypeID);
+    {
+        uuid_t typeid;
+        uuid_from_le(&typeid, &part->TypeID);
+        CopyMem(&typeid, PTYPE(tag->ti_Data)->id, sizeof(typeid));
         PTYPE(tag->ti_Data)->id_len = sizeof(uuid_t);
         return TRUE;
+    }
 
     case PT_BOOTABLE:
         /* This extra flag is valid only for AROS partitions */
@@ -622,6 +675,12 @@ static LONG PartitionGPTGetPartitionAttr(struct Library *PartitionBase,
         return TRUE;
 
     case PT_AUTOMOUNT:
+        if (AROS_LE2QUAD(part->EndBlock) >= 0xffffffffULL ||
+            ph->de.de_DosType == 0)
+        {
+            *((ULONG *)tag->ti_Data) = FALSE;
+            return TRUE;
+        }
         *((ULONG *)tag->ti_Data) = (AROS_LE2LONG(part->Flags1) & GPT_PF1_NOMOUNT) ? FALSE : TRUE;
         return TRUE;
 
