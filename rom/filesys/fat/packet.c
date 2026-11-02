@@ -668,7 +668,7 @@ void ProcessPackets(struct Globals *glob)
                 }
 
                 err = FormatFATVolume(AROS_BSTR_ADDR(pkt->dp_Arg1),
-                    AROS_BSTR_strlen(pkt->dp_Arg1), glob);
+                    AROS_BSTR_strlen(pkt->dp_Arg1), pkt->dp_Arg2, glob);
                 if (err != 0)
                     break;
 

@@ -18,6 +18,7 @@
 #include <exec/types.h>
 #include <devices/inputevent.h>
 #include <dos/dos.h>
+#include <dos/filesystemids.h>
 #include <dos/dosextens.h>
 
 #include <clib/alib_protos.h>
@@ -544,7 +545,7 @@ static LONG GetVolumeIdentity(struct FSSuper *sb,
     return err;
 }
 
-LONG FormatFATVolume(const UBYTE *name, UWORD len, struct Globals *glob)
+LONG FormatFATVolume(const UBYTE *name, UWORD len, ULONG dostype, struct Globals *glob)
 {
     struct DosEnvec *de = BADDR(glob->fssm->fssm_Environ);
     LONG td_err;
@@ -560,7 +561,9 @@ LONG FormatFATVolume(const UBYTE *name, UWORD len, struct Globals *glob)
     /* Decide on FAT type based on number of sectors */
     sector_count = (de->de_HighCyl - de->de_LowCyl + 1)
         * de->de_Surfaces * de->de_BlocksPerTrack;
-    if (sector_count < 4085)
+    if (dostype == ID_FAT32_DISK)
+        type = 32;
+    else if (sector_count < 4085)
         type = 12;
     else if (sector_count < 1024 * 1024)
         type = 16;
@@ -612,11 +615,39 @@ LONG FormatFATVolume(const UBYTE *name, UWORD len, struct Globals *glob)
 
     /* Determine FAT size */
     root_dir_sectors = (root_entries_count * 32 + (bsize - 1)) / bsize;
-    temp1 = sector_count - (first_fat_sector + root_dir_sectors);
-    temp2 = 256 * sectors_per_cluster + 2;
     if (type == 32)
-        temp2 /= 2;
-    fat_size = (temp1 + temp2 - 1) / temp2;
+    {
+        if (sector_count <= first_fat_sector || bsize < 512)
+            return ERROR_DISK_FULL;
+        while ((UQUAD)sectors_per_cluster * bsize > 64 * 1024 && sectors_per_cluster > 1)
+            sectors_per_cluster >>= 1;
+        /* FAT type is determined by the data-cluster count, not the label
+         * in the BPB. Small ESPs need smaller clusters than our large-volume
+         * defaults. Include both FATs and the two reserved FAT entries. */
+        for (;;)
+        {
+            UQUAD numerator = (UQUAD)(sector_count - first_fat_sector) * 4 +
+                8 * sectors_per_cluster;
+            UQUAD denominator = (UQUAD)bsize * sectors_per_cluster + 8;
+            fat_size = (numerator + denominator - 1) / denominator;
+            if (2 * fat_size < sector_count - first_fat_sector &&
+                (sector_count - first_fat_sector - 2 * fat_size) /
+                    sectors_per_cluster >= 65525)
+                break;
+            if (sectors_per_cluster == 1)
+                return ERROR_DISK_FULL;
+            sectors_per_cluster >>= 1;
+        }
+        if ((sector_count - first_fat_sector - 2 * fat_size) /
+                sectors_per_cluster > 0x0ffffff5UL)
+            return ERROR_DISK_FULL;
+    }
+    else
+    {
+        temp1 = sector_count - (first_fat_sector + root_dir_sectors);
+        temp2 = 256 * sectors_per_cluster + 2;
+        fat_size = (temp1 + temp2 - 1) / temp2;
+    }
 
     boot = AllocMem(bsize, MEMF_CLEAR);
     if (!boot)

@@ -73,7 +73,7 @@ BOOL FreeCluster(struct FSSuper *sb, ULONG cluster);
 
 /* volume.c */
 LONG ReadFATSuper(struct FSSuper *s);
-LONG FormatFATVolume(const UBYTE *name, UWORD len, struct Globals *glob);
+LONG FormatFATVolume(const UBYTE *name, UWORD len, ULONG dostype, struct Globals *glob);
 LONG CompareFATSuper(struct FSSuper *s1, struct FSSuper *s2);
 LONG SetVolumeName(struct FSSuper *sb, UBYTE *name, UWORD len);
 void FillDiskInfo(struct InfoData *id, struct Globals *glob);
