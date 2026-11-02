@@ -254,7 +254,7 @@ int
 in6_pcbconnect(struct inpcb *inp, struct mbuf *nam)
 {
     struct sockaddr_in6 *sin6;
-    struct ifnet *zone = NULL;
+    struct ifnet *zone = NULL, *oifp;
 
     if(nam == NULL || nam->m_len < (int)sizeof(struct sockaddr_in6))
         return EINVAL;
@@ -296,8 +296,18 @@ in6_pcbconnect(struct inpcb *inp, struct mbuf *nam)
      * SYN (and every later segment) would never be accepted.  Mirrors the
      * source selection udp6_output() performs for unbound datagram sockets.
      */
-    if(IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6) && zone != NULL) {
-        struct in6_ifaddr *ia = in6_ifawithifp(zone, &sin6->sin6_addr);
+    /*
+     * A group with no zone is reached by the IPV6_MULTICAST_IF interface
+     * (RFC 3493 section 5.2), as each datagram udp6_output() sends to it
+     * is: the source comes from there too. The socket is not bound to it.
+     */
+    if(zone == NULL && IN6_IS_ADDR_MULTICAST(&sin6->sin6_addr) &&
+            inp->in6p_moptions && inp->in6p_moptions->im6o_multicast_ifp)
+        oifp = inp->in6p_moptions->im6o_multicast_ifp;
+    else
+        oifp = zone;
+    if(IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6) && oifp != NULL) {
+        struct in6_ifaddr *ia = in6_ifawithifp(oifp, &sin6->sin6_addr);
 
         if(ia == NULL)
             return EADDRNOTAVAIL;

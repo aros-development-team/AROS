@@ -24,6 +24,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-keepalive \
     cunit-net-localhost \
     cunit-net-mcast6 \
+    cunit-net-mcast6if \
     cunit-net-mld6 \
     cunit-net-naflags6 \
     cunit-net-ndqueue6 \

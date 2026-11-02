@@ -662,8 +662,12 @@ socket's zone is `inp_boundif`, the interface `SO_BINDTODEVICE` also sets. `in6_
 only one of our addresses (or a group, or `::`), a link-scope one only in its zone, and sets the
 socket's zone; `in6_pcbconnect()` takes the zone from the peer's `sin6_scope_id` (`ENXIO` if no
 interface has that index, `EINVAL` if the socket is in another zone) and picks the source on that
-link. Without a zone the routing table picks the link, as RFC 4007 section 6 allows for a default
-zone. `getsockname()`/`getpeername()`/`accept()` report the zone of link-scope addresses (for an
+link. A group with no zone is reached by the `IPV6_MULTICAST_IF` interface, as each datagram to it
+is, so a socket connected to it takes its source there (without being bound to it). Otherwise,
+without a zone, the routing table picks the link, as RFC 4007 section 6 allows for a default zone;
+for a group datagram with neither a zone nor `IPV6_MULTICAST_IF`, `ip6_output()` takes the link its
+source address is on, or else the first interface that is up.
+`getsockname()`/`getpeername()`/`accept()` report the zone of link-scope addresses (for an
 accepted connection, the link its link-local address is on), and `recvfrom()` the link a link-scope
 source arrived on. A packet sent to one of our own link-local addresses is looped back through
 `lo0` but received on the interface the address belongs to, as KAME's `origifp` does, so the zone
