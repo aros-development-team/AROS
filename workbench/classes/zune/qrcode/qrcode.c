@@ -24,6 +24,11 @@
 #define QRCODE_BYTE_LIMIT 2953UL
 #define QRCODE_QUIET_MODULES 4
 
+/* Native MUI pen specifications: text for modules, area background for
+   empty modules and the standard four-module quiet zone. */
+static const struct MUI_PenSpec defaultForeground = { "m5" }; /* MPEN_TEXT */
+static const struct MUI_PenSpec defaultBackground = { "m2" }; /* MPEN_BACKGROUND */
+
 /* Free the current encoded matrix and set status to Empty.
    Preserve the copied input, input mode, and requested ECC level. */
 static void clearMatrix(struct QRCode_DATA *data)
@@ -149,13 +154,66 @@ static void encodeCurrent(struct QRCode_DATA *data)
     }
 }
 
-/* Collect QRCode attributes from one tag list and re-encode at most once.
-   For repeated attributes of one kind, the last value wins. Supplying
+/* Stage a complete pair of pen specifications. When set up, obtain both
+   new pens first; never discard the active pair on a bad specification,
+   failed allocation or indistinguishable final screen pen indices.
+   NULL resets the requested component to the normal MUI theme pen. */
+static BOOL updateColours(struct QRCode_DATA *data, Object *obj,
+                          BOOL hasForeground, const struct MUI_PenSpec *foreground,
+                          BOOL hasBackground, const struct MUI_PenSpec *background,
+                          BOOL hasTransparent, BOOL transparent)
+{
+    struct MUI_PenSpec nextForeground = data->foregroundSpec;
+    struct MUI_PenSpec nextBackground = data->backgroundSpec;
+    BOOL nextTransparent = hasTransparent ? transparent : data->transparent;
+    LONG nextDark, nextLight = -1;
+
+    if (hasForeground)
+    {
+        if (foreground && !memchr(foreground->buf, 0, sizeof(foreground->buf)))
+            return FALSE;
+        nextForeground = foreground ? *foreground : defaultForeground;
+    }
+    if (hasBackground)
+    {
+        if (background && !memchr(background->buf, 0, sizeof(background->buf)))
+            return FALSE;
+        nextBackground = background ? *background : defaultBackground;
+    }
+    if (data->darkPen != -1)
+    {
+        nextDark = MUI_ObtainPen(muiRenderInfo(obj), &nextForeground, 0);
+        if (nextDark == -1)
+            return FALSE;
+        if (!nextTransparent)
+        {
+            nextLight = MUI_ObtainPen(muiRenderInfo(obj), &nextBackground, 0);
+            if (nextLight == -1 || MUIPEN(nextDark) == MUIPEN(nextLight))
+            {
+                MUI_ReleasePen(muiRenderInfo(obj), nextDark);
+                if (nextLight != -1)
+                    MUI_ReleasePen(muiRenderInfo(obj), nextLight);
+                return FALSE;
+            }
+        }
+        MUI_ReleasePen(muiRenderInfo(obj), data->darkPen);
+        MUI_ReleasePen(muiRenderInfo(obj), data->lightPen);
+        data->darkPen = nextDark;
+        data->lightPen = nextLight;
+    }
+    data->foregroundSpec = nextForeground;
+    data->backgroundSpec = nextBackground;
+    data->transparent = nextTransparent;
+    return TRUE;
+}
+
+/* Collect QRCode attributes from one tag list. For repeated attributes,
+   the last value wins. Color-only updates exchange pens and redraw without
+   re-encoding; invalid pen specs leave the active colors intact. Supplying
    both Text and Data invalidates and clears the old content. An input
-   replacement discards the previous content before validation, so this
-   operation does not provide rollback on failure. Return TRUE if any
-   recognized QRCode attribute was supplied, FALSE otherwise. */
-static BOOL applyTags(struct QRCode_DATA *data, struct TagItem *tags)
+   replacement discards the previous content before validation, so it does
+   not provide rollback on failure. Return TRUE if state changed. */
+static BOOL applyTags(struct QRCode_DATA *data, Object *obj, struct TagItem *tags)
 {
     struct TagItem *state = tags;
     struct TagItem *tag;
@@ -164,6 +222,10 @@ static BOOL applyTags(struct QRCode_DATA *data, struct TagItem *tags)
     BOOL hasText = FALSE;
     BOOL hasData = FALSE;
     BOOL changed = FALSE;
+    BOOL reencode = FALSE;
+    BOOL hasForeground = FALSE, hasBackground = FALSE;
+    BOOL hasTransparent = FALSE, transparent = FALSE;
+    const struct MUI_PenSpec *foreground = NULL, *background = NULL;
 
     while ((tag = NextTagItem(&state)) != NULL)
     {
@@ -171,22 +233,41 @@ static BOOL applyTags(struct QRCode_DATA *data, struct TagItem *tags)
         {
             case MUIA_QRCode_ECC:
                 data->ecc = (ULONG)tag->ti_Data;
+                reencode = TRUE;
                 changed = TRUE;
                 break;
             case MUIA_QRCode_Text:
                 text = (const char *)tag->ti_Data;
                 hasText = TRUE;
+                reencode = TRUE;
                 changed = TRUE;
                 break;
             case MUIA_QRCode_Data:
                 payload = (const struct MUI_QRCodePayload *)tag->ti_Data;
                 hasData = TRUE;
+                reencode = TRUE;
                 changed = TRUE;
+                break;
+            case MUIA_QRCode_ForegroundPenSpec:
+                foreground = (const struct MUI_PenSpec *)tag->ti_Data;
+                hasForeground = TRUE;
+                break;
+            case MUIA_QRCode_BackgroundPenSpec:
+                background = (const struct MUI_PenSpec *)tag->ti_Data;
+                hasBackground = TRUE;
+                break;
+            case MUIA_QRCode_Transparent:
+                transparent = (BOOL)(tag->ti_Data != 0);
+                hasTransparent = TRUE;
                 break;
         }
     }
-    if (!changed)
-        return FALSE;
+    if ((hasForeground || hasBackground || hasTransparent) &&
+        updateColours(data, obj, hasForeground, foreground,
+                      hasBackground, background, hasTransparent, transparent))
+        changed = TRUE;
+    if (!reencode)
+        return changed;
     if (hasText && hasData)
     {
         replaceInput(data, NULL, 1, FALSE);
@@ -209,7 +290,7 @@ static BOOL applyTags(struct QRCode_DATA *data, struct TagItem *tags)
 }
 
 /* Initialize one class instance after successful superclass creation.
-   Start with ECC M, Empty status, and no owned input, matrix, or pens.
+   Start with ECC M, theme-aware color specs, Empty status, and no pens.
    Apply the initial tag list before returning the object. Encoding
    errors remain observable through Status; they do not cause OM_NEW
    to discard an otherwise successfully created instance. */
@@ -225,18 +306,20 @@ IPTR QRCode__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
     data->ecc = MUIV_QRCode_ECC_M;
     data->darkPen = -1;
     data->lightPen = -1;
-    applyTags(data, msg->ops_AttrList);
+    data->foregroundSpec = defaultForeground;
+    data->backgroundSpec = defaultBackground;
+    applyTags(data, obj, msg->ops_AttrList);
     return (IPTR)obj;
 }
 
 /* Apply QRCode attributes, then forward OM_SET to the superclass.
-   Request a full object redraw if a recognized QRCode attribute was
+   Request a full object redraw when the QR matrix or colors changed.
    present. Return the superclass result; encoding failures are
    reported through MUIA_QRCode_Status rather than this return value. */
 IPTR QRCode__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
     struct QRCode_DATA *data = INST_DATA(cl, obj);
-    BOOL changed = applyTags(data, msg->ops_AttrList);
+    BOOL changed = applyTags(data, obj, msg->ops_AttrList);
     IPTR result = DoSuperMethodA(cl, obj, (Msg)msg);
 
     if (changed)
@@ -244,8 +327,8 @@ IPTR QRCode__OM_SET(Class *cl, Object *obj, struct opSet *msg)
     return result;
 }
 
-/* Return the current requested ECC value or encoding Status to the caller.
-   Return TRUE for either supported attribute; forward other queries
+/* Return the current ECC, encoding Status or borrowed pen specifications.
+   Return TRUE for recognized attributes; forward other queries
    to the superclass. Status describes encoding, not draw visibility. */
 IPTR QRCode__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 {
@@ -259,6 +342,21 @@ IPTR QRCode__OM_GET(Class *cl, Object *obj, struct opGet *msg)
     if (msg->opg_AttrID == MUIA_QRCode_ECC)
     {
         *msg->opg_Storage = (IPTR)data->ecc;
+        return TRUE;
+    }
+    if (msg->opg_AttrID == MUIA_QRCode_ForegroundPenSpec)
+    {
+        *msg->opg_Storage = (IPTR)&data->foregroundSpec;
+        return TRUE;
+    }
+    if (msg->opg_AttrID == MUIA_QRCode_BackgroundPenSpec)
+    {
+        *msg->opg_Storage = (IPTR)&data->backgroundSpec;
+        return TRUE;
+    }
+    if (msg->opg_AttrID == MUIA_QRCode_Transparent)
+    {
+        *msg->opg_Storage = (IPTR)data->transparent;
         return TRUE;
     }
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -293,27 +391,24 @@ IPTR QRCode__MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
     return TRUE;
 }
 
-/* Set up the superclass, then acquire dark and light screen pens.
-   Fail if either reservation fails or both resolve to one pen index.
-   Release each successful reservation (including equal indices),
-   reset both sentinels, and clean up the superclass before returning
-   FALSE. On success, Cleanup owns the two pen reservations. */
+/* Set up the superclass and resolve the owned foreground/background MUI
+   PenSpecs. Reject allocation failure or indistinguishable screen pens;
+   release complete MUI pen tokens before unwinding superclass Setup. */
 IPTR QRCode__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct QRCode_DATA *data = INST_DATA(cl, obj);
-    struct ColorMap *cm;
 
     if (!DoSuperMethodA(cl, obj, (Msg)msg))
         return FALSE;
-    cm = _screen(obj)->ViewPort.ColorMap;
-    data->darkPen = ObtainBestPen(cm, 0, 0, 0, TAG_DONE);
-    data->lightPen = ObtainBestPen(cm, 0xffffffffUL, 0xffffffffUL,
-                                   0xffffffffUL, TAG_DONE);
-    if (data->darkPen < 0 || data->lightPen < 0 ||
-        data->darkPen == data->lightPen)
+    data->darkPen = MUI_ObtainPen(muiRenderInfo(obj), &data->foregroundSpec, 0);
+    if (!data->transparent)
+        data->lightPen = MUI_ObtainPen(muiRenderInfo(obj), &data->backgroundSpec, 0);
+    if (data->darkPen == -1 ||
+        (!data->transparent && (data->lightPen == -1 ||
+         MUIPEN(data->darkPen) == MUIPEN(data->lightPen))))
     {
-        if (data->darkPen >= 0) ReleasePen(cm, data->darkPen);
-        if (data->lightPen >= 0) ReleasePen(cm, data->lightPen);
+        MUI_ReleasePen(muiRenderInfo(obj), data->darkPen);
+        MUI_ReleasePen(muiRenderInfo(obj), data->lightPen);
         data->darkPen = -1;
         data->lightPen = -1;
         DoSuperMethod(cl, obj, MUIM_Cleanup);
@@ -322,23 +417,21 @@ IPTR QRCode__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
     return TRUE;
 }
 
-/* Release each acquired screen pen against the active screen colormap.
-   Reset both pen sentinels, then delegate Zune cleanup to the
-   superclass. Each successful pen obtain owns one release. */
+/* Release both complete MUI pen tokens while render info is still valid.
+   Theme pen tokens are borrowed; RGB allocations are released by MUI. */
 IPTR QRCode__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct QRCode_DATA *data = INST_DATA(cl, obj);
-    struct ColorMap *cm = _screen(obj)->ViewPort.ColorMap;
 
-    if (data->darkPen >= 0) ReleasePen(cm, data->darkPen);
-    if (data->lightPen >= 0) ReleasePen(cm, data->lightPen);
+    MUI_ReleasePen(muiRenderInfo(obj), data->darkPen);
+    MUI_ReleasePen(muiRenderInfo(obj), data->lightPen);
     data->darkPen = -1;
     data->lightPen = -1;
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
 /* Draw the superclass first. On relevant draw requests, fill the area
-   with the light pen. Render only a Ready matrix that fits with four
+   with the background pen. Render only a Ready matrix that fits with four
    quiet modules on every side at an integral pixel scale. Each run
    of dark modules is one filled rectangle; scaling never interpolates.
    Insufficient display size leaves the area blank without changing
@@ -352,15 +445,25 @@ IPTR QRCode__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)))
         return result;
-    if (data->lightPen < 0 || data->darkPen < 0)
+    if (data->darkPen < 0 || (!data->transparent && data->lightPen < 0))
         return result;
     width = _mwidth(obj);
     height = _mheight(obj);
     if (width <= 0 || height <= 0)
         return result;
-    SetAPen(_rp(obj), data->lightPen);
-    RectFill(_rp(obj), _mleft(obj), _mtop(obj),
-             _mleft(obj) + width - 1, _mtop(obj) + height - 1);
+    if (data->transparent)
+    {
+        /* Repaint the inherited Zune background on each full or update draw,
+           preventing stale QR modules after data or color changes. */
+        DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj),
+                 width, height, _mleft(obj), _mtop(obj), 0);
+    }
+    else
+    {
+        SetAPen(_rp(obj), MUIPEN(data->lightPen));
+        RectFill(_rp(obj), _mleft(obj), _mtop(obj),
+                 _mleft(obj) + width - 1, _mtop(obj) + height - 1);
+    }
     if (data->matrix == NULL || data->status != MUIV_QRCode_Status_Ready)
         return result;
     size = qrcodegen_getSize(data->matrix);
@@ -371,7 +474,7 @@ IPTR QRCode__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     originX = _mleft(obj) + (width - unit * side) / 2 + QRCODE_QUIET_MODULES * unit;
     originY = _mtop(obj) + (height - unit * side) / 2 + QRCODE_QUIET_MODULES * unit;
 
-    SetAPen(_rp(obj), data->darkPen);
+    SetAPen(_rp(obj), MUIPEN(data->darkPen));
     for (y = 0; y < size; y++)
     {
         for (x = 0; x < size; )

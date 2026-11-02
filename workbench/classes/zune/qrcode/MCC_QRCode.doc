@@ -4,6 +4,9 @@ QRCode.mcc/QRCode.mcc
 QRCode.mcc/MUIA_QRCode_Text
 QRCode.mcc/MUIA_QRCode_Data
 QRCode.mcc/MUIA_QRCode_ECC
+QRCode.mcc/MUIA_QRCode_ForegroundPenSpec
+QRCode.mcc/MUIA_QRCode_BackgroundPenSpec
+QRCode.mcc/MUIA_QRCode_Transparent
 QRCode.mcc/MUIA_QRCode_Status
 QRCode.mcc/QRCode.mcc
 
@@ -13,7 +16,16 @@ QRCode.mcc/MUIA_QRCode_Status
 
    The object copies input synchronously when created or updated. Drawing
    does not rerun the encoder. The symbol uses integer pixel scaling and
-   four light modules of quiet zone on every side.
+   four background-coloured modules of quiet zone on every side.
+   Default module colour is the current MUI text pen (MPEN_TEXT); default
+   background/quiet-zone colour is MPEN_BACKGROUND. Applications may
+   override both with MUI pen specifications, including RGB specifications.
+   Pen changes do not re-encode the existing QR data. Colour contrast and
+   scan reliability remain the responsibility of the application; some
+   colour combinations may fail to scan on low-colour displays.
+   Optional transparent-background mode repaints the inherited Zune area
+   background, including in the quiet zone; it is not alpha blending.
+   Texture, gradients and insufficient contrast can make QR codes unreadable.
 
    When the object is smaller than the complete symbol, it draws no QR Code.
    Status reports the encoding result, not the size or contrast of the
@@ -63,6 +75,58 @@ QRCode.mcc/MUIA_QRCode_Status
    at the selected level reports NoCapacity. Both clear the symbol.
    The getter returns the last supplied ECC value, even if that value
    is outside the supported range.
+QRCode.mcc/MUIA_QRCode_ForegroundPenSpec
+
+   MUIA_QRCode_ForegroundPenSpec -- [ISG], const struct MUI_PenSpec *
+
+   Sets the foreground (dark-data-module) pen specification. The object
+   copies the 32-byte MUI_PenSpec immediately. NULL restores the default
+   MUI text pen ("m5", MPEN_TEXT). Its getter returns a borrowed pointer
+   to the current internal specification, valid until the next change or
+   object disposal. The caller must not modify or free that memory.
+
+   Supply a readable MUI_PenSpec with a NUL-terminated string in its
+   32-byte buf. A specification without a terminator is rejected. Pen
+   syntax (for example "m5" or "rFFFFFFFF,00000000,00000000") is
+   resolved against the Zune render context with MUI_ObtainPen(). When
+   set up in opaque mode, both new pens are obtained before the old pens
+   are released; transparent mode obtains only the foreground pen.
+   Failed pen resolution, or equal screen pen indices in opaque mode,
+   leave the previously selected colours and transparency unchanged.
+   Before Setup, syntactic pen validity is not fully checked: a stored
+   specification may later make Setup fail. A failed colour update does
+   not change the encoding Status, and OM_SET returns the superclass
+   result rather than a pen-update success code. Read the getter to
+   confirm the accepted specification. Changing colours does not
+   regenerate the QR matrix.
+
+QRCode.mcc/MUIA_QRCode_BackgroundPenSpec
+
+   MUIA_QRCode_BackgroundPenSpec -- [ISG], const struct MUI_PenSpec *
+
+   Sets the background and four-module quiet-zone colour for opaque
+   rendering. NULL restores the default MUI area background pen ("m2",
+   MPEN_BACKGROUND). The specification is copied; the getter returns a
+   borrowed, read-only pointer. It uses the same string termination and
+   resolution rules as ForegroundPenSpec. In transparent mode the value
+   is retained without obtaining a background pen; it is resolved when
+   opaque rendering is requested. The background should be uniform and
+   distinguishable from the foreground for reliable QR scanning.
+
+QRCode.mcc/MUIA_QRCode_Transparent
+
+   MUIA_QRCode_Transparent -- [ISG], BOOL
+
+   FALSE (default) fills the gadget with BackgroundPenSpec. TRUE instead
+   redraws the inherited Zune background and draws only the foreground
+   modules. The quiet zone shows that same background. No alpha blending
+   is performed. Switching modes redraws without re-encoding the matrix.
+   Transparent mode does not acquire a background pen; BackgroundPenSpec
+   is retained and resolved when switching back to opaque rendering. If
+   that pen cannot be obtained, the existing mode and pens are kept. The
+   inherited background must provide a uniform, high-contrast quiet zone;
+   textured and low-contrast backgrounds may prevent reliable scanning.
+
 QRCode.mcc/MUIA_QRCode_Status
 
    MUIA_QRCode_Status -- [..G], ULONG
@@ -79,3 +143,5 @@ QRCode.mcc/MUIA_QRCode_Status
    updates do not restore previous content. Encoding failures are reported
    through this attribute, not the return value of OM_SET. Status_Ready
    does not assert that the gadget has enough display pixels to render it.
+   Pen updates do not change Status. In a combined tag update, a failed
+   colour change does not prevent Text, Data or ECC from being processed.
