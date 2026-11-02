@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -24,6 +24,49 @@
 #include "prefs.h"
 #include "debug.h"
 #include "knob_private.h"
+
+/****** Knob.mui/MUIC_Knob ************
+*
+*   NAME
+*       MUIC_Knob
+*
+*   SUPERCLASS
+*       Numeric.mui
+*
+*   DESCRIPTION
+*       Show Numeric Value as a marker on a rotary control. There are no
+*       class-specific public attributes or methods. ValueToScale maps the
+*       current value to zero through 270 degrees; Numeric_Reverse reverses this
+*       mapping. The artwork is a built-in 25 by 25 pixel pattern. A framed
+*       label area is painted, but no numeric text is drawn there;
+*       Numeric_Format does not change that rendering.
+*       Construction prepends FillArea FALSE. Setup calls Numeric then registers
+*       a separate mouse handler; Cleanup removes it before Numeric Cleanup. No
+*       separately allocated knob image or native gadget is owned.
+*
+*   METHODS
+*       AskMinMax adds 33 pixels in width and 47 pixels in height to all
+*       superclass size fields and returns TRUE. Full Draw paints frame,
+*       background and marker; update Draw erases the old marker and draws the
+*       new one. Draw returns FALSE without full/update flags, otherwise TRUE;
+*       drawing statuses are ignored.
+*       SELECTDOWN inside the object enables mouse-move events. Any other button
+*       code disables them. A delivered mouse move calculates an absolute angle
+*       from the pointer around the knob center, clamps it to 0..270 and sets
+*       Numeric_Value through ScaleToValue. It is not a relative drag
+*       accumulator. The handler returns zero and does not delegate; Numeric
+*       separately handles raw keys. There is no local pressed/drag flag check
+*       on mouse moves, so callers must preserve the normal event-registration
+*       lifecycle.
+*
+*   NOTES
+*       Use valid Numeric bounds and normal Setup/Show/Hide/Cleanup ordering.
+*       Hit testing uses current geometry and WORD intermediates. Formatting,
+*       export/import and numeric methods remain inherited even though the class
+*       does not draw a value string. Reverse changes alone inherit Numeric's
+*       lack of an automatic redraw request.
+*
+*/
 
 extern struct Library *MUIMasterBase;
 
@@ -91,6 +134,11 @@ static const UBYTE knob_rle[] =  /* hand-encoded, BTW ;-) */
     
 };
 
+/*
+ * Construct Numeric with FillArea FALSE before caller tags, then initialize
+ * mouse descriptor. Return object or NULL. No image allocation or
+ * additional public state.
+ */
 IPTR Knob__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     obj = (Object *) DoSuperNewTags
@@ -112,6 +160,11 @@ IPTR Knob__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Set up Numeric and register Knob mouse handler on success. Return
+ * superclass result, ignoring registration status. Requires live window and
+ * paired Cleanup.
+ */
 IPTR Knob__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
@@ -137,6 +190,11 @@ IPTR Knob__MUIM_Setup(struct IClass *cl, Object *obj,
     return retval;
 }
 
+/*
+ * Remove Knob mouse handler then return Numeric Cleanup result. Requires
+ * live window and matching Setup; no separately allocated artwork to
+ * release.
+ */
 IPTR Knob__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
@@ -150,6 +208,11 @@ IPTR Knob__MUIM_Cleanup(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
+/*
+ * Ask Numeric/Area then add fixed 33 by 47 content requirements to every
+ * corresponding size field. Return TRUE ignoring superclass result.
+ * Requires writable MinMaxInfo; does not measure Format or font.
+ */
 IPTR Knob__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     struct MUIP_AskMinMax *msg)
 {
@@ -167,6 +230,12 @@ IPTR Knob__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
+/*
+ * Draw or erase the small Knob marker using object pens on the supplied
+ * RastPort. Angles outside 0..270 become zero before conversion to drawing
+ * angle. Requires adequate rectangle and live pens; no resource ownership
+ * or result.
+ */
 static void DrawNeedle(Object *obj, struct RastPort *rp, LONG x1, LONG y1,
     LONG x2, LONG y2, double angle, BOOL clear)
 {
@@ -213,6 +282,13 @@ static void DrawNeedle(Object *obj, struct RastPort *rp, LONG x1, LONG y1,
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
+/*
+ * Draw full built-in frame/pattern or erase previous marker, then map Value
+ * to 0..270 and draw marker. Return FALSE without full/update flags,
+ * otherwise TRUE. Requires valid render context and geometry; no numeric
+ * text is drawn. Save prevangle for later update; rendering results
+ * ignored.
+ */
 IPTR Knob__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Knob_DATA *data = INST_DATA(cl, obj);
@@ -403,6 +479,13 @@ IPTR Knob__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
+/*
+ * Enable moves for SELECTDOWN inside; disable them for other button codes.
+ * Map each delivered move to absolute clamped angle and set Numeric Value
+ * normally. NULL imsg returns zero; all paths return zero without
+ * superclass delegation. No local drag flag protects injected moves;
+ * requires valid geometry and window.
+ */
 IPTR Knob__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUIP_HandleEvent *msg)
 {
@@ -483,6 +566,12 @@ IPTR Knob__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 }
 
 #if ZUNE_BUILTIN_KNOB
+/*
+ * When built in, route local overrides and delegate other messages to
+ * Numeric. Return the selected handler result. Requires ABI-correct message
+ * and live object except construction; resource ownership follows the class
+ * lifecycle contract.
+ */
 BOOPSI_DISPATCHER(IPTR, Knob_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
