@@ -45,6 +45,7 @@ struct GPTPartitionHandle
 {
     struct PartitionHandle ph;  /* Public part                */
     ULONG entrySize;            /* Size of table entry        */
+    ULONG position;            /* Stable on-disk entry slot */
     char name[37];              /* Name in ASCII              */
                                 /* Actual table entry follows */
 };
@@ -369,7 +370,7 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
                 DREAD(bug("[GPT] Adding partitions...\n"));
                 err = 0;
 
-                for (i = 0; i < cnt; i++)
+                for (i = 0; i < cnt; i++, p = (APTR)p + entrysize)
                 {
                     struct GPTPartitionHandle *gph;
 
@@ -407,6 +408,7 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
 
                         gph->ph.ln.ln_Name = gph->name;
                         gph->entrySize     = entrysize;
+                        gph->position      = i;
 
                         ADDTAIL(&root->table->list, gph);
                         DREAD(bug("[GPT] Added partition %u (%s), handle 0x%p\n", i, gph->name, gph));
@@ -417,8 +419,7 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
                         break;
                     }
 
-                    /* Jump to next entry, skip 'entrysize' bytes */
-                    p = (APTR)p + entrysize;
+
                 }
             }
             else
@@ -553,6 +554,12 @@ static LONG PartitionGPTWritePartitionTable(struct Library *PartitionBase, struc
              * Use entry's own length, because if this entry is created by AddPartition(),
              * it can be shorter than on-disk one (if someone uses extended length we don't know about).
              */
+            if (gph->position >= cnt || gph->entrySize > entrysize)
+            {
+                FreeMem(table, tablesize);
+                return ERROR_NOT_A_DOS_DISK;
+            }
+            p = (APTR)table + gph->position * entrysize;
             CopyMem(&gph[1], p, gph->entrySize);
 
             DWRITE(PRINT_LE_UUID("Type     ", &p->TypeID));
@@ -597,6 +604,10 @@ static LONG PartitionGPTGetPartitionAttr(struct Library *PartitionBase,
 
     switch (tag->ti_Tag)
     {
+    case PT_POSITION:
+        *((ULONG *)tag->ti_Data) = GPTH(ph)->position;
+        return TRUE;
+
     case PT_TYPE:
         uuid_from_le((uuid_t *)tag->ti_Data, &part->TypeID);
         PTYPE(tag->ti_Data)->id_len = sizeof(uuid_t);
