@@ -765,6 +765,28 @@ static LONG PartitionGPTSetPartitionAttrs(struct Library *PartitionBase, struct 
     struct GPTPartition *part = (APTR)ph + sizeof(struct GPTPartitionHandle);
     struct TagItem *tag;
     struct TagItem *bootable = NULL;
+    struct DosEnvec *de = (APTR)GetTagData(PT_DOSENVEC, 0, taglist);
+    UQUAD first, end;
+    struct GPTHeader *hdr = ph->root->table->data;
+
+    /* Check geometry before changing any other attributes. */
+    if (de && (AROS_LE2QUAD(part->StartBlock) < AROS_LE2QUAD(hdr->DataStart) ||
+        AROS_LE2QUAD(part->EndBlock) > AROS_LE2QUAD(hdr->DataEnd) ||
+        AROS_LE2QUAD(part->EndBlock) >= 0xffffffffULL ||
+        AROS_LE2QUAD(part->EndBlock) < AROS_LE2QUAD(part->StartBlock) ||
+        !GPTPartitionBounds(ph->root, ph, de, &first, &end)))
+        return ERROR_BAD_NUMBER;
+    if (de)
+    {
+        part->StartBlock = AROS_QUAD2LE(first);
+        part->EndBlock = AROS_QUAD2LE(end);
+        initPartitionHandle(ph->root, ph, first, end - first + 1);
+        CopyMem(de, &ph->de, sizeof(*de));
+        if (is_aros_uuid_le(&part->TypeID))
+            part->Flags1 = (part->Flags1 & ~AROS_LONG2LE(GPT_PF1_AROS_BOOTPRI)) |
+                AROS_LONG2LE((UBYTE)de->de_BootPri);
+        GPT_PatchDosEnvec(PartitionBase, ph, part);
+    }
 
     while ((tag = NextTagItem((struct TagItem **)&taglist)))
     {
@@ -781,7 +803,9 @@ static LONG PartitionGPTSetPartitionAttrs(struct Library *PartitionBase, struct 
             /* Foolproof check */
             if (PTYPE(tag->ti_Data)->id_len == sizeof(uuid_t))
             {
-                uuid_to_le(&part->TypeID, (uuid_t *)tag->ti_Data);
+                uuid_t typeid;
+                CopyMem(PTYPE(tag->ti_Data)->id, &typeid, sizeof(typeid));
+                uuid_to_le(&part->TypeID, &typeid);
                 /* Update DOSType according to a new type ID */
                 GPT_PatchDosEnvec(PartitionBase, ph, part);
             }
@@ -804,7 +828,7 @@ static LONG PartitionGPTSetPartitionAttrs(struct Library *PartitionBase, struct 
 
             break;
 
-        /* TODO: implement the rest (geometry, dosenvec, start/end block) */
+        /* Geometry updates are supplied through PT_DOSENVEC above. */
         }
     }
 
