@@ -18,6 +18,7 @@ FILES := \
     examine \
     examinefh \
     exnext \
+    exnextdelete \
     filetest \
     fread \
     fstest \

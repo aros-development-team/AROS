@@ -1332,9 +1332,10 @@ BOOL CmdExamineFH(struct Handler *handler, struct Opening *opening,
 *	CmdExamineNext --
 *
 *   SYNOPSIS
-*	success = CmdExamineNext(handler, info)
+*	success = CmdExamineNext(handler, lock, info)
 *
-*	BOOL CmdExamineNext(struct Handler *, struct FileInfoBlock *);
+*	BOOL CmdExamineNext(struct Handler *, struct Lock *,
+*	   struct FileInfoBlock *);
 *
 *   FUNCTION
 *
@@ -1354,7 +1355,8 @@ BOOL CmdExamineFH(struct Handler *handler, struct Opening *opening,
 *
 */
 
-BOOL CmdExamineNext(struct Handler *handler, struct FileInfoBlock *info)
+BOOL CmdExamineNext(struct Handler *handler, struct Lock *lock,
+   struct FileInfoBlock *info)
 {
    struct Examination *examination;
    BOOL flag = info->fib_DiskKey & 0x1L;
@@ -1363,6 +1365,13 @@ BOOL CmdExamineNext(struct Handler *handler, struct FileInfoBlock *info)
    examination = (struct Examination *)info->fib_DiskKey;
    if (!flag)
    {
+      /* A finished scan clears the key. It must not start again */
+      if(info->fib_DiskKey == 0)
+      {
+         SetIoErr(ERROR_NO_MORE_ENTRIES);
+         return FALSE;
+      }
+
       /* This is a first call into ExNext, turn Object into Examination */
       /* This is done only for ExNext calls, doing it for every Examine call would
          leave a growing list of abandoned and not freed examinations, as there is
@@ -1374,7 +1383,12 @@ BOOL CmdExamineNext(struct Handler *handler, struct FileInfoBlock *info)
          return FALSE;
       }
       AddTail((APTR)&handler->examinations, (APTR)examination);
-      examination->next_object = (struct Object *)info->fib_DiskKey;
+
+      /* Nothing tracks the key left by Examine, so the entry it names may
+         have been deleted since. Start from the directory's first entry */
+      lock = FIXLOCK(handler, lock);
+      examination->next_object = (APTR)((struct Object *)
+         ((struct FileLock *)lock)->fl_Key)->elements.mlh_Head;
       info->fib_DiskKey = (IPTR)examination;
    }
 
