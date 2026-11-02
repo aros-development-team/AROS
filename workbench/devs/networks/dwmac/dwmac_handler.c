@@ -265,10 +265,10 @@ static BOOL CmdTrackType(struct DWMACBase *base, struct IOSana2Req *request)
         }
         tracker->packet_type = packet_type;
         tracker->user_count = 1;
-        Disable();
+        DWMAC_LIST_LOCK(base, unit);
         AddTail((struct List *)&unit->dwu_TypeTrackers,
                 (struct Node *)tracker);
-        Enable();
+        DWMAC_LIST_UNLOCK(base, unit);
     }
 
     initial->packet_type = packet_type;
@@ -301,9 +301,9 @@ static BOOL CmdUntrackType(struct DWMACBase *base, struct IOSana2Req *request)
         DWMAC_FindTypeStats(&unit->dwu_TypeTrackers, packet_type);
     if (tracker && --tracker->user_count == 0)
     {
-        Disable();
+        DWMAC_LIST_LOCK(base, unit);
         Remove((struct Node *)tracker);
-        Enable();
+        DWMAC_LIST_UNLOCK(base, unit);
         FreeMem(tracker, sizeof(struct TypeTracker));
     }
 

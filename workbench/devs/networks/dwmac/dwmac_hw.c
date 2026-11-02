@@ -17,13 +17,32 @@
  * strict alignment target it then splits every access into bytes, which
  * a register does not accept.
  */
+/*
+ * Register access. RISC-V orders device (I/O) accesses separately from
+ * memory accesses: a plain store to the tail-pointer register may reach
+ * the engine before the descriptor and frame stores (and their cache
+ * cleans) it is meant to publish - the engine then fetches a descriptor
+ * it does not own, suspends on TBU, and once the ring is full nothing
+ * rings it again (the Titan's TX stalls after a few hundred MB). So:
+ * every write is preceded by a fence ordering prior memory writes before
+ * this I/O write, and every read is followed by one ordering it before
+ * later memory reads (status first, then the descriptors it refers to).
+ */
 ULONG DWMAC_Read(struct dwmac_hw *hw, ULONG reg)
 {
-    return *(volatile ULONG *)(hw->base + reg);
+    ULONG val = *(volatile ULONG *)(hw->base + reg);
+
+#if defined(__riscv)
+    __asm__ __volatile__ ("fence i, r" ::: "memory");
+#endif
+    return val;
 }
 
 void DWMAC_Write(struct dwmac_hw *hw, ULONG reg, ULONG val)
 {
+#if defined(__riscv)
+    __asm__ __volatile__ ("fence w, o" ::: "memory");
+#endif
     *(volatile ULONG *)(hw->base + reg) = val;
 }
 
