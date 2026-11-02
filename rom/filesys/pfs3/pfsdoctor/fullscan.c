@@ -60,7 +60,8 @@ error_t AllocBuildBlocks(void)
 {
 	buildblock_t *bbl, *next;
 	cachedblock_t tblk;
-	error_t error = e_none;
+	extensionblock_t *newrext;
+	error_t error;
 	uint32 blocknr, offset, seqnr;
 	uint16 type;
 
@@ -68,82 +69,87 @@ error_t AllocBuildBlocks(void)
 	{
 		volume.progress(0, 1);
 		next = bbl->next;
-		blocknr = fs_AllocResBlock();
-		if (blocknr)
-		{
-			bbl->b.blocknr = blocknr;
-			bbl->b.mode = done;
-			volume.writeblock(&bbl->b);
-			switch(bbl->b.data->id)
-			{
-				case EXTENSIONID:
-					rbl->extension = blocknr;
-					WritePFS3Metadata((uint8 *)rbl,
-						ROOTBLOCK + volume.firstblock,
-						volume.blocksize, PFS3_METADATA_ROOT);
-					rext.mode = check;
-					rext.data = calloc(1, SIZEOF_RESBLOCK);
-					rext.blocknr = blocknr;
-					memcpy(rext.data, bbl->b.data, SIZEOF_RESBLOCK); 
-					break;
-
-				case SBLKID:
-					rext.data->superindex[bbl->b.data->indexblock.seqnr] = blocknr;
-					volume.writeblock((cachedblock_t *)&rext);
-					break;
-
-				case BMIBLKID:
-					rbl->idx.large.bitmapindex[bbl->b.data->indexblock.seqnr] = blocknr;
-					WritePFS3Metadata((uint8 *)rbl,
-						ROOTBLOCK + volume.firstblock,
-						volume.blocksize, PFS3_METADATA_ROOT);
-					break;
-
-				case IBLKID:
-					if (!(rbl->options & MODE_SUPERDELDIR))
-					{
-						rbl->idx.small.indexblocks[bbl->b.data->indexblock.seqnr] = blocknr;
-						WritePFS3Metadata((uint8 *)rbl,
-							ROOTBLOCK + volume.firstblock,
-							volume.blocksize,
-							PFS3_METADATA_ROOT);
-						break;
-					}
-					type = SBLKID;
-
-				case BMBLKID:
-					if (bbl->b.data->id == BMBLKID)
-						type = BMIBLKID;
-
-					seqnr = bbl->b.data->indexblock.seqnr/INDEX_PER_BLOCK;
-					offset = bbl->b.data->indexblock.seqnr%INDEX_PER_BLOCK;
-					tblk.data = calloc(1, SIZEOF_RESBLOCK);
-					if (tblk.data)
-					{
-						GetResBlock(&tblk, type, seqnr, true);
-						tblk.data->indexblock.index[offset] = blocknr;
-						volume.writeblock(&tblk);
-						free(tblk.data);
-					}
-					else
-					{
-						adderror("memory allocation error");
-						return e_out_of_memory;
-					}
-					break;
-
-			}
-			MinRemove(bbl);
-			FreeBufMem(bbl->b.data);
-			free(bbl);
+		newrext = NULL;
+		if (bbl->b.data->id == EXTENSIONID) {
+			newrext = calloc(1, SIZEOF_RESBLOCK);
+			if (!newrext)
+				return e_out_of_memory;
+			memcpy(newrext, bbl->b.data, SIZEOF_RESBLOCK);
 		}
-		else
-		{
+		blocknr = fs_AllocResBlock();
+		if (!blocknr) {
 			adderror("allocation error");
 			error = e_alloc_fail;
+			goto failed;
 		}
-	}
+		bbl->b.blocknr = blocknr;
+		bbl->b.mode = done;
+		if ((error = volume.writeblock(&bbl->b)))
+			goto failed;
+		switch(bbl->b.data->id)
+		{
+			case EXTENSIONID:
+				rbl->extension = blocknr;
+				if ((error = WritePFS3Metadata((uint8 *)rbl,
+					ROOTBLOCK + volume.firstblock, volume.blocksize, PFS3_METADATA_ROOT)))
+					goto failed;
+				rext.mode = check;
+				rext.data = newrext;
+				newrext = NULL;
+				rext.blocknr = blocknr;
+				break;
 
+			case SBLKID:
+				rext.data->superindex[bbl->b.data->indexblock.seqnr] = blocknr;
+				if ((error = volume.writeblock((cachedblock_t *)&rext)))
+					goto failed;
+				break;
+
+			case BMIBLKID:
+				rbl->idx.large.bitmapindex[bbl->b.data->indexblock.seqnr] = blocknr;
+				if ((error = WritePFS3Metadata((uint8 *)rbl,
+					ROOTBLOCK + volume.firstblock, volume.blocksize, PFS3_METADATA_ROOT)))
+					goto failed;
+				break;
+
+			case IBLKID:
+				if (!(rbl->options & MODE_SUPERDELDIR)) {
+					rbl->idx.small.indexblocks[bbl->b.data->indexblock.seqnr] = blocknr;
+					if ((error = WritePFS3Metadata((uint8 *)rbl,
+						ROOTBLOCK + volume.firstblock, volume.blocksize, PFS3_METADATA_ROOT)))
+						goto failed;
+					break;
+				}
+				type = SBLKID;
+				/* fall through */
+			case BMBLKID:
+				if (bbl->b.data->id == BMBLKID)
+					type = BMIBLKID;
+				seqnr = bbl->b.data->indexblock.seqnr/INDEX_PER_BLOCK;
+				offset = bbl->b.data->indexblock.seqnr%INDEX_PER_BLOCK;
+				tblk.data = calloc(1, SIZEOF_RESBLOCK);
+				if (!tblk.data) {
+					error = e_out_of_memory;
+					goto failed;
+				}
+				error = GetResBlock(&tblk, type, seqnr, true);
+				if (!error) {
+					tblk.data->indexblock.index[offset] = blocknr;
+					error = volume.writeblock(&tblk);
+				}
+				free(tblk.data);
+				if (error)
+					goto failed;
+				break;
+		}
+		MinRemove(bbl);
+		FreeBufMem(bbl->b.data);
+		free(bbl);
+	}
+	return e_none;
+
+ failed:
+	free(newrext);
 	return error;
 }
 
