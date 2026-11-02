@@ -334,7 +334,7 @@ error_t SearchBlocks(scanelement_t el[], uint32 seqlow, uint32 seqhigh,
 {
 	cachedblock_t blk;
 	uint32 i, seqnr, ds = 0;
-	error_t error;
+	error_t error, read_error = e_none;
 
 	blk.data = calloc(1, SIZEOF_RESBLOCK);
 	if (blk.data == NULL)
@@ -343,21 +343,27 @@ error_t SearchBlocks(scanelement_t el[], uint32 seqlow, uint32 seqhigh,
 	for (i = start; i < stop; i+=volume.rescluster) 
 	{
 		volume.progress(1,1);
+		if (aborting)
+		{
+			volume.showmsg("Aborting block search\n");
+			aborting = 0;
+			free(blk.data);
+			return e_aborted;
+		}
+
 		error = volume.getblock(&blk, i);
 		if (error == e_syntax_error || error == e_block_outside_reserved ||
 			error == e_block_outside_partition)
 			continue;
+		if (error == e_read_error) {
+			read_error = error;
+			continue;
+		}
 		if (error) {
 			free(blk.data);
 			return error;
 		}
 
-		if (aborting)
-		{
-			volume.showmsg("Aborting block search\n");
-			aborting = 0;
-			break;
-		}
 
 		if (blk.data->id == bloktype)
 		{
@@ -375,6 +381,10 @@ error_t SearchBlocks(scanelement_t el[], uint32 seqlow, uint32 seqhigh,
 
 	free (blk.data);
 	volume.status(1," ",100);
+	if (read_error)
+		for (i = 0; i <= seqhigh - seqlow; i++)
+			if (!el[i].blocknr)
+				return read_error;
 	return e_none;
 }
 
@@ -395,7 +405,7 @@ error_t SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp
 	uint32 ds, tmp;
 	int32 i, bloknr;	// signed !!
 	int found = 0;
-	error_t error;
+	error_t error, read_error = e_none;
 
 	blk.data = calloc(1, SIZEOF_RESBLOCK);
 	if (blk.data == NULL)
@@ -431,22 +441,28 @@ error_t SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp
 			break;
 
 		volume.progress(1,1);
+		if (aborting)
+		{
+			/* Keep an already found backup, but never infer absence. */
+			volume.showmsg("Aborting block search\n");
+			aborting = 0;
+			read_error = e_aborted;
+			break;
+		}
+
 		error = volume.getblock(&blk, i);
 		if (error == e_syntax_error || error == e_block_outside_reserved ||
 			error == e_block_outside_partition)
 			continue;
+		if (error == e_read_error) {
+			read_error = error;
+			continue;
+		}
 		if (error) {
 			free(blk.data);
 			return error;
 		}
 
-		if (aborting)
-		{
-			// break search, don't break repair
-			volume.showmsg("Aborting block search\n");
-			aborting = 0;
-			break;
-		}
 
 		if (blk.data->id == bloktype)
 		{
@@ -484,6 +500,8 @@ error_t SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp
 
 	free (blk.data);
 	volume.status(1," ",100);
+	if (!bloknr && read_error)
+		return read_error;
 	*result = (uint32)bloknr;
 	return e_none;
 }
@@ -493,7 +511,7 @@ error_t SearchLastReserved(volume_t *vol, uint32 *result)
 {
 	cachedblock_t blk;
 	uint32 i, last, cdwn;
-	error_t error = e_none;
+	error_t error = e_none, read_error = e_none;
 
 	blk.data = calloc(1, SIZEOF_RESBLOCK);
 	if (blk.data == NULL)
@@ -509,10 +527,18 @@ error_t SearchLastReserved(volume_t *vol, uint32 *result)
 		{
 			volume.showmsg("Aborting filesystem search\n");
 			aborting = 0;
+			error = e_aborted;
 			break;
 		}
 
-		if ((error = vol_GetRawBlock(&blk, i)))
+		error = vol_GetRawBlock(&blk, i);
+		if (error == e_read_error) {
+			read_error = error;
+			error = e_none;
+			i += volume.rescluster;
+			continue;
+		}
+		if (error)
 			goto s_ret;
 
 		switch (PFS3DiskBlockId((uint8 *)blk.data))
@@ -544,6 +570,8 @@ error_t SearchLastReserved(volume_t *vol, uint32 *result)
  	free (blk.data);
 	vol->status(1, " ", 100);
 	if (error == e_none)
+		error = read_error;
+	if (error == e_none)
 		*result = last;
 	return error;
 }
@@ -555,7 +583,7 @@ error_t SearchFileSystem(int32 startblok, int32 endblok, uint32 *result)
 {
 	rootblock_t *rbl;
 	uint32 blnr = 0, b;
-	error_t error = e_none;
+	error_t error = e_none, read_error = e_none;
 
 	if (!(rbl = (rootblock_t *)AllocBufMem (MAXRESBLOCKSIZE)))
 		return e_out_of_memory;
@@ -569,6 +597,7 @@ error_t SearchFileSystem(int32 startblok, int32 endblok, uint32 *result)
 		{
 			volume.showmsg("Aborting filesystem search\n");
 			aborting = 0;
+			error = e_aborted;
 			break;
 		}
 
@@ -576,6 +605,11 @@ error_t SearchFileSystem(int32 startblok, int32 endblok, uint32 *result)
 		error = ReadPFS3Metadata((uint8 *)rbl, b, volume.blocksize,
 			PFS3_METADATA_ROOT);
 		if (error == e_syntax_error) {
+			error = e_none;
+			continue;
+		}
+		if (error == e_read_error) {
+			read_error = error;
 			error = e_none;
 			continue;
 		}
@@ -590,6 +624,8 @@ error_t SearchFileSystem(int32 startblok, int32 endblok, uint32 *result)
 	}
 
 	FreeBufMem(rbl);
+	if (error == e_none && !blnr)
+		error = read_error;
 	if (error == e_none)
 		*result = blnr;
 	return error;
