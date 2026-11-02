@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <graphics/gfx.h>
@@ -19,6 +19,254 @@
 
 #include <string.h>
 
+/****** Bitmap.mui/MUIC_Bitmap ************
+*
+*   NAME
+*       MUIC_Bitmap
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       Display a caller-owned bitmap at the upper-left content position,
+*       cropping to the smaller of configured dimensions and available content
+*       dimensions. No scaling is performed. Width and Height default to zero
+*       and are not inferred from the source bitmap. Source bitmap, MappingTable
+*       and SourceColors pointers are borrowed; keep them valid through their
+*       use and later setup cycles.
+*       Setup calls Area then optionally remaps an indexed source using
+*       MappingTable or SourceColors. Remapping requires a source depth at most
+*       eight, positive configured dimensions and at least one of those tables.
+*       MappingTable takes precedence. Setup returns TRUE after Area success
+*       even if remapping allocations fail. Draw chooses the remapped bitmap
+*       when present, otherwise the original source.
+*
+*   METHODS
+*       AskMinMax adds one pixel to superclass minimum/default dimensions and
+*       sets both maxima to MUI_MAXMAX; configured bitmap dimensions do not
+*       determine these requirements. It returns TRUE. Draw calls Area and
+*       returns TRUE even with no image or invalid dimensions. There is no local
+*       drawing-flag test. If Alpha has ever been supplied, the local
+*       image-drawing branch is unimplemented and draws nothing.
+*       Set stores supported attributes but requests no remapping, redraw or
+*       relayout. Bitmap replacement is ignored while a remapped bitmap exists.
+*       Cleanup frees the transparency raster, waits for blits before freeing
+*       the remapped bitmap, and releases cached pens through the live screen
+*       ColorMap. Dispose additionally frees the remap table, but does not
+*       substitute for Cleanup's raster and pen release. Follow the normal
+*       setup/cleanup lifecycle.
+*
+*   BUGS
+*       Transparency-raster allocation is followed by memset without checking
+*       for NULL. Remapping uses WORD dimensions and loop counters and unchecked
+*       allocation arithmetic; source coverage and table lengths are not
+*       validated. Keep configured dimensions within both bitmap bounds and the
+*       representable implementation range.
+*       In the SourceColors pen path, an obtained pen plus a 0x100 marker is
+*       assigned through a UBYTE temporary before storage in the WORD cache. The
+*       marker is lost; pen zero is repeatedly obtained and not recognized for
+*       release. Pen acquisition failure is also unchecked. Successful Setup
+*       therefore does not establish successful remapping or balanced pen
+*       acquisition for every palette.
+*
+*/
+/****** Bitmap.mui/MUIA_Bitmap_Alpha ************
+*
+*   NAME
+*       MUIA_Bitmap_Alpha
+*
+*   FUNCTION
+*       Store the requested alpha value and select the alpha drawing path.
+*
+*   INPUTS
+*       Initialize, set and get, ULONG. Stored default 0xffffffff; alpha mode
+*       starts disabled.
+*
+*   NOTES
+*       Supplying this tag, even with the default value, permanently enables the
+*       local alpha flag. Its drawing branch is a TODO and performs no image
+*       blit. No tag disables that flag. Get returns the stored value, not
+*       whether alpha mode is enabled. Set requests no redraw; background/frame
+*       drawing remains inherited.
+*
+*/
+/****** Bitmap.mui/MUIA_Bitmap_Bitmap ************
+*
+*   NAME
+*       MUIA_Bitmap_Bitmap
+*
+*   FUNCTION
+*       Supply or retrieve the source bitmap.
+*
+*   INPUTS
+*       Initialize, set and get, struct BitMap pointer. Default NULL.
+*
+*   NOTES
+*       The pointer is borrowed and is never freed by Bitmap. Configured
+*       Width/Height must describe accessible source pixels. A setter is ignored
+*       while remapped storage exists, although its tag is still forwarded to
+*       Area. No remap or redraw is requested. Get returns the source pointer,
+*       not the remapped image; NULL means no source image.
+*
+*/
+/****** Bitmap.mui/MUIA_Bitmap_Width ************
+*
+*   NAME
+*       MUIA_Bitmap_Width
+*
+*   FUNCTION
+*       Set or retrieve the configured image width.
+*
+*   INPUTS
+*       Initialize, set and get, LONG. Default zero.
+*
+*   NOTES
+*       Use a positive dimension covered by the source bitmap. Draw crops to the
+*       available content dimension and skips the blit if either resulting
+*       dimension is nonpositive. Dimensions do not set minimum/default object
+*       size, which remains one content pixel. Set does not resize existing
+*       remapped storage, remap, redraw or relayout; changing dimensions while
+*       set up can make them inconsistent with allocated resources. Remapping
+*       uses narrower WORD counters.
+*
+*/
+/****** Bitmap.mui/MUIA_Bitmap_Height ************
+*
+*   NAME
+*       MUIA_Bitmap_Height
+*
+*   FUNCTION
+*       Set or retrieve the configured image height.
+*
+*   INPUTS
+*       Initialize, set and get, LONG. Default zero.
+*
+*   NOTES
+*       Use a positive dimension covered by the source bitmap. Draw crops to the
+*       available content dimension and skips the blit if either resulting
+*       dimension is nonpositive. Dimensions do not set minimum/default object
+*       size, which remains one content pixel. Set does not resize existing
+*       remapped storage, remap, redraw or relayout; changing dimensions while
+*       set up can make them inconsistent with allocated resources. Remapping
+*       uses narrower WORD counters.
+*
+*/
+/****** Bitmap.mui/MUIA_Bitmap_MappingTable ************
+*
+*   NAME
+*       MUIA_Bitmap_MappingTable
+*
+*   FUNCTION
+*       Provide a source-index to destination-pen mapping.
+*
+*   INPUTS
+*       Initialize, set and get, UBYTE pointer. Default NULL.
+*
+*   NOTES
+*       The table is borrowed; provide a readable entry for every source pixel
+*       index and keep it live during remapping. A 256-entry table covers all
+*       byte indices. This table takes precedence over SourceColors and bypasses
+*       pen acquisition. The caller manages destination pens and their lifetime.
+*       Get returns the same borrowed pointer. Set does not rebuild existing
+*       remapped data.
+*
+*/
+/****** Bitmap.mui/MUIA_Bitmap_SourceColors ************
+*
+*   NAME
+*       MUIA_Bitmap_SourceColors
+*
+*   FUNCTION
+*       Provide RGB components for indexed-source remapping.
+*
+*   INPUTS
+*       Initialize, set and get, ULONG pointer. Default NULL.
+*
+*   NOTES
+*       The borrowed table contains three ULONG components per source index, in
+*       red/green/blue order, in the representation expected by ObtainBestPenA.
+*       Provide all referenced entries; the class checks no length. MappingTable
+*       takes precedence. Setup may obtain screen pens and cache them for
+*       Cleanup; pen-zero caching and failure handling have the limitations
+*       described in the class entry. Get returns the borrowed pointer. Set does
+*       not remap or redraw.
+*
+*/
+/****** Bitmap.mui/MUIA_Bitmap_Precision ************
+*
+*   NAME
+*       MUIA_Bitmap_Precision
+*
+*   FUNCTION
+*       Select pen matching precision for SourceColors remapping.
+*
+*   INPUTS
+*       Initialize, set and get, LONG. Default PRECISION_GUI.
+*
+*   NOTES
+*       Passed as OBP_Precision to ObtainBestPenA, together with OBP_FailIfBad
+*       FALSE. Not used by the explicit MappingTable path. No value validation
+*       or live remapping occurs; Set only changes stored state for later use.
+*
+*/
+/****** Bitmap.mui/MUIA_Bitmap_RemappedBitmap ************
+*
+*   NAME
+*       MUIA_Bitmap_RemappedBitmap
+*
+*   FUNCTION
+*       Retrieve the internally allocated remapped bitmap.
+*
+*   INPUTS
+*       Get only, struct BitMap pointer. Default NULL.
+*
+*   NOTES
+*       Returns class-owned storage without transferring ownership. It can be
+*       NULL because remapping was unnecessary, unsupported or failed; Setup
+*       success does not distinguish these outcomes. Do not free it or retain it
+*       after Cleanup/disposal. The getter does not fall back to the original
+*       source bitmap.
+*
+*/
+/****** Bitmap.mui/MUIA_Bitmap_Transparent ************
+*
+*   NAME
+*       MUIA_Bitmap_Transparent
+*
+*   FUNCTION
+*       Choose the source palette index excluded by a generated mask.
+*
+*   INPUTS
+*       Initialize, set and get, LONG. Default -1 disables mask generation.
+*
+*   NOTES
+*       A value other than -1 requests a mask during indexed remapping. Matching
+*       is against original byte indices before remapping. Without a remapping
+*       pass, no mask is generated and this value alone does not make pixels
+*       transparent. Set does not regenerate or remove an existing mask. Mask
+*       allocation failure is not checked before initialization. This is
+*       palette-index transparency, not the Alpha path.
+*
+*/
+/****** Bitmap.mui/MUIA_Bitmap_UseFriend ************
+*
+*   NAME
+*       MUIA_Bitmap_UseFriend
+*
+*   FUNCTION
+*       Request the screen bitmap as friend when allocating remapped storage.
+*
+*   INPUTS
+*       Initialize only, BOOL. Default FALSE. No local setter or getter.
+*
+*   NOTES
+*       TRUE passes the screen bitmap to AllocBitMap and adds BMF_MINPLANES. The
+*       requested depth is capped at eight; the friend affects actual allocation
+*       behavior. This affects only remapping allocation and acquires no
+*       ownership of the screen bitmap.
+*
+*/
+
 extern struct Library *MUIMasterBase;
 
 struct MUI_BitmapData
@@ -34,6 +282,14 @@ struct MUI_BitmapData
     BOOL use_alpha;
 };
 
+/*
+ * Optionally allocate and populate indexed remapped bitmap from borrowed
+ * source/tables. Own destination, optional mask and cached pens until
+ * Cleanup; keep remap table until Dispose. Requires live screen and bounded
+ * dimensions/tables. Returns no status; allocation/pen failures and narrow
+ * counters have class-documented limits. Frees temporary line and raster
+ * resources on completed paths.
+ */
 static void remap_bitmap(struct IClass *cl, Object *obj)
 {
     struct MUI_BitmapData *data = INST_DATA(cl, obj);
@@ -243,6 +499,12 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
 /**************************************************************************
  OM_NEW
 **************************************************************************/
+/*
+ * Construct Area, initialize precision/transparency/alpha defaults and
+ * store borrowed source pointers and dimensions. Return object or zero on
+ * superclass failure. No remapping yet; Alpha tag presence enables
+ * unimplemented image path.
+ */
 IPTR Bitmap__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_BitmapData *data;
@@ -311,6 +573,11 @@ IPTR Bitmap__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
+/*
+ * Wait for blits and free any remaining remapped bitmap, then free remap
+ * table and return Area result. Requires prior Cleanup for mask and pens.
+ * Source bitmap and caller tables remain borrowed.
+ */
 IPTR Bitmap__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_BitmapData *data = INST_DATA(cl, obj);
@@ -329,6 +596,12 @@ IPTR Bitmap__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
+/*
+ * Store supported values, except ignore source bitmap replacement while
+ * remapped storage exists. Forward original tags and return Area result. No
+ * remap, redraw or relayout; caller must keep resources consistent. Alpha
+ * tag enables alpha mode regardless of value.
+ */
 IPTR Bitmap__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_BitmapData *data = INST_DATA(cl, obj);
@@ -384,6 +657,11 @@ IPTR Bitmap__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
+/*
+ * Write supported stored attributes or remapped pointer into valid caller-
+ * owned IPTR storage and return TRUE. Delegate others including UseFriend
+ * to Area. No ownership transfer, allocation or state change.
+ */
 IPTR Bitmap__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 #define STORE *(msg->opg_Storage)
@@ -436,6 +714,11 @@ IPTR Bitmap__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
+/*
+ * Call Area and return FALSE on failure; otherwise attempt remapping and
+ * return TRUE without propagating remap allocation failures. Requires live
+ * screen/source resources and paired Cleanup.
+ */
 IPTR Bitmap__MUIM_Setup(struct IClass *cl, Object *obj, Msg msg)
 {
     //struct MUI_BitmapData *data = INST_DATA(cl, obj);
@@ -451,6 +734,12 @@ IPTR Bitmap__MUIM_Setup(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
+/*
+ * Release owned mask using remapped dimensions, wait/free remapped bitmap,
+ * and release nonzero cached pen entries through live screen ColorMap.
+ * Clear released state and return Area Cleanup result. Keep remap table for
+ * reuse; borrowed source/tables are not freed.
+ */
 IPTR Bitmap__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_BitmapData *data = INST_DATA(cl, obj);
@@ -492,6 +781,11 @@ IPTR Bitmap__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
+/*
+ * Call Area, add one pixel to minimum/default width and height and set
+ * maxima to MUI_MAXMAX. Return TRUE. Requires writable size structure;
+ * configured image dimensions do not influence this calculation.
+ */
 IPTR Bitmap__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     struct MUIP_AskMinMax *msg)
 {
@@ -512,6 +806,12 @@ IPTR Bitmap__MUIM_AskMinMax(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
+/*
+ * Call Area then blit chosen remapped/original bitmap at inner top-left,
+ * cropping positive configured dimensions to content size. Alpha mode
+ * performs no blit. Return TRUE without local flag filtering or graphics
+ * status checks. Requires valid source coverage, mask and render context.
+ */
 IPTR Bitmap__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
@@ -556,6 +856,12 @@ IPTR Bitmap__MUIM_Draw(struct IClass *cl, Object *obj,
 }
 
 
+/*
+ * Dispatch local overrides and return their results; delegate other
+ * messages to the declared superclass. Requires ABI-correct message and
+ * live object except construction. Ownership follows the class lifecycle
+ * contract.
+ */
 BOOPSI_DISPATCHER(IPTR, Bitmap_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
