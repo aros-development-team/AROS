@@ -5,6 +5,8 @@
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
+#include <proto/processor.h>
+#include <resources/processor.h>
 
 #include <hidd/hidd.h>
 #include <hidd/usb.h>
@@ -77,6 +79,22 @@ static BOOL XHCIController__Init(struct PCIController *hc)
         return FALSE;
     }
     hc->hc_CPrivate = xhcic;
+
+#if defined(XHCI_NONCOHERENT_DMA)
+    {
+        struct Library *ProcessorBase = OpenResource(PROCESSORNAME);
+        ULONG line = 0;
+
+        if(ProcessorBase) {
+            struct TagItem tags[] = {
+                { GCIT_CacheLineSize, (IPTR)&line },
+                { TAG_DONE, 0 }
+            };
+            GetCPUInfo(tags);
+        }
+        xhcic->xhc_DMALine = (line > XHCI_DMA_LINE) ? line : XHCI_DMA_LINE;
+    }
+#endif
 
     /* Initialize hardware... */
     {

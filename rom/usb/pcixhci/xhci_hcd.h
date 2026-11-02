@@ -31,6 +31,17 @@ struct timerequest;
 #define DMAFLAGS_POSTWRITE   (1 << 31) | DMA_ReadFromRAM
 #endif
 
+/*
+ * DMA is not cache coherent, and CachePostDMA writes lines back: an IN
+ * buffer must own its cache lines, or a neighbour dirtied during the
+ * transfer is written back over the device's data.
+ */
+#if defined(__arm__) || defined(__aarch64__) || defined(__riscv)
+#define XHCI_NONCOHERENT_DMA
+#endif
+/* The smallest cache line assumed for DMA buffers */
+#define XHCI_DMA_LINE           64
+
 /* Number of TRBs in the single event ring segment. */
 #define XHCI_EVENT_RING_TRBS  USB_DEV_MAX    /* 128/256/512 */
 
@@ -114,6 +125,12 @@ struct XhciHCPrivate {
     struct Task                        *xhc_ReadySigTask;
     struct XhciPortTaskPrivate         xhc_PortTask;
     struct XhciEventTaskPrivate        xhc_EventTask;
+    /*
+     * Bounce buffers released in interrupt context, waiting for the event
+     * task to free them (xhciFreeDeferredBounces): a singly linked list
+     * through each block's first word.
+     */
+    APTR                                xhc_FreeBounce;
     struct pciusbXHCIDevice            *xhc_Devices[USB_DEV_MAX];
     volatile struct pciusbXHCITRBParams xhc_CmdResults[USB_DEV_MAX];
     UBYTE                               xhc_PortProtocol[MAX_ROOT_PORTS];
@@ -126,6 +143,9 @@ struct XhciHCPrivate {
      * then release the device underneath it.
      */
     struct SignalSemaphore              xhc_DevLock;
+#if defined(XHCI_NONCOHERENT_DMA)
+    ULONG                               xhc_DMALine;    /* cache line size for DMA buffers */
+#endif
 };
 
 static inline struct XhciHCPrivate *xhciGetHCPrivate(struct PCIController *hc)
