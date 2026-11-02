@@ -46,7 +46,7 @@
  * Proto
  **************************************/
 
-static struct cacheline *c_GetCacheLine(uint32 bloknr);
+static struct cacheline *c_GetCacheLine(uint32 bloknr, error_t *error);
 
 /**************************************
  * Globals
@@ -111,9 +111,9 @@ error_t c_GetBlock(uint8 *data, uint32 bloknr, uint32 bytes)
 	{
 		lineblnr = (bloknr / cache.linesize) * cache.linesize;
 		offset = (bloknr % cache.linesize);
-		cl = c_GetCacheLine(lineblnr);
+		cl = c_GetCacheLine(lineblnr, &error);
 		if (!cl)
-			return e_read_error;
+			return error;
 
 		memcpy(data, cl->data + offset*volume.blocksize, volume.blocksize);
 	}
@@ -133,9 +133,9 @@ error_t c_WriteBlock(uint8 *data, uint32 bloknr, uint32 bytes)
 	{
 		lineblnr = (bloknr / cache.linesize) * cache.linesize;
 		offset = (bloknr % cache.linesize);
-		cl = c_GetCacheLine(lineblnr);
+		cl = c_GetCacheLine(lineblnr, &error);
 		if (!cl)
-			return e_read_error;
+			return error;
 
 		memcpy(cl->data + offset*volume.blocksize, data, volume.blocksize);
 		if (!cl->dirty)
@@ -175,11 +175,11 @@ error_t WritePFS3Metadata(uint8 *data, uint32 bloknr, uint32 bytes,
 
 /* (private) locale function to search a cacheline 
  */
-static struct cacheline *c_GetCacheLine(uint32 bloknr)
+static struct cacheline *c_GetCacheLine(uint32 bloknr, error_t *error)
 {
 	uint32 i;
 	struct cacheline *cl = NULL;
-	error_t error;
+	*error = e_none;
 
 	for (i=0; i<cache.nolines; i++)
 	{
@@ -196,9 +196,9 @@ static struct cacheline *c_GetCacheLine(uint32 bloknr)
 		{
 			cl = (struct cacheline *)cache.LRUqueue.mlh_TailPred;
 			if (cl->dirty) {
-				error = volume.writerawblocks(cl->data + cl->dirtyfirst * volume.blocksize,
+				*error = volume.writerawblocks(cl->data + cl->dirtyfirst * volume.blocksize,
 				cl->dirtylast - cl->dirtyfirst + 1, cl->blocknr + cl->dirtyfirst);
-				if (error)
+				if (*error)
 					return NULL;
 			}
 		}
@@ -210,8 +210,8 @@ static struct cacheline *c_GetCacheLine(uint32 bloknr)
 		/* A failed read may already have overwritten part of the buffer. */
 		cl->blocknr = CL_UNUSED;
 		cl->dirty = false;
-		error = volume.getrawblocks(cl->data, cache.linesize, bloknr);
-		if (error)
+		*error = volume.getrawblocks(cl->data, cache.linesize, bloknr);
+		if (*error)
 			return NULL;
 		cl->blocknr = bloknr;
 		cl->dirty = false;
