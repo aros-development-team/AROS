@@ -1486,6 +1486,8 @@ addnameservent(struct NetDataBase *ndb,
     UBYTE Buffer[KEYWORDLEN];
     LONG  BufLen = sizeof(Buffer);
     struct in_addr ns_addr;
+    struct in6_addr ns_addr6;
+    int family = AF_INET;
     struct NameserventNode *nsn;
 
 #if defined(__AROS__)
@@ -1504,12 +1506,22 @@ addnameservent(struct NetDataBase *ndb,
         *errstrp = ERR_SYNTAX;
         return RETURN_WARN;
     }
+    /*
+     * An IPv4 or an IPv6 address. A link-local IPv6 server needs a zone,
+     * which a NAMESERVER line has no room for: it goes with its interface
+     * (DNS6=, or learned from a Router Advertisement) instead.
+     */
     if(!__inet_aton(Buffer, &ns_addr)) {
+        if(!inet6_aton(Buffer, &ns_addr6) || IN6_IS_ADDR_LINKLOCAL(&ns_addr6) ||
+                IN6_IS_ADDR_UNSPECIFIED(&ns_addr6) || IN6_IS_ADDR_MULTICAST(&ns_addr6)) {
 #if defined(__AROS__)
-        D(bug("[AROSTCP](amiga_netdb.c) addnameservent: error with address\n"));
+            D(bug("[AROSTCP](amiga_netdb.c) addnameservent: error with address\n"));
 #endif
-        *errstrp = ERR_VALUE;
-        return RETURN_WARN;
+            *errstrp = ERR_VALUE;
+            return RETURN_WARN;
+        }
+        family = AF_INET6;
+        ns_addr.s_addr = 0;
     }
     if((nsn = bsd_malloc(sizeof(*nsn), M_NETDB, M_WAITOK)) == NULL) {
 #if defined(__AROS__)
@@ -1519,8 +1531,10 @@ addnameservent(struct NetDataBase *ndb,
         return RETURN_FAIL;
     }
     nsn->nsn_EntSize = sizeof(nsn->nsn_Ent);
-    nsn->nsn_Family = AF_INET;
+    nsn->nsn_Family = family;
     nsn->nsn_Ent.ns_addr.s_addr = ns_addr.s_addr;
+    if(family == AF_INET6)
+        nsn->nsn_Addr6 = ns_addr6;
     nsn->nsn_Owner = NULL;
     nsn->nsn_Expire = 0;
 

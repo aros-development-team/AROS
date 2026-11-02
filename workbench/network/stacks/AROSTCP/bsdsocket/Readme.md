@@ -78,6 +78,9 @@ The resolver (`res_search()`) searches as BIND 4.9's and resolv.conf(5) say, wit
 with a dot is first tried as it is, and one not found that way, or one without a dot, is tried in
 each domain of the search list in turn (`RES_DNSRCH` is in `RES_DEFAULT`) - the static `DOMAIN`
 entries first, then the dynamic ones (DHCP, Router Advertisements); a final dot means only as it is.
+A `NAMESERVER` line in the NetDB takes an IPv4 or an IPv6 address; a link-local IPv6 server needs a
+zone, which the line has no room for, and goes with its interface instead (`DNS6=`, or learned from
+a Router Advertisement).
 The networks table (`db/networks`) holds each network's number in host order, as
 `getnetent(3)` and the autodoc say, read with `inet_network()`'s rules (`__inet_network()`: "10.1"
 is 0x0a01), so `getnetbyaddr(127, AF_INET)` finds `loop 127`.
