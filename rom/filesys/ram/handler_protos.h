@@ -63,7 +63,8 @@ BOOL CmdExamineObject(struct Handler *handler, struct Lock *lock,
    struct FileInfoBlock *info);
 BOOL CmdExamineFH(struct Handler *handler, struct Opening *opening,
    struct FileInfoBlock *info);
-BOOL CmdExamineNext(struct Handler *handler, struct FileInfoBlock *info);
+BOOL CmdExamineNext(struct Handler *handler, struct Lock *lock,
+   struct FileInfoBlock *info);
 BOOL CmdExamineAll(struct Handler *handler, struct Lock *lock,
    UBYTE *buffer, ULONG size, ULONG type, struct ExAllControl *control);
 VOID CmdExamineAllEnd(struct Handler *handler, struct Lock *lock,
