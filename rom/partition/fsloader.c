@@ -108,6 +108,8 @@ ULONG AddFS(struct Library *PartitionBase, struct FileSysHandle *fs)
         return 0;
     }
 
+    FreeVec(fsrnode);
+
     /* InternalLoadSeg() will leave its error code in IoErr() */
     return IoErr();
 }
