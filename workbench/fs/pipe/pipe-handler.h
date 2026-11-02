@@ -94,6 +94,7 @@ PIPEDATA;
 
 #define   OPEN_FOR_READ    (1 << 0)
 #define   OPEN_FOR_WRITE   (1 << 1)     /* flags for pipedata struct */
+#define   READER_GONE      (1 << 2)     /* read end closed, not reopened */
 
 
 
