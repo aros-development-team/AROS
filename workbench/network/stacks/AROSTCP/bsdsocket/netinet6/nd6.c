@@ -761,6 +761,39 @@ nd6_nud_hint(struct rtentry *rt)
  * NUD Timer (RFC 4861 §7.3)
  * ================================================================== */
 
+
+/* The neighbour of ln did not answer: tell the default router list. */
+static void
+nd6_rtr_unreachable(struct llinfo_nd6 *ln)
+{
+    if(ln->ln_rt && ln->ln_rt->rt_ifp)
+        defrouter_unreachable(&((struct sockaddr_in6 *)rt_key(ln->ln_rt))->sin6_addr,
+                              ln->ln_rt->rt_ifp);
+}
+
+/* ------------------------------------------------------------------
+ * nd6_probe - find out whether addr on ifp answers: address resolution,
+ * as for a packet to it, without the packet. Unless it is under way or
+ * the address is known already.
+ * ------------------------------------------------------------------ */
+void
+nd6_probe(struct ifnet *ifp, struct in6_addr *addr)
+{
+    struct rtentry *rt = nd6_lookup(addr, 1, ifp);
+    struct llinfo_nd6 *ln;
+
+    if(rt == NULL)
+        return;
+    ln = (struct llinfo_nd6 *)rt->rt_llinfo;
+    if((rt->rt_flags & RTF_LLINFO) && ln != NULL &&
+            ln->ln_state == ND6_LLINFO_NOSTATE) {
+        ln->ln_state = ND6_LLINFO_INCOMPLETE;
+        ln->ln_asked = 1;
+        nd6_ns_output(ifp, NULL, addr, ln, 0);
+    }
+    rtfree(rt);
+}
+
 /* ------------------------------------------------------------------
  * nd6_timer - periodic ND6 timer (called from slowtimo path).
  *
@@ -797,6 +830,7 @@ nd6_timer(void *arg)
                 nd6stat.nd6s_nud_incomplete++;
                 nd6_hold_free(ln, 1);
                 ln->ln_state = ND6_LLINFO_NOSTATE;
+                nd6_rtr_unreachable(ln);
             } else {
                 /* retransmit NS */
                 if(ln->ln_rt && ln->ln_rt->rt_ifp) {
@@ -836,6 +870,7 @@ nd6_timer(void *arg)
                 nd6stat.nd6s_nud_probe++;
                 nd6_hold_free(ln, 0);
                 ln->ln_state = ND6_LLINFO_NOSTATE;
+                nd6_rtr_unreachable(ln);
             } else {
                 /* send unicast NS */
                 if(ln->ln_rt && ln->ln_rt->rt_ifp) {

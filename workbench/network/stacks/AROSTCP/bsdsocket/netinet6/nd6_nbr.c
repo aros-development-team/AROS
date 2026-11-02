@@ -539,6 +539,9 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
         }
         ln->ln_router = is_router;
 
+        /* if it is a router not in use, it may be the better one now */
+        defrouter_reachable(&tgt, ifp);
+
         /* send the queued packets */
         if(ln->ln_hold && sdl && sdl->sdl_alen > 0) {
             struct sockaddr_in6 dst_sa;

@@ -255,23 +255,85 @@ defrouter_del(struct nd_defrouter *dr)
     FREE(dr, M_PCB);
 }
 
-/* ------------------------------------------------------------------
- * defrouter_select - install the best default router as the default
- * route: the most preferred one that has not expired (RFC 4191 section
- * 3.2), the one heard first among equals.
- * ------------------------------------------------------------------ */
-void
-defrouter_select(void)
+/* A router is probed once a minute at most (RFC 4191 section 3.5). */
+#define ND6_RTR_PROBE_INTERVAL 60
+
+static long
+nd6_now(void)
 {
-    struct nd_defrouter *dr, *best = NULL;
+    struct timeval tv;
+
+    GetSysTime(&tv);
+    return tv.tv_sec;
+}
+
+static int
+defrouter_live(const struct nd_defrouter *dr)
+{
+    return !nd6_rtexpired(dr->expire) && dr->rtlifetime != 0;
+}
+
+/* Whether dr is reachable or probably reachable: its neighbour cache entry
+ * is past INCOMPLETE (RFC 4861 section 6.3.6). */
+static int
+defrouter_isreachable(struct nd_defrouter *dr)
+{
+    struct rtentry *rt = nd6_lookup(&dr->rtaddr, 0, dr->ifp);
+    int reach = 0;
+
+    if(rt) {
+        const struct llinfo_nd6 *ln = (const struct llinfo_nd6 *)rt->rt_llinfo;
+
+        reach = (rt->rt_flags & RTF_LLINFO) && ln != NULL &&
+                ln->ln_state > ND6_LLINFO_INCOMPLETE;
+        rtfree(rt);
+    }
+    return reach;
+}
+
+/* ------------------------------------------------------------------
+ * defrouter_choose - install the best default router as the default
+ * route (RFC 4191 section 3.2, RFC 4861 section 6.3.6): the most
+ * preferred of those reachable or probably reachable, the one heard first
+ * among equals. With none known reachable, the one installed stays, or
+ * the most preferred is taken - but when the installed one has just
+ * failed, failed, the next one after it: round robin. A more preferred
+ * router that is not known reachable is probed, so that it is used again
+ * once it answers (section 3.5).
+ * ------------------------------------------------------------------ */
+static void
+defrouter_choose(const struct nd_defrouter *failed)
+{
+    struct nd_defrouter *dr, *best = NULL, *installed = NULL, *pref = NULL;
     struct in6_addr any;
+    long now = nd6_now();
 
     for(dr = nd6_defrtrlist; dr; dr = dr->next) {
-        if(nd6_rtexpired(dr->expire) || dr->rtlifetime == 0)
+        if(!defrouter_live(dr))
             continue;
-        if(best == NULL || dr->pref > best->pref)
+        if(dr->installed)
+            installed = dr;
+        if(pref == NULL || dr->pref > pref->pref)
+            pref = dr;
+        if(defrouter_isreachable(dr) && (best == NULL || dr->pref > best->pref))
             best = dr;
     }
+    if(best == NULL && failed != NULL) {
+        for(dr = failed->next; dr && !defrouter_live(dr); dr = dr->next)
+            ;
+        for(dr = dr ? dr : nd6_defrtrlist; dr && !defrouter_live(dr); dr = dr->next)
+            ;
+        best = dr;
+    } else if(best == NULL)
+        best = installed ? installed : pref;
+
+    for(dr = nd6_defrtrlist; best && dr; dr = dr->next)
+        if(defrouter_live(dr) && dr->pref > best->pref &&
+                now - dr->probed >= ND6_RTR_PROBE_INTERVAL &&
+                !defrouter_isreachable(dr)) {
+            dr->probed = now;
+            nd6_probe(dr->ifp, &dr->rtaddr);
+        }
 
     bzero(&any, sizeof(any));
     /* remove any currently installed default routes */
@@ -286,6 +348,37 @@ defrouter_select(void)
     if(best && !best->installed &&
             nd6_router_route(RTM_ADD, &any, 0, &best->rtaddr, best->ifp) == 0)
         best->installed = 1;
+}
+
+void
+defrouter_select(void)
+{
+    defrouter_choose(NULL);
+}
+
+/* Neighbour unreachability detection has given up on addr on ifp: if it is
+ * the router in use, choose again; it is not probed again for a while. */
+void
+defrouter_unreachable(struct in6_addr *addr, struct ifnet *ifp)
+{
+    struct nd_defrouter *dr = defrouter_lookup(addr, ifp);
+
+    if(dr == NULL)
+        return;
+    dr->probed = nd6_now();
+    if(dr->installed)
+        defrouter_choose(dr);
+}
+
+/* addr on ifp has answered: if it is a router not in use, it may be the
+ * better one now. */
+void
+defrouter_reachable(struct in6_addr *addr, struct ifnet *ifp)
+{
+    const struct nd_defrouter *dr = defrouter_lookup(addr, ifp);
+
+    if(dr != NULL && !dr->installed)
+        defrouter_choose(NULL);
 }
 
 /* ==================================================================

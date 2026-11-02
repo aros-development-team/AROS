@@ -417,7 +417,13 @@ route to `::` without a netmask would be a host route, which the routing table r
 
 Router Advertisements are processed as by an RFC 4191 type C host. Each default router keeps its
 preference (high, medium, low; the reserved value counts as medium) and the default route goes
-through the most preferred one that has not expired, the one heard first among equals. A Route
+through the most preferred of those that have not expired and are reachable or probably reachable -
+their neighbour entry past INCOMPLETE (RFC 4861 §6.3.6, RFC 4191 §3.2) - the one heard first among
+equals (`defrouter_choose()`). With none known reachable, the one in use stays, or the most preferred
+is taken; when neighbour unreachability detection gives up on the one in use, the next one in the
+list is (round robin, `defrouter_unreachable()`). A more preferred router passed over is probed with
+a Neighbor Solicitation once a minute at most (RFC 4191 §3.5, `nd6_probe()`), and its answer
+(`defrouter_reachable()`) brings the default route back to it. A Route
 Information Option installs a route to its prefix through the advertising router, on the interface
 it was heard on, one entry per (prefix, router) with its own lifetime and preference: the most
 preferred router for a prefix gets the route, and between prefixes the routing table's longest match

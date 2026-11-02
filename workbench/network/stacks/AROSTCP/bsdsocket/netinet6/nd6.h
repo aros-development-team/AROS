@@ -101,6 +101,7 @@ struct nd_defrouter {
 	u_int8_t flags;			/* ND_RA_FLAG_* */
 	int8_t pref;			/* RFC 4191 preference: 1 high, 0 medium, -1 low */
 	u_int8_t installed;		/* route installed in FIB */
+	long probed;			/* when it was last probed (RFC 4191 section 3.5) */
 };
 
 /*
@@ -247,6 +248,9 @@ void nd6_ra_input(struct mbuf *, int, int);
 void nd6_redirect_input(struct mbuf *, int, int);
 struct nd_defrouter *defrouter_lookup(struct in6_addr *, struct ifnet *);
 void defrouter_select(void);
+void defrouter_unreachable(struct in6_addr *, struct ifnet *);
+void defrouter_reachable(struct in6_addr *, struct ifnet *);
+void nd6_probe(struct ifnet *, struct in6_addr *);
 struct nd_prefix *nd6_prefix_lookup(struct sockaddr_in6 *, int);
 void nd6_prefix_timer(void);
 void nd6_defrouter_timer(void);
