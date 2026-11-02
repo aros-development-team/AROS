@@ -235,11 +235,22 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     if(oifp == NULL && IN6_IS_ADDR_MULTICAST(&faddr6) && inp->in6p_moptions)
         oifp = inp->in6p_moptions->im6o_multicast_ifp;
 
-    /* ---- Resolve source address ---- */
-    if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6)) {
-        laddr6 = inp->inp_laddr6;
-    } else if(!IN6_IS_ADDR_UNSPECIFIED(&osrc)) {
+    /*
+     * ---- Resolve source address ----
+     * An IPV6_PKTINFO source must be an address of ours, usable (RFC 3542
+     * section 6.1, as KAME's in6_selectsrc() checks); on a datagram sent
+     * with a destination it wins over the address the socket is bound to.
+     * A connected socket keeps the source of its connection.
+     */
+    if(!IN6_IS_ADDR_UNSPECIFIED(&osrc) && in6_ourifa(&osrc, NULL) == NULL) {
+        error = EADDRNOTAVAIL;
+        goto release;
+    }
+    if(!IN6_IS_ADDR_UNSPECIFIED(&osrc) &&
+            (addr_m != NULL || IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6))) {
         laddr6 = osrc;                  /* IPV6_PKTINFO named it */
+    } else if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6)) {
+        laddr6 = inp->inp_laddr6;
     } else if(oifp != NULL) {
         /* the interface asked for supplies the address */
         struct in6_ifaddr *ia = in6_ifawithifp(oifp, &faddr6);

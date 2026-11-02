@@ -94,7 +94,7 @@ in6_ifbyindex(u_int32_t index)
  * Our address addr, on ifp if that is not NULL, usable as a local address
  * (not tentative or duplicated). NULL if there is none.
  */
-static struct in6_ifaddr *
+struct in6_ifaddr *
 in6_ourifa(const struct in6_addr *addr, struct ifnet *ifp)
 {
     struct in6_ifaddr *ia;
