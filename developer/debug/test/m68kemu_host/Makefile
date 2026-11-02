@@ -1,6 +1,7 @@
 TEST_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 M68KEMU_DIR := $(abspath $(TEST_DIR)/../../../../rom/m68kemu)
 PYTHON ?= python3
+OPENLIBRARY_ARGS ?=
 MEMORY_BOUNDS_ARGS ?=
 
 CXXFLAGS = -std=c++20 -Wall -Wextra -Wno-unused-parameter -g \
@@ -19,7 +20,7 @@ test_moira_exec: $(TEST_DIR)/test_moira_exec.cpp
 test_hello_thunks: $(TEST_DIR)/test_hello_thunks.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
-test: all test-memory-bounds
+test: all test-memory-bounds test-openlibrary-versions
 	./test_m68kemu
 	./test_moira_exec
 	./test_hello_thunks
@@ -30,7 +31,13 @@ test-memory-bounds:
 test-memory-bounds-sanitize:
 	$(PYTHON) "$(TEST_DIR)/regressions/run_memory_bounds.py" --cxx "$(CXX)" --sanitize $(MEMORY_BOUNDS_ARGS)
 
+test-openlibrary-versions:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_openlibrary_versions.py" --cxx "$(CXX)" $(OPENLIBRARY_ARGS)
+
+test-openlibrary-versions-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_openlibrary_versions.py" --cxx "$(CXX)" --sanitize $(OPENLIBRARY_ARGS)
+
 clean:
 	rm -f $(TESTS)
 
-.PHONY: all test test-memory-bounds test-memory-bounds-sanitize clean
+.PHONY: all test test-openlibrary-versions test-openlibrary-versions-sanitize test-memory-bounds test-memory-bounds-sanitize clean
