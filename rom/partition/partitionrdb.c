@@ -623,7 +623,7 @@ static LONG PartitionRDBWritePartitionTable(struct Library *PartitionBase, struc
     /* write bad blocks */
     bn = (struct BadBlockNode *)data->badblocklist.lh_Head;
     if (bn->ln.ln_Succ)
-        data->rdb.rdb_BadBlockList = block;
+        data->rdb.rdb_BadBlockList = AROS_LONG2BE(block);
     else
         data->rdb.rdb_BadBlockList = (ULONG)-1;
     while (bn->ln.ln_Succ)
