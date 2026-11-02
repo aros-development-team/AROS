@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <graphics/gfx.h>
@@ -18,6 +18,200 @@
 /*  #define MYDEBUG 0 */
 #include "debug.h"
 
+/****** Popstring.mui/MUIC_Popstring ************
+*
+*   NAME
+*       MUIC_Popstring
+*
+*   SUPERCLASS
+*       Group.mui
+*
+*   DESCRIPTION
+*       Combine a caller-supplied button and optional string object in a
+*       horizontal group with zero spacing. Successful construction places these
+*       objects in the Group child hierarchy. No default button or string is
+*       created. Supply a valid button; construction passes it as Child without
+*       a NULL guard. The optional string pointer may be NULL only if the hooks
+*       can handle it.
+*       The button's Pressed FALSE notification invokes Open. OpenHook and
+*       CloseHook are borrowed, default NULL; Toggle defaults FALSE. This base
+*       class supplies hook dispatch and logical open state, not a popup window
+*       or requester.
+*
+*   METHODS
+*       Setup delegates to Group and installs a raw-key event handler in the
+*       containing window; Cleanup removes it before delegating. MUIKEY_POPUP
+*       invokes Open and consumes the event regardless of opening success. Other
+*       events return zero.
+*       The open hook is synchronous. Close queues a CallHook through the
+*       application and immediately resets logical open state and enables the
+*       button. The queued call contains the hook pointer, string pointer and
+*       result value. There is no local cancellation, queue-success check or
+*       wait. Cleanup does not call Close or wait for queued hooks.
+*
+*   NOTES
+*       Keep the application, Popstring, children, hook structures and
+*       referenced hook data alive through queued execution. Do not assume a
+*       zero Open/Close result signals failure or completion. Avoid reopening
+*       while a previous close callback remains queued: logical state has
+*       already changed, but the old callback can still affect popup resources.
+*       Hook replacement does not change a hook pointer already copied into a
+*       queued call.
+*       Only String has a local getter. The header's getter annotations for
+*       Button, OpenHook, CloseHook and Toggle do not correspond to local getter
+*       implementations.
+*
+*/
+/****** Popstring.mui/MUIA_Popstring_Button ************
+*
+*   NAME
+*       MUIA_Popstring_Button
+*
+*   FUNCTION
+*       Supply the button that requests opening.
+*
+*   INPUTS
+*       Initialize only in this implementation, Object pointer. No default
+*       object and no local getter despite the header annotation.
+*
+*   NOTES
+*       The button becomes a Group child on successful construction; do not
+*       dispose it independently. Its Pressed FALSE notification opens the
+*       popup. A successful non-toggle open disables it; a close with a non-NULL
+*       close hook enables it immediately. Button replacement is not
+*       implemented.
+*
+*/
+/****** Popstring.mui/MUIA_Popstring_String ************
+*
+*   NAME
+*       MUIA_Popstring_String
+*
+*   FUNCTION
+*       Supply or retrieve the string-side child.
+*
+*   INPUTS
+*       Initialize and get, Object pointer; default NULL. No local setter.
+*
+*   NOTES
+*       A non-NULL object becomes a Group child. Get returns a borrowed pointer.
+*       Hooks receive this pointer unchanged and must accept NULL if no string
+*       was supplied. Subclasses that interpret String_Contents require a
+*       compatible live string object. The base class neither copies text nor
+*       updates string contents.
+*
+*/
+/****** Popstring.mui/MUIA_Popstring_OpenHook ************
+*
+*   NAME
+*       MUIA_Popstring_OpenHook
+*
+*   FUNCTION
+*       Supply the synchronous opening hook.
+*
+*   INPUTS
+*       Initialize and set, pointer to struct Hook; default NULL. No local
+*       getter despite the header annotation.
+*
+*   NOTES
+*       The hook is borrowed. MUIM_CallHook passes the Popstring object as hook
+*       object and a pointer to argument words as message. The first word is the
+*       String object. A nonzero hook return marks the popup logically open;
+*       zero leaves it closed. With no hook Open does nothing.
+*
+*/
+/****** Popstring.mui/MUIA_Popstring_CloseHook ************
+*
+*   NAME
+*       MUIA_Popstring_CloseHook
+*
+*   FUNCTION
+*       Supply the queued closing hook.
+*
+*   INPUTS
+*       Initialize and set, pointer to struct Hook; default NULL. No local
+*       getter despite the header annotation.
+*
+*   NOTES
+*       The hook is borrowed. MUIM_CallHook passes the Popstring object as hook
+*       object and a pointer to argument words as message. The first word is the
+*       String object and the second is the Close result. Its return is ignored.
+*       Close queues the hook only while logically open; with no hook it does
+*       not reset state or enable the button. Retain hook and data until queued
+*       execution completes.
+*
+*/
+/****** Popstring.mui/MUIA_Popstring_Toggle ************
+*
+*   NAME
+*       MUIA_Popstring_Toggle
+*
+*   FUNCTION
+*       Control repeated Open requests while logically open.
+*
+*   INPUTS
+*       Initialize and set, BOOL; default FALSE. No local getter despite the
+*       header annotation.
+*
+*   NOTES
+*       With TRUE and a non-NULL OpenHook, an Open request while already open
+*       invokes Close with FALSE. With FALSE, an already-open request does
+*       nothing and successful opening disables the button. Changing Toggle does
+*       not immediately synchronize button-disabled state. A close requires
+*       CloseHook to reset logical state.
+*
+*/
+/****** Popstring.mui/MUIM_Popstring_Open ************
+*
+*   NAME
+*       MUIM_Popstring_Open
+*
+*   SYNOPSIS
+*       IPTR rc = DoMethod(obj, MUIM_Popstring_Open);
+*
+*   FUNCTION
+*       Call the open hook or request a toggle-close.
+*
+*   INPUTS
+*       No additional arguments.
+*
+*   RESULT
+*       Zero in all cases.
+*
+*   NOTES
+*       A nonzero synchronous OpenHook result sets logical open state and
+*       disables the button when Toggle is FALSE. With no hook nothing happens.
+*       If already open, Toggle TRUE requests Close(FALSE), otherwise nothing
+*       happens. The public result does not expose the hook result.
+*
+*/
+/****** Popstring.mui/MUIM_Popstring_Close ************
+*
+*   NAME
+*       MUIM_Popstring_Close
+*
+*   SYNOPSIS
+*       IPTR rc = DoMethod(obj, MUIM_Popstring_Close, result);
+*
+*   FUNCTION
+*       Queue the close hook for a logically open popup.
+*
+*   INPUTS
+*       result - LONG passed to the close hook; subclasses commonly interpret
+*       nonzero as accept and zero as cancel.
+*
+*   RESULT
+*       Zero in all cases.
+*
+*   NOTES
+*       With CloseHook and logical open state, enqueue CallHook, clear that
+*       state and enable the button immediately. The hook runs later through the
+*       application; allocation/enqueue failure is not checked. With no hook or
+*       already closed, do nothing. This is not an ASL abort or a synchronous
+*       completion barrier.
+*
+*/
+
 extern struct Library *MUIMasterBase;
 
 struct Popstring_DATA
@@ -32,6 +226,12 @@ struct Popstring_DATA
 };
 
 
+/*
+ * Construct a horizontal Group owning supplied children, store borrowed
+ * hooks/flags and register button release notification. Return object or
+ * zero on superclass failure. Requires a valid button; optional string must
+ * suit hooks. No default children or local getter support beyond String.
+ */
 IPTR Popstring__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Popstring_DATA *data;
@@ -86,6 +286,12 @@ IPTR Popstring__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Replace borrowed hooks and Toggle in tag order, then return Group setter
+ * result. Does not cancel queued callbacks, change existing queue payloads
+ * or immediately synchronize button state. Caller maintains hook/data
+ * lifetimes.
+ */
 IPTR Popstring__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TagItem *tags, *tag;
@@ -111,6 +317,11 @@ IPTR Popstring__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 #define STORE *(msg->opg_Storage)
+/*
+ * Return borrowed String object through valid storage with one; delegate
+ * all other queries to Group. Header getter annotations for
+ * Button/hooks/Toggle are not implemented locally. No ownership transfer.
+ */
 IPTR Popstring__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Popstring_DATA *data = INST_DATA(cl, obj);
@@ -125,6 +336,11 @@ IPTR Popstring__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 #undef STORE
 
+/*
+ * Call Group setup and return FALSE on failure; otherwise register instance
+ * raw-key handler in the containing window and return TRUE. Requires live
+ * window and matched Cleanup before disposal.
+ */
 IPTR Popstring__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
@@ -138,6 +354,11 @@ IPTR Popstring__MUIM_Setup(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
+/*
+ * Remove instance event handler from the live containing window and return
+ * Group cleanup result. Does not close a popup or drain queued hooks; their
+ * lifetimes remain caller responsibilities.
+ */
 IPTR Popstring__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
@@ -148,6 +369,11 @@ IPTR Popstring__MUIM_Cleanup(struct IClass *cl, Object *obj,
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * On MUIKEY_POPUP invoke Open and return Eat regardless of hook result;
+ * otherwise return zero. Requires live object and correctly formed event
+ * message. No ownership transfer.
+ */
 IPTR Popstring__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUIP_HandleEvent *msg)
 {
@@ -160,6 +386,12 @@ IPTR Popstring__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     return 0;
 }
 
+/*
+ * If close hook and logical open state exist, enqueue CallHook with
+ * borrowed hook/string and result, reset state and enable button. Always
+ * return zero, ignoring enqueue failure. Requires live application and
+ * retained callback resources until deferred execution.
+ */
 IPTR Popstring__MUIM_Popstring_Close(struct IClass *cl, Object *obj,
     struct MUIP_Popstring_Close *msg)
 {
@@ -175,6 +407,12 @@ IPTR Popstring__MUIM_Popstring_Close(struct IClass *cl, Object *obj,
     return 0;
 }
 
+/*
+ * Invoke synchronous borrowed open hook when closed, or request toggle
+ * cancellation when already open. Always return zero. Hook arguments and
+ * logical/button effects follow public Open contract; queued prior closes
+ * remain outstanding.
+ */
 IPTR Popstring__MUIM_Popstring_Open(struct IClass *cl, Object *obj,
     struct MUIP_Popstring_Open *msg)
 {
@@ -203,6 +441,12 @@ IPTR Popstring__MUIM_Popstring_Open(struct IClass *cl, Object *obj,
 }
 
 
+/*
+ * Dispatch local overrides and return their results; delegate other
+ * messages to superclass. Requires ABI-correct message and live object
+ * except construction. Deferred callbacks and resource ownership follow the
+ * class lifecycle contract.
+ */
 BOOPSI_DISPATCHER(IPTR, Popstring_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
