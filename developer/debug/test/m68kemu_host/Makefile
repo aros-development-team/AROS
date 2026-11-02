@@ -48,3 +48,15 @@ clean:
 	rm -f $(TESTS)
 
 .PHONY: all test test-memheader test-memheader-sanitize test-openlibrary-versions test-openlibrary-versions-sanitize test-memory-bounds test-memory-bounds-sanitize clean
+
+# The full host suite already requires this Moira checkout.
+LIBRARY_LOADING_ARGS ?=
+test: test-library-loading-versions
+
+test-library-loading-versions:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_library_loading_versions.py" --cxx "$(CXX)" $(LIBRARY_LOADING_ARGS)
+
+test-library-loading-versions-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_library_loading_versions.py" --cxx "$(CXX)" --sanitize $(LIBRARY_LOADING_ARGS)
+
+.PHONY: test-library-loading-versions test-library-loading-versions-sanitize

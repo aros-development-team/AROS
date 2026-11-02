@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <strings.h>
+#include <initializer_list>
 
 using ULONG = uint32_t;
 using UWORD = uint16_t;
@@ -29,6 +30,7 @@ struct M68KEmuContext
 {
     const char *name = nullptr;
     ULONG native_result = 0, class_result = 0, loader_result = 0;
+    UWORD native_version = 2;
     ULONG native_calls = 0, class_calls = 0, loader_calls = 0;
     ULONG class_version = 0xFFFFFFFFu, loader_version = 0xFFFFFFFFu;
     ULONG version_address = 0, cached_version = 0;
@@ -87,6 +89,8 @@ static ULONG M68KEmu_LoadM68KLibrary(M68KEmuContext *ctx, const char *, ULONG ve
 static UWORD m68k_read16(M68KEmuContext *ctx, ULONG addr)
 {
     ctx->version_address = addr;
+    if (ctx->native_result && addr == ctx->native_result + 20)
+        return ctx->native_version;
     return static_cast<UWORD>(ctx->cached_version);
 }
 
@@ -263,8 +267,29 @@ static void task_local_tail()
     CHECK(std::memcmp(&cpu, &saved, sizeof cpu) == 0);
 }
 
+static void native_versions()
+{
+    for (UWORD available : {UWORD(0), UWORD(2), UWORD(0x8000), UWORD(0xFFFF)})
+    {
+        for (ULONG requested : {0u, 2u, 3u, 0x8000u, 0xFFFFu, 0x12340002u})
+        {
+            auto ctx = context_with();
+            ctx.native_result = 0x3000; ctx.native_version = available;
+            ctx.class_result = 0x3500; ctx.loader_result = 0x5000;
+            auto cpu = cpu_with(requested); auto saved = cpu;
+            CHECK(thunk_exec_OpenLibrary(&ctx, &cpu) ==
+                  (available >= UWORD(requested) ? 0x3000u : 0u));
+            CHECK(ctx.native_calls == 1 && !ctx.class_calls && !ctx.loader_calls);
+            CHECK(std::memcmp(&cpu, &saved, sizeof cpu) == 0);
+            CHECK(thunk_exec_OldOpenLibrary(&ctx, &cpu) == 0x3000);
+            CHECK(!ctx.class_calls && !ctx.loader_calls && ctx.tasks[0].tail_pc == 0xAAAAAAAAu);
+        }
+    }
+}
+
 int main()
 {
+    native_versions();
     null_and_native();
     class_versions();
     cached_versions();
