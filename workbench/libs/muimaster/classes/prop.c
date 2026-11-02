@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2012, The AROS Development Team. All rights reserved.
+    Copyright  2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/memory.h>
@@ -29,6 +29,272 @@
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
+
+/****** Prop.mui/MUIC_Prop ************
+*
+*   NAME
+*       MUIC_Prop
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       Represent a proportional range with Entries, Visible and First.
+*       Construction defaults to zero for those values, vertical orientation and
+*       no window border; DeltaFactor defaults to one. Maintain a coherent
+*       nonnegative range with Visible no greater than Entries and First no
+*       greater than Entries minus Visible. The implementation does not enforce
+*       all these invariants.
+*       Prop owns its in-content Intuition propgclass gadget, created by Show
+*       and disposed by Hide. In window-border mode it instead borrows the
+*       window gadget. Setup registers an IDCMPUPDATE handler and allocates a
+*       gadget ID for nonborder mode; Cleanup removes the handler and releases
+*       that ID. Pair Hide before Cleanup and complete both before disposal. No
+*       local Dispose operation substitutes for removing the event handler.
+*
+*   METHODS
+*       Show returns Area's result even if gadget creation fails, a requested
+*       border gadget is unavailable, or virtual-group clipping prevents
+*       creation. A nonborder gadget is created only when entirely inside every
+*       virtual ancestor's inner rectangle; it is not partially clipped. Draw
+*       skips border mode, otherwise draws Area and refreshes the gadget for
+*       full drawing. Hide leaves a borrowed border gadget alive; Cleanup clears
+*       only the local pointer, not the gadget UserData backlink.
+*       HandleEvent accepts IDCMPUPDATE only with matching GA_ID and a PGA_Top
+*       tag. It converts native Top to the logical range, suppresses unchanged
+*       repeat events, and sends First plus private release/trigger tags through
+*       the setter. It returns zero and does not call Area's event handler.
+*       The active scaling algorithm leaves values unchanged below 65536
+*       Entries. At larger totals it maps values to 0..65535 using integer
+*       arithmetic and maps them back with truncation. A First query can
+*       therefore update the stored value to a quantized native position.
+*
+*   NOTES
+*       Setters modify writable caller tags to TAG_IGNORE for unchanged
+*       Entries/First/Visible. Negative First is clamped in stored state, but
+*       the original tag value still reaches superclass notification processing.
+*       Native gadget updates temporarily disable ICA_TARGET and can render
+*       immediately; they are not deferred exclusively to Draw.
+*       Custom rendering borrows image data from the prepared background and
+*       owns temporary image/bitmap/RastPort resources. Setup resets their
+*       pointers without freeing retained allocations; Cleanup does not free
+*       them. Repeated setup cycles can therefore lose resources, and repeated
+*       low-depth custom Show can replace a RastPort pointer without freeing the
+*       previous one. Dispose releases resources still referenced.
+*
+*   BUGS
+*       Getter success for First is reported even though the underlying PGA_Top
+*       getter result is unchecked. Gadget allocation and handler-registration
+*       success are not fully reflected in lifecycle return values. Range
+*       arithmetic, conversions and custom image bounds are not comprehensively
+*       validated. Slider and DoSmooth provide no working local feature; Horiz
+*       has no local getter despite its header annotation.
+*
+*/
+/****** Prop.mui/MUIA_Prop_Entries ************
+*
+*   NAME
+*       MUIA_Prop_Entries
+*
+*   FUNCTION
+*       Set the logical total range.
+*
+*   INPUTS
+*       LONG declaration, stored as ULONG; initialize, set, get. Default zero.
+*
+*   NOTES
+*       Values are not validated against Visible or First. Negative inputs
+*       convert to unsigned values. At totals of at least 65536, native gadget
+*       values are scaled to 65535; rounding can change a later First query. An
+*       unchanged setter tag becomes TAG_IGNORE. The getter returns stored
+*       Entries.
+*
+*/
+/****** Prop.mui/MUIA_Prop_Visible ************
+*
+*   NAME
+*       MUIA_Prop_Visible
+*
+*   FUNCTION
+*       Set the logical visible portion of Entries.
+*
+*   INPUTS
+*       LONG declaration, stored as ULONG; initialize, set, get. Default zero.
+*
+*   NOTES
+*       Keep Visible between zero and Entries. No such validation is performed,
+*       and changing Visible does not repair First. Native values use the
+*       Entries-dependent scale. An unchanged setter tag becomes TAG_IGNORE. The
+*       getter returns stored Visible.
+*
+*/
+/****** Prop.mui/MUIA_Prop_First ************
+*
+*   NAME
+*       MUIA_Prop_First
+*
+*   FUNCTION
+*       Set or query the first visible logical position.
+*
+*   INPUTS
+*       LONG; initialize, set, get. Default zero.
+*
+*   NOTES
+*       Construction and setting clamp negative stored values to zero, but do
+*       not impose an upper limit. When a native gadget exists, the getter reads
+*       PGA_Top, converts it back and updates stored First. The native getter
+*       result is unchecked. Unchanged setter tags become TAG_IGNORE; changed
+*       negative tag values are not rewritten to the stored zero before
+*       notifications. Maintain a coherent range and allow for native
+*       quantization.
+*
+*/
+/****** Prop.mui/MUIA_Prop_Horiz ************
+*
+*   NAME
+*       MUIA_Prop_Horiz
+*
+*   FUNCTION
+*       Select horizontal orientation when nonzero; otherwise vertical.
+*
+*   INPUTS
+*       BOOL; initialize only in this implementation. Default FALSE.
+*
+*   NOTES
+*       Stored orientation is normalized. There is no runtime setter or local
+*       getter, despite the header declaring get support. Orientation affects
+*       native freedom and default dimensions; it is not changed by Group_Horiz
+*       on this Area subclass.
+*
+*/
+/****** Prop.mui/MUIA_Prop_Slider ************
+*
+*   NAME
+*       MUIA_Prop_Slider
+*
+*   FUNCTION
+*       Declared slider flag with no effective local implementation.
+*
+*   INPUTS
+*       BOOL; header declares initialize, set and get.
+*
+*   NOTES
+*       Constructor and setter contain empty cases; no state or behavior is
+*       changed and there is no local getter. Do not infer slider-specific
+*       operation or a stored default.
+*
+*/
+/****** Prop.mui/MUIA_Prop_DoSmooth ************
+*
+*   NAME
+*       MUIA_Prop_DoSmooth
+*
+*   FUNCTION
+*       Declared attribute without a consumer in Prop.
+*
+*   INPUTS
+*       LONG; initialization declaration only.
+*
+*   NOTES
+*       No local constructor branch, setter or getter implements this attribute.
+*       It does not enable smoothing in the current implementation; no
+*       functional default is defined here.
+*
+*/
+/****** Prop.mui/MUIA_Prop_DeltaFactor ************
+*
+*   NAME
+*       MUIA_Prop_DeltaFactor
+*
+*   FUNCTION
+*       Multiply the amount used by Increase and Decrease.
+*
+*   INPUTS
+*       LONG; initialize and set. Default one.
+*
+*   NOTES
+*       There is no local getter. Zero, negative values and overflow-prone
+*       factors are accepted. The factor affects the two methods, not every
+*       native knob movement. Use nonnegative amounts/factors with representable
+*       products for forward/decrease semantics.
+*
+*/
+/****** Prop.mui/MUIA_Prop_UseWinBorder ************
+*
+*   NAME
+*       MUIA_Prop_UseWinBorder
+*
+*   FUNCTION
+*       Select an existing native window-border proportional gadget instead of
+*       an owned in-content gadget.
+*
+*   INPUTS
+*       LONG; initialize only. Default None.
+*
+*   NOTES
+*       Right borrows mri_VertProp; Bottom borrows mri_HorizProp. Configure the
+*       window with the matching UseRightBorderScroller or
+*       UseBottomBorderScroller attribute. Left is declared but has no Show
+*       branch; other nonzero values likewise mark border mode without finding a
+*       gadget. No local setter/getter exists. Show writes the borrowed gadget
+*       UserData and ICA_TARGET; Hide does not dispose it, and Cleanup does not
+*       restore its UserData backlink.
+*
+*/
+/****** Prop.mui/MUIM_Prop_Increase ************
+*
+*   NAME
+*       MUIM_Prop_Increase
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Prop_Increase, amount);
+*
+*   FUNCTION
+*       Add amount times DeltaFactor to/from stored First.
+*
+*   INPUTS
+*       amount - LONG. Use a nonnegative representable value and a coherent
+*       range; multiplication/addition are not overflow-checked.
+*
+*   RESULT
+*       Always one, including when no value changes. Setter and native gadget
+*       results are not propagated.
+*
+*   NOTES
+*       Increase limits the result against Entries minus Visible before setting
+*       First. Mixed signed/unsigned range arithmetic makes invalid ranges
+*       unsafe. The method uses stored First, not an explicit fresh native
+*       getter, and calls the ordinary setter only when needed. Notifications
+*       remain enabled.
+*
+*/
+/****** Prop.mui/MUIM_Prop_Decrease ************
+*
+*   NAME
+*       MUIM_Prop_Decrease
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Prop_Decrease, amount);
+*
+*   FUNCTION
+*       Subtract amount times DeltaFactor to/from stored First.
+*
+*   INPUTS
+*       amount - LONG. Use a nonnegative representable value and a coherent
+*       range; multiplication/addition are not overflow-checked.
+*
+*   RESULT
+*       Always one, including when no value changes. Setter and native gadget
+*       results are not propagated.
+*
+*   NOTES
+*       Decrease returns immediately when stored First is at or below zero.
+*       Otherwise it clamps a negative calculated result to zero; it does not
+*       impose an upper bound for negative amounts or factors. The method uses
+*       stored First, not an explicit fresh native getter, and calls the
+*       ordinary setter only when needed. Notifications remain enabled.
+*
+*/
 
 extern struct Library *MUIMasterBase;
 
@@ -70,6 +336,11 @@ struct Prop_DATA
 };
 
 #if SCALE16_METHOD == 1
+/*
+ * Inactive SCALE16_METHOD == 1 alternative: compute cached 16.16 scale from
+ * Entries. Requires live instance, no allocation or result. Current file
+ * selects method 2, so this definition is not compiled.
+ */
 static void calcscale16(struct Prop_DATA *data)
 {
     if (data->entries < 65535)
@@ -86,6 +357,12 @@ static void calcscale16(struct Prop_DATA *data)
 }
 #endif
 
+/*
+ * Convert an unsigned logical value to native scale using instance Entries.
+ * Active method 2 is identity below 65536, otherwise truncates value times
+ * 65535 divided by Entries using a wide intermediate. Does not clamp
+ * incoherent values; returns converted ULONG, no ownership change.
+ */
 static ULONG downscale(struct Prop_DATA *data, ULONG val)
 {
 #if SCALE16_METHOD == 1
@@ -107,6 +384,12 @@ static ULONG downscale(struct Prop_DATA *data, ULONG val)
     return val;
 }
 
+/*
+ * Convert a native unsigned value back to logical units. Active method 2 is
+ * identity below 65536 Entries, otherwise truncates value times Entries
+ * divided by 65535. Requires live instance; no validation or ownership
+ * change.
+ */
 static ULONG upscale(struct Prop_DATA *data, ULONG val)
 {
 #if SCALE16_METHOD == 1
@@ -127,6 +410,13 @@ static ULONG upscale(struct Prop_DATA *data, ULONG val)
     return val;
 }
 
+/*
+ * Construct Area with default PropBack, parse
+ * range/orientation/border/factor tags and initialize event descriptor and
+ * dimensions. Clamp only negative First; leave other range invariants
+ * unchecked. Return object or zero on Area failure. No native gadget
+ * allocated here; Slider case does nothing.
+ */
 IPTR Prop__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Prop_DATA *data;
@@ -206,6 +496,13 @@ IPTR Prop__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Remove/dispose an owned nonborder gadget if still present, free
+ * referenced image/bitmap/RastPort buffers and dispose Area. Requires valid
+ * window if removing a gadget and prior handler Cleanup. Borrowed border
+ * gadget is not disposed. Return superclass result; lost earlier allocation
+ * pointers cannot be recovered.
+ */
 IPTR Prop__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Prop_DATA *data = INST_DATA(cl, obj);
@@ -234,6 +531,14 @@ IPTR Prop__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
+/*
+ * Store range/factor tags and mutate unchanged range tags to TAG_IGNORE;
+ * clamp stored negative First. Private OnlyTrigger suppresses native
+ * refresh only, not storage or notifications. Refresh existing gadget
+ * synchronously with ICA_TARGET temporarily disabled, then return Area
+ * setter result. Caller tag list must be writable; range upper bounds and
+ * arithmetic are unchecked.
+ */
 IPTR Prop__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TagItem *tags, *tag;
@@ -317,6 +622,13 @@ IPTR Prop__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 #define STORE *(msg->opg_Storage)
+/*
+ * Return stored Entries/Visible, or refresh First from native PGA_Top
+ * without checking that getter result. Private Release always returns zero
+ * with success to support notification discovery; it is not stored release
+ * state. Requires IPTR storage. Other attributes delegate to Area,
+ * including unsupported Horiz getter.
+ */
 IPTR Prop__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Prop_DATA *data = INST_DATA(cl, obj);
@@ -341,19 +653,7 @@ IPTR Prop__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         STORE = data->visible;
         return 1;
 
-        /* CHECKME: MUIA_Prop_Release
-
-           TextEditor.mcc sets up notification on slider obj which is subclass
-           of group and notification on group children (the prop object) will
-           be dropped if the child does not return TRUE on OM_GET.
-
-           It may be that MUI handles this differently, because a quick check
-           with UAE/MUI showed that a GetAttr() of MUIA_Prop_Release on alider
-           object does not work (returns FALSE). Maybe MUI slider class is
-           similiar to for exampe NListview.mcc which overrides MUIM_Notify
-           where it checks for known attributes and forwards the Method to
-           the correct child of the group.
-         */
+        /* Private notification-discovery getter; no release state stored. */
     case MUIA_Prop_Release:
         STORE = 0;
         return 1;
@@ -365,6 +665,11 @@ IPTR Prop__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 #undef STORE
 
+/*
+ * Ask Area, add instance minima/defaults and overwrite maxima with instance
+ * maxima. Requires setup-derived size data and writable MinMaxInfo. Return
+ * TRUE regardless of superclass result; no allocation or ownership change.
+ */
 IPTR Prop__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     struct MUIP_AskMinMax *msg)
 {
@@ -389,6 +694,13 @@ IPTR Prop__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
+/*
+ * Set up Area, register IDCMPUPDATE handler and allocate nonborder gadget
+ * ID; choose custom-background thickness when available. Return zero on
+ * Area failure, otherwise one. Resets buffer pointers without freeing old
+ * allocations; requires paired lifecycle and connected window/preferences.
+ * Handler/ID results are not validated.
+ */
 IPTR Prop__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
@@ -464,6 +776,12 @@ IPTR Prop__MUIM_Setup(struct IClass *cl, Object *obj,
     return 1;
 }
 
+/*
+ * Release nonborder gadget ID or clear borrowed border pointer/ID, remove
+ * event handler, then return Area Cleanup result. Requires prior Hide and
+ * matching Setup. Does not free custom buffers or restore borrowed gadget
+ * UserData.
+ */
 IPTR Prop__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
@@ -482,6 +800,13 @@ IPTR Prop__MUIM_Cleanup(struct IClass *cl, Object *obj,
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Blend a source ARGB rectangle into destination pixels, forcing alpha 255.
+ * Components use separate right shifts by eight, so this is the implemented
+ * approximation, not exact division by 255. Requires valid nonoverlapping
+ * image storage and in-bounds rectangles; no clipping, allocation or
+ * status.
+ */
 void WritePixelArrayAlphaToImage(struct NewImage *in, UWORD sx, UWORD sy,
     struct NewImage *out, UWORD xp, UWORD yp, UWORD w, UWORD h)
 {
@@ -517,6 +842,13 @@ void WritePixelArrayAlphaToImage(struct NewImage *in, UWORD sx, UWORD sy,
     }
 }
 
+/*
+ * Repeat a source strip across dw pixels into optional image and/or
+ * RastPort; return final x, or xp when sw/dw is zero. Requires positive
+ * strip width for positive destination width and valid image rectangles; sh
+ * is unused. Negative sw can prevent progress. No bounds checks or resource
+ * transfer; bitmap mask is used when present.
+ */
 int WriteTiledImageHorizontal(struct NewImage *dst, struct RastPort *maprp,
     struct NewImage *ni, int sx, int sy, int sw, int sh, int xp, int yp,
     int dw, int dh)
@@ -552,6 +884,13 @@ int WriteTiledImageHorizontal(struct NewImage *dst, struct RastPort *maprp,
     return x;
 }
 
+/*
+ * Repeat source strip down dh pixels into optional image and/or RastPort;
+ * return final y, or yp when sh/dh is zero. Requires positive strip height
+ * for positive destination height and valid rectangles; sw is unused.
+ * Negative sh can prevent progress. No allocation or clipping; uses bitmap
+ * mask when present.
+ */
 int WriteTiledImageVertical(struct NewImage *dst, struct RastPort *maprp,
     struct NewImage *ni, int sx, int sy, int sw, int sh, int xp, int yp,
     int dw, int dh)
@@ -587,6 +926,14 @@ int WriteTiledImageVertical(struct NewImage *dst, struct RastPort *maprp,
 }
 
 #ifdef __AROS__
+/*
+ * AROS-only private display hook handles WDM_DRAW_BORDERPROPKNOB using
+ * borrowed skin images and window geometry. Restore saved background into
+ * temporary buffers, tile container/knob for state, then copy to window
+ * RastPort. Requires complete valid paired buffers, skin slices and in-
+ * bounds geometry; no validation or result. Other methods do nothing; never
+ * retain the borrowed message.
+ */
 AROS_UFH3
     (void, CustomPropRenderFunc,
     AROS_UFHA(struct Hook *, h, A0),
@@ -801,6 +1148,14 @@ AROS_UFH3
 }
 #endif
 
+/*
+ * Call Area Show then create/replace owned nonborder gadget only if fully
+ * visible through virtual ancestors, or borrow Right/Bottom border gadget
+ * and set UserData. Return Area result regardless of gadget failure. Custom
+ * rendering may allocate fallback buffers; failed pairs disable custom
+ * hook. Repeated low-depth Show can lose old RastPort; requires valid
+ * setup/window and skin geometry.
+ */
 IPTR Prop__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct Prop_DATA *data = INST_DATA(cl, obj);
@@ -1035,6 +1390,12 @@ IPTR Prop__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     return rc;
 }
 
+/*
+ * Return zero immediately in border mode. Otherwise draw Area and, for full
+ * draw, capture custom background and refresh native gadget when present.
+ * Return one, ignoring delegated results. Requires live drawing resources;
+ * does not create a missing gadget.
+ */
 IPTR Prop__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
@@ -1078,6 +1439,12 @@ IPTR Prop__MUIM_Draw(struct IClass *cl, Object *obj,
     return 1;
 }
 
+/*
+ * Remove and dispose only owned nonborder gadget, clearing its pointer,
+ * then return Area Hide result. Requires live window and shown state.
+ * Borrowed border gadget and custom buffers remain; Cleanup is still
+ * required.
+ */
 IPTR Prop__MUIM_Hide(struct IClass *cl, Object *obj,
     struct MUIP_Hide *msg)
 {
@@ -1096,6 +1463,13 @@ IPTR Prop__MUIM_Hide(struct IClass *cl, Object *obj,
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Process matching IDCMPUPDATE GA_ID/PGA_Top tags; upscale, suppress
+ * unchanged repeat updates and invoke setter with OnlyTrigger and release
+ * flag. Return zero for all events without superclass delegation. Requires
+ * valid borrowed IntuiMessage/tag list. Release notifications carry repeat-
+ * dependent state although the Release getter always returns zero.
+ */
 IPTR Prop__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUIP_HandleEvent *msg)
 {
@@ -1143,6 +1517,11 @@ IPTR Prop__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     return 0;
 }
 
+/* Implement MUIM_Prop_Increase using stored First and amount times
+ * DeltaFactor. Requires coherent range and representable arithmetic. Return
+ * one unconditionally; ordinary setter notifications remain enabled. See
+ * the public method contract above for exact clamping and limitations.
+ */
 IPTR Prop__MUIM_Prop_Increase(struct IClass *cl, Object *obj,
     struct MUIP_Prop_Increase *msg)
 {
@@ -1158,6 +1537,11 @@ IPTR Prop__MUIM_Prop_Increase(struct IClass *cl, Object *obj,
     return 1;
 }
 
+/* Implement MUIM_Prop_Decrease using stored First and amount times
+ * DeltaFactor. Requires coherent range and representable arithmetic. Return
+ * one unconditionally; ordinary setter notifications remain enabled. See
+ * the public method contract above for exact clamping and limitations.
+ */
 IPTR Prop__MUIM_Prop_Decrease(struct IClass *cl, Object *obj,
     struct MUIP_Prop_Decrease *msg)
 {
@@ -1178,6 +1562,12 @@ IPTR Prop__MUIM_Prop_Decrease(struct IClass *cl, Object *obj,
 }
 
 
+/*
+ * Route Prop overrides and Increase/Decrease; delegate remaining methods to
+ * Area. Return selected handler result. Requires live instance and ABI-
+ * correct message except construction; native resources follow
+ * Setup/Show/Hide/Cleanup pairing.
+ */
 BOOPSI_DISPATCHER(IPTR, Prop_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
