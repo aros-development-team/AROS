@@ -291,9 +291,9 @@ LONG ReadFATSuper(struct FSSuper *sb)
             {
                 /* FIXME: Handle IO errors on cache read! */
                 SetMem(fat_block, 0, bsize);
-                if (i == 0)
+                if (i == 0 || i == sb->fat_size)
                 {
-                    /* The first two entries are special */
+                    /* Initialise the reserved entries in both FAT copies. */
                     if (sb->type == 32)
                         *(UQUAD *) fat_block =
                             AROS_QUAD2LE(0x0FFFFFFF0FFFFFF8);
