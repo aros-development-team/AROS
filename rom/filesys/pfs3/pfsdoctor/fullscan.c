@@ -34,6 +34,17 @@
 
 uint32 maxdatestamp = 0;
 
+/* Absence cannot be proved across unreadable metadata. Let the owner choose
+ * salvage using the readable subset, rather than silently making that choice. */
+static bool AcceptIncompleteSearch(void)
+{
+	return volume.askuser(
+		"This metadata search encountered unreadable blocks.\n"
+		"Continue this reconstruction using only readable metadata?\n"
+		"Missing references may be removed and files may be lost.",
+		"Continue", "Abort") != 0;
+}
+
 void InitFullScan(void)
 {
 	NewList((struct List *)&volume.buildblocks);
@@ -390,7 +401,7 @@ error_t SearchBlocks(scanelement_t el[], uint32 seqlow, uint32 seqhigh,
 	if (read_error)
 		for (i = 0; i <= seqhigh - seqlow; i++)
 			if (!el[i].blocknr)
-				return read_error;
+				return AcceptIncompleteSearch() ? e_none : read_error;
 	return e_none;
 }
 
@@ -506,8 +517,10 @@ error_t SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp
 
 	free (blk.data);
 	volume.status(1," ",100);
-	if (!bloknr && read_error)
-		return read_error;
+	if (!bloknr && read_error) {
+		if (read_error != e_read_error || !AcceptIncompleteSearch())
+			return read_error;
+	}
 	*result = (uint32)bloknr;
 	return e_none;
 }
@@ -516,7 +529,8 @@ error_t SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp
 error_t SearchLastReserved(volume_t *vol, uint32 *result)
 {
 	cachedblock_t blk;
-	uint32 i, last, cdwn;
+	uint32 i, last, cdwn, last_unreadable = 0;
+	bool found = false;
 	error_t error = e_none, read_error = e_none;
 
 	blk.data = calloc(1, SIZEOF_RESBLOCK);
@@ -540,6 +554,7 @@ error_t SearchLastReserved(volume_t *vol, uint32 *result)
 		error = vol_GetRawBlock(&blk, i);
 		if (error == e_read_error) {
 			read_error = error;
+			last_unreadable = i;
 			error = e_none;
 			i += volume.rescluster;
 			continue;
@@ -560,6 +575,7 @@ error_t SearchLastReserved(volume_t *vol, uint32 *result)
 
 				cdwn = 1024;
 				last = i;
+				found = true;
 				break;
 
 			default:
@@ -575,7 +591,8 @@ error_t SearchLastReserved(volume_t *vol, uint32 *result)
  s_ret:
  	free (blk.data);
 	vol->status(1, " ", 100);
-	if (error == e_none)
+	if (error == e_none && read_error &&
+		(!found || last_unreadable > last) && !AcceptIncompleteSearch())
 		error = read_error;
 	if (error == e_none)
 		*result = last;
@@ -630,7 +647,7 @@ error_t SearchFileSystem(int32 startblok, int32 endblok, uint32 *result)
 	}
 
 	FreeBufMem(rbl);
-	if (error == e_none && !blnr)
+	if (error == e_none && !blnr && read_error && !AcceptIncompleteSearch())
 		error = read_error;
 	if (error == e_none)
 		*result = blnr;
