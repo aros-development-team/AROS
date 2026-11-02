@@ -238,7 +238,7 @@ static struct cacheline *c_GetCacheLine(uint32 bloknr, error_t *error, bool writ
 error_t UpdateCache(void)
 {
 	struct cacheline *cl;
-	error_t error;
+	error_t error, first_error = e_none;
 
 	for (cl = HeadOf(&cache.LRUqueue); cl->next; cl=cl->next)
 	{
@@ -248,12 +248,14 @@ error_t UpdateCache(void)
 				cl->dirtylast - cl->dirtyfirst + 1, cl->blocknr + cl->dirtyfirst);
 			if (error) {
 				adderror("write error");
-				return error;
+				if (!first_error)
+					first_error = error;
+				continue;
 			}
 			cl->dirty = false;
 		}
 	}
-	return e_none;
+	return first_error;
 }
 
 /* destroy cache
