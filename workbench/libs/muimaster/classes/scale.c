@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -27,9 +27,75 @@
 /*  #define MYDEBUG 1 */
 #include "debug.h"
 
+/****** Scale.mui/MUIC_Scale ************
+*
+*   NAME
+*       MUIC_Scale
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       Draw a horizontal percentage scale from 0% to 100%. This is a decorative
+*       Area subclass with no value attribute, range configuration, numeric
+*       input or automatic association with Gauge. The default orientation is
+*       horizontal. Vertical orientation can be stored and retrieved but has no
+*       scale rendering or class-specific size implementation.
+*
+*   METHODS
+*       Setup calls Area and measures the literal string "0% 100%" using the
+*       current font; it caches that width and the font height. It returns zero
+*       if Area setup fails, otherwise one. Horizontal AskMinMax adds the cached
+*       width to minimum/default widths, permits maximum width MUI_MAXMAX and
+*       adds font height plus four pixels to all height fields. In vertical mode
+*       it leaves superclass size fields unchanged. It returns zero.
+*       Draw calls Area and, in horizontal mode, paints a bar, endpoint labels
+*       and alternating long/short marks. It selects a power-of-two subdivision
+*       count from available width and measured strings. The fit estimate
+*       measures subdivision indices followed by percent signs, rather than the
+*       actual percentage labels; it is not a guarantee that labels fit.
+*       Endpoint labels are 0% and 100%; intermediate displayed values use
+*       integer division. Temporary Zune text objects are freed after use;
+*       allocation failure skips the affected label. Draw returns zero and has
+*       no local draw-flag check.
+*
+*   NOTES
+*       No persistent strings, bitmap, pen or native gadget are allocated by
+*       this class. Use the normal Area lifecycle with a live font and render
+*       context. Orientation changes request redraw but do not request relayout
+*       or remeasure text. No vertical drawing is supplied after such a change.
+*
+*/
+/****** Scale.mui/MUIA_Scale_Horiz ************
+*
+*   NAME
+*       MUIA_Scale_Horiz
+*
+*   FUNCTION
+*       Store or retrieve the requested scale orientation.
+*
+*   INPUTS
+*       Initialize, set and get, BOOL. Default TRUE for horizontal. FALSE
+*       selects the unimplemented vertical branch.
+*
+*   NOTES
+*       A changed value requests full redraw; every supplied tag is still
+*       forwarded to Area, including unchanged values. Get writes the stored
+*       BOOL to caller-owned IPTR storage and returns TRUE. Set returns the
+*       superclass result. There is no relayout request, so changing this
+*       attribute does not itself update size negotiation. In vertical mode only
+*       superclass drawing occurs and no class-specific sizes are added.
+*
+*/
+
 extern struct Library *MUIMasterBase;
 
 
+/*
+ * Construct Area and initialize Horiz TRUE unless overridden by tags.
+ * Return object or zero on superclass failure. No owned resource or local
+ * notification.
+ */
 IPTR Scale__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Scale_DATA *data;
@@ -61,6 +127,12 @@ IPTR Scale__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Store each Horiz tag and request full redraw if any differs from the
+ * preceding state. Forward all tags unchanged and return Area result.
+ * Requires live object and valid tag list; no remeasurement or relayout
+ * request.
+ */
 IPTR Scale__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Scale_DATA *data;
@@ -88,6 +160,10 @@ IPTR Scale__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Return stored Horiz in valid caller-owned IPTR storage with TRUE;
+ * delegate all other attributes to Area. No allocation or mutation.
+ */
 IPTR Scale__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Scale_DATA *data = INST_DATA(cl, obj);
@@ -104,6 +180,12 @@ IPTR Scale__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Call Area setup; on success measure literal endpoint-label sample with
+ * current font and cache width/height. Return zero on superclass failure,
+ * otherwise one. Requires live font; owns no allocated measurement
+ * resources.
+ */
 IPTR Scale__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
@@ -126,6 +208,12 @@ IPTR Scale__MUIM_Setup(struct IClass *cl, Object *obj,
     return 1;
 }
 
+/*
+ * Call Area and add cached horizontal label sizes plus four-pixel bar
+ * height; vertical branch adds nothing. Return zero ignoring superclass
+ * result. Requires writable MinMaxInfo and prior Setup; no text
+ * measurement.
+ */
 IPTR Scale__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     struct MUIP_AskMinMax *msg)
 {
@@ -147,6 +235,13 @@ IPTR Scale__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     return 0;
 }
 
+/*
+ * Call Area; horizontally draw line, marks and temporary text objects,
+ * skipping labels on allocation failure and freeing successful objects.
+ * Vertical branch does nothing locally. Return zero; no local draw-flag
+ * filtering. Requires valid font/render geometry; index-based fit estimate
+ * does not guarantee label fit.
+ */
 IPTR Scale__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
@@ -265,6 +360,11 @@ IPTR Scale__MUIM_Draw(struct IClass *cl, Object *obj,
 }
 
 #if ZUNE_BUILTIN_SCALE
+/*
+ * When built in, dispatch local methods and return their results; delegate
+ * other messages to Area. Requires ABI-correct message and live object
+ * except construction. Ownership and lifecycle follow the class contract.
+ */
 BOOPSI_DISPATCHER(IPTR, Scale_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
