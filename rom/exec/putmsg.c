@@ -60,23 +60,34 @@
     ASSERT_VALID_PTR(message);
     ASSERT_VALID_PTR(port);
 
-    /* Set the node type to NT_MESSAGE == sent message. */
-    message->mn_Node.ln_Type = NT_MESSAGE;
-
-    InternalPutMsg(port, message, SysBase);
+    /* NT_MESSAGE == sent message; published once the message is on the list */
+    InternalPutMsgType(port, message, NT_MESSAGE, SysBase);
 
     AROS_LIBFUNC_EXIT
 } /* PutMsg() */
 
-void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase)
+/*
+ * Add a message to the port's list and wake the owner.
+ *
+ * Messages may be sent from interrupts, so the list is protected with
+ * Disable() for the local core and a spinlock on SMP. Two SMP rules
+ * (heavy4c-04, 2026-11-01: input.device faulted in AddTail on a port the
+ * waiter had already freed):
+ *  - the node type (NT_MESSAGE / NT_REPLYMSG) is published AFTER the node
+ *    is linked, under the lock. WaitIO()/CheckIO() test ln_Type without
+ *    the lock; a waiter woken early (DoSyncAction shares its port's signal
+ *    with the "done" signal) must not see NT_REPLYMSG while the replier is
+ *    still between the store and the AddTail - it would Remove() a node
+ *    that is not on any list and free the port under the replier.
+ *  - everything the signalling needs is read under the lock: once the
+ *    message is visible the receiver may run, consume it and free the port.
+ * Type 0 leaves ln_Type alone (remtask.c / service.c rely on that).
+ */
+void InternalPutMsgType(struct MsgPort *port, struct Message *message, UBYTE type, struct ExecBase *SysBase)
 {
-    /*
-     * Add a message to the ports list.
-     * NB : Messages may be sent from interrupts, therefore
-     * the message list of the message port must be protected
-     * with Disable() for the local core, and also a spinlock
-     * on smp systems.
-     */
+    UBYTE flags;
+    BYTE  sigbit;
+    APTR  sigtask;
 
     D(bug("[EXEC] PutMsg: Port @ 0x%p, Msg @ 0x%p\n", port, message);)
 
@@ -84,32 +95,37 @@ void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBa
 #if defined(__AROSEXEC_SMP__)
     EXEC_SPINLOCK_LOCK(&port->mp_SpinLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
+    flags   = port->mp_Flags;
+    sigbit  = port->mp_SigBit;
+    sigtask = port->mp_SigTask;
     AddTail(&port->mp_MsgList, &message->mn_Node);
+    if (type)
+        __atomic_store_n(&message->mn_Node.ln_Type, type, __ATOMIC_RELEASE);
     D(bug("[EXEC] PutMsg: Port MsgList->lh_TailPred =  0x%p\n", port->mp_MsgList.lh_TailPred);)
 #if defined(__AROSEXEC_SMP__)
     EXEC_SPINLOCK_UNLOCK(&port->mp_SpinLock);
 #endif
     Enable();
 
-    if (port->mp_SigTask)
+    if (sigtask)
     {
-        ASSERT_VALID_PTR(port->mp_SigTask);
+        ASSERT_VALID_PTR(sigtask);
 
         /* And trigger the action. */
-        switch(port->mp_Flags & PF_ACTION)
+        switch(flags & PF_ACTION)
         {
             case PA_SIGNAL:
-                D(bug("[EXEC] PutMsg: PA_SIGNAL -> Task 0x%p, Signal %08x\n", port->mp_SigTask, (1 << port->mp_SigBit));)
+                D(bug("[EXEC] PutMsg: PA_SIGNAL -> Task 0x%p, Signal %08x\n", sigtask, (1 << sigbit));)
 
                 /* Send the signal */
-                Signal((struct Task *)port->mp_SigTask, (1 << port->mp_SigBit));
+                Signal((struct Task *)sigtask, (1 << sigbit));
                 break;
 
             case PA_SOFTINT:
-                D(bug("[EXEC] PutMsg: PA_SOFTINT -> Int %s\n", ((struct Interrupt *)port->mp_SoftInt)->is_Node.ln_Name);)
+                D(bug("[EXEC] PutMsg: PA_SOFTINT -> Int %s\n", ((struct Interrupt *)sigtask)->is_Node.ln_Name);)
 
                 /* Raise a software interrupt */
-                Cause((struct Interrupt *)port->mp_SoftInt);
+                Cause((struct Interrupt *)sigtask);
                 break;
 
             case PA_IGNORE:
@@ -117,16 +133,21 @@ void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBa
                 break;
 
             case PA_CALL:
-                D(bug("[EXEC] PutMsg: PA_CALL -> Func @ 0x%p\n", port->mp_SigTask, port);)
+                D(bug("[EXEC] PutMsg: PA_CALL -> Func @ 0x%p\n", sigtask, port);)
 
 #if defined(__AROSEXEC_SMP__)
                 //TODO! - the called function must be SMP safe.
 #endif
                 /* Call the function in mp_SigTask. */
-                AROS_UFC2NR(void, port->mp_SigTask,
+                AROS_UFC2NR(void, sigtask,
                     AROS_UFCA(struct MsgPort *,  port,    D0),
                     AROS_UFCA(struct ExecBase *, SysBase, A6));
                 break;
         }
     }
+}
+
+void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase)
+{
+    InternalPutMsgType(port, message, 0, SysBase);
 }

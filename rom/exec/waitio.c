@@ -8,6 +8,8 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#include "exec_intern.h"
+
 /*****************************************************************************
 
     NAME */
@@ -68,11 +70,21 @@
     */
     if(iORequest->io_Message.mn_Node.ln_Type==NT_REPLYMSG)
     {
-        /* Arbitrate for the message queue. */
-        Disable();
+        struct MsgPort *port = iORequest->io_Message.mn_ReplyPort;
 
+        /* Arbitrate for the message queue: PutMsg() on another CPU may
+           be appending to it right now (it takes the same lock) */
+        Disable();
+#if defined(__AROSEXEC_SMP__)
+        if (port)
+            EXEC_SPINLOCK_LOCK(&port->mp_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
         /* Remove the message */
         Remove(&iORequest->io_Message.mn_Node);
+#if defined(__AROSEXEC_SMP__)
+        if (port)
+            EXEC_SPINLOCK_UNLOCK(&port->mp_SpinLock);
+#endif
         Enable();
     }
 

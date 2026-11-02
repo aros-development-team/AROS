@@ -57,10 +57,8 @@
         message->mn_Node.ln_Type=NT_FREEMSG;
     else
     {
-        /* Mark the message as replied */
-        message->mn_Node.ln_Type=NT_REPLYMSG;
-
-        InternalPutMsg(port, message, SysBase);
+        /* Marked as replied only once it is on the port (see InternalPutMsgType) */
+        InternalPutMsgType(port, message, NT_REPLYMSG, SysBase);
     }
 
     AROS_LIBFUNC_EXIT

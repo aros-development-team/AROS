@@ -142,6 +142,8 @@
                     if( ((IPTR)sr->sr_Waiter & SM_SHARED) == SM_SHARED )
                     {
                         Remove((struct Node *)sr);
+                        /* Granted - the waiter tests this (semaphores.c) */
+                        sr->sr_Link.mln_Succ = NULL;
 
                         /* Clear the bit, and update the owner count */
                         sr->sr_Waiter = (APTR)((IPTR)sr->sr_Waiter & ~1);
@@ -170,6 +172,8 @@
 
                 /* Only awaken the first of the nodes */
                 Remove((struct Node *)sr);
+                /* Granted - the waiter tests this (semaphores.c) */
+                sr->sr_Link.mln_Succ = NULL;
                 sigSem->ss_NestCount++;
 
                 if(sr->sr_Waiter != NULL)
