@@ -51,6 +51,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <proto/asl.h>
+#include <proto/dos.h>
 #include <proto/exec.h>
 #include "pfs3.h"
 #include "doctor.h"
@@ -97,10 +98,10 @@ static error_t GetRext(void);
 static error_t RepairBootBlock(void);
 static error_t GetRepairBlock(cachedblock_t *block, ULONG blocknr);
 static error_t RepairDeldir(void);
-static bool dd_CheckBlock(uint32 bloknr, int seqnr);
+static error_t dd_CheckBlock(uint32 bloknr, int seqnr, bool *valid);
 static error_t RepairDirTree(void);
 static error_t RepairDir(struct direntry *de, c_dirblock_t *parent);
-static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent);
+static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool discardable);
 static error_t RepairDirEntry(struct direntry *de, c_dirblock_t *dirblk);
 static error_t RepairFile(struct direntry *de, c_dirblock_t *parent);
 static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok);
@@ -124,11 +125,11 @@ static error_t MainBlockUsed(uint32 bloknr);
 static error_t AnodeUsed(uint32 bloknr);
 static error_t bg_ItemUsed(bitmap_t *bm, uint32 nr);
 static BOOL IsAnodeUsed(uint32 nr);
-static uint32 vol_SearchFileSystem(void);
+static error_t vol_SearchFileSystem(uint32 *result);
 static bitmap_t *bg_InitBitmap(int32 start, int32 stop, int32 step);
 static void bg_KillBitmap(bitmap_t **bm);
 static BOOL bg_IsItemUsed(bitmap_t *bm, uint32 nr);
-int SearchInDir(uint32 diranodenr, uint32 target);
+error_t SearchInDir(uint32 diranodenr, uint32 target, int *result);
 static void AddExtraFields(struct direntry *direntry, struct extrafields *extra);
 static bool MakeMountFile(char *fname);
 static error_t BuildRootBlock_hub(void);
@@ -153,6 +154,27 @@ void __regargs __chkabort(void)
 	}
 }
 #endif
+
+/* These failures say nothing about whether a readable object is corrupt. */
+static bool IsOperationalError(error_t error)
+{
+	return error == e_read_error || error == e_write_error ||
+		error == e_out_of_memory || error == e_options_error ||
+		error == e_aborted || error == e_alloc_fail || error == e_fatal_error;
+}
+
+static bool DiscardUnreadableBlock(error_t error, const char *kind, uint32 blocknr)
+{
+	char question[256];
+
+	if (error != e_read_error || mode != repair)
+		return false;
+	sprintf(question, "Cannot read %s block %lu.\n"
+		"Discard its contents and continue recovery?\n"
+		"Files referenced only by this block will be lost.", kind, blocknr);
+	return volume.askuser(question, "Discard", "Abort") != 0;
+}
+
 
 static BOOL FileSizeCheck(ULONG low, ULONG high, ULONG numblocks)
 {
@@ -235,6 +257,8 @@ static error_t mainStandardScan(uint32 flags)
 	/* read rootblockextension */
 	volume.progress(0, 30);
 	rext.data = calloc(1, SIZEOF_RESBLOCK);
+	if (!rext.data)
+		return exitStandardScan(e_out_of_memory);
 	rext.mode = check;
 	if ((error = GetRext()) || aborting)
 		return exitStandardScan(error);
@@ -263,18 +287,20 @@ static error_t mainStandardScan(uint32 flags)
 	}
 
 	if (ss.stage != finished)
-		return e_max_pass_exceeded;
+		return exitStandardScan(e_max_pass_exceeded);
 
 	volume.status(0, "finishing up", 2);
 	volume.progress(0, 1);
-	exitStandardScan(e_none);
+	error = exitStandardScan(e_none);
 	volume.progress(0, 1);
-	return e_none;
+	return error;
 }
 
 static error_t exitStandardScan(error_t error)
 {
-	UpdateCache();
+	error_t write_error = UpdateCache();
+	if (error == e_none)
+		error = write_error;
 
 	if (rbl)
 	{
@@ -322,7 +348,8 @@ static error_t ss_CheckDirTree(void)
 
 			/* initialize reserved bitmap generation */
 			if (ss.flags & SSF_GEN_RESBITMAP)
-				InitReservedBitmap();
+				if ((error = InitReservedBitmap()))
+					return error;
 
 			if (rext.mode == check)
 				if ((error = ResBlockUsed(rext.blocknr)))
@@ -537,14 +564,24 @@ error_t vol_GetRawBlock(cachedblock_t *blok, ULONG bloknr)
 /*
  * Repair routines need the contents of an overwritten metadata block so they
  * can take their wrong-ID recovery path.  A syntactically invalid metadata
- * block is therefore readable here; actual I/O and bounds errors still fail.
+ * block is therefore readable here. During syntax repair, an unreadable
+ * primary also takes the backup-search path; later passes retain the error.
  */
 static error_t GetRepairBlock(cachedblock_t *block, ULONG blocknr)
 {
 	error_t error = volume.getblock(block, blocknr);
 
 	if (error == e_syntax_error)
-		return vol_GetRawBlock(block, blocknr);
+		error = vol_GetRawBlock(block, blocknr);
+	if (error == e_read_error && mode == repair && ss.stage == syntax)
+	{
+		/* Invalid ID forces the caller to search for a readable backup.
+		 * This placeholder must never be treated as recovered metadata. */
+		memset(block->data, 0, SIZEOF_RESBLOCK);
+		block->blocknr = blocknr;
+		block->mode = check;
+		return e_none;
+	}
 	return error;
 }
 
@@ -584,10 +621,11 @@ static error_t BuildRootBlock_hub(void)
 	{
 		if (!(error = BuildRootBlock(rbl)))
 		{
-			fixederror("new rootblock build");
-			WritePFS3Metadata((uint8 *)rbl,
+			error = WritePFS3Metadata((uint8 *)rbl,
 				ROOTBLOCK + volume.firstblock, volume.blocksize,
 				PFS3_METADATA_ROOT);
+			if (!error)
+				fixederror("new rootblock build");
 		}
 	}
 	else
@@ -599,14 +637,50 @@ static error_t BuildRootBlock_hub(void)
 /* read from disk and check
  * Returns error (0 = ERROR_NONE = ok).
  */
+static error_t RequestMountFile(void)
+{
+	struct FileRequester *freq;
+	char *mfname;
+	size_t length;
+	bool ok = false;
+
+	freq = AllocAslRequestTags(ASL_FileRequest, ASLFR_SleepWindow, TRUE,
+		ASLFR_TitleText, "Select mountfile", ASLFR_InitialFile, "mountme",
+		ASLFR_InitialDrawer, "df0:", ASLFR_DoSaveMode, TRUE, TAG_DONE);
+	if (freq == NULL)
+		return e_out_of_memory;
+	while (!ok) {
+		if (!AslRequestTags(freq, ASLFR_Window, CheckRepairWnd, TAG_DONE)) {
+			volume.showmsg("No mountlist written\n");
+			FreeAslRequest(freq);
+			return e_aborted;
+		}
+		length = strlen(freq->fr_Drawer) + strlen(freq->fr_File) + 2;
+		mfname = malloc(length);
+		if (mfname == NULL) {
+			FreeAslRequest(freq);
+			return e_out_of_memory;
+		}
+		strcpy(mfname, freq->fr_Drawer);
+		if (!AddPart(mfname, freq->fr_File, length)) {
+			free(mfname);
+			FreeAslRequest(freq);
+			return e_options_error;
+		}
+		ok = MakeMountFile(mfname);
+		free(mfname);
+		volume.showmsg(ok ? "Mountlist written\n" : "Could not write mountlist\n");
+	}
+	FreeAslRequest(freq);
+	return e_none;
+}
+
 static error_t GetRootBlock(void)
 {
 	error_t error = e_none;
 	uint32 bloknr;
 	int okuser;
-	struct FileRequester *freq;
-	char mfname[FNSIZE], *t;
-	bool ok = false;
+	bool unreadable = false;
 
 	enterblock(ROOTBLOCK);
 	volume.showmsg("Checking rootblock\n");
@@ -625,18 +699,36 @@ static error_t GetRootBlock(void)
 		PFS3_METADATA_ROOT)))
 	{
 		adderror("rootblock could not be loaded");
-		return error;
+		if (error != e_read_error || mode != repair)
+			return error;
+		unreadable = true;
+		if (!volume.askuser("The rootblock could not be read.\n"
+			"Try recovery from other metadata?\n"
+			"Backups may be obsolete and recovery may lose files.",
+			"Continue", "Abort"))
+			return e_read_error;
+		/* Offer the normal root search/reconstruction choices. */
+		memset(rbl, 0, MAXRESBLOCKSIZE);
 	}
 
 	// check rootblock type
 	if (!IsRootBlock(rbl))
 	{
-		adderror("not an AFS, PFS-II or PFS-III disk");
+		if (!unreadable)
+			adderror("not an AFS, PFS-II or PFS-III disk");
 		okuser = volume.askuser("Rootblock not found.\n"
 			"Select ok to search for misplaced rootblock.", "ok", "cancel");
 
-		if (okuser && (bloknr = vol_SearchFileSystem()))
+		bloknr = 0;
+		if (okuser && (error = vol_SearchFileSystem(&bloknr)))
+			return error;
+		if (okuser && bloknr)
 		{
+			if (unreadable && !volume.askuser(
+				"A readable rootblock was found. It may be obsolete.\n"
+				"Use this candidate and its partition layout?",
+				"Use", "Abort"))
+				return e_aborted;
 			volume.showmsg("\nRootblock found. Repartitioning .. \n");
 			if ((error = Repartition(bloknr)))
 				return error;
@@ -649,26 +741,9 @@ static error_t GetRootBlock(void)
 				"Press CONTINUE to select location to store the\n"
 				"mountlist", "CONTINUE", NULL);
 
-			freq = AllocAslRequestTags(ASL_FileRequest, ASLFR_SleepWindow, TRUE, 
-				ASLFR_TitleText, "Select mountfile", ASLFR_InitialFile, "mountme",
-				ASLFR_InitialDrawer, "df0:", ASLFR_DoSaveMode, TRUE, TAG_DONE);
+			if ((error = RequestMountFile()))
+				return error;
 
-			do
-			{
-				if (AslRequestTags(freq, ASLFR_Window, CheckRepairWnd, TAG_DONE))
-				{
-					t = stpcpy(mfname, freq->fr_Drawer);
-					t = stpcpy(t, freq->fr_File);
-					if ((ok = MakeMountFile(mfname)))
-						volume.showmsg("Mountlist written\n");
-				}
-				else
-				{
-					volume.showmsg("no mountlist written\n");
-				}
-			} while (!ok);
-
-			FreeAslRequest(freq);	
 			volume.askuser("Now starting to check/repair\n"
 				"relocated partition", "CONTINUE", NULL);
 
@@ -713,26 +788,9 @@ static error_t GetRootBlock(void)
 				"Press CONTINUE to select location to store the\n"
 				"mountlist", "CONTINUE", NULL);
 
-			freq = AllocAslRequestTags(ASL_FileRequest, ASLFR_SleepWindow, TRUE, 
-				ASLFR_TitleText, "Select mountfile", ASLFR_InitialFile, "mountme",
-				ASLFR_InitialDrawer, "df0:", ASLFR_DoSaveMode, TRUE, TAG_DONE);
+			if ((error = RequestMountFile()))
+				return error;
 
-			do
-			{
-				if (AslRequestTags(freq, ASLFR_Window, CheckRepairWnd, TAG_DONE))
-				{
-					t = stpcpy(mfname, freq->fr_Drawer);
-					t = stpcpy(t, freq->fr_File);
-					if ((ok = MakeMountFile(mfname)))
-						volume.showmsg("Mountlist written\n");
-				}
-				else
-				{
-					volume.showmsg("no mountlist written\n");
-				}
-			} while (!ok);
-
-			FreeAslRequest(freq);	
 			volume.askuser("Now starting to check/repair\n"
 				"redefined partition", "CONTINUE", NULL);
 
@@ -752,6 +810,7 @@ static error_t GetRootBlock(void)
 static bool MakeMountFile(char *fname)
 {
 	FILE *mf;
+	bool ok;
 
 	if ((mf = fopen(fname, "w")))
 	{
@@ -777,17 +836,19 @@ static bool MakeMountFile(char *fname)
 		fprintf(mf, "\tStackSize      = 600\n");
 		fprintf(mf, "\tMaxTransfer    = %lu\n", volume.dosenvec->de_MaxTransfer);
 		fprintf(mf, "\tMask           = %#lx\n", volume.dosenvec->de_Mask);
-		fclose(mf);
-		return true;
+		ok = !ferror(mf);
+		if (fclose(mf) != 0)
+			ok = false;
+		return ok;
 	}
 	return false;
 }
 
-static uint32 vol_SearchFileSystem(void)
+static error_t vol_SearchFileSystem(uint32 *result)
 {
 	return SearchFileSystem(
 			(volume.firstblock > 1024) ? volume.firstblock - 1024 : 0,
-			volume.firstblock + 1024);
+			volume.firstblock + 1024, result);
 }
 
 bool IsRootBlock(rootblock_t *r)
@@ -848,10 +909,10 @@ static error_t CheckRootBlock(void)
 		}
 	}
 
-	strncpy (volume.diskname, (char *)&rbl->diskname[1], rbl->diskname[0]);
-	volume.diskname[rbl->diskname[0]+1] = 0;
+	memcpy(volume.diskname, &rbl->diskname[1], min(rbl->diskname[0], sizeof(rbl->diskname) - 1));
+	volume.diskname[min(rbl->diskname[0], sizeof(rbl->diskname) - 1)] = 0;
 	volume.showmsg("Checking disk ");
-	volume.showmsg(volume.diskname);
+	volume.showmsg("%s", volume.diskname);
 	volume.showmsg("\n");
 	volume.showmsg("Reserved blocksize: %lu\n", rbl->reserved_blksize);
 
@@ -921,10 +982,13 @@ static error_t CheckRootBlock(void)
 		dirty = true;
 	}
 
-	if (dirty)
-		return WritePFS3Metadata((uint8 *)rbl,
+	if (dirty) {
+		error_t write_error = WritePFS3Metadata((uint8 *)rbl,
 			ROOTBLOCK + volume.firstblock, volume.blocksize,
 			PFS3_METADATA_ROOT);
+		if (write_error)
+			return write_error;
+	}
 
 	return error;
 }
@@ -959,7 +1023,8 @@ static error_t GetRext(void)
 		{
 			volume.status(1, "Searching rext", 256);
 			oldbloknr = bloknr;
-			bloknr = SearchBlock(EXTENSIONID, 0, bloknr, 0, 0, 0);
+			if ((error = SearchBlock(EXTENSIONID, 0, bloknr, 0, 0, 0, &bloknr)))
+				return error;
 			if (bloknr)
 			{
 				sprintf(bericht, "replaced block %lu with backup %lu", oldbloknr, bloknr);
@@ -1141,7 +1206,7 @@ static error_t RepairBootBlock(void)
 static error_t RepairDeldir(void)
 {
 	int i;
-	bool remove;
+	bool remove, valid;
 	uint32 ddsize;
 	error_t error;
 	bool rextdirty = false, rootdirty = false;
@@ -1171,7 +1236,11 @@ static error_t RepairDeldir(void)
 					if (i <= ddsize)
 					{
 						remove = true;
-						if (dd_CheckBlock(rext.data->deldir[i], i))
+						if ((error = dd_CheckBlock(rext.data->deldir[i], i, &valid))) {
+							exitblock();
+							return error;
+						}
+						if (valid)
 						{
 							if ((error = ResBlockUsed(rext.data->deldir[i])))
 								remove = true;
@@ -1230,7 +1299,9 @@ static error_t RepairDeldir(void)
 			else
 			{
 				remove = false;
-				if (dd_CheckBlock(rbl->deldir, 0))
+				if ((error = dd_CheckBlock(rbl->deldir, 0, &valid)))
+					return error;
+				if (valid)
 				{
 					if ((error = ResBlockUsed(rbl->deldir)))
 						remove = true;
@@ -1289,17 +1360,20 @@ static error_t RepairDeldir(void)
 		}
 	}
 
-	if (rootdirty)
-		WritePFS3Metadata((uint8 *)rbl, ROOTBLOCK + volume.firstblock,
+	if (rootdirty) {
+		error = WritePFS3Metadata((uint8 *)rbl, ROOTBLOCK + volume.firstblock,
 			volume.blocksize, PFS3_METADATA_ROOT);
+		if (error)
+			return error;
+	}
 	if (rextdirty)
-		volume.writeblock((cachedblock_t *)&rext);
+		return volume.writeblock((cachedblock_t *)&rext);
 
 	return e_none;
 }
 
 
-static bool dd_CheckBlock(uint32 bloknr, int seqnr)
+static error_t dd_CheckBlock(uint32 bloknr, int seqnr, bool *valid)
 {
 	error_t error;
 	c_deldirblock_t ddblk;
@@ -1309,15 +1383,20 @@ static bool dd_CheckBlock(uint32 bloknr, int seqnr)
 	struct deldirentry *dde;
 	ULONG size, high;
 
+	*valid = false;
 	volume.progress(0, 1);
 	
 	/* get block */
 	ddblk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (!ddblk.data)
+		return e_out_of_memory;
 	if ((error = volume.getblock((cachedblock_t *)&ddblk, bloknr)))
 	{
 		adderror("couldn't read deldirblock");
 		free (ddblk.data);
-		return false;
+		if (DiscardUnreadableBlock(error, "deleted-file directory", bloknr))
+			return e_none;
+		return IsOperationalError(error) ? error : e_none;
 	}
 
 	/* check id */
@@ -1325,14 +1404,14 @@ static bool dd_CheckBlock(uint32 bloknr, int seqnr)
 	{
 		adderror("deldirblock error");
 		free (ddblk.data);
-		return false;
+		return e_none;
 	}
 
 	if (ddblk.data->seqnr != seqnr)
 	{
 		adderror("deldirblock error");
 		free (ddblk.data);
-		return false;
+		return e_none;
 	}
 
 	// check entries
@@ -1348,7 +1427,12 @@ static bool dd_CheckBlock(uint32 bloknr, int seqnr)
 		{
 			for (ddnr = dde->anodenr; ddnr; ddnr = delnode.next)
 			{
-				if (!GetAnode (&delnode, ddnr, false) || IsAnodeUsed(ddnr))
+				error = ReadAnode(&delnode, ddnr, false);
+				if (IsOperationalError(error)) {
+					free(ddblk.data);
+					return error;
+				}
+				if (error || IsAnodeUsed(ddnr))
 				{
 					if (mode == check)
 						adderror("delfile anode error");
@@ -1356,7 +1440,10 @@ static bool dd_CheckBlock(uint32 bloknr, int seqnr)
 					{
 						fixederror("delfile anode error");
 						dde->anodenr = 0;
-						volume.writeblock((cachedblock_t *)&ddblk);
+						if ((error = volume.writeblock((cachedblock_t *)&ddblk))) {
+							free(ddblk.data);
+							return error;
+						}
 					}
 					break;
 				}
@@ -1374,7 +1461,10 @@ static bool dd_CheckBlock(uint32 bloknr, int seqnr)
 				{
 					fixederror(bericht);
 					dde->anodenr = 0;
-					volume.writeblock((cachedblock_t *)&ddblk);
+					if ((error = volume.writeblock((cachedblock_t *)&ddblk))) {
+						free(ddblk.data);
+						return error;
+					}
 				}
 			}
 		}
@@ -1384,7 +1474,14 @@ static bool dd_CheckBlock(uint32 bloknr, int seqnr)
 
 		for (ddnr = dde->anodenr; ddnr; ddnr = delnode.next)
 		{
-			GetAnode(&delnode, ddnr, false);
+			error = ReadAnode(&delnode, ddnr, false);
+			if (error) {
+				if (IsOperationalError(error)) {
+					free(ddblk.data);
+					return error;
+				}
+				break;
+			}
 			/* mark anodes as used */
 			if (ss.stage <= anodebitmap)
 				AnodeUsed(ddnr);
@@ -1396,7 +1493,8 @@ static bool dd_CheckBlock(uint32 bloknr, int seqnr)
 	}
 
 	free(ddblk.data);
-	return true;
+	*valid = true;
+	return e_none;
 }
 
 
@@ -1510,7 +1608,9 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 		}
 
 		/* repair linkchain, remove if necessary */
-		RepairLinkChain(de, parent);
+		error = RepairLinkChain(de, parent);
+		if (IsOperationalError(error))
+			return error;
 	}
 
 	parentanodenr = parent ? parent->data->anodenr : 0;
@@ -1518,8 +1618,8 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 	for (anodenr = mainanodenr; anodenr; anodenr=dirnode.next)
 	{
 		/* get anode */
-		if (!GetAnode(&dirnode, anodenr, true))
-			return e_remove;
+		if ((error = ReadAnode(&dirnode, anodenr, true)))
+			return IsOperationalError(error) ? error : e_remove;
 
 		/* check anode */
 		if (dirnode.clustersize != 1)
@@ -1530,7 +1630,8 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 		}
 
 		enterblock(dirnode.blocknr);
-		error = RepairDirBlock(dirnode.blocknr, mainanodenr, parentanodenr);
+		error = RepairDirBlock(dirnode.blocknr, mainanodenr, parentanodenr,
+			de != NULL || anodenr != mainanodenr || dirnode.next != 0);
 		exitblock();
 		switch (error)
 		{
@@ -1559,7 +1660,14 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 						addfileerror("corrupt directory block");
 				}
 				
-				DeleteAnode(mainanodenr, anodenr);
+				error = DeleteAnode(mainanodenr, anodenr);
+				if (error == e_empty)
+					return e_remove;
+				if (error)
+					return error;
+				/* Deleting the head copied its successor into the head. */
+				if (anodenr == mainanodenr)
+					dirnode.next = mainanodenr;
 				break;
 
 			case e_none:
@@ -1580,7 +1688,7 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 	return e_none;
 }
 
-static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent)
+static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool discardable)
 {
 	c_dirblock_t dirblk;
 	struct direntry *entry;
@@ -1588,10 +1696,14 @@ static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent)
 
 	/* get block */
 	dirblk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (!dirblk.data)
+		return e_out_of_memory;
 	if ((error = volume.getblock((cachedblock_t *)&dirblk, bloknr)))
 	{
 		free (dirblk.data);
-		return e_remove;
+		if (discardable && DiscardUnreadableBlock(error, "directory", bloknr))
+			return e_remove;
+		return IsOperationalError(error) ? error : e_remove;
 	}
 
 	/* check dirblock */
@@ -1608,6 +1720,10 @@ static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent)
 	{
 		if ((error = RepairDirEntry(entry, &dirblk)))
 		{
+			if (IsOperationalError(error)) {
+				free(dirblk.data);
+				return error;
+			}
 			if (mode == repair)
 			{
 				redosyntax = true;
@@ -1757,7 +1873,7 @@ static error_t RepairFile(struct direntry *de, c_dirblock_t *parent)
 		for (anodenr = de->anode; anodenr; anodenr = filenode.next)
 		{
 			if ((error = CheckAnode(&filenode, anodenr, true)))
-				return e_remove;
+				return IsOperationalError(error) ? error : e_remove;
 
 			blokken += filenode.clustersize;
 		}
@@ -1770,13 +1886,17 @@ static error_t RepairFile(struct direntry *de, c_dirblock_t *parent)
 		}
 	}
 
-	if (extra.link)
-		RepairLinkChain(de, parent);
+	if (extra.link) {
+		error = RepairLinkChain(de, parent);
+		if (IsOperationalError(error))
+			return error;
+	}
 
 	/* bitmap gen */
 	for (anodenr = de->anode; anodenr; anodenr = filenode.next)
 	{
-		GetAnode(&filenode, anodenr, true);
+		if ((error = ReadAnode(&filenode, anodenr, true)))
+			break;
 		if ((error = AnodeUsed(anodenr)))
 			break;
 
@@ -1804,6 +1924,7 @@ static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok)
 	struct extrafields extra;
 	canode_t linknode;
 	error_t error;
+	int type;
 
 	stats.numhardlink++;
 	if ((error = GetExtraFields(&extra, de)))
@@ -1816,8 +1937,8 @@ static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok)
 	}
 
 	/* get linknode */
-	if (!GetAnode (&linknode, de->anode, true))
-		return e_remove;
+	if ((error = ReadAnode(&linknode, de->anode, true)))
+		return IsOperationalError(error) ? error : e_remove;
 
 	/* check linknode linkdir (anode.blocknr) reference (objectdir is
 	 * checked by CheckLinkChain) */
@@ -1833,7 +1954,9 @@ static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok)
 	 * It is not checked if the link itself is infact a link, 
      * just that it exists.
 	 */
-	switch (SearchInDir(linknode.clustersize, extra.link))
+	if ((error = SearchInDir(linknode.clustersize, extra.link, &type)))
+		return error;
+	switch (type)
 	{
 		case 0:
 			addfileerror("dangling hardlink");
@@ -1929,39 +2052,32 @@ static error_t DeleteAnode(uint32 anodechain, uint32 node)
 {
 	canode_t prev_node, next_node;
 	uint32 previous;
+	error_t error;
 
-	/* node is head */
+	if ((error = ReadAnode(&next_node, node, false)))
+		return error;
+	if (next_node.next == node)
+		return e_anode_error;
 	if (anodechain == node)
 	{
-		if (!GetAnode(&next_node, node, false))
-			return e_anode_error;
-
-		if (!next_node.next || !GetAnode(&next_node, next_node.next, false))
-			return e_anode_error;
-
-		SaveAnode(&next_node, node);
+		if (!next_node.next)
+			return e_empty;
+		if ((error = ReadAnode(&next_node, next_node.next, false)))
+			return error;
+		return WriteAnode(&next_node, node);
 	}
-	else
+
+	for (previous = anodechain; previous; previous = prev_node.next)
 	{
-		/* find previous */
-		previous = anodechain;
-		while (true)
+		if ((error = ReadAnode(&prev_node, previous, false)))
+			return error;
+		if (prev_node.next == node)
 		{
-			if (!GetAnode(&prev_node, previous, false))
-				return e_anode_error;
-
-			if (prev_node.next == node) 
-				break;		// we found it
-
-			previous = prev_node.next;
+			prev_node.next = next_node.next;
+			return WriteAnode(&prev_node, previous);
 		}
-
-		GetAnode(&next_node, prev_node.next, false);
-		prev_node.next = next_node.next;
-		SaveAnode(&prev_node, prev_node.nr);
 	}
-	
-	return e_none;
+	return e_anode_error;
 }
 
 /* Get the directory entry extension fields
@@ -2016,6 +2132,7 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 	struct extrafields extra = { 0 } ;
 	canode_t linknode;
 	error_t error;
+	int type;
 	uint32 parent;
 
 	/* check extra fields */
@@ -2026,8 +2143,8 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 	if (!extra.link)
 		return e_none;
 
-	if (!GetAnode(&linknode, extra.link, false))
-		return e_anode_error;
+	if ((error = ReadAnode(&linknode, extra.link, false)))
+		return IsOperationalError(error) ? error : e_anode_error;
 
 	parent = dirblk->data->anodenr;
 	for (;;)
@@ -2037,26 +2154,31 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 		{
 			fixedfileerror("invalid hardlink");
 			linknode.clustersize = parent;
-			SaveAnode(&linknode, linknode.nr);
+			if ((error = WriteAnode(&linknode, linknode.nr)))
+				return error;
 		}
 
 		// check linkdir left to HardLink::Check
-		if (!SearchInDir(linknode.blocknr, linknode.nr))
+		if ((error = SearchInDir(linknode.blocknr, linknode.nr, &type)))
+			return error;
+		if (!type)
 		{
 			fixedfileerror("dangling hardlink");
-			if ((error = DeleteAnode(extra.link, linknode.nr))
-				 && (linknode.nr == extra.link))
+			error = DeleteAnode(extra.link, linknode.nr);
+			if (error == e_empty && linknode.nr == extra.link)
 			{
 				extra.link = 0;
-				SetExtraFields(&extra, de, dirblk);
+				return SetExtraFields(&extra, de, dirblk);
 			}
+			if (error)
+				return error;
 		}
 
 		if (!linknode.next)
 			return e_none;
 
-		if (!GetAnode (&linknode, linknode.next, false))
-			return e_anode_error;
+		if ((error = ReadAnode(&linknode, linknode.next, false)))
+			return IsOperationalError(error) ? error : e_anode_error;
 	}
 }
 
@@ -2064,9 +2186,10 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
  */
 static error_t CheckAnode(canode_t *anode, uint32 nr, bool fix)
 {
-	/* if an anodeblock does not exist, it is considered empty */
-	if (!GetAnode(anode, nr, fix))
-		return e_empty;
+	error_t error = ReadAnode(anode, nr, fix);
+	/* Missing/corrupt anodes are empty; unreadable ones are unknown. */
+	if (error)
+		return IsOperationalError(error) ? error : e_empty;
 
 	if (anode->clustersize == 0 && anode->blocknr == 0 && anode->next == 0)
 		return e_empty;
@@ -2077,42 +2200,49 @@ static error_t CheckAnode(canode_t *anode, uint32 nr, bool fix)
 /* Search file by anodenr in a directory
  * return filetype or 0 for not found
  */
-int SearchInDir(uint32 diranodenr, uint32 target)
+error_t SearchInDir(uint32 diranodenr, uint32 target, int *result)
 {
 	canode_t anode;
 	c_dirblock_t dirblk;
 	struct direntry *de;
-	error_t error = e_none;
-	int ftype;
+	error_t error, read_error = e_none;
 
-	/* Get directory and find object */
 	dirblk.data = calloc(1, SIZEOF_RESBLOCK);
-	while (error == e_none && diranodenr)
+	if (!dirblk.data)
+		return e_out_of_memory;
+	while (diranodenr)
 	{
-		if (!GetAnode(&anode, diranodenr, false))
+		error = ReadAnode(&anode, diranodenr, false);
+		if (error) {
+			if (IsOperationalError(error))
+				goto failed;
 			break;
-		
-		if ((error = volume.getblock((cachedblock_t *)&dirblk, anode.blocknr)) || aborting)
-			break;
-
-		de = FIRSTENTRY(&dirblk);
-		while (de->next)
-		{
-			if (de->anode == target)
-			{
-				ftype = de->type;
-				free (dirblk.data);
-				return ftype;
-			}
-
-			de = NEXTENTRY(de);
 		}
-
+		error = volume.getblock((cachedblock_t *)&dirblk, anode.blocknr);
+		if (aborting) {
+			error = e_aborted;
+			goto failed;
+		}
+		if (error == e_read_error)
+			read_error = error;
+		else if (IsOperationalError(error))
+			goto failed;
+		else if (!error && dirblk.data->id == DBLKID) {
+			for (de = FIRSTENTRY(&dirblk); de->next; de = NEXTENTRY(de))
+				if (de->anode == target) {
+					*result = de->type;
+					free(dirblk.data);
+					return e_none;
+				}
+		}
 		diranodenr = anode.next;
 	}
-
-	free (dirblk.data);
-	return 0;
+	error = read_error;
+	if (!error)
+		*result = 0;
+ failed:
+	free(dirblk.data);
+	return error;
 }
 
 /**************************************
@@ -2189,6 +2319,8 @@ error_t RepairAnodeBlock(uint32 *bloknr, uint32 seqnr)
 
 	// get anodeblock
 	ablk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (!ablk.data)
+		return e_out_of_memory;
 	if (*bloknr)
 	{
 		if ((error = GetRepairBlock((cachedblock_t *)&ablk, *bloknr)))
@@ -2215,7 +2347,13 @@ error_t RepairAnodeBlock(uint32 *bloknr, uint32 seqnr)
 			{
 				volume.status(1, "Searching anode block", 256);
 				oldbloknr = *bloknr;
-				if ((*bloknr = SearchBlock(ABLKID, seqnr, oldbloknr, 0, 0, 0)))
+				if ((error = SearchBlock(ABLKID, seqnr, oldbloknr, 0, 0, 0, bloknr)))
+				{
+					free(ablk.data);
+					exitblock();
+					return error;
+				}
+				if (*bloknr)
 				{
 					sprintf(bericht, "replaced block %lu with backup %lu", oldbloknr, *bloknr);
 					fixederror(bericht);
@@ -2294,9 +2432,11 @@ error_t RepairBitmapBlock(uint32 *bloknr, uint32 seqnr)
 	uint32 oldbloknr;
 
 	// get anodeblock
-	bmblk.data = calloc(1, SIZEOF_RESBLOCK);
 	if (GetBuildBlock(BMBLKID, seqnr))
 		return e_none;
+	bmblk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (!bmblk.data)
+		return e_out_of_memory;
 
 	if (*bloknr)
 	{
@@ -2324,7 +2464,13 @@ error_t RepairBitmapBlock(uint32 *bloknr, uint32 seqnr)
 			{
 				volume.status(1, "Searching bitmap block", 256);
 				oldbloknr = *bloknr;
-				if ((*bloknr = SearchBlock(BMBLKID, seqnr, oldbloknr, 0, 0, 0)))
+				if ((error = SearchBlock(BMBLKID, seqnr, oldbloknr, 0, 0, 0, bloknr)))
+				{
+					free(bmblk.data);
+					exitblock();
+					return error;
+				}
+				if (*bloknr)
 				{
 					sprintf(bericht, "replaced block %lu with backup %lu", oldbloknr, *bloknr);
 					fixederror(bericht);
@@ -2372,6 +2518,8 @@ error_t RepairIndexBlock(uint16 bloktype, error_t (*repairchild)(uint32 *, uint3
 	if (!iblk.data)
 	{
 		iblk.data = calloc(1, SIZEOF_RESBLOCK);
+		if (!iblk.data)
+			return e_out_of_memory;
 
 		/* read or build indexblock
 		 */
@@ -2398,7 +2546,13 @@ error_t RepairIndexBlock(uint16 bloktype, error_t (*repairchild)(uint32 *, uint3
 				{
 					volume.status(1, "Searching index block", 256);
 					oldbloknr = *bloknr;
-					if ((*bloknr = SearchBlock(bloktype, seqnr, oldbloknr, 0, 0, 0)))
+					if ((error = SearchBlock(bloktype, seqnr, oldbloknr, 0, 0, 0, bloknr)))
+					{
+						free(iblk.data);
+						exitblock();
+						return error;
+					}
+					if (*bloknr)
 					{
 						sprintf(bericht, "replaced block %lu with backup %lu", oldbloknr, *bloknr);
 						fixederror(bericht);
@@ -2434,23 +2588,27 @@ error_t RepairIndexBlock(uint16 bloktype, error_t (*repairchild)(uint32 *, uint3
 		if ((child_blk_nr = iblk.data->index[i]))
 		{
 			volume.progress(0, 1);
-			switch (repairchild((uint32 *)&iblk.data->index[i], seqnr*LONGS_PER_BMB + i))
-			{
-				case e_none:
-					break;
-
-				default:
-					/* kill block */
-					iblk.data->index[i] = 0;
-					break;
+			error = repairchild((uint32 *)&iblk.data->index[i], seqnr*LONGS_PER_BMB + i);
+			if (IsOperationalError(error) || aborting) {
+				if (iblk.mode == check)
+					free(iblk.data);
+				exitblock();
+				return error ? error : e_aborted;
+			}
+			if (error) {
+				iblk.data->index[i] = 0;
+				error = e_none;
 			}
 
-			if (aborting)
-				return error;
-
 			/* save changes */
-			if (child_blk_nr != iblk.data->index[i] && iblk.mode == check)
-				volume.writeblock((cachedblock_t *)&iblk);
+			if (child_blk_nr != iblk.data->index[i] && iblk.mode == check) {
+				error = volume.writeblock((cachedblock_t *)&iblk);
+				if (error) {
+					free(iblk.data);
+					exitblock();
+					return error;
+				}
+			}
 		}
 	}
 	
@@ -2477,6 +2635,7 @@ error_t RepairIndexBlock(uint16 bloktype, error_t (*repairchild)(uint32 *, uint3
 
 static error_t InitReservedBitmap(void)
 {
+	error_t error;
 	uint32 reservedsize, bloknr, cluster;
 
 	KillReservedBitmap();
@@ -2488,20 +2647,26 @@ static error_t InitReservedBitmap(void)
 
 	// reservedsize cannot be smaller then 0 and is not allowed to take more than
     // 1/8th of the partition.
-	volume.lastreserved = rbl->lastreserved;
-	reservedsize = rbl->lastreserved/volume.rescluster - rbl->firstreserved + 1;
+	volume.lastreserved = volume.disksize - 1;
+	reservedsize = rbl->lastreserved < rbl->firstreserved ? 0 :
+		(rbl->lastreserved - rbl->firstreserved) / volume.rescluster + 1;
 
 	if (reservedsize <=0 || reservedsize > volume.disksize/8)
 	{
 		sprintf(bericht, "illegal reserved area size of %lu blocks", reservedsize);
 		adderror(bericht);
 		
-		if (!(bloknr = SearchLastReserved(&volume)))
+		if ((error = SearchLastReserved(&volume, &bloknr)))
+			return error;
+		if (!bloknr)
 			return e_fatal_error;
 
 		fixederror(NULL);
 		rbl->lastreserved = volume.lastreserved = bloknr;
 	}
+
+	volume.lastreserved = rbl->lastreserved;
+	reservedsize = (rbl->lastreserved - rbl->firstreserved) / volume.rescluster + 1;
 
 	if ((rext.data->reserved_roving + 31)/32 > reservedsize)
 	{
@@ -2748,27 +2913,38 @@ static error_t RepairMainBitmap(void)
 	c_bitmapblock_t bmb;
 	bitmap_t *gbm;
 	error_t error = e_none;
-	bool dirty;
-	bool build = 0;
+	bool dirty = false;
+	bitmapblock_t *buffer;
+	cachedblock_t *built;
 	uint32 nuba=0, ubna=0;
 
 	if (ss.verbose)
 		volume.showmsg("checking main bitmap\n");
 
 	gbm = volume.mainbitmap;
-	bmb.data = calloc(1, SIZEOF_RESBLOCK);
+	buffer = calloc(1, SIZEOF_RESBLOCK);
+	if (!buffer)
+		return e_out_of_memory;
 	volume.status(0, "validating main", gbm->lwsize/INDEX_PER_BLOCK);
 
 	for (bmseqnr = 0; bmseqnr <= gbm->lwsize/INDEX_PER_BLOCK; bmseqnr++)
 	{
+		bmb.data = buffer;
 		volume.progress(0, 1);
 
-		if ((error = GetResBlock((cachedblock_t *)&bmb, BMBLKID, bmseqnr, true)) || aborting)
-		{
-			free (bmb.data);
-			if ((error = BuildBitmapBlock(&bmb, bmseqnr)))
+		error = GetResBlock((cachedblock_t *)&bmb, BMBLKID, bmseqnr, true);
+		if (IsOperationalError(error) || aborting) {
+			free(buffer);
+			return error ? error : e_aborted;
+		}
+		built = GetBuildBlock(BMBLKID, bmseqnr);
+		if (built)
+			bmb = *(c_bitmapblock_t *)built;
+		else if (error) {
+			if ((error = BuildBitmapBlock(&bmb, bmseqnr))) {
+				free(buffer);
 				return error;
-			build = 1;
+			}
 		}
 
 		// check block
@@ -2805,7 +2981,7 @@ static error_t RepairMainBitmap(void)
 						dirty = true;
 						if ((error = volume.writeblock ((cachedblock_t *)&bmb)))
 						{
-							free (bmb.data);
+							free(buffer);
 							return error;
 						}						
 					}
@@ -2842,8 +3018,7 @@ static error_t RepairMainBitmap(void)
 			ROOTBLOCK + volume.firstblock, volume.blocksize,
 			PFS3_METADATA_ROOT);
 	
-	if (!build)
-		free (bmb.data);
+	free(buffer);
 	return error;
 }
 
@@ -2879,6 +3054,8 @@ static error_t RepairAnodeBitmap(void)
 		anodenr = (i/ANODES_PER_BLOCK << 16) + i%ANODES_PER_BLOCK;
 
 		error = CheckAnode(&anode, anodenr, false);
+		if (IsOperationalError(error))
+			return error;
 
 		if ((error == e_empty) == anodeused)
 		{
