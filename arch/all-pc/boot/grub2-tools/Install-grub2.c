@@ -111,6 +111,7 @@ struct Volume
 
 #define VF_IS_TRACKDISK (1<<0)
 #define VF_IS_RDB       (1<<1)
+#define VF_IS_GPT       (1<<2)
 
 struct BlockNode
 {
@@ -576,6 +577,26 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
                         }
                     }
                 }
+                else if (ttype == PHPTT_GPT)
+                {
+                    struct PartitionHandle *pn;
+                    ForeachNode(&ph->table->list, pn)
+                    {
+                        UQUAD first = 0, last = 0;
+                        ULONG position = 0;
+                        GetPartitionAttrsTags(pn,
+                            PT_STARTBLOCK, (IPTR)&first,
+                            PT_ENDBLOCK, (IPTR)&last,
+                            PT_POSITION, (IPTR)&position, TAG_DONE);
+                        if (volume->startblock == first && position < 255)
+                        {
+                            volume->partnum = position;
+                            volume->flags |= VF_IS_GPT;
+                            retval = TRUE;
+                            break;
+                        }
+                    }
+                }
                 else
                 {
                     if (ttype == PHPTT_RDB)
@@ -590,7 +611,7 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
                     }
                     else
                         Printf
-                            ("only MBR and RDB partition tables are supported\n");
+                            ("only MBR, GPT and RDB partition tables are supported\n");
                 }
                 ClosePartitionTable(ph);
             }
@@ -716,7 +737,7 @@ BOOL isvalidPartition(CONST_STRPTR device, ULONG unit, LONG * pnum,
                     tags[0].ti_Tag = PTT_TYPE;
                     tags[0].ti_Data = (STACKIPTR) & type;
                     GetPartitionTableAttrs(ph, tags);
-                    if ((type == PHPTT_MBR) || (type == PHPTT_RDB))
+                    if ((type == PHPTT_MBR) || (type == PHPTT_GPT) || (type == PHPTT_RDB))
                     {
                         tags[0].ti_Tag = PT_DOSENVEC;
                         tags[0].ti_Data = (STACKIPTR) de;
@@ -725,7 +746,7 @@ BOOL isvalidPartition(CONST_STRPTR device, ULONG unit, LONG * pnum,
                     }
                     else
                         Printf
-                            ("partition table type must be either MBR or RDB\n");
+                            ("partition table type must be MBR, GPT or RDB\n");
                 }
                 ClosePartitionTable(ph);
             }
