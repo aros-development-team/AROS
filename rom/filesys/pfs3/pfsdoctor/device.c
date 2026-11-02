@@ -46,7 +46,7 @@
  * Proto
  **************************************/
 
-static struct cacheline *c_GetCacheLine(uint32 bloknr, error_t *error);
+static struct cacheline *c_GetCacheLine(uint32 bloknr, error_t *error, bool writing);
 
 /**************************************
  * Globals
@@ -102,19 +102,18 @@ error_t InitCache(uint32 linesize, uint32 nolines)
  */
 error_t c_GetBlock(uint8 *data, uint32 bloknr, uint32 bytes)
 {
-	uint32 lineblnr, offset, total;
+	uint32 offset, total;
 	struct cacheline *cl = NULL;
 	error_t error = e_none;
 
 	__chkabort();
 	for (total=0; total<bytes; total+=volume.blocksize, bloknr++, data+=volume.blocksize)
 	{
-		lineblnr = (bloknr / cache.linesize) * cache.linesize;
-		offset = (bloknr % cache.linesize);
-		cl = c_GetCacheLine(lineblnr, &error);
+		cl = c_GetCacheLine(bloknr, &error, false);
 		if (!cl)
 			return error;
 
+		offset = bloknr - cl->blocknr;
 		memcpy(data, cl->data + offset*volume.blocksize, volume.blocksize);
 	}
 	return error;
@@ -124,19 +123,18 @@ error_t c_GetBlock(uint8 *data, uint32 bloknr, uint32 bytes)
  */
 error_t c_WriteBlock(uint8 *data, uint32 bloknr, uint32 bytes)
 {
-	uint32 lineblnr, offset, total;
+	uint32 offset, total;
 	struct cacheline *cl = NULL;
 	error_t error = e_none;
 
 	__chkabort();
 	for (total=0; total<bytes; total+=volume.blocksize, bloknr++, data+=volume.blocksize)
 	{
-		lineblnr = (bloknr / cache.linesize) * cache.linesize;
-		offset = (bloknr % cache.linesize);
-		cl = c_GetCacheLine(lineblnr, &error);
+		cl = c_GetCacheLine(bloknr, &error, true);
 		if (!cl)
 			return error;
 
+		offset = bloknr - cl->blocknr;
 		memcpy(cl->data + offset*volume.blocksize, data, volume.blocksize);
 		if (!cl->dirty)
 			cl->dirtyfirst = cl->dirtylast = offset;
@@ -175,7 +173,7 @@ error_t WritePFS3Metadata(uint8 *data, uint32 bloknr, uint32 bytes,
 
 /* (private) locale function to search a cacheline 
  */
-static struct cacheline *c_GetCacheLine(uint32 bloknr, error_t *error)
+static struct cacheline *c_GetCacheLine(uint32 bloknr, error_t *error, bool writing)
 {
 	uint32 i;
 	struct cacheline *cl = NULL;
@@ -183,7 +181,8 @@ static struct cacheline *c_GetCacheLine(uint32 bloknr, error_t *error)
 
 	for (i=0; i<cache.nolines; i++)
 	{
-		if (cache.cachelines[i].blocknr == bloknr)
+		if (cache.cachelines[i].blocks && bloknr >= cache.cachelines[i].blocknr
+		    && bloknr - cache.cachelines[i].blocknr < cache.cachelines[i].blocks)
 		{
 			cl = &cache.cachelines[i];
 			break;
@@ -209,11 +208,23 @@ static struct cacheline *c_GetCacheLine(uint32 bloknr, error_t *error)
 
 		/* A failed read may already have overwritten part of the buffer. */
 		cl->blocknr = CL_UNUSED;
+		cl->blocks = 0;
 		cl->dirty = false;
-		*error = volume.getrawblocks(cl->data, cache.linesize, bloknr);
+		/* Preserve readable neighbours of a bad sector. Existing larger
+		 * lines retain their own valid length until they are evicted. */
+		if (!writing || cache.linesize != 1)
+			*error = volume.getrawblocks(cl->data, cache.linesize,
+				(bloknr / cache.linesize) * cache.linesize);
+		if (*error == e_read_error && cache.linesize > 1)
+		{
+			cache.linesize = 1;
+			*error = writing ? e_none : volume.getrawblocks(cl->data, 1, bloknr);
+		}
 		if (*error)
 			return NULL;
-		cl->blocknr = bloknr;
+		/* A single-sector write replaces the entire buffer. */
+		cl->blocknr = (bloknr / cache.linesize) * cache.linesize;
+		cl->blocks = cache.linesize;
 		cl->dirty = false;
 	}
 

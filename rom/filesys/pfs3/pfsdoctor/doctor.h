@@ -122,7 +122,8 @@ struct cacheline
 {
 	struct cacheline *next;
 	struct cacheline *prev;
-	uint32 blocknr;			/* 1 == unused */
+	uint32 blocknr;
+	uint32 blocks;			/* valid sectors; zero == unused */
 	bool dirty;
 	uint32 dirtyfirst, dirtylast;
 	uint8 *data;
