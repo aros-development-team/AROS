@@ -3774,7 +3774,7 @@ static void group_layout_pagemode(struct IClass *cl, Object *obj,
  * Select page, custom Hook or built-in layout. Hook receives a zeroed
  * temporary message with inner dimensions and borrowed list; return
  * ignored. Copy virtual dimensions back, clamp WORD offsets and set them
- * without notification, potentially reentering Layout. Return zero
+ * with child forwarding disabled, potentially reentering Layout. Return zero
  * regardless of outcome. Requires established child min/max and valid
  * lifecycle.
  */
