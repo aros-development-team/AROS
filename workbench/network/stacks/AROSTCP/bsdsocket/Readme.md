@@ -431,6 +431,14 @@ send another. An address's `IN6_IFF_*` flags are kept in `ia6_ifaflags`, apart f
 the address. A prefix gets one temporary address (RFC 4941) at a time: another is made when a Router
 Advertisement repeats the prefix after the current one is deprecated.
 
+An address SLAAC makes lives by its prefix's lifetimes (RFC 4862 §5.5.3, §5.5.4): each Router
+Advertisement for the prefix renews them (`nd6_slaac_lifetimes()`), but one that would cut the valid
+lifetime below two hours brings it down to two hours at most, so a forged advertisement cannot take
+the address away; a preferred lifetime of 0 deprecates it. `in6_tmpaddrtimer()` deprecates SLAAC and
+temporary addresses at the end of their preferred lifetime and removes them at the end of the valid
+one. An option whose preferred lifetime exceeds its valid one is ignored (§5.5.3 (c)). An address
+deleted by hand comes back with the next advertisement.
+
 An in-place reload deletes every address of every interface, the link-local included, and forgets
 the routers and prefixes heard on it (`nd6_purge_routers()`, `nd6_purge_prefixes()`). For an
 interface that stays up and running, `addifent()` then makes the link-local again with `in6_if_up()`,

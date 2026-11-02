@@ -35,6 +35,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-route6 \
     cunit-net-scope6 \
     cunit-net-sendto6 \
+    cunit-net-slaaclife \
     cunit-net-slaac6 \
     cunit-net-socket \
     cunit-net-srcaddr6 \

@@ -736,6 +736,61 @@ nd6_purge_prefixes(struct ifnet *ifp)
  * SLAAC - Stateless Address Autoconfiguration (RFC 4862)
  * ================================================================== */
 
+/*
+ * nd6_slaac_lifetimes - the lifetimes a Prefix Information Option gives an
+ * address autoconfigured from its prefix (RFC 4862 section 5.5.3 (d) for a
+ * new one, (e) for an existing one): as absolute expiry times, 0 for
+ * infinite. An existing address's valid lifetime is taken when it is more
+ * than two hours or more than what is left; when what is left is two hours
+ * or less it stays; otherwise it becomes two hours - so a forged
+ * advertisement cannot take the address away. A preferred lifetime of 0
+ * deprecates the address (section 5.5.4); a later one undoes that.
+ */
+static void
+nd6_slaac_lifetimes(struct in6_ifaddr *ia, u_int32_t vltime, u_int32_t pltime,
+                    int fresh)
+{
+    struct timeval _tv;
+    u_int32_t now;
+
+    GetSysTime(&_tv);
+    now = (u_int32_t)_tv.tv_sec;
+    if(!fresh && vltime <= 7200) {
+        u_int32_t left = ia->ia6_lifetime_expire == 0 ? 0xffffffff :
+                         ia->ia6_lifetime_expire > now ? ia->ia6_lifetime_expire - now : 0;
+
+        if(vltime <= left)
+            vltime = left <= 7200 ? left : 7200;
+    }
+    if(pltime > vltime)
+        pltime = vltime;
+    ia->ia6_lifetime_vltime = vltime;
+    ia->ia6_lifetime_pltime = pltime;
+    ia->ia6_lifetime_expire = vltime == 0xffffffff ? 0 : now + vltime;
+    ia->ia6_lifetime_preferred = pltime == 0xffffffff ? 0 : now + pltime;
+    if(pltime == 0)
+        ia->ia6_ifaflags |= IN6_IFF_DEPRECATED;
+    else
+        ia->ia6_ifaflags &= ~IN6_IFF_DEPRECATED;
+}
+
+/*
+ * nd6_slaac_addr - the address autoconfigured (not a temporary one) on ifp
+ * from the /64 prefix, or NULL.
+ */
+static struct in6_ifaddr *
+nd6_slaac_addr(const struct ifnet *ifp, const struct in6_addr *prefix)
+{
+    struct in6_ifaddr *ia;
+
+    for(ia = in6_ifaddr; ia; ia = ia->ia_next)
+        if(ia->ia6_ifp == ifp &&
+                (ia->ia6_ifaflags & (IN6_IFF_AUTOCONF | IN6_IFF_TEMPORARY)) == IN6_IFF_AUTOCONF &&
+                bcmp(&ia->ia_addr.sin6_addr, prefix, 8) == 0)
+            return ia;
+    return NULL;
+}
+
 /* ------------------------------------------------------------------
  * nd6_prefix_slaac - create a SLAAC address from prefix + EUI-64.
  * ------------------------------------------------------------------ */
@@ -748,8 +803,15 @@ nd6_prefix_slaac(struct ifnet *ifp, struct nd_prefix *pr)
 
     if(pr->ndpr_plen != 64)
         return;			/* SLAAC requires /64 */
-    if(pr->ndpr_autoconf)
-        return;			/* already configured */
+    /*
+     * An address made from the prefix already: renew its lifetimes. Else
+     * make one - also when one was made and deleted by hand since, which
+     * the next advertisement gives back, as in FreeBSD.
+     */
+    if((ia = nd6_slaac_addr(ifp, &pr->ndpr_prefix.sin6_addr)) != NULL) {
+        nd6_slaac_lifetimes(ia, pr->ndpr_vltime, pr->ndpr_pltime, 0);
+        return;
+    }
 
     /* get link-local to derive EUI-64 interface identifier */
     ia = in6_ifaof_ifpforlinklocal(ifp);
@@ -794,6 +856,8 @@ nd6_prefix_slaac(struct ifnet *ifp, struct nd_prefix *pr)
 
     /* in6_ifinit() joins the address's solicited-node group */
     in6_control(NULL, SIOCAIFADDR_IN6, (caddr_t)&ifra, ifp);
+    if((ia = nd6_slaac_addr(ifp, &pr->ndpr_prefix.sin6_addr)) != NULL)
+        nd6_slaac_lifetimes(ia, pr->ndpr_vltime, pr->ndpr_pltime, 1);
 
     pr->ndpr_autoconf = 1;
     pr->ndpr_refcount++;
@@ -1018,8 +1082,11 @@ nd6_ra_input(struct mbuf *m, int off, int icmp6len)
                     (struct nd_opt_prefix_info *)opts;
                 struct nd_prefix *pr;
 
-                /* skip link-local prefixes */
-                if(IN6_IS_ADDR_LINKLOCAL(&pi->nd_opt_pi_prefix))
+                /* skip link-local prefixes, and one whose preferred
+                 * lifetime exceeds its valid one (RFC 4862 5.5.3 (c)) */
+                if(IN6_IS_ADDR_LINKLOCAL(&pi->nd_opt_pi_prefix) ||
+                        ntohl(pi->nd_opt_pi_preferred_time) >
+                        ntohl(pi->nd_opt_pi_valid_time))
                     break;
 
                 /* add/update prefix entry */
