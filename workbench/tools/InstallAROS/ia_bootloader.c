@@ -26,6 +26,8 @@
 #include <devices/trackdisk.h>
 #include <devices/scsidisk.h>
 #include <dos/filehandler.h>
+#include <libraries/partition.h>
+#include <libraries/uuid.h>
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -51,6 +53,9 @@ extern Object   *optObjCycleGrub2Mode;
 BOOL            gfx_font_exists;
 
 LONG BootLoaderType;
+#ifdef INSTALL_BL_PC_EFI
+LONG BIOSBootLoaderType;
+#endif
 
 #define GRUB_COPY_FILE_LOOP(files)                                              \
 SET(data->gauge2, MUIA_Gauge_Current, 0);                                       \
@@ -99,15 +104,7 @@ struct BootLoaderInfo BootLoaderData[] = {
         "c/Install-grub2",
         "boot/grub/fonts/unicode.pf2"
     },
-#if (0)
-    {
-        "grub EFI",
-        "SYS:",
-        "EFI/BOOT/BOOTX64.EFI",
-        NULL,
-        NULL
-    },
-#endif
+
 #endif
 #if defined(INSTALL_BL_EFI)
     {
@@ -153,6 +150,9 @@ void BOOTLOADER_InitSupport(void)
 {
     LONG i, lastmatch;
     BootLoaderType = lastmatch = BOOTLOADER_NONE;
+#ifdef INSTALL_BL_PC_EFI
+    BIOSBootLoaderType = BOOTLOADER_NONE;
+#endif
 
     D(bug("[InstallAROS] %s()\n", __func__));
 
@@ -182,6 +182,10 @@ void BOOTLOADER_InitSupport(void)
 #endif
 #endif
                 lastmatch = i;
+#ifdef INSTALL_BL_PC_EFI
+                if (i != BOOTLOADER_EFI)
+                    BIOSBootLoaderType = i;
+#endif
 
                 if (BootLoaderData[i].match3)
                     _matchPath(&BootLoaderData[i].match3);
@@ -201,6 +205,12 @@ void BOOTLOADER_InitSupport(void)
 #endif
     if ((BootLoaderType == BOOTLOADER_NONE) && (lastmatch != BOOTLOADER_NONE))
         BootLoaderType = lastmatch;
+#ifdef INSTALL_BL_PC_EFI
+    if (BootLoaderType != BOOTLOADER_EFI && BootLoaderType != BOOTLOADER_NONE)
+        BIOSBootLoaderType = BootLoaderType;
+    if (BootLoaderData[BOOTLOADER_EFI].match && OpenResource("efi.resource"))
+        BootLoaderType = BOOTLOADER_EFI;
+#endif
 }
 
 void BOOTLOADER_AddCoreSkipPaths(struct List *SkipList)
@@ -294,10 +304,8 @@ static LONG FindWindowsPartition(STRPTR device, LONG unit)
 
 #if defined(INSTALL_BL_EFI)
 
-/* The ESP holds no AROS filesystem, so it is identified by its DOS type on
-   the drive being installed to rather than by a volume name */
-/* ID_FAT_DISK, ID_FAT32_DISK and friends come from dos/filesystemids.h;
-   FAT12, FAT16 and FAT32 differ only in the last byte */
+/* Match the partition type and exact on-disk extent, not just a FAT
+ * filesystem: a data partition on the destination drive is not an ESP. */
 #define ID_FAT_MASK     0xffffff00
 
 extern Object *optObjDestDevice;
@@ -305,11 +313,46 @@ extern Object *optObjDestUnit;
 extern Object *optObjCheckFormatESP;
 extern Object *optObjCheckCopyESP;
 
-extern BOOL FormatPartition(CONST_STRPTR device, CONST_STRPTR name,
-    ULONG dostype);
-
 #define EFI_MAXDEVS     64
 #define EFI_DEVNAMELEN  34
+
+#ifdef INSTALL_BL_PC_EFI
+static BOOL EFI_IsSystemPartition(struct PartitionHandle *root,
+    const struct DosEnvec *de)
+{
+    static const uuid_t esp = MAKE_UUID(0xC12A7328, 0xF81F, 0x11D2,
+        0xBA4B, 0x00A0C93EC93BULL);
+    struct PartitionHandle *ph;
+    UQUAD first, end, cylsize = (UQUAD)de->de_Surfaces * de->de_BlocksPerTrack;
+
+    if (!cylsize || de->de_HighCyl < de->de_LowCyl)
+        return FALSE;
+    first = cylsize * de->de_LowCyl;
+    end = cylsize * (de->de_HighCyl + 1) - 1;
+    ForeachNode(&root->table->list, ph)
+    {
+        struct PartitionType type = { { 0 }, 0 };
+        UQUAD a = 0, b = 0;
+        GetPartitionAttrsTags(ph, PT_TYPE, (IPTR)&type,
+            PT_STARTBLOCK, (IPTR)&a, PT_ENDBLOCK, (IPTR)&b, TAG_DONE);
+        if (root->table->type == PHPTT_GPT && type.id_len == sizeof(esp) &&
+            !memcmp(type.id, &esp, sizeof(esp)) && first == a && end == b)
+            return TRUE;
+        if (root->table->type == PHPTT_MBR && type.id_len == 1 && type.id[0] == 0xef)
+        {
+            struct DosEnvec partde = { 0 };
+            GetPartitionAttrsTags(ph, PT_DOSENVEC, (IPTR)&partde, TAG_DONE);
+            a = (UQUAD)partde.de_Surfaces * partde.de_BlocksPerTrack;
+            b = a * (partde.de_HighCyl + 1) - 1;
+            a *= partde.de_LowCyl;
+            if (first == a && end == b)
+                return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+#endif
 
 static BOOL EFI_FindESP(CONST_STRPTR devName, ULONG unit, STRPTR buf,
     ULONG bufLen)
@@ -319,6 +362,18 @@ static BOOL EFI_FindESP(CONST_STRPTR devName, ULONG unit, STRPTR buf,
     ULONG count = 0, i;
     struct DosList *dl;
     BOOL found = FALSE;
+#ifdef INSTALL_BL_PC_EFI
+    struct PartitionHandle *root = OpenRootPartition(devName, unit);
+
+    if (!root)
+        return FALSE;
+    if (OpenPartitionTable(root) != 0)
+    {
+        CloseRootPartition(root);
+        return FALSE;
+    }
+
+#endif
 
     /* CON:, RAW: and friends keep something else entirely in dol_Startup,
        so each entry has to be asked whether it is a filesystem first - and
@@ -341,7 +396,8 @@ static BOOL EFI_FindESP(CONST_STRPTR devName, ULONG unit, STRPTR buf,
     {
         struct FileSysStartupMsg *fssm;
         struct DeviceNode *dn;
-        struct DosEnvec *de;
+        struct DosEnvec *de, geometry;
+        BOOL candidate = FALSE;
         TEXT devPath[EFI_DEVNAMELEN + 1];
 
         sprintf(devPath, "%s:", names[i]);
@@ -362,13 +418,26 @@ static BOOL EFI_FindESP(CONST_STRPTR devName, ULONG unit, STRPTR buf,
                 && ((de->de_DosType & ID_FAT_MASK) == ID_FAT_DISK)
                 && (strlen(names[i]) < bufLen))
             {
-                strcpy(buf, names[i]);
-                found = TRUE;
+                geometry = *de;
+                candidate = TRUE;
             }
         }
         UnLockDosList(LDF_DEVICES | LDF_READ);
+        if (candidate
+#ifdef INSTALL_BL_PC_EFI
+            && EFI_IsSystemPartition(root, &geometry)
+#endif
+            )
+        {
+            strcpy(buf, names[i]);
+            found = TRUE;
+        }
     }
 
+#ifdef INSTALL_BL_PC_EFI
+    ClosePartitionTable(root);
+    CloseRootPartition(root);
+#endif
     return found;
 }
 
@@ -397,12 +466,69 @@ BOOL BOOTLOADER_ESPInfo(STRPTR buf, ULONG bufLen, BOOL *formatted)
     return TRUE;
 }
 
+static BOOL EFI_FormatESP(CONST_STRPTR name, CONST_STRPTR path)
+{
+    struct DevProc *dp = GetDeviceProc(path, NULL);
+    struct DosList *list, *device;
+    struct MsgPort *port = NULL;
+    LONG error = 0;
+    BOOL success = FALSE;
+
+    if (!dp)
+        return FALSE;
+    list = LockDosList(LDF_DEVICES | LDF_READ);
+    device = FindDosEntry(list, name, LDF_DEVICES);
+    if (device)
+        port = device->dol_Task;
+    UnLockDosList(LDF_DEVICES | LDF_READ);
+    if (port && port == dp->dvp_Port)
+    {
+        if (DoPkt(port, ACTION_INHIBIT, DOSTRUE, 0, 0, 0, 0))
+        {
+            success = DoPkt(port, ACTION_FORMAT,
+                (IPTR)AROS_CONST_BSTR(EFI_VOL_NAME), ID_FAT32_DISK, 0, 0, 0) != 0;
+            error = IoErr();
+            if (!DoPkt(port, ACTION_INHIBIT, DOSFALSE, 0, 0, 0, 0) && success)
+            {
+                success = FALSE;
+                error = IoErr();
+            }
+        }
+        else
+            error = IoErr();
+    }
+    else
+        error = ERROR_DEVICE_NOT_MOUNTED;
+    FreeDeviceProc(dp);
+    if (success)
+    {
+        /* The handler finishes filesystem initialization on uninhibit.
+         * Its packet reply alone does not prove that initialization worked. */
+        BPTR lock = Lock(path, SHARED_LOCK);
+        if (lock)
+            UnLock(lock);
+        else
+        {
+            success = FALSE;
+            error = IoErr();
+        }
+    }
+    SetIoErr(error);
+    return success;
+}
+
 static void EFI_DoInstall(Class * CLASS, Object * self)
 {
     struct InstallStage_DATA *data = INST_DATA(CLASS, self);
     CONST_STRPTR efi_dirs[] = {
         "boot", "boot",
+#ifdef INSTALL_BL_PC_EFI
+        /* Some PC images contain both EFI/BOOT and efi/boot. Copy the
+         * fallback loader directory once onto the case-insensitive ESP. */
+        "EFI/BOOT", "EFI/BOOT",
+#else
         "EFI", "EFI",
+#endif
         NULL
     };
     /* The stub reads these from the root of the volume it was loaded from */
@@ -434,9 +560,10 @@ static void EFI_DoInstall(Class * CLASS, Object * self)
     if (option)
     {
         LOG_Printf("EFI: formatting %s", espDev);
-        SET(data->label, MUIA_Text_Contents, __(MSG_FORMATTING));
+        sprintf(dstFile, _(MSG_FORMATTING), espDev);
+        SET(data->label, MUIA_Text_Contents, (IPTR)dstFile);
 
-        if (!FormatPartition(espDev, EFI_VOL_NAME, ID_FAT32_DISK))
+        if (!EFI_FormatESP(espName, espDev))
         {
             LOG_Printf("ERROR: could not format %s [ioerr=%ld]", espDev,
                 (LONG)IoErr());

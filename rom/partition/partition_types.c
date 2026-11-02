@@ -45,6 +45,7 @@ const struct TypeMapping PartTypes[] =
     { 0xdb, MAKE_ID('C','P','M','\2'), NULL                  }, /* CPM/M */
     { 0xeb, MAKE_ID('B','E','F','S' ), NULL                  }, /* BeOS FS */
     { 0xec, MAKE_ID('S','K','Y','\0'), NULL                  }, /* SkyOS FS */
+    { 0xef, MAKE_ID('F','A','T','\2'), NULL                  }, /* EFI system partition */
     { 0xfd, MAKE_ID('R','A','I','D' ), NULL                  }, /* linux RAID with autodetect */
     { 0, 0, NULL }
 };
