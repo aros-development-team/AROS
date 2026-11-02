@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include "datatypes_intern.h"
@@ -14,6 +14,11 @@
 
 #include <aros/debug.h>
 
+/*
+ * Internal: Recover the enclosing DataType from its embedded dtn_Node2.
+ * aNode must point to that member of a live DataType.  No allocation or
+ * reference acquisition occurs; NULL is not a supported input.
+ */
 static inline struct DataType *DataTypeFromANode(struct Node *aNode)
 {
     struct DataType *dtNode;
@@ -36,34 +41,40 @@ static inline struct DataType *DataTypeFromANode(struct Node *aNode)
         struct Library *, DataTypesBase, 6, DataTypes)
 
 /*  FUNCTION
-    Examine the data pointed to by 'handle'.
+    Resolve a registered datatype descriptor for the specified source.
+    For a file lock or clipboard context, inspect the source and search
+    matching registered descriptors.  For DTST_RAM, look up a descriptor
+    by name or enumerate registered descriptors.
 
     INPUTS
-    type    --  specifies the stream-type of 'handle', using one of the following types;
-                DTST_FILE - 'handle' is a BPTR lock
-                DTST_CLIPBOARD - 'handle' is a struct IFFHandle *
-                DTST_RAM - (v45) 'handle' is a STRPTR datatype-name
-    handle  --  handle to return a datatype for.
-    attrs   --  additional attributes.
-                
-                DTA_GroupID  -  (v45) (ULONG)
-                                the group (GID_#?) to match.
-                                0 is used as a wildcard value.
+    type    --  DTST_FILE: handle is a BPTR DOS lock.
+                DTST_CLIPBOARD: handle is a valid struct IFFHandle *.
+                DTST_RAM (v45): handle is a datatype name (STRPTR), or
+                NULL to enumerate the sorted datatype list.
+    handle  --  source handle as described by type.
+    attrs   --  optional tag list (NULL uses the defaults):
 
-                DTA_DataType -  (v45) (struct DataType *)
-                                starts/continues search from the specified
-                                DataType. NULL has the same effect as not
-                                using DTA_DataType.
+                DTA_GroupID (v45, ULONG) restricts matches to this
+                datatype group.  Zero accepts every group.
+
+                DTA_DataType (v45, struct DataType *) starts after this
+                prior descriptor during enumeration or source matching.
+                NULL starts at the beginning.  For a named DTST_RAM lookup,
+                a non-NULL prior descriptor yields no match.
 
     RESULT
-    A pointer to a DataType or NULL if failure. IoErr() gives more information
-    in the latter case:
-    
-    ERROR_NO_FREE_STORE     --  Not enough memory available
-    ERROR_OBJECT_NOT_FOUND  --  Unable to open the data type object
-    ERROR_NOT_IMPLEMENTED   --  Unknown handle type
+    A pointer to a matching DataType, or NULL if no match was found or
+    an operation failed.  A successful pointer must be released with
+    ReleaseDataType().  A NULL result does not guarantee a nonzero IoErr():
+    for example, an unmatched file can return NULL with IoErr() unchanged.
+    Certain failure paths explicitly set DOS or datatype errors, including
+    ERROR_NO_FREE_STORE and ERROR_NOT_IMPLEMENTED.
 
     NOTES
+    The caller retains ownership of a DTST_FILE lock; recognition may open
+    and close its own file handle.  Keep the supplied handle valid for the
+    duration of the call.  Group filtering and continuation follow the
+    matching lists; an unmatched prior descriptor need not produce a result.
 
     EXAMPLE
 
@@ -103,7 +114,7 @@ static inline struct DataType *DataTypeFromANode(struct Node *aNode)
             {
                 D(bug("datatypes.library/ObtainDataType: alloced DOS_FIB. Now calling ExamineLock\n"));
 
-                cdt = ExamineLock((BPTR)handle, fib, prevdt, DataTypesBase);
+                cdt = ExamineLock((BPTR)handle, fib, prevdt, grpid, DataTypesBase);
 
                 D(bug("datatypes.library/ObtainDataType: DTST_FILE. ExamineLock call returned\n"));
 
@@ -159,6 +170,7 @@ static inline struct DataType *DataTypeFromANode(struct Node *aNode)
                     cdt = ExamineData(DataTypesBase,
                                       &dthc,
                                       prevdt,
+                                      grpid,
                                       CheckArray,
                                       (UWORD)cbh->cbh_Req.io_Actual,
                                       "",
@@ -192,12 +204,16 @@ static inline struct DataType *DataTypeFromANode(struct Node *aNode)
                     }
                 }
             }
-            else
+            else if (!prevdt)
             {
                 struct Node *tmpDt = FindNameNoCase(DataTypesBase, &(GPB(DataTypesBase)->dtb_DTList->dtl_SortedList),
                             (STRPTR)handle);
                 if (tmpDt)
+                {
                     cdt = (struct CompoundDataType *)DataTypeFromANode(tmpDt);
+                    if (grpid && cdt->DTH.dth_GroupID != grpid)
+                        cdt = NULL;
+                }
             }
         }
         break;
