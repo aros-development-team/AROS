@@ -600,15 +600,17 @@ struct RDBData *data;
     FreeMem(data, sizeof(struct RDBData));
 }
 
-ULONG PartitionRDBWriteFileSys
+LONG PartitionRDBWriteFileSys
     (
         struct Library *PartitionBase,
         struct PartitionHandle *root,
         struct FileSysNode *fn,
-        ULONG block
+        ULONG *nextblock
     )
 {
 ULONG size;
+ULONG block = *nextblock;
+LONG error;
 
     if (fn->filesystem)
     {
@@ -621,8 +623,9 @@ ULONG size;
             lsb->lsb_ChkSum = 0;
             lsb->lsb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)lsb, AROS_LONG2BE(lsb->lsb_SummedLongs)));
 #if RDB_WRITE
-            if (writeBlock(PartitionBase, root, block++, lsb) != 0)
-                return block;
+            error = writeBlock(PartitionBase, root, block++, lsb);
+            if (error != 0)
+                return error;
 #else
             kprintf("RDB-write: block=%ld, type=LSEG\n", block);
             block++;
@@ -630,7 +633,8 @@ ULONG size;
             size++;
         }
     }
-    return block;
+    *nextblock = block;
+    return 0;
 }
 
 static LONG PartitionRDBWritePartitionTable(struct Library *PartitionBase, struct PartitionHandle *root)
@@ -641,9 +645,10 @@ static LONG PartitionRDBWritePartitionTable(struct Library *PartitionBase, struc
     struct BadBlockNode *bn;
     struct FileSysNode *fn;
     ULONG block;
+    LONG error;
 
     if (sizeof(root->buffer) < (root->de.de_SizeBlock << 2))
-        return 0;
+        return ERROR_BAD_NUMBER;
 
     data = root->table->data;
     block = data->rdbblock+1; /* RDB will be written at the end */
@@ -663,7 +668,9 @@ static LONG PartitionRDBWritePartitionTable(struct Library *PartitionBase, struc
         bn->bbb.bbb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)&bn->bbb, AROS_BE2LONG(bn->bbb.bbb_SummedLongs)));
         CopyMem(&bn->bbb, root->buffer, sizeof(struct BadBlockBlock));
 #if RDB_WRITE
-        writeBlock(PartitionBase, root, block++, root->buffer);
+        error = writeBlock(PartitionBase, root, block++, root->buffer);
+        if (error != 0)
+            return deviceError(error);
 #else
         kprintf("RDB-write: block=%ld, type=BADB\n", block);
         block++;
@@ -686,7 +693,9 @@ static LONG PartitionRDBWritePartitionTable(struct Library *PartitionBase, struc
         pblock->pb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)pblock, AROS_BE2LONG(pblock->pb_SummedLongs)));
         CopyMem(pblock, root->buffer, sizeof(struct PartitionBlock));
 #if RDB_WRITE
-        writeBlock(PartitionBase, root, block++, root->buffer);
+        error = writeBlock(PartitionBase, root, block++, root->buffer);
+        if (error != 0)
+            return deviceError(error);
 #else
         kprintf("RDB-write: block=%ld, type=PART\n", block);
         block++;
@@ -709,14 +718,20 @@ static LONG PartitionRDBWritePartitionTable(struct Library *PartitionBase, struc
         block++; /* header block will be written later */
         fn->fhb.fhb_SegListBlocks = AROS_LONG2BE(block);
         /* write filesystem LSEG blocks */
-        block = PartitionRDBWriteFileSys(PartitionBase, root, fn, block);
+        if (!fn->filesystem || !fn->fsblocks)
+            return ERROR_NOT_A_DOS_DISK;
+        error = PartitionRDBWriteFileSys(PartitionBase, root, fn, &block);
+        if (error != 0)
+            return deviceError(error);
         fn->fhb.fhb_Next = fn->h.ln.ln_Succ->ln_Succ ? AROS_LONG2BE(block) : (ULONG)-1;
         fn->fhb.fhb_ChkSum = 0;
         CopyMem(&fn->fhb, root->buffer, sizeof(struct FileSysHeaderBlock));
         fsb = (struct FileSysHeaderBlock *)root->buffer;
         fsb->fhb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)root->buffer, AROS_BE2LONG(fn->fhb.fhb_SummedLongs)));
 #if RDB_WRITE
-        writeBlock(PartitionBase, root, fshblock, root->buffer);
+        error = writeBlock(PartitionBase, root, fshblock, root->buffer);
+        if (error != 0)
+            return deviceError(error);
 #else
         kprintf("RDB-write: block=%ld, type=FSHD\n", fshblock);
 #endif
@@ -727,7 +742,9 @@ static LONG PartitionRDBWritePartitionTable(struct Library *PartitionBase, struc
     data->rdb.rdb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)&data->rdb, AROS_BE2LONG(data->rdb.rdb_SummedLongs)));
     CopyMem(&data->rdb, root->buffer, sizeof(struct RigidDiskBlock));
 #if RDB_WRITE
-    writeBlock(PartitionBase, root, data->rdbblock, root->buffer);
+    error = writeBlock(PartitionBase, root, data->rdbblock, root->buffer);
+    if (error != 0)
+        return deviceError(error);
 #else
     kprintf("RDB-write: block=%ld, type=RDSK\n", data->rdbblock);
 #endif
@@ -983,15 +1000,13 @@ struct RDBData *data;
 struct RigidDiskBlock *rdb;
 
     if (sizeof(root->buffer) < (root->de.de_SizeBlock << 2))
-            return 0;
+            return ERROR_BAD_NUMBER;
 
     data = root->table->data;
     CopyMem(&data->rdb, root->buffer, sizeof(struct RigidDiskBlock));
     rdb = (struct RigidDiskBlock *)root->buffer;
     rdb->rdb_ID = 0;
-    if (writeBlock(PartitionBase, root, data->rdbblock, root->buffer))
-        return 1;
-    return 0;
+    return deviceError(writeBlock(PartitionBase, root, data->rdbblock, root->buffer));
 }
 
 struct Node *PartitionRDBFindFileSystem(struct Library *PartitionBase, struct PartitionHandle *ph, const struct TagItem *tags)
