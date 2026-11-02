@@ -1417,7 +1417,8 @@ bad:
  * a length above 0 - and from the router that is now the first hop to the
  * destination, so that no other node on the link, router or not, can
  * draw away traffic it does not carry. Then the destination is routed
- * through the target (section 8.3). A router ignores Redirects.
+ * through the target (section 8.3), unless its route is a host route set
+ * by hand. A router ignores Redirects.
  * ------------------------------------------------------------------ */
 void
 nd6_redirect_input(struct mbuf *m, int off, int icmp6len)
@@ -1429,7 +1430,7 @@ nd6_redirect_input(struct mbuf *m, int off, int icmp6len)
     struct sockaddr_in6 dst_sa, gw_sa;
     struct rtentry *rt;
     union nd_opts ndopts;
-    int first_hop, host;
+    int first_hop, host, dynamic;
 
     nd6stat.nd6s_rcv_redirect++;
 
@@ -1503,19 +1504,24 @@ nd6_redirect_input(struct mbuf *m, int off, int icmp6len)
                 IN6_ARE_ADDR_EQUAL(&((struct sockaddr_in6 *)rt->rt_gateway)->sin6_addr,
                                    &src6);
     host = rt != NULL && (rt->rt_flags & RTF_HOST);
+    dynamic = rt != NULL && (rt->rt_flags & RTF_DYNAMIC);
     if(rt)
         rtfree(rt);
     if(!first_hop) {
         nd6stat.nd6s_rcv_badredirect++;
         goto bad;
     }
+    /* a host route set by hand stays as it is: only one an earlier
+     * Redirect made is replaced, as in FreeBSD */
+    if(host && !dynamic)
+        goto bad;
 
     /* route the destination through the target, on this interface */
     bzero(&gw_sa, sizeof(gw_sa));
     gw_sa.sin6_family = AF_INET6;
     gw_sa.sin6_len    = sizeof(gw_sa);
     gw_sa.sin6_addr   = tgt;
-    if(host)            /* from an earlier Redirect */
+    if(host)            /* from an earlier Redirect (RTF_DYNAMIC) */
         rtrequest(RTM_DELETE, (struct sockaddr *)&dst_sa,
                   NULL, NULL, RTF_HOST, NULL);
     rt = NULL;

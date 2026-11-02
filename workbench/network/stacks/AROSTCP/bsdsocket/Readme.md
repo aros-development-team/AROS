@@ -465,7 +465,8 @@ with hop limit 255, code 0, at least 40 octets, options that parse, a target tha
 the destination itself - and from the router that is the first hop to the destination now, the
 gateway of the route the table uses for it on that interface, so that another node on the link,
 router or not, cannot draw the traffic away. It then routes the destination through the target
-(a host route, replacing one an earlier Redirect made). A router ignores Redirects.
+(a host route, replacing one an earlier Redirect made, `RTF_DYNAMIC`; a host route set by hand is left
+as it is, as in FreeBSD). A router ignores Redirects.
 
 The DNS options of a Router Advertisement (RFC 8106) give the resolver servers and search domains:
 the addresses of an RDNSS option and the domains of a DNSSL option go into the dynamic database
