@@ -98,7 +98,7 @@ static error_t GetRext(void);
 static error_t RepairBootBlock(void);
 static error_t GetRepairBlock(cachedblock_t *block, ULONG blocknr);
 static error_t RepairDeldir(void);
-static bool dd_CheckBlock(uint32 bloknr, int seqnr);
+static error_t dd_CheckBlock(uint32 bloknr, int seqnr, bool *valid);
 static error_t RepairDirTree(void);
 static error_t RepairDir(struct direntry *de, c_dirblock_t *parent);
 static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent);
@@ -154,6 +154,14 @@ void __regargs __chkabort(void)
 	}
 }
 #endif
+
+/* These failures say nothing about whether a readable object is corrupt. */
+static bool IsOperationalError(error_t error)
+{
+	return error == e_read_error || error == e_write_error ||
+		error == e_out_of_memory || error == e_options_error ||
+		error == e_aborted || error == e_alloc_fail || error == e_fatal_error;
+}
 
 static BOOL FileSizeCheck(ULONG low, ULONG high, ULONG numblocks)
 {
@@ -1159,7 +1167,7 @@ static error_t RepairBootBlock(void)
 static error_t RepairDeldir(void)
 {
 	int i;
-	bool remove;
+	bool remove, valid;
 	uint32 ddsize;
 	error_t error;
 	bool rextdirty = false, rootdirty = false;
@@ -1189,7 +1197,11 @@ static error_t RepairDeldir(void)
 					if (i <= ddsize)
 					{
 						remove = true;
-						if (dd_CheckBlock(rext.data->deldir[i], i))
+						if ((error = dd_CheckBlock(rext.data->deldir[i], i, &valid))) {
+							exitblock();
+							return error;
+						}
+						if (valid)
 						{
 							if ((error = ResBlockUsed(rext.data->deldir[i])))
 								remove = true;
@@ -1248,7 +1260,9 @@ static error_t RepairDeldir(void)
 			else
 			{
 				remove = false;
-				if (dd_CheckBlock(rbl->deldir, 0))
+				if ((error = dd_CheckBlock(rbl->deldir, 0, &valid)))
+					return error;
+				if (valid)
 				{
 					if ((error = ResBlockUsed(rbl->deldir)))
 						remove = true;
@@ -1307,17 +1321,20 @@ static error_t RepairDeldir(void)
 		}
 	}
 
-	if (rootdirty)
-		WritePFS3Metadata((uint8 *)rbl, ROOTBLOCK + volume.firstblock,
+	if (rootdirty) {
+		error = WritePFS3Metadata((uint8 *)rbl, ROOTBLOCK + volume.firstblock,
 			volume.blocksize, PFS3_METADATA_ROOT);
+		if (error)
+			return error;
+	}
 	if (rextdirty)
-		volume.writeblock((cachedblock_t *)&rext);
+		return volume.writeblock((cachedblock_t *)&rext);
 
 	return e_none;
 }
 
 
-static bool dd_CheckBlock(uint32 bloknr, int seqnr)
+static error_t dd_CheckBlock(uint32 bloknr, int seqnr, bool *valid)
 {
 	error_t error;
 	c_deldirblock_t ddblk;
@@ -1327,15 +1344,18 @@ static bool dd_CheckBlock(uint32 bloknr, int seqnr)
 	struct deldirentry *dde;
 	ULONG size, high;
 
+	*valid = false;
 	volume.progress(0, 1);
 	
 	/* get block */
 	ddblk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (!ddblk.data)
+		return e_out_of_memory;
 	if ((error = volume.getblock((cachedblock_t *)&ddblk, bloknr)))
 	{
 		adderror("couldn't read deldirblock");
 		free (ddblk.data);
-		return false;
+		return IsOperationalError(error) ? error : e_none;
 	}
 
 	/* check id */
@@ -1343,14 +1363,14 @@ static bool dd_CheckBlock(uint32 bloknr, int seqnr)
 	{
 		adderror("deldirblock error");
 		free (ddblk.data);
-		return false;
+		return e_none;
 	}
 
 	if (ddblk.data->seqnr != seqnr)
 	{
 		adderror("deldirblock error");
 		free (ddblk.data);
-		return false;
+		return e_none;
 	}
 
 	// check entries
@@ -1366,7 +1386,12 @@ static bool dd_CheckBlock(uint32 bloknr, int seqnr)
 		{
 			for (ddnr = dde->anodenr; ddnr; ddnr = delnode.next)
 			{
-				if (!GetAnode (&delnode, ddnr, false) || IsAnodeUsed(ddnr))
+				error = ReadAnode(&delnode, ddnr, false);
+				if (IsOperationalError(error)) {
+					free(ddblk.data);
+					return error;
+				}
+				if (error || IsAnodeUsed(ddnr))
 				{
 					if (mode == check)
 						adderror("delfile anode error");
@@ -1374,7 +1399,10 @@ static bool dd_CheckBlock(uint32 bloknr, int seqnr)
 					{
 						fixederror("delfile anode error");
 						dde->anodenr = 0;
-						volume.writeblock((cachedblock_t *)&ddblk);
+						if ((error = volume.writeblock((cachedblock_t *)&ddblk))) {
+							free(ddblk.data);
+							return error;
+						}
 					}
 					break;
 				}
@@ -1392,7 +1420,10 @@ static bool dd_CheckBlock(uint32 bloknr, int seqnr)
 				{
 					fixederror(bericht);
 					dde->anodenr = 0;
-					volume.writeblock((cachedblock_t *)&ddblk);
+					if ((error = volume.writeblock((cachedblock_t *)&ddblk))) {
+						free(ddblk.data);
+						return error;
+					}
 				}
 			}
 		}
@@ -1402,7 +1433,14 @@ static bool dd_CheckBlock(uint32 bloknr, int seqnr)
 
 		for (ddnr = dde->anodenr; ddnr; ddnr = delnode.next)
 		{
-			GetAnode(&delnode, ddnr, false);
+			error = ReadAnode(&delnode, ddnr, false);
+			if (error) {
+				if (IsOperationalError(error)) {
+					free(ddblk.data);
+					return error;
+				}
+				break;
+			}
 			/* mark anodes as used */
 			if (ss.stage <= anodebitmap)
 				AnodeUsed(ddnr);
@@ -1414,7 +1452,8 @@ static bool dd_CheckBlock(uint32 bloknr, int seqnr)
 	}
 
 	free(ddblk.data);
-	return true;
+	*valid = true;
+	return e_none;
 }
 
 
