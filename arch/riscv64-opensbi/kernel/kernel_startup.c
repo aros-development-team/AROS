@@ -898,6 +898,14 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
          */
         use_tlsf = !(fdtinfo.bootargs &&
                      krnArgMatch(fdtinfo.bootargs, "notlsf"));
+#if defined(RISCV_KRNWATCHDOG)
+        /* "watchdog": the last CPU watches the others for lock-ups */
+        if (fdtinfo.bootargs && krnArgMatch(fdtinfo.bootargs, "watchdog"))
+        {
+            __krn_watchdog = 1;
+            krnSBIPutStr("watchdog:  lock-up watchdog on the last CPU\n");
+        }
+#endif
         if (use_tlsf)
             krnSBIPutStr("mem:       TLSF allocator enabled\n");
 
