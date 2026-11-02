@@ -637,6 +637,48 @@ LONG error;
     return 0;
 }
 
+/* Check the complete rewrite before touching any metadata or volume data. */
+static LONG PartitionRDBCheckWriteSize(struct PartitionHandle *root)
+{
+    struct RDBData *data = root->table->data;
+    struct BadBlockNode *bn;
+    struct PartitionHandle *ph;
+    struct FileSysNode *fn;
+    UQUAD end = (UQUAD)data->rdbblock + 1;
+    UQUAD blocks = (UQUAD)(root->de.de_HighCyl - root->de.de_LowCyl + 1) *
+        root->de.de_Surfaces * root->de.de_BlocksPerTrack;
+    UQUAD first = (UQUAD)AROS_BE2LONG(data->rdb.rdb_LoCylinder) *
+        AROS_BE2LONG(data->rdb.rdb_Heads) * AROS_BE2LONG(data->rdb.rdb_Sectors);
+    UQUAD limit = (UQUAD)AROS_BE2LONG(data->rdb.rdb_RDBBlocksHi) + 1;
+
+    if (data->rdbblock < AROS_BE2LONG(data->rdb.rdb_RDBBlocksLo))
+        return ERROR_NOT_A_DOS_DISK;
+    if (limit > blocks)
+        limit = blocks;
+    if (limit > first)
+        limit = first;
+
+    for (bn = (struct BadBlockNode *)data->badblocklist.lh_Head;
+         bn->ln.ln_Succ; bn = (struct BadBlockNode *)bn->ln.ln_Succ)
+        end++;
+    for (ph = (struct PartitionHandle *)root->table->list.lh_Head;
+         ph->ln.ln_Succ; ph = (struct PartitionHandle *)ph->ln.ln_Succ)
+    {
+        UQUAD start = (UQUAD)ph->de.de_LowCyl * ph->de.de_Surfaces * ph->de.de_BlocksPerTrack;
+        if (limit > start)
+            limit = start;
+        end++;
+    }
+    for (fn = (struct FileSysNode *)data->fsheaderlist.lh_Head;
+         fn->h.ln.ln_Succ; fn = (struct FileSysNode *)fn->h.ln.ln_Succ)
+    {
+        if (!fn->filesystem || !fn->fsblocks || fn->blockbytes != root->de.de_SizeBlock * 4)
+            return ERROR_NOT_A_DOS_DISK;
+        end += (UQUAD)fn->fsblocks + 1;
+    }
+    return end > limit ? ERROR_DISK_FULL : 0;
+}
+
 static LONG PartitionRDBWritePartitionTable(struct Library *PartitionBase, struct PartitionHandle *root)
 {
     struct RDBData *data;
@@ -649,6 +691,10 @@ static LONG PartitionRDBWritePartitionTable(struct Library *PartitionBase, struc
 
     if (sizeof(root->buffer) < (root->de.de_SizeBlock << 2))
         return ERROR_BAD_NUMBER;
+
+    error = PartitionRDBCheckWriteSize(root);
+    if (error != 0)
+        return error;
 
     data = root->table->data;
     block = data->rdbblock+1; /* RDB will be written at the end */
