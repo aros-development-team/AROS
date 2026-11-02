@@ -933,24 +933,26 @@ LONG PartitionRDBCreatePartitionTable(struct Library *PartitionBase, struct Part
 {
     struct RDBData *data;
     ULONG i;
+    ULONG rdbsize;
+
+    if (!ph->dg.dg_CylSectors || ph->dg.dg_CylSectors > 0x7fffffff ||
+        (UQUAD)ph->dg.dg_Heads * ph->dg.dg_TrackSectors != ph->dg.dg_CylSectors ||
+        !ph->dg.dg_Cylinders || ph->de.de_SizeBlock < 128 ||
+        ph->de.de_SizeBlock > sizeof(ph->buffer) / 4 ||
+        ph->dg.dg_SectorSize != ph->de.de_SizeBlock * 4)
+        return ERROR_BAD_NUMBER;
+
+    /* Reserve two cylinders, increasing in whole-cylinder steps to at least
+     * 256 blocks for flat LBA containers (Heads == TrackSectors == 1). */
+    rdbsize = ph->dg.dg_CylSectors << 1;
+    while (rdbsize < 256)
+        rdbsize <<= 1;
+    if (rdbsize >= (UQUAD)ph->dg.dg_Cylinders * ph->dg.dg_CylSectors)
+        return ERROR_DISK_FULL;
 
     data = AllocMem(sizeof(struct RDBData) + (ph->de.de_SizeBlock << 2) - sizeof(struct RigidDiskBlock), MEMF_PUBLIC | MEMF_CLEAR);
     if (data)
     {
-        /* Get number of reserved sectors to place the partition table. By default we reserve 2 cylinders. */
-        ULONG rdbsize = ph->dg.dg_CylSectors << 1;
-
-        /*
-         * Modern machines love LBA, so container partition may be not cylinder-aligned. In this case we will
-         * likely use flat LBA to describe own placement, with Heads == TrackSectors == 1. This will give us
-         * just two sectors for the RDB, which is horribly small.
-         * Here we detect this situation and increase rdbsize by two until it reaches a minimum of 256 blocks.
-         * This way we keep it aligned to our (virtual) CylSectors value, which allows to set correct LoCylinder
-         * value.
-         */
-        while (rdbsize < 256)
-            rdbsize <<= 1;
-
         ph->table->data = data;
 
         data->rdb.rdb_ID                = AROS_LONG2BE(IDNAME_RIGIDDISK);
