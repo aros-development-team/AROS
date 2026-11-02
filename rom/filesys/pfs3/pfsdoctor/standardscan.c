@@ -1577,8 +1577,8 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 	for (anodenr = mainanodenr; anodenr; anodenr=dirnode.next)
 	{
 		/* get anode */
-		if (!GetAnode(&dirnode, anodenr, true))
-			return e_remove;
+		if ((error = ReadAnode(&dirnode, anodenr, true)))
+			return IsOperationalError(error) ? error : e_remove;
 
 		/* check anode */
 		if (dirnode.clustersize != 1)
@@ -1647,10 +1647,12 @@ static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent)
 
 	/* get block */
 	dirblk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (!dirblk.data)
+		return e_out_of_memory;
 	if ((error = volume.getblock((cachedblock_t *)&dirblk, bloknr)))
 	{
 		free (dirblk.data);
-		return e_remove;
+		return IsOperationalError(error) ? error : e_remove;
 	}
 
 	/* check dirblock */
@@ -1820,7 +1822,7 @@ static error_t RepairFile(struct direntry *de, c_dirblock_t *parent)
 		for (anodenr = de->anode; anodenr; anodenr = filenode.next)
 		{
 			if ((error = CheckAnode(&filenode, anodenr, true)))
-				return e_remove;
+				return IsOperationalError(error) ? error : e_remove;
 
 			blokken += filenode.clustersize;
 		}
@@ -1842,7 +1844,8 @@ static error_t RepairFile(struct direntry *de, c_dirblock_t *parent)
 	/* bitmap gen */
 	for (anodenr = de->anode; anodenr; anodenr = filenode.next)
 	{
-		GetAnode(&filenode, anodenr, true);
+		if ((error = ReadAnode(&filenode, anodenr, true)))
+			break;
 		if ((error = AnodeUsed(anodenr)))
 			break;
 
@@ -2136,9 +2139,10 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
  */
 static error_t CheckAnode(canode_t *anode, uint32 nr, bool fix)
 {
-	/* if an anodeblock does not exist, it is considered empty */
-	if (!GetAnode(anode, nr, fix))
-		return e_empty;
+	error_t error = ReadAnode(anode, nr, fix);
+	/* Missing/corrupt anodes are empty; unreadable ones are unknown. */
+	if (error)
+		return IsOperationalError(error) ? error : e_empty;
 
 	if (anode->clustersize == 0 && anode->blocknr == 0 && anode->next == 0)
 		return e_empty;
@@ -2985,6 +2989,8 @@ static error_t RepairAnodeBitmap(void)
 		anodenr = (i/ANODES_PER_BLOCK << 16) + i%ANODES_PER_BLOCK;
 
 		error = CheckAnode(&anode, anodenr, false);
+		if (IsOperationalError(error))
+			return error;
 
 		if ((error == e_empty) == anodeused)
 		{
