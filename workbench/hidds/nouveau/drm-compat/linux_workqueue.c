@@ -39,9 +39,8 @@ void compat_startup_wait(struct compat_startup *s, const char *what);
  * As in Linux, a work item belongs to its function once that runs: the
  * function may re-queue it or free the memory it lives in
  * (ttm_bo_delayed_delete frees the buffer object that embeds it), so the
- * worker never touches *work after func() returns. The SMP display stress
- * of 2026-11-01 showed exactly that write into freed memory as TLSF
- * free-list corruption on the 'Nouveau WorkQueue' task.
+ * worker never touches *work after func() returns: a write into it
+ * afterwards lands in freed memory.
  */
 
 enum {

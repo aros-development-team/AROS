@@ -93,6 +93,34 @@ static BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm)
     output_ids[0] = ((drmModeConnectorPtr)gfxdata->selectedconnector)->connector_id;
     
 
+    /*
+     * Same mode, same panning, same framebuffer geometry: only the scanout
+     * buffer changes, which is a page flip. A full drmModeSetCrtc() for every
+     * screen switch would run the modeset and blank the monitor for seconds.
+     */
+    if (gfxdata->shownmode && gfxdata->shownmode == gfxdata->selectedmode &&
+        gfxdata->shownxoff == -bmdata->xoffset && gfxdata->shownyoff == -bmdata->yoffset &&
+        gfxdata->shownpitch == (ULONG)bmdata->pitch && gfxdata->shownbpp == (ULONG)bmdata->bytesperpixel)
+    {
+        if (gfxdata->shownfb == bmdata->fbid)
+            ret = 0;                                    /* already on screen */
+        else
+        {
+            ret = drmModePageFlip(NOUVEAU_DEV_FD(nvdev), gfxdata->selectedcrtcid, bmdata->fbid, 0, NULL);
+            nvlog("[Nouveau] flip crtc %lu fb %lu -> %lu: %ld\n", (unsigned long)gfxdata->selectedcrtcid,
+                  (unsigned long)gfxdata->shownfb, (unsigned long)bmdata->fbid, (long)ret);
+        }
+        if (ret == 0)
+        {
+            gfxdata->shownfb = bmdata->fbid;
+            bmdata->showngfx = gfxdata;
+            UNLOCK_BITMAP
+            UNLOCK_ENGINE
+            return TRUE;
+        }
+        /* a flip that was refused (another one pending, geometry) falls back to the modeset */
+    }
+
     ret = drmModeSetCrtc(NOUVEAU_DEV_FD(nvdev), gfxdata->selectedcrtcid,
             bmdata->fbid, -bmdata->xoffset, -bmdata->yoffset, output_ids,
             output_count, gfxdata->selectedmode);
@@ -101,6 +129,18 @@ static BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm)
         ((drmModeModeInfoPtr)gfxdata->selectedmode)->name, ((drmModeModeInfoPtr)gfxdata->selectedmode)->hdisplay,
         ((drmModeModeInfoPtr)gfxdata->selectedmode)->vdisplay, ((drmModeModeInfoPtr)gfxdata->selectedmode)->vrefresh,
         (long)-bmdata->xoffset, (long)-bmdata->yoffset, (long)bmdata->pitch, (long)bmdata->bytesperpixel * 8, (long)ret);
+    if (ret == 0)
+    {
+        gfxdata->shownmode  = gfxdata->selectedmode;
+        gfxdata->shownfb    = bmdata->fbid;
+        gfxdata->shownxoff  = -bmdata->xoffset;
+        gfxdata->shownyoff  = -bmdata->yoffset;
+        gfxdata->shownpitch = bmdata->pitch;
+        gfxdata->shownbpp   = bmdata->bytesperpixel;
+        bmdata->showngfx    = gfxdata;
+    }
+    else
+        gfxdata->shownmode = NULL;
 
     UNLOCK_BITMAP
     UNLOCK_ENGINE

@@ -763,8 +763,8 @@ nouveau_bo_del(struct nouveau_bo *bo)
     * bo for its unmap notification (drm_nouveau_check_userspace_mapped ->
     * nouveau_bo_unmapped writes bo->map = NULL). Unmapping after the handle
     * is closed silently did nothing, and the delayed delete on the 'ttm'
-    * task later stored NULL into whatever had reused this bo's memory -
-    * the SMP heap corruption of 2026-11-01. Unmap first.
+    * task later stored NULL into whatever had reused this bo's memory.
+    * Unmap first.
     */
    if (bo->map)
       drmMUnmap(drm->fd, bo->handle);
