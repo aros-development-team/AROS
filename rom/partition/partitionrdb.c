@@ -343,6 +343,8 @@ struct PartitionHandle *ph;
                         tableSize = sizeof(ph->de) / sizeof(IPTR) - 1;
                     CopyBE2HostDosEnvec(pblock->pb_Environment, (SIPTR *)&ph->de, tableSize + 1);
                     ph->de.de_TableSize = tableSize;
+                    if (ph->de.de_TableSize >= DE_BOOTPRI)
+                        ph->de.de_BootPri = (LONG)AROS_BE2LONG(pblock->pb_Environment[DE_BOOTPRI]);
                     PartitionRDBUpdateGeometry(ph);
                     return ph;
                 }
