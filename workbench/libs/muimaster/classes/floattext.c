@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -24,9 +24,196 @@
 #include "support_classes.h"
 #include "floattext_private.h"
 
+/****** Floattext.mui/MUIC_Floattext ************
+*
+*   NAME
+*       MUIC_Floattext
+*
+*   SUPERCLASS
+*       List.mui
+*
+*   DESCRIPTION
+*       Wrap text into List entries using the native window RastPort's font and
+*       the object's width minus inner margins and eight pixels. Newlines
+*       delimit paragraphs. Text is copied; SkipChars is borrowed. Defaults are
+*       no source text, no skip characters, Justify FALSE and TabSize 8.
+*       Construction installs List's string construction/destruction hooks,
+*       replacing caller hook selections. Preserve these hooks while the class
+*       manages its generated lines.
+*       Each typesetting pass clears the list and rebuilds its entries. Without
+*       a window or source text it leaves the list empty. Full Draw retypesets
+*       when the outer width differs from the cached width; a font or margin
+*       change alone does not satisfy that width test. Setting any Floattext
+*       attribute also retypesets, even if the value is unchanged. Text source
+*       storage and generated line copies have separate ownership. Disposal
+*       frees the source and delegates list cleanup to List.
+*
+*   METHODS
+*       The formatter expands tabs to a fixed number of spaces, filters
+*       SkipChars and carries two-byte escape commands across wrapped lines
+*       within a paragraph. It is not a general parser for all multi-byte Zune
+*       escape forms. It fits text with TextFit and prefers spaces as break
+*       points. Justification adds whole spaces; even the last paragraph line
+*       can be justified unless its computed space multiplier exceeds five.
+*       Draw suppresses superclass drawing while typesetting and always returns
+*       zero. Typesetting clears its suppression flag and redraws the list only
+*       on normal completion. Temporary paragraph/line allocation failures
+*       return early with the flag still set and can leave an empty or partially
+*       rebuilt list. List insertion results are ignored; success of
+*       construction, set or Append does not establish that every line was
+*       generated.
+*
+*   BUGS
+*       The formatter uses UWORD positions, counts and allocation sizes, and
+*       unchecked arithmetic. Long paragraphs, tab expansion or accumulated
+*       escape commands can truncate lengths and overrun buffers. Incomplete
+*       escapes can read beyond input. A nonempty paragraph for which TextFit
+*       returns zero without advancing the source, including an entirely
+*       filtered paragraph, can cause a loop without progress. No cancellation
+*       or timeout is provided. Justification assumes a nonzero measured space
+*       width.
+*       Setting Text frees the old source before copying the replacement. Never
+*       pass the current Text getter pointer or a pointer into it to that
+*       setter. Append copies into new storage before freeing the old source,
+*       but its ULONG allocation-size calculation is unchecked. These
+*       limitations describe this implementation, not guaranteed safe
+*       arbitrary-input handling.
+*
+*/
+/****** Floattext.mui/MUIA_Floattext_Text ************
+*
+*   NAME
+*       MUIA_Floattext_Text
+*
+*   FUNCTION
+*       Replace or retrieve the source text used for wrapping.
+*
+*   INPUTS
+*       Initialize, set and get, STRPTR. Default NULL. Supply a readable
+*       NUL-terminated string; NULL clears the source.
+*
+*   NOTES
+*       The class owns a StrDup copy. Get returns a borrowed pointer valid until
+*       replacement, successful Append or disposal; do not modify or free it.
+*       The setter frees the previous source before duplication, so the
+*       replacement must not alias that allocation. Copy failure loses the
+*       previous text and leaves NULL; construction and set do not report this
+*       as a separate error.
+*       Each set rebuilds the list, including an unchanged value. Repeated
+*       constructor Text tags overwrite earlier copies without freeing them. The
+*       original tag is forwarded to List and normal notification processing; it
+*       contains the supplied pointer, not the owned copy. Formatting
+*       temporarily writes terminators into the owned source and restores them,
+*       so do not read it concurrently during typesetting.
+*
+*/
+/****** Floattext.mui/MUIA_Floattext_SkipChars ************
+*
+*   NAME
+*       MUIA_Floattext_SkipChars
+*
+*   FUNCTION
+*       Supply bytes to omit during typesetting.
+*
+*   INPUTS
+*       Initialize and set, STRPTR. Default NULL. No local getter.
+*
+*   NOTES
+*       The pointer is borrowed without copying; keep its NUL-terminated string
+*       valid through all later retypesetting until replacement or disposal.
+*       NULL disables this filter. A non-NULL pointer also selects code paths
+*       that strip leading spaces, even when it points to an empty string.
+*       Tabs and two-byte escape handling have their own formatting paths;
+*       SkipChars is not a general escaping or sanitizing mechanism. Setting
+*       this attribute rebuilds all lines. A paragraph filtered to no printable
+*       text can prevent formatter progress; arbitrary filtering is not
+*       protected against that case.
+*
+*/
+/****** Floattext.mui/MUIA_Floattext_TabSize ************
+*
+*   NAME
+*       MUIA_Floattext_TabSize
+*
+*   FUNCTION
+*       Choose the number of spaces emitted for each tab.
+*
+*   INPUTS
+*       Initialize and set, header LONG, stored ULONG. Default 8. Zero becomes
+*       8; values greater than 20 become 20. No local getter.
+*
+*   NOTES
+*       Every tab expands to this many spaces, independent of its column; these
+*       are not tab stops. Conversion to ULONG occurs before the upper-limit
+*       check, so negative input is not a negative tab width. Construction and
+*       any recognized attribute set normalize the stored size before
+*       rebuilding. Buffer lengths still use narrower counters and are not
+*       protected against expansion overflow.
+*
+*/
+/****** Floattext.mui/MUIA_Floattext_Justify ************
+*
+*   NAME
+*       MUIA_Floattext_Justify
+*
+*   FUNCTION
+*       Enable insertion of spaces to fill wrapped lines.
+*
+*   INPUTS
+*       Initialize, set and get, BOOL. Default FALSE. The setter normalizes
+*       nonzero values to TRUE.
+*
+*   NOTES
+*       The formatter inserts whole space characters among words when eligible
+*       spaces exist. It can also stretch the last paragraph line; that line is
+*       excluded only when the computed multiplier exceeds five. There is no
+*       fractional spacing or exact pixel-width guarantee. Get returns the
+*       stored flag. Setting it always rebuilds the list; it does not merely
+*       change drawing style. A font with zero-width spaces is not protected
+*       against division by zero.
+*
+*/
+/****** Floattext.mui/MUIM_Floattext_Append ************
+*
+*   NAME
+*       MUIM_Floattext_Append
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Floattext_Append, (IPTR)text);
+*
+*   FUNCTION
+*       Append a string directly to the stored source and rebuild all lines.
+*
+*   INPUTS
+*       text - Readable NUL-terminated string, or NULL for no operation. No
+*       newline or separator is inserted.
+*
+*   RESULT
+*       Always zero, including successful append, NULL input and allocation
+*       failure.
+*
+*   NOTES
+*       A new combined allocation is filled before the old source is freed. The
+*       input may therefore refer to the current source while copying. Combined
+*       length plus terminator must fit the unchecked ULONG allocation
+*       calculation. Allocation failure preserves the old source and list.
+*       Successful replacement invalidates prior getter pointers and retypesets
+*       the entire list; subsequent formatting failure is not reported.
+*       The method writes private source state directly and does not send a
+*       Floattext_Text setter tag or notification for that attribute. It does
+*       not explicitly scroll to the appended text. An empty non-NULL string
+*       still allocates and rebuilds.
+*
+*/
+
 extern struct Library *MUIMasterBase;
 
 // like strlen(), but \n ends string, too.
+/*
+ * Return byte count before newline or NUL in a readable string. Requires a
+ * terminator and representable pointer-to-long subtraction. No mutation,
+ * allocation or ownership transfer.
+ */
 static long MyStrLen(const char *ptr)
 {
     const char *start = ptr;
@@ -40,6 +227,12 @@ static long MyStrLen(const char *ptr)
 /*
  * Calculates the number of characters that will fit on a line of a given
  * pixel width.
+ */
+/*
+ * Use window RastPort TextFit on the remaining paragraph and prefer a
+ * preceding space boundary. Return fitted count as UWORD, possibly zero.
+ * Requires valid text/length/offset, window and representable width. Does
+ * not ensure caller progress or allocate storage.
  */
 static UWORD FitParagraphLine(STRPTR text, ULONG length, WORD width,
    ULONG offset, struct Window *window)
@@ -64,6 +257,14 @@ static UWORD FitParagraphLine(STRPTR text, ULONG length, WORD width,
     return char_count;
 }
 
+/*
+ * Clear List and rebuild copied lines from owned source using borrowed
+ * SkipChars and live window geometry. Temporarily mutate/restore source
+ * terminators. Own and release temporary buffers on normal exit; allocation
+ * failures leave typesetting TRUE. No status; unchecked UWORD lengths and
+ * zero-fit paragraphs can overrun or loop without progress. See class
+ * limits.
+ */
 static void SetText(Object *obj, struct Floattext_DATA *data)
 {
     WORD width;
@@ -401,6 +602,12 @@ static void SetText(Object *obj, struct Floattext_DATA *data)
     DoMethod(obj, MUIM_List_Redraw, MUIV_List_Redraw_All);
 }
 
+/*
+ * Construct List, install string hooks, parse attributes, normalize tab
+ * size and typeset. Return object or zero on superclass failure. Own copied
+ * Text, borrow SkipChars. Text-copy or line-generation failure does not
+ * fail construction; repeated Text tags leak earlier copies.
+ */
 IPTR Floattext__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Floattext_DATA *data;
@@ -451,6 +658,11 @@ IPTR Floattext__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Free owned source text then return List disposal result, which releases
+ * generated entries through installed hooks. Requires no active formatting
+ * or borrowed getter consumers. SkipChars remains caller-owned.
+ */
 IPTR Floattext__OM_DISPOSE(struct IClass *cl, Object *obj,
     struct opSet *msg)
 {
@@ -461,6 +673,11 @@ IPTR Floattext__OM_DISPOSE(struct IClass *cl, Object *obj,
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Write stored Justify or borrowed source pointer into valid IPTR storage
+ * and return one. Delegate other attributes to List. Source pointer expires
+ * after successful append, replacement or disposal.
+ */
 IPTR Floattext__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Floattext_DATA *data = INST_DATA(cl, obj);
@@ -483,6 +700,13 @@ IPTR Floattext__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Store recognized attributes, freeing source before Text duplication;
+ * normalize tabs and rebuild once if any recognized tag occurred. Return
+ * List setter result with original tags forwarded. Replacement must not
+ * alias owned text; failures are not separately reported and may lose old
+ * state.
+ */
 IPTR Floattext__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Floattext_DATA *data = INST_DATA(cl, obj);
@@ -534,6 +758,12 @@ IPTR Floattext__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
+/*
+ * Draw through List unless typesetting is active; on full draw and changed
+ * outer width cache width and rebuild lines. Return zero. Requires live
+ * render context; margin/font changes alone do not trigger this test and
+ * formatting may fail or not terminate.
+ */
 IPTR Floattext__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
@@ -554,6 +784,12 @@ IPTR Floattext__MUIM_Draw(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Floattext_Append
 **************************************************************************/
+/*
+ * For non-NULL input allocate/copy concatenated source before freeing old
+ * storage and retypeset. Return zero on all paths. Allocation failure
+ * retains state; combined size is unchecked ULONG. No Text setter
+ * notification or explicit scrolling.
+ */
 IPTR Floattext__MUIM_Floattext_Append(struct IClass *cl, Object *obj,
     struct MUIP_Floattext_Append *msg)
 {
@@ -585,6 +821,12 @@ IPTR Floattext__MUIM_Floattext_Append(struct IClass *cl, Object *obj,
 }
 
 #if ZUNE_BUILTIN_FLOATTEXT
+/*
+ * When built in, dispatch local overrides and return their results;
+ * delegate other messages to List. Requires ABI-correct messages and live
+ * object except construction. Ownership and lifecycle follow class
+ * contract.
+ */
 BOOPSI_DISPATCHER(IPTR, Floattext_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
