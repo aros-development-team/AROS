@@ -164,6 +164,9 @@ static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
 {
     LONG_FUNC FunctionArray[4];
     struct FileSysReader fakefile;
+    BPTR seglist;
+
+    SetIoErr(ERROR_NOT_EXECUTABLE);
 
     if (!node->filesystem || !node->fsblocks || node->filesize < sizeof(ULONG))
         return BNULL;
@@ -197,12 +200,15 @@ static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
      * with A6 = NULL. Check internalloadseg.c for more information
      */
 
-    return AROS_CALL4(BPTR, __AROS_GETVECADDR(DOSBase, 126),
+    seglist = AROS_CALL4(BPTR, __AROS_GETVECADDR(DOSBase, 126),
         AROS_LCA(BPTR, (BPTR)&fakefile, D0),
         AROS_LCA(BPTR, BNULL, A0),
         AROS_LCA(LONG_FUNC*, FunctionArray, A1),
         AROS_LCA(LONG*, NULL, A2),
         struct Library*, NULL);
+    if (seglist)
+        SetIoErr(0);
+    return seglist;
 }
 
 static ULONG calcChkSum(ULONG *ptr, ULONG size)
