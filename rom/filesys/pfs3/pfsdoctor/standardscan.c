@@ -2859,26 +2859,37 @@ static error_t RepairMainBitmap(void)
 	bitmap_t *gbm;
 	error_t error = e_none;
 	bool dirty;
-	bool build = 0;
+	bitmapblock_t *buffer;
+	cachedblock_t *built;
 	uint32 nuba=0, ubna=0;
 
 	if (ss.verbose)
 		volume.showmsg("checking main bitmap\n");
 
 	gbm = volume.mainbitmap;
-	bmb.data = calloc(1, SIZEOF_RESBLOCK);
+	buffer = calloc(1, SIZEOF_RESBLOCK);
+	if (!buffer)
+		return e_out_of_memory;
 	volume.status(0, "validating main", gbm->lwsize/INDEX_PER_BLOCK);
 
 	for (bmseqnr = 0; bmseqnr <= gbm->lwsize/INDEX_PER_BLOCK; bmseqnr++)
 	{
+		bmb.data = buffer;
 		volume.progress(0, 1);
 
-		if ((error = GetResBlock((cachedblock_t *)&bmb, BMBLKID, bmseqnr, true)) || aborting)
-		{
-			free (bmb.data);
-			if ((error = BuildBitmapBlock(&bmb, bmseqnr)))
+		error = GetResBlock((cachedblock_t *)&bmb, BMBLKID, bmseqnr, true);
+		if (IsOperationalError(error) || aborting) {
+			free(buffer);
+			return error ? error : e_aborted;
+		}
+		built = GetBuildBlock(BMBLKID, bmseqnr);
+		if (built)
+			bmb = *(c_bitmapblock_t *)built;
+		else if (error) {
+			if ((error = BuildBitmapBlock(&bmb, bmseqnr))) {
+				free(buffer);
 				return error;
-			build = 1;
+			}
 		}
 
 		// check block
@@ -2915,7 +2926,7 @@ static error_t RepairMainBitmap(void)
 						dirty = true;
 						if ((error = volume.writeblock ((cachedblock_t *)&bmb)))
 						{
-							free (bmb.data);
+							free(buffer);
 							return error;
 						}						
 					}
@@ -2952,8 +2963,7 @@ static error_t RepairMainBitmap(void)
 			ROOTBLOCK + volume.firstblock, volume.blocksize,
 			PFS3_METADATA_ROOT);
 	
-	if (!build)
-		free (bmb.data);
+	free(buffer);
 	return error;
 }
 
