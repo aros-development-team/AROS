@@ -27,6 +27,7 @@
 #include <proto/exec.h>
 #include <proto/partition.h>
 #include <proto/utility.h>
+#include <proto/uuid.h>
 
 #include <string.h>
 
@@ -45,7 +46,7 @@ struct GPTPartitionHandle
 {
     struct PartitionHandle ph;  /* Public part                */
     ULONG entrySize;            /* Size of table entry        */
-    ULONG position;            /* Stable on-disk entry slot */
+    ULONG position;            /* Stable index in the on-disk entry array */
     char name[37];              /* Name in ASCII              */
                                 /* Actual table entry follows */
 };
@@ -553,6 +554,38 @@ static LONG GPTWriteTable(struct Library *PartitionBase, struct PartitionHandle 
     return deviceError(res);
 }
 
+/* Publish a protective MBR after both GPT copies have been written. Retain
+ * boot code and an existing protective/hybrid MBR when updating a disk. */
+static LONG GPTWriteProtectiveMBR(struct Library *PartitionBase, struct PartitionHandle *root)
+{
+    ULONG size = root->de.de_SizeBlock << 2;
+    struct MBR *mbr = AllocMem(size, MEMF_CLEAR);
+    LONG error;
+
+    if (!mbr)
+        return ERROR_NO_FREE_STORE;
+    error = ReadPartitionDataQ(root, mbr, size, 0);
+    if (!error && !(mbr->magic == AROS_WORD2LE(MBR_MAGIC) &&
+        mbr->pcpt[0].type == MBRT_GPT && mbr->pcpt[0].first_sector == AROS_LONG2LE(1)))
+    {
+        memset(mbr->pcpt, 0, sizeof(mbr->pcpt));
+        mbr->magic = AROS_WORD2LE(MBR_MAGIC);
+        mbr->pcpt[0].type = MBRT_GPT;
+        mbr->pcpt[0].start_sector = 2;
+        mbr->pcpt[0].end_head = 0xff;
+        mbr->pcpt[0].end_sector = 0xff;
+        mbr->pcpt[0].end_cylinder = 0xff;
+        mbr->pcpt[0].first_sector = AROS_LONG2LE(1);
+        struct GPTHeader *hdr = root->table->data;
+        UQUAD last = AROS_LE2QUAD(hdr->CurrentBlock) == 1 ?
+            AROS_LE2QUAD(hdr->BackupBlock) : AROS_LE2QUAD(hdr->CurrentBlock);
+        mbr->pcpt[0].count_sector = AROS_LONG2LE(last > 0xffffffffULL ? 0xffffffffUL : (ULONG)last);
+        error = WritePartitionDataQ(root, mbr, size, 0);
+    }
+    FreeMem(mbr, size);
+    return deviceError(error);
+}
+
 static LONG PartitionGPTWritePartitionTable(struct Library *PartitionBase, struct PartitionHandle *root)
 {
     struct GPTHeader *hdr = root->table->data;
@@ -638,6 +671,8 @@ static LONG PartitionGPTWritePartitionTable(struct Library *PartitionBase, struc
             res = GPTWriteTable(PartitionBase, root, hdr, table, 1, backup, 2, tablesize);
         }
 
+        if (!res)
+            res = GPTWriteProtectiveMBR(PartitionBase, root);
         FreeMem(table, tablesize);
 
         return res;
@@ -694,6 +729,35 @@ static LONG PartitionGPTGetPartitionAttr(struct Library *PartitionBase,
     }
 
     return 0;
+}
+
+/* The public DosEnvec geometry uses 32-bit sector positions. */
+static BOOL GPTPartitionBounds(struct PartitionHandle *root,
+    struct PartitionHandle *skip, const struct DosEnvec *de, UQUAD *first, UQUAD *end)
+{
+    struct GPTHeader *hdr = root->table->data;
+    struct GPTPartitionHandle *other;
+    UQUAD cylsize;
+
+    if (!de || de->de_SizeBlock != root->de.de_SizeBlock ||
+        !de->de_Surfaces || !de->de_BlocksPerTrack || de->de_HighCyl < de->de_LowCyl)
+        return FALSE;
+    cylsize = (UQUAD)de->de_Surfaces * de->de_BlocksPerTrack;
+    if (de->de_HighCyl >= 0xffffffffULL ||
+        cylsize > 0xffffffffULL / (de->de_HighCyl + 1))
+        return FALSE;
+    *first = cylsize * de->de_LowCyl;
+    *end = cylsize * (de->de_HighCyl + 1) - 1;
+    if (*first < AROS_LE2QUAD(hdr->DataStart) || *end > AROS_LE2QUAD(hdr->DataEnd))
+        return FALSE;
+    ForeachNode(&root->table->list, other)
+    {
+        struct GPTPartition *p = (APTR)&other[1];
+        if (&other->ph != skip && *first <= AROS_LE2QUAD(p->EndBlock) &&
+            *end >= AROS_LE2QUAD(p->StartBlock))
+            return FALSE;
+    }
+    return TRUE;
 }
 
 static LONG PartitionGPTSetPartitionAttrs(struct Library *PartitionBase, struct PartitionHandle *ph, const struct TagItem *taglist)
@@ -760,6 +824,143 @@ static LONG PartitionGPTSetPartitionAttrs(struct Library *PartitionBase, struct 
     return 0;
 }
 
+/* Creation is only used after DOS has started; boot-time probing does not
+ * acquire uuid.library. Keep UUID byte order separate from the disk format. */
+static BOOL GPTGenerateID(uuid_t *id)
+{
+    struct Library *UUIDBase = OpenLibrary("uuid.library", 0);
+    uuid_t generated;
+
+    if (!UUIDBase)
+        return FALSE;
+    UUID_Generate(UUID_TYPE_DCE_RANDOM, &generated);
+    CloseLibrary(UUIDBase);
+    uuid_to_le(id, &generated);
+    return TRUE;
+}
+
+static LONG PartitionGPTCreatePartitionTable(struct Library *PartitionBase,
+    struct PartitionHandle *root)
+{
+    ULONG blocksize = root->de.de_SizeBlock << 2;
+    ULONG entries = 128, entrysize = sizeof(struct GPTPartition);
+    ULONG arrayblocks;
+    struct GPTHeader *hdr;
+    UQUAD blocks = root->dg.dg_TotalSectors;
+
+    /* The device geometry API reports a 32-bit sector count. Do not create
+     * a backup at a guessed last sector if that count has saturated. */
+    if (root->root || blocksize < 512 || (blocksize & (blocksize - 1)) ||
+        !blocks || blocks == 0xffffffffULL)
+        return ERROR_BAD_NUMBER;
+    arrayblocks = (entries * entrysize + blocksize - 1) / blocksize;
+    if (blocks <= 2 * arrayblocks + 3)
+        return ERROR_DISK_FULL;
+    hdr = AllocMem(blocksize, MEMF_CLEAR);
+    if (!hdr)
+        return ERROR_NO_FREE_STORE;
+    if (!GPTGenerateID(&hdr->DiskID))
+    {
+        FreeMem(hdr, blocksize);
+        return ERROR_INVALID_RESIDENT_LIBRARY;
+    }
+    CopyMem(GPT_SIGNATURE, hdr->Signature, sizeof(hdr->Signature));
+    hdr->Revision = AROS_LONG2LE(0x00010000);
+    hdr->HeaderSize = AROS_LONG2LE(GPT_MIN_HEADER_SIZE);
+    hdr->CurrentBlock = AROS_QUAD2LE(1);
+    hdr->BackupBlock = AROS_QUAD2LE(blocks - 1);
+    hdr->DataStart = AROS_QUAD2LE(2 + arrayblocks);
+    hdr->DataEnd = AROS_QUAD2LE(blocks - arrayblocks - 2);
+    hdr->StartBlock = AROS_QUAD2LE(2);
+    hdr->NumEntries = AROS_LONG2LE(entries);
+    hdr->EntrySize = AROS_LONG2LE(entrysize);
+    root->table->data = hdr;
+    NEWLIST(&root->table->list);
+    return 0;
+}
+
+static struct PartitionHandle *PartitionGPTAddPartition(struct Library *PartitionBase,
+    struct PartitionHandle *root, const struct TagItem *tags)
+{
+    struct GPTHeader *hdr = root->table->data;
+    struct DosEnvec *de = (APTR)GetTagData(PT_DOSENVEC, 0, tags);
+    struct PartitionType *type = (APTR)GetTagData(PT_TYPE, 0, tags);
+    struct GPTPartitionHandle *gph, *other;
+    struct GPTPartition *part;
+    ULONG count = AROS_LE2LONG(hdr->NumEntries), position;
+    IPTR requested = GetTagData(PT_POSITION, (IPTR)-1, tags);
+    UQUAD first, end;
+    uuid_t typeid;
+
+    if (!type || type->id_len != sizeof(uuid_t) ||
+        !GPTPartitionBounds(root, NULL, de, &first, &end))
+        return NULL;
+    for (position = 0; position < count; position++)
+    {
+        BOOL used = FALSE;
+        if (requested != (IPTR)-1 && position != requested)
+            continue;
+        ForeachNode(&root->table->list, other)
+            if (other->position == position)
+                used = TRUE;
+        if (!used)
+            break;
+    }
+    if (position == count)
+        return NULL;
+    gph = AllocVec(sizeof(*gph) + sizeof(*part), MEMF_CLEAR);
+    if (!gph)
+        return NULL;
+    part = (APTR)&gph[1];
+    CopyMem(type->id, &typeid, sizeof(typeid));
+    uuid_to_le(&part->TypeID, &typeid);
+    if (!memcmp(&part->TypeID, &GPT_Type_Unused, sizeof(uuid_t)) ||
+        !GPTGenerateID(&part->PartitionID))
+    {
+        FreeVec(gph);
+        return NULL;
+    }
+    part->StartBlock = AROS_QUAD2LE(first);
+    part->EndBlock = AROS_QUAD2LE(end);
+    initPartitionHandle(root, &gph->ph, first, end - first + 1);
+    gph->entrySize = sizeof(*part);
+    gph->position = position;
+    gph->ph.ln.ln_Name = gph->name;
+    GPT_PatchDosEnvec(PartitionBase, &gph->ph, part);
+    PartitionGPTSetPartitionAttrs(PartitionBase, &gph->ph, tags);
+    ADDTAIL(&root->table->list, gph);
+    return &gph->ph;
+}
+
+static void PartitionGPTDeletePartition(struct Library *PartitionBase,
+    struct PartitionHandle *ph)
+{
+    Remove(&ph->ln);
+    FreeVec(ph);
+}
+
+static LONG PartitionGPTGetPartitionTableAttr(struct Library *PartitionBase,
+    struct PartitionHandle *root, const struct TagItem *tag)
+{
+    struct GPTHeader *hdr = root->table->data;
+    switch (tag->ti_Tag)
+    {
+    case PTT_RESERVED:
+        *((ULONG *)tag->ti_Data) = AROS_LE2QUAD(hdr->DataStart);
+        return TRUE;
+    case PTT_MAX_PARTITIONS:
+        *((ULONG *)tag->ti_Data) = AROS_LE2LONG(hdr->NumEntries);
+        return TRUE;
+    case PTT_FIRSTUSABLE:
+        *((UQUAD *)tag->ti_Data) = AROS_LE2QUAD(hdr->DataStart);
+        return TRUE;
+    case PTT_LASTUSABLE:
+        *((UQUAD *)tag->ti_Data) = AROS_LE2QUAD(hdr->DataEnd);
+        return TRUE;
+    }
+    return FALSE;
+}
+
 static ULONG PartitionGPTDestroyPartitionTable(struct Library *PartitionBase,
     struct PartitionHandle *root)
 {
@@ -787,12 +988,17 @@ static ULONG PartitionGPTDestroyPartitionTable(struct Library *PartitionBase,
 static const struct PartitionAttribute PartitionGPTPartitionTableAttrs[]=
 {
     {PTT_TYPE,           PLAM_READ},
+    {PTT_RESERVED,       PLAM_READ},
+    {PTT_MAX_PARTITIONS, PLAM_READ},
+    {PTT_FIRSTUSABLE,    PLAM_READ},
+    {PTT_LASTUSABLE,     PLAM_READ},
     {TAG_DONE,           0}
 };
 
 static const struct PartitionAttribute PartitionGPTPartitionAttrs[]=
 {
     {PT_GEOMETRY,  PLAM_READ},
+    {PT_DOSENVEC,  PLAM_READ|PLAM_WRITE},
     {PT_TYPE,      PLAM_READ|PLAM_WRITE},
     {PT_POSITION,  PLAM_READ},
     {PT_NAME,      PLAM_READ|PLAM_WRITE},
@@ -811,10 +1017,10 @@ const struct PTFunctionTable PartitionGPT =
     PartitionGPTOpenPartitionTable,
     PartitionGPTClosePartitionTable,
     PartitionGPTWritePartitionTable,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
+    PartitionGPTCreatePartitionTable,
+    PartitionGPTAddPartition,
+    PartitionGPTDeletePartition,
+    PartitionGPTGetPartitionTableAttr,
     NULL,
     PartitionGPTGetPartitionAttr,
     PartitionGPTSetPartitionAttrs,
