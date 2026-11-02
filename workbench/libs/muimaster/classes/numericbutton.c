@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2003, The AROS Development Team. All rights reserved.
+    Copyright  2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -26,6 +26,58 @@
 #include "debug.h"
 #include "numericbutton_private.h"
 
+/****** Numericbutton.mui/MUIC_Numericbutton ************
+*
+*   NAME
+*       MUIC_Numericbutton
+*
+*   SUPERCLASS
+*       Numeric.mui
+*
+*   DESCRIPTION
+*       Display Numeric Value as a formatted button and edit it through a
+*       temporary horizontal popup. There are no class-specific public
+*       attributes or methods. Use inherited Numeric bounds, Value, Format and
+*       conversion methods. Construction prepends ButtonBack and Button frame;
+*       later caller tags can override them.
+*       The class owns a setup-time background image and any open native popup
+*       window. It borrows strings returned by Numeric_Stringify only while
+*       measuring/drawing. Complete Hide before Cleanup and disposal: Hide
+*       closes an open popup, while Cleanup only releases the image and event
+*       handler. There is no local disposal override that closes a surviving
+*       popup.
+*
+*   METHODS
+*       Setup calls Numeric, prepares the background, registers a separate
+*       mouse-button handler and marks size measurement dirty. It returns the
+*       superclass result without reporting image/handler failure. Show shows
+*       the prepared image and returns the superclass result. Cleanup removes
+*       the mouse handler and cleans the image before Numeric Cleanup.
+*       AskMinMax formats every integer from Min through Max when dirty and uses
+*       the widest text and font height. There is no range-size cap and
+*       CheckAllSizes does not control the loop. A large range can block the
+*       application; LONG_MAX can overflow the loop increment. Changes to Min,
+*       Max or Format pointer mark measurement dirty before Numeric's
+*       parent-relayout request. In-place string edits are not detected.
+*       SELECTDOWN inside a drawable button opens the popup if screen geometry
+*       and OpenWindowTags permit. Popup width derives from numeric span and is
+*       capped to screen width. Mouse movement redraws a tentative value without
+*       setting Numeric_Value. SELECTUP closes and commits it with normal
+*       notifications. Other non-SELECTDOWN button events close without commit;
+*       Hide also cancels. HandleEvent always returns zero and does not delegate
+*       to Numeric, whose separate raw-key handler remains installed.
+*
+*   NOTES
+*       Popup drawing temporarily redirects the object's RastPort and, for the
+*       background image, its Area box, restoring both afterward. Callbacks and
+*       drawing require a live connected application/window and stable object
+*       lifetime. No public popup object or ownership transfer is exposed.
+*       Bounds, conversion arithmetic and Stringify validity retain Numeric's
+*       limitations. AskMinMax and Draw do not propagate superclass failure;
+*       Draw returns FALSE without full/update flags, otherwise TRUE.
+*
+*/
+
 extern struct Library *MUIMasterBase;
 
 #define longget(obj,attr,var) \
@@ -36,6 +88,11 @@ extern struct Library *MUIMasterBase;
         *var = (LONG)_iptr_var; \
     } while(0)
 
+/*
+ * Construct Numeric with button visual defaults and initialize mouse-
+ * handler descriptor on success. Return object or NULL; caller tags may
+ * override defaults. No popup/image allocation occurs yet.
+ */
 IPTR Numericbutton__OM_NEW(struct IClass *cl, Object *obj,
     struct opSet *msg)
 {
@@ -61,6 +118,12 @@ IPTR Numericbutton__OM_NEW(struct IClass *cl, Object *obj,
 /**************************************************************************
  OM_SET
 **************************************************************************/
+/*
+ * Compare Min/Max/Format tags with current getters and mark cached
+ * measurement dirty when different, then return superclass setter result
+ * through ULONG. Requires writable tags and live object. Does not measure
+ * immediately or detect edits behind an unchanged Format pointer.
+ */
 static ULONG Numericbutton__OM_SET(struct IClass *cl, Object *obj,
     struct opSet *msg)
 {
@@ -90,6 +153,12 @@ static ULONG Numericbutton__OM_SET(struct IClass *cl, Object *obj,
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Call Numeric Setup; on success prepare owned background image, register
+ * mouse handler and dirty sizes. Return superclass result, ignoring
+ * image/registration failure. Requires connected resources and paired
+ * Cleanup.
+ */
 IPTR Numericbutton__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
@@ -115,6 +184,11 @@ IPTR Numericbutton__MUIM_Setup(struct IClass *cl, Object *obj,
     return retval;
 }
 
+/*
+ * Clean background image if present, remove mouse handler and return
+ * Numeric Cleanup result. Requires prior Hide to close any popup; this
+ * method does not close it. No formatter-string ownership.
+ */
 IPTR Numericbutton__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
@@ -134,6 +208,13 @@ IPTR Numericbutton__MUIM_Cleanup(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
+/*
+ * Ask superclass and, when dirty, scan every value Min..Max through
+ * Stringify to cache maximum text width/font height. Add cached dimensions
+ * to all six fields and return TRUE. Requires valid font/strings and
+ * writable message. No scan cap; huge ranges block and LONG_MAX loop
+ * increment can overflow.
+ */
 IPTR Numericbutton__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     struct MUIP_AskMinMax *msg)
 {
@@ -183,6 +264,13 @@ IPTR Numericbutton__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
+/*
+ * Calculate tentative value from popup mouse position on a zero-based scale
+ * and paint knob/text/background. Requires live owned popup and setup
+ * resources. Save/restore object RastPort and temporary Area box. Store
+ * tentative knob_val without setting Numeric_Value; force bypasses
+ * unchanged-position drawing suppression. No result or allocation.
+ */
 static void DrawKnob(Object *obj, struct Numericbutton_DATA *data,
     BOOL force)
 {
@@ -291,6 +379,12 @@ static void DrawKnob(Object *obj, struct Numericbutton_DATA *data,
     _rp(obj) = saverp;
 }
 
+/*
+ * Close owned popup if present and clear pointer. If mouse-move tracking is
+ * enabled, remove/re-add handler with that bit cleared. Requires live
+ * enclosing window; ignores handler results. Does not commit tentative
+ * value or free setup image.
+ */
 static void KillPopupWin(Object *obj, struct Numericbutton_DATA *data)
 {
     if (data->popwin)
@@ -310,6 +404,13 @@ static void KillPopupWin(Object *obj, struct Numericbutton_DATA *data)
 
 }
 
+/*
+ * Compute popup geometry from numeric span, measured text and frame; cap
+ * width to screen and reject impossible fit. Open nonactivating borderless
+ * native window, draw frame/knob and retain ownership. Return FALSE for
+ * rejected geometry/open failure, TRUE otherwise. Requires setup/sizing and
+ * live screen; span arithmetic is unchecked, drawing results ignored.
+ */
 static BOOL MakePopupWin(Object *obj, struct Numericbutton_DATA *data)
 {
     const struct ZuneFrameGfx *zframe;
@@ -389,6 +490,11 @@ static BOOL MakePopupWin(Object *obj, struct Numericbutton_DATA *data)
 /**************************************************************************
  MUIM_Show
 **************************************************************************/
+/*
+ * Invoke Numeric Show then show prepared background when present. Return
+ * superclass result without using it to suppress image show. Requires
+ * setup/live render state.
+ */
 IPTR Numericbutton__MUIM_Show(struct IClass *cl, Object *obj,
     struct MUIP_Show *msg)
 {
@@ -406,6 +512,11 @@ IPTR Numericbutton__MUIM_Show(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Hide
 **************************************************************************/
+/*
+ * Close an open popup without commit, hide background image and return
+ * Numeric Hide result. Requires live enclosing window and matched shown
+ * state; image remains until Cleanup.
+ */
 IPTR Numericbutton__MUIM_Hide(struct IClass *cl, Object *obj,
     struct MUIP_Hide *msg)
 {
@@ -426,6 +537,12 @@ IPTR Numericbutton__MUIM_Hide(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
+/*
+ * Invoke superclass, then render current Stringify result centered over
+ * button background for full/update flags. Return FALSE without those
+ * flags, otherwise TRUE. Requires live render context and non-NULL borrowed
+ * string; does not copy or own it.
+ */
 IPTR Numericbutton__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
@@ -460,6 +577,13 @@ IPTR Numericbutton__MUIM_Draw(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
+/*
+ * Open popup on eligible SELECTDOWN, update tentative knob on moves, close
+ * on other button codes and commit only SELECTUP. NULL imsg and all results
+ * return zero. No superclass event delegation. Requires normal handler
+ * lifecycle and stable object; opening/closing does not report errors to
+ * caller.
+ */
 IPTR Numericbutton__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUIP_HandleEvent *msg)
 {
@@ -531,6 +655,12 @@ IPTR Numericbutton__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 
 
 #if ZUNE_BUILTIN_NUMERICBUTTON
+/*
+ * When built in, route local overrides and delegate other messages to
+ * Numeric. Return the selected handler result. Requires ABI-correct message
+ * and live object except construction; resource ownership follows the class
+ * lifecycle contract.
+ */
 BOOPSI_DISPATCHER(IPTR, Numericbutton_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
