@@ -26,7 +26,14 @@ static LONG emu_proc_entry(void)
 
     if (!ctx) return -1;
 
+    /* the Workbench startup message, where the program waits for it */
+    if (ctx->wb_startup)
+    {
+        ctx->wb_queued = TRUE;
+        PutMsg(&me->pr_MsgPort, ctx->wb_startup);
+    }
     ctx->exit_code = M68KEmu_Execute(ctx);
+    m68k_wbstartup_done(ctx);
     m68k_restore_windowptr(ctx);
     return ctx->exit_code;
 }
@@ -94,7 +101,15 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
     {
         /* PROGDIR: is the program's own directory, not the caller's */
         BPTR oldHome = homeDir ? SetProgramDir(homeDir) : BNULL;
-        LONG rc = M68KEmu_Execute(ctx);
+        LONG rc;
+
+        if (ctx->wb_startup)
+        {
+            ctx->wb_queued = TRUE;
+            PutMsg(&((struct Process *)FindTask(NULL))->pr_MsgPort, ctx->wb_startup);
+        }
+        rc = M68KEmu_Execute(ctx);
+        m68k_wbstartup_done(ctx);
         if (homeDir)
         {
             SetProgramDir(oldHome);
@@ -184,12 +199,26 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
     AROS_LIBFUNC_INIT
 
     struct M68KEmuContext *ctx;
+    struct Process *me = (struct Process *)FindTask(NULL);
+    struct Message *wb = NULL;
     ULONG entry;
     LONG result = -1;
 
+    /* started from Workbench: its startup message is taken before the
+       first DOS call of this process, as the native startup code does */
+    if (me->pr_Task.tc_Node.ln_Type == NT_PROCESS && !me->pr_CLI)
+    {
+        WaitPort(&me->pr_MsgPort);
+        wb = GetMsg(&me->pr_MsgPort);
+    }
     ctx = M68KEmu_CreateContext(M68KEmuBase);
     if (!ctx)
+    {
+        if (wb)
+            ReplyMsg(wb);
         return -1;
+    }
+    ctx->wb_startup = wb;
 
     {
         char tracebuf[4];
@@ -216,6 +245,7 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
         result = setup_and_execute(ctx, entry, argPtr, argSize,
                                    stackSize, name[0] ? name : NULL, BNULL, M68KEmuBase);
     }
+    m68k_wbstartup_done(ctx);
     m68k_context_release(ctx);
     return result;
 
