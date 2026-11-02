@@ -83,6 +83,7 @@
 #include <netinet/in_protos.h>
 #include <kern/uipc_domain_protos.h>
 #include <net/raw_usrreq_protos.h>
+#include <protos/net/route_protos.h>
 
 struct	icmpstat icmpstat = { 0 };
 
@@ -234,6 +235,45 @@ struct sockaddr_in icmpmask = { 8, 0 };
 struct in_ifaddr *ifptoia();
 
 /*
+ * Path MTU discovery (RFC 1191): a "fragmentation needed" reports the MTU
+ * of the next hop; an older router leaves it 0, and the next plateau below
+ * the length of the quoted datagram (section 7) is taken. Never below
+ * IP_PMTU_MIN, as Linux (min_pmtu), so that a forged message cannot make
+ * the stack send tiny packets. The MTU goes on the destination's own route
+ * (rt_pmtu_update(), route.c), and back into the message for the
+ * protocols' ctlinput (tcp_ctlinput() reads it).
+ */
+#define IP_PMTU_MIN     552
+
+static const u_short ip_mtu_plateaus[] = {
+    32000, 17914, 8166, 4352, 2002, 1492, 1006, 508, 296, 68, 0
+};
+
+static void
+icmp_mtudisc(struct icmp *icp)
+{
+    struct sockaddr_in dst;
+    u_int mtu = ntohs(icp->icmp_nextmtu);
+
+    if(mtu == 0) {
+        int i;
+
+        for(i = 0; ip_mtu_plateaus[i] != 0 &&
+                ip_mtu_plateaus[i] >= icp->icmp_ip.ip_len; i++)
+            ;
+        mtu = ip_mtu_plateaus[i];
+    }
+    if(mtu < IP_PMTU_MIN)
+        mtu = IP_PMTU_MIN;
+    bzero(&dst, sizeof(dst));
+    dst.sin_len = sizeof(dst);
+    dst.sin_family = AF_INET;
+    dst.sin_addr = icp->icmp_ip.ip_dst;
+    rt_pmtu_update((struct sockaddr *)&dst, mtu);
+    icp->icmp_nextmtu = htons(mtu);
+}
+
+/*
  * Process a received ICMP message.
  */
 void icmp_input(void *arg, ...)
@@ -299,7 +339,10 @@ void icmp_input(void *arg, ...)
     case ICMP_UNREACH:
         if(code > 5)
             goto badcode;
-        code += PRC_UNREACH_NET;
+        if(code == ICMP_UNREACH_NEEDFRAG)
+            code = PRC_MSGSIZE;         /* path MTU discovery, below */
+        else
+            code += PRC_UNREACH_NET;
         goto deliver;
 
     case ICMP_TIMXCEED:
@@ -328,6 +371,8 @@ deliver:
             goto freeit;
         }
         NTOHS(icp->icmp_ip.ip_len);
+        if(code == PRC_MSGSIZE)
+            icmp_mtudisc(icp);
 #ifdef ICMPPRINTFS
         if(icmpprintfs)
             printf("deliver to protocol %ld\n", (long)icp->icmp_ip.ip_p);

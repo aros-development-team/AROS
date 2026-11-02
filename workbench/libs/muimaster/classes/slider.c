@@ -1,6 +1,6 @@
 /*
     Copyright (C) 1999, David Le Corfec.
-    Copyright (C) 2002-2018, The AROS Development Team.
+    Copyright (C) 2002-2026, The AROS Development Team.
     All rights reserved.
 
 */
@@ -24,6 +24,168 @@
 #include "muimaster_intern.h"
 #include "prefs.h"
 #include "imspec.h"
+
+/****** Slider.mui/MUIC_Slider ************
+*
+*   NAME
+*       MUIC_Slider
+*
+*   SUPERCLASS
+*       Numeric.mui
+*
+*   DESCRIPTION
+*       Display Numeric Value with a custom drawn knob and optional text.
+*       Default orientation is horizontal; Quiet defaults FALSE. Construction
+*       prepends SliderBack, Knob font and Slider frame before caller tags. This
+*       class is a Numeric subclass and does not own a Prop child or native
+*       proportional gadget.
+*       Setup calls Numeric, prepares a knob background image and calculates
+*       knob dimensions, then registers a mouse handler. Cleanup releases the
+*       background and removes the handler before Numeric Cleanup. Show shows
+*       the prepared image and returns one regardless of superclass result; Hide
+*       hides it and invalidates the cached position. Dispose frees owned copied
+*       display text, then Numeric. Complete Hide/Cleanup first.
+*
+*   METHODS
+*       Knob sizing calls Stringify for every value from Min to Max. If the
+*       computed span exceeds MUI_MAXMAX it instead scans zero through
+*       MUI_MAXMAX, which can miss wide strings for the real range.
+*       CheckAllSizes is ignored by this scan. Signed span/loop arithmetic is
+*       unchecked; a maximum at LONG_MAX can overflow the loop increment.
+*       Draw maps Value to pixel offset and caches both offset and a copied
+*       Stringify result. Text-copy allocation is unchecked before strlen. Setup
+*       does not turn knob-background preparation failure into FALSE. Mouse
+*       handling requires geometry established by drawing and a nonnegative
+*       travel length.
+*       A non-shift click on the knob starts dragging and sets Pressed. A
+*       background click changes Value by one with Reverse honored. A later
+*       non-SELECTDOWN button event ends a pressed drag. Mouse moves map offset
+*       through ScaleToValue on a zero-based scale and use the Numeric setter
+*       directly to preserve pixel offset. Notifications remain enabled even in
+*       Quiet mode.
+*
+*   NOTES
+*       Slider HandleEvent handles mouse events only and does not delegate to
+*       Numeric. Numeric Setup separately installs its raw-key handler with the
+*       Numeric class. Keep normal event registration intact; direct calls to
+*       Slider HandleEvent are not a substitute for that handler.
+*       Value/Min/Max/Format setters invalidate cached position/text, but only
+*       orientation setting explicitly recalculates knob dimensions after Setup.
+*       Thus live format/bound changes can leave stale measured knob size
+*       despite Numeric requesting parent relayout. Reverse alone does not
+*       invalidate the position cache. Quiet hides text only; it does not reduce
+*       the knob-size scan or suppress notifications.
+*
+*/
+/****** Slider.mui/MUIA_Slider_Horiz ************
+*
+*   NAME
+*       MUIA_Slider_Horiz
+*
+*   FUNCTION
+*       Select horizontal orientation when true; vertical otherwise. Default
+*       TRUE.
+*
+*   INPUTS
+*       BOOL; initialize, set and get.
+*
+*   NOTES
+*       Getter normalizes to TRUE/FALSE. Runtime setting immediately
+*       recalculates knob dimensions using font and application preferences,
+*       invalidates caches and requests a full redraw. Perform it with valid
+*       setup/connection state; it does not itself request parent relayout.
+*       Construction stores the flag without that runtime calculation.
+*
+*/
+/****** Slider.mui/MUIA_Slider_Quiet ************
+*
+*   NAME
+*       MUIA_Slider_Quiet
+*
+*   FUNCTION
+*       Suppress drawing the text inside the knob. Default FALSE.
+*
+*   INPUTS
+*       BOOL; initialize only. No local getter or runtime setter.
+*
+*   NOTES
+*       Value changes and notifications continue normally. Knob dimensions are
+*       still calculated by formatting the selected value range. Quiet does not
+*       mean release-only updates or notification suppression.
+*
+*/
+/****** Slider.mui/MUIA_Slider_Level ************
+*
+*   NAME
+*       MUIA_Slider_Level
+*
+*   FUNCTION
+*       Obsolete name with the same attribute ID as MUIA_Numeric_Value.
+*
+*   INPUTS
+*       Available in the header only when MUI_OBSOLETE is enabled. Same type and
+*       access as Numeric_Value.
+*
+*   NOTES
+*       Use MUIA_Numeric_Value in new code. There is no separate Slider state or
+*       conversion for this alias; inherited Numeric behavior and limitations
+*       apply.
+*
+*/
+/****** Slider.mui/MUIA_Slider_Min ************
+*
+*   NAME
+*       MUIA_Slider_Min
+*
+*   FUNCTION
+*       Obsolete name with the same attribute ID as MUIA_Numeric_Min.
+*
+*   INPUTS
+*       Available in the header only when MUI_OBSOLETE is enabled. Same type and
+*       access as Numeric_Min.
+*
+*   NOTES
+*       Use MUIA_Numeric_Min in new code. There is no separate Slider state or
+*       conversion for this alias; inherited Numeric behavior and limitations
+*       apply.
+*
+*/
+/****** Slider.mui/MUIA_Slider_Max ************
+*
+*   NAME
+*       MUIA_Slider_Max
+*
+*   FUNCTION
+*       Obsolete name with the same attribute ID as MUIA_Numeric_Max.
+*
+*   INPUTS
+*       Available in the header only when MUI_OBSOLETE is enabled. Same type and
+*       access as Numeric_Max.
+*
+*   NOTES
+*       Use MUIA_Numeric_Max in new code. There is no separate Slider state or
+*       conversion for this alias; inherited Numeric behavior and limitations
+*       apply.
+*
+*/
+/****** Slider.mui/MUIA_Slider_Reverse ************
+*
+*   NAME
+*       MUIA_Slider_Reverse
+*
+*   FUNCTION
+*       Obsolete name with the same attribute ID as MUIA_Numeric_Reverse.
+*
+*   INPUTS
+*       Available in the header only when MUI_OBSOLETE is enabled. Same type and
+*       access as Numeric_Reverse.
+*
+*   NOTES
+*       Use MUIA_Numeric_Reverse in new code. There is no separate Slider state
+*       or conversion for this alias; inherited Numeric behavior and limitations
+*       apply.
+*
+*/
 
 extern struct Library *MUIMasterBase;
 
@@ -64,6 +226,14 @@ enum slider_flags
     } while(0)
 
 
+/*
+ * Measure Stringify results across the selected scan range and derive knob
+ * size from font/frame preferences. Requires setup resources and valid non-
+ * NULL strings. Span above MUI_MAXMAX substitutes 0..MUI_MAXMAX;
+ * CheckAllSizes is ignored. Mutates geometry, no return status. LONG_MAX
+ * loop increment and span subtraction can overflow; UWORD text width can
+ * truncate.
+ */
 static void CalcKnobDimensions(struct IClass *cl, Object *obj)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
@@ -125,6 +295,11 @@ static void CalcKnobDimensions(struct IClass *cl, Object *obj)
 /**************************************************************************
  OM_NEW
 **************************************************************************/
+/*
+ * Parse orientation/Quiet, prepend visual defaults and construct Numeric.
+ * Store flags and mouse-handler descriptor; return object or zero on
+ * superclass failure. No knob image or text copy allocated yet.
+ */
 IPTR Slider__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_SliderData *data;
@@ -175,6 +350,11 @@ IPTR Slider__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
+/*
+ * Free owned copied text if present and return Numeric disposal result.
+ * Requires prior Hide/Cleanup of knob image and event handlers; no Prop
+ * child exists.
+ */
 IPTR Slider__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
@@ -186,6 +366,13 @@ IPTR Slider__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
+/*
+ * Recalculate dimensions immediately for Horiz, invalidate caches and
+ * redraw. Value/bounds/Format invalidate caches only, then delegate to
+ * Numeric and return its result. Requires live font/preferences for Horiz;
+ * bounds/format alone do not rerun measurement. Reverse is not a cache
+ * invalidator.
+ */
 IPTR Slider__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
@@ -216,6 +403,10 @@ IPTR Slider__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
+/*
+ * Return normalized Horiz through IPTR storage with TRUE; otherwise
+ * delegate to Numeric. Quiet has no local getter. No ownership transfer.
+ */
 IPTR Slider__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
@@ -234,6 +425,12 @@ IPTR Slider__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
+/*
+ * Set up Numeric, prepare owned knob background, measure knob and register
+ * mouse handler. Return FALSE only on superclass failure, otherwise TRUE
+ * without validating image/handler success. Requires valid formatter and
+ * connected resources; pair Cleanup.
+ */
 IPTR Slider__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
@@ -254,6 +451,11 @@ IPTR Slider__MUIM_Setup(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
+/*
+ * Clean prepared knob image when present and remove mouse handler before
+ * Numeric Cleanup; return superclass result. Requires matched setup. Cached
+ * text remains until replacement/disposal.
+ */
 IPTR Slider__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
@@ -272,6 +474,12 @@ IPTR Slider__MUIM_Cleanup(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
+/*
+ * Ask superclass then add cached knob constraints according to orientation;
+ * set travel-axis maximum to MUI_MAXMAX. Requires prior knob measurement
+ * and writable MinMaxInfo. Return TRUE ignoring superclass result; does not
+ * remeasure text.
+ */
 IPTR Slider__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     struct MUIP_AskMinMax *msg)
 {
@@ -308,6 +516,11 @@ IPTR Slider__MUIM_AskMinMax(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Show
 **************************************************************************/
+/*
+ * Call Numeric/Area Show, show knob background if present, return one
+ * ignoring superclass result. Requires completed Setup and live render
+ * state.
+ */
 IPTR Slider__MUIM_Show(struct IClass *cl, Object *obj,
     struct MUIP_Show *msg)
 {
@@ -322,6 +535,11 @@ IPTR Slider__MUIM_Show(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Hide
 **************************************************************************/
+/*
+ * Hide knob background if present, invalidate offset cache and return
+ * superclass Hide result. Does not free image or text; Cleanup still
+ * required.
+ */
 IPTR Slider__MUIM_Hide(struct IClass *cl, Object *obj,
     struct MUIP_Hide *msg)
 {
@@ -341,6 +559,13 @@ IPTR Slider__MUIM_Hide(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
+/*
+ * Call superclass, return FALSE without full/update flags; otherwise
+ * compute travel, cached offset, knob/frame and optional text. Own a StrDup
+ * of Stringify output; allocation result is unchecked before strlen. Return
+ * TRUE ignoring render statuses. Requires valid images/frame, setup and
+ * nonnegative travel length.
+ */
 IPTR Slider__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
@@ -431,6 +656,14 @@ IPTR Slider__MUIM_Draw(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
+/*
+ * Handle knob drag and background clicks, suppress shift-click selection,
+ * update Pressed and Numeric Value, return Eat when handled. Mouse moves
+ * rely on registration rather than testing Pressed locally. NULL imsg
+ * returns zero. No superclass delegation; Numeric has its own key handler.
+ * Requires previously drawn hit geometry and valid travel; drag bypasses
+ * Slider setter to retain offset.
+ */
 IPTR Slider__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUIP_HandleEvent *msg)
 {
@@ -561,6 +794,11 @@ IPTR Slider__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     return result;
 }
 
+/*
+ * Route Slider access/lifecycle/draw/mouse overrides and delegate other
+ * methods to Numeric. Return handler result. Requires valid object and
+ * message; no native Prop gadget ownership.
+ */
 BOOPSI_DISPATCHER(IPTR, Slider_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)

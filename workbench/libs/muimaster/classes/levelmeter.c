@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -24,6 +24,66 @@
 #include "prefs.h"
 #include "debug.h"
 #include "levelmeter_private.h"
+
+/****** Levelmeter.mui/MUIC_Levelmeter ************
+*
+*   NAME
+*       MUIC_Levelmeter
+*
+*   SUPERCLASS
+*       Numeric.mui
+*
+*   DESCRIPTION
+*       Show Numeric Value as a needle on a semicircular scale. ValueToScale
+*       maps the current value to zero through 180 degrees, honoring
+*       Numeric_Reverse. No periodic sampling, peak hold, decay or automatic
+*       source binding is implemented; application code sets Value.
+*       Construction prepends FillArea FALSE and initializes a private pen
+*       sentinel. Setup calls Numeric and obtains a background pen from the
+*       screen ColorMap. Cleanup releases a successfully obtained pen before
+*       Numeric Cleanup. Complete this lifecycle before disposal; no local
+*       disposer substitutes for Cleanup.
+*
+*   METHODS
+*       AskMinMax adds 53 pixels in width and 46 pixels in height to all
+*       superclass size fields and returns TRUE. Full Draw paints frame,
+*       background, scale marks and an empty label field. Update Draw erases the
+*       old needle with the background pen before drawing the new one. Draw
+*       returns FALSE without full/update flags, otherwise TRUE and ignores
+*       superclass/drawing results.
+*       Setup returns Numeric's result even if ObtainBestPen fails. Draw uses
+*       the stored pen without checking the -1 failure sentinel. The class has
+*       no mouse handler of its own and retains Numeric's raw-key handler; it is
+*       not automatically a read-only object merely because it looks like a
+*       meter.
+*
+*   NOTES
+*       The Label attribute has no implementation. Numeric_Format/Stringify are
+*       inherited but not used to draw a numeric label. Scale artwork uses a
+*       nominal 39 by 20 pixel area and current frame geometry. Use ordered
+*       representable Numeric bounds and a live screen/render context. No
+*       separate bitmap or native gadget is owned.
+*
+*/
+/****** Levelmeter.mui/MUIA_Levelmeter_Label ************
+*
+*   NAME
+*       MUIA_Levelmeter_Label
+*
+*   FUNCTION
+*       Declared label attribute without an implementation in this AROS class.
+*
+*   INPUTS
+*       String pointer; header declares initialize, set and get, but no local
+*       handler implements those operations.
+*
+*   NOTES
+*       The constructor does not store the string, no getter returns it, and
+*       Draw paints only the empty label background. No string ownership is
+*       acquired. Supplying a label does not display text or change sizing;
+*       inherited Numeric_Format also does not populate this field.
+*
+*/
 
 extern struct Library *MUIMasterBase;
 
@@ -53,6 +113,11 @@ extern struct Library *MUIMasterBase;
 #define TOTAL_HEIGHT OUTERFRAME_H + BORDERSIZE_H + INNERFRAME_H * 2 \
 + LEVEL_HEIGHT + LEVEL_LABEL_SPACING + LABEL_HEIGHT
 
+/*
+ * Construct Numeric with FillArea FALSE and set background-pen sentinel to
+ * -1. Return superclass object or NULL. Pen acquisition is deferred to
+ * Setup.
+ */
 IPTR Levelmeter__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     obj = (Object *) DoSuperNewTags
@@ -69,6 +134,11 @@ IPTR Levelmeter__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Call Numeric Setup, then obtain a background pen from screen ColorMap on
+ * success. Retain pen for Cleanup and return superclass result even if
+ * acquisition fails. Requires live screen and no unmatched prior Setup.
+ */
 IPTR Levelmeter__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
@@ -95,6 +165,11 @@ IPTR Levelmeter__MUIM_Setup(struct IClass *cl, Object *obj,
     return retval;
 }
 
+/*
+ * Release stored background pen when not -1, reset sentinel and return
+ * Numeric Cleanup result. Requires same live screen/ColorMap as Setup. No
+ * native gadget or image ownership.
+ */
 IPTR Levelmeter__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
@@ -112,6 +187,11 @@ IPTR Levelmeter__MUIM_Cleanup(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
+/*
+ * Ask Numeric/Area then add fixed 53 by 46 content dimensions to all
+ * corresponding size fields. Return TRUE ignoring superclass result.
+ * Requires writable MinMaxInfo; Label does not affect size.
+ */
 IPTR Levelmeter__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     struct MUIP_AskMinMax *msg)
 {
@@ -129,6 +209,11 @@ IPTR Levelmeter__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
+/*
+ * Paint semicircular scale marks every 15 degrees, with extra pixels at
+ * multiples of 45. Requires valid RastPort, pen and adequate rectangle.
+ * Mutates drawing state, allocates nothing and returns no status.
+ */
 static void DrawScale(struct RastPort *rp, LONG x1, LONG y1, LONG x2,
     LONG y2, LONG pen)
 {
@@ -167,6 +252,11 @@ static void DrawScale(struct RastPort *rp, LONG x1, LONG y1, LONG x2,
 
 }
 
+/*
+ * Draw a line from the meter pivot using supplied pen. Angles outside
+ * 0..180 become zero before reversing drawing direction. Requires valid
+ * RastPort, pen and adequate rectangle; no resource ownership or result.
+ */
 static void DrawNeedle(struct RastPort *rp, LONG x1, LONG y1, LONG x2,
     LONG y2, double angle, LONG pen)
 {
@@ -193,6 +283,13 @@ static void DrawNeedle(struct RastPort *rp, LONG x1, LONG y1, LONG x2,
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
+/*
+ * Paint full frame/scale/empty label background or erase old needle, then
+ * map Value to 0..180 and draw new needle. Return FALSE without full/update
+ * flags, otherwise TRUE. Requires live render state and valid background
+ * pen; does not check acquisition failure. Store prevangle; no text
+ * formatting or periodic update source.
+ */
 IPTR Levelmeter__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
@@ -421,6 +518,12 @@ IPTR Levelmeter__MUIM_Draw(struct IClass *cl, Object *obj,
 }
 
 #if ZUNE_BUILTIN_LEVELMETER
+/*
+ * When built in, route local overrides and delegate other messages to
+ * Numeric. Return the selected handler result. Requires ABI-correct message
+ * and live object except construction; resource ownership follows the class
+ * lifecycle contract.
+ */
 BOOPSI_DISPATCHER(IPTR, Levelmeter_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)

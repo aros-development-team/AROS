@@ -20,11 +20,33 @@
 #include <linux/compiler.h>
 #include <linux/list.h>
 
-static inline void spin_lock_init(spinlock_t *lock)                 { lock->owner_nest = 0; }
-static inline void spin_lock(spinlock_t *lock)                      { Forbid(); lock->owner_nest++; }
-static inline void spin_unlock(spinlock_t *lock)                    { lock->owner_nest--; Permit(); }
-static inline int  spin_trylock(spinlock_t *lock)                   { spin_lock(lock); return 1; }
-static inline int  spin_is_locked(spinlock_t *lock)                 { return lock->owner_nest != 0; }
+/*
+ * Forbid() keeps this CPU's scheduler off while the lock is held (a holder
+ * must not be preempted, other CPUs would spin on it); the kernel spinlock
+ * excludes the other CPUs. Without kernel.resource (never on AROS) only the
+ * Forbid() remains, as before.
+ */
+static inline void __nv_krn_lock(struct nouveau_krnspin *k)
+{
+    if (KernelBase)
+        KrnSpinLock((void *)k, NULL, SPINLOCK_MODE_WRITE);
+}
+static inline int __nv_krn_trylock(struct nouveau_krnspin *k)
+{
+    if (KernelBase)
+        return KrnSpinTryLock((void *)k, SPINLOCK_MODE_WRITE) != NULL;
+    return 1;
+}
+static inline void __nv_krn_unlock(struct nouveau_krnspin *k)
+{
+    if (KernelBase)
+        KrnSpinUnLock((void *)k);
+}
+static inline void spin_lock_init(spinlock_t *lock)                 { lock->owner_nest = 0; lock->krn.lock = 0; lock->krn.s_Owner = NULL; }
+static inline void spin_lock(spinlock_t *lock)                      { Forbid(); __nv_krn_lock(&lock->krn); lock->owner_nest++; }
+static inline void spin_unlock(spinlock_t *lock)                    { lock->owner_nest--; __nv_krn_unlock(&lock->krn); Permit(); }
+static inline int  spin_trylock(spinlock_t *lock)                   { Forbid(); if (!__nv_krn_trylock(&lock->krn)) { Permit(); return 0; } lock->owner_nest++; return 1; }
+static inline int  spin_is_locked(spinlock_t *lock)                 { return lock->krn.lock != 0 || lock->owner_nest != 0; }
 static inline void assert_spin_locked(spinlock_t *lock)             { (void)lock; }
 #define spin_lock_bh(l)                     spin_lock(l)
 #define spin_unlock_bh(l)                   spin_unlock(l)
@@ -36,8 +58,8 @@ static inline void assert_spin_locked(spinlock_t *lock)             { (void)lock
 #define spin_lock_irqsave(l, f)             do { (void)(f); Disable(); spin_lock(l); } while (0)
 #define spin_lock_irqsave_nested(l, f, s)   spin_lock_irqsave(l, f)
 #define spin_unlock_irqrestore(l, f)        do { spin_unlock(l); Enable(); (void)(f); } while (0)
-#define spin_trylock_irq(l)                 ({ spin_lock_irq(l); 1; })
-#define spin_trylock_irqsave(l, f)          ({ spin_lock_irqsave(l, f); 1; })
+#define spin_trylock_irq(l)                 ({ int __r; Disable(); __r = spin_trylock(l); if (!__r) Enable(); __r; })
+#define spin_trylock_irqsave(l, f)          ({ int __r; (void)(f); Disable(); __r = spin_trylock(l); if (!__r) Enable(); __r; })
 #define spin_lock_irqsave_check(l, f)       spin_lock_irqsave(l, f)
 #define spin_lock_release(l)                do { } while (0)
 #define spin_lock_acquire(l)                do { } while (0)
@@ -46,22 +68,22 @@ static inline void assert_spin_locked(spinlock_t *lock)             { (void)lock
 #define local_bh_disable()                  do { } while (0)
 #define local_bh_enable()                   do { } while (0)
 
-static inline void raw_spin_lock_init(raw_spinlock_t *lock)         { lock->owner_nest = 0; }
-static inline void raw_spin_lock(raw_spinlock_t *lock)              { Forbid(); lock->owner_nest++; }
-static inline void raw_spin_unlock(raw_spinlock_t *lock)            { lock->owner_nest--; Permit(); }
-static inline int  raw_spin_trylock(raw_spinlock_t *lock)           { raw_spin_lock(lock); return 1; }
-static inline int  raw_spin_is_locked(raw_spinlock_t *lock)         { return lock->owner_nest != 0; }
+static inline void raw_spin_lock_init(raw_spinlock_t *lock)         { lock->owner_nest = 0; lock->krn.lock = 0; lock->krn.s_Owner = NULL; }
+static inline void raw_spin_lock(raw_spinlock_t *lock)              { Forbid(); __nv_krn_lock(&lock->krn); lock->owner_nest++; }
+static inline void raw_spin_unlock(raw_spinlock_t *lock)            { lock->owner_nest--; __nv_krn_unlock(&lock->krn); Permit(); }
+static inline int  raw_spin_trylock(raw_spinlock_t *lock)           { Forbid(); if (!__nv_krn_trylock(&lock->krn)) { Permit(); return 0; } lock->owner_nest++; return 1; }
+static inline int  raw_spin_is_locked(raw_spinlock_t *lock)         { return lock->krn.lock != 0 || lock->owner_nest != 0; }
 #define raw_spin_lock_irq(l)                do { Disable(); raw_spin_lock(l); } while (0)
 #define raw_spin_unlock_irq(l)              do { raw_spin_unlock(l); Enable(); } while (0)
 #define raw_spin_lock_irqsave(l, f)         do { (void)(f); Disable(); raw_spin_lock(l); } while (0)
 #define raw_spin_unlock_irqrestore(l, f)    do { raw_spin_unlock(l); Enable(); (void)(f); } while (0)
-#define raw_spin_trylock_irqsave(l, f)      ({ raw_spin_lock_irqsave(l, f); 1; })
+#define raw_spin_trylock_irqsave(l, f)      ({ int __r; (void)(f); Disable(); __r = raw_spin_trylock(l); if (!__r) Enable(); __r; })
 
-static inline void rwlock_init(rwlock_t *l)                         { l->dummy = 0; }
-static inline void read_lock(rwlock_t *l)                           { Forbid(); }
-static inline void read_unlock(rwlock_t *l)                         { Permit(); }
-static inline void write_lock(rwlock_t *l)                          { Forbid(); }
-static inline void write_unlock(rwlock_t *l)                        { Permit(); }
+static inline void rwlock_init(rwlock_t *l)                         { l->dummy = 0; l->krn.lock = 0; l->krn.s_Owner = NULL; }
+static inline void read_lock(rwlock_t *l)                           { Forbid(); __nv_krn_lock(&l->krn); }
+static inline void read_unlock(rwlock_t *l)                         { __nv_krn_unlock(&l->krn); Permit(); }
+static inline void write_lock(rwlock_t *l)                          { Forbid(); __nv_krn_lock(&l->krn); }
+static inline void write_unlock(rwlock_t *l)                        { __nv_krn_unlock(&l->krn); Permit(); }
 #define read_lock_bh(l)                     read_lock(l)
 #define read_unlock_bh(l)                   read_unlock(l)
 #define write_lock_bh(l)                    write_lock(l)

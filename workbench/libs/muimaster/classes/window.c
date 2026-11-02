@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2025, The AROS Development Team.
+    Copyright (C) 2002-2026, The AROS Development Team.
     Copyright (C) 1999, David Le Corfec.
     All rights reserved.
 
@@ -52,6 +52,1014 @@
 //#define ZUNE_WINDOWCLASS_FORCEFANCYPENS
 
 extern struct Library *MUIMasterBase;
+
+/****** Window.mui/MUIC_Window ************
+*
+*   NAME
+*       MUIC_Window
+*
+*   SUPERCLASS
+*       Notify.mui
+*
+*   DESCRIPTION
+*       Manage an Intuition window, one owned Area-compatible root object, an
+*       optional owned local menustrip, and display resources. Attach the Window
+*       to a live Application before opening it. Opening needs the application's
+*       preferences, ports, and global information. Construction itself does not
+*       open an Intuition window.
+*       Application owns an attached Window. Window owns its current root and
+*       local menustrip; it borrows the application's fallback menustrip.
+*       Titles, screen selectors, reference/default/active objects, and
+*       registered event-handler nodes are borrowed. Keep borrowed objects and
+*       storage alive while used. Perform window operations and input processing
+*       in the application's task.
+*       Close a window and remove it from its application before disposing it
+*       separately. OM_DISPOSE disposes the current root and local menustrip and
+*       deletes the private pool, but does not close the Intuition window or
+*       remove application membership. Normal application removal disconnects
+*       and closes an open child before disposal.
+*
+*   METHODS
+*       FindUData and GetUData match the window first, then search its root
+*       subtree. GetUData reports a match without checking getter success.
+*       SetUData visits the window and root and returns TRUE; SetUDataOnce stops
+*       at the first match. Neither traversal searches the local menustrip.
+*       Export and Import forward to the root without checking for NULL and
+*       return zero regardless of the child's result. Provide a root before
+*       application state loading or saving. Version and Revision getters both
+*       return 1.
+*       The private ShowMe handling supports application iconification by
+*       closing and remembering open windows. It is not an Area visibility
+*       implementation. Seven Window methods marked PRIV in window.h remain
+*       internal implementation contracts, not public interfaces.
+*
+*   NOTES
+*       Construction returns NULL on superclass or pool failure, or an explicit
+*       NULL RootObject tag. Omitting RootObject is allowed, but such an object
+*       cannot open. Setter tags reach Notify after local processing;
+*       notification delivery is not proof that an operation succeeded. Query
+*       Open to determine the actual open state.
+*       Do not mutate an event-handler list, destroy callback targets, or
+*       dispose the window during its synchronous callback traversal. Event data
+*       is borrowed only for the call. RenderInfo screen, draw-info and font
+*       resources belong to the setup/cleanup interval; the native window and
+*       drawing port belong to the show/hide interval.
+*
+*   BUGS
+*       Opening has incomplete checks for optional pens, images, scrollbars,
+*       menus and AppWindow registration. Setup success does not guarantee that
+*       every optional resource exists. The AppWindow handle is not removed by
+*       this file's close or disposal paths. See AppWindow, Setup, Cleanup,
+*       Snapshot and AllocGadgetID for specific limitations.
+*
+*/
+/****** Window.mui/MUIA_Window_Activate ************
+*
+*   NAME
+*       MUIA_Window_Activate
+*
+*   FUNCTION
+*       Choose activation on opening; default TRUE. Setting TRUE on an open,
+*       locally inactive window calls ActivateWindow. Getting returns TRUE only
+*       when the window is open and its active flag is set.
+*
+*   INPUTS
+*       BOOL; initialize, set, get.
+*
+*   NOTES
+*       Setting FALSE while open does not deactivate the Intuition window. While
+*       closed it changes the next-open activation request. Activation events
+*       update the local flag and pass notification tags to Notify.
+*
+*/
+/****** Window.mui/MUIA_Window_ActiveObject ************
+*
+*   NAME
+*       MUIA_Window_ActiveObject
+*
+*   FUNCTION
+*       Select keyboard focus. None clears focus; Next and Prev traverse the
+*       cycle chain. While closed, a setter stores the request for the next
+*       opening. The getter returns the active object only if it is found in the
+*       current root subtree, otherwise NULL.
+*
+*   INPUTS
+*       Object pointer or MUIV_Window_ActiveObject_None, Next, Prev; set and
+*       get.
+*
+*   NOTES
+*       Objects remain borrowed. An explicit target is stored without ownership
+*       or membership validation; use a live descendant. GoInactive and GoActive
+*       depend on setup/draw state. Raw-key processing tries active, parent,
+*       default and other handlers.
+*
+*   BUGS
+*       Next/Prev filter disabled or hidden objects during traversal, but
+*       wraparound falls back to the first/last chain entry without that
+*       filtering. The raw-key parent loop starts at the active object again, so
+*       an unconsumed key can reach it twice. Initialization tags are not
+*       handled.
+*
+*/
+/****** Window.mui/MUIA_Window_DefaultObject ************
+*
+*   NAME
+*       MUIA_Window_DefaultObject
+*
+*   FUNCTION
+*       Store the fallback raw-key target, initially NULL. It is tried after the
+*       active-object/parent path if distinct from the active object and not
+*       disabled.
+*
+*   INPUTS
+*       Object pointer; initialize, set, get.
+*
+*   NOTES
+*       The pointer is borrowed, not added to the root or cycle chain. Keep it
+*       alive and compatible with Area while registered.
+*
+*/
+/****** Window.mui/MUIA_Window_Backdrop ************
+*
+*   NAME
+*       MUIA_Window_Backdrop
+*
+*   FUNCTION
+*       Set or clear WFLG_BACKDROP for native window creation. Default FALSE.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*        There is no Window setter or getter for this attribute. Final
+*       appearance also depends on Intuition and other creation flags.
+*
+*/
+/****** Window.mui/MUIA_Window_Borderless ************
+*
+*   NAME
+*       MUIA_Window_Borderless
+*
+*   FUNCTION
+*       Set or clear WFLG_BORDERLESS for native window creation. Default FALSE.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*       Root spacing defaults to zero for a borderless window. There is no
+*       Window setter or getter for this attribute. Final appearance also
+*       depends on Intuition and other creation flags.
+*
+*/
+/****** Window.mui/MUIA_Window_CloseGadget ************
+*
+*   NAME
+*       MUIA_Window_CloseGadget
+*
+*   FUNCTION
+*       Set or clear WFLG_CLOSEGADGET for native window creation. Default TRUE.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*       A close click raises CloseRequest; it does not close the window. There
+*       is no Window setter or getter for this attribute. Final appearance also
+*       depends on Intuition and other creation flags.
+*
+*/
+/****** Window.mui/MUIA_Window_DepthGadget ************
+*
+*   NAME
+*       MUIA_Window_DepthGadget
+*
+*   FUNCTION
+*       Set or clear WFLG_DEPTHGADGET for native window creation. Default TRUE.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*        There is no Window setter or getter for this attribute. Final
+*       appearance also depends on Intuition and other creation flags.
+*
+*/
+/****** Window.mui/MUIA_Window_DragBar ************
+*
+*   NAME
+*       MUIA_Window_DragBar
+*
+*   FUNCTION
+*       Set or clear WFLG_DRAGBAR for native window creation. Default TRUE.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*       This requests an Intuition drag bar, not object drag-and-drop. There is
+*       no Window setter or getter for this attribute. Final appearance also
+*       depends on Intuition and other creation flags.
+*
+*/
+/****** Window.mui/MUIA_Window_SizeGadget ************
+*
+*   NAME
+*       MUIA_Window_SizeGadget
+*
+*   FUNCTION
+*       Set or clear WFLG_SIZEGADGET for native window creation. Default TRUE.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*       Opening removes the size-gadget flag when both minimum and maximum
+*       dimensions are equal. There is no Window setter or getter for this
+*       attribute. Final appearance also depends on Intuition and other creation
+*       flags.
+*
+*/
+/****** Window.mui/MUIA_Window_SizeRight ************
+*
+*   NAME
+*       MUIA_Window_SizeRight
+*
+*   FUNCTION
+*       Set or clear WFLG_SIZEBRIGHT for native window creation. Default FALSE.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*       Without this flag, opening selects a bottom-border size gadget. There is
+*       no Window setter or getter for this attribute. Final appearance also
+*       depends on Intuition and other creation flags.
+*
+*/
+/****** Window.mui/MUIA_Window_ZoomGadget ************
+*
+*   NAME
+*       MUIA_Window_ZoomGadget
+*
+*   FUNCTION
+*       Enable WA_Zoom with the calculated alternate rectangle when opening.
+*       Default TRUE.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*       There is no setter or getter. Alternate dimensions are initialization
+*       values; see AltWidth and AltHeight for calculation limits.
+*
+*/
+/****** Window.mui/MUIA_Window_ToolBox ************
+*
+*   NAME
+*       MUIA_Window_ToolBox
+*
+*   FUNCTION
+*       Request toolbox behavior. Default FALSE. On AROS, opening adds
+*       WFLG_TOOLBOX; WA_ToolBox is also passed when that tag is available at
+*       compile time.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*       This class does not implement a setter or getter and does not
+*       independently implement Intuition toolbox policy.
+*
+*/
+/****** Window.mui/MUIA_Window_EraseArea ************
+*
+*   NAME
+*       MUIA_Window_EraseArea
+*
+*   FUNCTION
+*       Set the flag used when redrawing the window background. Setup also
+*       forces the flag on when the preference selects redraw with clearing.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*       The zero-initialized flag is not explicitly set TRUE by the constructor;
+*       the header's unconditional TRUE default does not describe this
+*       implementation. There is no getter or setter. Not every background
+*       drawing path tests this flag.
+*
+*/
+/****** Window.mui/MUIA_Window_AppWindow ************
+*
+*   NAME
+*       MUIA_Window_AppWindow
+*
+*   FUNCTION
+*       When TRUE, attempt AddAppWindowA after opening the native window, using
+*       the application AppPort and this object as user data. Default FALSE.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*       Delivered AppMessage tags are forwarded synchronously to the root and
+*       children whose bounds contain the drop coordinates. Message ownership
+*       remains with the application input path; recipients must not retain or
+*       reply to it.
+*
+*   BUGS
+*       Registration failure is ignored. No RemoveAppWindow call appears in this
+*       file's close or disposal paths, so registration lifetime is not
+*       correctly paired with window lifetime here.
+*
+*/
+/****** Window.mui/MUIA_Window_CloseRequest ************
+*
+*   NAME
+*       MUIA_Window_CloseRequest
+*
+*   FUNCTION
+*       A close IDCMP event and the configured close key set this tag to TRUE
+*       for Notify delivery. The Window getter always returns FALSE.
+*
+*   INPUTS
+*       BOOL notification event; getter implemented.
+*
+*   NOTES
+*       Register a notification and decide whether to close or quit in the
+*       application. No pending-close state is stored and this event does not
+*       itself close or dispose the window.
+*
+*/
+/****** Window.mui/MUIA_Window_DisableKeys ************
+*
+*   NAME
+*       MUIA_Window_DisableKeys
+*
+*   FUNCTION
+*       Store a bit mask, initially zero, tested as 1 shifted by the matched
+*       MUIKEY value before Window performs built-in keyboard actions.
+*
+*   INPUTS
+*       ULONG mask; initialize, set, get.
+*
+*   NOTES
+*       Disabling a built-in action does not suppress raw-key delivery to
+*       handlers or erase the matched muikey argument. This is not a general
+*       input-disable switch; Sleep has separate behavior.
+*
+*/
+/****** Window.mui/MUIA_Window_ID ************
+*
+*   NAME
+*       MUIA_Window_ID
+*
+*   FUNCTION
+*       Store the identifier used to find application window-position records.
+*       Default zero.
+*
+*   INPUTS
+*       ULONG; initialize, set, get.
+*
+*   NOTES
+*       Choose distinct nonzero identifiers for windows whose positions should
+*       be distinguished. The class neither generates nor validates uniqueness.
+*       Zero is not searched by Application_GetWinPos and disables
+*       preference-driven close snapshots.
+*
+*/
+/****** Window.mui/MUIA_Window_IsSubWindow ************
+*
+*   NAME
+*       MUIA_Window_IsSubWindow
+*
+*   FUNCTION
+*       Store a normalized subwindow flag, initially FALSE.
+*
+*   INPUTS
+*       BOOL; initialize, set, get.
+*
+*   NOTES
+*       The flag is exposed to callers but does not itself change this class's
+*       opening, activation, ownership or event processing.
+*
+*/
+/****** Window.mui/MUIA_Window_InputEvent ************
+*
+*   NAME
+*       MUIA_Window_InputEvent
+*
+*   FUNCTION
+*       Before raw-key dispatch, set this tag to a temporary InputEvent
+*       containing the raw key, qualifiers, timestamp and event-address
+*       information.
+*
+*   INPUTS
+*       InputEvent pointer carried by a notification tag; no implemented getter.
+*
+*   NOTES
+*       Use MUIV_TriggerValue in a synchronous notification to inspect the
+*       event. The structure is on the handler's stack and must not be retained.
+*       It does not provide an input queue or a persistent last-event value. The
+*       header's get flag does not correspond to an OM_GET case.
+*
+*/
+/****** Window.mui/MUIA_Window_MenuAction ************
+*
+*   NAME
+*       MUIA_Window_MenuAction
+*
+*   FUNCTION
+*       Menu selection sets this tag to the selected menu item's UserData, also
+*       sets Application_MenuAction, and queues that value through
+*       Application_ReturnID.
+*
+*   INPUTS
+*       ULONG notification value; no implemented Window storage or getter.
+*
+*   NOTES
+*       Use notification trigger data. Window does not retain the last action. A
+*       setter tag can trigger Notify even though this attribute has no Window
+*       field. The native menu path handles one selected item, not a complete
+*       NextSelect chain. It also reads the message Code after replying to the
+*       original IntuiMessage; that read is outside the message lifetime.
+*
+*/
+/****** Window.mui/MUIA_Window_Menustrip ************
+*
+*   NAME
+*       MUIA_Window_Menustrip
+*
+*   FUNCTION
+*       Supply an owned local Menustrip, initially NULL. Opening uses this
+*       object if present, otherwise borrows Application_Menustrip.
+*
+*   INPUTS
+*       Object pointer; initialize and get.
+*
+*   NOTES
+*       The getter returns only the local object, not the effective fallback.
+*       Window connects/disconnects the local menu with its parent and disposes
+*       it at disposal. There is no replacement setter. Do not share one owned
+*       menu tree between owners. Native menus are created for opening and freed
+*       on closing or rebuilding.
+*
+*/
+/****** Window.mui/MUIA_Window_NoMenus ************
+*
+*   NAME
+*       MUIA_Window_NoMenus
+*
+*   FUNCTION
+*       Store a right-mouse-button trap request, initially FALSE. Opening passes
+*       WA_RMBTrap when true; a setter updates WFLG_RMBTRAP on the native window
+*       immediately.
+*
+*   INPUTS
+*       BOOL; initialize and set.
+*
+*   NOTES
+*       No getter is implemented. Mouse-move context-menu detection also adjusts
+*       the native trap flag. This does not dispose or remove the menustrip.
+*
+*/
+/****** Window.mui/MUIA_Window_Open ************
+*
+*   NAME
+*       MUIA_Window_Open
+*
+*   FUNCTION
+*       Request opening or closing. Opening requires a root and a connected
+*       application, then sets up display resources and the root, computes
+*       layout and opens Intuition. Closing hides and cleans up the root and
+*       releases display resources. The getter returns the actual open flag.
+*
+*   INPUTS
+*       BOOL; set and get.
+*
+*   NOTES
+*       Initially FALSE; initialization tags are ignored. A TRUE setter on an
+*       already open window brings it forward and activates it. While hidden by
+*       iconification, TRUE records a pending reopen and FALSE cancels it.
+*       Failed opening leaves Open FALSE, but the setter forwards the original
+*       tag to Notify and does not return the open result. Query Open after
+*       requesting it.
+*
+*   BUGS
+*       Optional resource failures are not all detected. Close does not reset
+*       Sleep's nesting counter or remove an AppWindow registration.
+*
+*/
+/****** Window.mui/MUIA_Window_RootObject ************
+*
+*   NAME
+*       MUIA_Window_RootObject
+*
+*   FUNCTION
+*       Install the owned Area-compatible root. An explicit NULL construction
+*       tag fails construction; omission leaves no root. A setter while closed
+*       disconnects the old root, installs the new pointer and connects it if
+*       application global information exists.
+*
+*   INPUTS
+*       Object pointer; initialize, set while closed, get.
+*
+*   NOTES
+*       A setter while open is ignored. Replacement does not dispose the old
+*       root: retain its pointer and manage its lifetime after detaching it. The
+*       current root is disposed with the window. NULL is accepted by the setter
+*       but prevents opening and is unsafe for Import/Export.
+*
+*   BUGS
+*       Replacement clears active focus only when it equals the old root, not
+*       when it points to a descendant. Ensure borrowed focus/default targets do
+*       not outlive their objects.
+*
+*/
+/****** Window.mui/MUIA_Window_Title ************
+*
+*   NAME
+*       MUIA_Window_Title
+*
+*   FUNCTION
+*       Store the window title pointer, initially NULL. When open, a setter
+*       calls SetWindowTitles for that title and leaves the other unchanged.
+*
+*   INPUTS
+*       STRPTR; initialize, set, get.
+*
+*   NOTES
+*       The string is borrowed, not copied or freed. Keep it readable and
+*       NUL-terminated while used. The getter returns the stored pointer. When
+*       opening, a NULL pointer omits the corresponding Intuition title tag.
+*
+*/
+/****** Window.mui/MUIA_Window_ScreenTitle ************
+*
+*   NAME
+*       MUIA_Window_ScreenTitle
+*
+*   FUNCTION
+*       Store the screen title associated with the window pointer, initially
+*       NULL. When open, a setter calls SetWindowTitles for that title and
+*       leaves the other unchanged.
+*
+*   INPUTS
+*       STRPTR; initialize, set, get.
+*
+*   NOTES
+*       The string is borrowed, not copied or freed. Keep it readable and
+*       NUL-terminated while used. The getter returns the stored pointer. When
+*       opening, a NULL pointer omits the corresponding Intuition title tag.
+*
+*/
+/****** Window.mui/MUIA_Window_Screen ************
+*
+*   NAME
+*       MUIA_Window_Screen
+*
+*   FUNCTION
+*       Select a borrowed screen to use during the next setup. The getter
+*       returns the actual render-info screen, not the requested pointer.
+*
+*   INPUTS
+*       Screen pointer; initialize, set, get.
+*
+*   NOTES
+*       A non-NULL supplied screen takes precedence over public-screen selection
+*       and is not locked or closed as a caller-owned screen. Keep it open
+*       throughout use. Setting it while open does not migrate the window.
+*       Application custom screens have separate ownership.
+*
+*   BUGS
+*       A failed setup can leave a stale render-info screen pointer after
+*       releasing its public-screen lock. Use the getter only during a
+*       successfully established display lifetime; non-NULL alone is not a
+*       success test.
+*
+*/
+/****** Window.mui/MUIA_Window_PublicScreen ************
+*
+*   NAME
+*       MUIA_Window_PublicScreen
+*
+*   FUNCTION
+*       Store a borrowed public-screen name, initially NULL. With no user
+*       screen, setup may first select an application custom screen from
+*       preferences; otherwise it tries the requested public name, or the
+*       preference-selected name when no explicit name was supplied. If that
+*       attempt fails, it tries the default public screen.
+*
+*   INPUTS
+*       STRPTR; initialize, set, get.
+*
+*   NOTES
+*       The getter returns the requested string, not the actual selected screen
+*       name. Keep it readable while stored. Public-screen locks are owned by
+*       setup and released by cleanup. Setting a new name while open does not
+*       move the window. Failure to lock the requested name can fall back to
+*       another screen.
+*
+*/
+/****** Window.mui/MUIA_Window_Window ************
+*
+*   NAME
+*       MUIA_Window_Window
+*
+*   FUNCTION
+*       Return the native window while open, otherwise NULL.
+*
+*   INPUTS
+*       Intuition Window pointer; get only.
+*
+*   NOTES
+*       The pointer is borrowed. Do not CloseWindow it, replace its shared
+*       UserPort, consume its messages independently, or retain it across
+*       closing. The Zune Window object and the native Window are distinct
+*       objects.
+*
+*/
+/****** Window.mui/MUIA_Window_Sleep ************
+*
+*   NAME
+*       MUIA_Window_Sleep
+*
+*   FUNCTION
+*       A nonzero setter on an open window increments a nesting counter. The
+*       first increment installs a busy pointer and freezes the native size
+*       limits. Zero decrements a nonzero counter; reaching zero restores
+*       pointer and saved limits. The getter reports whether the counter is
+*       nonzero.
+*
+*   INPUTS
+*       BOOL; set and get.
+*
+*   NOTES
+*       Initially zero. Balance each accepted sleep request with a wake request.
+*       Sleeping input is replied to without ordinary dispatch; refresh events
+*       are still processed. A sleep request while closed is ignored, but a wake
+*       request can decrement a retained counter.
+*
+*   BUGS
+*       Closing does not reset the counter. Reopening while it is nonzero does
+*       not repeat the first-sleep setup. The WORD counter has no overflow
+*       check; do not treat repeated TRUE as an idempotent assignment.
+*
+*/
+/****** Window.mui/MUIA_Window_Width ************
+*
+*   NAME
+*       MUIA_Window_Width
+*
+*   FUNCTION
+*       Request the inner width. Default MUIV_Window_Width_Default selects the
+*       root's default dimension. Positive values request pixels. MinMax(p),
+*       Screen(p), Visible(p) for p from 0 through 100, and Scaled are declared
+*       encodings. Results are clamped to the root's computed minimum and
+*       maximum. The getter returns native GZZWidth while open, otherwise zero.
+*
+*   INPUTS
+*       LONG; initialize and get; setter also implemented.
+*
+*   NOTES
+*       Screen and Visible both use screen dimensions rather than measuring the
+*       unobscured viewport. Scaled derives this dimension from the other using
+*       the root minimum aspect ratio; it does not guard division by zero. Do
+*       not request both dimensions Scaled. A setter stores the request and
+*       clears this cached dimension; it does not immediately resize the native
+*       window.
+*
+*   BUGS
+*       Both requests are evaluated only when cached width is zero. Setting
+*       Height alone can leave its request unevaluated. Width MinMax(p) uses
+*       percentage interpolation. Boundary encodings overlap; the first matching
+*       MinMax, Screen or Visible branch wins.
+*
+*/
+/****** Window.mui/MUIA_Window_Height ************
+*
+*   NAME
+*       MUIA_Window_Height
+*
+*   FUNCTION
+*       Request the inner height. Default MUIV_Window_Height_Default selects the
+*       root's default dimension. Positive values request pixels. MinMax(p),
+*       Screen(p), Visible(p) for p from 0 through 100, and Scaled are declared
+*       encodings. Results are clamped to the root's computed minimum and
+*       maximum. The getter returns native GZZHeight while open, otherwise zero.
+*
+*   INPUTS
+*       LONG; initialize and get; setter also implemented.
+*
+*   NOTES
+*       Screen and Visible both use screen dimensions rather than measuring the
+*       unobscured viewport. Screen height subtracts estimated top/bottom
+*       borders; Visible height uses full screen height. Scaled derives this
+*       dimension from the other using the root minimum aspect ratio; it does
+*       not guard division by zero. Do not request both dimensions Scaled. A
+*       setter stores the request and clears this cached dimension; it does not
+*       immediately resize the native window.
+*
+*   BUGS
+*       Both requests are evaluated only when cached width is zero. Setting
+*       Height alone can leave its request unevaluated. Height MinMax(p) uses
+*       min + p * (max - min) without dividing by 100, then clamps; it is not
+*       percentage interpolation.
+*
+*/
+/****** Window.mui/MUIA_Window_RefWindow ************
+*
+*   NAME
+*       MUIA_Window_RefWindow
+*
+*   FUNCTION
+*       Store a borrowed Window object used when calculating the next opening
+*       position. Default NULL.
+*
+*   INPUTS
+*       Object pointer; initialize and set.
+*
+*   NOTES
+*       Keep it alive through position calculation.
+*       LeftEdge/TopEdge/Width/Height getters provide its geometry; a closed
+*       reference supplies zero. There is no getter, no immediate repositioning,
+*       and no ownership transfer. Horizontal centering mixes reference inner
+*       width with this window's outer width.
+*
+*/
+/****** Window.mui/MUIA_Window_LeftEdge ************
+*
+*   NAME
+*       MUIA_Window_LeftEdge
+*
+*   FUNCTION
+*       Request the next opening position. Default
+*       MUIV_Window_LeftEdge_Centered. Moused centers about the screen pointer.
+*       Ordinary values are screen coordinates without RefWindow, or offsets
+*       from that reference's corresponding edge. The getter returns the actual
+*       native edge while open, otherwise zero.
+*
+*   INPUTS
+*       LONG; initialize and get; setter also implemented.
+*
+*   NOTES
+*       Setting the request does not move an open window. Saved application
+*       position records and Intuition auto-adjustment can override calculated
+*       geometry.
+*
+*/
+/****** Window.mui/MUIA_Window_TopEdge ************
+*
+*   NAME
+*       MUIA_Window_TopEdge
+*
+*   FUNCTION
+*       Request the next opening position. Default MUIV_Window_TopEdge_Centered.
+*       Moused centers about the screen pointer. Ordinary values are screen
+*       coordinates without RefWindow, or offsets from that reference's
+*       corresponding edge. The getter returns the actual native edge while
+*       open, otherwise zero.
+*
+*   INPUTS
+*       LONG; initialize and get; setter also implemented.
+*
+*   NOTES
+*       Setting the request does not move an open window. TopEdge_Delta(p) is
+*       recognized only for p from 0 through 6, adding the offset below the
+*       screen bar or reference top plus the estimated top border. Other Delta
+*       encodings fall through as ordinary values. Saved application position
+*       records and Intuition auto-adjustment can override calculated geometry.
+*
+*/
+/****** Window.mui/MUIA_Window_AltWidth ************
+*
+*   NAME
+*       MUIA_Window_AltWidth
+*
+*   FUNCTION
+*       Store the alternate zoom width, default MUIV_Window_AltWidth_MinMax(0).
+*       The getter returns the stored encoding, not the computed zoom rectangle.
+*       Opening computes the rectangle and passes it to WA_Zoom when ZoomGadget
+*       is true.
+*
+*   INPUTS
+*       LONG converted to the IBox WORD field; initialize and get.
+*
+*   NOTES
+*       Positive pixels, MinMax(p), Screen(p) and Visible(p) are processed, then
+*       clamped to content limits. Screen and Visible both use the full screen
+*       dimension. Opening adds estimated borders after calculation. There is no
+*       setter.
+*
+*   BUGS
+*       MinMax(p) omits division by 100 for both alternate dimensions. The
+*       declared Scaled encoding has no scaling branch and is merely clamped.
+*       The WORD conversion can truncate large values.
+*
+*/
+/****** Window.mui/MUIA_Window_AltHeight ************
+*
+*   NAME
+*       MUIA_Window_AltHeight
+*
+*   FUNCTION
+*       Store the alternate zoom height, default
+*       MUIV_Window_AltHeight_MinMax(0). The getter returns the stored encoding,
+*       not the computed zoom rectangle. Opening computes the rectangle and
+*       passes it to WA_Zoom when ZoomGadget is true.
+*
+*   INPUTS
+*       LONG converted to the IBox WORD field; initialize and get.
+*
+*   NOTES
+*       Positive pixels, MinMax(p), Screen(p) and Visible(p) are processed, then
+*       clamped to content limits. Screen and Visible both use the full screen
+*       dimension. Opening adds estimated borders after calculation. There is no
+*       setter.
+*
+*   BUGS
+*       MinMax(p) omits division by 100 for both alternate dimensions. The
+*       declared Scaled encoding has no scaling branch and is merely clamped.
+*       The WORD conversion can truncate large values.
+*
+*/
+/****** Window.mui/MUIA_Window_AltLeftEdge ************
+*
+*   NAME
+*       MUIA_Window_AltLeftEdge
+*
+*   FUNCTION
+*       Store an alternate zoom position, default
+*       MUIV_Window_AltLeftEdge_NoChange. NoChange becomes Intuition's unchanged
+*       coordinate. Centered uses the screen dimension and current normal inner
+*       dimension. The getter returns the stored request.
+*
+*   INPUTS
+*       LONG converted to the IBox WORD field; initialize and get.
+*
+*   NOTES
+*       There is no setter. Moused is treated as unchanged rather than
+*       mouse-centered. RefWindow is not applied to the alternate rectangle.
+*
+*/
+/****** Window.mui/MUIA_Window_AltTopEdge ************
+*
+*   NAME
+*       MUIA_Window_AltTopEdge
+*
+*   FUNCTION
+*       Store an alternate zoom position, default
+*       MUIV_Window_AltTopEdge_NoChange. NoChange becomes Intuition's unchanged
+*       coordinate. Centered uses the screen dimension and current normal inner
+*       dimension. The getter returns the stored request.
+*
+*   INPUTS
+*       LONG converted to the IBox WORD field; initialize and get.
+*
+*   NOTES
+*       There is no setter. Moused is treated as unchanged rather than
+*       mouse-centered. The declared AltTopEdge_Delta(p) has no special
+*       calculation and remains a negative coordinate. RefWindow is not applied
+*       to the alternate rectangle.
+*
+*/
+/****** Window.mui/MUIA_Window_UseBottomBorderScroller ************
+*
+*   NAME
+*       MUIA_Window_UseBottomBorderScroller
+*
+*   FUNCTION
+*       Request native bottom-border scrollbar gadgets during opening. Default
+*       FALSE. Setup creates their system images and display creates their
+*       gadget chain.
+*
+*   INPUTS
+*       BOOL; initialize and set; no implemented getter.
+*
+*   NOTES
+*       Setting the flag while open does not create or remove existing gadgets.
+*       Use it before opening. Prop objects can associate with the native
+*       scrollbars through RenderInfo; button updates then call Prop_Increase or
+*       Prop_Decrease.
+*
+*   BUGS
+*       System-image, gadget and gadget-ID allocation failures are not fully
+*       checked. The header advertises a getter, but Window has no matching
+*       getter case.
+*
+*/
+/****** Window.mui/MUIA_Window_UseRightBorderScroller ************
+*
+*   NAME
+*       MUIA_Window_UseRightBorderScroller
+*
+*   FUNCTION
+*       Request native right-border scrollbar gadgets during opening. Default
+*       FALSE. Setup creates their system images and display creates their
+*       gadget chain.
+*
+*   INPUTS
+*       BOOL; initialize and set; no implemented getter.
+*
+*   NOTES
+*       Setting the flag while open does not create or remove existing gadgets.
+*       Use it before opening. Prop objects can associate with the native
+*       scrollbars through RenderInfo; button updates then call Prop_Increase or
+*       Prop_Decrease.
+*
+*   BUGS
+*       System-image, gadget and gadget-ID allocation failures are not fully
+*       checked. The header advertises a getter, but Window has no matching
+*       getter case.
+*
+*/
+/****** Window.mui/MUIA_Window_FancyDrawing ************
+*
+*   NAME
+*       MUIA_Window_FancyDrawing
+*
+*   FUNCTION
+*       Declared in window.h, but not implemented by Window.
+*
+*   INPUTS
+*       BOOL; declared initialize, set, get.
+*
+*   NOTES
+*       There is no matching constructor, setter or getter behavior. Setter tags
+*       can still reach Notify. The declaration alone does not provide the named
+*       capability.
+*
+*/
+/****** Window.mui/MUIA_Window_MouseObject ************
+*
+*   NAME
+*       MUIA_Window_MouseObject
+*
+*   FUNCTION
+*       Declared in window.h, but not implemented by Window.
+*
+*   INPUTS
+*       Object pointer; declared get only.
+*
+*   NOTES
+*       There is no matching constructor, setter or getter behavior. Setter tags
+*       can still reach Notify. The declaration alone does not provide the named
+*       capability.
+*
+*/
+/****** Window.mui/MUIA_Window_NeedsMouseObject ************
+*
+*   NAME
+*       MUIA_Window_NeedsMouseObject
+*
+*   FUNCTION
+*       Declared in window.h, but not implemented by Window.
+*
+*   INPUTS
+*       BOOL; declared initialize only.
+*
+*   NOTES
+*       There is no matching constructor, setter or getter behavior. Setter tags
+*       can still reach Notify. The declaration alone does not provide the named
+*       capability.
+*
+*/
+/****** Window.mui/MUIA_Window_UseLeftBorderScroller ************
+*
+*   NAME
+*       MUIA_Window_UseLeftBorderScroller
+*
+*   FUNCTION
+*       Declared in window.h, but not implemented by Window.
+*
+*   INPUTS
+*       BOOL; declared initialize, set, get.
+*
+*   NOTES
+*       There is no matching constructor, setter or getter behavior. Setter tags
+*       can still reach Notify. The declaration alone does not provide the named
+*       capability.
+*
+*/
+/****** Window.mui/MUIA_Window_Menu ************
+*
+*   NAME
+*       MUIA_Window_Menu
+*
+*   FUNCTION
+*       Declared in window.h, but not implemented by Window.
+*
+*   INPUTS
+*       NewMenu pointer; declared initialize only under MUI_OBSOLETE.
+*
+*   NOTES
+*       There is no matching constructor, setter or getter behavior. Setter tags
+*       can still reach Notify. Use Menustrip for the implemented menu-object
+*       interface; this legacy tag is not an alias.
+*
+*/
 
 static const int __version = 1;
 static const int __revision = 1;
@@ -199,58 +1207,29 @@ struct __dummyXFC3__
 
 #define muiWindowData(obj)   (&(((struct __dummyXFC3__ *)(obj))->mwd))
 
-/****** Window.mui/MUIA_Window_DragBar *****************************************
-*
-*   NAME
-*       MUIA_Window_DragBar -- (V4) [I..], BOOL
-*
-*   FUNCTION
-*       Allow the window to be dragged. Defaults to TRUE.
-*
-*   SEE ALSO
-*       MUIA_Window_DepthGadget, MUIA_Window_SizeGadget
-*
-******************************************************************************
-*
-*/
 
-/****** Window.mui/MUIA_Window_ScreenTitle *************************************
-*
-*   NAME
-*       MUIA_Window_ScreenTitle -- (V5) [ISG], STRPTR
-*
-*   FUNCTION
-*       The title shown in the drag bar of the window's screen when the
-*       screen is active. If set to NULL, the screen's default title is shown.
-*       The set string is not copied.
-*
-*   SEE ALSO
-*       MUIA_Window_Title
-*
-******************************************************************************
-*
-*/
 
-/****** Window.mui/MUIA_Window_Title *******************************************
-*
-*   NAME
-*       MUIA_Window_Title -- (V4) [ISG], STRPTR
-*
-*   FUNCTION
-*       The window title, as shown in the drag bar. If set to NULL, no title
-*       is shown. The set string is not copied.
-*
-*   SEE ALSO
-*       MUIA_Window_ScreenTitle
-*
-******************************************************************************
-*
-*/
 
+/* If the stored active object is in the cycle chain, send GoActive once
+ * according to the sent flag; otherwise clear the active pointer. Requires
+ * stable live chain members and callback-safe window lifetime. Return no
+ * status; this does not choose a replacement focus object.
+ */
 static void ActivateObject(struct MUI_WindowData *data);
+/* Dispatch a borrowed event to matching non-disabled handler objects. For
+ * events other than IDCMPUPDATE, copy the message, clear IAddress and reply
+ * before callbacks. IDCMPUPDATE retains the original until final ReplyMsg;
+ * an Eat return currently bypasses that reply. Update the native context-
+ * menu trap on mouse move. Return no status and require stable live handler
+ * nodes.
+ */
 static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
     struct IntuiMessage *event);
 
+/* Compute a replicated 32-bit color component from the high bytes of a and
+ * b using (a + 3*b)/4. Return the value without allocating or changing
+ * state; inputs are color components, not pointers.
+ */
 static ULONG DoHalfshineGun(ULONG a, ULONG b)
 {
     ULONG val = ((((a) >> 24) + 3 * ((b) >> 24)) / 4);
@@ -258,6 +1237,10 @@ static ULONG DoHalfshineGun(ULONG a, ULONG b)
     return val;
 }
 
+/* Compute a replicated 32-bit color component from the high bytes of a and
+ * b using (a + 5*b)/6. Return the value without allocating or changing
+ * state.
+ */
 static ULONG DoHalfshadowGun(ULONG a, ULONG b)
 {
     ULONG val = ((((a) >> 24) + 5 * ((b) >> 24)) / 6);
@@ -265,12 +1248,21 @@ static ULONG DoHalfshadowGun(ULONG a, ULONG b)
     return val;
 }
 
+/* Create a sysiclass image for which using the live borrowed screen
+ * DrawInfo. Return an owned BOOPSI image or NULL; the caller must dispose a
+ * successful image before releasing its DrawInfo.
+ */
 static Object *CreateSysimage(struct DrawInfo *dri, ULONG which)
 {
     return NewObject(NULL, "sysiclass",
         SYSIA_DrawInfo, (IPTR) dri, SYSIA_Which, which, TAG_DONE);
 }
 
+/* Insert an unlinked live node in decreasing signed priority and then
+ * decreasing address order. Borrow list and node, mutate their links, and
+ * return no status. Membership is not validated; keep traversal and
+ * insertion serialized.
+ */
 static void EnqueueByPriAndAddress(struct List *list, struct Node *node)
 {
     struct Node *scannode;
@@ -293,6 +1285,11 @@ static void EnqueueByPriAndAddress(struct List *list, struct Node *node)
     Insert(list, (struct Node *)node, scannode->ln_Pred);
 }
 
+/* Initialize all 16 render-info custom-frame slots and load the
+ * corresponding preference image specifications through the frame cache.
+ * Requires live application preferences. Return TRUE even if individual
+ * loads return NULL; cleanup must release acquired cache references.
+ */
 static BOOL InitCustomFrames(Object *obj, struct MUI_RenderInfo *mri)
 {
     int i;
@@ -354,6 +1351,10 @@ static BOOL InitCustomFrames(Object *obj, struct MUI_RenderInfo *mri)
     return TRUE;
 }
 
+/* Release each non-NULL custom-frame cache reference and clear its slot.
+ * Requires initialized writable render-info state; return no status and do
+ * not free the render-info structure.
+ */
 static void DisposeCustomFrames(struct MUI_RenderInfo *mri)
 {
     int i;
@@ -366,6 +1367,12 @@ static void DisposeCustomFrames(struct MUI_RenderInfo *mri)
     }
 }
 
+/* Obtain the base render pens and derived halfshine/halfshadow pens for the
+ * current live screen, then expose the instance pen array through mri_Pens.
+ * Temporary pen-spec allocations and obtain results are not fully checked.
+ * MPEN_MARK is not acquired here. Return no status; cleanup owns release of
+ * acquired pens.
+ */
 static void InitRenderInfoPens(struct MUI_RenderInfo *mri, struct MUI_WindowData *data) {
     ULONG rgbtable[3 * 3];
     mri->mri_PensStorage[MPEN_SHINE] = MUI_ObtainPen(mri, &MUIMB(MUIMasterBase)->defaultPens[MPEN_SHINE], 0);
@@ -410,6 +1417,14 @@ static void InitRenderInfoPens(struct MUI_RenderInfo *mri, struct MUI_WindowData
     mri->mri_Pens = mri->mri_PensStorage;
 }
 
+/* Select a supplied, application-custom, requested-public, preference-
+ * public or default public screen; acquire DrawInfo, custom-frame cache
+ * references, pens and optional scrollbar images. Borrow obj/data/mri and
+ * require a connected application with preferences. Return FALSE on checked
+ * screen/DrawInfo failure, TRUE otherwise. Public locks are owned until
+ * cleanup; optional allocations remain incompletely checked and failure can
+ * leave a stale screen pointer.
+ */
 static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data,
     struct MUI_RenderInfo *mri)
 {
@@ -580,6 +1595,11 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data,
     return TRUE;
 }
 
+/* Release render pens for an established render-info setup; no status is
+ * returned. The current sequence releases MPEN_MARK twice although setup
+ * does not acquire that slot. This is a source limitation, not a balanced
+ * resource contract.
+ */
 static void CleanupRenderInfoPens(struct MUI_RenderInfo *mri, struct MUI_WindowData *data) {
     MUI_ReleasePen(mri, mri->mri_PensStorage[MPEN_MARK]);
     MUI_ReleasePen(mri, mri->mri_PensStorage[MPEN_HALFSHADOW]);
@@ -600,6 +1620,13 @@ static void CleanupRenderInfoPens(struct MUI_RenderInfo *mri, struct MUI_WindowD
     MUI_ReleasePen(mri, mri->mri_PensStorage[MPEN_SHINE]);
 }
 
+/* Dispose acquired frame references and system images, close cached fonts,
+ * release pens and DrawInfo, then release the public-screen lock or
+ * conditionally close the application custom screen. Requires no remaining
+ * users of these resources. Custom-screen closure tests an empty
+ * application window list; CloseScreen failure is ignored. Clear the render
+ * screen and return no status.
+ */
 static void CleanupRenderInfo(Object *obj, struct MUI_WindowData *data,
     struct MUI_RenderInfo *mri)
 {
@@ -650,8 +1677,8 @@ static void CleanupRenderInfo(Object *obj, struct MUI_WindowData *data,
     FreeScreenDrawInfo(mri->mri_Screen, mri->mri_DrawInfo);
     mri->mri_DrawInfo = NULL;
 
-    /* If a custom screen has been opened by zune, close it as soon as zero
-     * windows are opened. See above for comments about refactorization. */
+    /* Close the application custom screen only when the application window
+     * list is empty. This tests membership, not the number of open windows. */
     if (muiGlobalInfo(obj)->mgi_CustomScreen)
     {
         BOOL screenclose = TRUE;
@@ -686,6 +1713,11 @@ static void CleanupRenderInfo(Object *obj, struct MUI_WindowData *data,
     mri->mri_Screen = NULL;
 }
 
+/* Select the buffer RastPort when a buffer bitmap exists, otherwise the
+ * live native window RastPort. Requires a native window and prepared render
+ * info. Store a borrowed drawing-port pointer valid until hide; return no
+ * status.
+ */
 static void ShowRenderInfo(struct MUI_RenderInfo *mri)
 {
     if (mri->mri_BufferBM)
@@ -698,11 +1730,18 @@ static void ShowRenderInfo(struct MUI_RenderInfo *mri)
     }
 }
 
+/* Clear the borrowed drawing-port pointer after drawing has stopped. Does
+ * not free the native RastPort or buffer and returns no status.
+ */
 static void HideRenderInfo(struct MUI_RenderInfo *mri)
 {
     mri->mri_RastPort = NULL;
 }
 
+/* Return the fixed IDCMP mask for size/change/refresh, mouse buttons/move,
+ * menu pick, close, raw keys, ticks, activation and gadget-up events. No
+ * allocation or state change occurs.
+ */
 static ULONG GetDefaultEvents(void)
 {
     return IDCMP_NEWSIZE | IDCMP_CHANGEWINDOW | IDCMP_REFRESHWINDOW
@@ -711,6 +1750,11 @@ static ULONG GetDefaultEvents(void)
         | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW | IDCMP_GADGETUP;
 }
 
+/* Combine new_events with every registered handler mask, then remove
+ * IDCMP_VANILLAKEY. Update stored events and call ModifyIDCMP if the mask
+ * changed while open. Requires stable valid handler links; return no status
+ * and retain no new storage.
+ */
 static void ChangeEvents(struct MUI_WindowData *data, ULONG new_events)
 {
     struct MinNode *mn;
@@ -736,14 +1780,52 @@ static void ChangeEvents(struct MUI_WindowData *data, ULONG new_events)
     }
 }
 
+/* Compute stored X/Y from requests, estimated outer size, screen and
+ * optional borrowed reference window. Centered/mouse encodings and
+ * TopEdge_Delta(0..6) have special handling. Reference horizontal centering
+ * mixes inner and outer sizes. Requires live screen/DrawInfo-derived
+ * borders and reference; return no status and do not move an existing
+ * window.
+ */
 static void CalcWindowPosition(Object *obj, struct MUI_WindowData *data);
+/* Create requested right/bottom native prop and button gadgets using setup-
+ * owned system images and allocated gadget IDs; store owned gadget pointers
+ * for display/undisplay. Requires live non-NULL images. Allocation failures
+ * are not propagated or fully unwound here; there is no result. Failed
+ * gadget creation can leave an ID allocated until pool disposal.
+ */
 static void CreateWindowScrollbars(Object *obj,
     struct MUI_WindowData *data);
+/* Modify the supplied writable alternate IBox for the next opening using
+ * screen size and content limits. NoChange and Moused coordinates both
+ * become unchanged; Centered uses normal inner size. Both MinMax
+ * calculations omit division by 100. Scaled and Delta have no special
+ * branches. Clamp dimensions and return no status.
+ */
 static void CalcAltDimensions(Object *obj, struct MUI_WindowData *data,
     struct IBox *altdims);
+/* Optionally snapshot, clear exposed native pointers and active state,
+ * detach/free native menus, remove and reply queued messages belonging to
+ * this window under Forbid, detach the shared port and close Intuition.
+ * Dispose scrollbar gadgets and release their IDs. Requires the application
+ * and setup resources to remain live. Return no status; the AppWindow
+ * registration is not removed and Sleep count is not reset.
+ */
 static void UndisplayWindow(Object *obj, struct MUI_WindowData *data);
+/* Search a stable ObjNode list for pointer equality with a live object;
+ * NULL object returns NULL. Return the borrowed node or NULL without
+ * changing links or ownership.
+ */
 static struct ObjNode *FindObjNode(struct MinList *list, Object *obj);
 
+/* For a connected, successfully set-up window with computed content limits,
+ * build native menus and scrollbars, calculate normal/alternate geometry
+ * and apply a saved application position record. Open Intuition, install
+ * the shared application port and borrowed object UserData, set limits, and
+ * optionally register an AppWindow. Return TRUE on native opening, FALSE
+ * after local native-resource cleanup otherwise. Menu, image, gadget and
+ * AppWindow failures are not all reported.
+ */
 static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 {
     struct Window *win;
@@ -942,6 +2024,13 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 }
 
 
+/* Optionally snapshot, clear exposed native pointers and active state,
+ * detach/free native menus, remove and reply queued messages belonging to
+ * this window under Forbid, detach the shared port and close Intuition.
+ * Dispose scrollbar gadgets and release their IDs. Requires the application
+ * and setup resources to remain live. Return no status; the AppWindow
+ * registration is not removed and Sleep count is not reset.
+ */
 static void UndisplayWindow(Object *obj, struct MUI_WindowData *data)
 {
     struct Window *win = data->wd_RenderInfo.mri_Window;
@@ -1019,6 +2108,12 @@ static void UndisplayWindow(Object *obj, struct MUI_WindowData *data)
 }
 
 
+/* Refresh an open, set-up window with a live root. Finish pending resize
+ * layout/show and redraw according to preferences, or redraw inside
+ * MUI_BeginRefresh/MUI_EndRefresh. Reestablish active-object state. Borrow
+ * all inputs and return no status; this helper does not validate a closed
+ * window.
+ */
 static VOID RefreshWindow(Object *oWin, struct MUI_WindowData *data)
 {
     if (data->wd_Flags & MUIWF_RESIZING)
@@ -1081,6 +2176,13 @@ static VOID RefreshWindow(Object *oWin, struct MUI_WindowData *data)
 
 
 /* Initialize data->wd_X and data->wd_Y for DisplayWindow */
+/* Compute stored X/Y from requests, estimated outer size, screen and
+ * optional borrowed reference window. Centered/mouse encodings and
+ * TopEdge_Delta(0..6) have special handling. Reference horizontal centering
+ * mixes inner and outer sizes. Requires live screen/DrawInfo-derived
+ * borders and reference; return no status and do not move an existing
+ * window.
+ */
 static void CalcWindowPosition(Object *obj, struct MUI_WindowData *data)
 {
     struct MUI_RenderInfo *mri = &data->wd_RenderInfo;
@@ -1140,6 +2242,12 @@ static void CalcWindowPosition(Object *obj, struct MUI_WindowData *data)
 }
 
 /* Initialize alternative dimensions for DisplayWindow */
+/* Modify the supplied writable alternate IBox for the next opening using
+ * screen size and content limits. NoChange and Moused coordinates both
+ * become unchanged; Centered uses normal inner size. Both MinMax
+ * calculations omit division by 100. Scaled and Delta have no special
+ * branches. Clamp dimensions and return no status.
+ */
 static void CalcAltDimensions(Object *obj, struct MUI_WindowData *data,
     struct IBox *altdims)
 {
@@ -1221,6 +2329,12 @@ static void CalcAltDimensions(Object *obj, struct MUI_WindowData *data,
 
 
 /* Create horiz/vert window scrollbars for DisplayWindow */
+/* Create requested right/bottom native prop and button gadgets using setup-
+ * owned system images and allocated gadget IDs; store owned gadget pointers
+ * for display/undisplay. Requires live non-NULL images. Allocation failures
+ * are not propagated or fully unwound here; there is no result. Failed
+ * gadget creation can leave an ID allocated until pool disposal.
+ */
 static void CreateWindowScrollbars(Object *obj,
     struct MUI_WindowData *data)
 {
@@ -1337,6 +2451,12 @@ static void CreateWindowScrollbars(Object *obj,
 }
 
 /* return FALSE only if no resize (dx=dy=0) occured */
+/* For a live native window, temporarily relax limits, request the
+ * difference between desired inner and current outer dimensions, then
+ * restore content-derived limits. Return whether a nonzero delta was
+ * requested, not whether Intuition completed a resize. Borrow data and
+ * window; no new ownership.
+ */
 static BOOL WindowResize(struct MUI_WindowData *data)
 {
     struct Window *win = data->wd_RenderInfo.mri_Window;
@@ -1361,6 +2481,11 @@ static BOOL WindowResize(struct MUI_WindowData *data)
     return dx || dy;
 }
 
+/* Ask the retained help object to delete its owned bubble and clear the
+ * borrowed object/bubble pointers. Optionally leave bubble mode, then reset
+ * the first/later help ticker. Requires the help object to remain alive
+ * through its callback; obj is unused and no status is returned.
+ */
 static void KillHelpBubble(struct MUI_WindowData *data, Object *obj,
     BOOL kill_bubblemode)
 {
@@ -1388,13 +2513,27 @@ static void KillHelpBubble(struct MUI_WindowData *data, Object *obj,
 
 /**************/
 
+/* Synchronous Area predicate used by ObjectUnderPointer. Receive a borrowed
+ * live object and return whether it qualifies; do not change hierarchy or
+ * retain ownership during traversal.
+ */
 typedef BOOL(*UNDERCHECK_FUNC) (Object *obj);
 
+/* Return whether a live Area-compatible object has a non-NULL short-help
+ * pointer. The pointer is only tested, not copied or retained; no state is
+ * changed.
+ */
 static BOOL ShortHelpUnderPointerCheck(Object *obj)
 {
     return muiAreaData(obj)->mad_ShortHelp ? TRUE : FALSE;
 }
 
+/* Recursively find the first drawable child/subtree at inclusive x/y bounds
+ * that satisfies the supplied synchronous predicate, otherwise test obj
+ * itself. Require a live Area root, stable child lists and callable
+ * predicate. Return a borrowed match or NULL; do not retain ownership or
+ * modify hierarchy during callbacks.
+ */
 static Object *ObjectUnderPointer(struct MUI_WindowData *data, Object *obj,
     LONG x, LONG y, UNDERCHECK_FUNC func)
 {
@@ -1435,6 +2574,11 @@ static Object *ObjectUnderPointer(struct MUI_WindowData *data, Object *obj,
     return obj;
 }
 
+/* Recursively test children at inclusive x/y bounds, then the current
+ * drawable object, for a context-menu pointer. Require a live Area-
+ * compatible tree and stable child lists. Return BOOL without taking
+ * ownership or constructing a menu.
+ */
 static BOOL ContextMenuUnderPointer(struct MUI_WindowData *data,
     Object *obj, LONG x, LONG y)
 {
@@ -1473,6 +2617,11 @@ static BOOL ContextMenuUnderPointer(struct MUI_WindowData *data,
 
 /**************/
 
+/* If the stored active object is in the cycle chain, send GoActive once
+ * according to the sent flag; otherwise clear the active pointer. Requires
+ * stable live chain members and callback-safe window lifetime. Return no
+ * status; this does not choose a replacement focus object.
+ */
 static void ActivateObject(struct MUI_WindowData *data)
 {
     //bug("Window::ActivateObject (dummy) %08lx\n", data->wd_ActiveObject);
@@ -1496,9 +2645,13 @@ static void ActivateObject(struct MUI_WindowData *data)
 
 /**************/
 
-/* handle intuimessage while an object is being dragged
- * (reply imsg before returning)
- * Returns TRUE if finished dragging.
+/* Process a live dequeued IntuiMessage while a drag context exists. Track
+ * application-window targets, issue synchronous drag
+ * query/begin/report/drop/finish callbacks and draw the drag image. Keep
+ * source, destination, application lists and context alive through
+ * callbacks. Return FALSE after replying when drag continues; TRUE after
+ * releasing drag resources when finished, leaving the message for ordinary
+ * event processing. The Lock report is not implemented.
  */
 static BOOL HandleDragging(Object *oWin, struct MUI_WindowData *data,
     struct IntuiMessage *imsg)
@@ -1687,6 +2840,13 @@ static BOOL HandleDragging(Object *oWin, struct MUI_WindowData *data,
 }
 
 /* Reply to imsg if handled */
+/* Handle activation, geometry, refresh, close, menu, scrollbar and help
+ * events for a live open window. Return TRUE for consumed events and
+ * normally reply those messages; FALSE leaves the message for further
+ * dispatch. Callback targets and root must remain live. The MENUPICK branch
+ * replies before subsequently reading imsg->Code, so its ordering does not
+ * preserve that message field lifetime.
+ */
 BOOL HandleWindowEvent(Object *oWin, struct MUI_WindowData *data,
     struct IntuiMessage *imsg)
 {
@@ -1958,6 +3118,13 @@ BOOL HandleWindowEvent(Object *oWin, struct MUI_WindowData *data,
     return is_handled;
 }
 
+/* Invoke one borrowed live handler with a borrowed message and muikey after
+ * GUIMODE visibility/draw and virtual click tests. Use CoerceMethod when
+ * ehn_Class exists, otherwise DoMethod. Return HandleEvent result or zero
+ * for skipped/private HandleInput delivery; HandleInput results are
+ * discarded. Disabled checks are performed by caller paths, not uniformly
+ * here.
+ */
 static ULONG InvokeEventHandler(struct MUI_EventHandlerNode *ehn,
     struct IntuiMessage *event, ULONG muikey)
 {
@@ -2024,6 +3191,14 @@ static ULONG InvokeEventHandler(struct MUI_EventHandlerNode *ehn,
     return res;
 }
 
+/* Construct a temporary InputEvent for synchronous notifications, copy the
+ * raw IntuiMessage and dead-key address data, then reply the original
+ * before dispatch. Apply configured built-in actions unless masked, then
+ * active/parent/default/other/control-character handlers. Borrow all nodes
+ * and targets throughout traversal. Return no status. The parent loop
+ * starts with the active object again; callbacks must not retain stack
+ * event pointers or alter traversed lists.
+ */
 static void HandleRawkey(Object *win, struct MUI_WindowData *data,
     struct IntuiMessage *event)
 {
@@ -2381,6 +3556,13 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 }
 
 /* forward non-keystroke events to event handlers */
+/* Dispatch a borrowed event to matching non-disabled handler objects. For
+ * events other than IDCMPUPDATE, copy the message, clear IAddress and reply
+ * before callbacks. IDCMPUPDATE retains the original until final ReplyMsg;
+ * an Eat return currently bypasses that reply. Update the native context-
+ * menu trap on mouse move. Return no status and require stable live handler
+ * nodes.
+ */
 static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
     struct IntuiMessage *event)
 {
@@ -2438,8 +3620,14 @@ static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
 }
 
 
-/* process window message; this does a ReplyMsg() to the message */
 /* Called from application.c */
+/* Consume a dequeued application-port IntuiMessage whose native IDCMPWindow
+ * and UserData identify a live Zune Window. Route sleeping, drag, window,
+ * raw-key and other handler paths. No result is returned; callbacks may
+ * synchronously act on the application. Most paths reply, but GADGETUP here
+ * and an eaten IDCMPUPDATE lack a reply. Callers must not assume
+ * unconditional reply or reuse a possibly replied message.
+ */
 void _zune_window_message(struct IntuiMessage *imsg)
 {
     struct Window *iWin;
@@ -2507,6 +3695,12 @@ void _zune_window_message(struct IntuiMessage *imsg)
 /**************************************************************************/
 
 /* code for setting MUIA_Window_RootObject */
+/* While closed, disconnect the old root, install the new borrowed input as
+ * the owned current root, and connect it when global information exists. Do
+ * not dispose the detached old root; the caller must manage it. While open
+ * do nothing. Clear focus only when equal to the old root, not a
+ * descendant. Return no status.
+ */
 static void ChangeRootObject(struct MUI_WindowData *data, Object *obj,
     Object *newRoot)
 {
@@ -2538,6 +3732,10 @@ static void ChangeRootObject(struct MUI_WindowData *data, Object *obj,
 
 // find the ObjNode containing a pointer to the given object
 // currently only used for cycle chain objects
+/* Search a stable ObjNode list for pointer equality with a live object;
+ * NULL object returns NULL. Return the borrowed node or NULL without
+ * changing links or ownership.
+ */
 static struct ObjNode *FindObjNode(struct MinList *list, Object *obj)
 {
     struct ObjNode *node;
@@ -2560,6 +3758,10 @@ static struct ObjNode *FindObjNode(struct MinList *list, Object *obj)
     return NULL;
 }
 
+/* Return the borrowed object in the first cycle-chain node, or NULL for an
+ * empty chain. Do not filter disabled or hidden state; callers must account
+ * for this fallback behavior.
+ */
 static Object *GetFirstActiveObject(struct MUI_WindowData *data)
 {
     ASSERT_VALID_PTR(data);
@@ -2570,6 +3772,10 @@ static Object *GetFirstActiveObject(struct MUI_WindowData *data)
         return NULL;
 }
 
+/* Return the borrowed object in the last cycle-chain node, or NULL for an
+ * empty chain. Do not filter disabled or hidden state; no ownership or
+ * state changes occur.
+ */
 static Object *GetLastActiveObject(struct MUI_WindowData *data)
 {
     ASSERT_VALID_PTR(data);
@@ -2580,11 +3786,27 @@ static Object *GetLastActiveObject(struct MUI_WindowData *data)
         return NULL;
 }
 
+/* Cycle-chain iterator signature. Receive a linked live ObjNode and return
+ * the borrowed adjacent node or NULL at the sentinel. Do not mutate the
+ * chain or transfer ownership.
+ */
 typedef struct ObjNode *objnode_iterator_t(struct ObjNode *curr_node);
 
+/* Forward declaration of the next-node iterator; its contract is defined
+ * with the implementation below. Input links must remain valid and the
+ * return value is borrowed.
+ */
 static objnode_iterator_t NextObjNodeIterator;
+/* Forward declaration of the previous-node iterator; its contract is
+ * defined with the implementation below. Input links must remain valid and
+ * the return value is borrowed.
+ */
 static objnode_iterator_t PrevObjNodeIterator;
 
+/* Return the next borrowed cycle-chain node or NULL at the tail sentinel.
+ * curr_node must be a linked live node; no wrapping, mutation or ownership
+ * transfer occurs.
+ */
 static struct ObjNode *NextObjNodeIterator(struct ObjNode *curr_node)
 {
     if (curr_node->node.mln_Succ->mln_Succ)
@@ -2593,6 +3815,10 @@ static struct ObjNode *NextObjNodeIterator(struct ObjNode *curr_node)
         return NULL;
 }
 
+/* Return the previous borrowed cycle-chain node or NULL at the head
+ * sentinel. curr_node must be a linked live node; no wrapping, mutation or
+ * ownership transfer occurs.
+ */
 static struct ObjNode *PrevObjNodeIterator(struct ObjNode *curr_node)
 {
     if (curr_node->node.mln_Pred->mln_Pred)
@@ -2601,6 +3827,11 @@ static struct ObjNode *PrevObjNodeIterator(struct ObjNode *curr_node)
         return NULL;
 }
 
+/* Traverse from the supplied node with a callable next/previous iterator,
+ * selecting a non-disabled object with SHOWME set. Require valid stable
+ * chain links and live Area targets. Return a borrowed target or NULL; this
+ * helper does not wrap at a sentinel.
+ */
 static Object *GetPrevNextActiveObject(struct ObjNode *old_activenode,
     objnode_iterator_t node_iterator)
 {
@@ -2651,6 +3882,13 @@ Basically, it will:
 - set data->wd_ActiveObject to the new object
 - draw focus around the new active object
 **************************************************************************/
+/* While closed, remember the pointer or special selection value for later.
+ * While open, deactivate the previous valid setup target, resolve
+ * None/Next/Prev or store an explicit borrowed target, and send GoActive
+ * only to an eligible root descendant. Wraparound first/last fallback does
+ * not filter hidden/disabled state. Return no status; keep all callback
+ * targets alive.
+ */
 static void SetActiveObject(struct MUI_WindowData *data, Object *obj,
     IPTR newval)
 {
@@ -2731,6 +3969,10 @@ static void SetActiveObject(struct MUI_WindowData *data, Object *obj,
 }
 
 
+/* Return whether WORD x/y lie within a readable IBox using inclusive
+ * left/top and exclusive right/bottom bounds. No allocation, mutation or
+ * ownership transfer occurs.
+ */
 static BOOL InBox(struct IBox *box, WORD x, WORD y)
 {
     return x >= box->Left && x < box->Left + box->Width
@@ -2740,6 +3982,12 @@ static BOOL InBox(struct IBox *box, WORD x, WORD y)
 
 /*
  * Pass on an AppMessage to all objects that it landed on.
+ */
+/* Set a borrowed live AppMessage on the root/current child, then recurse
+ * into Group children whose boxes contain its coordinates. Require a non-
+ * NULL Area-compatible child and stable hierarchy. Return no status;
+ * neither copy nor reply the message, which remains owned by the
+ * application input path.
  */
 static void ForwardAppMessage(struct MUI_WindowData *data, Object *child,
     struct AppMessage *appmsg)
@@ -2773,8 +4021,11 @@ static void ForwardAppMessage(struct MUI_WindowData *data, Object *child,
  * calculate real dimensions from programmer requirements.
  * may be overridden by user settings if MUIA_Window_ID is set.
  */
-/* MUIV_Window_Height_Screen and MUIV_Window_Height_Visible
- * are not handled yet, as their Width couterparts.
+/* If cached width is zero, evaluate both requested dimensions from content
+ * limits and the selected screen, then always clamp both. Height MinMax
+ * omits division by 100; scaled calculation does not guard zero minimums. A
+ * Height-only invalidation does not trigger evaluation. Mutate instance
+ * dimensions and return no status.
  */
 static void WindowSelectDimensions(struct MUI_WindowData *data)
 {
@@ -2848,9 +4099,12 @@ static void WindowSelectDimensions(struct MUI_WindowData *data)
 }
 
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
+/* Construct Notify, create the private node pool, initialize lists/defaults
+ * and process supported tags in order. Return the object or NULL after
+ * superclass/pool failure or explicit NULL RootObject. Adopt the current
+ * root/local menustrip; borrow strings, screen and reference pointers.
+ * Omitted root is allowed. Do not open the native window here.
+ */
 IPTR Window__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_WindowData *data;
@@ -3067,9 +4321,12 @@ IPTR Window__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
-/**************************************************************************
- OM_DISPOSE
-**************************************************************************/
+/* Dispose the current owned root and local menustrip, delete the private
+ * node pool and return superclass disposal result. The caller must already
+ * have closed the native window, detached application membership and
+ * stopped callbacks. This handler intentionally does not perform close or
+ * remove membership.
+ */
 IPTR Window__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -3101,12 +4358,28 @@ IPTR Window__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
+/* Require a root, run Window setup then root setup, compute dimensions,
+ * choose local/application menu and open the native window. On checked
+ * failure unwind completed setup and return FALSE. On success mark open,
+ * show/redraw and restore remembered focus, then return TRUE. Requires
+ * connected application state; optional resource failures may remain
+ * unchecked.
+ */
 static ULONG WindowOpen(struct IClass *cl, Object *obj);
+/* Remember focus, clear it, delete help bubble, hide root/background,
+ * release backbuffer and native display, clear open/effective-menu state
+ * and clean up root then Window resources. Requires a live open window and
+ * application. Return TRUE; Sleep nesting and AppWindow registration are
+ * not reset here.
+ */
 static ULONG WindowClose(struct IClass *cl, Object *obj);
 
-/**************************************************************************
- OM_SET
-**************************************************************************/
+/* Apply supported tags in order, including open/close, focus, borrowed
+ * selectors, sleeping and private iconification visibility; forward the
+ * same list to Notify and return its result. Local operation failures are
+ * not collected into a success result. Require valid application/root state
+ * for operations that use it; pointer lifetimes follow attribute contracts.
+ */
 IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -3345,9 +4618,12 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
-/**************************************************************************
- OM_GET
-**************************************************************************/
+/* Initialize writable opg_Storage to zero, then return recognized stored or
+ * native-window fields, or delegate unknown attributes to Notify. Native
+ * geometry is zero while closed; pointer results are borrowed. Some
+ * declared header getters have no case here and do not become implemented
+ * merely through zero initialization.
+ */
 IPTR Window__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 #define STORE *(msg->opg_Storage)
@@ -3486,9 +4762,9 @@ IPTR Window__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 #undef STORE
 }
 
-/*
- * MUIM_FindUData : tests if the MUIA_UserData of the object
- * contains the given <udata> and returns the object pointer in this case.
+/* Match window UserData first, then search its root subtree if present.
+ * Return a borrowed matching object or zero. Do not search the menustrip;
+ * keep hierarchy alive through delegated calls.
  */
 IPTR Window__MUIM_FindUData(struct IClass *cl, Object *obj,
     struct MUIP_FindUData *msg)
@@ -3505,10 +4781,10 @@ IPTR Window__MUIM_FindUData(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_GetUData : This method tests if the MUIA_UserData of the object
- * contains the given <udata> and gets <attr> to <storage> for itself
- * in this case.
+/* On a window UserData match, get the requested attribute into writable
+ * storage and return TRUE without checking getter success; otherwise
+ * delegate to the root if present. Return FALSE without a match. No
+ * menustrip traversal or ownership transfer occurs.
  */
 IPTR Window__MUIM_GetUData(struct IClass *cl, Object *obj,
     struct MUIP_GetUData *msg)
@@ -3528,9 +4804,9 @@ IPTR Window__MUIM_GetUData(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_SetUData : This method tests if the MUIA_UserData of the object
- * contains the given <udata> and sets <attr> to <val> for itself in this case.
+/* Set the window attribute on a UserData match, then visit the root if
+ * present. Return TRUE regardless of matches or setter results. Keep the
+ * root/window alive and traversal stable through synchronous notifications.
  */
 IPTR Window__MUIM_SetUData(struct IClass *cl, Object *obj,
     struct MUIP_SetUData *msg)
@@ -3547,9 +4823,9 @@ IPTR Window__MUIM_SetUData(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_SetUDataOnce : This method tests if the MUIA_UserData of the object
- * contains the given <udata> and sets <attr> to <val> for itself in this case.
+/* Set the window on a UserData match and return TRUE without checking
+ * setter success; otherwise delegate to the root or return FALSE. Stop at
+ * the first delegated match and do not search menus.
  */
 IPTR Window__MUIM_SetUDataOnce(struct IClass *cl, Object *obj,
     struct MUIP_SetUDataOnce *msg)
@@ -3572,6 +4848,11 @@ IPTR Window__MUIM_SetUDataOnce(struct IClass *cl, Object *obj,
  Called by Application (parent) object whenever this object is added.
  init GlobalInfo
 **************************************************************************/
+/* Delegate connection to Notify and, if successful, connect current root
+ * and local menustrip to this Window. Return TRUE on that path, FALSE on
+ * superclass failure. Borrow a live application-parent message; child
+ * results are ignored and no membership insertion is performed here.
+ */
 IPTR Window__MUIM_ConnectParent(struct IClass *cl, Object *obj,
     struct MUIP_ConnectParent *msg)
 {
@@ -3593,6 +4874,11 @@ IPTR Window__MUIM_ConnectParent(struct IClass *cl, Object *obj,
 /**************************************************************************
  called by parent object
 **************************************************************************/
+/* If global information exists, close an open window, then disconnect local
+ * menustrip and root before delegating to Notify. Return zero. Requires
+ * live application state during closing; global info is not cleared by
+ * Notify and is not a lifetime guarantee.
+ */
 IPTR Window__MUIM_DisconnectParent(struct IClass *cl, Object *obj,
     struct MUIP_DisconnectParent *msg)
 {
@@ -3626,6 +4912,11 @@ IPTR Window__MUIM_DisconnectParent(struct IClass *cl, Object *obj,
     }
 }
 
+/* Set each root inner-spacing component from window preferences unless
+ * explicitly specified by the Area object; use zero for borderless windows.
+ * Require a live root and connected preferences. Mutate root layout inputs,
+ * return no status and retain no pointers.
+ */
 static void SetRootObjInnerSpacing(Object *obj,
     struct MUI_WindowData *data)
 {
@@ -3671,6 +4962,11 @@ static void SetRootObjInnerSpacing(Object *obj,
  * Called before window is opened or resized. It determines its bounds,
  * so you can call WindowSelectDimensions() to find the final dims.
  */
+/* Set root spacing, ask and finalize its min/max dimensions, then cap
+ * maxima to screen dimensions. Require live root and render screen. Store
+ * the result in window data and return no status; this does not open or
+ * resize Intuition.
+ */
 static void WindowMinMax(Object *obj, struct MUI_WindowData *data)
 {
     SetRootObjInnerSpacing(obj, data);
@@ -3697,6 +4993,11 @@ static void WindowMinMax(Object *obj, struct MUI_WindowData *data)
 }
 
 
+/* Initialize a buffer RastPort and assign its bitmap only if a buffer
+ * bitmap already exists. Bitmap allocation code is disabled. Borrow
+ * instance state and return no status; this helper does not currently
+ * enable buffering by itself.
+ */
 static void InstallBackbuffer(struct IClass *cl, Object *obj)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -3719,6 +5020,10 @@ static void InstallBackbuffer(struct IClass *cl, Object *obj)
     }
 }
 
+/* If an owned buffer bitmap exists, deinitialize its RastPort, free the
+ * bitmap and clear its pointer. Call only after drawing has stopped. No
+ * result or new ownership is produced.
+ */
 static void DeinstallBackbuffer(struct IClass *cl, Object *obj)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -3735,6 +5040,11 @@ static void DeinstallBackbuffer(struct IClass *cl, Object *obj)
  * Called after window is opened or resized.
  * An expose event is already queued, it will trigger
  * MUIM_Draw for us when going back to main loop.
+ */
+/* Use the live native window borders and cached inner dimensions to lay out
+ * the root, select the drawing port, show the background and show the root.
+ * Requires successful setup and opening. Return no status; callbacks must
+ * not invalidate the window during this sequence.
  */
 static void WindowShow(struct IClass *cl, Object *obj)
 {
@@ -3755,6 +5065,13 @@ static void WindowShow(struct IClass *cl, Object *obj)
     DoShowMethod(data->wd_RootObject);
 }
 
+/* Require a root, run Window setup then root setup, compute dimensions,
+ * choose local/application menu and open the native window. On checked
+ * failure unwind completed setup and return FALSE. On success mark open,
+ * show/redraw and restore remembered focus, then return TRUE. Requires
+ * connected application state; optional resource failures may remain
+ * unchecked.
+ */
 static ULONG WindowOpen(struct IClass *cl, Object *obj)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -3838,6 +5155,12 @@ static ULONG WindowOpen(struct IClass *cl, Object *obj)
 /**************************************************************************/
 /**************************************************************************/
 
+/* Remember focus, clear it, delete help bubble, hide root/background,
+ * release backbuffer and native display, clear open/effective-menu state
+ * and clean up root then Window resources. Requires a live open window and
+ * application. Return TRUE; Sleep nesting and AppWindow registration are
+ * not reset here.
+ */
 static ULONG WindowClose(struct IClass *cl, Object *obj)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -3875,6 +5198,13 @@ static ULONG WindowClose(struct IClass *cl, Object *obj)
  * see Group_ExitChange
  * see Group_Columns
  * see Group_Rows
+ */
+/* Private MUIM_Window_RecalcDisplay: use the borrowed originator and
+ * ancestor chain to choose relayout scope, recompute root limits, resize
+ * the live native window, layout/show/redraw and reactivate focus. Return
+ * zero while closed, TRUE after the sequence. Require an appropriate live
+ * Area originator or NULL and stable hierarchy; intermediate results are
+ * ignored.
  */
 IPTR Window__MUIM_RecalcDisplay(struct IClass *cl, Object *obj,
     struct MUIP_Window_RecalcDisplay *msg)
@@ -3982,9 +5312,50 @@ IPTR Window__MUIM_RecalcDisplay(struct IClass *cl, Object *obj,
 }
 
 
-/**************************************************************************
- MUIM_AddEventHandler
-**************************************************************************/
+/****** Window.mui/MUIM_Window_AddEventHandler ************
+*
+*   NAME
+*       MUIM_Window_AddEventHandler
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Window_AddEventHandler, (IPTR)ehnode);
+*
+*   FUNCTION
+*       Link a borrowed event-handler node and recompute the native IDCMP mask
+*       from default events and all registered masks. IDCMP_VANILLAKEY is always
+*       removed.
+*
+*   INPUTS
+*       ehnode - Non-NULL MUI_EventHandlerNode not already linked. Clear
+*       reserved fields and set ehn_Priority, ehn_Flags, ehn_Object, optional
+*       ehn_Class, and ehn_Events before registering. Keep the node, object and
+*       class alive until removal.
+*
+*   RESULT
+*       Always TRUE; there is no duplicate or NULL check.
+*
+*   NOTES
+*       Handlers are ordered by descending signed BYTE priority, then descending
+*       node address. ehn_Class selects CoerceMethod; NULL selects DoMethod.
+*       Normal delivery calls MUIM_HandleEvent with a borrowed message and a
+*       muikey value. MUI_EventHandlerRC_Eat stops further delivery on paths
+*       that test it.
+*       MUI_EHF_ALWAYSKEYS participates in the active/parent/default raw-key
+*       paths even without an IDCMP_RAWKEY bit. MUI_EHF_GUIMODE filters
+*       drawing/visibility. Virtual-group SELECTDOWN bounds are checked
+*       independently of that flag; caller paths also test disabled state.
+*       MUI_EHF_HANDLEINPUT is private. Remove handlers before freeing them and
+*       keep list membership stable during dispatch.
+*
+*   BUGS
+*       Most delivered IntuiMessages are temporary copies whose original was
+*       already replied to; IAddress is cleared except for raw-key dead-key
+*       data. IDCMP_IDCMPUPDATE uses the original message. Never reply to or
+*       retain either form. An Eat return in the IDCMPUPDATE path skips the
+*       implementation's final ReplyMsg. The raw-key parent loop can deliver to
+*       the active object twice.
+*
+*/
 IPTR Window__MUIM_AddEventHandler(struct IClass *cl, Object *obj,
     struct MUIP_Window_AddEventHandler *msg)
 {
@@ -3999,9 +5370,32 @@ IPTR Window__MUIM_AddEventHandler(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/**************************************************************************
- MUIM_RemEventHandler
-**************************************************************************/
+/****** Window.mui/MUIM_Window_RemEventHandler ************
+*
+*   NAME
+*       MUIM_Window_RemEventHandler
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Window_RemEventHandler, (IPTR)ehnode);
+*
+*   FUNCTION
+*       Unlink a registered event handler and recompute the IDCMP mask.
+*
+*   INPUTS
+*       ehnode - The exact live node currently linked to this window.
+*
+*   RESULT
+*       Always TRUE.
+*
+*   NOTES
+*       The node is not freed. Remove outside active traversal, then release
+*       caller-owned storage when callbacks can no longer use it.
+*
+*   BUGS
+*       No membership or NULL validation is performed. Repeated removal or
+*       removal from the wrong list is invalid.
+*
+*/
 IPTR Window__MUIM_RemEventHandler(struct IClass *cl, Object *obj,
     struct MUIP_Window_RemEventHandler *msg)
 {
@@ -4017,6 +5411,40 @@ IPTR Window__MUIM_RemEventHandler(struct IClass *cl, Object *obj,
 /**************************************************************************
  Note that this is MUIM_Window_Setup, not MUIM_Setup
 **************************************************************************/
+/****** Window.mui/MUIM_Window_Setup ************
+*
+*   NAME
+*       MUIM_Window_Setup
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Window_Setup);
+*
+*   FUNCTION
+*       Acquire render-info resources and create the window background
+*       specification. Used by the Window open sequence and custom Window
+*       subclasses.
+*
+*   INPUTS
+*       No arguments beyond MethodID. The window must be attached to a live
+*       application with valid preferences, and must not already own an active
+*       setup.
+*
+*   RESULT
+*       FALSE if SetupRenderInfo fails; otherwise TRUE.
+*
+*   NOTES
+*       This is MUIM_Window_Setup, distinct from the root Area's MUIM_Setup.
+*       Opening calls it before root setup and native window creation.
+*       Subclasses must preserve the superclass resource lifecycle and propagate
+*       failure. Pair a successful setup with Cleanup in the close/unwind
+*       sequence.
+*
+*   BUGS
+*       Background, pen and system-image creation are not all checked. Temporary
+*       pen-spec allocation can be dereferenced without a NULL check. TRUE is
+*       not proof that every render resource exists.
+*
+*/
 IPTR Window__MUIM_Setup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -4034,9 +5462,39 @@ IPTR Window__MUIM_Setup(struct IClass *cl, Object *obj, Msg msg)
     return TRUE;
 }
 
-/**************************************************************************
- MUIM_Cleanup
-**************************************************************************/
+/****** Window.mui/MUIM_Window_Cleanup ************
+*
+*   NAME
+*       MUIM_Window_Cleanup
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Window_Cleanup);
+*
+*   FUNCTION
+*       Release the background, any drag context and render-info resources after
+*       hiding and closing. Used by the Window close sequence and custom
+*       subclasses.
+*
+*   INPUTS
+*       No arguments beyond MethodID. Requires resources from a successful setup
+*       and no remaining users of them.
+*
+*   RESULT
+*       Always TRUE.
+*
+*   NOTES
+*       This does not close the native window or dispose the root. It is not an
+*       idempotent public close operation. Subclasses must release their
+*       dependent resources before calling the superclass cleanup. Borrowed
+*       render-info pointers become invalid.
+*
+*   BUGS
+*       CleanupRenderInfoPens releases MPEN_MARK twice, although
+*       InitRenderInfoPens does not acquire that entry. Custom-screen closure is
+*       conditioned on an empty application window list, not on the number of
+*       open native windows.
+*
+*/
 IPTR Window__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -4058,6 +5516,12 @@ IPTR Window__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
  This adds the the control char handler and also does the MUIA_CycleChain
  stuff. Orginal MUI does this another way.
 **************************************************************************/
+/* Private MUIM_Window_AddControlCharHandler: borrow ccnode; enqueue it when
+ * ehn_Events is nonzero and append a pooled cycle node when its live Area
+ * target has CYCLECHAIN. Return TRUE even if cycle-node allocation fails.
+ * Do not duplicate registration; node and target must remain valid until
+ * matching removal.
+ */
 IPTR Window__MUIM_AddControlCharHandler(struct IClass *cl, Object *obj,
     struct MUIP_Window_AddControlCharHandler *msg)
 {
@@ -4084,9 +5548,12 @@ IPTR Window__MUIM_AddControlCharHandler(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/**************************************************************************
- MUIM_RemControlCharHandler
-**************************************************************************/
+/* Private MUIM_Window_RemControlCharHandler: unlink ccnode when its event
+ * field is nonzero and remove/free the first cycle node for its target.
+ * Return TRUE. Require the original live registration and unchanged
+ * linkage-relevant fields; membership is not validated and caller-owned
+ * ccnode is not freed.
+ */
 IPTR Window__MUIM_RemControlCharHandler(struct IClass *cl, Object *obj,
     struct MUIP_Window_RemControlCharHandler *msg)
 {
@@ -4107,9 +5574,13 @@ IPTR Window__MUIM_RemControlCharHandler(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/**************************************************************************
- MUIM_DragObject
-**************************************************************************/
+/* Private MUIM_Window_DragObject: ask the live source obj for a drag image
+ * using touchx/touchy/flags, create a drag context and bitmap node,
+ * attach/prepare it for the render screen, then mark the source dragging
+ * and retain borrowed source/image pointers. Return 1 on success or 0 after
+ * local allocation failure cleanup. Require an open window with no existing
+ * drag; no overlap guard is implemented.
+ */
 IPTR Window__MUIM_DragObject(struct IClass *cl, Object *obj,
     struct MUIP_Window_DragObject *msg)
 {
@@ -4170,9 +5641,39 @@ IPTR Window__MUIM_DragObject(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/**************************************************************************
- MUIM_AllocGadgetID
-**************************************************************************/
+/****** Window.mui/MUIM_Window_AllocGadgetID ************
+*
+*   NAME
+*       MUIM_Window_AllocGadgetID
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Window_AllocGadgetID);
+*
+*   FUNCTION
+*       Allocate a pool node and choose a numeric identifier for a native BOOPSI
+*       gadget.
+*
+*   INPUTS
+*       No arguments beyond MethodID. Serialize use with other window
+*       operations.
+*
+*   RESULT
+*       Zero on pool allocation failure; otherwise the selected integer,
+*       starting at 1.
+*
+*   NOTES
+*       The allocation belongs to the window; release it with FreeGadgetID when
+*       the gadget no longer uses it. Remaining nodes are reclaimed with the
+*       window pool.
+*
+*   BUGS
+*       The search assumes ascending IDs, but inserts a reused gap after the
+*       larger node. After allocating 1 and 2, freeing 1 and allocating twice
+*       can return 1 twice. There is no UWORD overflow check, and the returned
+*       integer can differ from its truncated stored value. This implementation
+*       cannot guarantee uniqueness after reuse.
+*
+*/
 IPTR Window__MUIM_AllocGadgetID(struct IClass *cl, Object *obj,
     struct MUIP_Window_AllocGadgetID *msg)
 {
@@ -4211,9 +5712,29 @@ IPTR Window__MUIM_AllocGadgetID(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/**************************************************************************
- MUIM_FreeGadgetID
-**************************************************************************/
+/****** Window.mui/MUIM_Window_FreeGadgetID ************
+*
+*   NAME
+*       MUIM_Window_FreeGadgetID
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Window_FreeGadgetID, gadgetid);
+*
+*   FUNCTION
+*       Remove and free the first stored gadget-ID node equal to the argument.
+*
+*   INPUTS
+*       gadgetid - LONG identifier previously obtained from this window. Stop
+*       using the corresponding gadget before releasing its ID.
+*
+*   RESULT
+*       Always zero, whether found or not.
+*
+*   NOTES
+*       This frees only the allocation record, not the gadget. Duplicate or
+*       truncated IDs from AllocGadgetID limit reliable matching.
+*
+*/
 IPTR Window__MUIM_FreeGadgetID(struct IClass *cl, Object *obj,
     struct MUIP_Window_FreeGadgetID *msg)
 {
@@ -4235,9 +5756,34 @@ IPTR Window__MUIM_FreeGadgetID(struct IClass *cl, Object *obj,
 }
 
 
-/**************************************************************************
- MUIM_Window_GetMenuCheck
-**************************************************************************/
+/****** Window.mui/MUIM_Window_GetMenuCheck ************
+*
+*   NAME
+*       MUIM_Window_GetMenuCheck
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Window_GetMenuCheck, MenuID);
+*
+*   FUNCTION
+*       Get Menuitem_Checked on the first object found by UserData in the local
+*       menustrip, or in the effective fallback menu while open.
+*
+*   INPUTS
+*       MenuID - ULONG UserData value. Matching includes the menustrip object
+*       itself.
+*
+*   RESULT
+*       The queried value, or zero when no menu/object is available or the
+*       getter does not supply it.
+*
+*   NOTES
+*       These obsolete declarations require MUI_OBSOLETE, but their dispatch
+*       cases are implemented. Prefer the menu object attributes when the caller
+*       already holds the object. The application fallback menu is not selected
+*       until opening. Zero does not distinguish a false state from an
+*       unsuccessful lookup.
+*
+*/
 IPTR Window__MUIM_GetMenuCheck(struct IClass *cl, Object *obj,
     struct MUIP_Window_GetMenuCheck *msg)
 {
@@ -4255,9 +5801,33 @@ IPTR Window__MUIM_GetMenuCheck(struct IClass *cl, Object *obj,
     return stat;
 }
 
-/**************************************************************************
- MUIM_Window_SetMenuCheck
-**************************************************************************/
+/****** Window.mui/MUIM_Window_SetMenuCheck ************
+*
+*   NAME
+*       MUIM_Window_SetMenuCheck
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Window_SetMenuCheck, MenuID, stat);
+*
+*   FUNCTION
+*       Set Menuitem_Checked on the first object found by UserData in the local
+*       menustrip, or in the effective fallback menu while open.
+*
+*   INPUTS
+*       MenuID - ULONG UserData value. Matching includes the menustrip object
+*       itself. stat - LONG value passed to the menu-item setter.
+*
+*   RESULT
+*       Always zero; absence and setter results are not reported.
+*
+*   NOTES
+*       These obsolete declarations require MUI_OBSOLETE, but their dispatch
+*       cases are implemented. Prefer the menu object attributes when the caller
+*       already holds the object. The application fallback menu is not selected
+*       until opening. Changing a menu attribute can synchronously rebuild
+*       native menu structures; do not retain native MenuItem pointers.
+*
+*/
 IPTR Window__MUIM_SetMenuCheck(struct IClass *cl, Object *obj,
     struct MUIP_Window_SetMenuCheck *msg)
 {
@@ -4274,9 +5844,34 @@ IPTR Window__MUIM_SetMenuCheck(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/**************************************************************************
- MUIM_Window_GetMenuState
-**************************************************************************/
+/****** Window.mui/MUIM_Window_GetMenuState ************
+*
+*   NAME
+*       MUIM_Window_GetMenuState
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Window_GetMenuState, MenuID);
+*
+*   FUNCTION
+*       Get Menuitem_Enabled on the first object found by UserData in the local
+*       menustrip, or in the effective fallback menu while open.
+*
+*   INPUTS
+*       MenuID - ULONG UserData value. Matching includes the menustrip object
+*       itself.
+*
+*   RESULT
+*       The queried value, or zero when no menu/object is available or the
+*       getter does not supply it.
+*
+*   NOTES
+*       These obsolete declarations require MUI_OBSOLETE, but their dispatch
+*       cases are implemented. Prefer the menu object attributes when the caller
+*       already holds the object. The application fallback menu is not selected
+*       until opening. Zero does not distinguish a false state from an
+*       unsuccessful lookup.
+*
+*/
 IPTR Window__MUIM_GetMenuState(struct IClass *cl, Object *obj,
     struct MUIP_Window_GetMenuState *msg)
 {
@@ -4294,9 +5889,33 @@ IPTR Window__MUIM_GetMenuState(struct IClass *cl, Object *obj,
     return stat;
 }
 
-/**************************************************************************
- MUIM_Window_SetMenuState
-**************************************************************************/
+/****** Window.mui/MUIM_Window_SetMenuState ************
+*
+*   NAME
+*       MUIM_Window_SetMenuState
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Window_SetMenuState, MenuID, stat);
+*
+*   FUNCTION
+*       Set Menuitem_Enabled on the first object found by UserData in the local
+*       menustrip, or in the effective fallback menu while open.
+*
+*   INPUTS
+*       MenuID - ULONG UserData value. Matching includes the menustrip object
+*       itself. stat - LONG value passed to the menu-item setter.
+*
+*   RESULT
+*       Always zero; absence and setter results are not reported.
+*
+*   NOTES
+*       These obsolete declarations require MUI_OBSOLETE, but their dispatch
+*       cases are implemented. Prefer the menu object attributes when the caller
+*       already holds the object. The application fallback menu is not selected
+*       until opening. Changing a menu attribute can synchronously rebuild
+*       native menu structures; do not retain native MenuItem pointers.
+*
+*/
 IPTR Window__MUIM_SetMenuState(struct IClass *cl, Object *obj,
     struct MUIP_Window_SetMenuState *msg)
 {
@@ -4313,9 +5932,11 @@ IPTR Window__MUIM_SetMenuState(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/**************************************************************************
- MUIM_Window_DrawBackground
-**************************************************************************/
+/* Private MUIM_Window_DrawBackground: draw the setup-owned background over
+ * left/top/width/height with xoffset/yoffset while open. Ignore message
+ * flags and return zero, also while closed. Require valid render resources
+ * and drawing lifetime; do not interpret zero as a draw-failure report.
+ */
 IPTR Window__MUIM_DrawBackground(struct IClass *cl, Object *obj,
     struct MUIP_Window_DrawBackground *msg)
 {
@@ -4332,9 +5953,28 @@ IPTR Window__MUIM_DrawBackground(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/**************************************************************************
- MUIM_Window_ToFront
-**************************************************************************/
+/****** Window.mui/MUIM_Window_ToFront ************
+*
+*   NAME
+*       MUIM_Window_ToFront
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Window_ToFront);
+*
+*   FUNCTION
+*       Move the open native window to the front.
+*
+*   INPUTS
+*       No arguments beyond MethodID.
+*
+*   RESULT
+*       Zero when no native window exists; otherwise 1 after the Intuition call.
+*
+*   NOTES
+*       This does not open the window or report the final stacking order. It
+*       does not separately request keyboard activation.
+*
+*/
 IPTR Window__MUIM_ToFront(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -4345,9 +5985,28 @@ IPTR Window__MUIM_ToFront(struct IClass *cl, Object *obj, Msg msg)
     return 1;
 }
 
-/**************************************************************************
- MUIM_Window_ToBack
-**************************************************************************/
+/****** Window.mui/MUIM_Window_ToBack ************
+*
+*   NAME
+*       MUIM_Window_ToBack
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Window_ToBack);
+*
+*   FUNCTION
+*       Move the open native window to the back.
+*
+*   INPUTS
+*       No arguments beyond MethodID.
+*
+*   RESULT
+*       Zero when no native window exists; otherwise 1 after the Intuition call.
+*
+*   NOTES
+*       This does not open the window or report the final stacking order. It
+*       does not separately request keyboard activation.
+*
+*/
 IPTR Window__MUIM_ToBack(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -4358,9 +6017,28 @@ IPTR Window__MUIM_ToBack(struct IClass *cl, Object *obj, Msg msg)
     return 1;
 }
 
-/**************************************************************************
- MUIM_Window_ScreenToBack
-**************************************************************************/
+/****** Window.mui/MUIM_Window_ScreenToBack ************
+*
+*   NAME
+*       MUIM_Window_ScreenToBack
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Window_ScreenToBack);
+*
+*   FUNCTION
+*       Move the screen containing the open native window to the back.
+*
+*   INPUTS
+*       No arguments beyond MethodID.
+*
+*   RESULT
+*       Zero when no native window exists; otherwise 1 after the Intuition call.
+*
+*   NOTES
+*       This does not open the window or report the final stacking order. It
+*       does not separately request keyboard activation.
+*
+*/
 IPTR Window__MUIM_ScreenToBack(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -4371,9 +6049,28 @@ IPTR Window__MUIM_ScreenToBack(struct IClass *cl, Object *obj, Msg msg)
     return 1;
 }
 
-/**************************************************************************
- MUIM_Window_ScreenToFront
-**************************************************************************/
+/****** Window.mui/MUIM_Window_ScreenToFront ************
+*
+*   NAME
+*       MUIM_Window_ScreenToFront
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Window_ScreenToFront);
+*
+*   FUNCTION
+*       Move the screen containing the open native window to the front.
+*
+*   INPUTS
+*       No arguments beyond MethodID.
+*
+*   RESULT
+*       Zero when no native window exists; otherwise 1 after the Intuition call.
+*
+*   NOTES
+*       This does not open the window or report the final stacking order. It
+*       does not separately request keyboard activation.
+*
+*/
 IPTR Window__MUIM_ScreenToFront(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -4384,9 +6081,29 @@ IPTR Window__MUIM_ScreenToFront(struct IClass *cl, Object *obj, Msg msg)
     return 1;
 }
 
-/**************************************************************************
- MUIM_Window_ActionIconify
-**************************************************************************/
+/****** Window.mui/MUIM_Window_ActionIconify ************
+*
+*   NAME
+*       MUIM_Window_ActionIconify
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Window_ActionIconify);
+*
+*   FUNCTION
+*       Set Application_Iconified to TRUE on this window's application.
+*
+*   INPUTS
+*       No arguments beyond MethodID. The window must have a live connected
+*       application.
+*
+*   RESULT
+*       Always TRUE; the application setter result is ignored.
+*
+*   NOTES
+*       This iconifies the application, not only this window. Iconified state
+*       does not establish that an AppIcon was successfully created.
+*
+*/
 IPTR Window__MUIM_ActionIconify(struct IClass *cl, Object *obj, Msg msg)
 {
     set(_app(obj), MUIA_Application_Iconified, TRUE);
@@ -4414,6 +6131,10 @@ IPTR Window__MUIM_ActionIconify(struct IClass *cl, Object *obj, Msg msg)
  * 00 01 00 00
  * 00 00 00 00
  */
+/* Stub for the nonzero Snapshot flags path. Accept a borrowed window and
+ * ULONG ID, return immediately for zero ID, and otherwise do nothing. No
+ * record is persisted and no status is returned.
+ */
 static void RememberWindowPosition(Object *winobj, ULONG id)
 {
     if (!id)
@@ -4426,15 +6147,49 @@ static void RememberWindowPosition(Object *winobj, ULONG id)
  * This function shouldn't really be in window.c, but rather in a file dealing
  * with prefs file stuff.
  */
+/* Stub for the zero Snapshot flags path. Accept a borrowed window and ULONG
+ * ID, return immediately for zero ID, and otherwise do nothing. No existing
+ * record is removed and no status is returned.
+ */
 static void ForgetWindowPosition(Object *winobj, ULONG id)
 {
     if (!id)
         return;
 }
 
-/**************************************************************************
- MUIM_Window_Snapshot
-**************************************************************************/
+/****** Window.mui/MUIM_Window_Snapshot ************
+*
+*   NAME
+*       MUIM_Window_Snapshot
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Window_Snapshot, flags);
+*
+*   FUNCTION
+*       When a native window exists, copy its position and inner dimensions into
+*       an application position record using this window's ID.
+*
+*   INPUTS
+*       flags - LONG. Nonzero selects RememberWindowPosition; zero selects
+*       ForgetWindowPosition. Both helpers are currently stubs. A connected
+*       application is required for an open-window snapshot.
+*
+*   RESULT
+*       Always 1, including when closed and no record is stored.
+*
+*   NOTES
+*       This does not itself write a file or remove a saved record. Mouse-button
+*       handling calls Snapshot with zero; closing can call it with one
+*       according to preferences. Application lifecycle and preference handling
+*       determine later persistence.
+*
+*   BUGS
+*       The alternate record fields are incompletely initialized: x2 is assigned
+*       zero twice and y2 is left uninitialized. Do not assume a fully defined
+*       alternate rectangle or infer successful persistence from the return
+*       value.
+*
+*/
 IPTR Window__MUIM_Snapshot(struct IClass *cl, Object *obj,
     struct MUIP_Window_Snapshot *msg)
 {
@@ -4465,9 +6220,12 @@ IPTR Window__MUIM_Snapshot(struct IClass *cl, Object *obj,
     return 1;
 }
 
-/**************************************************************************
- MUIM_Window_UpdateMenu
-**************************************************************************/
+/* Private MUIM_Window_UpdateMenu: when an effective menu exists, clear and
+ * free native menus, build and lay out replacements and install them on the
+ * live window. Requires open display resources and stable menu objects.
+ * Return 1 even on absent menu or allocation failure; borrowed native
+ * MenuItem pointers are invalidated by rebuilding.
+ */
 IPTR Window__MUIM_UpdateMenu(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -4511,9 +6269,10 @@ IPTR Window__MUIM_UpdateMenu(struct IClass *cl, Object *obj, Msg msg)
     return 1;
 }
 
-/**************************************************************************
- MUIM_Window_Refresh
-**************************************************************************/
+/* Private MUIM_Window_Refresh: invoke RefreshWindow and return 1. Requires
+ * a live open window with setup root/resources; this wrapper does not guard
+ * closed windows or validate the refresh result.
+ */
 IPTR Window__MUIM_Refresh(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
@@ -4523,9 +6282,11 @@ IPTR Window__MUIM_Refresh(struct IClass *cl, Object *obj, Msg msg)
     return 1;
 }
 
-/**************************************************************************
-MUIM_Export : to export an object's "contents" to a dataspace object.
-**************************************************************************/
+/* Forward the borrowed export message synchronously to the current root and
+ * return zero regardless of its result. Require a non-NULL live root and
+ * valid dataspace/message fields; do not retain the message or transfer
+ * ownership.
+ */
 static IPTR Window__MUIM_Export(struct IClass *cl, Object *obj,
     struct MUIP_Export *msg)
 {
@@ -4535,9 +6296,11 @@ static IPTR Window__MUIM_Export(struct IClass *cl, Object *obj,
 }
 
 
-/**************************************************************************
-MUIM_Import : to import an object's "contents" from a dataspace object.
-**************************************************************************/
+/* Forward the borrowed import message synchronously to the current root and
+ * return zero regardless of its result. Require a non-NULL live root and
+ * valid dataspace/message fields. Child changes are not rolled back and no
+ * ownership is transferred.
+ */
 static IPTR Window__MUIM_Import(struct IClass *cl, Object *obj,
     struct MUIP_Import *msg)
 {
@@ -4546,6 +6309,39 @@ static IPTR Window__MUIM_Import(struct IClass *cl, Object *obj,
     return 0;
 }
 
+/****** Window.mui/MUIM_Window_SetCycleChain ************
+*
+*   NAME
+*       MUIM_Window_SetCycleChain
+*
+*   SYNOPSIS
+*       IPTR result = DoMethodA(obj, message);
+*
+*   FUNCTION
+*       Declared under MUI_OBSOLETE, but not implemented by the Window
+*       dispatcher.
+*
+*   INPUTS
+*       The legacy message declares an Object pointer array beginning with
+*       obj[0]. Window does not consume it or establish a usable argument
+*       contract.
+*
+*   RESULT
+*       The inherited unhandled-method result is zero.
+*
+*   NOTES
+*       There is no explicit cycle-chain installation here. The implementation
+*       builds its chain through internal control-character registration for
+*       Area objects with MUIA_CycleChain.
+*
+*/
+
+/* Dispatch supported Window and inherited object/user-data/lifecycle
+ * methods, returning the selected handler result. Forward unknown methods
+ * to Notify. Require a live object and correctly formed message for the
+ * selected MethodID; header-only declarations do not add dispatcher
+ * behavior.
+ */
 BOOPSI_DISPATCHER(IPTR, Window_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)

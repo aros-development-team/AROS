@@ -61,6 +61,7 @@
 #include <netinet/in_var.h>
 #include <netinet/ip_var.h>
 #include <netinet/ip_icmp.h>
+#include <stddef.h>		/* offsetof */
 #include <netinet/in_cksum_protos.h>
 #include <protos/net/route_protos.h>
 #include <netinet/tcp.h>
@@ -118,7 +119,7 @@ tcp_isipv6(struct inpcb *inp)
  */
 int
 tcp_v6output(struct mbuf *m, struct in6_addr *laddr, struct in6_addr *faddr,
-    int hlim, int tlen, struct inpcb *inp)
+    int hlim, int tlen, int tclass, struct inpcb *inp)
 {
     struct ip6_hdr *ip6;
     struct tcphdr  *th;
@@ -139,8 +140,8 @@ tcp_v6output(struct mbuf *m, struct in6_addr *laddr, struct in6_addr *faddr,
             return (ENOBUFS);
     }
     ip6 = mtod(m, struct ip6_hdr *);
-    ip6->ip6_flow = 0;
-    ip6->ip6_vfc  = IPV6_VERSION;	/* must follow ip6_flow (they overlap) */
+    /* version 6 and the traffic class; no flow label */
+    ip6->ip6_flow = htonl(0x60000000 | ((u_int32_t)(tclass & 0xff) << 20));
     ip6->ip6_plen = htons((u_short)tlen);
     ip6->ip6_nxt  = IPPROTO_TCP;
     ip6->ip6_hlim = (hlim > 0) ? (u_int8_t)hlim : (u_int8_t)ip6_defhlim;
@@ -316,8 +317,13 @@ int	tcp_do_rfc1323 = 1;
 int	tcp_do_rfc1644 = 0;	/* T/TCP (RFC 1644) - off: Historic, RFC 6247 */
 int	tcp_do_sack = 1;	/* enable SACK (RFC 2018) */
 int	tcp_do_newreno = 1;	/* enable NewReno (RFC 3782) */
-int	tcp_do_ecn = 0;		/* enable ECN (RFC 3168) - off by default */
+/* ECN (RFC 3168): 0 off, 1 ask for it and accept it, 2 accept it when the
+ * peer asks (the default of Linux, FreeBSD and Windows) */
+int	tcp_do_ecn = 2;
 int	tcp_do_prr = 0;		/* enable PRR (RFC 6937) - off by default */
+int	tcp_do_pmtud = 1;	/* IPv4 path MTU discovery: DF on (RFC 1191) */
+/* path MTU black-hole detection (RFC 2923 section 2.1): on, as in XNU */
+int	tcp_do_pmtud_blackhole = 1;
 static	void tcp_cleartaocache(void);
 
 extern u_char inetctlerrmap[];
@@ -513,7 +519,7 @@ struct in6_addr *laddr6, *faddr6;
         m->m_data       += sizeof(struct ipovly);
         m->m_len         = t6;
         m->m_pkthdr.len  = t6;
-        (void) tcp_v6output(m, laddr6, faddr6, hlim, t6,
+        (void) tcp_v6output(m, laddr6, faddr6, hlim, t6, 0,
                             tp ? tp->t_inpcb : NULL);
         return;
     }
@@ -760,6 +766,8 @@ int error;
     sowwakeup(so);
 }
 
+void tcp_mtudisc(struct tcpcb *, u_int32_t);
+
 void
 tcp_ctlinput(cmd, sa, arg)
 int cmd;
@@ -769,6 +777,34 @@ void *arg;
     register struct ip *ip = arg;
     void (*notify) __P((struct inpcb *, int)) = tcp_notify;
 
+    if(cmd == PRC_MSGSIZE) {
+        /*
+         * "Fragmentation needed" (RFC 1191) about a segment of a
+         * connection under way: icmp_input() has put the path MTU on the
+         * route and in the message (icmp_mtudisc()). Only for a segment
+         * still unacknowledged - anything else is old, or forged blind
+         * (RFC 5927 section 7.2) - the connection sends smaller ones.
+         */
+        const struct icmp *icp;
+        struct tcphdr *th;
+        struct inpcb *inp;
+        struct tcpcb *tp;
+        tcp_seq seq;
+
+        if(ip == NULL)
+            return;
+        icp = (const struct icmp *)((caddr_t)ip - offsetof(struct icmp, icmp_ip));
+        th = (struct tcphdr *)((caddr_t)ip + (ip->ip_hl << 2));
+        inp = in_pcblookup(&tcb, ip->ip_dst, th->th_dport, ip->ip_src,
+                           th->th_sport, 0);
+        if(inp == NULL || (tp = intotcpcb(inp)) == NULL)
+            return;
+        seq = ntohl(th->th_seq);
+        if(SEQ_LT(seq, tp->snd_una) || SEQ_GEQ(seq, tp->snd_max))
+            return;
+        tcp_mtudisc(tp, ntohs(icp->icmp_nextmtu));
+        return;
+    }
     if(cmd == PRC_QUENCH)
         notify = tcp_quench;
     else if(!PRC_IS_REDIRECT(cmd) &&
@@ -784,14 +820,13 @@ void *arg;
 }
 
 #if INET6
-void tcp_mtudisc6(struct tcpcb *, u_int32_t);
 
 /*
  * tcp6_ctlinput - an ICMPv6 error about a TCP/IPv6 segment we sent
  * (icmp6_notify_error()): sa is its destination, arg an ip6ctlparam with
  * its source and ports. tcp_notify() keeps it as a soft error; a Packet
  * Too Big (PRC_MSGSIZE) about a segment still unacknowledged makes the
- * connection send smaller ones (tcp_mtudisc6()).
+ * connection send smaller ones (tcp_mtudisc()).
  */
 void
 tcp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
@@ -815,7 +850,7 @@ tcp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
         if(SEQ_LT(ip6cp->ip6c_seq, tp->snd_una) ||
                 SEQ_GEQ(ip6cp->ip6c_seq, tp->snd_max))
             return;
-        tcp_mtudisc6(tp, ip6cp->ip6c_mtu);
+        tcp_mtudisc(tp, ip6cp->ip6c_mtu);
         return;
     }
     if(ip6cp != NULL)
@@ -827,32 +862,108 @@ tcp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
 }
 #endif
 
-#if INET6
 /*
- * tcp_mtudisc6 - the path to tp's peer takes packets of at most mtu bytes
- * (RFC 8201 section 5.2): send segments that fit, and resend what was not
- * acknowledged, as FreeBSD's tcp_mtudisc() does. The MSS is set as
- * tcp_mss() sets it; only ever lowered.
+ * tcp_setmtu - send segments of at most mtu bytes, headers included, to tp's
+ * peer: t_maxopd and t_maxseg as tcp_mss() sets them. Only ever lowers them;
+ * returns whether it did. With mtu 0, the MTU is the connection's route's.
  */
-void
-tcp_mtudisc6(struct tcpcb *tp, u_int32_t mtu)
+static int
+tcp_setmtu(struct tcpcb *tp, u_int32_t mtu)
 {
-    int mss = (int)mtu - (int)(sizeof(struct ip6_hdr) + sizeof(struct tcphdr));
+    int hdrs = sizeof(struct tcpiphdr), mss;
+
+#if INET6
+    if(tcp_isipv6(tp->t_inpcb))
+        hdrs = sizeof(struct ip6_hdr) + sizeof(struct tcphdr);
+    else
+#endif
+    if(mtu == 0) {
+        struct rtentry *rt = tp->t_inpcb->inp_route.ro_rt;
+
+        if(rt == NULL)
+            return 0;
+        mtu = rt->rt_rmx.rmx_mtu ? rt->rt_rmx.rmx_mtu :
+              rt->rt_ifp ? rt->rt_ifp->if_mtu : 0;
+    }
+    mss = (int)mtu - hdrs;
 
     if(mss <= 0 || mss >= tp->t_maxopd)
-        return;
+        return 0;
     tp->t_maxopd = mss;
     if((tp->t_flags & (TF_REQ_TSTMP | TF_NOOPT)) == TF_REQ_TSTMP &&
             (tp->t_flags & TF_RCVD_TSTMP) == TF_RCVD_TSTMP)
         mss -= TCPOLEN_TSTAMP_APPA;
     if(mss >= tp->t_maxseg)
-        return;
+        return 0;
     tp->t_maxseg = mss;
+    return 1;
+}
+
+/*
+ * tcp_mtudisc - the path to tp's peer takes packets of at most mtu bytes
+ * (RFC 1191, RFC 8201 section 5.2): send segments that fit, and resend
+ * what was not acknowledged, as FreeBSD's tcp_mtudisc() does. With mtu 0,
+ * the MTU is the connection's route's (IPv4, after ip_output() said
+ * EMSGSIZE).
+ */
+void
+tcp_mtudisc(struct tcpcb *tp, u_int32_t mtu)
+{
+    if(!tcp_setmtu(tp, mtu))
+        return;
     tp->t_rtt = 0;                  /* do not time the resent segment */
     tp->snd_nxt = tp->snd_una;
     (void)tcp_output(tp);
 }
+
+/*
+ * tcp_pmtud_blackhole - called by the retransmission timer, t_rxtshift just
+ * raised. A path that drops large packets without telling us (ICMP
+ * filtered: RFC 2923 section 2.1) loses every full-sized segment, so after
+ * the 2nd timeout in a row with one unacknowledged, try segments that fit
+ * the IPv6 minimum MTU (1280) or, for IPv4, 1240 bytes; after the 4th, an
+ * IPv4 connection stops setting DF, so routers fragment again. After the
+ * 6th, it was not the path: the MSS and DF come back. A lowered MSS that
+ * gets through is kept, as a learned path MTU is. FreeBSD's
+ * tcp_timer_rexmt() does the same, with the same steps.
+ */
+void
+tcp_pmtud_blackhole(struct tcpcb *tp)
+{
+    u_int32_t mtu = 1240;               /* IPv4 */
+
+    if(!tcp_do_pmtud_blackhole ||
+            (tp->t_state != TCPS_ESTABLISHED && tp->t_state != TCPS_CLOSE_WAIT))
+        return;
+#if INET6
+    if(tcp_isipv6(tp->t_inpcb))
+        mtu = IPV6_MMTU;
+    else
 #endif
+    if(!tcp_do_pmtud)                   /* no DF: routers fragment */
+        return;
+
+    if(tp->t_rxtshift >= 6) {
+        if(tp->t_flagsext & TF_PMTUD_BH) {
+            tp->t_maxseg = tp->t_pmtud_saved_maxseg;
+            tp->t_maxopd = tp->t_pmtud_saved_maxopd;
+            tp->t_flagsext &= ~(TF_PMTUD_BH | TF_PMTUD_NODF);
+        }
+        return;
+    }
+    if(tp->t_rxtshift < 2 || (tp->t_rxtshift & 1) ||
+            (u_long)(tp->snd_max - tp->snd_una) < tp->t_maxseg)
+        return;
+
+    if(!(tp->t_flagsext & TF_PMTUD_BH)) {
+        tp->t_pmtud_saved_maxseg = tp->t_maxseg;
+        tp->t_pmtud_saved_maxopd = tp->t_maxopd;
+    }
+    if(tcp_setmtu(tp, mtu))
+        tp->t_flagsext |= TF_PMTUD_BH;
+    else if(tp->t_flagsext & TF_PMTUD_BH)
+        tp->t_flagsext |= TF_PMTUD_NODF;    /* only IPv4 output reads it */
+}
 
 /*
  * When a source quench is received, close congestion window

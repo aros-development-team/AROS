@@ -46,7 +46,7 @@
  * Proto
  **************************************/
 
-static struct cacheline *c_GetCacheLine(uint32 bloknr);
+static struct cacheline *c_GetCacheLine(uint32 bloknr, error_t *error, bool writing);
 
 /**************************************
  * Globals
@@ -70,7 +70,7 @@ struct cache cache;
  */
 error_t InitCache(uint32 linesize, uint32 nolines)
 {
-	int i;
+	int i, allocated = 0;
 
 	/* allocate memory for the cache */
 	if (!(cache.cachelines = calloc(nolines, sizeof(struct cacheline))))
@@ -87,7 +87,13 @@ error_t InitCache(uint32 linesize, uint32 nolines)
 		if (cache.cachelines[i].data)
 		{
 			MinAddHead(&cache.LRUpool, &cache.cachelines[i]);
+			allocated++;
 		}
+	}
+	if (!allocated) {
+		free(cache.cachelines);
+		cache.cachelines = NULL;
+		return e_out_of_memory;
 	}
 	return e_none;
 }
@@ -96,19 +102,18 @@ error_t InitCache(uint32 linesize, uint32 nolines)
  */
 error_t c_GetBlock(uint8 *data, uint32 bloknr, uint32 bytes)
 {
-	uint32 lineblnr, offset, total;
+	uint32 offset, total;
 	struct cacheline *cl = NULL;
 	error_t error = e_none;
 
 	__chkabort();
 	for (total=0; total<bytes; total+=volume.blocksize, bloknr++, data+=volume.blocksize)
 	{
-		lineblnr = (bloknr / cache.linesize) * cache.linesize;
-		offset = (bloknr % cache.linesize);
-		cl = c_GetCacheLine(lineblnr);
+		cl = c_GetCacheLine(bloknr, &error, false);
 		if (!cl)
-			return e_read_error;
+			return error;
 
+		offset = bloknr - cl->blocknr;
 		memcpy(data, cl->data + offset*volume.blocksize, volume.blocksize);
 	}
 	return error;
@@ -118,20 +123,25 @@ error_t c_GetBlock(uint8 *data, uint32 bloknr, uint32 bytes)
  */
 error_t c_WriteBlock(uint8 *data, uint32 bloknr, uint32 bytes)
 {
-	uint32 lineblnr, offset, total;
+	uint32 offset, total;
 	struct cacheline *cl = NULL;
 	error_t error = e_none;
 
 	__chkabort();
 	for (total=0; total<bytes; total+=volume.blocksize, bloknr++, data+=volume.blocksize)
 	{
-		lineblnr = (bloknr / cache.linesize) * cache.linesize;
-		offset = (bloknr % cache.linesize);
-		cl = c_GetCacheLine(lineblnr);
+		cl = c_GetCacheLine(bloknr, &error, true);
 		if (!cl)
-			return e_read_error;
+			return error;
 
+		offset = bloknr - cl->blocknr;
 		memcpy(cl->data + offset*volume.blocksize, data, volume.blocksize);
+		if (!cl->dirty)
+			cl->dirtyfirst = cl->dirtylast = offset;
+		else {
+			cl->dirtyfirst = min(cl->dirtyfirst, offset);
+			cl->dirtylast = max(cl->dirtylast, offset);
+		}
 		cl->dirty = true;
 	}
 	return error;
@@ -163,15 +173,16 @@ error_t WritePFS3Metadata(uint8 *data, uint32 bloknr, uint32 bytes,
 
 /* (private) locale function to search a cacheline 
  */
-static struct cacheline *c_GetCacheLine(uint32 bloknr)
+static struct cacheline *c_GetCacheLine(uint32 bloknr, error_t *error, bool writing)
 {
 	uint32 i;
 	struct cacheline *cl = NULL;
-	error_t error;
+	*error = e_none;
 
 	for (i=0; i<cache.nolines; i++)
 	{
-		if (cache.cachelines[i].blocknr == bloknr)
+		if (cache.cachelines[i].blocks && bloknr >= cache.cachelines[i].blocknr
+		    && bloknr - cache.cachelines[i].blocknr < cache.cachelines[i].blocks)
 		{
 			cl = &cache.cachelines[i];
 			break;
@@ -183,18 +194,37 @@ static struct cacheline *c_GetCacheLine(uint32 bloknr)
 		if (IsMinListEmpty(&cache.LRUpool))
 		{
 			cl = (struct cacheline *)cache.LRUqueue.mlh_TailPred;
-			if (cl->dirty)
-				error = volume.writerawblocks(cl->data, cache.linesize, cl->blocknr);
+			if (cl->dirty) {
+				*error = volume.writerawblocks(cl->data + cl->dirtyfirst * volume.blocksize,
+				cl->dirtylast - cl->dirtyfirst + 1, cl->blocknr + cl->dirtyfirst);
+				if (*error)
+					return NULL;
+			}
 		}
 		else
 		{
 			cl = HeadOf(&cache.LRUpool);
 		}
 
-		error = volume.getrawblocks(cl->data, cache.linesize, bloknr);
-		if (error)
+		/* A failed read may already have overwritten part of the buffer. */
+		cl->blocknr = CL_UNUSED;
+		cl->blocks = 0;
+		cl->dirty = false;
+		/* Preserve readable neighbours of a bad sector. Existing larger
+		 * lines retain their own valid length until they are evicted. */
+		if (!writing || cache.linesize != 1)
+			*error = volume.getrawblocks(cl->data, cache.linesize,
+				(bloknr / cache.linesize) * cache.linesize);
+		if (*error == e_read_error && cache.linesize > 1)
+		{
+			cache.linesize = 1;
+			*error = writing ? e_none : volume.getrawblocks(cl->data, 1, bloknr);
+		}
+		if (*error)
 			return NULL;
-		cl->blocknr = bloknr;
+		/* A single-sector write replaces the entire buffer. */
+		cl->blocknr = (bloknr / cache.linesize) * cache.linesize;
+		cl->blocks = cache.linesize;
 		cl->dirty = false;
 	}
 
@@ -205,20 +235,27 @@ static struct cacheline *c_GetCacheLine(uint32 bloknr)
 
 /* update alle dirty blocks in the cache
  */
-void UpdateCache(void)
+error_t UpdateCache(void)
 {
 	struct cacheline *cl;
-	error_t error;
+	error_t error, first_error = e_none;
 
 	for (cl = HeadOf(&cache.LRUqueue); cl->next; cl=cl->next)
 	{
 		if (cl->dirty)
 		{
-			error = volume.writerawblocks(cl->data, cache.linesize, cl->blocknr);
-			if (error)
+			error = volume.writerawblocks(cl->data + cl->dirtyfirst * volume.blocksize,
+				cl->dirtylast - cl->dirtyfirst + 1, cl->blocknr + cl->dirtyfirst);
+			if (error) {
 				adderror("write error");
+				if (!first_error)
+					first_error = error;
+				continue;
+			}
+			cl->dirty = false;
 		}
 	}
+	return first_error;
 }
 
 /* destroy cache
@@ -263,7 +300,8 @@ BOOL OpenDiskDevice(struct FileSysStartupMsg *startup, struct MsgPort **port,
 		*request = (struct IOExtTD *)CreateIORequest(*port, sizeof(struct IOExtTD));
 		if(*request)
 		{
-			BCPLtoCString(name, (UBYTE *)BADDR(startup->fssm_Device));
+			if (!BCPLtoCString(name, (UBYTE *)BADDR(startup->fssm_Device)))
+				return FALSE;
 			*trackdisk = (strcmp(name, "trackdisk.device") == 0) || (strcmp(name, "diskspare.device") == 0);
 			if(OpenDevice(name, startup->fssm_Unit, (struct IORequest *)*request,
 				startup->fssm_Flags) == 0)
@@ -300,6 +338,8 @@ retry_read:
 	{
 		io_transfer = min(io_length, volume.dosenvec->de_MaxTransfer);
 		io_transfer &= ~(volume.blocksize-1);
+		if (io_transfer == 0)
+			return e_options_error;
 		request = volume.request;
 		request->iotd_Req.io_Command = CMD_READ;
 		request->iotd_Req.io_Length  = io_transfer;
@@ -313,7 +353,8 @@ retry_read:
 			request->iotd_Req.io_Command = NSCMD_TD_READ64;
 		}			
 
-		if (DoIO((struct IORequest*)request))
+		if (DoIO((struct IORequest*)request)
+		    || request->iotd_Req.io_Actual != io_transfer)
 		{
 			volume.showmsg("READ ERROR\n");
 			if (!retry--)
@@ -335,6 +376,19 @@ retry_read:
 }
 
 
+/* SCSI command fields are big-endian, independent of the host CPU. */
+static void BuildSCSI10(uint8 *command, uint8 opcode, uint32 block, uint32 count)
+{
+	memset(command, 0, 10);
+	command[0] = opcode;
+	command[2] = block >> 24;
+	command[3] = block >> 16;
+	command[4] = block >> 8;
+	command[5] = block;
+	command[7] = count >> 8;
+	command[8] = count;
+}
+
 error_t dev_GetBlocksDS(uint8 *buffer, int32 blocks, uint32 blocknr)
 {
 	uint8  cmdbuf[10];
@@ -347,12 +401,12 @@ retry_read:
 
 	/* chop in maxtransfer chunks */
 	maxtransfer = volume.dosenvec->de_MaxTransfer >> volume.blockshift;
+	if (blocks > 0 && maxtransfer == 0)
+		return e_options_error;
 	while (blocks > 0)
 	{
-		transfer = min(blocks,maxtransfer);
-		*((UWORD *)&cmdbuf[0]) = 0x2800;
-		*((ULONG *)&cmdbuf[2]) = blocknr;
-		*((ULONG *)&cmdbuf[6]) = transfer<<8;
+		transfer = min(blocks, min(maxtransfer, 65535));
+		BuildSCSI10(cmdbuf, 0x28, blocknr, transfer);
 		if (!DoSCSICommand(buffer,transfer<<BLOCKSHIFT,cmdbuf,10,SCSIF_READ))
 		{
 			volume.showmsg("READ ERROR\n");
@@ -386,13 +440,13 @@ retry_write:
 
 	/* chop in maxtransfer chunks */
 	maxtransfer = volume.dosenvec->de_MaxTransfer >> volume.blockshift;
+	if (blocks > 0 && maxtransfer == 0)
+		return e_options_error;
 	while (blocks > 0)
 	{
-		transfer = min(blocks,maxtransfer);
-		*((UWORD *)&cmdbuf[0]) = 0x2a00;
-		*((ULONG *)&cmdbuf[2]) = blocknr;
-		*((ULONG *)&cmdbuf[6]) = transfer<<8;
-		if (!DoSCSICommand(buffer,blocks<<BLOCKSHIFT,cmdbuf,10,SCSIF_WRITE))
+		transfer = min(blocks, min(maxtransfer, 65535));
+		BuildSCSI10(cmdbuf, 0x2a, blocknr, transfer);
+		if (!DoSCSICommand(buffer,transfer<<BLOCKSHIFT,cmdbuf,10,SCSIF_WRITE))
 		{
 			volume.showmsg("WRITE ERROR\n");
 			if (!retry--)
@@ -432,6 +486,8 @@ retry_write:
 	{
 		io_transfer = min(io_length, volume.dosenvec->de_MaxTransfer);
 		io_transfer &= ~(volume.blocksize-1);
+		if (io_transfer == 0)
+			return e_options_error;
 		request = volume.request;
 		request->iotd_Req.io_Command = CMD_WRITE;
 		request->iotd_Req.io_Length  = io_transfer;
@@ -445,7 +501,8 @@ retry_write:
 			request->iotd_Req.io_Command = NSCMD_TD_WRITE64;
 		}
 
-		if (DoIO((struct IORequest*)request))
+		if (DoIO((struct IORequest*)request)
+		    || request->iotd_Req.io_Actual != io_transfer)
 		{
 			volume.showmsg("WRITE ERROR\n");
 			if (!retry--)
@@ -503,6 +560,8 @@ int DoSCSICommand(UBYTE *data, ULONG datalen, UBYTE *command,
 {
 	scsicmd.scsi_Data = (UWORD *)data;
 	scsicmd.scsi_Length = datalen;
+	scsicmd.scsi_Actual = 0;
+	scsicmd.scsi_Status = 0;
 	scsicmd.scsi_Command = command;
 	scsicmd.scsi_CmdLength = commandlen;
 	scsicmd.scsi_Flags = SCSIF_AUTOSENSE | direction; /* SCSIF_READ or SCSIF_WRITE */
@@ -513,8 +572,8 @@ int DoSCSICommand(UBYTE *data, ULONG datalen, UBYTE *command,
 	volume.request->iotd_Req.io_Length = sizeof(struct SCSICmd);
 	volume.request->iotd_Req.io_Data = (APTR)&scsicmd;
 	volume.request->iotd_Req.io_Command = HD_SCSICMD;
-	DoIO((struct IORequest *)volume.request);
-	if (scsicmd.scsi_Status)
+	if (DoIO((struct IORequest *)volume.request)
+	    || scsicmd.scsi_Status || scsicmd.scsi_Actual != datalen)
 		return 0;
 	else 
 		return 1;
@@ -526,17 +585,18 @@ int DoSCSICommand(UBYTE *data, ULONG datalen, UBYTE *command,
  */
 UBYTE *BCPLtoCString(STRPTR dest, UBYTE *src)
 {
-  UBYTE len, *to;
+	size_t len;
 
-	len  = *(src++);
-	len	 = min (len, PATHSIZE);
-	to	 = dest;
-
-	while (len--)
-		*(dest++) = *(src++);
-	*dest = 0x0;
-
-	return to;
+#ifdef AROS_FAST_BSTR
+	len = strlen((char *)src);
+#else
+	len = *src++;
+#endif
+	if (len >= FNSIZE)
+		return NULL;
+	memcpy(dest, src, len);
+	dest[len] = 0;
+	return (UBYTE *)dest;
 }
 
 /* ACCESS MODE AUTODETECT */
@@ -570,22 +630,19 @@ static BOOL testread_ds(UBYTE *buffer)
 
 		fillbuffer(buffer, 0xfe);
 		/* Read Capacity */
-		*((UWORD *)&cmdbuf[0]) = 0x2500;
-		*((ULONG *)&cmdbuf[2]) = 0;
-		*((ULONG *)&cmdbuf[6]) = 0;
+		BuildSCSI10(cmdbuf, 0x25, 0, 0);
 		if (!DoSCSICommand(buffer, 8, cmdbuf, 10, SCSIF_READ)) {
 			return FALSE;
 		}
-		capacity = *((ULONG*)buffer);
+		capacity = ((ULONG)buffer[0] << 24) | ((ULONG)buffer[1] << 16)
+		    | ((ULONG)buffer[2] << 8) | buffer[3];
 
 		if (volume.lastblock > capacity) {
 			return FALSE;
 		}
 		fillbuffer(buffer, cnt);
 		/* Read(10) */
-		*((UWORD *)&cmdbuf[0]) = 0x2800;
-		*((ULONG *)&cmdbuf[2]) = volume.lastblock;
-		*((ULONG *)&cmdbuf[6]) = 1 << 8;
+		BuildSCSI10(cmdbuf, 0x28, volume.lastblock, 1);
 		if (!DoSCSICommand(buffer, 1 << BLOCKSHIFT, cmdbuf, 10, SCSIF_READ)) {
 			return FALSE;
 		}
@@ -639,11 +696,12 @@ static BOOL testread_td(UBYTE *buffer)
 		io->iotd_Req.io_Length  = BLOCKSIZE;
 		io->iotd_Req.io_Data    = buffer;
 		io->iotd_Req.io_Offset  = volume.lastblock << BLOCKSHIFT;
+		io->iotd_Req.io_Actual  = 0;
 		if (volume.accessmode >= ACCESS_TD64) {
 			io->iotd_Req.io_Actual  = volume.lastblock >> (32 - BLOCKSHIFT);
 			io->iotd_Req.io_Command = volume.accessmode == ACCESS_NSD ? NSCMD_TD_READ64 : TD_READ64;
 		}
-		if (DoIO((struct IORequest*)io) != 0)
+		if (DoIO((struct IORequest*)io) != 0 || io->iotd_Req.io_Actual != BLOCKSIZE)
 			return FALSE;
 		if (testbuffer(buffer, cnt))
 			return TRUE;

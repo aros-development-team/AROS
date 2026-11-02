@@ -170,16 +170,44 @@ static void gfx_SetLayerSurfaces(struct BitMap *bitmap, struct HIDD_CompositeReq
             if (vp->Modes & VP_HIDE)
                 continue;
 
+            /*
+             * By the struct BitMap, not its object: on a direct framebuffer
+             * driver the frontmost screen's object is the framebuffer while
+             * it is shown alone (display_FBInstall()), vpd->Bitmap its own.
+             */
+            if (!vp->RasInfo || (vp->RasInfo->BitMap != screenbm))
+                continue;
+
             vpe = (struct ViewPortExtra *)GfxLookUp(vp);
             if (!vpe || !(vpd = VPE_DATA(vpe)))
                 continue;
 
-            if (vpd->Bitmap == HIDD_BM_OBJ(screenbm))
+            vpd->Surfaces = surfaces;
+            HIDD_Display_SurfaceStackChanged(display->display_obj, vpd);
+
+            /*
+             * Composing now (a surface appeared) or no longer (the last one
+             * went): as in ScrollVPort(), the framebuffer of a direct
+             * framebuffer driver must leave the frontmost screen's bitmap
+             * while it is composed into, and go back when the screen is
+             * shown alone again. The compositor has already copied the
+             * framebuffer back into, or shown, that bitmap.
+             */
             {
-                vpd->Surfaces = surfaces;
-                HIDD_Display_SurfaceStackChanged(display->display_obj, vpd);
-                break;
+                struct monitor_displaydata *mdd = GFXPRIVATE_DISPLAYDATA(display);
+                OOP_Object *compositor = NULL;
+                IPTR active = 0;
+
+                OOP_GetAttr(display->display_obj, aHidd_Display_Compositor, (IPTR *)&compositor);
+                if (compositor)
+                    OOP_GetAttr(compositor, aHidd_Compositor_Active, &active);
+
+                if (active)
+                    display_FBUninstall(mdd, GfxBase);
+                else if (!mdd->bm_bak)
+                    display_FBInstall(mdd, GfxBase);
             }
+            break;
         }
     }
 

@@ -4,6 +4,8 @@
     Desc: Basic support functions for layers.library.
 */
 
+#include <graphics/gfxmacros.h>
+#include <graphics/rpattr.h>
 #include <aros/config.h>
 #include <aros/asmcall.h>
 #include <exec/memory.h>
@@ -107,6 +109,95 @@ struct layerhookmsg
     WORD MinX, MinY, MaxX, MaxY;
     LONG OffsetX, OffsetY;
 };
+
+#if defined(__AROSEXEC_SMP__)
+/*
+ * A RastPort for a hook to render into bm, made with graphics' own
+ * functions: InitRastPort() gives a fresh one - a RastPort is never
+ * duplicated by assignment, its private space belongs to graphics - and
+ * the public drawing state of src is carried over through the setters:
+ * font, pens and draw mode (or the direct colours when src renders with
+ * those), write mask, area pattern and outline, line pattern, pen size,
+ * position, and the caller's TmpRas/AreaInfo buffers. Layer stays NULL,
+ * as for every backfill hook's RastPort.
+ */
+static void _InitHookRastPort(struct RastPort *hrp, struct RastPort *src, struct BitMap *bm,
+                              struct LayersBase *LayersBase)
+{
+  IPTR penmode = TRUE, fg = 0, bg = 0;
+
+  InitRastPort(hrp);
+  hrp->BitMap = bm;
+
+  if (NULL != src->Font)
+    SetFont(hrp, src->Font);
+  SetABPenDrMd(hrp, src->FgPen, src->BgPen, src->DrawMode);
+  SetWriteMask(hrp, src->Mask);
+  if (NULL != src->AreaPtrn)
+    SetAfPt(hrp, src->AreaPtrn, src->AreaPtSz);
+  if (src->Flags & AREAOUTLINE)
+    SetOutlinePen(hrp, src->AOlPen);
+  hrp->LinePtrn  = src->LinePtrn;
+  hrp->linpatcnt = src->linpatcnt;
+  hrp->PenWidth  = src->PenWidth;
+  hrp->PenHeight = src->PenHeight;
+  hrp->TmpRas    = src->TmpRas;
+  hrp->AreaInfo  = src->AreaInfo;
+  hrp->RP_User   = src->RP_User;
+  Move(hrp, src->cp_x, src->cp_y);
+
+  /* direct colours rather than pens, when that is how src renders */
+  if (NULL != src->BitMap && NULL != bm)
+  {
+    GetRPAttrs(src, RPTAG_PenMode, (IPTR)&penmode,
+                    RPTAG_FgColor, (IPTR)&fg,
+                    RPTAG_BgColor, (IPTR)&bg,
+                    TAG_DONE);
+    if (!penmode)
+      SetRPAttrs(hrp, RPTAG_PenMode, FALSE,
+                      RPTAG_FgColor, fg,
+                      RPTAG_BgColor, bg,
+                      TAG_DONE);
+  }
+}
+#endif
+
+/*
+ * The RastPort a hook renders into bm through. With one CPU the
+ * application's RastPort rp is used, its BitMap swapped for the duration:
+ * the layer lock keeps everyone else away from it. On SMP that RastPort
+ * may be read on another CPU at any moment (graphics reads rp->BitMap
+ * before it takes the layer lock), so its BitMap must never change, not
+ * even for a hook call, and the hook gets a RastPort made for the call.
+ */
+struct RastPort *_ObtainHookRastPort(struct HookRastPort *h, struct RastPort *rp,
+                                     struct BitMap *bm, struct LayersBase *LayersBase)
+{
+#if defined(__AROSEXEC_SMP__)
+  _InitHookRastPort(&h->rp, rp, bm, LayersBase);
+  return &h->rp;
+#else
+  h->rp = rp;
+  h->bm = rp->BitMap;
+  rp->BitMap = bm;
+  return rp;
+#endif
+}
+
+void _ReleaseHookRastPort(struct HookRastPort *h, struct LayersBase *LayersBase)
+{
+#if defined(__AROSEXEC_SMP__)
+  /* SetRPAttrs() may attach extra data to a RastPort; freeing it is left to
+     the RastPort's owner (see SetRPAttrsA()) */
+  if (NULL != h->rp.RP_Extra)
+  {
+    FreeVec(h->rp.RP_Extra);
+    h->rp.RP_Extra = NULL;
+  }
+#else
+  h->rp->BitMap = h->bm;
+#endif
+}
 
 void _CallLayerHook(struct Hook * h,
                     struct RastPort * rp,
@@ -798,12 +889,13 @@ void _UpdateSurfaces(struct Layer_Info *li, struct LayersBase *LayersBase)
 static void _BackFillSurface(struct Layer * l, struct Region * r, struct LayersBase * LayersBase)
 {
   struct RegionRectangle * RR;
-  struct BitMap * bm = l->rp->BitMap;
+  struct HookRastPort hrp;
+  struct RastPort * rp;
 
   if (NULL == IL(l)->surface)
     return;
 
-  l->rp->BitMap = IL(l)->surface;
+  rp = _ObtainHookRastPort(&hrp, l->rp, IL(l)->surface, LayersBase);
   for (RR = r->RegionRectangle; NULL != RR; RR = RR->Next)
   {
     struct Rectangle bmrect;
@@ -814,14 +906,14 @@ static void _BackFillSurface(struct Layer * l, struct Region * r, struct LayersB
     bmrect.MaxY = RR->bounds.MaxY + r->bounds.MinY - l->bounds.MinY;
 
     _CallLayerHook(l->BackFill,
-                   l->rp,
+                   rp,
                    l,
                    &bmrect,
                    bmrect.MinX + l->Scroll_X,
                    bmrect.MinY + l->Scroll_Y,
                    LayersBase);
   }
-  l->rp->BitMap = bm;
+  _ReleaseHookRastPort(&hrp, LayersBase);
 }
 
 /*
@@ -1033,7 +1125,6 @@ int _CopyClipRectsToClipRects(struct Layer * l,
       for (rr = uncovered->RegionRectangle; NULL != rr; rr = rr->Next)
       {
         struct Rectangle screenrect, bmrect;
-        struct BitMap * bm = l->rp->BitMap;
 
         screenrect.MinX = rr->bounds.MinX + uncovered->bounds.MinX;
         screenrect.MinY = rr->bounds.MinY + uncovered->bounds.MinY;
@@ -1045,15 +1136,18 @@ int _CopyClipRectsToClipRects(struct Layer * l,
         bmrect.MaxX = screenrect.MaxX - _cr->bounds.MinX + CR_BMOFFX(_cr);
         bmrect.MaxY = screenrect.MaxY - _cr->bounds.MinY + CR_BMOFFY(_cr);
 
-        l->rp->BitMap = _cr->BitMap;
-        _CallLayerHook(l->BackFill,
-                       l->rp,
-                       l,
-                       &bmrect,
-                       screenrect.MinX - l->bounds.MinX + l->Scroll_X,
-                       screenrect.MinY - l->bounds.MinY + l->Scroll_Y,
-                       LayersBase);
-        l->rp->BitMap = bm;
+        {
+          struct HookRastPort hrp;
+
+          _CallLayerHook(l->BackFill,
+                         _ObtainHookRastPort(&hrp, l->rp, _cr->BitMap, LayersBase),
+                         l,
+                         &bmrect,
+                         screenrect.MinX - l->bounds.MinX + l->Scroll_X,
+                         screenrect.MinY - l->bounds.MinY + l->Scroll_Y,
+                         LayersBase);
+          _ReleaseHookRastPort(&hrp, LayersBase);
+        }
       }
       DisposeRegion(uncovered);
     }
@@ -1613,7 +1707,6 @@ int _ShowLayer(struct Layer * l, struct LayersBase *LayersBase)
   struct Region *r;
   struct RegionRectangle * rr;
   struct ClipRect * prevcr = NULL;
-  struct BitMap * bm = l->rp->BitMap;
   int invisible = FALSE;
 
   if (IS_COMPOSITED(l))
@@ -1721,15 +1814,16 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
             bmrect.MaxX = bmrect.MinX + cr->bounds.MaxX - cr->bounds.MinX;
             bmrect.MaxY = bmrect.MinY + cr->bounds.MaxY - cr->bounds.MinY;
 
-            l->rp->BitMap = cr->BitMap;
+            struct HookRastPort hrp;
+
             _CallLayerHook(l->BackFill,
-                           l->rp,
+                           _ObtainHookRastPort(&hrp, l->rp, cr->BitMap, LayersBase),
                            l,
                            &bmrect,
                            cr->bounds.MinX - l->bounds.MinX + l->Scroll_X,
                            cr->bounds.MinY - l->bounds.MinY + l->Scroll_Y,
                            LayersBase);
-            l->rp->BitMap = bm;
+            _ReleaseHookRastPort(&hrp, LayersBase);
           }
         }
       }

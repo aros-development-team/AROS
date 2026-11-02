@@ -113,6 +113,12 @@ struct HIDDNouveauData
     ULONG               selectedcrtcid;
     APTR                selectedmode;
     APTR                selectedconnector;
+    /* what the CRTC is scanning out now: a Show() of another framebuffer in
+       the same mode is a page flip, not a modeset (no blackout) */
+    APTR                shownmode;
+    ULONG               shownfb;
+    LONG                shownxoff, shownyoff;
+    ULONG               shownpitch, shownbpp;
 
     /* scan-out planes */
     ULONG               selectedcrtcindex;  /* index of the crtc among the crtcs (plane masks, vblank) */
@@ -161,6 +167,7 @@ enum
 struct HIDDNouveauBitMapData
 {
     struct SignalSemaphore  semaphore;
+    struct HIDDNouveauData  *showngfx;  /* the gfx hidd this bitmap was last shown on (flip bookkeeping) */
     struct nouveau_bo       *bo; /* Buffer object behind bitmap. Don't make any
                                     assumptions about buffer mapping (bo->map)
                                     state. This state however can only be changed

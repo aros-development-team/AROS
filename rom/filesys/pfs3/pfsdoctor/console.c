@@ -61,14 +61,20 @@ int guiAskUser(char *message, char *okstr, char *cancelstr)
 	char ch = 0;
 	for (;;) {
 		printf("%s\n", message);
-		printf("1=<%s> 0=<%s>\n", okstr, cancelstr);
-		scanf("%c", &ch);
+		if (cancelstr != NULL)
+			printf("1=<%s> 0=<%s>\n", okstr, cancelstr);
+		else
+			printf("1=<%s>\n", okstr);
+		if (scanf(" %c", &ch) != 1)
+			return 0;
 		if (ch == '1')
 			return 1;
 		if (ch == '0')
 			return 0;
 	}
 }
+
+static BOOL deviceopened;
 
 #define OV_Flags LDF_DEVICES|LDF_VOLUMES
 static BOOL OpenVolume(void)
@@ -98,9 +104,11 @@ static BOOL OpenVolume(void)
 				unsigned char *dname;
 
 				dl = dl2;
-				dname = (char *)BADDR(dl->dol_Name);
-				strncpy(targetdevice.name, dname+1, *dname);
-				targetdevice.name[*dname] = 0;
+				dname = (UBYTE *)BADDR(dl->dol_Name);
+				if (!BCPLtoCString(targetdevice.name, dname)) {
+					UnLockDosList(OV_Flags|LDF_READ);
+					return FALSE;
+				}
 				break;
 			}
 		}
@@ -109,16 +117,20 @@ static BOOL OpenVolume(void)
 	if (!dl || dl->dol_Type == DLT_VOLUME)
 	{
 		UnLockDosList(OV_Flags|LDF_READ);
-		guiMsg("DEVICE "); guiMsg(targetdevice.name);
+		guiMsg("DEVICE %s", targetdevice.name);
 		guiMsg(" not found\nEXITING ...\n\n");
 		return FALSE;
 	}
 
 	UnLockDosList(OV_Flags|LDF_READ);
 
+	/* Leave room for both the colon and terminator in volume.devicename. */
+	if (strlen(targetdevice.name) >= FNSIZE - 1)
+		return FALSE;
+
 	/* inhibit device */
-	targetdevice.name[strlen(targetdevice.name)] = ':';
-	targetdevice.name[strlen(targetdevice.name)] = 0;
+	if (targetdevice.name[0] && targetdevice.name[strlen(targetdevice.name) - 1] != ':')
+		strcat(targetdevice.name, ":");
 	if (!(inhibited = Inhibit(targetdevice.name, DOSTRUE)))
 	{
 		guiMsg("Device could not be inhibited.\nEXITING ...\n\n");
@@ -148,7 +160,8 @@ static BOOL OpenVolume(void)
 	volume.updatestats = guiUpdateStats;
 	volume.getblock = vol_GetBlock;
 	volume.writeblock = vol_WriteBlock;
-	BCPLtoCString(volume.execdevice, (UBYTE *)BADDR(volume.fssm->fssm_Device));
+	if (!BCPLtoCString(volume.execdevice, (UBYTE *)BADDR(volume.fssm->fssm_Device)))
+		return FALSE;
 	volume.execunit = volume.fssm->fssm_Unit;
 
 	if (verbose) {
@@ -167,7 +180,12 @@ static BOOL OpenVolume(void)
 		return FALSE;
 	}
 
-	InitCache(64, 32);		/* make this configurable ? */
+	deviceopened = TRUE;
+
+	if (InitCache(64, 32) != e_none) {
+		guiMsg("Could not allocate disk cache.\n");
+		return FALSE;
+	}
 
 	detectbuf = AllocVec(volume.blocksize, MEMF_PUBLIC);
 	if (!detectbuf) {
@@ -212,13 +230,10 @@ static void CloseVolume(void)
 	if (inhibited)
 		Inhibit(targetdevice.name, FALSE);
 
-	if (volume.request)
-	{
-		if (!(CheckIO((struct IORequest *)volume.request)))
-			AbortIO((struct IORequest *)volume.request);
-		
-		WaitIO((struct IORequest *)volume.request);
+	/* All requests use synchronous DoIO; none remain pending here. */
+	if (deviceopened) {
 		CloseDevice((struct IORequest *)volume.request);
+		deviceopened = FALSE;
 	}
 
 	if (volume.request)
@@ -248,6 +263,7 @@ int main(int argc, char *argv[])
 	struct RDArgs *rdarg;
 	SIPTR args[ARGS_SIZE] =  { 0 };
 	int cnt = 0;
+	int result = RETURN_FAIL;
 	uint32 opties;
 
 	if (!(rdarg = ReadArgs (TEMPLATE, args, NULL)))
@@ -256,6 +272,11 @@ int main(int argc, char *argv[])
 		return RETURN_FAIL;
 	}
 
+	if (strlen((char *)args[ARGS_DEVICE]) >= FNSIZE - 1) {
+		printf("Device name too long.\n");
+		FreeArgs(rdarg);
+		return RETURN_FAIL;
+	}
 	strcpy(targetdevice.name, (char*)args[ARGS_DEVICE]);
 
 	if (args[ARGS_VERBOSE])
@@ -310,13 +331,13 @@ int main(int argc, char *argv[])
 		opties |= SSF_VERBOSE;
 
 	if (OpenVolume()) {
-		StandardScan(opties);
-		CloseVolume();
+		result = StandardScan(opties) == e_none ? RETURN_OK : RETURN_FAIL;
 	}
+	CloseVolume();
 
 	if (logfh)
 		fclose(logfh);
 
 	FreeArgs(rdarg);
-	return 0;
+	return result;
 }

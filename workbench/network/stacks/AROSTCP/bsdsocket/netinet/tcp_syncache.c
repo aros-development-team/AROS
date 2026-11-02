@@ -59,6 +59,7 @@ void in_pcbsetv4mapped(struct inpcb *);
 #include <kern/uipc_socket2_protos.h>
 
 extern int tcp_v6mssdflt;
+extern int tcp_do_pmtud;
 int tcp_mssopt6(const struct ifnet *, const struct in6_addr *);
 extern int ip_defttl;			/* default TTL for TCP segments */
 
@@ -405,7 +406,7 @@ syncache_respond(struct syncache *sc)
         m->m_len        = t6;
         m->m_pkthdr.len = t6;
         (void) tcp_v6output(m, &sc->sc_laddr6, &sc->sc_faddr6,
-                            sc->sc_ip_ttl, t6, NULL);
+                            sc->sc_ip_ttl, t6, 0, NULL);
         return (0);
     }
 #endif /* INET6 */
@@ -414,6 +415,8 @@ syncache_respond(struct syncache *sc)
     ti->ti_sum = in_cksum(m, tlen);
     ((struct ip *)ti)->ip_len = tlen;
     ((struct ip *)ti)->ip_ttl = sc->sc_ip_ttl ? sc->sc_ip_ttl : ip_defttl;
+    if(tcp_do_pmtud)            /* path MTU discovery (RFC 1191) */
+        ((struct ip *)ti)->ip_off |= IP_DF;
 
 #ifdef ENABLE_MULTICAST
     (void) ip_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
@@ -714,8 +717,22 @@ syncache_socket(struct syncache *sc, struct socket *lso, struct tcpiphdr *ti)
     /* Compute t_maxseg/t_maxopd (and the initial window) from the peer MSS. */
     tcp_mss(tp, sc->sc_peer_mss);
 
+    /* the listening socket's keepalive values (as FreeBSD's syncache) and
+     * user timeout */
+    {
+        const struct tcpcb *ltp = intotcpcb(sotoinpcb(lso));
+
+        if (ltp != NULL) {
+            tp->t_keepinit = ltp->t_keepinit;
+            tp->t_keepidle = ltp->t_keepidle;
+            tp->t_keepintvl = ltp->t_keepintvl;
+            tp->t_keepcnt = ltp->t_keepcnt;
+            tp->t_uto_ms = ltp->t_uto_ms;   /* as Linux */
+        }
+    }
+
     tp->t_flags |= TF_ACKNOW;
-    tp->t_timer[TCPT_KEEP] = tcp_keepidle;
+    tp->t_timer[TCPT_KEEP] = TP_KEEPIDLE(tp);
 
     tcpstat.tcps_accepts++;
     tcpstat.tcps_connects++;

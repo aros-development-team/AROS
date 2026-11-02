@@ -46,6 +46,7 @@
 #include <netinet6/nd6.h>
 #include <net/if_loop_protos.h>
 #include <protos/kern/kern_random_protos.h>
+#include <kern/uipc_socket2_protos.h>
 
 /*
  * ip6_mloopback - give a copy of a group datagram being sent on ifp to this
@@ -94,6 +95,92 @@ ip6_srcifp(struct ip6_hdr *ip6)
     return NULL;
 }
 
+/*
+ * ip6_outflags - the ip6_output() flags for one datagram from its
+ * IPV6_USE_MIN_MTU (-1, 0, 1) and IPV6_DONTFRAG (RFC 3542 sections 11.1 and
+ * 11.2): -1 sends multicast at the minimum MTU, unicast at the path MTU.
+ */
+int
+ip6_outflags(int minmtu, int dontfrag, const struct in6_addr *dst)
+{
+    int flags = dontfrag ? IPV6_OUT_DONTFRAG : 0;
+
+    if(minmtu == 1 || (minmtu == -1 && IN6_IS_ADDR_MULTICAST(dst)))
+        flags |= IPV6_OUT_MINMTU;
+    return flags;
+}
+
+/*
+ * ip6_notify_pmtu - give a socket that asked with IPV6_RECVPATHMTU an
+ * IPV6_PATHMTU message (RFC 3542 section 11.3): no data, the destination
+ * and its path MTU as ancillary data, from that destination.
+ */
+void
+ip6_notify_pmtu(const struct inpcb *inp, const struct sockaddr_in6 *dst,
+                u_int32_t mtu)
+{
+    struct socket *so = inp->inp_socket;
+    struct ip6_mtuinfo mi;
+    struct mbuf *ctl;
+
+    if(!(inp->in6p_flags & IN6P_RECVPATHMTU))
+        return;
+    bzero(&mi, sizeof(mi));
+    mi.ip6m_addr = *dst;
+    mi.ip6m_mtu = mtu;
+    ctl = sbcreatecontrol((caddr_t)&mi, sizeof(mi), IPV6_PATHMTU, IPPROTO_IPV6);
+    if(ctl == NULL)
+        return;
+    if(sbappendaddr(&so->so_rcv, (struct sockaddr *)&mi.ip6m_addr, NULL, ctl) == 0) {
+        m_freem(ctl);
+        return;
+    }
+    sorwakeup(so);
+}
+
+/*
+ * ip6_pathmtu - the path MTU to a connected socket's peer, as ip6_output()
+ * finds it: a link-local peer on the socket's zone, through its neighbour
+ * entry; any other through the routing table. 0 if there is no way there.
+ */
+u_int32_t
+ip6_pathmtu(const struct inpcb *inp)
+{
+    struct in6_addr dst = inp->inp_faddr6;
+    struct rtentry *rt = NULL;
+    struct ifnet *ifp = NULL;
+    u_int32_t mtu;
+
+    if(IN6_IS_ADDR_LINKLOCAL(&dst) || IN6_IS_ADDR_MULTICAST(&dst)) {
+        ifp = inp->inp_boundif;
+        if(ifp != NULL && IN6_IS_ADDR_LINKLOCAL(&dst))
+            rt = nd6_lookup(&dst, 0, ifp);
+    } else {
+        struct route_in6 ro;
+
+        bzero(&ro, sizeof(ro));
+        ro.ro_dst.sin6_family = AF_INET6;
+        ro.ro_dst.sin6_len = sizeof(ro.ro_dst);
+        ro.ro_dst.sin6_addr = dst;
+        rtalloc((struct route *)&ro);
+        rt = ro.ro_rt;
+        if(rt != NULL)
+            ifp = rt->rt_ifp;
+    }
+    if(ifp == NULL) {
+        if(rt != NULL)
+            rtfree(rt);
+        return 0;
+    }
+    mtu = ifp->if_mtu;
+    if(rt != NULL) {
+        if(rt->rt_rmx.rmx_mtu != 0 && rt->rt_rmx.rmx_mtu < mtu)
+            mtu = rt->rt_rmx.rmx_mtu;
+        rtfree(rt);
+    }
+    return mtu;
+}
+
 int
 ip6_output(void *args, ...)
 {
@@ -116,16 +203,17 @@ ip6_output(void *args, ...)
     struct sockaddr_in6 *dst;
     struct rtentry *rt = NULL;
     int error = 0;
-    int mtu;
+    int mtu, flags;
+    struct inpcb *inp;
     spl_t s;
 
     va_start(va, args);
     (void)va_arg(va, struct mbuf *);
     ro    = va_arg(va, struct route *);
-    (void)va_arg(va, int);
+    flags = va_arg(va, int);
     im6o  = va_arg(va, struct ip6_moptions *);
     ifpp  = va_arg(va, struct ifnet **);
-    (void)va_arg(va, struct inpcb *);
+    inp   = va_arg(va, struct inpcb *);
     va_end(va);
 
     if(ro == NULL) {
@@ -280,6 +368,35 @@ multicast_output:
     if(ro->ro_rt != NULL && ro->ro_rt->rt_rmx.rmx_mtu != 0 &&
             ro->ro_rt->rt_rmx.rmx_mtu < (u_long)mtu)
         mtu = (int)ro->ro_rt->rt_rmx.rmx_mtu;
+    if((flags & IPV6_OUT_MINMTU) && mtu > IPV6_MMTU)
+        mtu = IPV6_MMTU;                    /* IPV6_USE_MIN_MTU */
+
+    /*
+     * IPV6_DONTFRAG (RFC 3542 section 11.2): the datagram leaves whole even
+     * above the path MTU (an application probing for a larger one, RFC
+     * 8899), but not above the link's: EMSGSIZE, and an IPV6_PATHMTU
+     * message for a socket that asked. As KAME and FreeBSD.
+     */
+    if((flags & IPV6_OUT_DONTFRAG) && m->m_pkthdr.len > mtu) {
+        if(m->m_pkthdr.len > (int)ifp->if_mtu) {
+            ip6stat.ip6s_cantfrag++;
+            if(inp != NULL) {
+                struct sockaddr_in6 d6;
+
+                bzero(&d6, sizeof(d6));
+                d6.sin6_family = AF_INET6;
+                d6.sin6_len = sizeof(d6);
+                d6.sin6_addr = ip6->ip6_dst;
+                if(IN6_IS_ADDR_LINKLOCAL(&d6.sin6_addr) ||
+                        IN6_IS_ADDR_MC_LINKLOCAL(&d6.sin6_addr))
+                    d6.sin6_scope_id = ifp->if_index;
+                ip6_notify_pmtu(inp, &d6, (u_int32_t)mtu);
+            }
+            error = EMSGSIZE;
+            goto bad;
+        }
+        mtu = m->m_pkthdr.len;
+    }
 
     /* packet is within MTU: send directly */
     if(m->m_pkthdr.len <= mtu) {

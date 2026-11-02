@@ -27,7 +27,17 @@
 
 #ifndef __ASSEMBLER__
 
+#include <aros/config.h>
 #include <exec/types.h>
+
+/*
+ * Build-time switch for the SMP lock-up watchdog: the per-hart trail
+ * below, KrnSpinLock()'s wait record and the watcher on the last CPU
+ * (riscv64-opensbi kernel_watchdog.c).
+ */
+#if defined(__AROSEXEC_SMP__)
+//#define RISCV_KRNWATCHDOG
+#endif
 
 typedef struct tls
 {
@@ -46,6 +56,25 @@ typedef struct tls
     UQUAD               HartID;         /* SBI hart id, for firmware calls only */
     APTR                StackTop;       /* Trap stack (a secondary's initial sp) */
     APTR                Platform;       /* Platform per-hart data (HartData)    */
+#if defined(RISCV_KRNWATCHDOG)
+    /*
+     * Lock-up trail, written only by this hart and read by the watchdog
+     * on another one (kernel_watchdog.c). What a hart was doing at its
+     * last timer interrupt is all that is left to see once it stops
+     * taking them - RISC-V has no NMI to ask it again.
+     */
+    UQUAD               WdTicks;        /* Timer interrupts taken               */
+    UQUAD               WdTime;         /* rdtime at the last one               */
+    UQUAD               WdPC[8];        /* Interrupted pc, last 8 ticks         */
+    UQUAD               WdRA;           /* ... and ra, sp, sstatus at the last  */
+    UQUAD               WdSP;
+    UQUAD               WdSR;
+    struct Task         *WdTask;        /* Task it interrupted (NULL: asleep in
+                                           the dispatcher)                      */
+    APTR                SpinWait;       /* Spinlock waited for, or NULL         */
+    APTR                SpinCaller;     /* Who asked for it                     */
+    UQUAD               SpinSince;      /* rdtime when the wait began           */
+#endif
 } tls_t;
 
 #define TLSSF_Quantum   (1 << 0)

@@ -65,6 +65,22 @@ The API layer (`amiga_syscalls.c`) implements the Berkeley calls: each builds th
 `mbuf`s (for example, an address `mbuf` with `m_len = addrlen` and `sa_len` set) and invokes the
 socket-layer entry points (`sobind`, `soconnect`, `sosend`, `soreceive`, …), which in turn dispatch
 to the protocol via `so->so_proto->pr_usrreq(so, PRU_*, …)`.
+A send or receive that would block returns `EWOULDBLOCK` when the socket is non-blocking
+(`FIONBIO`, `SS_NBIO`) or the call has `MSG_DONTWAIT`, which applies to that call only.
+
+Name lookup (`gethostnamadr.c`) is what `gethostbyname()`, `gethostbyname_r()`, Miami's
+`gethostbyname2()` and both `getaddrinfo()`s (Roadshow's and Miami's) share. An address literal is
+taken as it is, and a localhost name (RFC 6761 section 6.3: `localhost` and the names within
+`.localhost`, any case, with or without the final dot) is the loopback address - 127.0.0.1, or
+`::1` for AF_INET6 - without the host table or the DNS; `getaddrinfo()` with AF_UNSPEC gives both.
+Anything else goes to the host table and the resolver in the configured order.
+The resolver (`res_search()`) searches as BIND 4.9's and resolv.conf(5) say, with `ndots` 1: a name
+with a dot is first tried as it is, and one not found that way, or one without a dot, is tried in
+each domain of the search list in turn (`RES_DNSRCH` is in `RES_DEFAULT`) - the static `DOMAIN`
+entries first, then the dynamic ones (DHCP, Router Advertisements); a final dot means only as it is.
+The networks table (`db/networks`) holds each network's number in host order, as
+`getnetent(3)` and the autodoc say, read with `inet_network()`'s rules (`__inet_network()`: "10.1"
+is 0x0a01), so `getnetbyaddr(127, AF_INET)` finds `loop 127`.
 
 ### 3.2 Concurrency and synchronization
 
@@ -236,13 +252,46 @@ The SYN cache is fully dual-stack (see §6).
 (with exponential backoff), persist, keepalive, 2MSL/TIME-WAIT, and delayed-ACK. `tcp_slowtimo`
 also expires SYN-cache entries, and advances the ISS clock (`tcp_iss`, RFC 6528) and `tcp_now`
 every tick, whether or not there are connections: `tcp_now` is the timestamp clock (RFC 7323)
-and paces the IPv4 ICMP error rate limit (§7).
+and paces the IPv4 ICMP error rate limit (§7). Each connection's timers are counted down every tick, and its idle,
+duration and RTT clocks advanced; `tcp_timers()` hands the connection back, or NULL once a timer
+has closed it.
+
+The retransmission timer also detects a path MTU black hole (RFC 2923 section 2.1): a path that
+drops large packets without saying so, because the ICMP that would say so is filtered. After the 2nd
+timeout in a row with a full-sized segment unacknowledged, `tcp_pmtud_blackhole()` (`tcp_subr.c`)
+tries segments that fit the IPv6 minimum MTU (1280), or 1240 bytes for IPv4; after the 4th, an IPv4
+connection stops setting DF (`TF_PMTUD_NODF`), so routers fragment again; after the 6th it was not
+the path, and the MSS and DF come back. A lowered MSS that gets through is kept, as a learned path
+MTU is. The steps are FreeBSD's (`tcp_timer_rexmt()`); detection is on by default, as in XNU
+(sysctl `net.inet.tcp.pmtud_blackhole`).
+
+Keepalive is per connection, with FreeBSD's options: `TCP_KEEPIDLE` (idle time before the first
+probe), `TCP_KEEPINTVL` (between probes) and `TCP_KEEPINIT` (to establish the connection) in
+seconds, `TCP_KEEPCNT` in probes; 0 gives back the system value (2 hours, 75 s, 75 s, 8), and
+`getsockopt()` reads what the connection uses (`TP_KEEPIDLE()` and the rest, `tcp_var.h`). A
+change re-arms the timer it concerns; a connection accepted by a listening socket has its values.
+The slow-tick timers are 16-bit, so a time is at most 16383 s (`TCP_KEEP_MAXSECS`); the idle
+counter saturates rather than wrapping.
+
+`TCP_USER_TIMEOUT` (RFC 5482; Linux's option and number, FreeBSD has none) is how long, in ms,
+data may wait - sent and unacknowledged, or held back by a shut window - before the connection is
+dropped with `ETIMEDOUT`; 0 (the default) is off. The wait starts when the retransmission or the
+persist timer is armed for it and restarts whenever an ACK takes `snd_una` forward (`t_acktime`);
+`tcp_slowtimo()` checks it for every connection, every 500 ms, whichever timer is running. With
+it the retransmission count no longer ends the connection (it goes on at the longest interval).
+With keepalive it replaces the probe count, as in Linux: a connection that has sent a probe and
+heard nothing for that long is dropped. Accepted connections inherit it.
 
 ### 5.4 Options in the SYN
 
 A connection asks for the MSS (§6, segment size, for IPv6), window scale and timestamps
-(RFC 7323, `tcp_do_rfc1323`) and SACK (RFC 2018, `tcp_do_sack`). ECN (`tcp_do_ecn`) is off by
-default. T/TCP (RFC 1644: the CC, CC.NEW and CC.ECHO options, the TAO cache, the shortened
+(RFC 7323, `tcp_do_rfc1323`) and SACK (RFC 2018, `tcp_do_sack`). ECN (RFC 3168, `tcp_do_ecn`,
+sysctl `net.inet.tcp.ecn`) has three modes: 0 off, 1 ask for it in the SYN and accept it, 2 accept
+it when the peer asks (the default, as Linux, FreeBSD and Windows). In mode 1 a SYN resent twice
+goes without ECE and CWR (section 6.1.1.1), and only a SYN-ACK to a SYN that asked turns it on
+(`TF_ECN_SYN`). The ECN field of a segment is TCP's: ECT(0) on new data of a connection that agreed,
+over IPv4 and IPv6 (`tcp_v6output()` takes the traffic class), the rest of the byte from `IP_TOS` or
+`IPV6_TCLASS`. T/TCP (RFC 1644: the CC, CC.NEW and CC.ECHO options, the TAO cache, the shortened
 TIME-WAIT) is off by default too: RFC 6247 moved it to Historic, as it lets a SYN with a guessed
 CC skip the three-way handshake. It is still in the source, and `tcp_do_rfc1644` (sysctl
 `net.inet.tcp.rfc1644`) turns it back on.
@@ -311,7 +360,9 @@ IPv4: the socket keeps its bound address, and only a missing port is bound for g
   (`IPV6_RECVPKTINFO`) flag is set, `udp6_input` delivers the received hop limit and/or a
   `struct in6_pktinfo` (public in `<netinet/in.h>`: destination address + receiving interface index)
   as `IPPROTO_IPV6` ancillary `cmsg`s, chained via `m_next` and assembled before the headers are
-  stripped (RFC 3542).
+  stripped (RFC 3542). `IPV6_RECVTCLASS` (`IN6P_TCLASS`) adds the traffic class (section 6.5), so
+  an application sees the ECN field (QUIC, RFC 9000 section 13.4). `IPV6_TCLASS`, as a socket option
+  or ancillary data on one datagram, is the traffic class UDP and raw sockets send with (-1 is 0).
 - **Raw IPv6 sockets** (`raw_ip6.c`, after KAME's `raw_ip6.c`; RFC 3542 §3) have an `inpcb` on
   their own list (`rip6cb`), so the IPv6 options are the ones `ip6_ctloutput()` keeps for UDP6. The
   socket's protocol and its `ICMP6_FILTER` (level `IPPROTO_ICMPV6`, pass-all by default) live in a
@@ -330,7 +381,22 @@ IPv4: the socket keeps its bound address, and only a missing port is bound for g
   long. On LP64 `CMSG_DATA()` starts past padding after the 12-byte header, which a length of
   `sizeof(struct cmsghdr) + size` would cut from the data's end. `recvmsg()` copies the whole chain
   into the caller's buffer and reports what did not fit with `MSG_CTRUNC` in `msg_flags`. IPv4's
-  `IP_RECVDSTADDR` uses the same helper.
+  `IP_RECVDSTADDR` and `IP_RECVTOS` use the same helper.
+- **Receive time.** A UDP socket with `SO_TIMESTAMP` gets, first in each datagram's ancillary data,
+  the time the stack handed it to the socket - before it waits in the buffer, so a late
+  `recvmsg()` does not move it (`sbcreatetimestamp()`, `kern/uipc_socket2.c`, from
+  `udp_savecontrol()` and `udp6_append()`). `SO_TS_CLOCK` (FreeBSD's) chooses the clock, read once
+  per datagram, and so the message: `SO_TS_REALTIME_MICRO`, the default, gives `SCM_TIMESTAMP`, a
+  `struct timeval` from the C runtime's `timespec_get(TIME_UTC)` - the time posixc's
+  `gettimeofday()` gives, the system time from 1970 in UTC by the locale's offset of that moment,
+  so the stack keeps no conversion of its own; `SO_TS_MONOTONIC` gives `SCM_MONOTONIC`, a
+  `struct timespec` from timer.device's `GetUpTime()`, which is posixc's `CLOCK_MONOTONIC`. A
+  datagram keeps the kind it came in with. `SO_TS_REALTIME` and `SO_TS_BINTIME` are refused with
+  `EOPNOTSUPP` (an AROS choice; FreeBSD has them), other values with `EINVAL`. Both options change
+  at `splnet`, as the daemon reads them. `struct timeval` is two 32-bit fields on every target;
+  `struct timespec` is a 32-bit `time_t` and a `long`, 8 bytes on 32-bit targets and 16 on 64-bit
+  ones, so code that must read stamps across targets (an m68k program under emulation) should use
+  `SCM_TIMESTAMP`.
 
 ### 6.1 Neighbour Discovery
 
@@ -351,7 +417,13 @@ route to `::` without a netmask would be a host route, which the routing table r
 
 Router Advertisements are processed as by an RFC 4191 type C host. Each default router keeps its
 preference (high, medium, low; the reserved value counts as medium) and the default route goes
-through the most preferred one that has not expired, the one heard first among equals. A Route
+through the most preferred of those that have not expired and are reachable or probably reachable -
+their neighbour entry past INCOMPLETE (RFC 4861 §6.3.6, RFC 4191 §3.2) - the one heard first among
+equals (`defrouter_choose()`). With none known reachable, the one in use stays, or the most preferred
+is taken; when neighbour unreachability detection gives up on the one in use, the next one in the
+list is (round robin, `defrouter_unreachable()`). A more preferred router passed over is probed with
+a Neighbor Solicitation once a minute at most (RFC 4191 §3.5, `nd6_probe()`), and its answer
+(`defrouter_reachable()`) brings the default route back to it. A Route
 Information Option installs a route to its prefix through the advertising router, on the interface
 it was heard on, one entry per (prefix, router) with its own lifetime and preference: the most
 preferred router for a prefix gets the route, and between prefixes the routing table's longest match
@@ -368,6 +440,47 @@ send another. An address's `IN6_IFF_*` flags are kept in `ia6_ifaflags`, apart f
 `ifa_flags` (`ia6_flags`) where `IFA_ROUTE` records the prefix route `in6_ifscrub()` removes with
 the address. A prefix gets one temporary address (RFC 4941) at a time: another is made when a Router
 Advertisement repeats the prefix after the current one is deprecated.
+
+A prefix is on-link on the link it is advertised on: the prefix list has an entry per (prefix,
+interface) (`nd6_prefix_lookup()`), each with the lifetimes heard on its link, as in KAME. The
+routing table holds one route for a prefix: it is put on its entry's interface (`nd6_prefix_onlink()`;
+with a link-local gateway `rtrequest()` would take whichever interface registered fe80::/64 first),
+and when that entry ends - expired, or its interface gone - another interface's entry for the
+prefix gets it (`nd6_prefix_drop()`).
+
+An address SLAAC makes lives by its prefix's lifetimes (RFC 4862 §5.5.3, §5.5.4): each Router
+Advertisement for the prefix renews them (`nd6_slaac_lifetimes()`), but one that would cut the valid
+lifetime below two hours brings it down to two hours at most, so a forged advertisement cannot take
+the address away; a preferred lifetime of 0 deprecates it. `in6_tmpaddrtimer()` deprecates SLAAC and
+temporary addresses at the end of their preferred lifetime and removes them at the end of the valid
+one. An option whose preferred lifetime exceeds its valid one is ignored (§5.5.3 (c)). An address
+deleted by hand comes back with the next advertisement.
+
+The flags of a Neighbor Advertisement are used as they are on the wire: `ND_NA_FLAG_*` are in
+network byte order (KAME's `<netinet/icmp6.h>`), so `nd6_na_input()` and `nd6_na_output()` neither
+swap them nor need to.
+
+A Redirect (`nd6_redirect_input()`) is taken only as RFC 4861 §8.1 says: from a link-local address
+with hop limit 255, code 0, at least 40 octets, options that parse, a target that is link-local or
+the destination itself - and from the router that is the first hop to the destination now, the
+gateway of the route the table uses for it on that interface, so that another node on the link,
+router or not, cannot draw the traffic away. It then routes the destination through the target
+(a host route, replacing one an earlier Redirect made, `RTF_DYNAMIC`; a host route set by hand is left
+as it is, as in FreeBSD). A router ignores Redirects.
+
+The DNS options of a Router Advertisement (RFC 8106) give the resolver servers and search domains:
+the addresses of an RDNSS option and the domains of a DNSSL option go into the dynamic database
+(`ndb_ra_server()`, `ndb_ra_domain()`), tagged with the interface and with when they end. Each
+advertisement renews them, a lifetime of 0 ends them at once, `ndb_ra_timer()` (from `nd6_timer()`)
+drops them when it is up, and taking the interface down drops them with its DNS= servers
+(`ifnet_clear_dns()`). At most three of each are kept per interface; a new one replaces the one that
+ends soonest (§5.3.1). An option that does not parse is ignored whole. A link-local server is asked on
+the interface it was heard on (its zone; see 6.6). The static `NAMESERVER` and `DOMAIN` entries are never
+touched and come first; a DHCP client's update (`ClearDynNameServ()`, `ClearDynDomain()`) replaces
+only what DHCP gave, not what an interface or a router did. The stack task only attempts the
+database's lock for them (`AttemptSemaphore()`): an application may hold it from `ClearDynNameServ()`
+to `EndDynNameServ()` for as long as it likes, and an option heard meanwhile is taken from the next
+advertisement, as `ndb_ra_timer()` takes the expiries on its next tick.
 
 An in-place reload deletes every address of every interface, the link-local included, and forgets
 the routers and prefixes heard on it (`nd6_purge_routers()`, `nd6_purge_prefixes()`). For an
@@ -441,18 +554,34 @@ rather than fragments: `icmp6_notify_error()` passes the Packet Too Big to `tcp6
 `PRC_MSGSIZE`, with the MTU and the quoted segment's sequence number in the `ip6ctlparam`. When that
 segment is still unacknowledged - anything else is old, or forged by someone who does not see the
 connection (RFC 5927 section 7.2) - `tcp_mtudisc6()` lowers `t_maxopd`/`t_maxseg` as `tcp_mss`
-would for that MTU and resends from `snd_una`, as FreeBSD's `tcp_mtudisc()`. UDP sockets ignore
-`PRC_MSGSIZE`: a datagram is fragmented to the path MTU anyway.
+would for that MTU and resends from `snd_una`, as FreeBSD's `tcp_mtudisc()`. A UDP datagram is
+fragmented to the path MTU, unless the application does its own path MTU discovery (QUIC, RFC 9000
+section 14; RFC 8899) with the RFC 3542 section 11 options, as KAME and FreeBSD have them:
+
+- `IPV6_USE_MIN_MTU`: -1 (the default) sends multicast at 1280 bytes a packet and unicast at the
+  path MTU, 0 everything at the path MTU, 1 everything at 1280. `IPV6_DONTFRAG`: never fragment.
+  The datagram leaves whole even above the path MTU - an application probing for a larger one - and
+  is refused with `EMSGSIZE` only above the link's MTU. Both are socket options and ancillary data
+  on one datagram (UDP and raw sockets; `ip6_outflags()` turns them into `ip6_output()` flags).
+- `IPV6_RECVPATHMTU`: a Packet Too Big about a datagram the socket sent (its port, and its address
+  if bound, and its peer if connected), or a datagram refused with `IPV6_DONTFRAG`, gives the socket
+  an `IPV6_PATHMTU` message: no data, a `struct ip6_mtuinfo` with the destination and the MTU
+  (`ip6_notify_pmtu()`, from `udp6_ctlinput()`).
+- `IPV6_PATHMTU` (get): the path MTU to a connected socket's peer, as `ip6_output()` would find it
+  (`ip6_pathmtu()`).
+
+An ICMPv6 error about a link-scope destination carries the interface it came in on as the
+destination's zone (`sin6_scope_id`), so a socket bound to another interface is not told.
 
 That route is the destination's own. On the link it is the neighbour's host route, cloned by
 neighbour discovery. Through a router the table only has the router's route (a prefix, or `::/0`),
 which every destination behind it shares, so - as KAME's `icmp6_mtudisc_clone()` does - a host route
 through the same router (`RTF_HOST | RTF_GATEWAY | RTF_DYNAMIC`, the router route's metrics) is
 added for the destination and the MTU put on that. A lowered MTU is kept 10 minutes (`rmx_expire`
-says when), then the larger one is tried again (RFC 8201 section 4): `icmp6_slowtimo()` deletes a
-host route added for it and gives any other route its previous MTU back. The routes are held,
-with a reference, in a table of 32 (`pmtu_routes[]`); when it is full the one closest to expiring
-gives way.
+says when), then the larger one is tried again (RFC 8201 section 4): `rt_pmtu_timer()` (from
+`ip_slowtimo()`) deletes a host route added for it and gives any other route its previous MTU back.
+The routes are held, with a reference, in a table of 32 (`pmtu_routes[]`, `net/route.c`, shared with
+IPv4 - §7); when it is full the one closest to expiring gives way.
 
 The other ICMPv6 errors (Destination Unreachable, Time Exceeded, Parameter Problem) go to the
 upper-layer protocol of the packet they quote, as in KAME: `icmp6_notify_error()` copies out the
@@ -539,9 +668,14 @@ source arrived on. A packet sent to one of our own link-local addresses is loope
 and `IPV6_PKTINFO` name that link.
 
 Among an interface's usable addresses (not tentative or duplicated), `in6_ifawithifp()` picks the
-source by RFC 6724 section 5 rules 2, 3 and 7: the smaller of two scopes unless it is smaller than
-the destination's (a link-scope destination gets the link-local, a global one a global address),
-then a preferred address over a deprecated one, then a temporary address over a public one.
+source by RFC 6724 section 5 rules 1, 2, 3, 6, 7 and 8: the destination itself, if it is one of
+them; the smaller of two scopes unless it is smaller than the destination's (a link-scope
+destination gets the link-local, a global one a global address); a preferred address over a
+deprecated one; one whose label in the default policy table (section 2.1) is the destination's (a
+ULA destination gets the ULA, a global one a global address rather than the ULA); a temporary
+address over a public one; then the one with the longest prefix in common with the destination,
+counted no further than the source's own prefix. Without rules 6 and 8, of two global-scope
+addresses the first on the list won, whatever the destination.
 
 ---
 
@@ -552,16 +686,41 @@ then a preferred address over a deprecated one, then a temporary address over a 
   (`struct ipq`, bounded by `maxnipq`) and linked through separately allocated `struct ipqent`
   nodes — the fragment chain is kept out of the packet rather than overlaid on the IP header, so it
   is correct on 64-bit targets and a received fragment can no longer crash the stack (§10).
+- **Roadshow interface calls.** `ObtainInterfaceList()` gives one node per interface, its name
+  (`eth0`, `lo0`) in `ln_Name`, freed with `ReleaseInterfaceList()`. `QueryInterfaceTagList()` fills
+  `IFQ_Address`, `IFQ_DestinationAddress`, `IFQ_BroadcastAddress` and `IFQ_NetMask` with a
+  `struct sockaddr_in` from the interface's first IPv4 address, as the `SIOCGIF*` ioctls give them.
+- **Forwarding** (`in_canforward()`, `netinet/in.c`, also Roadshow's `In_CanForward()`): network 0,
+  the loopback network 127, multicast and class E (224/3) and link-local 169.254/16 (RFC 3927
+  section 2.7) are never forwarded or redirected to; any other unicast destination may be.
 - **ICMP** (`ip_icmp.c`) generates and processes error and informational messages. Error generation
   is rate-limited by a token bucket (`icmp_ratelimit`): a burst of 10 tokens refills at 5 tokens per
   500 ms slow-tick, keyed off the `tcp_now` clock; suppressed errors are counted in
   `icmpstat.icps_ratelimit`, bounding ICMP error amplification.
+- **Path MTU discovery** (RFC 1191). TCP sends with DF set (`tcp_do_pmtud`, in `tcp_output` and the
+  syncache's SYN-ACK). An ICMP "fragmentation needed" gives the next hop's MTU; an older router gives
+  0, and the next plateau below the quoted datagram's length is taken (section 7). It is never below
+  552 (`IP_PMTU_MIN`, as Linux), so a forged message cannot shrink packets further. `icmp_mtudisc()`
+  puts it on the destination's own route through `rt_pmtu_update()`, as for IPv6 (§6.3: a host route
+  through the router, given back after 10 minutes), and `ip_output` sizes packets by the route's MTU.
+  `tcp_ctlinput` (`PRC_MSGSIZE`) lowers the MSS of the connection the quoted segment belongs to,
+  when that segment is still unacknowledged (RFC 5927 section 7.2), with `tcp_mtudisc()`, shared with
+  IPv6; and when `ip_output` refuses a segment larger than the route's MTU (`EMSGSIZE`),
+  `tcp_output` does the same from the route. UDP ignores `PRC_MSGSIZE`; a socket with `IP_DONTFRAG`
+  (FreeBSD's number) sends with DF, so `ip_output` refuses a datagram above the path MTU with
+  `EMSGSIZE` instead of fragmenting it.
+  Where the ICMP never comes, the retransmission timer finds the black hole (§5.3). Sysctl
+  `net.inet.tcp.pmtud` turns DF off.
 - **UDP** (`udp_usrreq.c`) is the standard datagram path over the shared `udb` table. The default
   UDP receive buffer (`udp_recvspace`, 256 datagrams) and the IP input queue depth
   (`ipqmaxlen = 4·IFQ_MAXLEN`, `ip_input.c`) are sized to absorb short high-rate receive bursts
   before the owning task drains them, rather than dropping at the ~40-datagram default. `SO_BINDTODEVICE`
   pins a UDP socket to one interface, so a limited broadcast (`255.255.255.255`) or a reply can be
-  directed out a chosen link even on a multi-homed host with no default route.
+  directed out a chosen link even on a multi-homed host with no default route. A datagram carries
+  the ancillary data its socket asked for - `IP_RECVDSTADDR`, and `IP_RECVTOS` (FreeBSD's: the TOS
+  byte, so the ECN field) - whether it was sent to one address or to a group or broadcast address
+  (`udp_savecontrol()`). `IP_TOS` as ancillary data (a byte, or an int as Linux takes it) sets the
+  TOS byte of one datagram.
 - **IPv4 multicast** (built under `-DENABLE_MULTICAST`) provides host-side group membership,
   mirroring the IPv6 path. `in_addmulti`/`in_delmulti` (`in.c`) maintain the reference-counted
   `in_multihead` list and program the NIC hardware filter over SANA-II (RFC 1112 class-D →
@@ -606,7 +765,10 @@ locals before summing rather than reading them through a `u_int16_t *` taken fro
   feeds queued packets into the pool of write requests as earlier ones complete, so a burst of sends
   cannot drain the request or cluster pool and wedge the interface. `sana2arp.c` implements IPv4
   ARP with a **per-interface** ARP table (each `sana_softc` has its own `ss_arp.table` under
-  `ARPTAB_LOCK`).
+  `ARPTAB_LOCK`). While an address is resolved, up to `ARP_MAXHOLD` (16) packets are queued on its
+  entry (`at_hold`, chained through `m_nextpkt`, oldest dropped first) and all are sent when the reply
+  comes, so the fragments of a datagram all leave; the request is sent again at most once a second
+  (RFC 1122 section 2.3.2.1), not for every packet queued.
 - **Tunnel pseudo-interface.** `if_stf.c` provides a deviceless 6in4 (SIT) interface that
   encapsulates IPv6 in IPv4 (protocol 41) over the existing IPv4 stack — no SANA-II device is bound.
   See §6.5.
@@ -695,8 +857,9 @@ Properties the implementation provides:
   option on their reports, and receive-side `IPV6_HOPLIMIT`/`IPV6_PKTINFO` ancillary data is
   delivered; per-source multicast filtering (MLDv2 INCLUDE/EXCLUDE source lists) is not tracked.
 - **Unimplemented API surface.** Several Roadshow interface-management entrypoints
-  (`AddInterfaceTagList`, `ConfigureInterfaceTagList`, `ObtainInterfaceList`, …) and Miami calls
-  (`MiamiSysCtl`, `MiamiGetHardwareLen`, `sockatmark`, …) are stubs that log "not implemented".
+  (`AddInterfaceTagList`, `ConfigureInterfaceTagList`, …) and Miami calls
+  (`MiamiGetHardwareLen`, `sockatmark`, …) are stubs that log "not implemented". `MiamiSysCtl()`
+  serves the `net.inet.{ip,tcp,udp}` MIB only (`kern/kern_sysctl.c`).
 
 ---
 

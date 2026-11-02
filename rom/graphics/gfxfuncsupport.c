@@ -330,6 +330,8 @@ ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
         struct Rectangle torender, intersect;
 
         LockLayerRom(L);
+        /* the RastPort's BitMap is read under the layer lock, nothing may change it now */
+        bm = rp->BitMap;
 
         have_rp_cliprectangle = GetRPClipRectangleForLayer(rp, L, &rp_clip_rectangle, GfxBase);
 
@@ -487,6 +489,7 @@ ULONG do_pixel_func(struct RastPort *rp
         BOOL found = FALSE;
 
         LockLayerRom(L);
+        bm = rp->BitMap;
 
         have_rp_cliprectangle = GetRPClipRectangleForLayer(rp, L, &rp_clip_rectangle, GfxBase);
 

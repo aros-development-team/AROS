@@ -264,11 +264,15 @@ struct in_addr in;
 {
     register u_long i = ntohl(in.s_addr);
 
-    if(IN_EXPERIMENTAL(i))
+    /* multicast and class E (224/3); link-local 169.254/16, which RFC
+     * 3927 section 2.7 says must not be forwarded, as FreeBSD */
+    if(IN_EXPERIMENTAL(i) || (i & 0xffff0000) == 0xa9fe0000)
         return (0);
     if(IN_CLASSA(i)) {
         register u_long net = i & IN_CLASSA_NET;
-        if(net == 0 || net == IN_LOOPBACKNET)
+        /* net 0, and 127 - in its place, as 4.4BSD has it: the shift was
+         * lost, and the loopback network went out as forwardable */
+        if(net == 0 || net == (IN_LOOPBACKNET << IN_CLASSA_NSHIFT))
             return (0);
     }
     return (1);

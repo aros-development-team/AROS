@@ -98,6 +98,8 @@
 
 #include <kern/uipc_socket2_protos.h>
 #include <kern/amiga_select_protos.h>
+#include <proto/timer.h>
+#include <time.h>               /* timespec_get() */
 
 /*
  * Primitive routines for operating on sockets and socket buffers
@@ -832,6 +834,40 @@ sbcreatecontrol(caddr_t p, int size, int type, int level)
     cp->cmsg_level = level;
     cp->cmsg_type = type;
     return (m);
+}
+
+/*
+ * The receive time of a datagram for a socket that asked with SO_TIMESTAMP,
+ * as a control mbuf, or NULL (FreeBSD's SO_TIMESTAMP and SO_TS_CLOCK).
+ * Called as the datagram is handed to the socket, before it waits in the
+ * buffer; the clock is read once, of the kind so_ts_clock names:
+ * - SO_TS_REALTIME_MICRO: SCM_TIMESTAMP, a struct timeval - the C
+ *   runtime's timespec_get(TIME_UTC), which is the time posixc's
+ *   gettimeofday() gives (the system time from 1970, in UTC by the
+ *   locale's offset at that moment), so the stack keeps no conversion of
+ *   its own;
+ * - SO_TS_MONOTONIC: SCM_MONOTONIC, a struct timespec - timer.device's
+ *   GetUpTime(), which is posixc's CLOCK_MONOTONIC.
+ */
+struct mbuf *
+sbcreatetimestamp(struct socket *so)
+{
+    struct timespec ts;
+    struct timeval tv;
+
+    if(!(so->so_options & SO_TIMESTAMP))
+        return NULL;
+    if(so->so_ts_clock == SO_TS_MONOTONIC) {
+        GetUpTime(&tv);
+        ts.tv_sec = tv.tv_sec;
+        ts.tv_nsec = (long)tv.tv_usec * 1000;
+        return sbcreatecontrol((caddr_t)&ts, sizeof(ts), SCM_MONOTONIC, SOL_SOCKET);
+    }
+    if(timespec_get(&ts, TIME_UTC) != TIME_UTC)
+        return NULL;
+    tv.tv_sec = ts.tv_sec;
+    tv.tv_usec = ts.tv_nsec / 1000;
+    return sbcreatecontrol((caddr_t)&tv, sizeof(tv), SCM_TIMESTAMP, SOL_SOCKET);
 }
 
 /*

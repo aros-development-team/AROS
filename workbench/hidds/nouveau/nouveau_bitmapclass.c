@@ -258,6 +258,14 @@ VOID NouveauBitMap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     if (bmdata->fbid != 0)
     {
         struct nouveau_device *nvdev = SD(cl)->carddata.dev;
+        /* framebuffer ids are reused: a disposed scanout bitmap must not be
+           remembered as "shown", or the next Show() of a new bitmap with the
+           same id would be skipped (nouveau_displayclass.c flip path) */
+        if (bmdata->showngfx && bmdata->showngfx->shownfb == bmdata->fbid)
+        {
+            bmdata->showngfx->shownfb = 0;
+            bmdata->showngfx->shownmode = NULL;
+        }
         drmModeRmFB(NOUVEAU_DEV_FD(nvdev), bmdata->fbid);   
         bmdata->fbid = 0;
         if (bmdata->nbufs)
@@ -389,25 +397,31 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPixel)
 
     VIDEO_BITMAP_REFUSED(bmdata, );
 
-    /* FIXME "Optimistics" synchronization (yes, I know it's wrong) */
+    /*
+     * "Optimistic" fast path: a mapped buffer with no GPU work pending is
+     * accessed directly. Anything else - mapping, or waiting for the GPU -
+     * kicks the shared pushbuf, and libdrm's pushbuf state is not thread
+     * safe: that needs the engine lock (taken before the bitmap lock, the
+     * order every other method uses). An unlocked gpu_dirty wait here
+     * re-enters the pushbuf under another task's submission and corrupts it.
+     */
     IPTR map = (IPTR)bmdata->bo->map;
-    
-    /* If the current map was NULL, wait until bitmap lock is released. 
-       When it happens, map the buffer */
-    if (map == (IPTR)NULL)
+    BOOL locked = (map == (IPTR)NULL) || bmdata->gpu_dirty;
+
+    if (locked)
     {
+        LOCK_ENGINE
         LOCK_BITMAP
         MAP_BUFFER
+        if (bmdata->gpu_dirty)
+        {
+            nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client);
+            bmdata->gpu_dirty = FALSE;
+        }
         addr += (IPTR)bmdata->bo->map;
     }
     else
         addr += map;
-
-    if (bmdata->gpu_dirty)
-    {
-        nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client);
-        bmdata->gpu_dirty = FALSE;
-    }
 
     switch(bmdata->bytesperpixel)
     {
@@ -422,8 +436,11 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPixel)
         break;
     }
 
-    if (map == (IPTR)NULL)    
+    if (locked)
+    {
         UNLOCK_BITMAP
+        UNLOCK_ENGINE
+    }
 }
 
 HIDDT_Pixel METHOD(NouveauBitMap, Hidd_BitMap, GetPixel)
@@ -435,25 +452,31 @@ HIDDT_Pixel METHOD(NouveauBitMap, Hidd_BitMap, GetPixel)
 
     VIDEO_BITMAP_REFUSED(bmdata, 0);
 
-    /* FIXME "Optimistics" synchronization (yes, I know it's wrong) */
+    /*
+     * "Optimistic" fast path: a mapped buffer with no GPU work pending is
+     * accessed directly. Anything else - mapping, or waiting for the GPU -
+     * kicks the shared pushbuf, and libdrm's pushbuf state is not thread
+     * safe: that needs the engine lock (taken before the bitmap lock, the
+     * order every other method uses). An unlocked gpu_dirty wait here
+     * re-enters the pushbuf under another task's submission and corrupts it.
+     */
     IPTR map = (IPTR)bmdata->bo->map;
+    BOOL locked = (map == (IPTR)NULL) || bmdata->gpu_dirty;
 
-    /* If the current map was NULL, wait until bitmap lock is released. 
-       When it happens, map the buffer */
-    if (map == (IPTR)NULL)
+    if (locked)
     {
+        LOCK_ENGINE
         LOCK_BITMAP
         MAP_BUFFER
+        if (bmdata->gpu_dirty)
+        {
+            nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client);
+            bmdata->gpu_dirty = FALSE;
+        }
         addr += (IPTR)bmdata->bo->map;
     }
     else
         addr += map;
-
-    if (bmdata->gpu_dirty)
-    {
-        nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client);
-        bmdata->gpu_dirty = FALSE;
-    }
 
     switch(bmdata->bytesperpixel)
     {
@@ -468,8 +491,11 @@ HIDDT_Pixel METHOD(NouveauBitMap, Hidd_BitMap, GetPixel)
         break;
     }
     
-    if (map == (IPTR)NULL)    
+    if (locked)
+    {
         UNLOCK_BITMAP
+        UNLOCK_ENGINE
+    }
     
     return pixel;
 }
@@ -1042,6 +1068,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaTemplate)
     COMPLEMENT_JAM2_DECISION_BLOCK 
 
     /* This is software fallback */
+    LOCK_ENGINE   /* MAP_BUFFER kicks the shared pushbuf: libdrm state is not thread-safe */
     LOCK_BITMAP
     MAP_BUFFER
 
@@ -1067,6 +1094,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaTemplate)
     } /* switch(bmdata->bytesperpixel) */
 
     UNLOCK_BITMAP
+    UNLOCK_ENGINE
 }
 
 VOID METHOD(NouveauBitMap, Hidd_BitMap, PutTemplate)
@@ -1101,6 +1129,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutTemplate)
     COMPLEMENT_JAM2_DECISION_BLOCK
 
     /* This is software fallback */
+    LOCK_ENGINE   /* MAP_BUFFER kicks the shared pushbuf: libdrm state is not thread-safe */
     LOCK_BITMAP
     MAP_BUFFER
 
@@ -1136,6 +1165,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutTemplate)
     } /* switch(bmdata->bytesperpixel) */
 
     UNLOCK_BITMAP
+    UNLOCK_ENGINE
 }
 
 VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPattern)
@@ -1170,6 +1200,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPattern)
     COMPLEMENT_JAM2_DECISION_BLOCK
 
     /* This is software fallback */
+    LOCK_ENGINE   /* MAP_BUFFER kicks the shared pushbuf: libdrm state is not thread-safe */
     LOCK_BITMAP
     MAP_BUFFER
 
@@ -1208,6 +1239,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPattern)
     } /* switch(bmdata->bytesperpixel) */
 
     UNLOCK_BITMAP
+    UNLOCK_ENGINE
 }
 
 VOID METHOD(NouveauBitMap, Hidd_BitMap, DrawLine)
@@ -1217,6 +1249,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, DrawLine)
 
     VIDEO_BITMAP_REFUSED(bmdata, );
 
+    LOCK_ENGINE   /* MAP_BUFFER kicks the shared pushbuf: libdrm state is not thread-safe */
     LOCK_BITMAP
 
     if ((GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Copy) && (GC_COLMASK(msg->gc) == ~0))
@@ -1226,6 +1259,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, DrawLine)
         HIDDNouveauBitMapDrawSolidLine(bmdata, msg->gc, msg->x1, msg->y1, msg->x2, msg->y2);
 
         UNLOCK_BITMAP
+        UNLOCK_ENGINE
 
         return;
     }
@@ -1233,6 +1267,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, DrawLine)
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     
     UNLOCK_BITMAP
+    UNLOCK_ENGINE
 }
 
 VOID METHOD(NouveauBitMap, Hidd_BitMap, UpdateRect)

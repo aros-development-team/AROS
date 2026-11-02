@@ -413,6 +413,17 @@ gh100_gsp_init(struct nvkm_gsp *gsp)
 		}
 		if (gsp->boot_attempts)
 			nvkm_warn(subdev, "GSP-FMC boot attempt %d\n", gsp->boot_attempts + 1);
+		else if (!resume) {
+			/*
+			 * The storage read path delivers a few wrong bytes now and then
+			 * at boot (one byte lane of a 64-byte transfer), and
+			 * a damaged image means a refused boot whose recovery (FLR and a
+			 * second device init) is fragile. Majority-check the image against
+			 * two fresh reads of the file BEFORE the first boot instead.
+			 */
+			int r535_gsp_verify_image(struct nvkm_gsp *);
+			r535_gsp_verify_image(gsp);
+		}
 		gh100_gsp_reset_hw(gsp);
 		/* the firmware page table's level 2 is not a coherent block: clean it too */
 		dma_sync_sgtable_for_device(device->dev, &gsp->radix3.lvl2, DMA_TO_DEVICE);

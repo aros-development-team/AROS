@@ -93,6 +93,7 @@
 
 #include "ip_compat.h"
 #include <protos/kern/kern_random_protos.h>
+#include <protos/net/route_protos.h>
 
 #ifndef	IPFORWARDING
 #define	IPFORWARDING	0
@@ -681,7 +682,10 @@ void
 ip_slowtimo()
 {
     register struct ipq *fp;
-    spl_t s = splnet();
+    spl_t s;
+
+    rt_pmtu_timer();            /* path MTUs whose time is up (route.c) */
+    s = splnet();
 
     fp = ipq.next;
     if(fp == 0) {

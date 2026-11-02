@@ -60,6 +60,7 @@ extern void sana_remove_unseen(void);
 #include <protos/net/route_protos.h>
 
 extern struct ifnet *iface_make(struct ssconfig *ifc);
+extern ULONG __inet_network(const char *cp);      /* api/amiga_libcalls.c */
 
 LONG read_netdb(struct NetDataBase *ndb, UBYTE *fname,
                 UBYTE **errstrp, struct CSource *res,
@@ -562,13 +563,24 @@ static BOOL defer_remember(const char *name, const char *line, ULONG length)
  * away.  A server may be given as an IPv4 or an IPv6 literal (either token may
  * carry either family); the node is tagged with nsn_Family accordingly.
  */
-static void ifdns_remove_locked(struct ifnet *ifp)
+static void ifdns_remove_locked(struct ifnet *ifp, BOOL learned_too)
 {
     struct MinNode *node, *next;
 
     for(node = DynDB.dyn_NameServers.mlh_Head; node->mln_Succ; node = next) {
+        struct NameserventNode *nsn = (struct NameserventNode *)node;
+
         next = node->mln_Succ;
-        if(((struct NameserventNode *)node)->nsn_Owner == ifp) {
+        if(nsn->nsn_Owner == ifp && (learned_too || nsn->nsn_Expire == 0)) {
+            Remove((struct Node *)node);
+            bsd_free(node, M_NETDB);
+        }
+    }
+    if(!learned_too)
+        return;
+    for(node = DynDB.dyn_Domains.mlh_Head; node->mln_Succ; node = next) {
+        next = node->mln_Succ;
+        if(((struct DomainentNode *)node)->dn_Owner == ifp) {
             Remove((struct Node *)node);
             bsd_free(node, M_NETDB);
         }
@@ -614,6 +626,7 @@ static int ifdns_add_csv_locked(struct ifnet *ifp, const UBYTE *csv)
             }
             if(nsn) {
                 nsn->nsn_Owner = ifp;
+                nsn->nsn_Expire = 0;
                 AddTail((struct List *)&DynDB.dyn_NameServers,
                         (struct Node *)nsn);
                 added++;
@@ -633,7 +646,7 @@ void ifnet_set_dns(struct ifnet *ifp, const UBYTE *v4csv, const UBYTE *v6csv)
     int added = 0;
 
     ObtainSemaphore(&DynDB.dyn_Lock);
-    ifdns_remove_locked(ifp);
+    ifdns_remove_locked(ifp, FALSE);
     if(v4csv && *v4csv)
         added += ifdns_add_csv_locked(ifp, v4csv);
     if(v6csv && *v6csv)
@@ -646,13 +659,180 @@ void ifnet_set_dns(struct ifnet *ifp, const UBYTE *v4csv, const UBYTE *v6csv)
               ifp->if_name, ifp->if_unit, added);
 }
 
-/* Drop all per-interface DNS servers belonging to ifp (interface going down). */
+/* Drop all of ifp's DNS servers and search domains, those from its DNS=
+ * tokens and those learned from Router Advertisements (interface going down). */
 void ifnet_clear_dns(struct ifnet *ifp)
 {
     ObtainSemaphore(&DynDB.dyn_Lock);
-    ifdns_remove_locked(ifp);
+    ifdns_remove_locked(ifp, TRUE);
     ReleaseSemaphore(&DynDB.dyn_Lock);
     ndb_Serial++;
+}
+
+/*
+ * DNS configuration from Router Advertisements (RFC 8106).
+ *
+ * The servers of an RDNSS option and the domains of a DNSSL option go into
+ * the dynamic database tagged with the interface they were heard on, as the
+ * DNS= tokens' servers are, and with when they end: each advertisement
+ * renews them, a lifetime of 0 ends them at once (section 5.1), and
+ * ndb_ra_timer() drops them when their time is up.  The static database
+ * (NAMESERVER, DOMAIN) is never touched, and the resolver keeps trying its
+ * entries first.  At most NDB_RA_MAX of each are kept per interface; a new
+ * one takes the place of the one that ends soonest (section 5.3.1).
+ *
+ * This runs in the stack task, which must not wait for the lock: an
+ * application holds it from ClearDynNameServ() or ClearDynDomain() until
+ * EndDynNameServ() or EndDynDomain() (miami.library), for as long as it
+ * likes. So the lock is only attempted; without it the option is passed
+ * over and taken from the next advertisement, as ndb_ra_timer() does.
+ */
+#define NDB_RA_MAX 3
+
+static ULONG ndb_ra_now(void)
+{
+    struct timeval tv;
+
+    GetSysTime(&tv);
+    return tv.tv_sec;
+}
+
+/* When an entry with this lifetime ends; never 0, which marks the others. */
+static ULONG ndb_ra_end(ULONG lifetime)
+{
+    ULONG now = ndb_ra_now(), end = now + lifetime;
+
+    if(lifetime == NDB_RA_FOREVER)
+        return NDB_RA_FOREVER;
+    if(end < now || end == NDB_RA_FOREVER)
+        return NDB_RA_FOREVER - 1;
+    return end;
+}
+
+void ndb_ra_server(struct ifnet *ifp, const struct in6_addr *addr, ULONG lifetime)
+{
+    struct NameserventNode *nsn, *found = NULL, *soonest = NULL;
+    int n = 0, changed = 0;
+
+    if(!AttemptSemaphore(&DynDB.dyn_Lock))
+        return;             /* the next advertisement gives it again */
+    for(nsn = (struct NameserventNode *)DynDB.dyn_NameServers.mlh_Head;
+            nsn->nsn_Node.mln_Succ;
+            nsn = (struct NameserventNode *)nsn->nsn_Node.mln_Succ) {
+        if(nsn->nsn_Owner != ifp || nsn->nsn_Expire == 0)
+            continue;
+        if(IN6_ARE_ADDR_EQUAL(&nsn->nsn_Addr6, addr))
+            found = nsn;
+        if(soonest == NULL || nsn->nsn_Expire < soonest->nsn_Expire)
+            soonest = nsn;
+        n++;
+    }
+    if(found != NULL && lifetime == 0) {
+        Remove((struct Node *)found);
+        bsd_free(found, M_NETDB);
+        changed = 1;
+    } else if(found != NULL) {
+        found->nsn_Expire = ndb_ra_end(lifetime);
+    } else if(lifetime != 0) {
+        if(n >= NDB_RA_MAX)
+            found = soonest;
+        else if((found = bsd_malloc(sizeof(*found), M_NETDB, M_WAITOK)) != NULL) {
+            found->nsn_EntSize = sizeof(found->nsn_Ent);
+            found->nsn_Family = AF_INET6;
+            found->nsn_Ent.ns_addr.s_addr = 0;
+            found->nsn_Owner = ifp;
+            AddTail((struct List *)&DynDB.dyn_NameServers, (struct Node *)found);
+        }
+        if(found != NULL) {
+            found->nsn_Addr6 = *addr;
+            found->nsn_Expire = ndb_ra_end(lifetime);
+            changed = 1;
+        }
+    }
+    ReleaseSemaphore(&DynDB.dyn_Lock);
+    if(changed)
+        ndb_Serial++;       /* make the resolver refresh its nameserver list */
+}
+
+void ndb_ra_domain(struct ifnet *ifp, const char *name, ULONG lifetime)
+{
+    struct DomainentNode *dn, *found = NULL, *soonest = NULL;
+    int n = 0, changed = 0;
+    size_t len = strnlen(name, MAXHOSTNAMELEN) + 1;
+
+    if(!AttemptSemaphore(&DynDB.dyn_Lock))
+        return;             /* the next advertisement gives it again */
+    for(dn = (struct DomainentNode *)DynDB.dyn_Domains.mlh_Head;
+            dn->dn_Node.mln_Succ;
+            dn = (struct DomainentNode *)dn->dn_Node.mln_Succ) {
+        if(dn->dn_Owner != ifp || dn->dn_Expire == 0)
+            continue;
+        if(strcasecmp(dn->dn_Ent.d_name, name) == 0)
+            found = dn;
+        if(soonest == NULL || dn->dn_Expire < soonest->dn_Expire)
+            soonest = dn;
+        n++;
+    }
+    if(found != NULL && lifetime != 0) {
+        found->dn_Expire = ndb_ra_end(lifetime);
+    } else {
+        if(found == NULL && lifetime != 0 && n >= NDB_RA_MAX)
+            found = soonest;
+        if(found != NULL) {
+            Remove((struct Node *)found);
+            bsd_free(found, M_NETDB);
+            changed = 1;
+        }
+        if(lifetime != 0 &&
+                (dn = bsd_malloc(sizeof(*dn) + len, M_NETDB, M_WAITOK)) != NULL) {
+            dn->dn_EntSize = sizeof(*dn) + len - sizeof(struct GenentNode);
+            dn->dn_Ent.d_name = (char *)(dn + 1);
+            memcpy(dn + 1, name, len - 1);
+            dn->dn_Ent.d_name[len - 1] = '\0';
+            dn->dn_Owner = ifp;
+            dn->dn_Expire = ndb_ra_end(lifetime);
+            AddTail((struct List *)&DynDB.dyn_Domains, (struct Node *)dn);
+            changed = 1;
+        }
+    }
+    ReleaseSemaphore(&DynDB.dyn_Lock);
+    if(changed)
+        ndb_Serial++;
+}
+
+/* Once a second: drop what has reached its end.  Without the lock now, the
+ * next second does it. */
+void ndb_ra_timer(void)
+{
+    struct MinNode *node, *next;
+    ULONG now = ndb_ra_now();
+    int changed = 0;
+
+    if(!AttemptSemaphore(&DynDB.dyn_Lock))
+        return;
+    for(node = DynDB.dyn_NameServers.mlh_Head; node->mln_Succ; node = next) {
+        ULONG end = ((struct NameserventNode *)node)->nsn_Expire;
+
+        next = node->mln_Succ;
+        if(end != 0 && end != NDB_RA_FOREVER && end <= now) {
+            Remove((struct Node *)node);
+            bsd_free(node, M_NETDB);
+            changed = 1;
+        }
+    }
+    for(node = DynDB.dyn_Domains.mlh_Head; node->mln_Succ; node = next) {
+        ULONG end = ((struct DomainentNode *)node)->dn_Expire;
+
+        next = node->mln_Succ;
+        if(end != 0 && end != NDB_RA_FOREVER && end <= now) {
+            Remove((struct Node *)node);
+            bsd_free(node, M_NETDB);
+            changed = 1;
+        }
+    }
+    ReleaseSemaphore(&DynDB.dyn_Lock);
+    if(changed)
+        ndb_Serial++;
 }
 
 /*
@@ -1154,7 +1334,7 @@ addnetent(struct NetDataBase *ndb,
     LONG retval;
     IPTR Args[NDBARGS] = { 0 };
     struct NetentNode *nn;
-    struct in_addr addr;
+    ULONG net;
     int aliases;
 
 #if defined(__AROS__)
@@ -1162,8 +1342,9 @@ addnetent(struct NetDataBase *ndb,
 #endif
 
     if(rdargs = ReadArgs(NETDBTEMPLATE, Args, rdargs)) {
-        /* convert ip address */
-        if(__inet_aton((char *)Args[KNDB_DATA], &addr)) {
+        /* the network number, in host order (getnetent(3)), read as
+         * inet_network() reads it, as the BSDs do */
+        if((net = __inet_network((char *)Args[KNDB_DATA])) != INADDR_NONE) {
             nn = node_alloc(sizeof(*nn),
                             (UBYTE *)Args[KNDB_NAME],
                             (UBYTE **)Args[KNDB_ALIAS], &aliases);
@@ -1174,7 +1355,7 @@ addnetent(struct NetDataBase *ndb,
                 nn->nn_Ent.n_addrtype = AF_INET;
                 nn->nn_Ent.n_name = name;
                 nn->nn_Ent.n_aliases = (char **)alias;
-                bcopy(&addr, &nn->nn_Ent.n_net, sizeof(addr));
+                nn->nn_Ent.n_net = net;
 
                 /* Copy aliases */
                 aliascpy(nn->nn_Ent.n_name, (UBYTE *)Args[KNDB_NAME],
@@ -1340,6 +1521,8 @@ addnameservent(struct NetDataBase *ndb,
     nsn->nsn_EntSize = sizeof(nsn->nsn_Ent);
     nsn->nsn_Family = AF_INET;
     nsn->nsn_Ent.ns_addr.s_addr = ns_addr.s_addr;
+    nsn->nsn_Owner = NULL;
+    nsn->nsn_Expire = 0;
 
     /* TODO: NicJA - Where does CHECK_POINTER() Come from? */
 #if !defined(__AROS__)
@@ -1385,6 +1568,8 @@ adddomainent(struct NetDataBase *ndb,
     }
     dn->dn_EntSize = nodesize - sizeof(struct GenentNode);
     dn->dn_Ent.d_name = (char *)(dn + 1);
+    dn->dn_Owner = NULL;
+    dn->dn_Expire = 0;
 
     memcpy((char *)(dn + 1), Buffer, nodesize - sizeof(*dn));
 

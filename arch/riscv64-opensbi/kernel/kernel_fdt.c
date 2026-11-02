@@ -87,6 +87,7 @@ int krnParseFDT(void *dtb, struct krnFDTInfo *info)
     info->plic_ndev = 0;
     info->plic_context = -1;
     info->plic_ncontexts = 0;
+    info->plic_quirks = 0;
 
     if (!dtb || be32(hdr->magic) != FDT_MAGIC)
         return 0;
@@ -197,6 +198,21 @@ int krnParseFDT(void *dtb, struct krnFDTInfo *info)
                      str_eq(pname, "riscv,ndev"))
             {
                 info->plic_ndev = be32(*val);
+            }
+            else if (depth == 3 && str_prefix(node2, "plic@") &&
+                     str_eq(pname, "compatible"))
+            {
+                /* A list of NUL-separated strings; the vendor prefix is enough */
+                const char *s = (const char *)val, *e = s + len;
+
+                while (s < e)
+                {
+                    if (str_prefix(s, "ultrarisc,"))
+                        info->plic_quirks |= KRN_PLIC_QUIRK_CLAIM;
+                    while (s < e && *s)
+                        s++;
+                    s++;
+                }
             }
             else if (depth == 3 && str_prefix(node2, "plic@") &&
                      str_eq(pname, "interrupts-extended"))

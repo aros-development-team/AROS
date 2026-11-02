@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2023, The AROS Development Team.
+    Copyright (C) 2002-2026, The AROS Development Team.
     Copyright (C) 1999, David Le Corfec.
     All rights reserved.
 
@@ -50,7 +50,7 @@ extern struct Library *MUIMasterBase;
     MUIA_FrameTitle
     MUIA_HorizWeight
     MUIA_Pressed
-    MUIA_Selected
+    MUIA_Selected is not explicitly filtered by Group.
     MUIA_ShortHelp
     MUIA_ShowMe
     MUIA_VertWeight
@@ -147,11 +147,508 @@ struct MUI_GroupData
 #define w0_defheight(x) (_vweight(x) ? _defheight(x) : _minheight(x))
 #define w0_maxheight(x) (_vweight(x) ? _maxheight(x) : _minheight(x))
 
+/****** Group.mui/MUIC_Group ************
+*
+*   NAME
+*       MUIC_Group
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       Own an ordered set of Area-compatible children through an internal
+*       Family. Arrange them horizontally, vertically, in a grid, as pages or
+*       through a layout hook. Default orientation is vertical, with both stored
+*       row and column counts initially one. Layout requires the connected
+*       application's preferences and valid child min/max information.
+*       Group owns the internal Family, its attached children and private grid
+*       arrays. It borrows the layout Hook. Construction returns NULL on
+*       superclass/Family creation failure or any explicit NULL Group_Child tag.
+*       Disposal frees grid arrays and disposes the Family and remaining
+*       children, then Area. Hide and Cleanup must already have ended active
+*       display resources and handlers.
+*       Only attach live compatible objects that are not already owned or linked
+*       elsewhere. Adding adopts a child; removing unlinks without disposing it.
+*       Serialize membership, layout and callbacks in the application task. The
+*       implementation does not protect traversal against children destroying
+*       themselves or changing the list.
+*
+*   METHODS
+*       Setup calls Area then sets up every child, including children with
+*       ShowMe FALSE. On child failure it cleans only the previously successful
+*       children and returns FALSE; it does not clean the failing child or the
+*       successful Area setup itself. Cleanup calls every child then Area.
+*       Show/Hide select the active page or eligible visible children; child
+*       results are ignored. Draw returns FALSE while InitChange is active.
+*       AskMinMax asks visible children and finalizes their sizes, then uses
+*       page layout, a custom hook or built-in layout in that priority order. It
+*       returns zero regardless of results. Layout uses the same priority and
+*       also returns zero, even after a hook failure or incomplete built-in
+*       layout. The library MUI_Layout sets a child's box and returns TRUE
+*       without propagating the child's Layout result.
+*       FindUData/GetUData match Group first, then delegate through its internal
+*       Family, whose own default UserData can also match. GetUData reports a
+*       match without checking getter success. SetUData may set Group, whose
+*       setter can already broadcast, and then visits the Family, so assignments
+*       can repeat; SetUDataOnce stops at the first match. Export/Import visit
+*       children only and return zero; they do not call Area's own
+*       Selected-state serialization.
+*       OM_GET tries Group, then Area/Notify, then children until one getter
+*       succeeds. Unknown methods normally go to every child before Area; child
+*       results are discarded. Explicit lifecycle/utility/drag cases have
+*       different routes. DoMethodNoForward controls only the paths that inspect
+*       its forwarding flag, not every explicit child traversal.
+*
+*   NOTES
+*       MUIM_Notify first probes the group's trigger getter with child-get
+*       forwarding disabled. If recognized locally, it registers through the
+*       superclass. Otherwise it probes each child and registers on those
+*       reporting support. This is a Group override of Notify, so an event-only
+*       attribute without a getter is not automatically registered locally.
+*       Probe storage is a fixed 30-IPTR stack array; getters must not write
+*       beyond it. Return TRUE on the child path does not prove that any
+*       registration succeeded.
+*       Version and Revision getters both return 1. Family_GetChild is delegated
+*       to the internal Family. Group also implements virtual offset/extent
+*       attributes used by Virtgroup. The locally defined Group_Insert and
+*       Group_ChildCount are internal source interfaces; the header's
+*       ExitChange2 is explicitly private.
+*
+*   BUGS
+*       Add/remove helpers ignore child and Family results and adjust a stored
+*       count without validating membership. Setup has incomplete failure
+*       unwinding. Page indices and grid dimensions are not generally
+*       range-checked. Several layout intermediates are WORD values, and
+*       allocation/arithmetic failures have no comprehensive status. Treat
+*       documented results as implementation results, not stronger success
+*       guarantees.
+*
+*/
+/****** Group.mui/MUIA_Group_Child ************
+*
+*   NAME
+*       MUIA_Group_Child
+*
+*   FUNCTION
+*       Append a non-NULL Area-compatible child through OM_ADDMEMBER. The
+*       internal Family owns attached children.
+*
+*   INPUTS
+*       Object pointer; initialize only; repeatable.
+*
+*   NOTES
+*       Runtime changes use AddHead/AddTail or OM_ADDMEMBER and Remove or
+*       OM_REMMEMBER. Any explicit NULL Child tag makes construction fail after
+*       tag processing and disposes attached children. Earlier superclass/Family
+*       allocation failure can occur before child adoption. Do not dispose an
+*       attached child separately.
+*
+*   BUGS
+*       When the frame request is MUIV_Frame_Register, the first Child tag also
+*       stores the internal titlegroup pointer, even without PageMode. Removing
+*       or independently disposing this object does not clear that pointer.
+*
+*/
+/****** Group.mui/MUIA_Group_ChildList ************
+*
+*   NAME
+*       MUIA_Group_ChildList
+*
+*   FUNCTION
+*       Return the borrowed child list owned by the internal Family.
+*
+*   INPUTS
+*       Exec List pointer; get only.
+*
+*   NOTES
+*       Use NextObject for traversal. Do not edit links, free the list or retain
+*       it beyond Group disposal. Membership must remain stable during traversal
+*       and callbacks. This is not a copied snapshot.
+*
+*/
+/****** Group.mui/MUIA_Group_Horiz ************
+*
+*   NAME
+*       MUIA_Group_Horiz
+*
+*   FUNCTION
+*       Select horizontal one-dimensional layout when true; default FALSE
+*       selects vertical.
+*
+*   INPUTS
+*       BOOL; initialize; getter also implemented.
+*
+*   NOTES
+*       This orientation is used when rows and columns both equal one and
+*       neither PageMode nor LayoutHook takes precedence. There is no setter.
+*       The getter returns the GROUP_HORIZ bit value (2 when set), not
+*       normalized TRUE (1). Test it as nonzero.
+*
+*/
+/****** Group.mui/MUIA_Group_PageMode ************
+*
+*   NAME
+*       MUIA_Group_PageMode
+*
+*   FUNCTION
+*       Enable page-group layout, default FALSE. One content child is shown at a
+*       time; all pages contribute size constraints and are laid out.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*       PageMode takes precedence over LayoutHook, Rows/Columns and Horiz. With
+*       MUIV_Frame_Register, the first Child tag is treated as a title group and
+*       excluded from content-page counting. Its minimum height is reserved
+*       above the content; page changes set its Group_ActivePage. Group does not
+*       create tab objects or install title-selection notifications itself.
+*
+*   BUGS
+*       Show/Hide count all children except the title group, while Draw skips
+*       ShowMe-FALSE children before incrementing the page count. Hidden pages
+*       can therefore make these paths select different indices. There is no
+*       PageMode setter or local getter.
+*
+*/
+/****** Group.mui/MUIA_Group_ActivePage ************
+*
+*   NAME
+*       MUIA_Group_ActivePage
+*
+*   FUNCTION
+*       Choose a zero-based content-page index when PageMode is enabled. Default
+*       zero. First selects zero, Last selects count minus one, Prev wraps from
+*       zero, and Next/Advance both advance with modulo wrap. The title group,
+*       if any, is excluded from that count.
+*
+*   INPUTS
+*       LONG; initialize, set, get.
+*
+*   NOTES
+*       A changed live page hides the previous selection, stores the new index,
+*       lays out and shows the new selection, then redraws content. Before
+*       PageMode is enabled this operation does nothing; initialization tag
+*       order matters. Configure PageMode and children before using relative
+*       selectors. The getter returns the stored index.
+*
+*   BUGS
+*       Explicit indices are not clamped. Next/Advance divide by the content
+*       count and are invalid for an empty page group. Last on an empty group
+*       produces -1. Removing children does not repair an out-of-range active
+*       index. See PageMode for hidden-child counting differences.
+*
+*/
+/****** Group.mui/MUIA_Group_Columns ************
+*
+*   NAME
+*       MUIA_Group_Columns
+*
+*   FUNCTION
+*       Request a grid columns count, converted to at least one, and clear the
+*       other dimension to zero so min/max calculation derives it from the total
+*       child count.
+*
+*   INPUTS
+*       LONG declaration, stored as ULONG; initialize and set.
+*
+*   NOTES
+*       The last Rows/Columns tag wins. On min/max calculation, a nondivisible
+*       request falls back to one row containing all children. Dimensions are
+*       derived from total membership, while most cell passes skip hidden and
+*       border-gadget children. A runtime setter requests Window recalculation
+*       when RenderInfo exists. There is no local getter.
+*
+*   BUGS
+*       Negative or oversized values are not rejected before unsigned
+*       conversion/allocation arithmetic. There is no partial-last-row layout
+*       guarantee. Grid-array allocation failure returns from an internal helper
+*       without a public failure result; later Layout can do nothing.
+*
+*/
+/****** Group.mui/MUIA_Group_Rows ************
+*
+*   NAME
+*       MUIA_Group_Rows
+*
+*   FUNCTION
+*       Request a grid rows count, converted to at least one, and clear the
+*       other dimension to zero so min/max calculation derives it from the total
+*       child count.
+*
+*   INPUTS
+*       LONG declaration, stored as ULONG; initialize and set.
+*
+*   NOTES
+*       The last Rows/Columns tag wins. On min/max calculation, a nondivisible
+*       request falls back to one column containing all children. Dimensions are
+*       derived from total membership, while most cell passes skip hidden and
+*       border-gadget children. A runtime setter requests Window recalculation
+*       when RenderInfo exists. There is no local getter.
+*
+*   BUGS
+*       Negative or oversized values are not rejected before unsigned
+*       conversion/allocation arithmetic. There is no partial-last-row layout
+*       guarantee. Grid-array allocation failure returns from an internal helper
+*       without a public failure result; later Layout can do nothing.
+*
+*/
+/****** Group.mui/MUIA_Group_HorizSpacing ************
+*
+*   NAME
+*       MUIA_Group_HorizSpacing
+*
+*   FUNCTION
+*       Store the horizontal gap between children or grid cells. Before setup
+*       the unspecified value is stored as ULONG -1; setup replaces it with the
+*       corresponding application preference.
+*
+*   INPUTS
+*       LONG declaration, stored as ULONG; initialize, set, get.
+*
+*   NOTES
+*       Explicit initialization or setting marks the value as caller-specified
+*       so setup no longer supplies that default. The getter returns the stored
+*       value. A spacing setter alone does not request relayout; finish a
+*       controlled change with ExitChange when live.
+*
+*   BUGS
+*       No nonnegative/range validation is performed. Negative or very large
+*       values can wrap in unsigned/WORD layout arithmetic. Do not interpret -1
+*       as a documented runtime reset-to-default operation.
+*
+*/
+/****** Group.mui/MUIA_Group_VertSpacing ************
+*
+*   NAME
+*       MUIA_Group_VertSpacing
+*
+*   FUNCTION
+*       Store the vertical gap between children or grid cells. Before setup the
+*       unspecified value is stored as ULONG -1; setup replaces it with the
+*       corresponding application preference.
+*
+*   INPUTS
+*       LONG declaration, stored as ULONG; initialize, set, get.
+*
+*   NOTES
+*       Explicit initialization or setting marks the value as caller-specified
+*       so setup no longer supplies that default. The getter returns the stored
+*       value. A spacing setter alone does not request relayout; finish a
+*       controlled change with ExitChange when live.
+*
+*   BUGS
+*       No nonnegative/range validation is performed. Negative or very large
+*       values can wrap in unsigned/WORD layout arithmetic. Do not interpret -1
+*       as a documented runtime reset-to-default operation.
+*
+*/
+/****** Group.mui/MUIA_Group_Spacing ************
+*
+*   NAME
+*       MUIA_Group_Spacing
+*
+*   FUNCTION
+*       Set both horizontal and vertical gaps and mark both as explicit.
+*
+*   INPUTS
+*       LONG declaration, stored as ULONG; initialize and set.
+*
+*   NOTES
+*       Tag order determines the result when combined with the axis-specific
+*       tags. There is no local combined getter or automatic relayout. Use axis
+*       getters to inspect the stored values; spacing has the same unchecked
+*       conversion limitations as those attributes.
+*
+*/
+/****** Group.mui/MUIA_Group_SameWidth ************
+*
+*   NAME
+*       MUIA_Group_SameWidth
+*
+*   FUNCTION
+*       Enable same-width constraints in built-in min/max/layout calculations.
+*       Default FALSE.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*       The algorithms use the largest participating minimum and each child's
+*       own limits; this is not an unconditional guarantee of identical final
+*       dimensions. PageMode and custom hooks have their own behavior. There is
+*       no runtime setter or local getter. SameSize sets or clears both flags;
+*       later specific initialization tags can override one.
+*
+*/
+/****** Group.mui/MUIA_Group_SameHeight ************
+*
+*   NAME
+*       MUIA_Group_SameHeight
+*
+*   FUNCTION
+*       Enable same-height constraints in built-in min/max/layout calculations.
+*       Default FALSE.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*       The algorithms use the largest participating minimum and each child's
+*       own limits; this is not an unconditional guarantee of identical final
+*       dimensions. PageMode and custom hooks have their own behavior. There is
+*       no runtime setter or local getter. SameSize sets or clears both flags;
+*       later specific initialization tags can override one.
+*
+*/
+/****** Group.mui/MUIA_Group_SameSize ************
+*
+*   NAME
+*       MUIA_Group_SameSize
+*
+*   FUNCTION
+*       Enable both same-width and same-height constraints in built-in
+*       min/max/layout calculations. Default FALSE.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*       The algorithms use the largest participating minimum and each child's
+*       own limits; this is not an unconditional guarantee of identical final
+*       dimensions. PageMode and custom hooks have their own behavior. There is
+*       no runtime setter or local getter. SameSize sets or clears both flags;
+*       later specific initialization tags can override one.
+*
+*/
+/****** Group.mui/MUIA_Group_LayoutHook ************
+*
+*   NAME
+*       MUIA_Group_LayoutHook
+*
+*   FUNCTION
+*       Borrow a custom layout hook used when PageMode is FALSE. NULL selects
+*       built-in layout. Keep the Hook and callback code alive until replacement
+*       or Group disposal.
+*
+*   INPUTS
+*       Hook pointer; initialize; setter also implemented.
+*
+*   NOTES
+*       CallHookPkt passes this Group as object and a temporary MUI_LayoutMsg as
+*       message. lm_Children is the borrowed internal list; keep membership
+*       stable. The hook return value is ignored for both message types;
+*       returning MUILM_UNKNOWN does not request built-in fallback. There is no
+*       local getter and replacing the hook does not itself relayout.
+*       For MUILM_MINMAX, child limits have already been collected. Fill all six
+*       lm_MinMax fields with content requirements excluding this group's
+*       frame/spacing. This stack message is not initialized for you. Group
+*       raises maxima and defaults below minima, caps aggregate maxima to
+*       MUI_MAXMAX, then adds its Area contribution. It does not clamp a
+*       too-large hook default back to the maximum.
+*       For MUILM_LAYOUT, the message starts cleared; lm_Layout.Width/Height
+*       contain available inner dimensions. Lay out children with MUI_Layout
+*       using coordinates relative to the group inner origin. For virtual
+*       groups, write the resulting virtual content Width/Height back to those
+*       same fields. The private fields have no public contract. Do not retain
+*       the message or list as owned storage.
+*
+*   BUGS
+*       A hook that omits a min/max field leaves an uninitialized value in use.
+*       Hook failure is not propagated; Group AskMinMax and Layout return zero
+*       regardless. Group itself does not enforce the custom layout's child size
+*       constraints.
+*
+*/
+/****** Group.mui/MUIA_Group_Forward ************
+*
+*   NAME
+*       MUIA_Group_Forward
+*
+*   FUNCTION
+*       Control whether this OM_SET forwards its filtered tag list to children.
+*       Default TRUE for each call; the last Forward tag controls that call.
+*       FALSE still applies group/superclass changes.
+*
+*   INPUTS
+*       BOOL; set only, per setter call.
+*
+*   NOTES
+*       The flag is not stored and has no local getter. Suppression applies to
+*       this setter's ordinary child broadcast, not to explicit child effects of
+*       page switching or other operations. The setter mutates the caller's
+*       writable tags to TAG_IGNORE for filtered attributes and does not restore
+*       them.
+*       The filter removes HelpLine, HelpNode, ObjectID, UserData, ContextMenu,
+*       ContextMenuTrigger, ControlChar, CycleChain, Draggable, FillArea,
+*       Group_ActivePage, Frame, FrameTitle, HorizWeight, Pressed, ShortHelp,
+*       ShowMe, VertWeight, Weight, Virtgroup_Left/Top, AppMessage and Timer.
+*       Selected is not explicitly filtered, but Area may already suppress an
+*       unchanged Selected tag. Unfiltered group tags such as spacing can also
+*       reach child groups.
+*       Disabled is delayed: child forwarding prepends a NestedDisabled
+*       operation and also passes Disabled, then the superclass applies the
+*       group's Disabled tag. Repeated TRUE calls can accumulate child nesting
+*       even though Disabled itself is Boolean. Forward FALSE omits that child
+*       propagation.
+*
+*   BUGS
+*       Multiple Disabled tags are initially changed to TAG_IGNORE, but only the
+*       last one is restored and applied as the group's delayed value. Child
+*       setters can mutate the shared tag list, affecting later children. There
+*       is no tag-list copy per child.
+*
+*/
+/****** Group.mui/MUIA_Group_Virtual ************
+*
+*   NAME
+*       MUIA_Group_Virtual
+*
+*   FUNCTION
+*       Enable virtual-content layout, clipping and edge autoscroll; default
+*       FALSE. The constructor marks the object as a virtual group and
+*       connection marks descendants as inside a virtual group.
+*
+*   INPUTS
+*       BOOL; initialize only.
+*
+*   NOTES
+*       AskMinMax saves full content minima but exposes a viewport minimum of
+*       Area's contribution plus two pixels per dimension. Layout computes
+*       virtual extents and clamps offsets. Group implements Virtgroup_Left/Top
+*       setters and getters plus Width/Height/MinWidth/MinHeight getters for
+*       this machinery. It does not create scrollbar objects.
+*       A click inside registers tick events; moving outside while tracking
+*       scrolls four pixels per tick, clamped to extents. A later non-SELECTDOWN
+*       button event stops tick tracking. There is no runtime Virtual setter or
+*       local getter.
+*
+*   BUGS
+*       Virtual offset setters can force Layout even without a live display;
+*       callers must establish appropriate setup/layout state. Do not apply
+*       virtual offsets to nonvirtual groups: the drawing cleanup path assumes
+*       its scroll clip belongs to a virtual group.
+*
+*/
+
 static const int __version = 1;
 static const int __revision = 1;
 
+/*
+ * If message is non-NULL, show Area first and ignore its result. Page mode
+ * shows title and selected page without ShowMe filtering; ordinary mode
+ * checks ShowMe and virtual visibility. Ignore child results, return TRUE.
+ * NULL message is an internal child-only path; requires valid drawable
+ * geometry.
+ */
 IPTR Group__MUIM_Show(struct IClass *cl, Object *obj,
     struct MUIP_Show *msg);
+/*
+ * Hide title/selected page in page mode or drawable children otherwise.
+ * Call Area only for non-NULL message, returning its result, otherwise one.
+ * Requires stable list and valid shown state. Does not cleanup or release
+ * children; NULL message is the internal child-only path.
+ */
 IPTR Group__MUIM_Hide(struct IClass *cl, Object *obj,
     struct MUIP_Hide *msg);
 
@@ -159,8 +656,21 @@ IPTR Group__MUIM_Hide(struct IClass *cl, Object *obj,
 /*****************************************************************************/
 
 
+/*
+ * Broadcast the borrowed message to every child unless dontforwardmethods
+ * is set. Requires stable membership and writable message when recipients
+ * mutate it. Discard every child result and return zero; no ownership
+ * transfer. Explicit traversal methods do not use this suppression helper.
+ */
 static ULONG Group_DispatchMsg(struct IClass *cl, Object *obj, Msg msg);
 
+/*
+ * Change the stored page only in PageMode. Requires valid Group state and a
+ * nonempty content set for Next/Advance modulo arithmetic.
+ * Hide/layout/show/redraw the changed live selection and update the
+ * borrowed title group. No bounds validation or error result; explicit
+ * invalid indices can select no child.
+ */
 static void change_active_page(struct IClass *cl, Object *obj, LONG page)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -218,6 +728,12 @@ static void change_active_page(struct IClass *cl, Object *obj, LONG page)
  Returns the number of visible children. Visible children are all children
  that have MADF_SHOWME and not MADF_BORDERGADGET set.
 **************************************************************************/
+/*
+ * Start with the stored child count and subtract hidden or border-gadget
+ * children found in the borrowed list. Return the resulting integer; an
+ * inconsistent stored count remains inconsistent. Requires stable
+ * membership and valid child flags; no allocation or ownership transfer.
+ */
 static int Group_GetNumVisibleChildren(struct MUI_GroupData *data,
     struct MinList *children)
 {
@@ -247,6 +763,13 @@ struct MUIP_StructWithObj
     STACKED Object *obj;
 };
 
+/*
+ * Shared private insertion path for AddHead/AddTail/Insert. Requires a
+ * valid unowned Area child and valid predecessor for Insert. Family
+ * insertion, connection and Setup results are ignored; count increases
+ * unconditionally. Attach parent/virtual state and propagate disabled
+ * nesting. Return TRUE, not verified insertion/setup success.
+ */
 static IPTR Group__MUIM_AddObject(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -301,6 +824,13 @@ static IPTR Group__MUIM_AddObject(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_NEW - Constructor
 **************************************************************************/
+/*
+ * Construct Area, an owned Family and default Group state; consume
+ * initialization tags in order. Adopt Child objects; remember first
+ * register-frame child as borrowed titlegroup. Return object or NULL on
+ * superclass/Family failure or explicit NULL child. Failure disposal
+ * releases already adopted children. No grid arrays are allocated here.
+ */
 IPTR Group__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_GroupData *data;
@@ -454,6 +984,12 @@ IPTR Group__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
+/*
+ * Free owned row/column arrays and dispose internal Family with remaining
+ * children, then invoke Area disposal. Requires prior Hide/Cleanup of
+ * active resources and no surviving borrowers. Does not dispose the
+ * borrowed Hook separately; return superclass result.
+ */
 IPTR Group__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -470,6 +1006,14 @@ IPTR Group__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
+/*
+ * Apply Group tags, then Area, then optionally broadcast filtered writable
+ * tags. Delay Disabled until after child propagation; only the last
+ * Disabled tag is restored. Columns/Rows request Window recalculation;
+ * spacing/hook alone do not. Virtual offsets may hide/layout/show/redraw
+ * even outside normal setup. Return superclass setter result, ignoring
+ * child/layout results; tag IDs can remain TAG_IGNORE.
+ */
 IPTR Group__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -653,6 +1197,13 @@ IPTR Group__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
+/*
+ * Write recognized Group/virtual getters to caller storage, including
+ * private MUIA_Group_ChildCount from the unchecked stored count. Otherwise
+ * try Area then children until success unless forwarding is suppressed.
+ * Return getter status. Borrowed ChildList stays Family-owned; Horiz
+ * returns its raw flag bit.
+ */
 IPTR Group__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 /* small macro to simplify return value storage */
@@ -732,6 +1283,41 @@ IPTR Group__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
  MUIM_AddTail
 **************************************************************************/
+/****** Group.mui/MUIM_Group_AddTail ************
+*
+*   NAME
+*       MUIM_Group_AddTail
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Group_AddTail, (IPTR)child);
+*
+*   FUNCTION
+*       Insert a child at the end of the internal Family and increase the stored
+*       count. Set its parent to this Group, connect it when application
+*       information exists, and set it up immediately when the Group is set up.
+*
+*   INPUTS
+*       child - Non-NULL live Area-compatible object, not already owned or
+*       linked elsewhere. Ownership transfers through attachment.
+*
+*   RESULT
+*       Always TRUE; Family, child connection and child Setup results are
+*       ignored.
+*
+*   NOTES
+*       For live structural changes, bracket the operations with
+*       InitChange/ExitChange. Addition alone does not show or lay out the
+*       child. If the group is disabled, the added child receives a no-notify
+*       NestedDisabled increment and Disabled=TRUE. OM_ADDMEMBER uses the
+*       AddTail path.
+*
+*   BUGS
+*       No NULL/membership validation is provided by the Group helper; it
+*       dereferences child even if Family rejects the insertion. A reported TRUE
+*       does not establish successful setup. Subsequent removal does not undo
+*       inherited disabled state.
+*
+*/
 IPTR Group__MUIM_AddTail(struct IClass *cl, Object *obj,
     struct MUIP_Group_AddTail *msg)
 {
@@ -741,6 +1327,41 @@ IPTR Group__MUIM_AddTail(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_AddHead
 **************************************************************************/
+/****** Group.mui/MUIM_Group_AddHead ************
+*
+*   NAME
+*       MUIM_Group_AddHead
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Group_AddHead, (IPTR)child);
+*
+*   FUNCTION
+*       Insert a child at the beginning of the internal Family and increase the
+*       stored count. Set its parent to this Group, connect it when application
+*       information exists, and set it up immediately when the Group is set up.
+*
+*   INPUTS
+*       child - Non-NULL live Area-compatible object, not already owned or
+*       linked elsewhere. Ownership transfers through attachment.
+*
+*   RESULT
+*       Always TRUE; Family, child connection and child Setup results are
+*       ignored.
+*
+*   NOTES
+*       For live structural changes, bracket the operations with
+*       InitChange/ExitChange. Addition alone does not show or lay out the
+*       child. If the group is disabled, the added child receives a no-notify
+*       NestedDisabled increment and Disabled=TRUE. OM_ADDMEMBER uses the
+*       AddTail path.
+*
+*   BUGS
+*       No NULL/membership validation is provided by the Group helper; it
+*       dereferences child even if Family rejects the insertion. A reported TRUE
+*       does not establish successful setup. Subsequent removal does not undo
+*       inherited disabled state.
+*
+*/
 IPTR Group__MUIM_AddHead(struct IClass *cl, Object *obj,
     struct MUIP_Group_AddHead *msg)
 {
@@ -750,6 +1371,14 @@ IPTR Group__MUIM_AddHead(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Insert
 **************************************************************************/
+/*
+ * Private source-local MUIM_Group_Insert forwards to the shared insertion
+ * helper. Message carries child and predecessor; predecessor must be a
+ * current child. Family converts it with _OBJECT without a NULL guard; do
+ * not assume NULL safely requests head insertion. Adopts child and returns
+ * TRUE without checking Family/setup results. This is not a public header
+ * interface.
+ */
 IPTR Group__MUIM_Insert(struct IClass *cl, Object *obj,
     struct MUIP_Group_Insert *msg)
 {
@@ -759,6 +1388,39 @@ IPTR Group__MUIM_Insert(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Remove
 **************************************************************************/
+/****** Group.mui/MUIM_Group_Remove ************
+*
+*   NAME
+*       MUIM_Group_Remove
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Group_Remove, (IPTR)child);
+*
+*   FUNCTION
+*       Hide the child when the Group is drawable, clean it when the Group is
+*       set up, disconnect it, decrement the stored count and remove it through
+*       Family.
+*
+*   INPUTS
+*       child - Non-NULL live child currently attached to this Group.
+*
+*   RESULT
+*       Always TRUE; child and Family results are ignored.
+*
+*   NOTES
+*       The child is not disposed; the caller resumes responsibility for its
+*       lifetime. OM_REMMEMBER uses this path. Use InitChange/ExitChange for
+*       live removal. Family removal also disconnects the child, so the
+*       connected path can send DisconnectParent twice. The final Family removal
+*       clears the parent pointer.
+*
+*   BUGS
+*       No membership/count validation occurs. Passing an unrelated child can
+*       corrupt ownership/counts. The titlegroup pointer and active page are not
+*       repaired. Removal leaves any disabled state previously imposed on the
+*       child intact.
+*
+*/
 IPTR Group__MUIM_Remove(struct IClass *cl, Object *obj,
     struct MUIP_Group_Remove *msg)
 {
@@ -787,6 +1449,11 @@ IPTR Group__MUIM_Remove(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Family_GetChild
 **************************************************************************/
+/*
+ * Delegate the message to the owned internal Family and return its result.
+ * The returned child is borrowed; index/selectors and failure behavior
+ * belong to Family_GetChild. Requires an intact Family and stable list.
+ */
 IPTR Group__MUIM_Family_GetChild(struct IClass *cl, Object *obj,
     struct MUIP_Group_Remove *msg)
 {
@@ -798,6 +1465,12 @@ IPTR Group__MUIM_Family_GetChild(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_ConnectParent
 **************************************************************************/
+/*
+ * Connect Area first, then each child to this Group, assigning parent and
+ * inherited virtual flags. Requires a valid connected parent and stable
+ * child list. Ignore superclass/child results and return TRUE; the internal
+ * Family is not itself connected here.
+ */
 IPTR Group__MUIM_ConnectParent(struct IClass *cl, Object *obj,
     struct MUIP_ConnectParent *msg)
 {
@@ -829,6 +1502,12 @@ IPTR Group__MUIM_ConnectParent(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_DisconnectParent
 **************************************************************************/
+/*
+ * Disconnect every child, clear its parent and inherited virtual flag, then
+ * disconnect Area. Requires stable live children and ended display
+ * lifecycle. Return TRUE regardless of delegated results; do not dispose
+ * children.
+ */
 IPTR Group__MUIM_DisconnectParent(struct IClass *cl, Object *obj,
     struct MUIP_ConnectParent *msg)
 {
@@ -852,6 +1531,36 @@ IPTR Group__MUIM_DisconnectParent(struct IClass *cl, Object *obj,
 /*
  * Put group in exchange state
  */
+/****** Group.mui/MUIM_Group_InitChange ************
+*
+*   NAME
+*       MUIM_Group_InitChange
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Group_InitChange);
+*
+*   FUNCTION
+*       Clear the changed marker and set the changing flag. Drawing returns
+*       FALSE while that flag is set.
+*
+*   INPUTS
+*       No arguments beyond MethodID. Keep the group and application alive
+*       throughout the change sequence.
+*
+*   RESULT
+*       Always TRUE.
+*
+*   NOTES
+*       Pair with ExitChange around live add/remove or layout changes. This
+*       begins neither a lock nor a rollback transaction. It does not hide
+*       children or defer their connection/setup/cleanup.
+*
+*   BUGS
+*       There is one flag, not a nesting counter. Calling InitChange twice on
+*       the same object does not require two exits and clears the prior changed
+*       marker.
+*
+*/
 IPTR Group__MUIM_InitChange(struct IClass *cl, Object *obj,
     struct MUIP_Group_InitChange *msg)
 {
@@ -866,6 +1575,33 @@ IPTR Group__MUIM_InitChange(struct IClass *cl, Object *obj,
 /*
  * Will recalculate display after dynamic adding/removing
  */
+/****** Group.mui/MUIM_Group_ExitChange ************
+*
+*   NAME
+*       MUIM_Group_ExitChange
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Group_ExitChange);
+*
+*   FUNCTION
+*       Clear changing/changed flags and request Window recalculation when set
+*       up, unless an ancestor group is still changing.
+*
+*   INPUTS
+*       No arguments beyond MethodID. Requires a valid connected Group ancestor
+*       chain for live recalculation.
+*
+*   RESULT
+*       Always TRUE, including when recalculation is skipped or its result
+*       ignored.
+*
+*   NOTES
+*       Recalculation is attempted even without a recorded structural change;
+*       the changed-only guard is disabled. An outer group's later exit is
+*       responsible for updating a nested change. This is not a commit-success
+*       report or a restoration of failed operations.
+*
+*/
 IPTR Group__MUIM_ExitChange(struct IClass *cl, Object *obj,
     struct MUIP_Group_ExitChange *msg)
 {
@@ -919,6 +1655,13 @@ IPTR Group__MUIM_ExitChange(struct IClass *cl, Object *obj,
 /*
  * Will recalculate display after dynamic adding/removing
  */
+/*
+ * Private header method: only leave change state when currently changing.
+ * Ignore message flags, clear change markers and, when set up, request
+ * Window recalculation unless an ancestor Group is changing. Requires valid
+ * ancestor chain. Return TRUE regardless of skipped/failed recalculation;
+ * not a nesting counter.
+ */
 IPTR Group__MUIM_ExitChange2(struct IClass *cl, Object *obj,
     struct MUIP_Group_ExitChange2 *msg)
 {
@@ -965,6 +1708,40 @@ IPTR Group__MUIM_ExitChange2(struct IClass *cl, Object *obj,
 /*
  * Sort the family
  */
+/****** Group.mui/MUIM_Group_Sort ************
+*
+*   NAME
+*       MUIM_Group_Sort
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Group_Sort, (IPTR)first, ... ,
+*       (IPTR)NULL);
+*
+*   FUNCTION
+*       Replace the internal Family child order with the supplied
+*       NULL-terminated sequence. The method temporarily changes MethodID to
+*       Family_Sort, invokes Family, then restores Group_Sort.
+*
+*   INPUTS
+*       first, ... - Every currently attached child exactly once in the desired
+*       order, followed by NULL. A retained method message must be writable.
+*
+*   RESULT
+*       Always TRUE; Family result is ignored.
+*
+*   NOTES
+*       This is explicit ordering, not a comparison callback sort. It does not
+*       update the stored child count, reconnect children, change active
+*       page/titlegroup, mark a change or relayout. Use InitChange/ExitChange
+*       for a live reorder.
+*
+*   BUGS
+*       The implementation resets the list without validating completeness,
+*       uniqueness or membership. Omitting a child detaches its list node
+*       without cleanup/disposal/count repair; duplicates or foreign objects can
+*       corrupt the list.
+*
+*/
 IPTR Group__MUIM_Sort(struct IClass *cl, Object *obj,
     struct MUIP_Group_Sort *msg)
 {
@@ -985,6 +1762,41 @@ IPTR Group__MUIM_Sort(struct IClass *cl, Object *obj,
 
  Executes the given method but does not forward it to the children
 **************************************************************************/
+/****** Group.mui/MUIM_Group_DoMethodNoForward ************
+*
+*   NAME
+*       MUIM_Group_DoMethodNoForward
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Group_DoMethodNoForward, methodid,
+*       ...);
+*
+*   FUNCTION
+*       Set the private no-forward flag, dispatch the embedded method on this
+*       object and clear the flag before returning.
+*
+*   INPUTS
+*       methodid - ULONG MethodID beginning the embedded message.
+*       ... - Its correctly laid-out argument fields. Keep the Group alive
+*       through the call.
+*
+*   RESULT
+*       The embedded method's result.
+*
+*   NOTES
+*       This suppresses Group_DispatchMsg broadcasts and OM_GET fallback to
+*       children. It does not suppress explicit loops in Setup/Cleanup,
+*       Import/Export, user-data searches or the Group Notify override. It is
+*       therefore not a universal self-only execution mechanism.
+*
+*   BUGS
+*       The flag is set to one and later reset to zero rather than
+*       saved/restored. Nested use can clear an outer suppression early. The
+*       implementation passes the address of the declared ULONG DoMethodID field
+*       as a message; use the ABI-defined structure layout for direct messages,
+*       not an invented IPTR-array layout on every target.
+*
+*/
 IPTR Group__MUIM_DoMethodNoForward(struct IClass *cl, Object *obj,
     struct MUIP_Group_DoMethodNoForward *msg)
 {
@@ -1000,6 +1812,12 @@ IPTR Group__MUIM_DoMethodNoForward(struct IClass *cl, Object *obj,
 
 /*
  * Propagate a method to group children.
+ */
+/*
+ * Broadcast the borrowed message to every child unless dontforwardmethods
+ * is set. Requires stable membership and writable message when recipients
+ * mutate it. Discard every child result and return zero; no ownership
+ * transfer. Explicit traversal methods do not use this suppression helper.
  */
 static ULONG Group_DispatchMsg(struct IClass *cl, Object *obj, Msg msg)
 {
@@ -1024,6 +1842,13 @@ static ULONG Group_DispatchMsg(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
+/*
+ * Set up Area then all children including hidden children. Return FALSE on
+ * superclass or child failure; on child failure clean only earlier
+ * successful children, not Area or the failing child. Resolve unspecified
+ * spacing from preferences. Register virtual mouse handler only after all
+ * succeed. Return TRUE on completion.
+ */
 IPTR Group__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
@@ -1082,6 +1907,11 @@ IPTR Group__MUIM_Setup(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
+/*
+ * Remove virtual event handler, clean every child, then clean Area and
+ * return its result. Requires the matching live setup state. Child results
+ * are ignored; no disposal or membership changes.
+ */
 IPTR Group__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -1108,6 +1938,13 @@ IPTR Group__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Allocate a Region covering the group minus drawable child rectangles
+ * clipped to its inner box, selecting active page where needed. Return
+ * owned Region or NULL on allocation failure. Caller must dispose it or
+ * transfer it to MUI_AddClipRegion, which consumes it even on failure.
+ * Requires live geometry; page counting includes hidden children.
+ */
 static struct Region *group_children_clip_region(struct IClass *cl,
     Object *obj)
 {
@@ -1162,6 +1999,14 @@ static struct Region *group_children_clip_region(struct IClass *cl,
 /**************************************************************************
  MUIM_Draw - draw the group
 **************************************************************************/
+/*
+ * Draw Area and children under temporary regions, with separate page-switch
+ * and virtual-scroll update paths. Return FALSE during InitChange,
+ * otherwise normally TRUE; ignore child draw results. Requires drawable
+ * render state and stable membership. Scroll path updates old offsets.
+ * Nonvirtual use of virtual offset updates can leave a clip installed
+ * because final removal is virtual-only.
+ */
 IPTR Group__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
@@ -1419,6 +2264,13 @@ IPTR Group__MUIM_Draw(struct IClass *cl, Object *obj,
  * if they should have the same width (for a row of buttons ...)
  * - Adjust minwidth w/o making object bigger than their max size.
  */
+/*
+ * Accumulate visible non-border children horizontally, using spacing, same-
+ * width minimum and child limits/weights. Add normalized content limits to
+ * caller MinMaxInfo and cache weight sums. Requires finalized child sizes;
+ * no allocation or status. Zero weights constrain maxima to minima;
+ * arithmetic is not overflow-checked.
+ */
 static void group_minmax_horiz(struct IClass *cl, Object *obj,
     struct MinList *children, struct MUIP_AskMinMax *msg)
 {
@@ -1508,6 +2360,12 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
 
 /* minmax calculation for vertical groups (see group_minmax_horiz)
 */
+/*
+ * Accumulate visible non-border children vertically and cache weights.
+ * SameHeight can mutate child minimum heights within their limits. Add
+ * normalized content limits to caller MinMaxInfo. Requires finalized child
+ * sizes and valid writable message; no status or overflow checking.
+ */
 static void group_minmax_vert(struct IClass *cl, Object *obj,
     struct MinList *children, struct MUIP_AskMinMax *msg)
 {
@@ -1575,6 +2433,13 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
 }
 
 
+/*
+ * Update allocated row constraints from visible non-border children in row-
+ * major order. SameHeight adjusts child minima/defaults subject to zero-
+ * weight maxima. Requires arrays/dimensions established by grid
+ * calculation. Mutates child size data and row records; no allocation or
+ * result.
+ */
 static void
 minmax_2d_rows_pass(struct MUI_GroupData *data, struct MinList *children,
     struct MUI_MinMax *req, WORD maxmin_height, WORD maxdef_height)
@@ -1635,6 +2500,12 @@ minmax_2d_rows_pass(struct MUI_GroupData *data, struct MinList *children,
 }
 
 
+/*
+ * Accumulate column constraints by child position modulo the column count,
+ * skipping hidden/border children. SameWidth adjusts child minima/defaults
+ * subject to zero-weight maxima. Requires valid nonzero dimensions and
+ * allocated arrays. Mutates records and child limits; no result.
+ */
 static void
 minmax_2d_columns_pass(struct MUI_GroupData *data, struct MinList *children,
     struct MUI_MinMax *req, WORD maxmin_width, WORD maxdef_width)
@@ -1698,6 +2569,14 @@ minmax_2d_columns_pass(struct MUI_GroupData *data, struct MinList *children,
     }
 }
 
+/*
+ * Derive grid dimensions from total child count; nondivisible requests fall
+ * back to one full row/column. Replace owned constraint arrays, scan child
+ * limits and perform row/column passes. Add spacing and aggregate
+ * constraints to message. Allocation failure returns early with no status
+ * and can leave only one newly allocated array; later Layout must validate
+ * state.
+ */
 static void
 group_minmax_2d(struct IClass *cl, Object *obj,
     struct MinList *children, struct MUIP_AskMinMax *msg)
@@ -1799,6 +2678,12 @@ group_minmax_2d(struct IClass *cl, Object *obj,
 }
 
 
+/*
+ * Combine ShowMe content-page limits, excluding titlegroup; add title
+ * minimum height but not title width. Normalize and add content constraints
+ * to message. Requires finalized children and valid borrowed title pointer.
+ * Does not allocate or return status; hidden pages do not contribute.
+ */
 static void
 group_minmax_pagemode(struct IClass *cl, Object *obj,
     struct MinList *children, struct MUIP_AskMinMax *msg)
@@ -1850,6 +2735,13 @@ group_minmax_pagemode(struct IClass *cl, Object *obj,
  MUIM_AskMinMax : ask children about min/max sizes, then
  either call a hook, or the builtin method, to calculate our minmax
 **************************************************************************/
+/*
+ * Ask Area and ShowMe children, finalize child limits, then select page,
+ * custom Hook or built-in constraints. Hook must fill all six fields of its
+ * otherwise uninitialized min/max message; its return is ignored. Virtual
+ * groups save full minima but expose Area minima plus two. Return zero even
+ * on helper failure; needs valid preferences and stable membership.
+ */
 IPTR Group__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     struct MUIP_AskMinMax *msg)
 {
@@ -1982,6 +2874,12 @@ IPTR Group__MUIM_AskMinMax(struct IClass *cl, Object *obj,
 
 // enforce minmax constraint, but also update total growable/shrinkable weights
 // while we're at it
+/*
+ * Clamp one writable size to supplied bounds while adjusting remainder,
+ * grow/shrink sizes and weight totals through required pointers. Same-size
+ * zero-weight handling precedes clamping. Caller owns all storage and
+ * consistent totals; WORD arithmetic can overflow. No allocation or result.
+ */
 static void Layout1D_minmax_constraint(WORD *sizep, WORD minsize,
     WORD maxsize, WORD *remainp, WORD *sizegrowp, WORD *sizeshrinkp,
     ULONG *weightgrowp, ULONG *weightshrinkp, UWORD weight, WORD samesize)
@@ -2036,6 +2934,13 @@ static void Layout1D_minmax_constraint(WORD *sizep, WORD minsize,
 
 // redistribute excess size to growable child, or reduce size of a shrinkable
 // child
+/*
+ * Redistribute signed remaining space to one eligible weighted child,
+ * updating size and all running totals through required pointers. Zero
+ * weight returns without change. Caller must supply consistent nonzero
+ * grow/shrink divisors when those branches execute. WORD arithmetic and
+ * truncation are unchecked; no result.
+ */
 static void Layout1D_redistribution(WORD *sizep, WORD minsize,
     WORD maxsize, WORD *remainp, WORD *sizegrowp, WORD *sizeshrinkp,
     ULONG *weightgrowp, ULONG *weightshrinkp, UWORD weight)
@@ -2109,18 +3014,13 @@ static void Layout1D_redistribution(WORD *sizep, WORD minsize,
 }
 
 
-// 2 passes at most, less on average (0.5 or 1.5), each does
-// - a minmax clamping, evenutally adding to a remainder
-// (remainder = missing (underflow) or remaining (overflow) space compared
-// to ideal sizes where children fill the whole group)
-// - a redistribution of the remainder, by growing (pos. remainder) or
-// shrinking (neg. remainder) children able to support it.
-//
-// Occasionnaly the first time the redistribution is done, the minmax
-// constraint can be broken, thus the extra pass to check and eventually
-// redistribute. The second redistribution never breaks minmax constraint
-// (there should be a mathematical proof, but feel free to prove me wrong
-// with an example)
+/*
+ * Run at most two clamp/redistribution passes over visible non-border
+ * children using cached temporary sizes. Requires consistent weights, child
+ * limits and stable list. Mutates child temporary dimensions; does not
+ * report residual space or prove convergence for every input. No allocation
+ * or result.
+ */
 static void Layout1D_minmax_constraints_and_redistrib(struct MinList
     *children, WORD total_size, WORD remainder, WORD samesize,
     BOOL group_horiz)
@@ -2248,6 +3148,12 @@ static void Layout1D_minmax_constraints_and_redistrib(struct MinList
 
 }
 
+/*
+ * Assign initial weighted size from remaining totals, or minimum when no
+ * weight remains. Update caller size/space/weight pointers in place.
+ * Requires valid consistent totals and representable WORD arithmetic. No
+ * allocation, ownership change or result.
+ */
 static void Layout1D_weight_constraint(WORD *total_sizep,
     WORD *total_init_sizep,
     ULONG *total_weightp, WORD *sizep, UWORD weight, WORD minsize)
@@ -2264,6 +3170,13 @@ static void Layout1D_weight_constraint(WORD *total_sizep,
 }
 
 
+/*
+ * Compute vertical content dimensions, weighted child heights and centered
+ * cross-axis widths; clamp/redistribute then call MUI_Layout on visible
+ * non-border children. Requires prior min/max and setup. Virtual mode
+ * expands content bounds. Helper failure has no reported status; MUI_Layout
+ * currently returns TRUE regardless of child Layout result.
+ */
 static void group_layout_vert(struct IClass *cl, Object *obj,
     struct MinList *children)
 {
@@ -2366,6 +3279,13 @@ static void group_layout_vert(struct IClass *cl, Object *obj,
 }
 
 
+/*
+ * Compute horizontal weighted child widths and centered heights using prior
+ * min/max data, then lay out visible non-border children. Virtual mode
+ * clamps content dimensions to saved limits. Requires live geometry and
+ * consistent cached weights. No result; child layout errors are not
+ * propagated by MUI_Layout.
+ */
 static void group_layout_horiz(struct IClass *cl, Object *obj,
     struct MinList *children)
 {
@@ -2477,6 +3397,12 @@ static void group_layout_horiz(struct IClass *cl, Object *obj,
 }
 
 
+/*
+ * Initialize row and column dimensions proportionally to cached weights and
+ * available content space. Mutate allocated grid records. Requires nonzero
+ * established dimensions, arrays and consistent weight totals; WORD
+ * arithmetic is unchecked. No allocation or status.
+ */
 static void Layout2D_weight_constraint(struct MUI_GroupData *data,
     struct layout2d_elem *row_infos,
     struct layout2d_elem *col_infos,
@@ -2531,6 +3457,12 @@ static void Layout2D_weight_constraint(struct MUI_GroupData *data,
 
 
 
+/*
+ * Run two passes over one allocated axis array, clamping dimensions and
+ * redistributing remainder with shared 1D helpers. Requires valid count,
+ * constraints and consistent totals. Mutates records and does not report
+ * unresolved remainder or guarantee arithmetic safety.
+ */
 static void Layout2D_minmax_constraints_and_redistrib(struct layout2d_elem
     *infos, WORD nitems, WORD total_size, WORD samesize, WORD remainder)
 {
@@ -2596,6 +3528,14 @@ static void Layout2D_minmax_constraints_and_redistrib(struct layout2d_elem
     }
 }
 
+/*
+ * Place visible non-border children row-major using prepared row/column
+ * dimensions and supplied starting coordinates. Clamp each child to its
+ * min/max and center within its cell; advance by cell size plus spacing.
+ * Requires valid arrays, nonzero columns and stable membership. Return
+ * early if MUI_Layout reports FALSE, without an error result; that wrapper
+ * currently always returns TRUE.
+ */
 static void
 layout_2d_distribute_space(struct MUI_GroupData *data,
     struct layout2d_elem *row_infos,
@@ -2675,12 +3615,19 @@ layout_2d_distribute_space(struct MUI_GroupData *data,
  * for each row, determine its height allocation
  * weight ? the vertical weight of a row, if no fixed-height child
  *  in the row, is the sum of all vertical weights of children
- * all row members will have the same height
+ * row height is shared; individual child limits still apply
  *
  * for each column, determine its width allocation
- * all column members will have the same width
+ * column width is shared; individual child limits still apply
  */
 /* Write a proper hook function */
+/*
+ * Validate nonzero compatible dimensions and both arrays; otherwise return
+ * without layout or error status. Distribute space then place visible non-
+ * border children row-major, centered within cell limits. Requires prior
+ * min/max and render geometry. Calls MUI_Layout with no propagated child
+ * result.
+ */
 static void
 group_layout_2d(struct IClass *cl, Object *obj, struct MinList *children)
 {
@@ -2758,6 +3705,13 @@ group_layout_2d(struct IClass *cl, Object *obj, struct MinList *children)
 
 
 /* Write a proper hook function */
+/*
+ * Lay out all pages, including hidden/inactive children, centered in the
+ * available width with title minimum height reserved above content. Width
+ * uses available space and maximum, not a minimum clamp. Requires valid
+ * child limits/title pointer; ignores child layout results and returns no
+ * status.
+ */
 static void group_layout_pagemode(struct IClass *cl, Object *obj,
     struct MinList *children)
 {
@@ -2816,6 +3770,14 @@ static void group_layout_pagemode(struct IClass *cl, Object *obj,
  MUIM_Layout
  Either use a given layout hook, or the builtin method.
 **************************************************************************/
+/*
+ * Select page, custom Hook or built-in layout. Hook receives a zeroed
+ * temporary message with inner dimensions and borrowed list; return
+ * ignored. Copy virtual dimensions back, clamp WORD offsets and set them
+ * with child forwarding disabled, potentially reentering Layout. Return zero
+ * regardless of outcome. Requires established child min/max and valid
+ * lifecycle.
+ */
 IPTR Group__MUIM_Layout(struct IClass *cl, Object *obj,
     struct MUIP_Layout *msg)
 {
@@ -2893,6 +3855,13 @@ IPTR Group__MUIM_Layout(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Show
 **************************************************************************/
+/*
+ * If message is non-NULL, show Area first and ignore its result. Page mode
+ * shows title and selected page without ShowMe filtering; ordinary mode
+ * checks ShowMe and virtual visibility. Ignore child results, return TRUE.
+ * NULL message is an internal child-only path; requires valid drawable
+ * geometry.
+ */
 IPTR Group__MUIM_Show(struct IClass *cl, Object *obj,
     struct MUIP_Show *msg)
 {
@@ -2946,6 +3915,12 @@ IPTR Group__MUIM_Show(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Hide
 **************************************************************************/
+/*
+ * Hide title/selected page in page mode or drawable children otherwise.
+ * Call Area only for non-NULL message, returning its result, otherwise one.
+ * Requires stable list and valid shown state. Does not cleanup or release
+ * children; NULL message is the internal child-only path.
+ */
 IPTR Group__MUIM_Hide(struct IClass *cl, Object *obj,
     struct MUIP_Hide *msg)
 {
@@ -2996,6 +3971,12 @@ IPTR Group__MUIM_Hide(struct IClass *cl, Object *obj,
  * MUIM_FindUData : tests if the MUIA_UserData of the object
  * contains the given <udata> and returns the object pointer in this case.
  */
+/*
+ * Return this borrowed Group if UserData matches; otherwise delegate to
+ * internal Family, which can itself match. Requires live objects and stable
+ * traversal. Return zero when Family finds no match; do not dispose
+ * returned objects.
+ */
 IPTR Group__MUIM_FindUData(struct IClass *cl, Object *obj,
     struct MUIP_FindUData *msg)
 {
@@ -3012,6 +3993,12 @@ IPTR Group__MUIM_FindUData(struct IClass *cl, Object *obj,
  * MUIM_GetUData : This method tests if the MUIA_UserData of the object
  * contains the given <udata> and gets <attr> to <storage> for itself
  * in this case.
+ */
+/*
+ * Match Group first and invoke its getter into caller storage without
+ * checking getter success; otherwise delegate to Family. Return match
+ * status, not getter success. Requires storage suitable for requested
+ * attribute and stable traversal.
  */
 IPTR Group__MUIM_GetUData(struct IClass *cl, Object *obj,
     struct MUIP_GetUData *msg)
@@ -3032,6 +4019,12 @@ IPTR Group__MUIM_GetUData(struct IClass *cl, Object *obj,
  * MUIM_SetUData : This method tests if the MUIA_UserData of the object
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  */
+/*
+ * Set matching Group then traverse Family for all matches. Group setter may
+ * already broadcast to children before explicit Family traversal, so
+ * assignments can repeat. Requires writable valid setter arguments and
+ * stable membership. Return TRUE; delegated results are ignored.
+ */
 IPTR Group__MUIM_SetUData(struct IClass *cl, Object *obj,
     struct MUIP_SetUData *msg)
 {
@@ -3050,6 +4043,12 @@ IPTR Group__MUIM_SetUData(struct IClass *cl, Object *obj,
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  * Stop after the first udata found.
  */
+/*
+ * Set Group and return TRUE when its UserData matches; otherwise return
+ * Family search result. A Group match can still propagate its setter to
+ * children. Requires live compatible objects and valid setter arguments; no
+ * ownership change.
+ */
 IPTR Group__MUIM_SetUDataOnce(struct IClass *cl, Object *obj,
     struct MUIP_SetUData *msg)
 {
@@ -3066,6 +4065,12 @@ IPTR Group__MUIM_SetUDataOnce(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_DragQueryExtented
 **************************************************************************/
+/*
+ * Ask drawable children in list order and return the first accepting
+ * object/result; otherwise ask Area. Requires valid borrowed drag message
+ * and live geometry. Does not transfer ownership or validate child callback
+ * lifetime.
+ */
 IPTR Group__MUIM_DragQueryExtended(struct IClass *cl, Object *obj,
     struct MUIP_DragQueryExtended *msg)
 {
@@ -3091,6 +4096,13 @@ IPTR Group__MUIM_DragQueryExtended(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
+/*
+ * Handle virtual-group mouse/tick autoscroll only; never delegate to Area
+ * here. SELECTDOWN inside starts ticks; another button event removes them.
+ * Ticks outside adjust/clamp offsets by four pixels and set them with
+ * Forward FALSE. Requires valid IntuiMessage/window/setup. Return zero,
+ * including unhandled events.
+ */
 IPTR Group__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUIP_HandleEvent *msg)
 {
@@ -3198,6 +4210,12 @@ IPTR Group__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_DrawBackground
 **************************************************************************/
+/*
+ * For virtual groups copy the message and add virtual offsets to background
+ * offsets before Area dispatch; otherwise forward original. Requires live
+ * drawing state and valid message. Return superclass result; temporary copy
+ * must not escape.
+ */
 IPTR Group__MUIM_DrawBackground(struct IClass *cl, Object *obj,
     struct MUIP_DrawBackground *msg)
 {
@@ -3220,6 +4238,11 @@ IPTR Group__MUIM_DrawBackground(struct IClass *cl, Object *obj,
  MUIM_FindAreaObject
  Find the given object or return NULL
 **************************************************************************/
+/*
+ * Find this Group, then immediate child identities, then recursive child
+ * matches. Return a borrowed object or zero. Requires stable live tree and
+ * valid sought object identity; no allocation or ownership change.
+ */
 IPTR Group__MUIM_FindAreaObject(struct IClass *cl, Object *obj,
     struct MUIP_FindAreaObject *msg)
 {
@@ -3256,6 +4279,11 @@ IPTR Group__MUIM_FindAreaObject(struct IClass *cl, Object *obj,
 /**************************************************************************
 MUIM_Export : to export an object's "contents" to a dataspace object.
 **************************************************************************/
+/*
+ * Forward export to every child, ignoring results, then return zero.
+ * Requires stable membership and valid borrowed Dataspace. Does not export
+ * this Group through Area and does not transfer ownership.
+ */
 static IPTR Group__MUIM_Export(struct IClass *cl, Object *obj,
     struct MUIP_Export *msg)
 {
@@ -3281,6 +4309,11 @@ static IPTR Group__MUIM_Export(struct IClass *cl, Object *obj,
 /**************************************************************************
 MUIM_Import : to import an object's "contents" from a dataspace object.
 **************************************************************************/
+/*
+ * Forward import to every child, ignoring results, then return zero.
+ * Requires stable membership and valid borrowed Dataspace. Does not import
+ * this Group through Area; callbacks can change child state.
+ */
 static IPTR Group__MUIM_Import(struct IClass *cl, Object *obj,
     struct MUIP_Import *msg)
 {
@@ -3307,6 +4340,11 @@ static IPTR Group__MUIM_Import(struct IClass *cl, Object *obj,
  check in MUIM_Notify which is no longer the case
 **************************************************************************/
 #if 0
+/*
+ * Inactive #if 0 alternative; not compiled. Probes local Notify then
+ * children and returns registration result. Its suppression flag is not
+ * nested-safe. Retained for source history, not a runtime contract.
+ */
 STATIC IPTR Group_Notify(struct IClass *cl, Object *obj,
     struct MUIP_Notify *msg)
 {
@@ -3363,6 +4401,14 @@ Zune to work like MUI one needs to choose a size which one hopes will be
 big enough to hold all possible attributes of all classes, old, present
 and future ones.
 */
+/*
+ * Probe trigger getter on Group with child-get forwarding disabled, then
+ * register locally through Area if recognized. Otherwise probe each child
+ * and register on supported getters, ignoring registration results and
+ * returning TRUE even if none match. Requires stable children and getters
+ * writing at most 30 IPTRs. Borrowed message; flag restoration is not
+ * nested-safe.
+ */
 STATIC IPTR Group_Notify(struct IClass *cl, Object *obj,
     struct MUIP_Notify *msg)
 {
@@ -3399,6 +4445,13 @@ STATIC IPTR Group_Notify(struct IClass *cl, Object *obj,
 }
 #endif
 
+/*
+ * Route explicit Group/Area overrides and utility exceptions; unknown
+ * messages broadcast to children then reach Area. Return selected
+ * handler/superclass result, not aggregate child success. Requires live
+ * class/object and ABI-correct writable message where handlers mutate it.
+ * Explicit routes can bypass no-forward suppression.
+ */
 BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -3475,7 +4528,7 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
 
 //#if 0
 #if 1
-        /* Disabled. See above */
+        /* Active getter-probing notification override. */
     case MUIM_Notify:
         return Group_Notify(cl, obj, (APTR) msg);
 #endif
