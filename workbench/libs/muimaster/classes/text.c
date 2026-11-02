@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2020, The AROS Development Team.
+    Copyright  2002-2026, The AROS Development Team.
     Copyright  1999, David Le Corfec.
     All rights reserved.
 
@@ -22,6 +22,229 @@
 #include "muimaster_intern.h"
 #include "support.h"
 #include "textengine.h"
+
+/****** Text.mui/MUIC_Text ************
+*
+*   NAME
+*       MUIC_Text
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       Display copied text using the Zune text engine. Contents and PreParse
+*       default to empty strings. SetMin and SetVMax default to TRUE; SetMax
+*       defaults to FALSE. No editing, cursor or automatic line wrapping is
+*       implemented by this class. Newline bytes separate text-engine lines.
+*       Version and Revision both return 1.
+*       The object owns separate copies of Contents and PreParse and frees them
+*       on disposal. Setup creates and measures a parsed text object; Cleanup
+*       destroys it and clears its pointer. Complete Cleanup before disposal
+*       because Dispose frees the strings but does not destroy the parsed text.
+*       Getters return borrowed pointers into object-owned storage.
+*
+*   METHODS
+*       Successful string setters duplicate the new string before freeing the
+*       old one, rebuild parsed text while set up, and request full redraw. They
+*       do not request parent relayout. Copy failure leaves the old string and
+*       parsed text unchanged, but the original tag still reaches superclass
+*       notification processing. The setter returns the superclass result and
+*       does not report copy failure separately.
+*       Setup returns FALSE on Area failure, otherwise TRUE even if text-engine
+*       allocation fails. Bounds measurement tolerates NULL, but AskMinMax and
+*       Draw dereference the parsed object without checking it. Constructor copy
+*       failure may fall back to an empty string; construction fails only if
+*       either final string remains NULL. Repeated constructor string tags can
+*       leak earlier copies.
+*       Draw calls Area, clips to the content rectangle and centers the parsed
+*       block vertically. Horizontal alignment comes from the text engine. Pure
+*       update requests return zero while the private update field is zero; this
+*       class never sets it to a nonzero value in active code. Normal drawing
+*       returns TRUE and resets that field. Show converts the superclass result
+*       to BOOL; Hide returns it unchanged. Import and Export are local no-ops
+*       returning zero without delegating to Area.
+*
+*   NOTES
+*       The public text macros map to escape-byte commands: MUIX_L, MUIX_C and
+*       MUIX_R select left, center and right alignment; MUIX_N resets style;
+*       MUIX_B, MUIX_I and MUIX_U add bold, italic and underline; MUIX_PT and
+*       MUIX_PH select draw-info pen indices 2 and 8. PreParse is concatenated
+*       directly before Contents, with no inserted separator. Alignment and
+*       style state can continue across lines. Parsing is byte-oriented, not
+*       Unicode character indexing.
+*       HiChar and HiCharIdx only control underlining. They do not set
+*       Area_ControlChar or register keyboard activation. Supply valid
+*       text-engine escapes and keep any external objects or image data
+*       referenced by pointer escapes alive; copying the string does not copy
+*       those objects. Text bounds use WORD fields, so large strings or
+*       dimensions are not an unlimited-size layout contract.
+*
+*/
+/****** Text.mui/MUIA_Text_Contents ************
+*
+*   NAME
+*       MUIA_Text_Contents
+*
+*   FUNCTION
+*       Set or retrieve the displayed text string.
+*
+*   INPUTS
+*       Initialize, set and get, STRPTR. Default empty string. Supply readable
+*       NUL-terminated text; setting NULL is equivalent to setting an empty
+*       string.
+*
+*   NOTES
+*       The object copies the string. Get returns the stored source text,
+*       including escapes and marker characters, not a rendered-text buffer. Do
+*       not free or modify the returned pointer; it expires on successful
+*       replacement or disposal. Because replacement is copied first, the
+*       current returned pointer can be supplied back to the setter.
+*       Even identical text is copied and reparsed; no equality suppression
+*       occurs. A successful change while set up remeasures the parsed text and
+*       requests redraw without relayout. On copy failure the old value remains,
+*       yet the original tag is forwarded and can trigger notifications. Do not
+*       treat a notification as proof of successful replacement.
+*       At construction, NULL Contents tags are ignored; a failed copy can be
+*       replaced by the final empty-string fallback. Avoid repeated constructor
+*       Contents tags because earlier copies are not freed. Newline bytes create
+*       separate lines; text-engine escape sequences are interpreted.
+*
+*/
+/****** Text.mui/MUIA_Text_PreParse ************
+*
+*   NAME
+*       MUIA_Text_PreParse
+*
+*   FUNCTION
+*       Set or retrieve text prepended to Contents before parsing.
+*
+*   INPUTS
+*       Initialize, set and get, STRPTR. Default empty string. NULL becomes an
+*       empty string on set; construction also falls back to an empty string.
+*
+*   NOTES
+*       The string is copied and owned like Contents. Get returns a borrowed
+*       pointer valid until successful replacement or disposal. It normally
+*       supplies formatting escapes, but ordinary characters are rendered too.
+*       No separator is inserted before Contents, and highlighting also scans
+*       ordinary bytes in this prefix.
+*       Each successful set destroys the old parsed text, copies the replacement
+*       into stored state, reparses while set up and requests redraw without
+*       relayout. Allocation failure retains the old value but does not suppress
+*       the forwarded notification tag. Repeated constructor tags overwrite
+*       earlier allocated pointers without freeing them. Supplying the current
+*       getter pointer to the setter is safe because duplication precedes
+*       release.
+*
+*/
+/****** Text.mui/MUIA_Text_HiChar ************
+*
+*   NAME
+*       MUIA_Text_HiChar
+*
+*   FUNCTION
+*       Underline the first matching character during text parsing.
+*
+*   INPUTS
+*       Initialize only, char stored as TEXT. Default zero disables this mode.
+*
+*   NOTES
+*       The text engine compares ordinary bytes against the supplied character
+*       converted with ToLower and ToUpper, underlining the first match and then
+*       disabling further matches. It scans the concatenated PreParse and
+*       Contents, across lines. No local setter or getter exists, and this
+*       attribute does not assign a keyboard shortcut.
+*       HiChar and HiCharIdx share one character field but use separate flags.
+*       If both flags are enabled, HiChar mode wins while using the last stored
+*       character value. Use one mode per object to avoid this interaction.
+*
+*/
+/****** Text.mui/MUIA_Text_HiCharIdx ************
+*
+*   NAME
+*       MUIA_Text_HiCharIdx
+*
+*   FUNCTION
+*       Use a marker byte to underline the following byte.
+*
+*   INPUTS
+*       Initialize only, char stored as TEXT. Default zero disables this mode.
+*       The value is a marker character, not a numeric position.
+*
+*   NOTES
+*       At the first matching ordinary marker byte, the parser removes the
+*       marker from rendered text and underlines the next byte. Later markers
+*       remain ordinary text because highlighting is then disabled. Get of
+*       Contents still returns the original marker-containing string. There is
+*       no local setter or getter and no keyboard binding.
+*       The parser advances once more after consuming the underlined byte,
+*       skipping inspection of the following byte. A marker at end of input or
+*       immediately before the final character can therefore advance beyond the
+*       terminator. Use a marker followed by the character to underline and at
+*       least one further ordinary byte. Do not place escape or newline bytes at
+*       that skipped position. This limitation is in the current text engine,
+*       not a positional-index feature.
+*       HiChar takes precedence when its flag is also enabled, but both
+*       attributes share the same stored character field. Use only one
+*       highlighting mode.
+*
+*/
+/****** Text.mui/MUIA_Text_SetMin ************
+*
+*   NAME
+*       MUIA_Text_SetMin
+*
+*   FUNCTION
+*       Choose whether text width contributes to minimum width.
+*
+*   INPUTS
+*       Initialize only, BOOL. Default TRUE. No local setter or getter.
+*
+*   NOTES
+*       AskMinMax first adds measured text width to superclass minimum, default
+*       and maximum widths. If SetMin is FALSE it then sets the entire minimum
+*       width to zero, including the superclass contribution. Default width
+*       still includes text width. Height constraints are unaffected. This
+*       permits a narrower allocation; it does not enable line wrapping.
+*
+*/
+/****** Text.mui/MUIA_Text_SetMax ************
+*
+*   NAME
+*       MUIA_Text_SetMax
+*
+*   FUNCTION
+*       Choose whether maximum width follows measured text width.
+*
+*   INPUTS
+*       Initialize only, BOOL. Default FALSE. No local setter or getter.
+*
+*   NOTES
+*       TRUE retains the superclass maximum width plus measured text width.
+*       FALSE replaces maximum width with MUI_MAXMAX, allowing horizontal
+*       expansion. Minimum and default widths still follow their separate rules.
+*       This controls size negotiation, not string length or allocation size.
+*
+*/
+/****** Text.mui/MUIA_Text_SetVMax ************
+*
+*   NAME
+*       MUIA_Text_SetVMax
+*
+*   FUNCTION
+*       Choose whether maximum height follows measured text height.
+*
+*   INPUTS
+*       Initialize only, BOOL. Default TRUE. No local setter or getter.
+*
+*   NOTES
+*       AskMinMax uses the greater of parsed text height and font YSize for
+*       minimum and default height. TRUE adds that same height to the superclass
+*       maximum. FALSE adds MUI_MAXMAX to the superclass maximum rather than
+*       replacing it. Width constraints are unaffected. Drawing centers the
+*       parsed text block vertically within the actual content rectangle.
+*
+*/
 
 extern struct Library *MUIMasterBase;
 
@@ -51,11 +274,24 @@ struct MUI_TextData
 static const int __version = 1;
 static const int __revision = 1;
 
+/*
+ * Create owned parsed text from stored strings, selecting HiChar before
+ * HiCharIdx, then measure bounds. Requires live font/render context and no
+ * unreleased previous parsed object. Stores NULL on allocation failure
+ * without reporting status; later sizing/drawing assume non-NULL. Caller
+ * owns lifecycle and must destroy parsed text.
+ */
 static void setup_text(struct MUI_TextData *data, Object *obj);
 
 /**************************************************************************
 OM_NEW
 **************************************************************************/
+/*
+ * Construct Area and copy constructor strings/flags. Fall back to empty
+ * strings for NULL final pointers; dispose partial object and return NULL
+ * if either final copy is absent. Otherwise return object. Repeated string
+ * tags leak old copies; no local notifications or parsing yet.
+ */
 IPTR Text__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_TextData *data;
@@ -125,6 +361,11 @@ IPTR Text__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
 OM_DISPOSE
 **************************************************************************/
+/*
+ * Free owned Contents and PreParse strings and return Area disposal result.
+ * Requires prior Cleanup for parsed text and no active consumers of getter
+ * pointers. Does not destroy ztext itself.
+ */
 IPTR Text__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
@@ -138,6 +379,12 @@ IPTR Text__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
 OM_SET
 **************************************************************************/
+/*
+ * Copy each replacement before releasing prior string and parsed text; NULL
+ * means empty. Reparse if set up and request full redraw, without parent
+ * relayout. Failed duplication retains old state. Forward original tags and
+ * return Area result, with no separate allocation status.
+ */
 IPTR Text__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
@@ -204,6 +451,12 @@ IPTR Text__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
 OM_GET
 **************************************************************************/
+/*
+ * Write borrowed Contents/PreParse pointer or class version/revision 1 to
+ * valid caller-owned IPTR storage and return TRUE. Delegate other
+ * attributes. Returned strings expire on replacement/disposal and transfer
+ * no ownership.
+ */
 IPTR Text__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_TextData *data = INST_DATA(cl, obj);
@@ -234,6 +487,13 @@ IPTR Text__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
 ...
 **************************************************************************/
+/*
+ * Create owned parsed text from stored strings, selecting HiChar before
+ * HiCharIdx, then measure bounds. Requires live font/render context and no
+ * unreleased previous parsed object. Stores NULL on allocation failure
+ * without reporting status; later sizing/drawing assume non-NULL. Caller
+ * owns lifecycle and must destroy parsed text.
+ */
 static void setup_text(struct MUI_TextData *data, Object *obj)
 {
     if (data->mtd_Flags & MTDF_HICHAR)
@@ -260,6 +520,12 @@ static void setup_text(struct MUI_TextData *data, Object *obj)
 /**************************************************************************
 MUIM_Setup
 **************************************************************************/
+/*
+ * Call Area setup and return FALSE on failure; otherwise create/measure
+ * parsed text and return TRUE even if parsing allocation failed. Requires
+ * live font/context and paired Cleanup; no previous unreleased parsed
+ * object.
+ */
 IPTR Text__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
@@ -276,6 +542,11 @@ IPTR Text__MUIM_Setup(struct IClass *cl, Object *obj,
 /**************************************************************************
 MUIM_Cleanup
 **************************************************************************/
+/*
+ * Destroy non-NULL parsed text, clear pointer, then return Area Cleanup
+ * result. Requires completed drawing and matched lifecycle. Stored strings
+ * remain owned until replacement/disposal.
+ */
 IPTR Text__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
@@ -293,6 +564,10 @@ IPTR Text__MUIM_Cleanup(struct IClass *cl, Object *obj,
 /**************************************************************************
 MUIM_Show
 **************************************************************************/
+/*
+ * Call Area Show and normalize its result to TRUE or FALSE. No local
+ * resource acquisition or drawing; requires normal setup/show lifecycle.
+ */
 IPTR Text__MUIM_Show(struct IClass *cl, Object *obj,
     struct MUIP_Show *msg)
 {
@@ -307,6 +582,10 @@ IPTR Text__MUIM_Show(struct IClass *cl, Object *obj,
 /**************************************************************************
 MUIM_Hide
 **************************************************************************/
+/*
+ * Return Area Hide result unchanged. No local release or parsed-text
+ * mutation; Cleanup remains responsible for parsed text.
+ */
 IPTR Text__MUIM_Hide(struct IClass *cl, Object *obj,
     struct MUIP_Hide *msg)
 {
@@ -317,6 +596,12 @@ IPTR Text__MUIM_Hide(struct IClass *cl, Object *obj,
 /**************************************************************************
 MUIM_AskMinMax
 **************************************************************************/
+/*
+ * Call Area, read measured text bounds and font height, then apply
+ * SetMin/SetMax/SetVMax rules to writable size fields. Return TRUE ignoring
+ * superclass result. Requires successful non-NULL parsed text; does not
+ * parse or request relayout.
+ */
 IPTR Text__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     struct MUIP_AskMinMax *msg)
 {
@@ -362,6 +647,13 @@ IPTR Text__MUIM_AskMinMax(struct IClass *cl, Object *obj,
 /**************************************************************************
 MUIM_Draw
 **************************************************************************/
+/*
+ * Call Area; skip update requests when private update field is zero.
+ * Otherwise clip and draw parsed block centered vertically, remove clip and
+ * clear update. Return zero on skip, TRUE after draw. Requires valid parsed
+ * text/window/render context; clipping status is not checked. Active code
+ * does not set a nonzero update type.
+ */
 IPTR Text__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
@@ -409,6 +701,11 @@ IPTR Text__MUIM_Draw(struct IClass *cl, Object *obj,
 /**************************************************************************
 MUIM_Export : to export an object's "contents" to a dataspace object.
 **************************************************************************/
+/*
+ * Return zero without exporting data or delegating to Area. The historical
+ * serialization body is excluded by #if 0. No allocation, ownership change
+ * or dataspace access.
+ */
 IPTR Text__MUIM_Export(struct IClass *cl, Object *obj,
     struct MUIP_Export *msg)
 {
@@ -429,6 +726,11 @@ IPTR Text__MUIM_Export(struct IClass *cl, Object *obj,
 /**************************************************************************
 MUIM_Import : to import an object's "contents" from a dataspace object.
 **************************************************************************/
+/*
+ * Return zero without importing data or delegating to Area. The historical
+ * deserialization body is excluded by #if 0. No allocation, ownership
+ * change or dataspace access.
+ */
 IPTR Text__MUIM_Import(struct IClass *cl, Object *obj,
     struct MUIP_Import *msg)
 {
@@ -449,6 +751,11 @@ IPTR Text__MUIM_Import(struct IClass *cl, Object *obj,
 }
 
 
+/*
+ * Dispatch Text overrides and return selected handler results; delegate all
+ * other messages to Area. Requires ABI-correct message and live object
+ * except construction. Ownership and lifecycle follow class contract.
+ */
 BOOPSI_DISPATCHER(IPTR, Text_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
