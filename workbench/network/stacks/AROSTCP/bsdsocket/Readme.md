@@ -74,6 +74,10 @@ taken as it is, and a localhost name (RFC 6761 section 6.3: `localhost` and the 
 `.localhost`, any case, with or without the final dot) is the loopback address - 127.0.0.1, or
 `::1` for AF_INET6 - without the host table or the DNS; `getaddrinfo()` with AF_UNSPEC gives both.
 Anything else goes to the host table and the resolver in the configured order.
+The resolver (`res_search()`) searches as BIND 4.9's and resolv.conf(5) say, with `ndots` 1: a name
+with a dot is first tried as it is, and one not found that way, or one without a dot, is tried in
+each domain of the search list in turn (`RES_DNSRCH` is in `RES_DEFAULT`) - the static `DOMAIN`
+entries first, then the dynamic ones (DHCP, Router Advertisements); a final dot means only as it is.
 The networks table (`db/networks`) holds each network's number in host order, as
 `getnetent(3)` and the autodoc say, read with `inet_network()`'s rules (`__inet_network()`: "10.1"
 is 0x0a01), so `getnetbyaddr(127, AF_INET)` finds `loop 127`.

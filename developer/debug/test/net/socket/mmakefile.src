@@ -31,6 +31,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-pmtu6 \
     cunit-net-ports \
     cunit-net-raw6 \
+    cunit-net-resolver \
     cunit-net-rio6 \
     cunit-net-route6 \
     cunit-net-scope6 \
