@@ -25,6 +25,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-localhost \
     cunit-net-mcast6 \
     cunit-net-mld6 \
+    cunit-net-naflags6 \
     cunit-net-ndqueue6 \
     cunit-net-netdb \
     cunit-net-pmtu4 \

@@ -443,6 +443,10 @@ temporary addresses at the end of their preferred lifetime and removes them at t
 one. An option whose preferred lifetime exceeds its valid one is ignored (§5.5.3 (c)). An address
 deleted by hand comes back with the next advertisement.
 
+The flags of a Neighbor Advertisement are used as they are on the wire: `ND_NA_FLAG_*` are in
+network byte order (KAME's `<netinet/icmp6.h>`), so `nd6_na_input()` and `nd6_na_output()` neither
+swap them nor need to.
+
 A Redirect (`nd6_redirect_input()`) is taken only as RFC 4861 §8.1 says: from a link-local address
 with hop limit 255, code 0, at least 40 octets, options that parse, a target that is link-local or
 the destination itself - and from the router that is the first hop to the destination now, the

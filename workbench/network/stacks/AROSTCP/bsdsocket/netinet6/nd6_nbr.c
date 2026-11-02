@@ -346,7 +346,7 @@ nd6_na_output(struct ifnet *ifp, struct in6_addr *dst,
     /* ICMPv6 NA */
     bzero(nd_na, sizeof(*nd_na));
     nd_na->nd_na_type = ND_NEIGHBOR_ADVERT;
-    nd_na->nd_na_flags_reserved = htonl(flags);
+    nd_na->nd_na_flags_reserved = flags;      /* ND_NA_FLAG_* are in network order */
     nd_na->nd_na_target = *tgt;
 
     /* Target Link-Layer Address option */
@@ -412,7 +412,7 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
 
     nd_na = (struct nd_neighbor_advert *)(mtod(m, u_int8_t *) + off);
     tgt = nd_na->nd_na_target;
-    flags = ntohl(nd_na->nd_na_flags_reserved);
+    flags = nd_na->nd_na_flags_reserved;      /* ND_NA_FLAG_* are in network order */
 
     is_solicited = (flags & ND_NA_FLAG_SOLICITED) != 0;
     is_override  = (flags & ND_NA_FLAG_OVERRIDE) != 0;
