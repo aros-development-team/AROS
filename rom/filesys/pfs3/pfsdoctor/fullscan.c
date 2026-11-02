@@ -113,7 +113,7 @@ error_t AllocBuildBlocks(void)
 				break;
 
 			case IBLKID:
-				if (!(rbl->options & MODE_SUPERDELDIR)) {
+				if (!(rbl->options & MODE_SUPERINDEX)) {
 					rbl->idx.small.indexblocks[bbl->b.data->indexblock.seqnr] = blocknr;
 					if ((error = WritePFS3Metadata((uint8 *)rbl,
 						ROOTBLOCK + volume.firstblock, volume.blocksize, PFS3_METADATA_ROOT)))
