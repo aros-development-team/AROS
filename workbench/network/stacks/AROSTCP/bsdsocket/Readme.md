@@ -342,7 +342,9 @@ overlay), so header building and the state machine are shared; only the family e
   destination, so for IPv6 `tcp_rtlookup6()` looks the route up each time and the caller releases it;
   the link is the connection's zone for a link-local peer. The MSS is the route's path MTU, else the
   link MTU, less the headers, at most `tcp_v6mssdflt` (1220) towards a destination off the link with
-  no path MTU known, and never more than the peer's MSS option, also when no route is found. The
+  no path MTU known, and never more than the peer's MSS option, also when no route is found. It is
+not rounded down to a multiple of the mbuf cluster, as 4.4BSD did (FreeBSD has dropped that, Linux
+never did it): a 9000-byte link carries 8948-byte segments, not 8192. The
   syncache's SYN-ACK advertises the same for IPv6 (`tcp_mssopt6()`), and a peer that sends no MSS is
   taken to accept 1220 (RFC 9293 §3.7.1). `in6_localaddr()` counts an address on one of our prefixes
   as local, as `in_localaddr()` does for IPv4.

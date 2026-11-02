@@ -2475,9 +2475,11 @@ short rtt;
  * Determine a reasonable value for maxseg size.
  * If the route is known, check route for mtu.
  * If none, use an mss that can be handled on the outgoing
- * interface without forcing IP to fragment; if bigger than
- * an mbuf cluster (mbconf.mclbytes), round down to nearest multiple of mbconf.mclbytes
- * to utilize large mbufs.  If no route is found, route has no mtu,
+ * interface without forcing IP to fragment - the whole of it: 4.4BSD
+ * rounded it down to a multiple of the mbuf cluster (8948 to 8192 on a
+ * 9000-byte path) to fill whole clusters, which FreeBSD has dropped and
+ * Linux never did; tcp_setmtu() (path MTU) never rounded either.  If no
+ * route is found, route has no mtu,
  * or the destination isn't local, use a default, hopefully conservative
  * size (usually 512 or the default IP max size, but no more than the mtu
  * of the interface), as we can't discover anything about intervening
@@ -2642,17 +2644,6 @@ int offer;
              (tp->t_flags & TF_RCVD_CC) == TF_RCVD_CC))
         mss -= TCPOLEN_CC_APPA;
 
-    if((mbconf.mclbytes & (mbconf.mclbytes - 1)) == 0) {
-        if(mss > mbconf.mclbytes)
-            mss &= ~(mbconf.mclbytes - 1);
-    } else {
-        if(mss > mbconf.mclbytes)
-            /*
-            * DO NOT REMOVE THIS! A side effect is rounding.
-            * Read the function description for more info
-            */
-            mss = mss / mbconf.mclbytes * mbconf.mclbytes;
-    }
     /*
      * If there's a pipesize, change the socket buffer
      * to that size.  Make the socket buffers an integral
