@@ -64,7 +64,8 @@ static APTR AllocMem(size_t size, unsigned long flags)
 {
     assert(size == sizeof(struct FileLock));
     assert(flags == (MEMF_PUBLIC | MEMF_CLEAR));
-    assert(allocations++ == 0);
+    assert(allocations == 0);
+    ++allocations;
     memset(&lock_storage, 0, sizeof(lock_storage));
     return &lock_storage.value;
 }
