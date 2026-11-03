@@ -222,7 +222,13 @@ void cpu_Register()
     Permit();
     Enable();
 
-    Exec_ARMCreateIdleTask(SysBase);
+    /* Without an idle task, stay as this core's idle loop: exiting would
+     * leave it nothing to run. Its load then reads as 0%. */
+    if (!Exec_ARMCreateIdleTask(SysBase))
+    {
+        for (;;)
+            asm volatile("wfi");
+    }
 
     /* The bootstrap's work is done. Do NOT return: we were reached by a
      * `br`, so x30 still holds firmware leftovers. Leave through exec's
