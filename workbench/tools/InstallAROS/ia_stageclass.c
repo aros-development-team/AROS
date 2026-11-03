@@ -1132,8 +1132,22 @@ IPTR InstallStage__MUIM_Partition(Class * CLASS, Object * self, Msg message)
         SET(data->back, MUIA_Disabled, TRUE);
         SET(data->proceed, MUIA_Disabled, TRUE);
 
-        char tmpcmd[150], tmparg[100];
+        char *tmpcmd, tmparg[100];
+        IPTR sysname, workname;
+
         GET(optObjDestDevice, MUIA_InstallOption_Value, &tmp);
+        OPTOGET(optObjDestVolumeName, MUIA_String_Contents, &sysname);
+        GET(work_devname, MUIA_String_Contents, &workname);
+        /* All variable strings plus room for option names and four signed
+         * numeric arguments (including 64-bit IPTR values). */
+        tmpcmd = malloc(strlen((char *)tmp) + strlen((char *)sysname)
+            + strlen((char *)workname) + 384);
+        if (tmpcmd == NULL)
+        {
+            SET(data->proceed, MUIA_Disabled, FALSE);
+            SetIoErr(ERROR_NO_FREE_STORE);
+            return RETURN_FAIL;
+        }
         GET(optObjDestUnit, MUIA_InstallOption_Value, &option);
         sprintf(tmpcmd, "C:Partition DEVICE=%s UNIT=%ld FORCE QUIET",
             (char *)tmp, option);
@@ -1161,9 +1175,7 @@ IPTR InstallStage__MUIM_Partition(Class * CLASS, Object * self, Msg message)
         }
 
         /* Specify SYS name */
-        OPTOGET(optObjDestVolumeName, MUIA_String_Contents, &tmp);
-        sprintf(tmparg, " SYSNAME=\"%s\"", (char *)tmp);
-        strcat(tmpcmd, tmparg);
+        sprintf(tmpcmd + strlen(tmpcmd), " SYSNAME=\"%s\"", (char *)sysname);
 
         /* Specify SYS filesystem (defaults to FFSIntl) */
         get(optObjCycleFSTypeSys, MUIA_Cycle_Active, &tmp);
@@ -1196,9 +1208,7 @@ IPTR InstallStage__MUIM_Partition(Class * CLASS, Object * self, Msg message)
                 strcat(tmpcmd, " WORKTYPE=SFS");
 
             /* Specify WORK name */
-            GET(work_devname, MUIA_String_Contents, &tmp);
-            sprintf(tmparg, " WORKNAME=\"%s\"", (char *)tmp);
-            strcat(tmpcmd, tmparg);
+            sprintf(tmpcmd + strlen(tmpcmd), " WORKNAME=\"%s\"", (char *)workname);
         }
 
         /* Specify whether to wipe disk or not */
@@ -1213,9 +1223,10 @@ IPTR InstallStage__MUIM_Partition(Class * CLASS, Object * self, Msg message)
                 bug("[InstallAROS:Stage] %s: Partitioning Free Space...\n", __func__);
         )
 
-        D(bug("[InstallAROS:Stage] %s: ### Executing '%s'\n", __func__, &tmpcmd));
+        D(bug("[InstallAROS:Stage] %s: ### Executing '%s'\n", __func__, tmpcmd));
         LOG_Printf("partitioning: %s", tmpcmd);
         tmp = SystemTagList(tmpcmd, NULL);
+        free(tmpcmd);
         LOG_Printf("partitioning returned %ld", (LONG)tmp);
 
         SET(data->proceed, MUIA_Disabled, FALSE);
