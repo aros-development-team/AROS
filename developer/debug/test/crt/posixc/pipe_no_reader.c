@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include "test.h"
 
@@ -39,21 +40,26 @@ static void *writer(void *unused)
 
 static int ended(void)
 {
+    const struct timespec pause = { 0, 10000000 };
     int i;
 
     for (i = 0; i < POLLS && !finished; i++)
-        usleep(10000);
+    {
+        if (nanosleep(&pause, NULL) != 0)
+            return 0;
+    }
     return finished;
 }
 
 int main(void)
 {
+    const struct timespec pause = { 0, 200000000 };
     pthread_t thread;
 
     /* The writer blocks on a full pipe, then the read end closes. */
     TEST(pipe(fds) == 0);
     TEST(pthread_create(&thread, NULL, writer, NULL) == 0);
-    usleep(200000);
+    TEST(nanosleep(&pause, NULL) == 0);
     TEST(!finished);
     TEST(close(fds[0]) == 0);
     fds[0] = -1;
