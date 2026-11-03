@@ -257,7 +257,10 @@ The SYN cache is fully dual-stack (see §6).
 (with exponential backoff), persist, keepalive, 2MSL/TIME-WAIT, and delayed-ACK. `tcp_slowtimo`
 also expires SYN-cache entries, and advances the ISS clock (`tcp_iss`, RFC 6528) and `tcp_now`
 every tick, whether or not there are connections: `tcp_now` is the timestamp clock (RFC 7323)
-and paces the IPv4 ICMP error rate limit (§7). Each connection's timers are counted down every tick, and its idle,
+and paces the IPv4 ICMP error rate limit (§7). A connection's TSval is `tcp_now` plus an offset of
+its own (`t_ts_offset`, RFC 7323 section 5.4), a keyed hash of its addresses and ports with a key
+that is not the ISN's, so that a TSval tells neither the time since the stack started nor how two
+connections relate; the SYN cache keeps it (`sc_tsoff`) for the connection it makes. Each connection's timers are counted down every tick, and its idle,
 duration and RTT clocks advanced; `tcp_timers()` hands the connection back, or NULL once a timer
 has closed it.
 

@@ -470,6 +470,7 @@ struct mbuf *nam;
         tp->t_state = TCPS_SYN_SENT;
         tp->t_timer[TCPT_KEEP] = TP_KEEPINIT(tp);
         tp->iss = tcp_new_isn(inp);
+        tp->t_ts_offset = tcp_new_tsoff(inp);
         tcp_sendseqinit(tp);
         tp->cc_send = CC_INC(tcp_ccgen);
         return 0;
@@ -527,6 +528,7 @@ struct mbuf *nam;
     tp->t_state = TCPS_SYN_SENT;
     tp->t_timer[TCPT_KEEP] = TP_KEEPINIT(tp);
     tp->iss = tcp_new_isn(inp);
+    tp->t_ts_offset = tcp_new_tsoff(inp);
     tcp_sendseqinit(tp);
     tp->cc_send = CC_INC(tcp_ccgen);
 

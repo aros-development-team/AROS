@@ -209,6 +209,39 @@ tcp_new_isn(struct inpcb *inp)
 }
 
 /*
+ * The timestamp offset of a connection (RFC 7323 section 5.4): its TSval is
+ * tcp_now plus a hash of its addresses and ports, so that the TSval tells
+ * neither the time since the stack started nor how two connections relate,
+ * as FreeBSD and Linux do. The key is not the ISN's: with the same hash in
+ * both, ISN - TSval would give the ISN clock away.
+ */
+u_int32_t tcp_ts_key[4];
+
+u_int32_t
+tcp_ts_offset(u_int32_t la, u_int32_t lport, u_int32_t fa, u_int32_t fport)
+{
+	return tcp_isn_hash(la, lport, fa, fport, tcp_ts_key);
+}
+
+u_int32_t
+tcp_new_tsoff(struct inpcb *inp)
+{
+#if INET6
+	if(tcp_isipv6(inp)) {
+		u_int32_t *la = (u_int32_t *)&inp->inp_laddr6;
+		u_int32_t *fa = (u_int32_t *)&inp->inp_faddr6;
+
+		return tcp_ts_offset(la[0] ^ la[1] ^ la[2] ^ la[3],
+		    (u_int32_t)inp->inp_lport,
+		    fa[0] ^ fa[1] ^ fa[2] ^ fa[3],
+		    (u_int32_t)inp->inp_fport);
+	}
+#endif
+	return tcp_ts_offset(inp->inp_laddr.s_addr, (u_int32_t)inp->inp_lport,
+	    inp->inp_faddr.s_addr, (u_int32_t)inp->inp_fport);
+}
+
+/*
  * SYN cookie support (RFC 4987).
  *
  * Cookie = ISN encoding:
@@ -348,6 +381,7 @@ tcp_init()
      * and the start of the ISN clock, from arc4random_buf() (kern_random.c).
      */
     kern_random(tcp_secret_key, sizeof(tcp_secret_key));
+    kern_random(tcp_ts_key, sizeof(tcp_ts_key));        /* RFC 7323 5.4 */
     tcp_iss = (tcp_seq)kern_random32();
     tcp_ccgen = 1;
     tcp_cc_init();

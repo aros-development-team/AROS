@@ -23,6 +23,13 @@ struct inpcb;
 tcp_seq	tcp_new_isn(struct inpcb *inp);
 
 /*
+ * RFC 7323 section 5.4: a per-connection timestamp offset, from a key of
+ * its own (tcp_ts_key).
+ */
+u_int32_t tcp_new_tsoff(struct inpcb *inp);
+u_int32_t tcp_ts_offset(u_int32_t, u_int32_t, u_int32_t, u_int32_t);
+
+/*
  * ISN hash primitive (Murmur-style keyed hash).
  */
 u_int32_t tcp_isn_hash(u_int32_t, u_int32_t, u_int32_t, u_int32_t,

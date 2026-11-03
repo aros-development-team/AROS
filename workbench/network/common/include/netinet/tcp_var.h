@@ -247,6 +247,11 @@ struct tcpcb {
 	u_long	t_challenge_time;
 	u_int	t_challenge_cnt;
 
+/*
+ * What this connection adds to tcp_now in its TSval (RFC 7323 section 5.4).
+ */
+	u_int32_t t_ts_offset;
+
 /* TUBA stuff */
 	caddr_t	t_tuba_pcb;		/* next level down pcb for TCP over z */
 };

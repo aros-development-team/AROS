@@ -80,6 +80,7 @@ struct syncache {
     tcp_seq         sc_irs;		/* initial received seq (peer ISN) */
     tcp_seq         sc_iss;		/* initial send seq (our ISN) */
     u_int32_t       sc_ts_recent;	/* peer timestamp value to echo */
+    u_int32_t       sc_tsoff;		/* our TSval offset (RFC 7323 5.4) */
     u_int16_t       sc_peer_mss;	/* peer's advertised MSS */
     u_int16_t       sc_wnd;		/* our advertised window (16-bit field) */
     u_int8_t        sc_requested_s_scale; /* peer's window scale shift */
@@ -353,7 +354,7 @@ syncache_respond(struct syncache *sc)
     if (sc->sc_flags & SCF_TIMESTAMP) {
         u_int32_t *lp = (u_int32_t *)(opt + optlen);
         *lp++ = htonl(TCPOPT_TSTAMP_HDR);
-        *lp++ = htonl(tcp_now);
+        *lp++ = htonl(tcp_now + sc->sc_tsoff);
         *lp = htonl(sc->sc_ts_recent);
         optlen += TCPOLEN_TSTAMP_APPA;
     }
@@ -449,6 +450,12 @@ syncache_fill(struct syncache *sc, struct socket *lso, struct sc_key *k,
     }
     sc->sc_fport = k->fport;
     sc->sc_lport = k->lport;
+    if (k->isipv6)
+        sc->sc_tsoff = tcp_ts_offset(syncache_v6fold(&k->laddr6).s_addr,
+            k->lport, syncache_v6fold(&k->faddr6).s_addr, k->fport);
+    else
+        sc->sc_tsoff = tcp_ts_offset(k->laddr.s_addr, k->lport,
+            k->faddr.s_addr, k->fport);
     sc->sc_irs = ti->ti_seq;
     sc->sc_peer_mss = peer_mss;
     sc->sc_flags = flags;
@@ -702,6 +709,7 @@ syncache_socket(struct syncache *sc, struct socket *lso, struct tcpiphdr *ti)
         tp->t_flags |= TF_RCVD_TSTMP;
         tp->ts_recent = sc->sc_ts_recent;
         tp->ts_recent_age = tcp_now;
+        tp->t_ts_offset = sc->sc_tsoff;
     } else
         tp->t_flags &= ~TF_REQ_TSTMP;
     if (sc->sc_flags & SCF_SACK)

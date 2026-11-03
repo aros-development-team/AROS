@@ -1013,7 +1013,7 @@ findpcb:
                 ++tcpstat.tcps_predack;
                 if((to.to_flag & TOF_TS) != 0)
                     tcp_xmit_timer(tp,
-                                   tcp_now - to.to_tsecr + 1);
+                                   tcp_now + tp->t_ts_offset - to.to_tsecr + 1);
                 else if(tp->t_rtt &&
                         SEQ_GT(ti->ti_ack, tp->t_rtseq))
                     tcp_xmit_timer(tp, tp->t_rtt);
@@ -1875,7 +1875,7 @@ process_ACK:
          * Recompute the initial retransmit timer.
          */
         if(to.to_flag & TOF_TS)
-            tcp_xmit_timer(tp, tcp_now - to.to_tsecr + 1);
+            tcp_xmit_timer(tp, tcp_now + tp->t_ts_offset - to.to_tsecr + 1);
         else if(tp->t_rtt && SEQ_GT(ti->ti_ack, tp->t_rtseq))
             tcp_xmit_timer(tp, tp->t_rtt);
 
