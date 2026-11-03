@@ -1,0 +1,12 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-prefs : workbench-prefs-notifications
+#MM workbench-prefs-notifications : includes linklibs workbench-libs-application
+
+%build_prog mmake=workbench-prefs-notifications \
+    progname=Notifications targetdir=$(AROSDIR)/Prefs \
+    files=notificationsprefs
+
+%common

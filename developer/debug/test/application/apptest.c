@@ -731,6 +731,64 @@ static void test_rexx(void)
         CloseLibrary((struct Library *)RexxSysBase);
 }
 
+/* Count APPLIBMT_ConfirmClose messages arriving at port within secs seconds. */
+static int confirms_within(struct MsgPort *port, int want, int secs)
+{
+    int n = 0, left = secs * 50;
+
+    while (left-- && n < want)
+    {
+        Delay(1);
+        n += drainfrom(port, APPLIBMT_ConfirmClose, ~0, NULL, 0);
+    }
+    return n;
+}
+
+/* A notification with ConfirmClose is answered whether it was shown or not:
+   under Do-not-disturb it never opens, with APPNOTIFY_Update the earlier
+   ones go, shown or still queued behind the visible limit. */
+static void test_confirm_paths(void)
+{
+    PrefsObject *saved, *dict;
+    struct MsgPort *port = NULL;
+    ULONG id, i;
+    BOOL had;
+
+    id = RegisterApplication("ConfirmTest", TAG_DONE);
+    GetApplicationAttrs(id, APPATTR_Port, (IPTR)&port, TAG_DONE);
+
+    for (i = 0; i < 8; i++)
+        Notify(id, APPNOTIFY_Title, (IPTR)"Replaced", APPNOTIFY_Text, (IPTR)"goes with the update",
+               APPNOTIFY_ConfirmClose, TRUE, TAG_DONE);
+    Delay(10);
+    Notify(id, APPNOTIFY_Text, (IPTR)"the update", APPNOTIFY_Update, TRUE, TAG_DONE);
+    check(confirms_within(port, 8, 5) == 8, "APPNOTIFY_Update confirms the shown and the queued ones it replaces");
+    Notify(id, APPNOTIFY_Text, (IPTR)"the second update", APPNOTIFY_Update, TRUE, TAG_DONE);
+    Delay(25);
+    drainfrom(port, APPLIBMT_ConfirmClose, ~0, NULL, 0);
+
+    saved = PrefsDictionary(NULL, NULL, ALPO_Alloc, 0, TAG_DONE);
+    had = ReadPrefs(saved, READPREFS_FileName, (IPTR)"Sys/Notifications.xml", READPREFS_ReadENVARC, FALSE,
+                    TAG_DONE) == 0;
+    dict = PrefsDictionary(saved, NULL, ALPO_Copy, 0, TAG_DONE);
+    DictSetObjectForKey(dict, PrefsNumber(NULL, NULL, ALPONUM_AllocSetBool, TRUE, TAG_DONE), "DoNotDisturb");
+    WritePrefs(dict, WRITEPREFS_FileName, (IPTR)"Sys/Notifications.xml", TAG_DONE);
+    release(dict);
+    Delay(25);
+
+    check(Notify(id, APPNOTIFY_Text, (IPTR)"not shown, do not disturb", APPNOTIFY_Pri, 5,
+                 APPNOTIFY_ConfirmClose, TRUE, TAG_DONE) == APPNOTIFY_OK_MSGQUEUED
+          && confirms_within(port, 1, 3) == 1, "Do-not-disturb: a notification it does not show is confirmed");
+
+    if (had)
+        WritePrefs(saved, WRITEPREFS_FileName, (IPTR)"Sys/Notifications.xml", TAG_DONE);
+    else
+        DeleteFile("ENV:Sys/Notifications.xml");
+    release(saved);
+    Delay(25);
+    UnregisterApplication(id, NULL);
+}
+
 static void test_blocked(void)
 {
     PrefsObject *saved, *dict, *apps;
@@ -934,6 +992,7 @@ int main(void)
     {
         test_rexx();
         test_blocked();
+        test_confirm_paths();
     }
     else
         printf("SKIP pop-ups, ARexx and the settings (SYS:System/Notifications is not installed)\n");
