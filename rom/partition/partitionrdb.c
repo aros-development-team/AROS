@@ -259,14 +259,30 @@ static void PartitionRDBUpdateGeometry(struct PartitionHandle *ph)
     ph->dg.dg_BufMemType = ph->de.de_BufMemType;
 }
 
+/* Probe and open must select the same first valid header. */
+static LONG PartitionRDBFindHeader(struct Library *PartitionBase,
+    struct PartitionHandle *root, void *buffer)
+{
+    struct RigidDiskBlock *rdb = buffer;
+    ULONG i;
+
+    for (i = 0; i < RDB_LOCATION_LIMIT; i++)
+    {
+        if (readBlock(PartitionBase, root, i, buffer) != 0)
+            break;
+        if (rdb->rdb_ID == AROS_BE2LONG(IDNAME_RIGIDDISK) &&
+            PartitionRDBValidChecksum(rdb, 64, root->de.de_SizeBlock << 2))
+            return i;
+    }
+    return -1;
+}
+
 LONG PartitionRDBCheckPartitionTable
     (
         struct Library *PartitionBase,
         struct PartitionHandle *root
     )
 {
-UBYTE i;
-struct RigidDiskBlock *rdb = (struct RigidDiskBlock *)root->buffer;
 struct PartitionType type;
 struct TagItem tags[] = {{PT_TYPE, (IPTR)&type}, {TAG_DONE, 0}};
 
@@ -286,15 +302,7 @@ struct TagItem tags[] = {{PT_TYPE, (IPTR)&type}, {TAG_DONE, 0}};
             return 0;
         }
     }
-    for (i=0;i<RDB_LOCATION_LIMIT; i++)
-    {
-        if (readBlock(PartitionBase, root, i, rdb) != 0)
-            return 0;
-        if (rdb->rdb_ID == AROS_BE2LONG(IDNAME_RIGIDDISK) &&
-            PartitionRDBValidChecksum(rdb, 64, root->de.de_SizeBlock << 2))
-            return 1;
-    }
-    return 0;
+    return PartitionRDBFindHeader(PartitionBase, root, root->buffer) >= 0;
 }
 
 void CopyBE2HostDosEnvec(LONG *src, SIPTR *dst, ULONG size) {
@@ -603,7 +611,7 @@ LONG PartitionRDBOpenPartitionTable
 {
 UBYTE *buffer;
 struct RDBData *data;
-UBYTE i;
+LONG i;
 
     if (root->de.de_SizeBlock < 128 || root->de.de_SizeBlock > sizeof(root->buffer) / 4)
         return ERROR_BAD_NUMBER;
@@ -611,22 +619,16 @@ UBYTE i;
     buffer = AllocVec(root->de.de_SizeBlock << 2, MEMF_PUBLIC);
     if (!buffer)
         return 1;
+    i = PartitionRDBFindHeader(PartitionBase, root, buffer);
+    if (i < 0)
+    {
+        FreeVec(buffer);
+        return 1;
+    }
     data = AllocMem(sizeof(struct RDBData) + (root->de.de_SizeBlock << 2) - sizeof(struct RigidDiskBlock), MEMF_PUBLIC);
     if (data)
     {
-        for (i=0;i<RDB_LOCATION_LIMIT; i++)
-        {
-            if (readBlock(PartitionBase, root, i, buffer) != 0) {
-                FreeMem(data, sizeof(*data) + (root->de.de_SizeBlock << 2) - sizeof(data->rdb));
-                FreeVec(buffer);
-                return 1;
-            }
-            CopyMem(buffer, &data->rdb, root->de.de_SizeBlock << 2);
-            if (data->rdb.rdb_ID == AROS_BE2LONG(IDNAME_RIGIDDISK) &&
-                PartitionRDBValidChecksum(&data->rdb, 64, root->de.de_SizeBlock << 2))
-                break;
-        }
-        if (i != RDB_LOCATION_LIMIT)
+        CopyMem(buffer, &data->rdb, root->de.de_SizeBlock << 2);
         {
             ULONG block;
             struct RDBChain chain = {0};
@@ -756,7 +758,6 @@ UBYTE i;
             FreeVec(buffer);
             return 0;
         }
-        FreeMem(data, sizeof(*data) + (root->de.de_SizeBlock << 2) - sizeof(data->rdb));
     }
     FreeVec(buffer);
     return 1;
