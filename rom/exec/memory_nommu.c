@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: System memory allocator for MMU-less systems.
           Used also as boot-time memory allocator on systems with MMU.
@@ -169,7 +169,10 @@ APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase)
              * Memory list consistency checks.
              * 1. Check alignment restrictions
              */
-            if (((IPTR)p2|(IPTR)p2->mc_Bytes) & (MEMCHUNK_TOTAL-1))
+            if (((IPTR)p2 & (MEMCHUNK_TOTAL - 1)) ||
+                ((p2->mc_Bytes & (MEMCHUNK_TOTAL - 1)) &&
+                 (p2->mc_Next || (IPTR)p2 > (IPTR)mh->mh_Upper ||
+                  p2->mc_Bytes != (IPTR)mh->mh_Upper - (IPTR)p2)))
             {
                 if (SysBase && SysBase->DebugAROSBase)
                 {
@@ -203,8 +206,9 @@ APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase)
                 /* Since AllocAbs allocations never allocate/update a ctx, they need to clear it if it exists */
                 mhac_ClearSysCtx(mh, SysBase);
 
-                /* Check if there's memory left at the end. */
-                if((UBYTE *)p2+p2->mc_Bytes!=(UBYTE *)p4)
+                /* Leave a terminal remainder in mh_Free, but create a
+                 * new chunk only if a complete allocation unit remains. */
+                if ((UBYTE *)p2 + p2->mc_Bytes - (UBYTE *)p4 >= MEMCHUNK_TOTAL)
                 {
                     /* Yes. Add it to the list */
                     p4->mc_Next  = p2->mc_Next;
@@ -398,7 +402,10 @@ IPTR nommu_AvailMem(ULONG attributes, struct ExecBase *SysBase)
                  * Do some constistency checks:
                  * 1. All MemChunks must be aligned to MEMCHUNK_TOTAL.
                  */
-                if (((IPTR)mc | mc->mc_Bytes) & (MEMCHUNK_TOTAL-1))
+                if (((IPTR)mc & (MEMCHUNK_TOTAL - 1)) ||
+                    ((mc->mc_Bytes & (MEMCHUNK_TOTAL - 1)) &&
+                     (mc->mc_Next || (IPTR)mc > (IPTR)mh->mh_Upper ||
+                      mc->mc_Bytes != (IPTR)mh->mh_Upper - (IPTR)mc)))
                 {
                     bug("[MM] Chunk allocator error in MemHeader 0x%p\n", mh);
                     bug("[MM] Misaligned chunk at 0x%p (%u bytes)\n", mc, mc->mc_Bytes);
@@ -414,8 +421,10 @@ IPTR nommu_AvailMem(ULONG attributes, struct ExecBase *SysBase)
                     Alert(AN_MemoryInsane|AT_DeadEnd);
                 }
 #endif
-                if (mc->mc_Bytes>ret)
-                    ret=mc->mc_Bytes;
+                /* Report a size that AllocMem can actually satisfy. */
+                IPTR usable = mc->mc_Bytes & ~(MEMCHUNK_TOTAL - 1);
+                if (usable > ret)
+                    ret = usable;
             }
         }
         else if (attributes & MEMF_TOTAL)
