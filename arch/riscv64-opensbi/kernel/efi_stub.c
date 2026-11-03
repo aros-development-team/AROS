@@ -626,34 +626,43 @@ static void efi_load_package(struct efi_system_table *st, efi_handle_t image)
     if (fs->open_volume(fs, &root) != EFI_SUCCESS || !root)
         return;
     /*
-     * An explicit command line always wins, but this image is normally
-     * started by the firmware's default boot path, where there is no way
-     * to supply one. Fall back to "aros.cmd" beside the package so the
-     * command line can be changed by editing a file on the boot volume.
+     * "aros.cmd" beside the package is the command line that can be
+     * changed by editing a file on the boot volume, and it takes
+     * precedence: this image is normally started by the firmware's
+     * default boot path, whose load options are not under the user's
+     * control and may hold the boot entry's own text.
      */
-    if (!have_options &&
-        root->open(root, &cmd, cmdname, EFI_FILE_MODE_READ, 0) == EFI_SUCCESS
+    if (root->open(root, &cmd, cmdname, EFI_FILE_MODE_READ, 0) == EFI_SUCCESS
         && cmd)
     {
-        uintn n = sizeof(__efi_cmdline) - 1;
-
-        if (cmd->read(cmd, &n, __efi_cmdline) == EFI_SUCCESS && n)
+        char line[sizeof(__efi_cmdline)];
+        uintn n = sizeof(line) - 1;
+        if (cmd->read(cmd, &n, line) == EFI_SUCCESS && n)
         {
             uintn i;
-
             /* One line only, and drop anything unprintable (CR/LF/tabs) */
             for (i = 0; i < n; i++)
             {
-                if (__efi_cmdline[i] < ' ')
+                if (line[i] < ' ')
                     break;
+                __efi_cmdline[i] = line[i];
             }
-            __efi_cmdline[i] = 0;
-
-            efi_puts("AROS: command line from aros.cmd: ");
-            efi_puts(__efi_cmdline);
-            efi_puts("\n");
+            if (i)
+            {
+                __efi_cmdline[i] = 0;
+                have_options = 2;
+                efi_puts("AROS: command line from aros.cmd: ");
+                efi_puts(__efi_cmdline);
+                efi_puts("\n");
+            }
         }
         cmd->close(cmd);
+    }
+    if (have_options == 1)
+    {
+        efi_puts("AROS: command line from the load options: ");
+        efi_puts(__efi_cmdline);
+        efi_puts("\n");
     }
 
     efi_path(path, sizeof(path) / sizeof(path[0]), AROS_DIR_BOOTARCH,
