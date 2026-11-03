@@ -16,7 +16,8 @@
 #define M68K_SIZEOF_PROCESS         228
 #define M68K_SIZEOF_CLI             64
 #define M68K_SIZEOF_WINDOW          136  /* Window struct from offsets.txt */
-#define M68K_SIZEOF_WINDOW_SHADOW   148  /* Shadow allocation (extra fields) */
+#define M68K_SIZEOF_WINDOW_SHADOW   152  /* Shadow allocation (extra fields) */
+#define M68K_WIN_FLAGS_SYNC         148  /* Flags as the emulator last wrote them to the shadow */
 #define M68K_SIZEOF_SCREEN          346
 #define M68K_SIZEOF_MSGPORT         34
 #define M68K_SIZEOF_RASTPORT        100

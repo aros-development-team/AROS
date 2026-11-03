@@ -8,6 +8,7 @@
 #include <exec/memory.h>
 #include <aros/debug.h>
 #include <proto/exec.h>
+#include <aros/atomic.h>
 #include <proto/locale.h>
 #include <proto/utility.h>
 #include <utility/date.h>
@@ -68,6 +69,7 @@ extern const ULONG m68kemu_thunks_locale_manual_count;
 ULONG shadow_register(struct M68KEmuContext *ctx, ULONG m68k_addr, void *native, UWORD type);
 void *shadow_lookup(struct M68KEmuContext *ctx, ULONG m68k_addr);
 static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w);
+static void window_flags_in(struct M68KEmuContext *ctx);
 static void rp_state_out(struct M68KEmuContext *ctx, ULONG mrp, struct RastPort *rp, BOOL font);
 IPTR m68k_NewObjectA(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_MakeClass(struct M68KEmuContext *ctx, void *cpu);
@@ -1033,6 +1035,7 @@ static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w)
     m68k_write16(ctx, mw + M68K_WIN_MOUSEY,   (UWORD)w->MouseY);
     m68k_write16(ctx, mw + M68K_WIN_MOUSEX,   (UWORD)w->MouseX);
     m68k_write32(ctx, mw + M68K_WIN_FLAGS,    w->Flags);
+    m68k_write32(ctx, mw + M68K_WIN_FLAGS_SYNC, w->Flags);
     ctx->mem[mw + M68K_WIN_BORDERLEFT]   = w->BorderLeft;
     ctx->mem[mw + M68K_WIN_BORDERTOP]    = w->BorderTop;
     ctx->mem[mw + M68K_WIN_BORDERRIGHT]  = w->BorderRight;
@@ -1235,6 +1238,7 @@ static IPTR thunk_intuition_CloseWindow(struct M68KEmuContext *ctx, void *cpu)
 static IPTR thunk_exec_WaitPort(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG mp = THUNK_A(0);
+    window_flags_in(ctx);
     if (ctx->trace_calls) bug("[m68kemu] WaitPort: m68k_port=0x%lx\n", (unsigned long)mp);
     struct MsgPort *port = (struct MsgPort *)shadow_lookup(ctx, mp);
     if (ctx->trace_calls) bug("[m68kemu] WaitPort: native=%p\n", port);
@@ -1258,9 +1262,39 @@ static ULONG imsg_to_m68k(struct M68KEmuContext *ctx, struct IntuiMessage *imsg)
 static void gadget_strinfo_sync(struct M68KEmuContext *ctx);
 static ULONG notifymsg_to_m68k(struct M68KEmuContext *ctx, struct NotifyMessage *nm);
 
+
+/* Programs set and clear WFLG_RMBTRAP and WFLG_REPORTMOUSE in Window->Flags
+   themselves. Before the program waits, the bits it changed in the shadow
+   since the emulator last wrote it go to the native window, bit by bit, as
+   Intuition's input handler changes other bits of the same word; then the
+   shadow is written from the native window again. */
+#define M68K_WIN_PROGRAM_FLAGS (WFLG_RMBTRAP | WFLG_REPORTMOUSE)
+static void window_flags_in(struct M68KEmuContext *ctx)
+{
+    for (UWORD i = 0; i < ctx->num_shadows; i++)
+    {
+        struct Window *w = (struct Window *)ctx->shadow_map[i].native_ptr;
+        ULONG mw = ctx->shadow_map[i].m68k_addr, mf, last, set, clear;
+
+        if (ctx->shadow_map[i].type != 1 || !w)
+            continue;
+        mf = m68k_read32(ctx, mw + M68K_WIN_FLAGS);
+        last = m68k_read32(ctx, mw + M68K_WIN_FLAGS_SYNC);
+        set = mf & ~last & M68K_WIN_PROGRAM_FLAGS;
+        clear = last & ~mf & M68K_WIN_PROGRAM_FLAGS;
+        if (set)
+            AROS_ATOMIC_OR(w->Flags, set);
+        if (clear)
+            AROS_ATOMIC_AND(w->Flags, ~clear);
+        m68k_write32(ctx, mw + M68K_WIN_FLAGS, w->Flags);
+        m68k_write32(ctx, mw + M68K_WIN_FLAGS_SYNC, w->Flags);
+    }
+}
+
 static IPTR thunk_exec_GetMsg(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG mp = THUNK_A(0), mmsg;
+    window_flags_in(ctx);
     struct MsgPort *port = (struct MsgPort *)shadow_lookup(ctx, mp);
     if (!port)
         return m68k_port_is_68k(ctx, mp) ? m68k_port_getmsg(ctx, mp) : 0;
@@ -1370,6 +1404,7 @@ static IPTR thunk_exec_Wait_m(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG sigs = THUNK_D(0), r;
 
+    window_flags_in(ctx);
     m68k_gil_release(ctx);
     r = Wait(sigs);
     m68k_gil_obtain(ctx);
@@ -1933,6 +1968,7 @@ static IPTR thunk_dos_FPuts(struct M68KEmuContext *ctx, void *cpu)
 /* -198: Delay(D1=timeout) */
 static IPTR thunk_dos_Delay(struct M68KEmuContext *ctx, void *cpu)
 {
+    window_flags_in(ctx);
     Delay((ULONG)THUNK_D(1));
     return 0;
 }
@@ -2773,6 +2809,7 @@ static IPTR thunk_dos_Delay_m(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG ticks = THUNK_D(1);
 
+    window_flags_in(ctx);
     m68k_gil_release(ctx);
     Delay(ticks);
     m68k_gil_obtain(ctx);
@@ -6668,7 +6705,16 @@ static IPTR thunk_gfx_BltBitMap_m(struct M68KEmuContext *ctx, void *cpu)
     return (IPTR)planes;
 }
 
+/* graphics -270: WaitTOF(); the wait of a program that polls instead of reading a port */
+static IPTR thunk_gfx_WaitTOF_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    window_flags_in(ctx);
+    WaitTOF();
+    return 0;
+}
+
 const struct M68KThunkEntry m68kemu_thunks_graphics_manual[] = {
+    { 270, thunk_gfx_WaitTOF_m },
     { 30, thunk_gfx_BltBitMap_m },
     { 282, thunk_gfx_InitArea_m },
     { 468, thunk_gfx_InitTmpRas_m },
