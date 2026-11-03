@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -26,6 +26,141 @@
 #include "support_classes.h"
 #include "popasl_private.h"
 
+/****** Popasl.mui/MUIC_Popasl ************
+*
+*   NAME
+*       MUIC_Popasl
+*
+*   SUPERCLASS
+*       Popstring.mui
+*
+*   DESCRIPTION
+*       Run an ASL requester in a separate process and transfer accepted results
+*       to the string. Type defaults ASL_FileRequest. AllocAslRequest receives
+*       the constructor tag list; failure returns NULL. If Popstring
+*       construction fails afterward, this path does not free the allocated
+*       requester. On success the class owns the requester and installs internal
+*       opening/closing hooks, forcing Toggle FALSE.
+*       Open creates a process and waits synchronously for its startup-message
+*       reply, with no timeout. The process then runs AslRequest and queues
+*       Close(TRUE/FALSE) on the application. The close hook runs in a further
+*       queued CallHook. Keep the application, object, string, requester and
+*       referenced tag data alive through all these stages.
+*
+*   METHODS
+*       Without StartHook, file opening derives InitialFile and InitialDrawer
+*       from String_Contents; font opening derives a .font name and size from a
+*       name/size string. Invalid numeric font size is not checked. Accepted
+*       file results combine drawer/file; accepted font results remove the first
+*       .font substring and append size. The default close hook sets
+*       String_Contents and then String_Acknowledge from the retrieved stored
+*       contents. Allocation failure can leave the string unchanged without a
+*       separate error. Other requester types have no built-in string
+*       conversion.
+*       Cleanup requests AbortAslRequest if active and then delegates; it does
+*       not wait for the process or queued close. Dispose frees the requester
+*       without joining the worker. An explicit inherited Close merely queues
+*       bookkeeping/result processing; it does not abort or wait for ASL. Do not
+*       use it to force-close a running requester.
+*
+*   NOTES
+*       Do not dispose while the worker or queued callbacks can still access
+*       this object/requester. Active is based on a stored process pointer, not
+*       a process-liveness query or join. That pointer is cleared only in the
+*       deferred close hook. Queue failures are not checked and can leave state
+*       stuck. The initial filename can point into the String's current buffer,
+*       so keep it stable while the worker may read startup tags.
+*       The open path leaks its temporary name/drawer buffer if message-port
+*       allocation, startup allocation or process creation fails after buffer
+*       creation. Startup reply handling frees the startup message without
+*       explicitly dequeuing the reply. These limitations are documented, not
+*       corrected here. Hook tags are borrowed, and asynchronous execution
+*       provides no automatic ownership protection.
+*
+*/
+/****** Popasl.mui/MUIA_Popasl_Active ************
+*
+*   NAME
+*       MUIA_Popasl_Active
+*
+*   FUNCTION
+*       Report whether the stored requester-process pointer is non-NULL.
+*
+*   INPUTS
+*       Get only, BOOL. Initially FALSE; true after successful process creation
+*       until the deferred close hook clears the pointer.
+*
+*   NOTES
+*       No TRUE notification is explicitly emitted when starting. Close
+*       processing emits Active FALSE using nfset, which disables Group
+*       forwarding, not notifications. The getter can remain TRUE after the
+*       worker has finished while close work is pending. It is not a process
+*       join or proof that no instructions remain in the worker.
+*
+*/
+/****** Popasl.mui/MUIA_Popasl_Type ************
+*
+*   NAME
+*       MUIA_Popasl_Type
+*
+*   FUNCTION
+*       Choose the ASL requester type at construction.
+*
+*   INPUTS
+*       Initialize only in this implementation, ULONG; default ASL_FileRequest.
+*       No local getter despite the header annotation.
+*
+*   NOTES
+*       Passed to AllocAslRequest together with constructor tags. Built-in
+*       string conversion exists only for file and font requesters. Changing
+*       Type after construction is not implemented. Use suitable
+*       StartHook/StopHook processing for other accepted ASL types.
+*
+*/
+/****** Popasl.mui/MUIA_Popasl_StartHook ************
+*
+*   NAME
+*       MUIA_Popasl_StartHook
+*
+*   FUNCTION
+*       Customize per-open requester tags or reject an opening attempt.
+*
+*   INPUTS
+*       Initialize and set, borrowed pointer to struct Hook; default NULL. No
+*       local getter despite the header annotation.
+*
+*   NOTES
+*       Called synchronously as CallHookPkt(hook, popaslObject, tagList). Return
+*       nonzero to continue or zero to abort. The instance has 20 TagItems; the
+*       first five are screen, private IDCMP, initial left/top/width, followed
+*       by TAG_DONE. Keep edits and termination within this capacity. Providing
+*       this hook replaces default file/font initialization. Referenced data
+*       must survive asynchronous requester use; do not leave worker tags
+*       pointing into callback-local storage.
+*
+*/
+/****** Popasl.mui/MUIA_Popasl_StopHook ************
+*
+*   NAME
+*       MUIA_Popasl_StopHook
+*
+*   FUNCTION
+*       Handle an accepted requester result.
+*
+*   INPUTS
+*       Initialize and set, borrowed pointer to struct Hook; default NULL. No
+*       local getter despite the header annotation.
+*
+*   NOTES
+*       Called as CallHookPkt(hook, popaslObject, aslRequester) only for a
+*       nonzero deferred Close result. Return value is ignored. Providing the
+*       hook replaces default string and Acknowledge updates; cancellation does
+*       not call it. The requester is borrowed and remains class-owned. The
+*       stored hook at close-processing time is used, so retain its data until
+*       then.
+*
+*/
+
 extern struct Library *MUIMasterBase;
 
 struct Asl_Startup
@@ -38,6 +173,13 @@ struct Asl_Startup
     STRPTR buf;           /* asl_entry must FreeVec() this before exiting!!! */
 };
 
+/*
+ * Worker waits for startup, copies borrowed request/tag/object pointers,
+ * replies, runs AslRequest and queues Close with acceptance flag. Free
+ * transferred temporary buffer and return zero. Requires all borrowed
+ * resources live through requester and queued callbacks; queue failure is
+ * ignored and no join signal is provided.
+ */
 SAVEDS static LONG Asl_Entry(void)
 {
     struct Process *proc;
@@ -73,6 +215,13 @@ SAVEDS static LONG Asl_Entry(void)
     return 0;
 }
 
+/*
+ * Reject existing stored process, prepare 20-slot tag buffer via hook or
+ * default string parsing, create process and wait for startup reply without
+ * timeout. Return one on handshake or zero on failure. Temporary buffer
+ * transfers to worker only on success; later allocation failures leak it.
+ * Caller retains objects and tag targets.
+ */
 static ULONG Popasl_Open_Function(struct Hook *hook, Object *obj,
     void **msg)
 {
@@ -198,6 +347,12 @@ static ULONG Popasl_Open_Function(struct Hook *hook, Object *obj,
 }
 
 
+/*
+ * On accepted result invoke StopHook or default file/font string conversion
+ * and Acknowledge; then clear process pointer and notify Active FALSE via
+ * nfset. Return zero. Requires completed requester and live objects; this
+ * is not abort/join. Output allocation failures silently skip updates.
+ */
 static ULONG Popasl_Close_Function(struct Hook *hook, Object *obj,
     void **msg)
 {
@@ -284,6 +439,12 @@ static ULONG Popasl_Close_Function(struct Hook *hook, Object *obj,
     return 0;
 }
 
+/*
+ * Allocate ASL request from Type/constructor tags, construct Popstring and
+ * install embedded hooks with Toggle FALSE. Return object or zero on
+ * failure. Superclass failure leaks already allocated requester. Borrow
+ * hooks and retain requester until disposal; no getter for Type/hooks.
+ */
 IPTR Popasl__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Popasl_DATA *data;
@@ -336,6 +497,11 @@ IPTR Popasl__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Free class-owned ASL requester and return Popstring disposal result.
+ * Requires worker and all deferred callbacks finished; does not abort, join
+ * or cancel queued work here. Disposing an active requester is unsafe.
+ */
 IPTR Popasl__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Popasl_DATA *data = INST_DATA(cl, obj);
@@ -345,6 +511,11 @@ IPTR Popasl__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 }
 
 #define STORE *(msg->opg_Storage)
+/*
+ * Store boolean presence of process pointer for Active and return one;
+ * delegate other getters. Requires valid storage. Does not query process
+ * liveness, wait, or expose Type/hooks.
+ */
 IPTR Popasl__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Popasl_DATA *data = INST_DATA(cl, obj);
@@ -359,6 +530,11 @@ IPTR Popasl__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 #undef STORE
 
+/*
+ * Replace borrowed StartHook/StopHook pointers and return Popstring setter
+ * result. No Type or Active state setter. New StopHook is used by later
+ * close processing; keep asynchronous resources valid.
+ */
 IPTR Popasl__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Popasl_DATA *data = INST_DATA(cl, obj);
@@ -381,6 +557,11 @@ IPTR Popasl__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * If process pointer is non-NULL request AbortAslRequest, then return
+ * Popstring cleanup result. No wait for worker exit or deferred Close. Keep
+ * requester, objects and hook data alive until asynchronous work finishes.
+ */
 IPTR Popasl__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
@@ -391,6 +572,12 @@ IPTR Popasl__MUIM_Cleanup(struct IClass *cl, Object *obj,
 }
 
 #if ZUNE_BUILTIN_POPASL
+/*
+ * Dispatch local overrides and return their results; delegate other
+ * messages to superclass. Requires ABI-correct message and live object
+ * except construction. Deferred callbacks and resource ownership follow the
+ * class lifecycle contract.
+ */
 BOOPSI_DISPATCHER(IPTR, Popasl_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)

@@ -74,6 +74,9 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULON
     UBYTE *fileData;
     ULONG entry, base = 0;
     struct M68KTaskState *ts;
+    /* The internal API keeps its full-width version parameter. */
+    if (version > 0xFFFFu) return 0;
+
     struct Process *me = (struct Process *)FindTask(NULL);
     APTR oldwin = me->pr_WindowPtr;
 
@@ -240,31 +243,42 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULON
     /* As exec does, the library's init function runs, then its Open
        vector; both as 68k code when the program's OpenLibrary returns, and
        the result of Open is the OpenLibrary result. The caller's A6 is
-       kept. A later OpenLibrary calls only Open. */
+       kept. Check the actual version after init, before Open. An initialized
+       library remains reusable if the first version request is rejected.
+       A later OpenLibrary calls only Open. */
     {
-        ULONG t = M68KEmu_HeapAlloc(ctx, 28 + 16, 0), r = t + 28;
         static const UWORD first[] = {
             0x2f0e,                     /* move.l a6,-(sp) */
             0x4eb9, 0, 0,               /* jsr init */
             0x4a80,                     /* tst.l d0 */
-            0x670c,                     /* beq.s 1f */
+            0x6716,                     /* beq.s done */
             0x2c40,                     /* movea.l d0,a6 */
             0x203c, 0, 0,               /* move.l #version,d0 */
+            0xb06e, M68K_LIB_VERSION,    /* cmp.w lib_Version(a6),d0 */
+            0x6206,                     /* bhi.s reject (unsigned) */
             0x4eae, 0xfffa,             /* jsr -6(a6) */
-            0x2c5f,                     /* 1: movea.l (sp)+,a6 */
+            0x6002,                     /* bra.s done */
+            0x7000,                     /* reject: moveq #0,d0 */
+            0x2c5f,                     /* done: movea.l (sp)+,a6 */
             0x4e75 };                   /* rts */
         static const UWORD again[] = {
             0x2f0e,                     /* move.l a6,-(sp) */
             0x2c7c, 0, 0,               /* movea.l #base,a6 */
+            0xb06e, M68K_LIB_VERSION,    /* cmp.w lib_Version(a6),d0 */
+            0x6206,                     /* bhi.s reject (unsigned) */
             0x4eae, 0xfffa,             /* jsr -6(a6) */
-            0x2c5f,                     /* movea.l (sp)+,a6 */
+            0x6002,                     /* bra.s done */
+            0x7000,                     /* reject: moveq #0,d0 */
+            0x2c5f,                     /* done: movea.l (sp)+,a6 */
             0x4e75 };                   /* rts */
+        ULONG t = M68KEmu_HeapAlloc(ctx, sizeof(first) + sizeof(again), 0), r;
 
         if (!t)
             return 0;
-        for (ULONG i = 0; i < 14; i++)
+        r = t + sizeof(first);
+        for (ULONG i = 0; i < sizeof(first) / sizeof(first[0]); i++)
             m68k_write16(ctx, t + 2 * i, first[i]);
-        for (ULONG i = 0; i < 8; i++)
+        for (ULONG i = 0; i < sizeof(again) / sizeof(again[0]); i++)
             m68k_write16(ctx, r + 2 * i, again[i]);
         m68k_write32(ctx, t + 4, initFunc);
         m68k_write32(ctx, t + 16, version);

@@ -13,7 +13,10 @@ CUNITEXEDIR := $(AROS_TESTS)/cunit/net/socket
 
 CUNITSOCKETTESTFILES := \
     cunit-net-addr6 \
+    cunit-net-addrflags6 \
+    cunit-net-addrsig \
     cunit-net-arpqueue \
+    cunit-net-bindtodev6 \
     cunit-net-canforward \
     cunit-net-cmsg \
     cunit-net-dontwait \
@@ -24,10 +27,13 @@ CUNITSOCKETTESTFILES := \
     cunit-net-keepalive \
     cunit-net-localhost \
     cunit-net-mcast6 \
+    cunit-net-mcast6if \
     cunit-net-mld6 \
     cunit-net-naflags6 \
+    cunit-net-narouter6 \
     cunit-net-ndqueue6 \
     cunit-net-netdb \
+    cunit-net-nud6 \
     cunit-net-pmtu4 \
     cunit-net-pmtu6 \
     cunit-net-ports \

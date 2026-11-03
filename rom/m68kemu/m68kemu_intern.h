@@ -191,6 +191,9 @@ struct M68KEmuContext
     UWORD   num_notify;
     ULONG   cb_stack_top;       /* stack for 68k callbacks made with no 68k caller */
     APTR    emu_task;           /* the native task that runs the program */
+    struct Message *wb_startup; /* the Workbench startup message, until the program replies it */
+    BOOL    wb_queued;          /* ... queued at the program's port */
+    ULONG   wb_m68k, wb_args, wb_argsize;   /* ... in the program's layout, with its arguments */
     struct M68KClassRec { struct M68KEmuContext *ctx; ULONG m68k; struct IClass *native; ULONG body; char *id; } m68kclasses[32];
     UWORD   num_m68kclasses;    /* BOOPSI classes the program made */
     struct { APTR native; ULONG m68k; } tagorigin[8];   /* native copies of the program's tag lists in use */
@@ -281,6 +284,10 @@ extern "C" {
 #endif
 /* Native BPTR <-> 32-bit m68k handle, and the vector-table write diagnostic (m68kemu_memory.c) */
 ULONG m68k_bptr_out(struct M68KEmuContext *ctx, BPTR b);
+/* m68kemu_tasks.c: the Workbench startup message in the program's layout, its reply */
+ULONG m68k_wbstartup_in(struct M68KEmuContext *ctx, struct Message *msg);
+BOOL  m68k_wbstartup_reply(struct M68KEmuContext *ctx, ULONG mmsg);
+void  m68k_wbstartup_done(struct M68KEmuContext *ctx);
 /* m68kemu_boopsi.c */
 ULONG m68k_open_class_library(struct M68KEmuContext *ctx, const char *name, ULONG version);
 void  m68k_boopsi_cleanup(struct M68KEmuContext *ctx);

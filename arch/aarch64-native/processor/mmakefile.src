@@ -11,7 +11,7 @@ FILES := \
     processor_util \
     processor_frequency
 
-#MM- kernel-processor-raspi-aarch64 : includes
+#MM- kernel-processor-raspi-aarch64 : includes kernel-mbox-bcm2708-includes
 
 %build_archspecific mainmmake=kernel-processor modname=processor maindir=rom/processor \
     arch=raspi-aarch64 files=$(FILES)

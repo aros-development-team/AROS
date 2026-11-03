@@ -59,7 +59,7 @@ void in6_pcbdisconnect(struct inpcb *);
 void in6_setsockaddr(struct inpcb *, struct mbuf *);
 void in6_setpeeraddr(struct inpcb *, struct mbuf *);
 struct inpcb *in6_pcblookup(struct inpcbhead *, struct in6_addr *, u_int,
-	    struct in6_addr *, u_int);
+	    struct in6_addr *, u_int, const struct ifnet *);
 
 /* IPv6 output path (netinet6/ip6_output.c, netinet6/in6.c). */
 extern int  ip6_defhlim;		/* default IPv6 hop limit */

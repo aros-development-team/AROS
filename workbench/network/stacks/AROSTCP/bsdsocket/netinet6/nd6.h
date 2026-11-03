@@ -232,7 +232,7 @@ caddr_t nd6_ifptomac(struct ifnet *);
 /* --- nd6_nbr.c: Neighbor Solicitation / Advertisement + DAD --- */
 void nd6_ns_input(struct mbuf *, int, int);
 void nd6_ns_output(struct ifnet *, struct in6_addr *, struct in6_addr *,
-	struct llinfo_nd6 *, int);
+	const struct llinfo_nd6 *, int);
 void nd6_na_input(struct mbuf *, int, int);
 void nd6_na_output(struct ifnet *, struct in6_addr *, struct in6_addr *,
 	u_long, int, struct sockaddr *);
@@ -250,6 +250,7 @@ struct nd_defrouter *defrouter_lookup(struct in6_addr *, struct ifnet *);
 void defrouter_select(void);
 void defrouter_unreachable(struct in6_addr *, struct ifnet *);
 void defrouter_reachable(struct in6_addr *, struct ifnet *);
+void defrouter_notrouter(struct in6_addr *, struct ifnet *);
 void nd6_probe(struct ifnet *, struct in6_addr *);
 struct nd_prefix *nd6_prefix_lookup(struct sockaddr_in6 *, int, const struct ifnet *);
 void nd6_prefix_timer(void);

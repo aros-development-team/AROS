@@ -596,6 +596,36 @@ nd6_purge_routers(struct ifnet *ifp)
     }
 }
 
+/*
+ * defrouter_notrouter - addr on ifp says it is no longer a router (a
+ * Neighbor Advertisement with the Router flag clear): it leaves the default
+ * router list, and the routes through it go, as FreeBSD's defrouter_del()
+ * flushes them - the more-specific ones it advertised among them; another
+ * router takes their place (RFC 4861 section 7.2.5).
+ */
+void
+defrouter_notrouter(struct in6_addr *addr, struct ifnet *ifp)
+{
+    struct nd_defrouter *dr = defrouter_lookup(addr, ifp);
+    struct nd_route_info *ri;
+
+    if(dr != NULL) {
+        defrouter_del(dr);
+        defrouter_select();
+    }
+    for(ri = nd6_rtinfolist; ri; ) {
+        if(ri->ifp == ifp && IN6_ARE_ADDR_EQUAL(&ri->rtaddr, addr)) {
+            struct in6_addr prefix = ri->prefix;
+            int plen = ri->plen;
+
+            rtinfo_del(ri);
+            rtinfo_select(&prefix, plen);
+            ri = nd6_rtinfolist;
+        } else
+            ri = ri->next;
+    }
+}
+
 /* ==================================================================
  * Prefix List Management
  * ================================================================== */

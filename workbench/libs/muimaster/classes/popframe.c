@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2006, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -20,8 +20,56 @@
 #include "support.h"
 #include "support_classes.h"
 
+/****** Popframe.mui/MUIC_Popframe ************
+*
+*   NAME
+*       MUIC_Popframe
+*
+*   SUPERCLASS
+*       Framedisplay.mui
+*
+*   DESCRIPTION
+*       Display a draggable button preview and open a Frameadjust editor when
+*       Pressed becomes FALSE. Constructor defaults are ButtonFrame, inner
+*       spacing four, button background, RelVerify input mode and Draggable
+*       TRUE, followed by caller tags. Construction returns NULL on superclass
+*       failure. The preview specification is inherited from Framedisplay.
+*       MUIA_Window_Title is read only at construction as a borrowed popup-title
+*       pointer, default NULL. It must remain valid through future popup
+*       creation; no local title setter/getter is provided.
+*
+*   METHODS
+*       Opening lazily creates an activated subwindow below the object, adds it
+*       to the application and initializes the editor from the preview
+*       specification. An existing window is reused without resampling the
+*       preview. Internal Open returns one even on construction/open failure;
+*       failed opening of a created window invokes cancellation.
+*       OK copies the editor specification into the preview before removing and
+*       disposing the window. Cancel and window close requests discard edits.
+*       Notifications enqueue the private close method through
+*       Application_PushMethod. Hide only delegates: its local window-closing
+*       code is compiled out. DisconnectParent cancels an existing popup before
+*       superclass disconnection.
+*
+*   NOTES
+*       Use a live application and parent window. Keep this object alive through
+*       queued closes. The private Close assumes an existing popup, ignores
+*       getter/setter status and has no repeated-call guard or queue
+*       cancellation. Dispose directly disposes a remaining popup without first
+*       removing its application membership; normal disconnection should
+*       close/remove it first. Do not treat Hide or Dispose as a queue drain.
+*       The private window methods are not public API.
+*
+*/
+
 extern struct Library *MUIMasterBase;
 
+/*
+ * Construct Framedisplay with button defaults, borrow Window_Title and
+ * register release notification for private MUIM_Popframe_OpenWindow.
+ * Return object or zero on superclass failure. Title must survive future
+ * opens; notification registration status is ignored.
+ */
 IPTR Popframe__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Popframe_DATA *data;
@@ -53,6 +101,12 @@ IPTR Popframe__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
+/*
+ * Dispose remaining popup directly and clear wnd, then return superclass
+ * result. Requires queued callbacks finished and proper prior
+ * disconnection: this fallback does not remove application membership.
+ * Editor pointer is not separately cleared; do not retain child pointers.
+ */
 IPTR Popframe__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Popframe_DATA *data = INST_DATA(cl, obj);
@@ -65,6 +119,11 @@ IPTR Popframe__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
+/*
+ * Delegate to superclass and return its result. Local popup cleanup is
+ * inside #if 0 and does not execute. A popup can remain open while this
+ * preview is hidden; callback lifetimes remain required.
+ */
 IPTR Popframe__MUIM_Hide(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 #if 0
@@ -84,6 +143,13 @@ IPTR Popframe__MUIM_Hide(struct IClass *cl, Object *obj, struct opGet *msg)
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
+/*
+ * Private MUIM_Popframe_OpenWindow lazily constructs an application
+ * subwindow from current preview, registers queued Close callbacks and
+ * opens it. Return one even on failure; cancel if created window fails to
+ * open. Requires live parent/application/title and valid specification;
+ * existing window is reused.
+ */
 IPTR Popframe__MUIM_Popframe_OpenWindow(struct IClass *cl, Object *obj,
                                         Msg msg)
 {
@@ -153,6 +219,13 @@ IPTR Popframe__MUIM_Popframe_OpenWindow(struct IClass *cl, Object *obj,
     return 1;
 }
 
+/*
+ * Private MUIM_Popframe_CloseWindow closes popup, copies editor Spec to
+ * preview only for nonzero ok, removes/disposes window and clears
+ * window/editor pointers. Return one. Requires existing live
+ * popup/application; ignores transfer status and does not guard stale
+ * queued calls.
+ */
 IPTR Popframe__MUIM_Popframe_CloseWindow(
     struct IClass *cl, Object *obj, struct MUIP_Popframe_CloseWindow *msg)
 {
@@ -175,6 +248,11 @@ IPTR Popframe__MUIM_Popframe_CloseWindow(
     return 1;
 }
 
+/*
+ * Cancel an existing popup while application connection is valid, then
+ * return superclass disconnect result. Discards edits and removes/disposes
+ * the window; does not cancel already queued close callbacks.
+ */
 IPTR Popframe__MUIM_DisconnectParent(struct IClass *cl, Object *obj,
                                      struct MUIP_DisconnectParent *msg)
 {
@@ -186,6 +264,12 @@ IPTR Popframe__MUIM_DisconnectParent(struct IClass *cl, Object *obj,
 }
 
 #if ZUNE_BUILTIN_POPFRAME
+/*
+ * Dispatch local overrides and return their results, delegating other
+ * messages to superclass. Requires ABI-correct message and live object
+ * except construction. Resources and deferred callbacks follow the class
+ * lifecycle contract.
+ */
 BOOPSI_DISPATCHER(IPTR, Popframe_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID) {

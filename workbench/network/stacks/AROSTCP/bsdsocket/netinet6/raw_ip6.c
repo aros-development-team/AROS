@@ -242,6 +242,8 @@ rip6_input(void *args, ...)
             continue;
         if(rp->rp_proto != 0 && rp->rp_proto != nxt)
             continue;
+        if(inp->inp_flags & INP_BOUNDGONE)
+            continue;
         if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6) &&
                 !IN6_ARE_ADDR_EQUAL(&inp->inp_laddr6, &dst))
             continue;
@@ -422,6 +424,10 @@ rip6_send(struct inpcb *inp, struct mbuf *m, struct mbuf *nam,
         m_freem(control);
     if(error)
         goto bad;
+    if(inp->inp_flags & INP_BOUNDGONE) {
+        error = ENXIO;                  /* its interface went away */
+        goto bad;
+    }
 
     if(nam != NULL) {
         struct sockaddr_in6 *sin6;
@@ -523,6 +529,13 @@ bad:
     if(m)
         m_freem(m);
     return error;
+}
+
+/* Interface ifp is going away: no raw socket may go on naming it. */
+void
+rip6_ifgone(struct ifnet *ifp)
+{
+    in_pcbifgone(&rip6cb, ifp);
 }
 
 /* pr_output: rip6_output(m, so, nam, control) */

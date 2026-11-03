@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include "m68kemu_intern.h"
+#include "m68kemu_shadow.h"
 #include "m68kemu_thunks.h"
 #include "m68kemu_offsets.h"
 
@@ -610,6 +611,100 @@ ULONG m68k_msg_from_native(struct M68KEmuContext *ctx, struct Message *m)
     ctx->mem[mmsg + LN_TYPE] = c->type;
     FreeVec(c);
     return mmsg;
+}
+
+/* Workbench started the program: the startup message RunHunk took from the
+   process port, in the program's layout, locks and names in its memory */
+ULONG m68k_wbstartup_in(struct M68KEmuContext *ctx, struct Message *msg)
+{
+    struct WBStartup *wbs = (struct WBStartup *)msg;
+    const struct M68KStructLayout *layout = shadow_find_layout("WBStartup");
+    ULONG m = 0, args = 0, size, pos, proc, i, nargs = wbs->sm_NumArgs;
+
+    size = nargs * 8 + (wbs->sm_ToolWindow ? strlen(wbs->sm_ToolWindow) + 1 : 0);
+    for (i = 0; i < nargs; i++)
+        if (wbs->sm_ArgList[i].wa_Name)
+            size += strlen(wbs->sm_ArgList[i].wa_Name) + 1;
+    if (!layout || !(m = shadow_create(ctx, layout, wbs)) || (size && !(args = M68KEmu_HeapAlloc(ctx, size, 0))))
+    {
+        if (m)
+            shadow_destroy(ctx, layout, m);
+        ReplyMsg(msg);
+        ctx->wb_startup = NULL;
+        ctx->wb_queued = FALSE;
+        return 0;
+    }
+    pos = args + nargs * 8;
+    for (i = 0; i < nargs; i++)
+    {
+        STRPTR name = wbs->sm_ArgList[i].wa_Name;
+
+        m68k_write32(ctx, args + i * 8, m68k_bptr_out(ctx, wbs->sm_ArgList[i].wa_Lock));
+        m68k_write32(ctx, args + i * 8 + 4, name ? pos : 0);
+        if (name)
+        {
+            strcpy((char *)ctx->mem + pos, name);
+            pos += strlen(name) + 1;
+        }
+    }
+    proc = m68k_process_of(ctx, FindTask(NULL));
+    m68k_write32(ctx, m + 10, 0);                                   /* ln_Name */
+    m68k_write32(ctx, m + 14, 0);                                   /* mn_ReplyPort */
+    m68k_write32(ctx, m + 20, proc ? proc + M68K_PR_MSGPORT : 0);   /* sm_Process */
+    m68k_write32(ctx, m + 24, m68k_bptr_out(ctx, wbs->sm_Segment));
+    m68k_write32(ctx, m + 28, nargs);
+    m68k_write32(ctx, m + 32, 0);
+    if (wbs->sm_ToolWindow)
+    {
+        strcpy((char *)ctx->mem + pos, wbs->sm_ToolWindow);
+        m68k_write32(ctx, m + 32, pos);
+    }
+    m68k_write32(ctx, m + 36, nargs ? args : 0);
+    ctx->wb_queued = FALSE;
+    ctx->wb_m68k = m;
+    ctx->wb_args = args;
+    ctx->wb_argsize = size;
+    return m;
+}
+
+static void wbstartup_forget(struct M68KEmuContext *ctx)
+{
+    if (ctx->wb_m68k)
+        shadow_destroy(ctx, shadow_find_layout("WBStartup"), ctx->wb_m68k);
+    if (ctx->wb_args)
+        M68KEmu_HeapFree(ctx, ctx->wb_args, ctx->wb_argsize);
+    ctx->wb_startup = NULL;
+    ctx->wb_queued = FALSE;
+    ctx->wb_m68k = ctx->wb_args = ctx->wb_argsize = 0;
+}
+
+/* ReplyMsg of the startup message: Workbench gets its own message back */
+BOOL m68k_wbstartup_reply(struct M68KEmuContext *ctx, ULONG mmsg)
+{
+    struct Message *msg = ctx->wb_startup;
+
+    if (!msg || !ctx->wb_m68k || mmsg != ctx->wb_m68k)
+        return FALSE;
+    wbstartup_forget(ctx);
+    ReplyMsg(msg);
+    return TRUE;
+}
+
+/* the program ended with the startup message untaken or unreplied */
+void m68k_wbstartup_done(struct M68KEmuContext *ctx)
+{
+    struct Message *msg = ctx->wb_startup;
+
+    if (!msg)
+        return;
+    if (ctx->wb_queued)
+    {
+        Forbid();
+        Remove(&msg->mn_Node);
+        Permit();
+    }
+    wbstartup_forget(ctx);
+    ReplyMsg(msg);
 }
 
 /* ReplyMsg of a message in the program's memory */

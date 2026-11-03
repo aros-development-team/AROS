@@ -173,7 +173,8 @@ static IPTR open_library(struct M68KEmuContext *ctx, void *cpu, UWORD version)
     if (!name) return 0;
 
     ULONG base = M68KEmu_OpenLibrary(ctx, name);
-    if (base) return (IPTR)base;
+    if (base)
+        return m68k_read16(ctx, base + M68K_LIB_VERSION) >= version ? (IPTR)base : 0;
 
     /* a native BOOPSI class library */
     base = m68k_open_class_library(ctx, name, version);
@@ -1268,6 +1269,8 @@ static IPTR thunk_exec_GetMsg(struct M68KEmuContext *ctx, void *cpu)
     if (!imsg) return 0;
     if ((mmsg = m68k_msg_from_native(ctx, &imsg->ExecMessage)))
         return mmsg;
+    if (ctx->wb_startup && &imsg->ExecMessage == ctx->wb_startup)
+        return m68k_wbstartup_in(ctx, &imsg->ExecMessage);
     {
         struct NotifyMessage *nm = (struct NotifyMessage *)imsg;
         if (nm->nm_Class == NOTIFY_CLASS && nm->nm_Code == NOTIFY_CODE)
@@ -1329,8 +1332,11 @@ static IPTR thunk_exec_ReplyMsg(struct M68KEmuContext *ctx, void *cpu)
     ULONG m_msg = THUNK_A(1);
     const struct M68KStructLayout *nml = shadow_find_layout("NotifyMessage");
     BOOL notify = FALSE;
-    struct Message *msg = (struct Message *)shadow_lookup(ctx, m_msg);
+    struct Message *msg;
 
+    if (m68k_wbstartup_reply(ctx, m_msg))
+        return 0;
+    msg = (struct Message *)shadow_lookup(ctx, m_msg);
     for (UWORD i = 0; nml && i < ctx->num_shadows; i++)
         if (ctx->shadow_map[i].m68k_addr == m_msg && ctx->shadow_map[i].type == nml->shadow_type)
             notify = TRUE;

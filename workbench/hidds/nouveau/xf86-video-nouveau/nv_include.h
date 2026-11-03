@@ -19,8 +19,9 @@
 #define xf86ScreenToScrn(x)         (x)
 #define NVPtr                       struct CardData *
 #define PixmapPtr                   struct HIDDNouveauBitMapData *
-#define xf86DrvMsg(a, b, fmt, ...)  bug(fmt, ##__VA_ARGS__)
-#define ErrorF(msg, ...)            bug(msg, ##__VA_ARGS__)
+/* into the driver log: an acceleration setup failure must say which step failed */
+#define xf86DrvMsg(a, b, fmt, ...)  nvlog("[Nouveau] " fmt, ##__VA_ARGS__)
+#define ErrorF(msg, ...)            nvlog("[Nouveau] " msg, ##__VA_ARGS__)
 #define PictFormatShort             LONG
 #define PictTransformPtr            APTR
 #define Pixel                       HIDDT_Pixel

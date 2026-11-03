@@ -1920,7 +1920,7 @@
 \ No newline at end of file
 --- ./xf86-video-nouveau-1.0.18/nv_include.h
 +++ ./xf86-video-nouveau/nv_include.h
-@@ -1,73 +1,214 @@
+@@ -1,73 +1,215 @@
  #ifndef __NV_INCLUDE_H__
  #define __NV_INCLUDE_H__
 -
@@ -1976,8 +1976,9 @@
 +#define xf86ScreenToScrn(x)         (x)
 +#define NVPtr                       struct CardData *
 +#define PixmapPtr                   struct HIDDNouveauBitMapData *
-+#define xf86DrvMsg(a, b, fmt, ...)  bug(fmt, ##__VA_ARGS__)
-+#define ErrorF(msg, ...)            bug(msg, ##__VA_ARGS__)
++/* into the driver log: an acceleration setup failure must say which step failed */
++#define xf86DrvMsg(a, b, fmt, ...)  nvlog("[Nouveau] " fmt, ##__VA_ARGS__)
++#define ErrorF(msg, ...)            nvlog("[Nouveau] " msg, ##__VA_ARGS__)
 +#define PictFormatShort             LONG
 +#define PictTransformPtr            APTR
 +#define Pixel                       HIDDT_Pixel

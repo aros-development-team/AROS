@@ -558,12 +558,12 @@ static BOOL defer_remember(const char *name, const char *line, ULONG length)
  *
  * The DNS=/DNS6= tokens on an interface line give that interface's DNS
  * servers.  They are registered as dynamic nameservers tagged with the owning
- * interface (nsn_Owner), so the resolver picks them up (res_init merges
+ * interface (nsn_OwnerIndex), so the resolver picks them up (res_init merges
  * DynDB.dyn_NameServers) and they can be dropped again when the interface goes
  * away.  A server may be given as an IPv4 or an IPv6 literal (either token may
  * carry either family); the node is tagged with nsn_Family accordingly.
  */
-static void ifdns_remove_locked(struct ifnet *ifp, BOOL learned_too)
+static void ifdns_remove_locked(ULONG index, BOOL learned_too)
 {
     struct MinNode *node, *next;
 
@@ -571,7 +571,7 @@ static void ifdns_remove_locked(struct ifnet *ifp, BOOL learned_too)
         struct NameserventNode *nsn = (struct NameserventNode *)node;
 
         next = node->mln_Succ;
-        if(nsn->nsn_Owner == ifp && (learned_too || nsn->nsn_Expire == 0)) {
+        if(nsn->nsn_OwnerIndex == index && (learned_too || nsn->nsn_Expire == 0)) {
             Remove((struct Node *)node);
             bsd_free(node, M_NETDB);
         }
@@ -580,14 +580,14 @@ static void ifdns_remove_locked(struct ifnet *ifp, BOOL learned_too)
         return;
     for(node = DynDB.dyn_Domains.mlh_Head; node->mln_Succ; node = next) {
         next = node->mln_Succ;
-        if(((struct DomainentNode *)node)->dn_Owner == ifp) {
+        if(((struct DomainentNode *)node)->dn_OwnerIndex == index) {
             Remove((struct Node *)node);
             bsd_free(node, M_NETDB);
         }
     }
 }
 
-static int ifdns_add_csv_locked(struct ifnet *ifp, const UBYTE *csv)
+static int ifdns_add_csv_locked(ULONG index, const UBYTE *csv)
 {
     const UBYTE *p = csv;
     char buf[64];       /* one server address string (IPv4 or IPv6 literal) */
@@ -625,7 +625,7 @@ static int ifdns_add_csv_locked(struct ifnet *ifp, const UBYTE *csv)
                 }
             }
             if(nsn) {
-                nsn->nsn_Owner = ifp;
+                nsn->nsn_OwnerIndex = index;
                 nsn->nsn_Expire = 0;
                 AddTail((struct List *)&DynDB.dyn_NameServers,
                         (struct Node *)nsn);
@@ -639,18 +639,142 @@ static int ifdns_add_csv_locked(struct ifnet *ifp, const UBYTE *csv)
     return added;
 }
 
+/*
+ * The stack task does not wait for DynDB.dyn_Lock: an application holds it
+ * from ClearDynNameServ()/ClearDynDomain() to EndDynNameServ()/EndDynDomain()
+ * (miami.library) for as long as it likes, and the stack would stand still
+ * meanwhile. What the stack task must change without it - an interface's
+ * DNS= servers set, its entries dropped as it goes down or away, everything
+ * flushed for a reload - is queued, copied, and applied in order by whoever
+ * holds the lock next, before any change of its own (ndb_ops_locked()):
+ * the holder's own later calls, or ndb_ra_timer() within a tick of the
+ * lock being free. Entries name their interface by index, which is never
+ * reused, so those of an interface already gone cannot dangle meanwhile.
+ * Changes learned from Router Advertisements are not queued: the next
+ * advertisement repeats them.
+ */
+#define NDB_OP_SET      1       /* an interface's DNS= servers */
+#define NDB_OP_CLEAR    2       /* all of an interface's entries */
+#define NDB_OP_FLUSH    3       /* every dynamic entry */
+
+struct ndb_op {
+    struct MinNode node;
+    UBYTE  op;
+    ULONG  index;
+    char  *v4, *v6;             /* NDB_OP_SET: copies, in the node */
+};
+
+static struct MinList ndb_ops;  /* NewList()ed by init_netdb() */
+
+/* Without the lock, the stack task queues; any other task may wait. */
+static BOOL ndb_lock(void)
+{
+    extern struct Task *AROSTCP_Task;
+
+    if(FindTask(NULL) != AROSTCP_Task) {
+        ObtainSemaphore(&DynDB.dyn_Lock);
+        return TRUE;
+    }
+    return AttemptSemaphore(&DynDB.dyn_Lock);
+}
+
+static void ndb_flush_locked(void)
+{
+    struct MinNode *node, *nnode;
+
+    for(node = DynDB.dyn_NameServers.mlh_Head; node->mln_Succ; node = nnode) {
+        nnode = node->mln_Succ;
+        bsd_free(node, NULL);
+    }
+    NewList((struct List *)&DynDB.dyn_NameServers);
+    for(node = DynDB.dyn_Domains.mlh_Head; node->mln_Succ; node = nnode) {
+        nnode = node->mln_Succ;
+        bsd_free(node, NULL);
+    }
+    NewList((struct List *)&DynDB.dyn_Domains);
+}
+
+/* With the lock: an interface's DNS= servers, replacing the earlier ones. */
+static int ndb_set_locked(ULONG index, const UBYTE *v4csv, const UBYTE *v6csv)
+{
+    int added = 0;
+
+    ifdns_remove_locked(index, FALSE);
+    if(v4csv && *v4csv)
+        added += ifdns_add_csv_locked(index, v4csv);
+    if(v6csv && *v6csv)
+        added += ifdns_add_csv_locked(index, v6csv);
+    return added;
+}
+
+/* Queue op; FALSE if there is no memory for it. */
+static BOOL ndb_queue(UBYTE op, ULONG index, const UBYTE *v4, const UBYTE *v6)
+{
+    size_t l4 = v4 ? strnlen((const char *)v4, CONFIGLINELEN) + 1 : 0;
+    size_t l6 = v6 ? strnlen((const char *)v6, CONFIGLINELEN) + 1 : 0;
+    struct ndb_op *o = bsd_malloc(sizeof(*o) + l4 + l6, M_NETDB, M_WAITOK);
+
+    if(o == NULL)
+        return FALSE;
+    o->op = op;
+    o->index = index;
+    o->v4 = o->v6 = NULL;
+    if(l4) {
+        o->v4 = (char *)(o + 1);
+        memcpy(o->v4, v4, l4 - 1);
+        o->v4[l4 - 1] = '\0';
+    }
+    if(l6) {
+        o->v6 = (char *)(o + 1) + l4;
+        memcpy(o->v6, v6, l6 - 1);
+        o->v6[l6 - 1] = '\0';
+    }
+    Forbid();
+    AddTail((struct List *)&ndb_ops, (struct Node *)o);
+    Permit();
+    return TRUE;
+}
+
+/* Apply what the stack task queued, in order. Call with the lock held,
+ * before changing anything. Whether there was anything. */
+int ndb_ops_locked(void)
+{
+    struct ndb_op *o;
+    int n = 0;
+
+    for(;;) {
+        Forbid();
+        o = (struct ndb_op *)RemHead((struct List *)&ndb_ops);
+        Permit();
+        if(o == NULL)
+            break;
+        if(o->op == NDB_OP_FLUSH)
+            ndb_flush_locked();
+        else if(o->op == NDB_OP_CLEAR)
+            ifdns_remove_locked(o->index, TRUE);
+        else
+            ndb_set_locked(o->index, (UBYTE *)o->v4, (UBYTE *)o->v6);
+        bsd_free(o, M_NETDB);
+        n++;
+    }
+    if(n)
+        ndb_Serial++;
+    return n;
+}
+
 /* Replace interface ifp's per-interface DNS servers with those in the two
  * comma-separated lists (either may be NULL/empty). */
 void ifnet_set_dns(struct ifnet *ifp, const UBYTE *v4csv, const UBYTE *v6csv)
 {
-    int added = 0;
+    int added;
 
-    ObtainSemaphore(&DynDB.dyn_Lock);
-    ifdns_remove_locked(ifp, FALSE);
-    if(v4csv && *v4csv)
-        added += ifdns_add_csv_locked(ifp, v4csv);
-    if(v6csv && *v6csv)
-        added += ifdns_add_csv_locked(ifp, v6csv);
+    if(!ndb_lock()) {
+        if(ndb_queue(NDB_OP_SET, ifp->if_index, v4csv, v6csv))
+            return;
+        ObtainSemaphore(&DynDB.dyn_Lock);   /* no memory to queue it: wait */
+    }
+    ndb_ops_locked();
+    added = ndb_set_locked(ifp->if_index, v4csv, v6csv);
     ReleaseSemaphore(&DynDB.dyn_Lock);
     ndb_Serial++;       /* make the resolver refresh its nameserver list */
 
@@ -660,11 +784,17 @@ void ifnet_set_dns(struct ifnet *ifp, const UBYTE *v4csv, const UBYTE *v6csv)
 }
 
 /* Drop all of ifp's DNS servers and search domains, those from its DNS=
- * tokens and those learned from Router Advertisements (interface going down). */
+ * tokens and those learned from Router Advertisements (interface going down
+ * or away). */
 void ifnet_clear_dns(struct ifnet *ifp)
 {
-    ObtainSemaphore(&DynDB.dyn_Lock);
-    ifdns_remove_locked(ifp, TRUE);
+    if(!ndb_lock()) {
+        if(ndb_queue(NDB_OP_CLEAR, ifp->if_index, NULL, NULL))
+            return;
+        ObtainSemaphore(&DynDB.dyn_Lock);
+    }
+    ndb_ops_locked();
+    ifdns_remove_locked(ifp->if_index, TRUE);
     ReleaseSemaphore(&DynDB.dyn_Lock);
     ndb_Serial++;
 }
@@ -716,10 +846,11 @@ void ndb_ra_server(struct ifnet *ifp, const struct in6_addr *addr, ULONG lifetim
 
     if(!AttemptSemaphore(&DynDB.dyn_Lock))
         return;             /* the next advertisement gives it again */
+    ndb_ops_locked();
     for(nsn = (struct NameserventNode *)DynDB.dyn_NameServers.mlh_Head;
             nsn->nsn_Node.mln_Succ;
             nsn = (struct NameserventNode *)nsn->nsn_Node.mln_Succ) {
-        if(nsn->nsn_Owner != ifp || nsn->nsn_Expire == 0)
+        if(nsn->nsn_OwnerIndex != (ULONG)ifp->if_index || nsn->nsn_Expire == 0)
             continue;
         if(IN6_ARE_ADDR_EQUAL(&nsn->nsn_Addr6, addr))
             found = nsn;
@@ -740,7 +871,7 @@ void ndb_ra_server(struct ifnet *ifp, const struct in6_addr *addr, ULONG lifetim
             found->nsn_EntSize = sizeof(found->nsn_Ent);
             found->nsn_Family = AF_INET6;
             found->nsn_Ent.ns_addr.s_addr = 0;
-            found->nsn_Owner = ifp;
+            found->nsn_OwnerIndex = ifp->if_index;
             AddTail((struct List *)&DynDB.dyn_NameServers, (struct Node *)found);
         }
         if(found != NULL) {
@@ -762,10 +893,11 @@ void ndb_ra_domain(struct ifnet *ifp, const char *name, ULONG lifetime)
 
     if(!AttemptSemaphore(&DynDB.dyn_Lock))
         return;             /* the next advertisement gives it again */
+    ndb_ops_locked();
     for(dn = (struct DomainentNode *)DynDB.dyn_Domains.mlh_Head;
             dn->dn_Node.mln_Succ;
             dn = (struct DomainentNode *)dn->dn_Node.mln_Succ) {
-        if(dn->dn_Owner != ifp || dn->dn_Expire == 0)
+        if(dn->dn_OwnerIndex != (ULONG)ifp->if_index || dn->dn_Expire == 0)
             continue;
         if(strcasecmp(dn->dn_Ent.d_name, name) == 0)
             found = dn;
@@ -789,7 +921,7 @@ void ndb_ra_domain(struct ifnet *ifp, const char *name, ULONG lifetime)
             dn->dn_Ent.d_name = (char *)(dn + 1);
             memcpy(dn + 1, name, len - 1);
             dn->dn_Ent.d_name[len - 1] = '\0';
-            dn->dn_Owner = ifp;
+            dn->dn_OwnerIndex = ifp->if_index;
             dn->dn_Expire = ndb_ra_end(lifetime);
             AddTail((struct List *)&DynDB.dyn_Domains, (struct Node *)dn);
             changed = 1;
@@ -810,6 +942,7 @@ void ndb_ra_timer(void)
 
     if(!AttemptSemaphore(&DynDB.dyn_Lock))
         return;
+    ndb_ops_locked();
     for(node = DynDB.dyn_NameServers.mlh_Head; node->mln_Succ; node = next) {
         ULONG end = ((struct NameserventNode *)node)->nsn_Expire;
 
@@ -1486,6 +1619,8 @@ addnameservent(struct NetDataBase *ndb,
     UBYTE Buffer[KEYWORDLEN];
     LONG  BufLen = sizeof(Buffer);
     struct in_addr ns_addr;
+    struct in6_addr ns_addr6;
+    int family = AF_INET;
     struct NameserventNode *nsn;
 
 #if defined(__AROS__)
@@ -1504,12 +1639,22 @@ addnameservent(struct NetDataBase *ndb,
         *errstrp = ERR_SYNTAX;
         return RETURN_WARN;
     }
+    /*
+     * An IPv4 or an IPv6 address. A link-local IPv6 server needs a zone,
+     * which a NAMESERVER line has no room for: it goes with its interface
+     * (DNS6=, or learned from a Router Advertisement) instead.
+     */
     if(!__inet_aton(Buffer, &ns_addr)) {
+        if(!inet6_aton(Buffer, &ns_addr6) || IN6_IS_ADDR_LINKLOCAL(&ns_addr6) ||
+                IN6_IS_ADDR_UNSPECIFIED(&ns_addr6) || IN6_IS_ADDR_MULTICAST(&ns_addr6)) {
 #if defined(__AROS__)
-        D(bug("[AROSTCP](amiga_netdb.c) addnameservent: error with address\n"));
+            D(bug("[AROSTCP](amiga_netdb.c) addnameservent: error with address\n"));
 #endif
-        *errstrp = ERR_VALUE;
-        return RETURN_WARN;
+            *errstrp = ERR_VALUE;
+            return RETURN_WARN;
+        }
+        family = AF_INET6;
+        ns_addr.s_addr = 0;
     }
     if((nsn = bsd_malloc(sizeof(*nsn), M_NETDB, M_WAITOK)) == NULL) {
 #if defined(__AROS__)
@@ -1519,9 +1664,11 @@ addnameservent(struct NetDataBase *ndb,
         return RETURN_FAIL;
     }
     nsn->nsn_EntSize = sizeof(nsn->nsn_Ent);
-    nsn->nsn_Family = AF_INET;
+    nsn->nsn_Family = family;
     nsn->nsn_Ent.ns_addr.s_addr = ns_addr.s_addr;
-    nsn->nsn_Owner = NULL;
+    if(family == AF_INET6)
+        nsn->nsn_Addr6 = ns_addr6;
+    nsn->nsn_OwnerIndex = 0;
     nsn->nsn_Expire = 0;
 
     /* TODO: NicJA - Where does CHECK_POINTER() Come from? */
@@ -1568,7 +1715,7 @@ adddomainent(struct NetDataBase *ndb,
     }
     dn->dn_EntSize = nodesize - sizeof(struct GenentNode);
     dn->dn_Ent.d_name = (char *)(dn + 1);
-    dn->dn_Owner = NULL;
+    dn->dn_OwnerIndex = 0;
     dn->dn_Expire = 0;
 
     memcpy((char *)(dn + 1), Buffer, nodesize - sizeof(*dn));
@@ -1976,6 +2123,7 @@ init_netdb(void)
     InitSemaphore(&DynDB.dyn_Lock);
     NewList((struct List *)&DynDB.dyn_NameServers);
     NewList((struct List *)&DynDB.dyn_Domains);
+    NewList((struct List *)&ndb_ops);
     ndb_Serial = 0;
 
     /* Allocate the NetDataBase */
@@ -2112,23 +2260,17 @@ LONG reset_netdb(struct CSource *cs,
  */
 void dyndb_flush(void)
 {
-    struct MinNode *node, *nnode;
-
 #if defined(__AROS__)
     D(bug("[AROSTCP](amiga_netdb.c) dyndb_flush()\n"));
 #endif
 
-    ObtainSemaphore(&DynDB.dyn_Lock);
-    for(node = DynDB.dyn_NameServers.mlh_Head; node->mln_Succ; node = nnode) {
-        nnode = node->mln_Succ;
-        bsd_free(node, NULL);
+    if(!ndb_lock()) {
+        if(ndb_queue(NDB_OP_FLUSH, 0, NULL, NULL))
+            return;
+        ObtainSemaphore(&DynDB.dyn_Lock);
     }
-    NewList((struct List *)&DynDB.dyn_NameServers);
-    for(node = DynDB.dyn_Domains.mlh_Head; node->mln_Succ; node = nnode) {
-        nnode = node->mln_Succ;
-        bsd_free(node, NULL);
-    }
-    NewList((struct List *)&DynDB.dyn_Domains);
+    ndb_ops_locked();
+    ndb_flush_locked();
     ReleaseSemaphore(&DynDB.dyn_Lock);
     ndb_Serial++;
 }
