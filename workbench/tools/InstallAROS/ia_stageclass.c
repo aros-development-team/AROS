@@ -1684,6 +1684,7 @@ IPTR InstallStage__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
     SET(data->proceed, MUIA_Disabled, FALSE);
 
     /* STEP : CREATE ENVIRONMENT VARIABLES THAT POINT TO INSTALLATION LOCATIONS */
+    if (data->inst_success == MUIV_Inst_InProgress)
     {
         TEXT varval[255];
         IPTR optcheck = 0;
@@ -1710,7 +1711,8 @@ IPTR InstallStage__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
     }
 
     /* STEP : EXECUTE EXTERNAL POST-INSTALL SCRIPT */
-    if ((BOOL) XGET(data->instc_options_main->opt_copycore, MUIA_Selected))
+    if (data->inst_success == MUIV_Inst_InProgress &&
+        (BOOL) XGET(data->instc_options_main->opt_copycore, MUIA_Selected))
     {
         BPTR scriptfile = Open(POST_INSTALL_SCRIPT, MODE_OLDFILE);
         if (scriptfile)
@@ -1813,7 +1815,7 @@ IPTR InstallStage__MUIM_Format(Class * CLASS, Object * self, Msg message)
     char vol_nametmp[100];
     char fmt_nametmp[100];
     char *name_tmp = NULL;
-    BOOL success = FALSE;
+    BOOL success;
     IPTR option = FALSE;
     BPTR lock = BNULL;
     char tmp[100];
@@ -1843,9 +1845,13 @@ IPTR InstallStage__MUIM_Format(Class * CLASS, Object * self, Msg message)
             FormatPartition(dev_nametmp, vol_nametmp, ID_INTER_FFS_DISK);
         LOG_Printf("format %s as '%s': %s", dev_nametmp, vol_nametmp,
             success ? "ok" : "FAILED");
+        if (!success)
+        {
+            data->inst_success = MUIV_Inst_Failed;
+            return FALSE;
+        }
 
-        if (success)
-            set(data->gauge2, MUIA_Gauge_Current, 100);
+        set(data->gauge2, MUIA_Gauge_Current, 100);
     }
 
     OPTOGET(optObjCheckWork, MUIA_Selected, &option);
@@ -1874,27 +1880,28 @@ IPTR InstallStage__MUIM_Format(Class * CLASS, Object * self, Msg message)
             FormatPartition(dev_nametmp, vol_nametmp, ID_INTER_FFS_DISK);
         LOG_Printf("format %s as '%s': %s", dev_nametmp, vol_nametmp,
             success ? "ok" : "FAILED");
-
-        if (success)
+        if (!success)
         {
-            SET(data->gauge2, MUIA_Gauge_Current, 100);
-            lock = Lock((CONST_STRPTR)dev_nametmp, SHARED_LOCK);      /* check the dest dir exists */
-            if (lock == BNULL)
-            {
-                bug("[InstallAROS:Stage] (Warning) FORMAT: Failed for chosen work partition '%s' : defaulting to sys only\n", dev_nametmp);
-                extras_path = dest_Path;
-            }
-            else
-            {
-                UnLock(lock);
-                lock = BNULL;
-            }
+            data->inst_success = MUIV_Inst_Failed;
+            return FALSE;
+        }
+
+        SET(data->gauge2, MUIA_Gauge_Current, 100);
+        lock = Lock((CONST_STRPTR)dev_nametmp, SHARED_LOCK);      /* check the dest dir exists */
+        if (lock == BNULL)
+        {
+            bug("[InstallAROS:Stage] (Warning) FORMAT: Failed for chosen work partition '%s' : defaulting to sys only\n", dev_nametmp);
+            extras_path = dest_Path;
+        }
+        else
+        {
+            UnLock(lock);
+            lock = BNULL;
         }
     }
-    if (success)
-        SET(data->gauge2, MUIA_Gauge_Current, 100);
+    SET(data->gauge2, MUIA_Gauge_Current, 100);
 
-    return success;
+    return TRUE;
 }
 
 IPTR InstallStage__MUIM_IC_CopyFile
