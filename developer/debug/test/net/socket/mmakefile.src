@@ -44,6 +44,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-resolver \
     cunit-net-rio6 \
     cunit-net-route6 \
+    cunit-net-sblock \
     cunit-net-scope6 \
     cunit-net-sendto6 \
     cunit-net-slaaclife \

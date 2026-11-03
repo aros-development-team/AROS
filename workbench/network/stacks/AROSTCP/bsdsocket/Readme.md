@@ -67,6 +67,8 @@ socket-layer entry points (`sobind`, `soconnect`, `sosend`, `soreceive`, …), w
 to the protocol via `so->so_proto->pr_usrreq(so, PRU_*, …)`.
 A send or receive that would block returns `EWOULDBLOCK` when the socket is non-blocking
 (`FIONBIO`, `SS_NBIO`) or the call has `MSG_DONTWAIT`, which applies to that call only.
+That holds as well for a socket buffer held by another task's call on a shared socket - a receive
+with `MSG_WAITALL` sleeps holding it - as FreeBSD's `SBLOCKWAIT()`; a blocking call waits for it.
 
 Name lookup (`gethostnamadr.c`) is what `gethostbyname()`, `gethostbyname_r()`, Miami's
 `gethostbyname2()` and both `getaddrinfo()`s (Roadshow's and Miami's) share. An address literal is
@@ -249,13 +251,22 @@ exhaust socket/accept-queue resources.
 
 The SYN cache is fully dual-stack (see §6).
 
+The ISN (RFC 6528), the cookies, the cache's buckets and the timestamp offsets (§5.3) come from one
+keyed hash of the connection, `tcp_conn_hash()` (`tcp_subr.c`): SipHash-2-4 over both addresses -
+the whole 128 bits for IPv6 - both ports, a word of the caller's (the cookie's counter) and a byte
+for the use, so that no two uses give the same value. RFC 6528 asks for a function that cannot be
+computed without the key; Linux uses SipHash for the same values.
+
 ### 5.3 Timers
 
 `tcp_timer.c` runs the fast (200 ms) and slow (500 ms) timers driven from the daemon: retransmit
 (with exponential backoff), persist, keepalive, 2MSL/TIME-WAIT, and delayed-ACK. `tcp_slowtimo`
 also expires SYN-cache entries, and advances the ISS clock (`tcp_iss`, RFC 6528) and `tcp_now`
 every tick, whether or not there are connections: `tcp_now` is the timestamp clock (RFC 7323)
-and paces the IPv4 ICMP error rate limit (§7). Each connection's timers are counted down every tick, and its idle,
+and paces the IPv4 ICMP error rate limit (§7). A connection's TSval is `tcp_now` plus an offset of
+its own (`t_ts_offset`, RFC 7323 section 5.4), a keyed hash of its addresses and ports with a key
+that is not the ISN's, so that a TSval tells neither the time since the stack started nor how two
+connections relate; the SYN cache keeps it (`sc_tsoff`) for the connection it makes. Each connection's timers are counted down every tick, and its idle,
 duration and RTT clocks advanced; `tcp_timers()` hands the connection back, or NULL once a timer
 has closed it.
 
@@ -299,6 +310,17 @@ TIME-WAIT) is off by default too: RFC 6247 moved it to Historic, as it lets a SY
 CC skip the three-way handshake. It is still in the source, and `tcp_do_rfc1644` (sysctl
 `net.inet.tcp.rfc1644`) turns it back on.
 
+### 5.5 Resets, SYNs and ACKs out of place
+
+A connection checks the segments that could end it or put data in it (RFC 5961, as FreeBSD and
+Linux). A reset outside the receive window is dropped, and so is one before it, which the 4.4BSD
+code took for one in it. Only a reset at exactly the next expected sequence number ends the
+connection; any other in the window gets a challenge ACK, which a peer that has lost the
+connection answers with a reset at that number. A SYN on a synchronized connection gets a
+challenge ACK too, not a reset, and so does a segment whose ACK is older than SND.UNA by more than
+the peer's largest window (section 5.2), whose data is dropped. Challenge ACKs are limited to 5 a
+second on each connection (section 7), not for all of them together.
+
 ---
 
 ## 6. Dual-stack IPv6 (TCP6 / UDP6)
@@ -334,9 +356,9 @@ overlay), so header building and the state machine are shared; only the family e
   `struct sc_key` (via `syncache_key`) abstracts the family for hash/lookup/fill.
   `syncache_respond` builds the v6 SYN-ACK via `tcp_v6output`. `syncache_socket` sets the v6
   four-tuple directly (`inp_laddr6`/`faddr6`/`lport`/`fport`) — v6 PCBs are found by a linear scan
-  of `tcb`, so there is no `in_pcbrehash`/`in_pcbconnect`. SYN cookies fold the 128-bit addresses to
-  32 bits (`syncache_v6fold`) for the v4-shaped cookie hash (consistent because those addresses are
-  also present on the return ACK). `syncache_add`/`expand`/`chkrst` take `(isipv6, src6, dst6)`.
+  of `tcb`, so there is no `in_pcbrehash`/`in_pcbconnect`. The cookie, the ISN and the bucket hash
+  take the whole 128-bit addresses (`tcp_conn_hash()`, §5.2). `syncache_add`/`expand`/`chkrst` take
+  `(isipv6, src6, dst6)`.
 - **Source address selection.** `in6_pcbconnect` selects a source via `rtalloc()` +
   `in6_ifawithifp()` (mirroring `udp6_output`); an unbound socket must not connect from the
   unspecified address (`::`), which `ip6_input` discards on receipt (RFC 4291 scope).
