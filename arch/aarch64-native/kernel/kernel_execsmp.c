@@ -30,7 +30,7 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase, cpuid_t cpunum)
     struct ExceptionContext *bsctx;
     struct MemList *ml;
 #define bstask          ((struct Task *)(ml->ml_ME[0].me_Addr))
-#define bstaskmlsize    (sizeof(struct MemList) + sizeof(struct MemEntry))
+#define bstaskmlsize    (sizeof(struct MemList) + 2 * sizeof(struct MemEntry))
 
     /* Build bootstraps memory list */
     if ((ml = AllocMem(bstaskmlsize, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
@@ -39,7 +39,7 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase, cpuid_t cpunum)
         return NULL;
     }
 
-    ml->ml_NumEntries      = 2;
+    ml->ml_NumEntries      = 3;
 
     ml->ml_ME[0].me_Length = sizeof(struct Task);
     if ((ml->ml_ME[0].me_Addr = AllocMem(sizeof(struct Task),    MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
@@ -81,13 +81,18 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase, cpuid_t cpunum)
     D(bug("[Kernel:%02d] CPU Ctx @ 0x%p\n", cpunum, bsctx));
 
 
-    if ((bstask->tc_Node.ln_Name = AllocVec(20, MEMF_CLEAR)) != NULL)
+    /* The name goes with the task, in its MemEntry list */
+    ml->ml_ME[2].me_Length = 20;
+    if ((ml->ml_ME[2].me_Addr = AllocMem(20, MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
     {
+        bstask->tc_Node.ln_Name = ml->ml_ME[2].me_Addr;
         sprintf(bstask->tc_Node.ln_Name, "CPU #%02d Bootstrap", cpunum);
     }
     bstask->tc_Node.ln_Type = NT_TASK;
-    /* Below the per-core idle task at -127: this only provides a context
-     * during bring-up and must yield to everything. */
+    /* The idle tasks' priority: this only provides a context during
+     * bring-up and must yield to everything. Creating its core's idle
+     * task does not preempt it (cpu_Register), though the two may share
+     * time slices until it exits. */
     bstask->tc_Node.ln_Pri  = -128;
     bstask->tc_State        = TS_READY;
     bstask->tc_SigAlloc     = 0xFFFF;
@@ -96,7 +101,7 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase, cpuid_t cpunum)
     if (!Exec_InitETask(bstask, NULL, SysBase))
     {
         bug("[Kernel:%02d] FATAL : Failed to initialize bootstrap ETask\n", cpunum);
-        FreeVec(bstask->tc_Node.ln_Name);
+        FreeMem(ml->ml_ME[2].me_Addr, ml->ml_ME[2].me_Length);
         FreeMem(ml->ml_ME[1].me_Addr, ml->ml_ME[1].me_Length);
         FreeMem(ml->ml_ME[0].me_Addr, ml->ml_ME[0].me_Length);
         FreeMem(ml, bstaskmlsize);
@@ -124,7 +129,6 @@ void cpu_DisposeBootStrap(struct Task *bstask, struct ExecBase *SysBase)
 
     KrnDeleteContext(bstask->tc_UnionETask.tc_ETask->et_RegFrame);
     Exec_CleanupETask(bstask, SysBase);
-    FreeVec(bstask->tc_Node.ln_Name);
 
     /* The task itself is in one of these MemLists */
     bstask->tc_MemEntry.lh_TailPred->ln_Succ = NULL;

@@ -14,13 +14,13 @@
 #include <exec/tasks.h>
 #include <exec/alerts.h>
 #include <exec/execbase.h>
+#include <exec/rawfmt.h>
 #include <asm/io.h>
 
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
 #include <strings.h>
-#include <stdio.h>
 
 #include "kernel_cpu.h"
 #include "kernel_ipi.h"
@@ -36,14 +36,89 @@ extern IPTR stack_super[];
 
 extern void IdleTask(struct ExecBase *);
 
+struct Task *Exec_ARMCreateIdleTask(struct ExecBase *SysBase)
+{
+    struct Task *CPUIdleTask;
+    char *taskName;
+#if defined(__AROSEXEC_SMP__)
+    cpuid_t cpuNo = KrnGetCPUNumber();
+    IPTR idleNameArg[] =
+    {
+        cpuNo
+    };
+    struct MemList *ml;
+    void *cpuMask;
+
+    /* Not optional: affinity 0 would mean the boot CPU, not this one */
+    if ((cpuMask = KrnAllocCPUMask()) == NULL)
+    {
+        bug("[Exec:%02u] FATAL : Failed to allocate the idle task's CPU mask\n", cpuNo);
+        return NULL;
+    }
+
+    if ((ml = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
+    {
+        bug("[Exec:%02u] FATAL : Failed to allocate memory for idle task name info\n", cpuNo);
+        KrnFreeCPUMask(cpuMask);
+        return NULL;
+    }
+
+    ml->ml_NumEntries      = 1;
+
+    ml->ml_ME[0].me_Length = 15;
+    if ((ml->ml_ME[0].me_Addr = AllocMem(15, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
+    {
+        bug("[Exec:%02u] FATAL : Failed to allocate memory for task idle name\n", cpuNo);
+        FreeMem(ml, sizeof(struct MemList));
+        KrnFreeCPUMask(cpuMask);
+        return NULL;
+    }
+    taskName = ml->ml_ME[0].me_Addr;
+    RawDoFmt("CPU #%02u Idle", (RAWARG)idleNameArg, RAWFMTFUNC_STRING, taskName);
+
+    KrnGetCPUMask(cpuNo, cpuMask);
+#else
+    taskName = "System Idle";
+#endif
+    CPUIdleTask = NewCreateTask(TASKTAG_NAME   , taskName,
+#if defined(__AROSEXEC_SMP__)
+                                TASKTAG_AFFINITY   , cpuMask,
+#endif
+                                TASKTAG_PRI        , -128,
+                                TASKTAG_PC         , IdleTask,
+                                TASKTAG_ARG1       , SysBase,
+                                TAG_DONE);
+
+    if (CPUIdleTask)
+    {
+        D(
+            bug("[Exec] %s: %s Task created @ 0x%p\n", __PRETTY_FUNCTION__, CPUIdleTask->tc_Node.ln_Name, CPUIdleTask);
+#if defined(__AROSEXEC_SMP__)
+            bug("[Exec] %s: CPU Affinity : %08x\n", __PRETTY_FUNCTION__, GetIntETask(CPUIdleTask)->iet_CpuAffinity);
+#endif
+        )
+#if defined(__AROSEXEC_SMP__)
+        AddTail(&CPUIdleTask->tc_MemEntry, &ml->ml_Node);
+        /* KATTR_CPULoad derives a core's load from its idle task,
+         * and only exec knows the mapping. Other cores read it. */
+        if (cpuNo < AARCH64_MAXCPUS)
+            __atomic_store_n(&aarch64_IdleTask[cpuNo], CPUIdleTask, __ATOMIC_RELEASE);
+#endif
+    }
+#if defined(__AROSEXEC_SMP__)
+    else
+    {
+        FreeMem(ml->ml_ME[0].me_Addr, 15);
+        FreeMem(ml, sizeof(struct MemList));
+    }
+#endif
+
+    return CPUIdleTask;
+}
+
 int Exec_ARMCPUInit(struct ExecBase *SysBase)
 {
-    struct Task *BootTask, *CPUIdleTask;
-#if defined(__AROSEXEC_SMP__)
-    int cpu, cpunum = KrnGetCPUCount();
-    void *cpuMask = NULL;
-#endif
-    char *taskName;
+    struct Task *BootTask;
 
     D(bug("[Exec] %s()\n", __PRETTY_FUNCTION__));
 
@@ -55,52 +130,9 @@ int Exec_ARMCPUInit(struct ExecBase *SysBase)
      * only done when KrnGetCPUCount() returned 0, which it never does.) */
     BootTask->tc_SPLower = stack;
     BootTask->tc_SPUpper = stack + AROS_STACKSIZE;
-#if defined(__AROSEXEC_SMP__)
 
-    for (cpu = 0; cpu < cpunum; cpu++)
-    {
-        taskName = AllocVec(15, MEMF_CLEAR);
-        sprintf(taskName, "CPU #%02d Idle", cpu);
-        /* Not optional: affinity 0 would mean the boot CPU, not this one */
-        if ((cpuMask = KrnAllocCPUMask()) == NULL)
-        {
-            D(bug("[Exec] %s: no CPU mask for CPU #%02d's idle task\n", __PRETTY_FUNCTION__, cpu));
-            FreeVec(taskName);
-            continue;
-        }
-        KrnGetCPUMask(cpu, cpuMask);
-#else
-    taskName = "System Idle";
-#endif
-        CPUIdleTask = NewCreateTask(TASKTAG_NAME   , taskName,
-#if defined(__AROSEXEC_SMP__)
-                                TASKTAG_AFFINITY   , cpuMask,
-#endif
-                                TASKTAG_PRI        , -127,
-                                TASKTAG_PC         , IdleTask,
-                                TASKTAG_ARG1       , SysBase,
-                                TAG_DONE);
-
-        if (CPUIdleTask)
-        {
-            D(
-                bug("[Exec] %s: %s Task created @ 0x%p\n", __PRETTY_FUNCTION__, CPUIdleTask->tc_Node.ln_Name, CPUIdleTask);
-#if defined(__AROSEXEC_SMP__)
-                bug("[Exec] %s: CPU Affinity : %08x\n", __PRETTY_FUNCTION__, GetIntETask(CPUIdleTask)->iet_CpuAffinity);
-#endif
-            )
-#if defined(__AROSEXEC_SMP__)
-            /* KATTR_CPULoad derives a core's load from its idle task,
-             * and only exec knows the mapping. */
-            if (cpu < AARCH64_MAXCPUS)
-                aarch64_IdleTask[cpu] = CPUIdleTask;
-#endif
-        }
-#if defined(__AROSEXEC_SMP__)
-    }
-#endif
-
-    return TRUE;
+    /* The other cores create theirs as they start (cpu_Register) */
+    return (Exec_ARMCreateIdleTask(SysBase) != NULL);
 }
 
 #if defined(__AROSEXEC_SMP__)
