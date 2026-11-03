@@ -77,7 +77,7 @@
         fh->fh_Pos = fh->fh_End = 0;
         
         /* Read mode. Try to seek back to the current position. */
-        if( InternalSeek( fh, offset, OFFSET_CURRENT, DOSBase ) < 0 )
+        if( InternalSeek( fh, offset, OFFSET_CURRENT, DOSBase ) == -1 )
         {
             return FALSE;
         }
