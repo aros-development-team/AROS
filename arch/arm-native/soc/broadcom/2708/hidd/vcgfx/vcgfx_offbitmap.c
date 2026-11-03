@@ -27,6 +27,7 @@
 
 #include "vcgfx_bitmap.h"
 #include "vcgfx_hidd.h"
+#include "vcgfx_decode.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -412,6 +413,9 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     D(bug("[VideoCoreGfx] VideoCoreGfx.OffBitMap::New()\n"));
 
+    screen = vcgfx_dectgt_new(cl, o, msg, &handled);
+    if (handled)
+        return screen;
     screen = vc4_scanout_new(cl, o, msg, &handled);
     if (handled)
         return screen;
@@ -518,13 +522,14 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     struct vcgfx_scanbuf scan[VCGFX_SCAN_BUFFERS];
+    struct vcgfx_dectgt *dectgt = data->dectgt;
     ULONG i;
 #if VC4_GPUBM_ENABLE
     ULONG handle = data->gpuhandle;
 #endif
 
     /* Off the display before the pages go. */
-    if (data->scan[0].sb_Pixels)
+    if (data->scan[0].sb_Pixels || dectgt)
         vcgfx_plane_forget(xsd, o);
     CopyMem(data->scan, scan, sizeof(scan));
 
@@ -532,6 +537,8 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     for (i = 0; i < VCGFX_SCAN_BUFFERS; i++)
         vcgfx_scanout_free(xsd, &scan[i]);
+    if (dectgt)
+        vcgfx_dectgt_dispose(xsd, dectgt);
 #if VC4_GPUBM_ENABLE
     if (handle)
         vc4_gpumem_free(xsd, handle);
@@ -583,6 +590,8 @@ BOOL MNAME_BM(LockBuffer)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Lock
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
+    if (data->dectgt)
+        return vcgfx_dectgt_lock(data->dectgt, msg);
     if (!data->nbufs || (msg->buffer >= data->nbufs) || !msg->addressReturn || !msg->pitchReturn)
         return FALSE;
 
@@ -604,6 +613,12 @@ VOID MNAME_BM(UnlockBuffer)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Un
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     OOP_Object *display = NULL;
     const struct Rectangle *d = msg->dirty;
+
+    if (data->dectgt)
+    {
+        vcgfx_dectgt_unlock(data->dectgt, msg);
+        return;
+    }
 
     /* Video is never blitted: off a plane it shows nothing */
     if (!data->nbufs || data->videofmt || (msg->buffer != data->front)
@@ -628,6 +643,14 @@ BOOL MNAME_BM(SwapBuffers)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Swa
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     OOP_Object *display = NULL;
 
+    /* Never a frame half decoded */
+    if (data->dectgt)
+    {
+        if (!vcgfx_dectgt_page(data->dectgt, msg->newFront))
+            return FALSE;
+        vcgfx_plane_page(cl, o, msg->newFront, !(msg->flags & fHidd_Swap_NoWait));
+        return TRUE;
+    }
     if (!data->nbufs || (msg->newFront >= data->nbufs))
         return FALSE;
     if (msg->newFront == data->front)

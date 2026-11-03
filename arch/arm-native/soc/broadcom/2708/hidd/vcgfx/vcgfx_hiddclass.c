@@ -31,6 +31,7 @@
 
 #include "vcgfx_hidd.h"
 #include "vcgfx_hardware.h"
+#include "vcgfx_decode.h"
 #include "vcgfx_hvs6.h"
 #include "vcgfx_neon.h"
 
@@ -186,6 +187,9 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             {
                 { aHidd_Display_GfxHidd,  (IPTR)self         },
                 { aHidd_Display_ModeTags, (IPTR)vc_modearray },
+                { aHidd_Display_DecodeVectors,
+                  XSD(cl)->vcsd_IsBCM2711 ? (IPTR)&vcgfx_decode_vectors : 0 },
+                { aHidd_Display_DecodeDataSize, vcgfx_decode_datasize },
                 { TAG_DONE,               0                  }
             };
 
@@ -531,6 +535,9 @@ ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Dis
         info.PixFmtMask |= 1 << vHidd_StdPixFmt_RGBA32;     /* the screens' own, with alpha */
     if (vcgfx_yuv_ok(xsd, vHidd_VideoFmt_NV12))
         info.VideoFmtMask = (1 << vHidd_VideoFmt_NV12) | (1 << vHidd_VideoFmt_I420);
+    /* 10-bit decode targets: SAND128 columns only HVS5 reads */
+    if (info.VideoFmtMask && (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5))
+        info.VideoFmtMask |= 1 << vHidd_VideoFmt_P010;
     vc4_plane_scale(xsd, &info.ScaleMin, &info.ScaleMax);
     info.AlphaModes = (1 << vHidd_CompAlpha_None) | (1 << vHidd_CompAlpha_PerPixel);
     info.PosAlignX  = 1;

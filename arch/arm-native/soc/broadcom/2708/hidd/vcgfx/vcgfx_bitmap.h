@@ -76,6 +76,7 @@ struct BitmapData {
 	ULONG               planeoff[2];            /* Video: chroma plane offsets in a page */
 	ULONG               cpitch;                 /* Video: chroma bytes per row */
 	ULONG               modew, modeh;           /* Screen: its mode's display size */
+	struct vcgfx_dectgt *dectgt;                /* Decode target (vcgfx_decode.c) */
 };
 
 #endif /* _VIDEOCOREGFX_BITMAP_H */

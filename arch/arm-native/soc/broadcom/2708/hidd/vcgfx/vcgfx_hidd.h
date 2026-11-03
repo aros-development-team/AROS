@@ -349,6 +349,7 @@ static inline BOOL vcgfx_scanout_rgb(struct VideoCoreGfx_staticdata *xsd, ULONG 
 BOOL    vcgfx_planes_supported(struct VideoCoreGfx_staticdata *xsd);
 LONG    vcgfx_plane_occlude(LONG px, LONG py, ULONG pw, ULONG ph,
                             LONG left, LONG top, LONG right, LONG bottom);
+BOOL    vcgfx_scanout_ok(struct VideoCoreGfx_staticdata *xsd);
 BOOL    vcgfx_scanout_alloc(struct VideoCoreGfx_staticdata *xsd,
                             struct vcgfx_scanbuf *sb, ULONG size);
 void    vcgfx_scanout_free(struct VideoCoreGfx_staticdata *xsd,

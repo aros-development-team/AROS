@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include "vcgfx_hidd.h"
+#include "vcgfx_decode.h"
 #include "vcgfx_hvs5.h"
 #include "vcgfx_hvs6.h"
 
@@ -51,8 +52,6 @@
 #define HiddChunkyBMAttrBase    (xsd->vcsd_attrBases[2])
 #define HiddPixFmtAttrBase      (xsd->vcsd_attrBases[4])
 
-static BOOL scanout_ok(struct VideoCoreGfx_staticdata *xsd);
-
 /* Planes need the HVS taken over and scanout memory the kernel can remap. */
 BOOL vcgfx_planes_supported(struct VideoCoreGfx_staticdata *xsd)
 {
@@ -66,7 +65,7 @@ BOOL vcgfx_planes_supported(struct VideoCoreGfx_staticdata *xsd)
         ok = vc4_hvs6_planes_ok();
     else if (xsd->vcsd_HVSGen == VCGFX_HVS_VC4)
         ok = vc4_hvs_planes_ok();
-    return ok && scanout_ok(xsd);
+    return ok && vcgfx_scanout_ok(xsd);
 }
 
 /* We own the display list. */
@@ -181,7 +180,7 @@ static struct vcgfx_arena *arena_new(ULONG want)
 /* Probed once by taking the first arena, which then serves the first
  * screens. The arm32 kernel's KrnMapGlobal() is still a stub that maps
  * nothing, so there the screens stay on Show() until it is implemented. */
-static BOOL scanout_ok(struct VideoCoreGfx_staticdata *xsd)
+BOOL vcgfx_scanout_ok(struct VideoCoreGfx_staticdata *xsd)
 {
     struct vcgfx_arena *a;
 
@@ -298,8 +297,8 @@ static void plane_format(struct vcgfx_plane *pl, struct BitmapData *data)
         pl->pl_Pxf = HVS6_CTL0_FMT_8888;    /* HVS6 entries then take B,G,R,A */
     if (data->videofmt)
     {
-        pl->pl_Yuv = (data->videofmt == vHidd_VideoFmt_NV12) ? HVS_PXF_YUV420_2PLANE
-                                                             : HVS_PXF_YUV420_3PLANE;
+        pl->pl_Yuv = ((data->videofmt == vHidd_VideoFmt_NV12) || data->dectgt) ? HVS_PXF_YUV420_2PLANE
+                                                                               : HVS_PXF_YUV420_3PLANE;
         pl->pl_Bpp = 1;
     }
 }
@@ -703,7 +702,7 @@ BOOL vcgfx_planes_commit(struct VideoCoreGfx_staticdata *xsd,
             continue;
 
         data = (OOP_OCLASS(st->BitMap) == offcl) ? OOP_INST_DATA(offcl, st->BitMap) : NULL;
-        if (!data || !data->scan[0].sb_Pixels
+        if (!data || (!data->scan[0].sb_Pixels && !data->dectgt)
             || ((st->AlphaMode != vHidd_CompAlpha_None)
                 && ((st->AlphaMode != vHidd_CompAlpha_PerPixel)
                     || data->videofmt || (vcgfx_px_bpp(data->pxflags) != 4)))
@@ -863,11 +862,15 @@ BOOL vcgfx_plane_page(OOP_Class *cl, OOP_Object *bm, ULONG page, BOOL wait)
     };
     struct pRoot_Set setmsg;
     struct vcgfx_plane *pl;
+    UBYTE *pixels;
     BOOL shown;
+
+    /* A decode still writing the page is waited for outside the lock */
+    pixels = data->dectgt ? vcgfx_dectgt_page(data->dectgt, page) : data->scan[page].sb_Pixels;
 
     VC4_MBOX_LOCK(xsd);
     data->front = page;
-    data->VideoData = data->scan[page].sb_Pixels;
+    data->VideoData = pixels;
 
     tags[0].ti_Data = (IPTR)data->VideoData;
     setmsg.mID      = OOP_GetMethodID(IID_Root, moRoot_Set);
