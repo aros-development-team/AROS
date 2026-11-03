@@ -218,10 +218,12 @@ cpu_registerfatal:
     Permit();
     Enable();
 
+    Exec_ARMCreateIdleTask(SysBase);
+
     /* The bootstrap's work is done. Do NOT return: we were reached by a
      * `br`, so x30 still holds firmware leftovers. Leave through exec's
      * task exit code instead, as every task does; the scheduler then runs
-     * this core's idle task (Exec_ARMCPUInit). */
+     * this core's idle task. */
     ((void (*)(void))SysBase->TaskExitCode)();
 #endif
 }

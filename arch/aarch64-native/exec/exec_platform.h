@@ -280,4 +280,6 @@ struct Exec_PlatformData
     KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock)
 #endif
 
+struct Task *Exec_ARMCreateIdleTask(struct ExecBase *);
+
 #endif /* __EXEC_PLATFORM_H */

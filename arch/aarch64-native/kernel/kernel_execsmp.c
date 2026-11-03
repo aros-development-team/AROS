@@ -86,8 +86,9 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase, cpuid_t cpunum)
         sprintf(bstask->tc_Node.ln_Name, "CPU #%02d Bootstrap", cpunum);
     }
     bstask->tc_Node.ln_Type = NT_TASK;
-    /* Below the per-core idle task at -127: this only provides a context
-     * during bring-up and must yield to everything. */
+    /* The idle tasks' priority: this only provides a context during
+     * bring-up and must yield to everything, yet not be preempted by the
+     * idle task it creates (cpu_Register). */
     bstask->tc_Node.ln_Pri  = -128;
     bstask->tc_State        = TS_READY;
     bstask->tc_SigAlloc     = 0xFFFF;
