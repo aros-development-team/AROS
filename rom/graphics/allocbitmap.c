@@ -16,6 +16,7 @@
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 #include "dispinfo.h"
+#include "graphics_private.h"
 
 #define SET_TAG(tags, idx, tag, val)    \
     tags[idx].ti_Tag = tag ; tags[idx].ti_Data = (IPTR)val;
@@ -287,6 +288,7 @@ static BOOL own_friend_colors(struct BitMap *nbm, struct BitMap *friend_bitmap, 
     struct DisplayInfoHandle *dh;
     struct gfxdisplay_data *drv = NULL;
     ULONG clear = flags & BMF_CLEAR;
+    HIDDT_StdPixFmt tagpf = vHidd_StdPixFmt_Unknown;
     BOOL alloc = TRUE;
 
     if(BITMAPFLAGS_ARE_EXTENDED(flags)) {
@@ -310,6 +312,11 @@ static BOOL own_friend_colors(struct BitMap *nbm, struct BitMap *friend_bitmap, 
 
             case BMATags_NoMemory:
                 alloc = !tag->ti_Data;
+                break;
+
+            case BMATags_CGXPixFmt:     /* private, graphics_private.h */
+                if(tag->ti_Data <= PIXFMT_RGBA32)
+                    tagpf = cyber2hidd_pixfmt[tag->ti_Data];
                 break;
 
             case BMATags_DisplayID:
@@ -346,7 +353,7 @@ static BOOL own_friend_colors(struct BitMap *nbm, struct BitMap *friend_bitmap, 
             (friend_bitmap && (friend_bitmap->pad == HIDD_BM_PAD_MAGIC)) ||
             (flags & BMF_SPECIALFMT) ||
             ((flags & BMF_REQUESTVMEM) == BMF_REQUESTVMEM)) {
-        struct TagItem bm_tags[9];
+        struct TagItem bm_tags[10];
         HIDDT_StdPixFmt stdpf = vHidd_StdPixFmt_Unknown;
 
         D(bug("[AllocBitMap] Allocating HIDD bitmap\n"));
@@ -389,6 +396,20 @@ static BOOL own_friend_colors(struct BitMap *nbm, struct BitMap *friend_bitmap, 
 
             if(cgxpf <= PIXFMT_RGBA32)
                 stdpf = cyber2hidd_pixfmt[cgxpf];
+        } else if(tagpf != vHidd_StdPixFmt_Unknown) {
+            /* BMATags_CGXPixFmt: the format, with a mode only one of its size of pixel */
+            stdpf = tagpf;
+            if((hiddmode != vHidd_ModeID_Invalid) && drv) {
+                OOP_Object *sync, *modepf, *pf = HIDD_DMEnum_GetPixFmt(drv->display_dmenum, stdpf);
+                IPTR modebpp = 0, bpp = 0;
+
+                if(pf && HIDD_DMEnum_GetMode(drv->display_dmenum, hiddmode, &sync, &modepf)) {
+                    OOP_GetAttr(modepf, aHidd_PixFmt_BytesPerPixel, &modebpp);
+                    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bpp);
+                }
+                if(!bpp || (bpp != modebpp))
+                    stdpf = vHidd_StdPixFmt_Unknown;    /* the mode's own then */
+            }
         } else if((!friend_bitmap) && (hiddmode == vHidd_ModeID_Invalid)) {
             /* If there is neither pixelformat nor friend bitmap nor ModeID specified,
                we have to use some default pixelformat depending on the depth */
@@ -406,10 +427,15 @@ static BOOL own_friend_colors(struct BitMap *nbm, struct BitMap *friend_bitmap, 
         /* If we have a friend bitmap, pixelformat will be
            picked up from it */
 
+        SET_TAG(bm_tags, 8, TAG_IGNORE, 0);
         if(stdpf != vHidd_StdPixFmt_Unknown) {
             D(bug("[AllocBitMap] Setting pixelformat to %d\n", stdpf));
             SET_BM_TAG(bm_tags, 4, StdPixFmt, stdpf);
-            hiddmode = vHidd_ModeID_Invalid;
+            if((tagpf != vHidd_StdPixFmt_Unknown) && (hiddmode != vHidd_ModeID_Invalid)) {
+                SET_BM_TAG(bm_tags, 8, ModeID, hiddmode);
+            } else {
+                hiddmode = vHidd_ModeID_Invalid;
+            }
         } else if(hiddmode != vHidd_ModeID_Invalid) {
             D(bug("[AllocBitMap] Setting ModeID to 0x%08lX\n", hiddmode));
             SET_BM_TAG(bm_tags, 4, ModeID, hiddmode);
@@ -429,7 +455,7 @@ static BOOL own_friend_colors(struct BitMap *nbm, struct BitMap *friend_bitmap, 
 
         SET_TAG(bm_tags, 7, aHidd_PlanarBM_Interleaved,
                 (flags & BMF_INTERLEAVED) != 0);
-        SET_TAG(bm_tags, 8, TAG_DONE, 0);
+        SET_TAG(bm_tags, 9, TAG_DONE, 0);
 
         /* Allocate an extra planes for HIDD bitmap info */
         nbm = AllocVec(sizeof(struct BitMap) + sizeof(PLANEPTR) * HIDD_BM_EXTRAPLANES, MEMF_ANY | MEMF_CLEAR);
@@ -565,6 +591,22 @@ static BOOL own_friend_colors(struct BitMap *nbm, struct BitMap *friend_bitmap, 
                         } /* if (pixtab successfully allocated) */
                         else
                             ok = FALSE;
+                    }
+
+                    /*
+                     * An alpha bitmap made as a friend (a layer's surface, an
+                     * ARGB image) clears transparent. An alpha screen of its
+                     * own has no friend and clears to pen 0.
+                     */
+                    if(friend_bitmap && IS_HIDD_BM(friend_bitmap)) {
+                        OOP_Object *pf = NULL;
+                        IPTR alphamask = 0;
+
+                        OOP_GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+                        if(pf)
+                            OOP_GetAttr(pf, aHidd_PixFmt_AlphaMask, &alphamask);
+                        if(alphamask)
+                            HIDD_BM_FLAGS(nbm) |= HIDD_BMF_CLEAR_ALPHA;
                     }
                 }
 

@@ -159,6 +159,11 @@ struct HIDD_CompositeRequest
 #define CRF_PLANE_REQUIRED  (1 << CRB_PLANE_REQUIRED) /* must not be blitted          */
 #define CRB_SCALED          3
 #define CRF_SCALED          (1 << CRB_SCALED)   /* Dest size differs from Src size    */
+#define CRB_UNDERLAY_OK     4
+#define CRF_UNDERLAY_OK     (1 << CRB_UNDERLAY_OK) /* may be scanned out below its screen,
+                                                 * shown through the screen's alpha: the
+                                                 * client keeps the screen transparent
+                                                 * over Dest where nothing is to cover it */
 
 /* A structure passed to ShowViewPorts() method */
 struct HIDD_ViewPortData
@@ -681,9 +686,15 @@ enum
  * GetPlaneInfo() and applies a whole set at once with CommitPlanes(). The
  * display's compositor assigns composition requests to planes within these
  * constraints and blits whatever gets no plane into the primary one.
+ *
+ * Planes stack by HIDD_PlaneState.ZOrder, back to front, within each
+ * plane's ZMin..ZMax. An overlay whose ZMin is below the primary's ZMin can
+ * go under the primary (an underlay). The primary then shows it through its
+ * own straight alpha, if its AlphaModes have vHidd_CompAlpha_PerPixel; the
+ * driver blends the primary so only while a plane is below it.
  */
 #define vHidd_Plane_Primary     0   /* full display scan-out, always present       */
-#define vHidd_Plane_Overlay     1   /* composed above the primary at a position    */
+#define vHidd_Plane_Overlay     1   /* composed above or below the primary at a position */
 #define vHidd_Plane_Cursor      2   /* small, topmost; the mouse pointer           */
 
 #define PIB_NEEDS_DISPLAYMEM    0   /* only bitmaps in display memory can be scanned */
@@ -908,10 +919,16 @@ struct HIDD_SurfaceHookMsg
     struct HIDD_CompositeRequest *Request;  /* the attached request                 */
     struct Rectangle              Rect;     /* Damage: screen bitmap coordinates    */
     ULONG                         Plane;    /* PlaneGained: the plane index         */
+    ULONG                         Flags;    /* PlaneGained: SHF_*                   */
 };
 
+/* HIDD_SurfaceHookMsg.Flags */
+#define SHF_UNDERLAY            (1 << 0)    /* the plane is below the screen (CRF_UNDERLAY_OK):
+                                             * keep the screen transparent over Dest */
+
 #define vHidd_SurfaceHook_Damage        0   /* the screen changed under/around Dest: recompute Shape */
-#define vHidd_SurfaceHook_PlaneGained   1   /* the surface is scanned out by a plane                 */
+#define vHidd_SurfaceHook_PlaneGained   1   /* the surface is scanned out by a plane; again when it
+                                             * moves between below and above the screen (SHF_*)   */
 #define vHidd_SurfaceHook_PlaneLost     2   /* the surface is no longer on a plane                   */
 #define vHidd_SurfaceHook_ScreenMoved   3   /* the screen moved on the display (informational)       */
 

@@ -1189,6 +1189,22 @@ OOP_Object *Display__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, st
                     FreeTagItems(cloned_attrlist);
                 return NULL;
             }
+
+            /*
+             * The mode's own format with its unused byte as alpha asked for
+             * instead, for a plane below the screen: the same bytes, so any
+             * driver scans it out as it would the mode's. No other layout.
+             */
+            if (pixfmt != vHidd_StdPixFmt_Unknown)
+            {
+                HIDDT_PixelFormat *own = (HIDDT_PixelFormat *)pf;
+                HIDDT_PixelFormat *alt = (HIDDT_PixelFormat *)DMEnum__Internal__GetPixFmt(CSD(cl)->dmenumclass, pixfmt);
+
+                if (alt && (alt->bytes_per_pixel == own->bytes_per_pixel) && alt->alpha_mask
+                    && (alt->red_mask == own->red_mask) && (alt->green_mask == own->green_mask)
+                    && (alt->blue_mask == own->blue_mask))
+                    pf = (OOP_Object *)alt;
+            }
         }
         else /* if (!displayable) */
         {
