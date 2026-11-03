@@ -814,6 +814,42 @@ diff -ruN gcc-16.2.0/gcc/config/m68k/t-aros gcc-16.2.0.aros/gcc/config/m68k/t-ar
 @@ -0,0 +1,2 @@
 +# Custom multilibs for AROS
 +M68K_MLIB_CPU += && match(MLIB, "^68")
+diff -ruN gcc-16.2.0/gcc/config/riscv/riscv-bclr-lowest-set-bit.cc gcc-16.2.0.aros/gcc/config/riscv/riscv-bclr-lowest-set-bit.cc
+--- gcc-16.2.0/gcc/config/riscv/riscv-bclr-lowest-set-bit.cc
++++ gcc-16.2.0.aros/gcc/config/riscv/riscv-bclr-lowest-set-bit.cc
+@@ -138,8 +138,8 @@
+ 		 we need to verify its input doesn't change between
+ 		 START and NEXT.  We also have to verify that its
+ 		 destination is unused between those points.  */
+-	      if (reg_set_between_p (XEXP (SET_SRC (set), 0), start, next)
+-		  || reg_used_between_p (SET_DEST (set), start, next))
++	      if (reg_set_between_p (XEXP (SET_SRC (set), 0), PREV_INSN (start), next)
++		  || reg_used_between_p (SET_DEST (set), PREV_INSN (start), next))
+ 		return NULL;
+ 
+ 	      return next;
+@@ -275,7 +275,7 @@
+ 	  if (later_ctz)
+ 	    {
+ 	      /* Remove the CTZ from the stream and reemit it immediately
+-		 after NEXT.  XXX FIXME.  Need to prove this is safe.  */
++		 after NEXT.  */
+ 	      df_insn_delete (later_ctz);
+ 	      remove_insn (later_ctz);
+ 	      SET_PREV_INSN (later_ctz) = NULL;
+@@ -290,6 +290,12 @@
+ 	      pat = gen_rtx_AND (GET_MODE (dec_dest), pat, dec_src);
+ 	      pat = gen_rtx_SET (and_dest, pat);
+ 	      df_insn_rescan (emit_insn_after (pat, NEXT_INSN (next)));
++
++	      /* And remove the original AND.  */
++	      df_insn_delete (next);
++	      remove_insn (next);
++	      SET_PREV_INSN (next) = NULL;
++	      SET_NEXT_INSN (next) = NULL;
+ 	    }
+ 	}
+     }
 diff -ruN gcc-16.2.0/gcc/config/rs6000/aros.h gcc-16.2.0.aros/gcc/config/rs6000/aros.h
 --- gcc-16.2.0/gcc/config/rs6000/aros.h	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-16.2.0.aros/gcc/config/rs6000/aros.h	2020-12-27 16:58:14.310000000 +0000
