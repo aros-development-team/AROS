@@ -1381,8 +1381,8 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +}
 diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/aros/mod.rs rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/mod.rs
 --- rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/aros/mod.rs	1970-01-01 00:00:00.000000000 +0000
-+++ rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/mod.rs	2026-10-17 19:49:42.423695110 +0000
-@@ -0,0 +1,1136 @@
++++ rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/mod.rs	2026-11-03 12:32:27.265692643 +0000
+@@ -0,0 +1,1145 @@
 +//! Bindings for the AROS C library (posixc.library / stdc.library) and
 +//! pthread.library, as shipped in the AROS SDK.
 +//!
@@ -1581,6 +1581,13 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +        pub param: sched_param,
 +        pub inheritsched: c_int,
 +        pub contentionscope: c_int,
++        pub affinityset: c_int,
++        pub affinity: cpu_set_t,
++    }
++
++    // sched.h: a CPU_SETSIZE bit mask in unsigned longs.
++    pub struct cpu_set_t {
++        bits: [c_ulong; CPU_SETSIZE as usize / (8 * core::mem::size_of::<c_ulong>())],
 +    }
 +
 +    pub struct pthread_mutexattr_t {
@@ -1720,6 +1727,8 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +pub const PTHREAD_COND_INITIALIZER: pthread_cond_t = pthread_cond_t { __private: [0; 40] };
 +pub const PTHREAD_RWLOCK_INITIALIZER: pthread_rwlock_t = pthread_rwlock_t { __private: [0; 32] };
 +pub const PTHREAD_ONCE_INIT: pthread_once_t = pthread_once_t { done: 0, started: -1, lock: 0 };
++
++pub const CPU_SETSIZE: c_int = 1024;
 +
 +pub const RTLD_LAZY: c_int = 0x1;
 +pub const RTLD_NOW: c_int = 0x2;
