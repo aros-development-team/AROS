@@ -1863,6 +1863,11 @@ static BYTE ata_Identify(struct ata_Unit *unit)
         }
 
         atapi_TestUnitOK(unit);
+
+        /* Establish the initial media state before publishing the unit.
+         * Only subsequent changes should notify filesystem handlers.
+         */
+        unit->au_Flags &= ~AF_DiscChanged;
     }
     else
     {
