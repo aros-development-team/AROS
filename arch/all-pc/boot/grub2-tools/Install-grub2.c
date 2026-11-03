@@ -1452,7 +1452,7 @@ int main(int argc, char **argv)
     struct Volume *grubvol;
     struct Volume *bbvol;
     struct FileSysStartupMsg *fssm;
-    int ret = RETURN_OK;
+    int ret = RETURN_FAIL;
 
     D(bug("[install] main()\n"));
 
@@ -1493,9 +1493,9 @@ int main(int argc, char **argv)
                             bbvol = getBBVolume(bootDevice, unit, partnum);
                             if (bbvol)
                             {
-                                    if (!installGrubFiles(grubvol, grubpath,
-                                                           fssm->fssm_Unit, bbvol))
-                                        ret = RETURN_ERROR;
+                                    ret = installGrubFiles(grubvol, grubpath,
+                                                           fssm->fssm_Unit, bbvol)
+                                        ? RETURN_OK : RETURN_ERROR;
 
                                     uninitVolume(bbvol);
                             }
@@ -1515,12 +1515,8 @@ int main(int argc, char **argv)
                         ret = RETURN_ERROR;
                 }
             }
-            else if (fssm)
-            {
+            else
                 Printf("kernel path must begin with a device name\n");
-                FreeArgs(rdargs);
-                ret = RETURN_ERROR;
-            }
 
             FreeArgs(rdargs);
     }
