@@ -15,7 +15,15 @@ every order, and verify original free counts, coalescing, returned addresses,
 and guards immediately outside the declared pool. Empty headers are populated
 through Deallocate with every terminal remainder and unaligned lower bounds.
 Tests also cover informational lower bounds, sub-chunk regions, and frees
-that explicitly include an already-counted orphan tail.
+that explicitly include an already-counted orphan tail. All 24 free orders
+for three complete units and a separately returned terminal remainder check
+boundary guards, untouched live data, free counts, usable allocations and
+final coalescing. This includes a tail isolated from an existing free chunk.
+
+Private mh_Lower remains informational for compatibility. The test also
+exhausts a pool with a higher mh_Lower and frees its first unit into an empty
+list, where no other field can retain the true original lower bound. Owners
+must validate membership themselves; upper-bound and overlap checks remain.
 
 A mixed-size stress test checks live data and free-list invariants after
 every operation. On AROS, four processes also share one pool through the

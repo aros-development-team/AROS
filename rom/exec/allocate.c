@@ -62,7 +62,8 @@
         mh_Lower is informational for a private region. Its first free
         chunk and the allocation units covered by Deallocate() must be
         backed by storage owned by the caller, including any prefix before
-        an unaligned mh_Lower.
+        an unaligned mh_Lower. Deallocate() does not treat mh_Lower as
+        a lower-bound check; the caller must validate region ownership.
 
         On SMP builds this function serialises through the header's
         embedded spinlock (mh_SpinLock), so a hand-built MemHeader MUST

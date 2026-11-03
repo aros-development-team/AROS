@@ -45,6 +45,16 @@
 
         Freeing blocks back to a private region restores its original free
         count, including a terminal remainder smaller than the alignment.
+        Such a remainder may be returned separately while other chunks are
+        free; it is counted without writing a header until an adjacent
+        allocation unit is returned.
+
+        mh_Lower is informational, as for Allocate(). A block is not
+        rejected merely because it precedes mh_Lower. The caller must
+        validate ownership against the actual region it supplied: its
+        original lower bound cannot be recovered from an empty free list.
+        The exclusive mh_Upper bound and free-list overlap checks still
+        apply. This function is not a general invalid-pointer validator.
 
         Calls on an unmanaged region use the same task synchronisation as
         Allocate(), preserving the caller's task-switch nesting without

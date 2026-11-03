@@ -247,6 +247,14 @@ static void informational_lower(void)
         Deallocate(&f.header, p, MEMCHUNK_TOTAL);
         restored(&f);
     }
+    p = Allocate(&f.header, f.capacity);
+    check(p == f.base && f.header.mh_First == NULL,
+          "exhaust a private region whose informational lower bound is higher");
+    if (p)
+    {
+        Deallocate(&f.header, p, f.capacity);
+        restored(&f);
+    }
     teardown(&f);
 }
 
@@ -273,6 +281,94 @@ static int consistent(struct Fixture *f)
     if (end != upper)
         sum += upper & (MEMCHUNK_TOTAL - 1);
     return sum == f->header.mh_Free;
+}
+
+/* Populate an empty region in separately returned allocation units. The
+ * last piece has no room for a header until its preceding unit is free. */
+static void piecemeal_regions(void)
+{
+    static const unsigned orders[24][4] = {
+        {0,1,2,3}, {0,1,3,2}, {0,2,1,3}, {0,2,3,1}, {0,3,1,2}, {0,3,2,1},
+        {1,0,2,3}, {1,0,3,2}, {1,2,0,3}, {1,2,3,0}, {1,3,0,2}, {1,3,2,0},
+        {2,0,1,3}, {2,0,3,1}, {2,1,0,3}, {2,1,3,0}, {2,3,0,1}, {2,3,1,0},
+        {3,0,1,2}, {3,0,2,1}, {3,1,0,2}, {3,1,2,0}, {3,2,0,1}, {3,2,1,0}
+    };
+    IPTR tail, a = MEMCHUNK_TOTAL;
+    unsigned order, step;
+
+    for (tail = 1; tail < a; tail++)
+        for (order = 0; order < 24; order++)
+        {
+            struct Fixture f;
+            unsigned freed[4] = {0};
+            IPTR expected = 0;
+
+            if (!setup(&f, a * 3 + tail))
+                return;
+            f.header.mh_First = NULL;
+            f.header.mh_Free = 0;
+            memset(f.base, 0x6d, f.capacity);
+            for (step = 0; step < 4; step++)
+            {
+                unsigned piece = orders[order][step], i;
+                IPTR j, size = piece == 3 ? tail : a;
+                int intact = 1;
+
+                Deallocate(&f.header, f.base + piece * a, size);
+                freed[piece] = 1;
+                expected += size;
+                check(f.header.mh_Free == expected,
+                      "piecemeal free counts each returned byte exactly once");
+                for (j = 0; j < a; j++)
+                    if ((f.base - a)[j] != 0xb7 ||
+                        f.base[f.capacity + j] != 0xb7)
+                        intact = 0;
+                check(intact, "separate terminal frees preserve pool boundary guards");
+                intact = 1;
+                for (i = 0; i < 4; i++)
+                    if (!freed[i] || (i == 3 && !freed[2]))
+                        for (j = 0; j < (i == 3 ? tail : a); j++)
+                            if (f.base[i * a + j] != 0x6d)
+                                intact = 0;
+                check(intact, "live pieces and an isolated tail are not overwritten");
+                if (freed[3])
+                {
+                    int valid = consistent(&f);
+
+                    check(valid, "piecemeal terminal free leaves a valid free list");
+                    /* Avoid following a damaged list in the negative control. */
+                    if (valid)
+                    {
+                        APTR block = Allocate(&f.header, a);
+                        int owned = 0;
+
+                        for (i = 0; i < 3; i++)
+                            if (freed[i] && block == f.base + i * a)
+                                owned = 1;
+                        check(expected >= a ? owned : block == NULL,
+                              "allocation after a separate tail uses only returned units");
+                        if (block)
+                        {
+                            memset(block, 0x39, a);
+                            Deallocate(&f.header, block, a);
+                        }
+                        check(f.header.mh_Free == expected && consistent(&f),
+                              "allocation round trip retains the isolated tail count");
+                    }
+                }
+            }
+            restored(&f);
+            if (consistent(&f))
+            {
+                APTR block = Allocate(&f.header, a * 3);
+
+                check(block == f.base, "piecemeal population restores the full usable region");
+                if (block)
+                    Deallocate(&f.header, block, a * 3);
+                restored(&f);
+            }
+            teardown(&f);
+        }
 }
 
 static void fragmented(void)
@@ -603,6 +699,32 @@ static void invalid_system_tail(void)
     teardown(&f);
 }
 
+static void overlapping_tail(void)
+{
+    struct Fixture f;
+    APTR block;
+
+    if (!setup(&f, MEMCHUNK_TOTAL * 3 + 1))
+        return;
+    block = Allocate(&f.header, MEMCHUNK_TOTAL * 2);
+    check(block == f.base, "allocate before freeing an already-free terminal byte");
+    if (block)
+    {
+        IPTR before_free = f.header.mh_Free;
+        struct MemChunk *before_first = f.header.mh_First;
+        unsigned before_alerts = allocator_alerts;
+
+        Deallocate(&f.header, f.base + MEMCHUNK_TOTAL * 3, 1);
+        check(allocator_alerts == before_alerts + 1 && last_alert == AN_FreeTwice,
+              "a small terminal free still reports overlap with a real chunk");
+        check(f.header.mh_First == before_first && f.header.mh_Free == before_free &&
+              consistent(&f), "rejected overlapping tail does not change the free list");
+        Deallocate(&f.header, block, MEMCHUNK_TOTAL * 2);
+        restored(&f);
+    }
+    teardown(&f);
+}
+
 static void host_nesting(void)
 {
     struct Fixture f;
@@ -712,6 +834,7 @@ static void host_checks(void)
     managed_pool();
     system_pool();
     invalid_system_tail();
+    overlapping_tail();
     host_nesting();
 #if defined(__AROSEXEC_SMP__) && !defined(__wasi__)
     concurrent_pool();
@@ -727,6 +850,7 @@ int main(void)
     informational_lower();
     tiny_regions();
     explicit_tail_free();
+    piecemeal_regions();
     fragmented();
 #ifndef PRIVATEPOOL_HOST_TEST
     task_sharing();

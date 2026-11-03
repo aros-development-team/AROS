@@ -911,8 +911,18 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
                  */
             }
             else
-                /* Not possible to merge */
+            {
+                /* A separate terminal remainder cannot carry a header.
+                 * Count it without linking it; freeing the preceding unit
+                 * later recovers these bytes through mh_Free's remainder.
+                 * Keep this after the overlap check above. */
+                if (p4 - (UBYTE *)p3 < MEMCHUNK_TOTAL)
+                {
+                    freeList->mh_Free += byteSize;
+                    goto stddealloc_done;
+                }
                 p1->mc_Next = p3;
+            }
         }else
             /*
                 There was no previous block. Just insert the memory at
