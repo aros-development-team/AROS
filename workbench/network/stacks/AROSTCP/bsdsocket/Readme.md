@@ -816,7 +816,10 @@ locals before summing rather than reading them through a `u_int16_t *` taken fro
   otherwise a requester offers retry / skip / shutdown. On a wireless link the stack requests
   `S2EVENT_DISCONNECT` and, when the link drops, tears down the addresses and routes that belonged to
   the old network; `sana_unrun` aborts the parked `S2_ONEVENT` before waiting on it, so another
-  opener keeping the device online can no longer hang shutdown.
+  opener keeping the device online can no longer hang shutdown. When the driver has no more events
+  for it - it does not do `S2_ONEVENT`, or the link went offline - `sana_connect` frees the request
+  there and then: `sana_poll()` has taken it off the port, and a later `WaitIO()` on it would
+  `Remove()` it from the port again, through stale links.
 - **DHCP across several interfaces.** The DHCP client (`kern/amiga_dhcp.c` launching `dhclient`) runs
   one socket per interface, each bound to its link, so a second interface (e.g. a Bluetooth PAN
   alongside ethernet) also gets an address; the default route, name servers and search domain follow
