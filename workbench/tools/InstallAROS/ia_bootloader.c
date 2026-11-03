@@ -633,8 +633,17 @@ void BOOTLOADER_DoInstall(Class * CLASS, Object * self)
         return;
     }
 
+    if (data->inst_success != MUIV_Inst_InProgress)
+        return;
+
     D(bug("[InstallAROS] %s: executing '%s'\n", __func__, tmp));
-    Execute(tmp, NULL, NULL);
+    LONG result = SystemTagList(tmp, NULL);
+    LOG_Printf("bootloader returned %ld", result);
+    if (result != RETURN_OK)
+    {
+        data->inst_success = MUIV_Inst_Failed;
+        return;
+    }
     D(bug("[InstallAROS] %s: finished\n", __func__));
 
     SET(data->gauge2, MUIA_Gauge_Current, 100);
