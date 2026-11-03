@@ -249,7 +249,8 @@ BOOL BOOTLOADER_PartFixUp(struct InstallStage_DATA *data, IPTR systype)
 
 static LONG FindWindowsPartition(STRPTR device, LONG unit)
 {
-    IPTR active, id;
+    ULONG active;
+    UBYTE id;
     struct PartitionType type;
     struct PartitionHandle *root, *partition;
     LONG partition_no = -1, i = 0;
@@ -263,6 +264,8 @@ static LONG FindWindowsPartition(STRPTR device, LONG unit)
             /* Look for an active partition with a Windows FS */
             ForeachNode(&root->table->list, partition)
             {
+                active = 0;
+                memset(&type, 0, sizeof(type));
                 GetPartitionAttrsTags
                     (partition,
                     PT_ACTIVE, (IPTR) & active,
