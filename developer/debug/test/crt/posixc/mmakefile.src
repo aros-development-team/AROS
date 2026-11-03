@@ -165,6 +165,7 @@ USER_CPPFLAGS = -D_XOPEN_SOURCE=700
 #MM : includes linklibs
 #MM test-crt-posixc-close-pipe-progress : includes linklibs
 
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/..
 USER_CPPFLAGS := -D_GNU_SOURCE
 %build_prog mmake=test-crt-posixc-vfork-fd-thread \
     progname=vfork_fd_thread files=vfork_fd_thread targetdir=$(EXEDIR) uselibs="pthread"

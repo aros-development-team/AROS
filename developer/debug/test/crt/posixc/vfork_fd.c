@@ -79,7 +79,6 @@ static int run_case(int mode, const char *self)
     int result;
     int saved_errno;
     unsigned char byte = 0;
-    pid_t child;
 
     TEST(pipe(descriptors) == 0);
     snprintf(reader, sizeof(reader), "%d", descriptors[0]);
@@ -91,7 +90,7 @@ static int run_case(int mode, const char *self)
 
     if (mode != 0)
     {
-        child = vfork();
+        pid_t child = vfork();
         if (child == 0)
         {
             if (mode == 1)

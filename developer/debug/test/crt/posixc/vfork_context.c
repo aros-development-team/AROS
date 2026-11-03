@@ -66,7 +66,6 @@ int main(void)
             int status = -1;
             int saved_errno;
             volatile unsigned int polls = 0;
-            long long now;
             volatile long long deadline = milliseconds();
 
             TEST(deadline >= 0);
@@ -88,6 +87,8 @@ int main(void)
 
             do
             {
+                long long now;
+
                 errno = 0;
                 waited = waitpid(child, &status, WNOHANG);
                 saved_errno = errno;
