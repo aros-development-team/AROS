@@ -617,6 +617,7 @@ void tcp_input(void *arg, ...)
 #ifdef TCPDEBUG
     short ostate = 0;
 #endif
+    int sacknew;            /* this ACK SACKs data not SACKed before */
     va_list va;
 
     va_start(va, arg);
@@ -1648,11 +1649,27 @@ close:
          * only influences transmission when PRR/SACK recovery is
          * engaged -- so it is safe on every SACK-permitted connection.
          */
-        if((tp->t_flags & TF_SACK_PERMIT) && (to.to_flag & TOF_SACK))
+        sacknew = 0;
+        if((tp->t_flags & TF_SACK_PERMIT) && (to.to_flag & TOF_SACK)) {
+            u_long osacked = tp->snd_sacked;
+
             tcp_sack_update(tp, &to);
+            sacknew = tp->snd_sacked > osacked;
+        }
 
         if(SEQ_LEQ(ti->ti_ack, tp->snd_una)) {
-            if(ti->ti_len == 0 && tiwin == tp->snd_wnd) {
+            /*
+             * A duplicate ACK: no data, and the window it offers is the
+             * one before (RFC 5681 section 2). With SACK blocks in it, it
+             * is one if it SACKs data not SACKed before (RFC 6675 section
+             * 2), whatever its window - a receiver that grows its window
+             * as it reads, as Linux does, changes it in every ACK - and
+             * only then: one that reports a duplicate (a D-SACK, RFC
+             * 2883) says nothing is missing.
+             */
+            if(ti->ti_len == 0 &&
+                    ((to.to_flag & TOF_SACK) && (tp->t_flags & TF_SACK_PERMIT) ?
+                     sacknew : tiwin == tp->snd_wnd)) {
                 tcpstat.tcps_rcvdupack++;
                 /*
                  * If we have outstanding data (other than
