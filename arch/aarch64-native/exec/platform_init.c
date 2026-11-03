@@ -100,9 +100,9 @@ struct Task *Exec_ARMCreateIdleTask(struct ExecBase *SysBase)
 #if defined(__AROSEXEC_SMP__)
         AddTail(&CPUIdleTask->tc_MemEntry, &ml->ml_Node);
         /* KATTR_CPULoad derives a core's load from its idle task,
-         * and only exec knows the mapping. */
+         * and only exec knows the mapping. Other cores read it. */
         if (cpuNo < AARCH64_MAXCPUS)
-            aarch64_IdleTask[cpuNo] = CPUIdleTask;
+            __atomic_store_n(&aarch64_IdleTask[cpuNo], CPUIdleTask, __ATOMIC_RELEASE);
 #endif
     }
 #if defined(__AROSEXEC_SMP__)
@@ -132,9 +132,7 @@ int Exec_ARMCPUInit(struct ExecBase *SysBase)
     BootTask->tc_SPUpper = stack + AROS_STACKSIZE;
 
     /* The other cores create theirs as they start (cpu_Register) */
-    Exec_ARMCreateIdleTask(SysBase);
-
-    return TRUE;
+    return (Exec_ARMCreateIdleTask(SysBase) != NULL);
 }
 
 #if defined(__AROSEXEC_SMP__)

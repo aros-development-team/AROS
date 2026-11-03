@@ -39,7 +39,8 @@ static intptr_t krnCPULoad(unsigned int cpu)
     if ((cpu >= AARCH64_MAXCPUS) || !__arm_arosintern.ARMI_GetTime)
         return 0;
 
-    idler = aarch64_IdleTask[cpu];
+    /* Pairs with the release store in Exec_ARMCreateIdleTask() */
+    idler = __atomic_load_n(&aarch64_IdleTask[cpu], __ATOMIC_ACQUIRE);
     if (!idler || !(iet = GetIntETask(idler)))
         return 0;
 
