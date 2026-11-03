@@ -897,17 +897,26 @@ findpcb:
                  * Final ACK of a handshake: complete it from the SYN
                  * cache (or a valid cookie), creating the established
                  * socket, then run normal segment processing on this
-                 * ACK via step6.
+                 * ACK via step6.  An ACK that completes nothing - no
+                 * entry and no valid cookie, as when the peer goes on
+                 * with a connection this side no longer has - gets a
+                 * reset (RFC 9293 section 3.10.7.2), so that the peer
+                 * learns at once rather than by retransmitting until it
+                 * times out.
                  */
-                if(syncache_expand(so, ti, optp, optlen, m, &nso,
-                                   isipv6, &src6, &dst6)) {
+                switch(syncache_expand(so, ti, optp, optlen, m, &nso,
+                                       isipv6, &src6, &dst6)) {
+                case 1:
                     so = nso;
                     inp = (struct inpcb *)so->so_pcb;
                     tp = intotcpcb(inp);
                     tiwin = ti->ti_win << tp->snd_scale;
                     goto step6;
+                case 0:
+                    goto dropwithreset;
+                default:
+                    goto drop;
                 }
-                goto drop;
             }
             /* Stray segment to a listening socket: ignore. */
             goto drop;

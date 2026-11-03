@@ -246,7 +246,11 @@ listen queue, with **stateless SYN cookies** as the overflow fallback, so a SYN 
 exhaust socket/accept-queue resources.
 
 - `syncache_add` (inbound SYN) → `syncache_respond` (SYN-ACK).
-- `syncache_expand` (final ACK) → `syncache_socket` builds the `ESTABLISHED` socket.
+- `syncache_expand` (final ACK) → `syncache_socket` builds the `ESTABLISHED` socket. An ACK
+  that completes nothing - no entry and no valid cookie, or an entry whose SYN-ACK it does not
+  acknowledge - gets a reset (RFC 9293 section 3.10.7.2): a peer that goes on with a connection
+  this side has dropped learns at once, instead of retransmitting until it times out. One out of
+  sequence for its entry, or one no socket can be made for, is dropped quietly.
 - `syncache_chkrst` (RST); entries time out via `tcp_slowtimo`; the table is purged in `tcp_close`.
 
 The SYN cache is fully dual-stack (see §6).

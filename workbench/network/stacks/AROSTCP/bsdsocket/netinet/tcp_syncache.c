@@ -736,11 +736,18 @@ syncache_expand(struct socket *lso, struct tcpiphdr *ti,
     sc = syncache_lookup(sch, &key);
 
     if (sc != NULL) {
-        /* The ACK must acknowledge our SYN-ACK and be in sequence. */
-        if (ti->ti_ack != sc->sc_iss + 1 ||
-                ti->ti_seq != sc->sc_irs + 1) {
+        /*
+         * The ACK must acknowledge our SYN-ACK - else a reset, as RFC 9293
+         * section 3.10.7.3 has it for SYN-RECEIVED - and be in sequence,
+         * else it is dropped. The entry stays either way, for the right ACK.
+         */
+        if (ti->ti_ack != sc->sc_iss + 1) {
             splx(s);
-            return (0);			/* leave entry; silent drop */
+            return (0);
+        }
+        if (ti->ti_seq != sc->sc_irs + 1) {
+            splx(s);
+            return (-1);
         }
         LIST_REMOVE(sc, sc_hash);
         sch->sch_length--;
@@ -750,7 +757,7 @@ syncache_expand(struct socket *lso, struct tcpiphdr *ti,
         if (so == NULL) {
             tcpstat.tcps_sc_aborted++;
             splx(s);
-            return (0);
+            return (-1);
         }
         tcpstat.tcps_sc_completed++;
         *sop = so;
@@ -787,7 +794,7 @@ syncache_expand(struct socket *lso, struct tcpiphdr *ti,
             so = syncache_socket(&scs, lso, ti);
             if (so == NULL) {
                 splx(s);
-                return (0);
+                return (-1);
             }
             tcpstat.tcps_sc_recvcookie++;
             tcpstat.tcps_sc_completed++;
