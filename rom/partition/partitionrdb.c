@@ -19,6 +19,7 @@
 #include <resources/filesysres.h>
 
 #include "partition_support.h"
+#include "partition_types.h"
 #include "platform.h"
 
 #ifndef DEBUG
@@ -293,14 +294,20 @@ struct TagItem tags[] = {{PT_TYPE, (IPTR)&type}, {TAG_DONE, 0}};
     if (root->root != NULL)
     {
         GetPartitionAttrs(root, tags);
-        if (
-            (root->root->table->type != PHPTT_MBR &&
-             root->root->table->type != PHPTT_EBR) ||
-            (type.id[0] != 0x30 && type.id[0] != 0x76)
-            )
+        if (root->root->table->type == PHPTT_GPT)
         {
-            return 0;
+            UQUAD end = 0;
+            GetPartitionAttrsTags(root, PT_ENDBLOCK, (IPTR)&end, TAG_DONE);
+            if (end >= 0xffffffffULL)
+                return 0;
+            if (type.id_len != sizeof(GPT_Type_AROS_RDB) ||
+                memcmp(type.id, &GPT_Type_AROS_RDB, sizeof(GPT_Type_AROS_RDB)))
+                return 0;
         }
+        else if ((root->root->table->type != PHPTT_MBR &&
+                  root->root->table->type != PHPTT_EBR) ||
+                 (type.id[0] != 0x30 && type.id[0] != 0x76))
+            return 0;
     }
     return PartitionRDBFindHeader(PartitionBase, root, root->buffer) >= 0;
 }

@@ -70,6 +70,8 @@ extern Object *optObjCheckEFI;
 extern Object *optObjCheckFormatESP;
 extern Object *optObjCheckCopyESP;
 extern Object *bootopt_esp;
+extern Object *bootopt_grubgroup;
+extern Object *bootopt_efigroup;
 #endif
 
 extern Object *optObjCyclePartScheme;
@@ -589,6 +591,17 @@ IPTR InstallStage__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
             if (!data->instc_options_main->bootloaded)
             {
                 data->instc_options_main->bootloaded = TRUE;
+#ifdef INSTALL_BL_PC_EFI
+                extern Object *optObjCycleBootMode;
+                BootLoaderType = XOPTOGET(optObjCycleBootMode, MUIA_Cycle_Active) ?
+                    BOOTLOADER_EFI : BIOSBootLoaderType;
+                Object *bootOptions = (Object *)XGET(bootopt_grubgroup, MUIA_Parent);
+                DoMethod(bootOptions, MUIM_Group_InitChange);
+                SET(bootopt_grubgroup, MUIA_ShowMe, BootLoaderType != BOOTLOADER_EFI);
+                SET(bootopt_efigroup, MUIA_ShowMe, BootLoaderType == BOOTLOADER_EFI);
+                DoMethod(bootOptions, MUIM_Group_ExitChange);
+#endif
+
 
 #if defined(INSTALL_BL_EFI)
                 if (BootLoaderType == BOOTLOADER_EFI)
@@ -596,6 +609,7 @@ IPTR InstallStage__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                     TEXT espName[64], espText[96];
                     BOOL formatted = FALSE;
 
+                    data->instc_options_grub->bootinfo = TRUE;
                     if (BOOTLOADER_ESPInfo(espName, sizeof(espName),
                             &formatted))
                     {
@@ -603,10 +617,9 @@ IPTR InstallStage__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                             formatted ? "" : "  (unformatted)");
                         SET(bootopt_esp, MUIA_Text_Contents, (IPTR)espText);
 
-                        /* One that already holds a filesystem may be shared
-                           with another operating system */
-                        OPTOSET(optObjCheckFormatESP, MUIA_Selected,
-                            formatted ? FALSE : TRUE);
+                        /* A failed mount may be damaged or temporarily
+                         * unreadable, not blank. Formatting is always opt-in. */
+                        OPTOSET(optObjCheckFormatESP, MUIA_Selected, FALSE);
                     }
                     else
                     {
@@ -658,6 +671,26 @@ IPTR InstallStage__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                 data->instc_stage_prev = EInstallOptionsStage;
                 break;
             }
+#if defined(INSTALL_BL_EFI)
+            else if (BootLoaderType == BOOTLOADER_EFI)
+            {
+                TEXT espName[64];
+                BOOL formatted = FALSE;
+                if (!BOOTLOADER_ESPInfo(espName, sizeof(espName), &formatted))
+                {
+                    MUI_RequestA(data->installer, data->window, 0, _(MSG_ERROR),
+                        _(MSG_OK), _(MSG_EFINOESP), NULL);
+                    return 0;
+                }
+                if (!formatted && XOPTOGET(optObjCheckCopyESP, MUIA_Selected) &&
+                    !XOPTOGET(optObjCheckFormatESP, MUIA_Selected))
+                {
+                    MUI_RequestA(data->installer, data->window, 0, _(MSG_EFIESPIS),
+                        _(MSG_OK), _(MSG_FORMATPART), NULL);
+                    return 0;
+                }
+            }
+#endif
             else if (
 #if defined(INSTALL_BL_EFI)
                 (BootLoaderType != BOOTLOADER_EFI) &&
@@ -1156,7 +1189,24 @@ IPTR InstallStage__MUIM_Partition(Class * CLASS, Object * self, Msg message)
         OPTOGET(optObjCheckEFI, MUIA_Selected, &option);
         if (option)
         {
-            strcat(tmpcmd, " BOOTSIZE=100 BOOTTYPE=fat32");
+            IPTR deviceName, unit;
+            ULONG bootMB = 100;
+            struct PartitionHandle *root;
+            GET(optObjDestDevice, MUIA_InstallOption_Value, &deviceName);
+            GET(optObjDestUnit, MUIA_InstallOption_Value, &unit);
+            root = OpenRootPartition((CONST_STRPTR)deviceName, unit);
+            if (root)
+            {
+                /* FAT32 needs at least 65525 data clusters, including on
+                 * disks whose logical sectors are larger than 512 bytes. */
+                ULONG minimum = ((UQUAD)root->dg.dg_SectorSize * 66560 +
+                    1024 * 1024 - 1) / (1024 * 1024);
+                if (minimum > bootMB)
+                    bootMB = minimum;
+                CloseRootPartition(root);
+            }
+            sprintf(tmparg, " BOOTSIZE=%lu BOOTTYPE=fat32", bootMB);
+            strcat(tmpcmd, tmparg);
         }
         /* Partition scheme to use? */
         OPTOGET(optObjCyclePartScheme, MUIA_Cycle_Active, &option);

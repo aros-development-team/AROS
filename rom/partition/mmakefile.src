@@ -39,8 +39,8 @@ FUNCS := \
 #MM kernel-partition-includes : \
 #MM    kernel-exec-includes \
 #MM    includes-copy
-#MM kernel-partition : core-linklibs linklibs-fatbpb
-#MM kernel-partition-kobj : core-linklibs linklibs-fatbpb
+#MM kernel-partition : core-linklibs linklibs-fatbpb workbench-libs-uuid-includes
+#MM kernel-partition-kobj : core-linklibs linklibs-fatbpb workbench-libs-uuid-includes
 #MM- core-linklibs: linklibs-partition
 
 USER_CPPFLAGS := \

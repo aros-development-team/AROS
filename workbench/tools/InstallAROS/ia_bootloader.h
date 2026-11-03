@@ -9,6 +9,13 @@
 #define INSTALL_BL_GRUB
 #define INSTALL_BL_GRUB2
 #define GRUBARCHDIR "i386-pc"
+#define INSTALL_BL_EFI
+#define INSTALL_BL_PC_EFI
+#if defined(__x86_64__)
+#define EFI_STUB_FILE "BOOTX64.EFI"
+#else
+#define EFI_STUB_FILE "BOOTIA32.EFI"
+#endif
 #endif
 /*
 // Not yet supported/used
@@ -53,6 +60,9 @@ struct BootLoaderInfo
 
 extern struct BootLoaderInfo BootLoaderData[];
 extern LONG BootLoaderType;
+#ifdef INSTALL_BL_PC_EFI
+extern LONG BIOSBootLoaderType;
+#endif
 
 extern void BOOTLOADER_InitSupport(void);
 extern BOOL BOOTLOADER_PartFixUp(struct InstallStage_DATA *data, IPTR systype);

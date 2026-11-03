@@ -37,6 +37,10 @@
         PTT_RESERVED (ULONG *)
             Get number of reserved blocks
 
+        PTT_FIRSTUSABLE, PTT_LASTUSABLE (UQUAD *)
+            Inclusive usable block range, excluding partition metadata.
+            QueryPartitionTableAttrs() indicates support for these tags.
+
     RESULT
 
     NOTES

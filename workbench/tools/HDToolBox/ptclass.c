@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "ptclass.h"
+#include "hdtoolbox_support.h"
 #include "partitions.h"
 #include "partitiontables.h"
 #include "platform.h"
@@ -346,6 +347,14 @@ struct DosEnvec *findSpace(struct HDTBPartition *table, struct DosEnvec *de, ULO
     ULONG last = 0xFFFFFFFF;
 
     D(bug("[HDToolBox] findSpace()\n"));
+
+    if (table->table->type == PHPTT_GPT)
+    {
+        UQUAD usableEnd = 0;
+        GetPartitionTableAttrsA(table->ph, PTT_LASTUSABLE, (IPTR)&usableEnd, TAG_DONE);
+        if (usableEnd && usableEnd < last)
+            last = usableEnd;
+    }
 
     /* inherit */
     CopyMem(&table->de, de, sizeof(struct DosEnvec));
