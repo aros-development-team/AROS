@@ -509,7 +509,9 @@ void BOOTLOADER_DoInstall(Class * CLASS, Object * self)
 #if defined(INSTALL_BL_EFI)
     case BOOTLOADER_EFI:
         EFI_DoInstall(CLASS, self);
-        break;
+        if (data->inst_success == MUIV_Inst_InProgress)
+            SET(data->gauge2, MUIA_Gauge_Current, 100);
+        return;
 #endif
 #if defined(INSTALL_BL_GRUB2)
     case BOOTLOADER_GRUB2:
@@ -626,8 +628,9 @@ void BOOTLOADER_DoInstall(Class * CLASS, Object * self)
         break;
 #endif
     default:
-        /* TODO: support more bootloaders */
-        break;
+        /* No installation command exists for this bootloader. */
+        data->inst_success = MUIV_Inst_Failed;
+        return;
     }
 
     D(bug("[InstallAROS] %s: executing '%s'\n", __func__, tmp));
