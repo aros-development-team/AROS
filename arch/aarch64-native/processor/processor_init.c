@@ -31,6 +31,8 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
     unsigned int i;
 #if defined(__AROSEXEC_SMP__)
     struct Task *me = FindTask(NULL);
+    IPTR online = KrnGetSystemAttr(KATTR_AffinityMask);
+    unsigned int cpu = 0;
     ULONG waitmask = 0;
     BYTE sigbits[ProcessorBase->cpucount];
 
@@ -52,26 +54,41 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
 #if defined(__AROSEXEC_SMP__)
         if (i > 0)
         {
-            void *cpuMask = KrnAllocCPUMask();
-            if (cpuMask)
-                KrnGetCPUMask(i, cpuMask);
+            void *cpuMask = NULL;
 
-            sigbits[i] = AllocSignal(-1);
+            /* Slot i is the i-th running core, which need not be core i */
+            do
+                cpu++;
+            while ((cpu < sizeof(online) * 8) && !(online & ((IPTR)1 << cpu)));
+
+            if ((cpu < sizeof(online) * 8) && ((cpuMask = KrnAllocCPUMask()) != NULL))
+            {
+                KrnGetCPUMask(cpu, cpuMask);
+                sigbits[i] = AllocSignal(-1);
+            }
             if (sigbits[i] >= 0)
             {
                 ULONG mask = 1UL << sigbits[i];
-                waitmask |= mask;
-                NewCreateTask(TASKTAG_AFFINITY      , cpuMask,
-                              TASKTAG_PRI           , -127,
-                              TASKTAG_PC            , ProbeCPUAndSignal,
-                              TASKTAG_ARG1          , sysprocs[i],
-                              TASKTAG_ARG2          , me,
-                              TASKTAG_ARG3          , mask,
-                              TAG_DONE);
+
+                if (NewCreateTask(TASKTAG_AFFINITY      , cpuMask,
+                                  TASKTAG_PRI           , -127,
+                                  TASKTAG_PC            , ProbeCPUAndSignal,
+                                  TASKTAG_ARG1          , sysprocs[i],
+                                  TASKTAG_ARG2          , me,
+                                  TASKTAG_ARG3          , mask,
+                                  TAG_DONE))
+                    waitmask |= mask;
+                else
+                {
+                    FreeSignal(sigbits[i]);
+                    sigbits[i] = -1;
+                }
             }
-            else
+            if (sigbits[i] < 0)
             {
-                /* Out of signals: probe on the current CPU. */
+                /* No probe task: read it on the current CPU */
+                if (cpuMask)
+                    KrnFreeCPUMask(cpuMask);
                 ReadProcessorInformation(sysprocs[i]);
             }
         }
