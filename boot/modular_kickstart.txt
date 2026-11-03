@@ -69,7 +69,7 @@ optimization purposes, because hosted AROS boots up from emul-handler.
 
  partition.library
  afs-handler
- cdrom-handler
+ ODFileSystem-handler
  sfs-handler
  pfs3-handler
  fat-handler

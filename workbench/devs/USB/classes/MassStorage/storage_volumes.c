@@ -476,7 +476,7 @@ BOOL USBMSS_AddVolume(mss_unit_t *unit)
 				bn->bn_Node.ln_Pri = 20;
 
 				if ((unit->msu_inquiry[0] & 0x1f) == DG_CDROM)
-					handler = "cdrom.handler";
+					handler = "ODFileSystem-handler";
 				else
 					handler = "fat.handler";
 

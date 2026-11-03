@@ -1694,15 +1694,8 @@ static const struct DosEnvec CD32Envec = {
     .de_Interleave = 0,
     .de_LowCyl = 0,
     .de_HighCyl = 0,
-    /*
-     * CDVDFS sizes its sector cache as de_NumBuffers 16-sector (32 KB)
-     * prefetch chunks. A CD32 without expansion RAM backs MEMF_24BITDMA
-     * with its only 2 MB of chip RAM, so keep a single readahead chunk.  Some
-     * CD32 titles require a contiguous block just over 1 MiB at startup; a
-     * second chunk consumes the last 32 KiB of headroom they need.
-     * The Akiko data ring already buffers incoming sectors below this
-     * filesystem cache.
-     */
+    /* Keep the mount's buffer request and DMA transfers small on a stock
+     * CD32. The Akiko data ring already buffers incoming sectors. */
     .de_NumBuffers = 1,
     .de_BufMemType = MEMF_24BITDMA,
     .de_MaxTransfer = 32 * 2048,

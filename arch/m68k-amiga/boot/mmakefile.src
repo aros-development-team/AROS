@@ -186,7 +186,7 @@ KLIBS   :=  graphics layers intuition gadtools icon workbench \
             mathffp mathieeesingbas \
             setpatch lowlevel
 KDEVS   := cd cd32mpeg ata ramdrive audio
-KHNDLRS := cdrom
+KHNDLRS := ODFileSystem
 KHIDDS  := bus storage system p96gfx
 KRSRCS  := battclock battmem potgo misc shellcommands workbook wbtag disk
 KHOOKS  := alert
@@ -392,7 +392,7 @@ AFILES  :=
 KLIBS   := aros utility dos oop mathffp mathieeesingbas partition \
            keymap graphics layers intuition gadtools icon workbench setpatch
 KDEVS   := timer input keyboard console trackdisk gameport audio ata cd
-KHNDLRS := cdrom con afs ram
+KHNDLRS := ODFileSystem con afs ram
 KHIDDS  := amigakbd amigamouse amigavideo ata_gayle bus gfx hiddclass inputclass keyboard mouse storage system p96gfx
 KRSRCS  := battclock battmem processor task lddemon dosboot cia potgo disk \
            misc shell shellcommands workbook wbtag card FileSystem

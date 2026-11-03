@@ -1,0 +1,20 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- test-filesys : test-filesys-odfs
+#MM- test-filesys-quick : test-filesys-odfs-quick
+
+#MM test-filesys-odfs
+#MM test-filesys-odfs-quick
+
+.PHONY: test-filesys-odfs test-filesys-odfs-quick
+
+test-filesys-odfs:
+	$(MAKE) -C $(SRCDIR)/rom/filesys/odfs/source check \
+	    HOSTCC="$(HOST_CC)" CC="$(HOST_CC)" AR="$(firstword $(HOST_AR))" GIT= \
+	    HOST_BUILD=$(GENDIR)/$(CURDIR)/host
+
+test-filesys-odfs-quick: test-filesys-odfs
+
+%common

@@ -1306,6 +1306,9 @@
 /rom/expansion/mmakefile
 /rom/expansion/libdefs.h
 
+# /rom/filesys/odfs/
+/rom/filesys/odfs/mmakefile
+
 # /rom/filesys/AmberRAM/
 /rom/filesys/AmberRAM/mmakefile
 

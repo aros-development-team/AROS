@@ -13,7 +13,7 @@ title AROS on Sam4x0
     module Classes/USB/bootkeyboard.class
     module Devs/bootloader.resource
     module Classes/USB/bootmouse.class
-    module L/cdrom-handler
+    module L/ODFileSystem-handler
     module L/con-handler
     module Devs/console.device
     module Libs/debug.library
@@ -73,7 +73,7 @@ title AROS on Sam4x0 Debug
     module Classes/USB/bootkeyboard.class
     module Devs/bootloader.resource
     module Classes/USB/bootmouse.class
-    module L/cdrom-handler
+    module L/ODFileSystem-handler
     module L/con-handler
     module Devs/console.device
     module Libs/debug.library
@@ -131,7 +131,7 @@ title AROS on Sam4x0 Test Alternative Usb
     module Devs/ata.device
     module boot/sam440/Devs/battclock.resource
     module Devs/bootloader.resource
-    module L/cdrom-handler
+    module L/ODFileSystem-handler
     module L/con-handler
     module Devs/console.device
     module Libs/debug.library

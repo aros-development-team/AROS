@@ -155,7 +155,7 @@ SFS:
 /* Entry for ISO image */
 
 CD0:
-        FileSystem     = cdrom-handler
+        FileSystem     = ODFileSystem-handler
         Device         = fdsk.device
         Unit           = 0
         LowCyl         = 0
