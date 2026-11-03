@@ -407,6 +407,12 @@ static BOOL riscv_hi20_value(struct sheader *sh, struct sheader *toreloc,
         }
 
         s2 = &symtab[ELF_R_SYM(r2->info)];
+        if (s2->shindex == SHN_UNDEF)
+        {
+            /* undefined weak symbol: its auipc was made an absolute lui */
+            *hival = r2->addend;
+            return TRUE;
+        }
         if (s2->shindex == SHN_ABS)
             v = s2->value;
         else
@@ -1257,6 +1263,21 @@ static int relocate
             case R_RISCV_PCREL_HI20:
             {
                 SIPTR off = s + rel->addend - (IPTR)p;
+
+                /*
+                 * An undefined weak symbol is address 0, which a module
+                 * loaded more than 2 GB up cannot reach pc-relatively:
+                 * the offset would wrap and the code's NULL test would
+                 * see a wild address. Address it absolutely instead, as
+                 * GNU ld does - auipc rd becomes lui rd - and the paired
+                 * LO12 then adds to that absolute base.
+                 */
+                if (sym->shindex == SHN_UNDEF)
+                {
+                    *(ULONG *)p = (*(ULONG *)p & 0x00000F80) | 0x37 |
+                                  ((rel->addend + 0x800) & 0xFFFFF000);
+                    break;
+                }
 
                 *(ULONG *)p = (*(ULONG *)p & 0x00000FFF) |
                               ((off + 0x800) & 0xFFFFF000);
