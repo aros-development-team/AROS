@@ -596,23 +596,22 @@ int main(void)
         if (!hasActive && activePart)
             SetPartitionAttrsTags(activePart, PT_ACTIVE, TRUE, TAG_DONE);
 
-        /* Save to disk and deallocate */
-        WritePartitionTable(diskPart);
-        ClosePartitionTable(diskPart);
-
-        if (parent == extPartition)
-        {
-            WritePartitionTable(extPartition);
-            ClosePartitionTable(extPartition);
-        }
-
-        /* Save to disk and deallocate */
-        WritePartitionTable(root);
-        ClosePartitionTable(root);
+        /* Write children before publishing them in their parent tables.
+         * With SCHEME=rdb, diskPart and root refer to the same table. */
+        error = WritePartitionTable(diskPart);
+        if (error == 0 && parent == extPartition)
+            error = WritePartitionTable(extPartition);
+        if (error == 0 && diskPart != root)
+            error = WritePartitionTable(root);
     }
 
     if (root != NULL)
+    {
+        /* Closing the root table recursively discards all child tables,
+         * including on an earlier creation or write failure. */
+        ClosePartitionTable(root);
         CloseRootPartition(root);
+    }
 
     if (!ARG(QUIET) && error == 0) Printf("Partitioning completed\n");
 
