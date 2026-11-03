@@ -27,22 +27,26 @@ tcp_seq	tcp_new_isn(struct inpcb *inp);
  * its own (tcp_ts_key).
  */
 u_int32_t tcp_new_tsoff(struct inpcb *inp);
-u_int32_t tcp_ts_offset(u_int32_t, u_int32_t, u_int32_t, u_int32_t);
+extern u_int32_t tcp_ts_key[];
 
 /*
- * ISN hash primitive (Murmur-style keyed hash).
+ * The keyed hash of a connection (SipHash-2-4), and what it is for.
  */
-u_int32_t tcp_isn_hash(u_int32_t, u_int32_t, u_int32_t, u_int32_t,
-	    u_int32_t *);
+#define TCPH_ISN	1
+#define TCPH_COOKIE	2
+#define TCPH_SYNCACHE	3
+#define TCPH_TSOFF	4
+u_int32_t tcp_conn_hash(const u_int32_t *, int, int, const void *,
+	    const void *, u_int16_t, u_int16_t, u_int32_t);
 
 /*
  * SYN cookie support (RFC 4987).
  */
 extern int tcp_syncookies;
 extern u_int32_t tcp_secret_key[];
-tcp_seq	 tcp_syncookie_generate(struct in_addr, struct in_addr,
+tcp_seq	 tcp_syncookie_generate(int, const void *, const void *,
 	    u_int16_t, u_int16_t, u_int16_t);
-u_int16_t tcp_syncookie_validate(struct in_addr, struct in_addr,
+u_int16_t tcp_syncookie_validate(int, const void *, const void *,
 	    u_int16_t, u_int16_t, tcp_seq);
 
 /*

@@ -159,20 +159,93 @@ tcp_v6output(struct mbuf *m, struct in6_addr *laddr, struct in6_addr *faddr,
 #endif /* INET6 */
 u_int32_t tcp_secret_key[4];
 
-/* Mix-based hash for ISN generation (Murmur-style) */
-u_int32_t
-tcp_isn_hash(u_int32_t a, u_int32_t b, u_int32_t c, u_int32_t d,
-    u_int32_t *key)
+/*
+ * The keyed hash of a connection: SipHash-2-4 (Aumasson and Bernstein) over
+ * its addresses - all 128 bits for IPv6 - its ports, a word of the
+ * caller's, and a byte that keeps the uses apart (TCPH_*). The ISN (RFC
+ * 6528), the SYN cookies (RFC 4987), the SYN cache buckets and the timestamp
+ * offsets need a function no one can compute without the key, which RFC
+ * 6528 asks for; Linux uses SipHash for them.
+ */
+#define SIP_ROTL(x, b)  (((x) << (b)) | ((x) >> (64 - (b))))
+#define SIP_ROUND(v0, v1, v2, v3) do { \
+        v0 += v1; v1 = SIP_ROTL(v1, 13); v1 ^= v0; v0 = SIP_ROTL(v0, 32); \
+        v2 += v3; v3 = SIP_ROTL(v3, 16); v3 ^= v2; \
+        v0 += v3; v3 = SIP_ROTL(v3, 21); v3 ^= v0; \
+        v2 += v1; v1 = SIP_ROTL(v1, 17); v1 ^= v2; v2 = SIP_ROTL(v2, 32); \
+    } while(0)
+
+/* n (0..8) bytes at p as a little-endian word */
+static uint64_t
+sip_le64(const u_char *p, size_t n)
 {
-	u_int32_t h = key[0];
-	h ^= a; h = (h << 13) | (h >> 19); h *= 0x5bd1e995;
-	h ^= b; h = (h << 13) | (h >> 19); h *= 0x5bd1e995;
-	h ^= c; h = (h << 13) | (h >> 19); h *= 0x5bd1e995;
-	h ^= d; h = (h << 13) | (h >> 19); h *= 0x5bd1e995;
-	h ^= key[1]; h ^= key[2]; h ^= key[3];
-	h ^= h >> 16;
-	return h;
+    uint64_t m = 0;
+
+    while(n--)
+        m |= (uint64_t)p[n] << (8 * n);
+    return m;
 }
+
+static uint64_t
+tcp_siphash(const u_int32_t *key, const u_char *p, size_t len)
+{
+    uint64_t k0 = key[0] | (uint64_t)key[1] << 32;
+    uint64_t k1 = key[2] | (uint64_t)key[3] << 32;
+    uint64_t v0 = k0 ^ 0x736f6d6570736575ULL, v1 = k1 ^ 0x646f72616e646f6dULL;
+    uint64_t v2 = k0 ^ 0x6c7967656e657261ULL, v3 = k1 ^ 0x7465646279746573ULL;
+    uint64_t m;
+    size_t left = len;
+
+    for(; left >= 8; p += 8, left -= 8) {
+        m = sip_le64(p, 8);
+        v3 ^= m;
+        SIP_ROUND(v0, v1, v2, v3);
+        SIP_ROUND(v0, v1, v2, v3);
+        v0 ^= m;
+    }
+    m = sip_le64(p, left) | (uint64_t)len << 56;
+    v3 ^= m;
+    SIP_ROUND(v0, v1, v2, v3);
+    SIP_ROUND(v0, v1, v2, v3);
+    v0 ^= m;
+    v2 ^= 0xff;
+    SIP_ROUND(v0, v1, v2, v3);
+    SIP_ROUND(v0, v1, v2, v3);
+    SIP_ROUND(v0, v1, v2, v3);
+    SIP_ROUND(v0, v1, v2, v3);
+    return v0 ^ v1 ^ v2 ^ v3;
+}
+
+/* laddr and faddr: struct in6_addr if isipv6, else struct in_addr */
+u_int32_t
+tcp_conn_hash(const u_int32_t *key, int use, int isipv6, const void *laddr,
+    const void *faddr, u_int16_t lport, u_int16_t fport, u_int32_t extra)
+{
+    u_char buf[1 + 2 * sizeof(struct in6_addr) + 2 * sizeof(u_int16_t) + sizeof(u_int32_t)];
+    size_t alen = isipv6 ? sizeof(struct in6_addr) : sizeof(struct in_addr), n = 0;
+
+    buf[n++] = (u_char)use;
+    bcopy(laddr, buf + n, alen);
+    n += alen;
+    bcopy(faddr, buf + n, alen);
+    n += alen;
+    bcopy(&lport, buf + n, sizeof(lport));
+    n += sizeof(lport);
+    bcopy(&fport, buf + n, sizeof(fport));
+    n += sizeof(fport);
+    bcopy(&extra, buf + n, sizeof(extra));
+    n += sizeof(extra);
+    return (u_int32_t)tcp_siphash(key, buf, n);
+}
+
+/* inp's family and addresses, for tcp_conn_hash() */
+#if INET6
+#define INP_HASHADDRS(inp) tcp_isipv6(inp), \
+        tcp_isipv6(inp) ? (const void *)&(inp)->inp_laddr6 : (const void *)&(inp)->inp_laddr, \
+        tcp_isipv6(inp) ? (const void *)&(inp)->inp_faddr6 : (const void *)&(inp)->inp_faddr
+#else
+#define INP_HASHADDRS(inp) 0, (const void *)&(inp)->inp_laddr, (const void *)&(inp)->inp_faddr
+#endif
 
 /*
  * Generate a per-connection ISN per RFC 6528:
@@ -182,74 +255,35 @@ tcp_isn_hash(u_int32_t a, u_int32_t b, u_int32_t c, u_int32_t d,
 tcp_seq
 tcp_new_isn(struct inpcb *inp)
 {
-	u_int32_t hash;
-
-#if INET6
-	if(tcp_isipv6(inp)) {
-		u_int32_t *la = (u_int32_t *)&inp->inp_laddr6;
-		u_int32_t *fa = (u_int32_t *)&inp->inp_faddr6;
-		hash = tcp_isn_hash(
-		    la[0] ^ la[1] ^ la[2] ^ la[3],
-		    (u_int32_t)inp->inp_lport,
-		    fa[0] ^ fa[1] ^ fa[2] ^ fa[3],
-		    (u_int32_t)inp->inp_fport,
-		    tcp_secret_key);
-		return ((tcp_seq)tcp_iss + hash);
-	}
-#endif
-
-	hash = tcp_isn_hash(
-	    inp->inp_laddr.s_addr,
-	    (u_int32_t)inp->inp_lport,
-	    inp->inp_faddr.s_addr,
-	    (u_int32_t)inp->inp_fport,
-	    tcp_secret_key);
-
-	return ((tcp_seq)tcp_iss + hash);
+	return ((tcp_seq)tcp_iss + tcp_conn_hash(tcp_secret_key, TCPH_ISN,
+	    INP_HASHADDRS(inp), inp->inp_lport, inp->inp_fport, 0));
 }
 
 /*
  * The timestamp offset of a connection (RFC 7323 section 5.4): its TSval is
- * tcp_now plus a hash of its addresses and ports, so that the TSval tells
+ * tcp_now plus a hash of its addresses and ports (tcp_conn_hash()), so that the TSval tells
  * neither the time since the stack started nor how two connections relate,
- * as FreeBSD and Linux do. The key is not the ISN's: with the same hash in
- * both, ISN - TSval would give the ISN clock away.
+ * as FreeBSD and Linux do. The key is not the ISN's: with the same one,
+ * ISN - TSval would give the ISN clock away.
  */
 u_int32_t tcp_ts_key[4];
 
 u_int32_t
-tcp_ts_offset(u_int32_t la, u_int32_t lport, u_int32_t fa, u_int32_t fport)
-{
-	return tcp_isn_hash(la, lport, fa, fport, tcp_ts_key);
-}
-
-u_int32_t
 tcp_new_tsoff(struct inpcb *inp)
 {
-#if INET6
-	if(tcp_isipv6(inp)) {
-		u_int32_t *la = (u_int32_t *)&inp->inp_laddr6;
-		u_int32_t *fa = (u_int32_t *)&inp->inp_faddr6;
-
-		return tcp_ts_offset(la[0] ^ la[1] ^ la[2] ^ la[3],
-		    (u_int32_t)inp->inp_lport,
-		    fa[0] ^ fa[1] ^ fa[2] ^ fa[3],
-		    (u_int32_t)inp->inp_fport);
-	}
-#endif
-	return tcp_ts_offset(inp->inp_laddr.s_addr, (u_int32_t)inp->inp_lport,
-	    inp->inp_faddr.s_addr, (u_int32_t)inp->inp_fport);
+	return tcp_conn_hash(tcp_ts_key, TCPH_TSOFF, INP_HASHADDRS(inp),
+	    inp->inp_lport, inp->inp_fport, 0);
 }
 
 /*
  * SYN cookie support (RFC 4987).
  *
  * Cookie = ISN encoding:
- *   bits 31..8: hash(src_ip, src_port, dst_ip, dst_port, secret, counter)
+ *   bits 31..8: tcp_conn_hash(secret, addresses, ports, counter)
  *   bits  7..5: MSS index (8 common MSS values)
  *   bits  4..0: counter mod 32 (to validate freshness)
  *
- * The counter is tcp_iss / TCP_ISSINCR (approximately a slow-timer tick count).
+ * The counter is tcp_iss / TCP_ISSINCR, which advances once a second.
  */
 
 /* Common MSS values for encoding (3 bits = 8 entries) */
@@ -273,8 +307,8 @@ tcp_sc_mss_encode(u_int16_t mss)
 }
 
 tcp_seq
-tcp_syncookie_generate(struct in_addr src, struct in_addr dst,
-    u_int16_t sport, u_int16_t dport, u_int16_t mss)
+tcp_syncookie_generate(int isipv6, const void *laddr, const void *faddr,
+    u_int16_t lport, u_int16_t fport, u_int16_t mss)
 {
 	u_int32_t counter;
 	u_int32_t hash;
@@ -283,17 +317,16 @@ tcp_syncookie_generate(struct in_addr src, struct in_addr dst,
 	counter = (u_int32_t)(tcp_iss / TCP_ISSINCR);
 	mss_idx = tcp_sc_mss_encode(mss);
 
-	hash = tcp_isn_hash(src.s_addr, dst.s_addr,
-	    ((u_int32_t)sport << 16) | dport,
-	    counter, tcp_secret_key);
+	hash = tcp_conn_hash(tcp_secret_key, TCPH_COOKIE, isipv6, laddr, faddr,
+	    lport, fport, counter);
 
 	return ((hash & 0xFFFFFF00) |
 	    ((mss_idx & 0x7) << 5) | (counter & 0x1F));
 }
 
 u_int16_t
-tcp_syncookie_validate(struct in_addr src, struct in_addr dst,
-    u_int16_t sport, u_int16_t dport, tcp_seq ack_seq)
+tcp_syncookie_validate(int isipv6, const void *laddr, const void *faddr,
+    u_int16_t lport, u_int16_t fport, tcp_seq ack_seq)
 {
 	tcp_seq cookie = ack_seq - 1;
 	u_int32_t counter_now;
@@ -310,14 +343,13 @@ tcp_syncookie_validate(struct in_addr src, struct in_addr dst,
 
 	diff = (counter_now & 0x1F) - counter_then;
 	if(diff < 0) diff += 32;
-	if(diff > 6) /* ~3 seconds window */
+	if(diff > 6) /* about 6 s: the counter advances once a second */
 		return 0;
 
 	/* Try current counter epoch */
 	try_counter = (counter_now & ~0x1F) | counter_then;
-	hash = tcp_isn_hash(src.s_addr, dst.s_addr,
-	    ((u_int32_t)sport << 16) | dport,
-	    try_counter, tcp_secret_key);
+	hash = tcp_conn_hash(tcp_secret_key, TCPH_COOKIE, isipv6, laddr, faddr,
+	    lport, fport, try_counter);
 	expected = (hash & 0xFFFFFF00) |
 	    ((mss_idx & 0x7) << 5) | (counter_then & 0x1F);
 	if(expected == cookie)
@@ -326,9 +358,8 @@ tcp_syncookie_validate(struct in_addr src, struct in_addr dst,
 	/* Try previous epoch in case counter wrapped */
 	if(try_counter >= 32) {
 		try_counter -= 32;
-		hash = tcp_isn_hash(src.s_addr, dst.s_addr,
-		    ((u_int32_t)sport << 16) | dport,
-		    try_counter, tcp_secret_key);
+		hash = tcp_conn_hash(tcp_secret_key, TCPH_COOKIE, isipv6, laddr,
+		    faddr, lport, fport, try_counter);
 		expected = (hash & 0xFFFFFF00) |
 		    ((mss_idx & 0x7) << 5) | (counter_then & 0x1F);
 		if(expected == cookie)

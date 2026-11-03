@@ -251,6 +251,12 @@ exhaust socket/accept-queue resources.
 
 The SYN cache is fully dual-stack (see §6).
 
+The ISN (RFC 6528), the cookies, the cache's buckets and the timestamp offsets (§5.3) come from one
+keyed hash of the connection, `tcp_conn_hash()` (`tcp_subr.c`): SipHash-2-4 over both addresses -
+the whole 128 bits for IPv6 - both ports, a word of the caller's (the cookie's counter) and a byte
+for the use, so that no two uses give the same value. RFC 6528 asks for a function that cannot be
+computed without the key; Linux uses SipHash for the same values.
+
 ### 5.3 Timers
 
 `tcp_timer.c` runs the fast (200 ms) and slow (500 ms) timers driven from the daemon: retransmit
@@ -350,9 +356,9 @@ overlay), so header building and the state machine are shared; only the family e
   `struct sc_key` (via `syncache_key`) abstracts the family for hash/lookup/fill.
   `syncache_respond` builds the v6 SYN-ACK via `tcp_v6output`. `syncache_socket` sets the v6
   four-tuple directly (`inp_laddr6`/`faddr6`/`lport`/`fport`) — v6 PCBs are found by a linear scan
-  of `tcb`, so there is no `in_pcbrehash`/`in_pcbconnect`. SYN cookies fold the 128-bit addresses to
-  32 bits (`syncache_v6fold`) for the v4-shaped cookie hash (consistent because those addresses are
-  also present on the return ACK). `syncache_add`/`expand`/`chkrst` take `(isipv6, src6, dst6)`.
+  of `tcb`, so there is no `in_pcbrehash`/`in_pcbconnect`. The cookie, the ISN and the bucket hash
+  take the whole 128-bit addresses (`tcp_conn_hash()`, §5.2). `syncache_add`/`expand`/`chkrst` take
+  `(isipv6, src6, dst6)`.
 - **Source address selection.** `in6_pcbconnect` selects a source via `rtalloc()` +
   `in6_ifawithifp()` (mirroring `udp6_output`); an unbound socket must not connect from the
   unspecified address (`::`), which `ip6_input` discards on receipt (RFC 4291 scope).
