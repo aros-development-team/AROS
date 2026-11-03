@@ -132,6 +132,88 @@ struct inpcbinfo tcbinfo;
 }
 
 /*
+ * The run of contiguous data in the reassembly queue that holds seq: 1 and
+ * *b, or 0.
+ */
+static int
+tcp_sack_run(struct tcpcb *tp, tcp_seq seq, struct sackblk *b)
+{
+    struct mbuf *q = tp->t_segq;
+
+    while(q) {
+        const struct tcpiphdr *ti = (const struct tcpiphdr *)q->m_pkthdr.header;
+        tcp_seq start = ti->ti_seq, end = ti->ti_seq + ti->ti_len;
+
+        for(q = q->m_nextpkt; q; q = q->m_nextpkt) {
+            ti = (const struct tcpiphdr *)q->m_pkthdr.header;
+            if(ti->ti_seq != end)
+                break;
+            end = ti->ti_seq + ti->ti_len;
+        }
+        if(SEQ_GEQ(seq, start) && SEQ_LT(seq, end)) {
+            b->start = start;
+            b->end = end;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* Add b to the n blocks of nb, unless one starts where it does or nb is full. */
+static void
+tcp_sack_addblk(struct sackblk *nb, int *n, const struct sackblk *b)
+{
+    int j;
+
+    if(*n >= MAX_SACK_BLKS)
+        return;
+    for(j = 0; j < *n; j++)
+        if(nb[j].start == b->start)
+            return;
+    nb[(*n)++] = *b;
+}
+
+/*
+ * The SACK blocks to send (RFC 2018 section 4), once the reassembly queue
+ * has changed and rcv_nxt moved past what it could: first the run that
+ * holds the segment [s, s + 1) just queued (have), if it is still out of
+ * order - the first block MUST hold the segment that triggered the ACK;
+ * then the blocks sent before, most recent first, as they stand now; then
+ * the other runs. tcp_output() sends as many as fit, the first ones. All
+ * are above rcv_nxt: a block below the ACK would read as a D-SACK (RFC
+ * 2883), a segment received twice.
+ */
+static void
+tcp_sack_rcvblocks(struct tcpcb *tp, int have, tcp_seq s)
+{
+    struct sackblk nb[MAX_SACK_BLKS] = { { 0, 0 } }, b;
+    struct mbuf *q;
+    int n = 0, i;
+
+    if(have && SEQ_GEQ(s, tp->rcv_nxt) && tcp_sack_run(tp, s, &b))
+        tcp_sack_addblk(nb, &n, &b);
+    for(i = 0; i < tp->t_num_dsack_blks; i++) {
+        tcp_seq from = tp->t_dsack_blks[i].start;
+
+        if(SEQ_LT(from, tp->rcv_nxt))
+            from = tp->rcv_nxt;
+        if(SEQ_LT(from, tp->t_dsack_blks[i].end) && tcp_sack_run(tp, from, &b))
+            tcp_sack_addblk(nb, &n, &b);
+    }
+    for(q = tp->t_segq; q; q = q->m_nextpkt) {
+        const struct tcpiphdr *ti = (const struct tcpiphdr *)q->m_pkthdr.header;
+
+        if(tcp_sack_run(tp, ti->ti_seq, &b))
+            tcp_sack_addblk(nb, &n, &b);
+    }
+    for(i = 0; i < n; i++)
+        tp->t_dsack_blks[i] = nb[i];
+    tp->t_num_dsack_blks = n;
+    if(n > 0)
+        tp->t_flagsext |= TF_SACK_GENERATE;
+}
+
+/*
  * Upper bound on the number of segments allowed to sit on a single
  * connection's out-of-order reassembly queue.  These segments are not
  * charged against the socket receive buffer, so without a cap a peer
@@ -149,8 +231,10 @@ struct mbuf *m;
     struct mbuf *p;
     struct mbuf *nq;
     struct socket *so = tp->t_inpcb->inp_socket;
-    int flags;
+    int flags = 0;
     int qlen;
+    int queued = 0;         /* a segment went into the queue */
+    tcp_seq qseq = 0;       /* where it starts */
 
 #define GETTCP(m)       ((struct tcpiphdr *)m->m_pkthdr.header)
 
@@ -248,42 +332,8 @@ struct mbuf *m;
         p->m_nextpkt = m;
     }
 
-    /*
-     * SACK (RFC 2018): Build SACK blocks from the reassembly
-     * queue to report to the sender what we have received.
-     * Only generate blocks when SACK is negotiated and we
-     * have OOO data (segments beyond rcv_nxt).
-     */
-    if(tp->t_flags & TF_SACK_PERMIT) {
-        struct mbuf *sq;
-        int n = 0;
-        for(sq = tp->t_segq; sq && n < MAX_SACK_BLKS;
-                sq = sq->m_nextpkt) {
-            struct tcpiphdr *stip = GETTCP(sq);
-            tcp_seq sblk_end = stip->ti_seq + stip->ti_len;
-            /* Merge with next contiguous segments */
-            while(sq->m_nextpkt) {
-                struct tcpiphdr *ntip = GETTCP(sq->m_nextpkt);
-                if(ntip->ti_seq == sblk_end) {
-                    sblk_end = ntip->ti_seq + ntip->ti_len;
-                    sq = sq->m_nextpkt;
-                } else
-                    break;
-            }
-            /* Only report blocks beyond rcv_nxt (OOO data) */
-            if(SEQ_GT(sblk_end, tp->rcv_nxt)) {
-                tcp_seq sblk_start = stip->ti_seq;
-                if(SEQ_LT(sblk_start, tp->rcv_nxt))
-                    sblk_start = tp->rcv_nxt;
-                tp->t_dsack_blks[n].start = sblk_start;
-                tp->t_dsack_blks[n].end = sblk_end;
-                n++;
-            }
-        }
-        tp->t_num_dsack_blks = n;
-        if(n > 0)
-            tp->t_flagsext |= TF_SACK_GENERATE;
-    }
+    queued = 1;
+    qseq = ti->ti_seq;
 
 present:
     /*
@@ -291,10 +341,10 @@ present:
      * completed sequence space.
      */
     if(!TCPS_HAVEESTABLISHED(tp->t_state))
-        return (0);
+        goto out;
     q = tp->t_segq;
     if(!q || GETTCP(q)->ti_seq != tp->rcv_nxt)
-        return (0);
+        goto out;
     do {
         tp->rcv_nxt += GETTCP(q)->ti_len;
         flags = GETTCP(q)->ti_flags & TH_FIN;
@@ -308,6 +358,9 @@ present:
         q = nq;
     } while(q && GETTCP(q)->ti_seq == tp->rcv_nxt);
     sorwakeup(so);
+out:
+    if(tp->t_flags & TF_SACK_PERMIT)
+        tcp_sack_rcvblocks(tp, queued, qseq);
     return (flags);
 
 #undef GETTCP

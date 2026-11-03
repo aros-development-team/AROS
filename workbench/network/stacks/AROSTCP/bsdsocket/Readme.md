@@ -245,6 +245,11 @@ bench (random, several holes in a window, a lost retransmission, reordering) it 
 difference either way. A partial ACK is one more ACK in recovery. `snd_cwnd` stays at
 what is in flight until the recovery ends, at `ssthresh`.
 
+As a receiver, the SACK blocks of an ACK (`tcp_sack_rcvblocks()`, from the reassembly queue once
+`rcv_nxt` has moved) begin with the one that holds the segment just received, as RFC 2018
+section 4 requires, then the ones sent before, most recent first, as many as fit. None lies below
+the cumulative ACK, where a sender would take it for a D-SACK (RFC 2883).
+
 Without SACK, loss recovery is NewReno (RFC 6582). A partial ACK in fast recovery resends the
 first unacknowledged segment with `cwnd` covering the bytes it acknowledges plus that segment
 (snd_una has not advanced yet), deflates `cwnd`, and is then processed like any ACK, so `snd_una`
