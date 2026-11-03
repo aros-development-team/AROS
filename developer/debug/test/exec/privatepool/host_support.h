@@ -3,12 +3,15 @@
 #define PRIVATEPOOL_HOST_SUPPORT_H
 
 #include <stdint.h>
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdatomic.h>
+#ifndef __wasi__
 #include <pthread.h>
+#endif
 #include <sched.h>
 
 typedef uintptr_t IPTR;
@@ -21,6 +24,17 @@ typedef int BOOL;
 #define FALSE 0
 #define NT_MEMORY 10
 #define MEMF_ANY 0
+#define MEMF_PHYSICAL_MASK 0xff
+#define MEMF_LARGEST (1UL << 17)
+#define MEMF_TOTAL (1UL << 19)
+#define D(x)
+#define ReturnVoid(x) return
+#define MEM_LOCK host_forbid(SysBase)
+#define MEM_LOCK_SHARED MEM_LOCK
+#define MEM_UNLOCK host_permit(SysBase)
+#define SPINLOCK_MODE_READ 0
+#define TDNESTCOUNT_INC SysBase->TDNestCnt++
+#define TDNESTCOUNT_DEC SysBase->TDNestCnt--
 #define MEMF_CLEAR (1UL << 16)
 #define MEMF_REVERSE (1UL << 18)
 #ifndef HOST_ALIGNMENT
@@ -54,8 +68,39 @@ struct MemHeaderExt {
     struct MemHeader header;
     APTR (*mhe_Alloc)(struct MemHeaderExt *, IPTR, ULONG *);
     void (*mhe_Free)(struct MemHeaderExt *, APTR, IPTR);
+    BOOL (*mhe_InBounds)(struct MemHeaderExt *, APTR, APTR);
+    APTR (*mhe_AllocAbs)(struct MemHeaderExt *, IPTR, APTR);
+    IPTR (*mhe_Avail)(struct MemHeaderExt *, ULONG);
 };
-struct ExecBase { int unused; };
+struct List { struct Node *lh_Head, *lh_Tail, *lh_TailPred; };
+struct ExecBase { struct List MemList; int DebugAROSBase; signed char TDNestCnt; unsigned IntFlags; unsigned pending_switch, switches; };
+static struct ExecBase host_sys = {.TDNestCnt = -1};
+#define PrivExecBase(sys) (sys)
+#define EXECF_MungWall 1
+#define MUNGE_BLOCK(p, value, n) memset(p, value, n)
+#define MEMFILL_ALLOC 0xa3
+#define ASSERT(x) assert(x)
+#define CURRENT_LOCATION(name) {name, NULL, NULL}
+static void host_forbid(struct ExecBase *sys) { sys->TDNestCnt++; }
+static void host_permit(struct ExecBase *sys) {
+    sys->TDNestCnt--;
+    if (sys->TDNestCnt < 0 && sys->pending_switch) {
+        sys->pending_switch = 0;
+        sys->switches++;
+    }
+}
+#define ForeachNode(list, node) \
+    for (node = (void *)(list)->lh_Head; node->mh_Node.ln_Succ; \
+         node = (void *)node->mh_Node.ln_Succ)
+static void host_memlist(struct ExecBase *sys, struct MemHeader *mh) {
+    sys->MemList.lh_Head = &mh->mh_Node;
+    sys->MemList.lh_Tail = NULL;
+    sys->MemList.lh_TailPred = &mh->mh_Node;
+    mh->mh_Node.ln_Pred = (void *)&sys->MemList.lh_Head;
+    mh->mh_Node.ln_Succ = (void *)&sys->MemList.lh_Tail;
+    sys->DebugAROSBase = 1;
+    sys->TDNestCnt = -1;
+}
 struct MemHeaderAllocatorCtx { int unused; };
 struct TraceLocation { const char *function; APTR caller, stack; };
 struct MMContext {
@@ -69,12 +114,17 @@ struct MMContext {
 struct Task { struct Node tc_Node; };
 static struct Task host_task;
 static _Atomic unsigned allocator_alerts;
+static _Atomic ULONG last_alert;
 #define SPINLOCK_MODE_WRITE 1
 #define MEMF_SEM_PROTECTED 1
 #if defined(__AROSEXEC_SMP__)
 static void host_lock(_Atomic unsigned *lock) {
     while (atomic_exchange_explicit(lock, 1, memory_order_acquire))
+#ifdef __wasi__
+        ;
+#else
         sched_yield();
+#endif
 }
 #define EXEC_SPINLOCK_LOCK(lock, task, mode) host_lock(lock)
 #define EXEC_SPINLOCK_UNLOCK(lock) atomic_store_explicit(lock, 0, memory_order_release)
@@ -83,10 +133,10 @@ static void host_bug(const char *fmt, ...) {
     va_list args; va_start(args, fmt); vfprintf(stderr, fmt, args); va_end(args);
 }
 #define bug host_bug
-static void Alert(ULONG code) { (void)code; allocator_alerts++; }
+static void Alert(ULONG code) { last_alert = code; allocator_alerts++; }
 static void Exec_ExtAlert(ULONG code, APTR caller, APTR stack, UBYTE type,
     struct MMContext *data, struct ExecBase *sys) {
-    (void)code; (void)caller; (void)stack; (void)type; (void)data; (void)sys;
+    last_alert = code; (void)caller; (void)stack; (void)type; (void)data; (void)sys;
     allocator_alerts++;
 }
 static struct Task *FindTask(APTR name) { (void)name; return &host_task; }
@@ -100,6 +150,10 @@ static void mhac_MemChunkClaimed(struct MemChunk *p, struct MemHeaderAllocatorCt
 static void mhac_MemChunkCreated(struct MemChunk *p, struct MemChunk *prev,
     struct MemHeaderAllocatorCtx *ctx) { (void)p; (void)prev; (void)ctx; }
 static BOOL mhac_IsIndexEmpty(struct MemHeaderAllocatorCtx *ctx) { (void)ctx; return TRUE; }
+static struct MemHeaderAllocatorCtx *mhac_GetSysCtx(struct MemHeader *mh,
+    struct ExecBase *sys) { (void)mh; (void)sys; return NULL; }
+static void mhac_ClearSysCtx(struct MemHeader *mh, struct ExecBase *sys)
+    { (void)mh; (void)sys; }
 static void mhac_ClearIndex(struct MemHeaderAllocatorCtx *ctx) { (void)ctx; }
 static APTR AllocMem(IPTR n, ULONG flags) { return flags & MEMF_CLEAR ? calloc(1,n) : malloc(n); }
 static void FreeMem(APTR p, IPTR n) { (void)n; free(p); }
@@ -107,12 +161,6 @@ APTR stdAlloc(struct MemHeader *, struct MemHeaderAllocatorCtx *, IPTR, ULONG,
     struct TraceLocation *, struct ExecBase *);
 void stdDealloc(struct MemHeader *, struct MemHeaderAllocatorCtx *, APTR, IPTR,
     struct TraceLocation *, struct ExecBase *);
-static APTR Allocate(struct MemHeader *mh, IPTR size) {
-    struct TraceLocation t = {"Allocate", NULL, NULL};
-    return stdAlloc(mh, NULL, size, 0, &t, NULL);
-}
-static void Deallocate(struct MemHeader *mh, APTR p, IPTR size) {
-    struct TraceLocation t = {"Deallocate", NULL, NULL};
-    stdDealloc(mh, NULL, p, size, &t, NULL);
-}
+static APTR Allocate(struct MemHeader *, IPTR);
+static void Deallocate(struct MemHeader *, APTR, IPTR);
 #endif

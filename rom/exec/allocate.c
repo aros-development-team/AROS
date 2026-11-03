@@ -52,8 +52,17 @@
         no free-chunk header is written past the end of the region.
 
         Calls on an unmanaged region are serialised against other tasks.
-        The owner must still synchronise initialisation and destruction of
+        These calls preserve task-switch nesting and do not explicitly
+        reschedule on exit. This does not mask interrupts: an owner sharing
+        a region between a task and an interrupt must exclude concurrent
+        access (for example with Disable()/Enable() on a single CPU).
+        The owner must also synchronise initialisation and destruction of
         the region, and must not manipulate its free list during a call.
+
+        mh_Lower is informational for a private region. Its first free
+        chunk and the allocation units covered by Deallocate() must be
+        backed by storage owned by the caller, including any prefix before
+        an unaligned mh_Lower.
 
         On SMP builds this function serialises through the header's
         embedded spinlock (mh_SpinLock), so a hand-built MemHeader MUST
@@ -138,17 +147,7 @@
         if(freeList->mh_Free<byteSize)
             return NULL;
 
-        /* stdAlloc takes the header lock on SMP. On a single CPU, protect
-         * the traversal and update from task switches with the normal
-         * memory lock (Forbid, or the hosted target's memory semaphore).
-         */
-#if !defined(__AROSEXEC_SMP__)
-        MEM_LOCK;
-#endif
         res = stdAlloc(freeList, NULL /* by design */, byteSize, 0, &tp, SysBase);
-#if !defined(__AROSEXEC_SMP__)
-        MEM_UNLOCK;
-#endif
 
         if ((PrivExecBase(SysBase)->IntFlags & EXECF_MungWall) && res) {
             MUNGE_BLOCK(res, MEMFILL_ALLOC, byteSize);

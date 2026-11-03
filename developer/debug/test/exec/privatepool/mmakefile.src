@@ -14,7 +14,8 @@ USER_LDFLAGS := -static
 # Explicit host execution of the same production allocator core.
 #MM
 test-exec-privatepool-host:
-	$(PYTHON) $(SRCDIR)/$(CURDIR)/host_test.py --cc "$(HOST_CC)"
+	$(PYTHON) $(SRCDIR)/$(CURDIR)/host_test.py --cc "$(HOST_CC)" \
+	    $(if $(WASI_SDK_PATH),--wasi-sdk "$(WASI_SDK_PATH)")
 
 #MM
 test-exec-privatepool-host-quick: test-exec-privatepool-host

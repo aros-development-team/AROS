@@ -47,7 +47,9 @@
         count, including a terminal remainder smaller than the alignment.
 
         Calls on an unmanaged region use the same task synchronisation as
-        Allocate(), preserving the caller's task-switch nesting.
+        Allocate(), preserving the caller's task-switch nesting without
+        explicitly rescheduling on exit. Interrupt access requires external
+        exclusion; see Allocate().
 
         On SMP builds this function serialises through the header's
         embedded spinlock (mh_SpinLock) - see the corresponding note in
@@ -83,29 +85,7 @@
         if(!byteSize || !memoryBlock)
             return;
 
-#if !defined(NO_CONSISTENCY_CHECKS)
-        /* Test if our block really fits into this MemHeader. */
-        if ((memoryBlock < freeList->mh_Lower) || (memoryBlock + byteSize > freeList->mh_Upper + 1))
-        {
-            /* Something is completely wrong. */
-            bug("[MM] Memory allocator error\n");
-            bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", (int)byteSize, memoryBlock, freeList);
-            bug("[MM] Block does not fit into MemHeader (0x%p - 0x%p)\n", freeList->mh_Lower, freeList->mh_Upper);
-
-            Alert(AN_BadFreeAddr);
-            return;
-        }
-#endif
-
-        /* Match the SMP header lock with task-switch protection on single
-         * CPU targets. Managed callbacks keep their own locking path. */
-#if !defined(__AROSEXEC_SMP__)
-        MEM_LOCK;
-#endif
         stdDealloc(freeList, NULL /* by design */, memoryBlock, byteSize, &tp, SysBase);
-#if !defined(__AROSEXEC_SMP__)
-        MEM_UNLOCK;
-#endif
 
     }
 

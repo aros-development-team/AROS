@@ -2,6 +2,7 @@
 
 #ifdef PRIVATEPOOL_HOST_TEST
 #include "host_support.h"
+#define report printf
 #else
 #include <aros/debug.h>
 #include <exec/memory.h>
@@ -11,6 +12,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <string.h>
+#define report Printf
 #endif
 
 static unsigned checks, failures;
@@ -21,7 +23,10 @@ static void check(int okay, const char *what)
     if (!okay)
     {
         failures++;
+        report("PRIVATE POOL FAIL: %s\n", what);
+#ifndef PRIVATEPOOL_HOST_TEST
         bug("PRIVATE POOL FAIL: %s\n", what);
+#endif
     }
 }
 
@@ -51,9 +56,12 @@ static int setup(struct Fixture *f, IPTR capacity)
     f->header.mh_Lower = f->base;
     f->header.mh_Upper = f->base + capacity;
     f->header.mh_Free = capacity;
-    f->header.mh_First = (struct MemChunk *)f->base;
-    f->header.mh_First->mc_Next = NULL;
-    f->header.mh_First->mc_Bytes = capacity;
+    if (capacity >= MEMCHUNK_TOTAL)
+    {
+        f->header.mh_First = (struct MemChunk *)f->base;
+        f->header.mh_First->mc_Next = NULL;
+        f->header.mh_First->mc_Bytes = capacity;
+    }
     return 1;
 }
 
@@ -140,6 +148,108 @@ static void tails(void)
         }
 }
 
+/* Populate an empty header through the public API, including an uneven
+ * upper bound and a lower bound inside the first aligned allocation unit.
+ * The caller owns the complete aligned storage, including that prefix. */
+static void initialise_pool(void)
+{
+    IPTR tail, offset, a = MEMCHUNK_TOTAL;
+
+    for (tail = 0; tail < a; tail++)
+        for (offset = 0; offset < a; offset += 4)
+        {
+            struct Fixture f;
+            APTR p;
+
+            if (!setup(&f, a * 3 + tail))
+                return;
+            f.header.mh_First = NULL;
+            f.header.mh_Free = 0;
+            f.header.mh_Lower = f.base + offset;
+            Deallocate(&f.header, f.base + offset, f.capacity - offset);
+            restored(&f);
+            p = Allocate(&f.header, a * 3);
+            check(p == f.base, "allocate a pool populated by Deallocate");
+            if (p)
+            {
+                memset(p, 0x63, a * 3);
+                Deallocate(&f.header, p, a * 3);
+                restored(&f);
+            }
+            teardown(&f);
+        }
+}
+
+static void tiny_regions(void)
+{
+    IPTR tail;
+
+    for (tail = 1; tail < MEMCHUNK_TOTAL; tail++)
+    {
+        struct Fixture f;
+
+        if (!setup(&f, tail))
+            return;
+        f.header.mh_Free = 0;
+        Deallocate(&f.header, f.base, tail);
+        check(f.header.mh_First == NULL && f.header.mh_Free == tail,
+              "initialise a sub-chunk region without writing a header");
+        check(Allocate(&f.header, 1) == NULL,
+              "a sub-chunk region cannot satisfy an allocation");
+        teardown(&f);
+    }
+}
+
+static void explicit_tail_free(void)
+{
+    IPTR tail, a = MEMCHUNK_TOTAL;
+
+    for (tail = 1; tail < a; tail++)
+    {
+        struct Fixture f;
+        APTR p, q;
+
+        if (!setup(&f, a * 3 + tail))
+            return;
+        p = Allocate(&f.header, a * 3);
+        check(p != NULL, "allocate before explicitly freeing an orphan tail");
+        if (p)
+        {
+            Deallocate(&f.header, p, f.capacity);
+            restored(&f);
+        }
+        p = Allocate(&f.header, a);
+        q = Allocate(&f.header, a * 2);
+        check(p && q, "allocate blocks before merging an explicit terminal tail");
+        if (p && q)
+        {
+            Deallocate(&f.header, p, a);
+            Deallocate(&f.header, q, a * 2 + tail);
+            restored(&f);
+        }
+        teardown(&f);
+    }
+}
+
+static void informational_lower(void)
+{
+    struct Fixture f;
+    APTR p;
+
+    if (!setup(&f, MEMCHUNK_TOTAL * 4))
+        return;
+    /* A private allocator traverses mh_First; mh_Lower is informational. */
+    f.header.mh_Lower = f.base + MEMCHUNK_TOTAL;
+    p = Allocate(&f.header, MEMCHUNK_TOTAL);
+    check(p == f.base, "a private first chunk may precede mh_Lower");
+    if (p)
+    {
+        Deallocate(&f.header, p, MEMCHUNK_TOTAL);
+        restored(&f);
+    }
+    teardown(&f);
+}
+
 static int consistent(struct Fixture *f)
 {
     struct MemChunk *mc = f->header.mh_First;
@@ -198,7 +308,7 @@ static void fragmented(void)
         }
         if (!okay || !consistent(&f))
         {
-            bug("PRIVATE POOL RANDOM: first bad state at operation %u, slot %u\n", i, slot);
+            report("PRIVATE POOL RANDOM: first bad state at operation %u, slot %u\n", i, slot);
             check(0, "mixed-size operations preserve data and the free list");
             teardown(&f);
             return;
@@ -335,7 +445,11 @@ static void managed_deallocate(struct MemHeaderExt *mh, APTR p, IPTR n)
 static void managed_pool(void)
 {
     struct MemHeaderExt mh;
+#if UINTPTR_MAX > UINT32_MAX
     IPTR n = ((IPTR)UINT32_MAX + 1) + 37;
+#else
+    IPTR n = 65537;
+#endif
     APTR p;
 
     memset(&mh, 0, sizeof(mh));
@@ -349,10 +463,10 @@ static void managed_pool(void)
     managed_calls = 0;
     p = stdAlloc(&mh.header, NULL, n, 0, NULL, NULL);
     check(p == &managed_size && managed_size == n && managed_calls == 1,
-          "managed allocation preserves a request larger than 4 GiB");
+          "managed allocation preserves the pointer-sized request");
     stdDealloc(&mh.header, NULL, p, n, NULL, NULL);
     check(managed_block == p && managed_size == n && managed_calls == 2,
-          "managed deallocation preserves 64-bit pointers and sizes");
+          "managed deallocation preserves pointers and sizes");
 #if defined(__AROSEXEC_SMP__)
     check(mh.header.mh_SpinLock == 0, "managed header lock is released");
     mh.header.mh_First = (struct MemChunk *)MEMF_SEM_PROTECTED;
@@ -363,7 +477,7 @@ static void managed_pool(void)
 #endif
 }
 
-#if defined(__AROSEXEC_SMP__)
+#if defined(__AROSEXEC_SMP__) && !defined(__wasi__)
 struct Worker { struct Fixture *fixture; unsigned id; int bad; };
 
 static void *worker(void *argument)
@@ -419,6 +533,109 @@ static void concurrent_pool(void)
 }
 #endif
 
+/* A minimal system memory list lets the production NOMMU paths exercise
+ * the same uneven chunks as Allocate/Deallocate. */
+static void system_pool(void)
+{
+    IPTR a = MEMCHUNK_TOTAL, tail;
+
+    for (tail = 1; tail < a; tail++)
+    {
+        struct Fixture f;
+        struct ExecBase sys = {0};
+        APTR p;
+        unsigned before = allocator_alerts;
+
+        if (!setup(&f, a * 3 + tail))
+            return;
+        host_memlist(&sys, &f.header);
+        check(nommu_AvailMem(MEMF_LARGEST, &sys) == a * 3,
+              "largest system chunk excludes the unusable tail");
+        p = nommu_AllocMem(nommu_AvailMem(MEMF_LARGEST, &sys), 0, NULL, &sys);
+        check(p == f.base, "allocate the reported largest system chunk");
+        if (p)
+        {
+            struct TraceLocation t = {"FreeMem", NULL, NULL};
+            nommu_FreeMem(p, a * 3, &t, &sys);
+            restored(&f);
+        }
+        /* AllocAbs must not write a header into the remaining tail. */
+        p = nommu_AllocAbs(f.base + a, a * 2, &sys);
+        check(p == f.base + a, "absolute allocation accepts an uneven terminal chunk");
+        if (p)
+        {
+            memset(p, 0x59, a * 2);
+            check(nommu_AvailMem(MEMF_LARGEST, &sys) == a,
+                  "absolute allocation leaves a usable leading chunk");
+            Deallocate(&f.header, p, a * 2);
+            restored(&f);
+        }
+        p = nommu_AllocAbs(f.base, a * 3, &sys);
+        check(p == f.base && f.header.mh_First == NULL && f.header.mh_Free == tail,
+              "absolute allocation can consume all usable bytes without a tail header");
+        if (p)
+            Deallocate(&f.header, p, a * 3);
+        restored(&f);
+        check(allocator_alerts == before, "valid NOMMU operations raise no alerts");
+        teardown(&f);
+    }
+}
+
+static void invalid_system_tail(void)
+{
+    struct Fixture f;
+    struct ExecBase sys = {0};
+    unsigned before;
+
+    if (!setup(&f, MEMCHUNK_TOTAL * 3 + 3))
+        return;
+    host_memlist(&sys, &f.header);
+    f.header.mh_First->mc_Bytes = f.capacity - 2;
+    before = allocator_alerts;
+    nommu_AvailMem(MEMF_LARGEST, &sys);
+    check(allocator_alerts > before,
+          "largest scan rejects an uneven chunk that does not reach mh_Upper");
+    before = allocator_alerts;
+    check(nommu_AllocAbs(f.base, MEMCHUNK_TOTAL, &sys) == NULL &&
+          allocator_alerts > before && f.header.mh_Free == f.capacity,
+          "absolute allocation rejects an invalid terminal remainder without mutation");
+    f.header.mh_First->mc_Bytes = f.capacity;
+    teardown(&f);
+}
+
+static void host_nesting(void)
+{
+    struct Fixture f;
+    APTR p;
+    signed char level;
+
+    if (!setup(&f, MEMCHUNK_TOTAL * 4))
+        return;
+    for (level = -1; level < 3; level++)
+    {
+        host_sys.TDNestCnt = level;
+        host_sys.pending_switch = 1;
+        host_sys.switches = 0;
+        p = Allocate(&f.header, 1);
+        check(p && host_sys.TDNestCnt == level && !host_sys.switches &&
+              host_sys.pending_switch,
+              "Allocate preserves nesting and leaves a pending reschedule deferred");
+        if (p)
+            Deallocate(&f.header, p, 1);
+        check(host_sys.TDNestCnt == level && !host_sys.switches &&
+              host_sys.pending_switch,
+              "Deallocate preserves nesting and leaves a pending reschedule deferred");
+    }
+    host_sys.TDNestCnt = -1;
+    host_sys.pending_switch = 0;
+    p = stdAlloc(&f.header, NULL, 1, 0, NULL, NULL);
+    check(p != NULL, "early-boot allocation works without a task or ExecBase");
+    if (p)
+        stdDealloc(&f.header, NULL, p, 1, NULL, NULL);
+    restored(&f);
+    teardown(&f);
+}
+
 static void host_checks(void)
 {
     struct Fixture f;
@@ -427,9 +644,14 @@ static void host_checks(void)
 
     if (!setup(&f, MEMCHUNK_TOTAL * 4))
         return;
-    check(sizeof(IPTR) == sizeof(void *) && sizeof(IPTR) == 8,
-          "host exercises 64-bit pointers and sizes");
-    check((IPTR)f.base > UINT32_MAX, "host pool uses an address above 4 GiB");
+    check(sizeof(IPTR) == sizeof(void *), "host uses pointer-sized arithmetic");
+#ifdef __wasi__
+    check(sizeof(IPTR) == 4 && sizeof(struct MemChunk) == 8 && MEMCHUNK_TOTAL == 8,
+          "32-bit host exercises the eight-byte chunk layout used on m68k");
+#else
+    check(sizeof(IPTR) == 8 && (IPTR)f.base > UINT32_MAX,
+          "64-bit host pool uses an address above 4 GiB");
+#endif
     check(Allocate(&f.header, 0) == NULL, "zero request is rejected");
     check(Allocate(&f.header, (IPTR)-1) == NULL, "rounding overflow is rejected");
     restored(&f);
@@ -451,10 +673,28 @@ static void host_checks(void)
     {
         IPTR free_before = f.header.mh_Free;
         before = allocator_alerts;
-        Deallocate(&f.header, p, (IPTR)-1);
+        struct TraceLocation t = {"Deallocate", NULL, NULL};
+        stdDealloc(&f.header, NULL, p, (IPTR)-1, &t, &host_sys);
         check(allocator_alerts > before && f.header.mh_Free == free_before,
               "overflowing free is rejected without changing accounting");
         Deallocate(&f.header, p, MEMCHUNK_TOTAL);
+        restored(&f);
+    }
+    p = Allocate(&f.header, f.capacity);
+    check(p != NULL, "allocate before public free bounds checks");
+    if (p)
+    {
+        unsigned extra;
+        for (extra = 1; extra <= 2; extra++)
+        {
+            before = allocator_alerts;
+            Deallocate(&f.header, p, f.capacity + extra);
+            check(allocator_alerts == before + 1 && f.header.mh_Free == 0 &&
+                  f.header.mh_First == NULL &&
+                  last_alert == (AN_MemCorrupt | AT_DeadEnd),
+                  "public out-of-range frees raise one consistent alert without mutation");
+        }
+        Deallocate(&f.header, p, f.capacity);
         restored(&f);
     }
     teardown(&f);
@@ -470,7 +710,10 @@ static void host_checks(void)
     }
     teardown(&f);
     managed_pool();
-#if defined(__AROSEXEC_SMP__)
+    system_pool();
+    invalid_system_tail();
+    host_nesting();
+#if defined(__AROSEXEC_SMP__) && !defined(__wasi__)
     concurrent_pool();
 #endif
 }
@@ -480,6 +723,10 @@ int main(void)
 {
     ufo_pool();
     tails();
+    initialise_pool();
+    informational_lower();
+    tiny_regions();
+    explicit_tail_free();
     fragmented();
 #ifndef PRIVATEPOOL_HOST_TEST
     task_sharing();
@@ -490,7 +737,11 @@ int main(void)
 #ifdef PRIVATEPOOL_HOST_TEST
     host_checks();
 #endif
+    report("PRIVATE POOL TEST: %u/%u pass, %u failures\n",
+        checks - failures, checks, failures);
+#ifndef PRIVATEPOOL_HOST_TEST
     bug("PRIVATE POOL TEST: %u/%u pass, %u failures\n",
         checks - failures, checks, failures);
+#endif
     return failures ? 20 : 0;
 }
