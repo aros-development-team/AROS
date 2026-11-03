@@ -428,7 +428,8 @@ int main(void)
                 {
                     D(bug("[C:Partition] EBR container handle @ 0x%p\n", extPartition));
 
-                    if (CreatePartitionTable(extPartition, PHPTT_EBR) != 0)
+                    error = CreatePartitionTable(extPartition, PHPTT_EBR);
+                    if (error != 0)
                     {
                         PutStr("*** ERROR: Creating extended partition table failed.\n");
                         extPartition = NULL;
@@ -442,6 +443,7 @@ int main(void)
                 else
                 {
                     D(bug("[C:Partition] Failed to create EBR container\n"));
+                    error = ERROR_DISK_FULL;
                 }
             }
         }
