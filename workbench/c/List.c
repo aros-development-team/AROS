@@ -230,6 +230,7 @@ typedef struct _Statistics
     ULONG nFiles;
     ULONG nDirs;
     UQUAD nBlocks;
+    ULONG nErrors;
 } Statistics;
 
 
@@ -996,6 +997,7 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
     ULONG  dirs = 0;
     ULONG  nBlocks = 0;
     LONG  error;
+    BOOL  queued = FALSE;
 
     NewList(&DirList);
     NewList(&FreeDirNodeList);
@@ -1162,6 +1164,15 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
         nBlocks = 0;
 
 
+        /* A directory found by ALL that cannot be listed doesn't end
+           the walk: report it and go on with the next one. */
+        if (error && queued && error != ERROR_BREAK)
+        {
+            PrintFault(error, filename);
+            stats->nErrors++;
+            error = 0;
+        }
+
         if (error) break;
         
         dirnode = (struct DirNode *)RemHead(&DirList);
@@ -1169,6 +1180,7 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
         if (dirnode != NULL)
         {
             filename = dirnode->dirname;
+            queued = TRUE;
             current = dirnode;
             
             prev_dirnode = NULL;
@@ -1223,7 +1235,7 @@ int main(void)
     STRPTR   subpatternStr = NULL;
     BPTR     oldOutput = BNULL;
 
-    Statistics stats = { 0, 0, 0 };
+    Statistics stats = { 0, 0, 0, 0 };
 
     rda = ReadArgs(ARG_TEMPLATE, args, NULL);
 
@@ -1434,6 +1446,10 @@ int main(void)
             PrintFault(error, "List");
             result = RETURN_FAIL;
         }
+    }
+    else if (stats.nErrors != 0 && result == RETURN_OK)
+    {
+        result = RETURN_WARN;
     }
     
     if (parsedPattern != NULL)
