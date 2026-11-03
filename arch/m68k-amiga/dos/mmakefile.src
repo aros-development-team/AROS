@@ -2,8 +2,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- test-dos-amiga-m68k : test-dos-cdbootconsole
-#MM- test-dos-amiga-m68k-quick : test-dos-cdbootconsole-quick
+#MM- test-dos-amiga-m68k : test-dos-cdbootconsole test-dos-hunkplacement test-dos-packetplacement
+#MM- test-dos-amiga-m68k-quick : test-dos-cdbootconsole-quick test-dos-hunkplacement-quick test-dos-packetplacement-quick
 #MM- test-dos-common-amiga-m68k : test-dos-amiga-m68k
 #MM- test-dos-common-amiga-m68k-quick : test-dos-amiga-m68k-quick
 

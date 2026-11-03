@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013 The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026 The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -163,12 +163,6 @@ struct DosPacket *allocdospacket(void)
     struct StandardPacket *sp;
     ULONG requirements = MEMF_CLEAR;
 
-#ifdef __mc68000
-    /* DOS packets are short-lived and otherwise punch small holes into the
-     * low-address free region.  Keep that region contiguous for legacy m68k
-     * software which uses 16-bit copper pointer updates within a 64 KiB bank. */
-    requirements |= MEMF_REVERSE;
-#endif
     sp = AllocVec(sizeof(struct StandardPacket), requirements);
 
     if (sp == NULL)
