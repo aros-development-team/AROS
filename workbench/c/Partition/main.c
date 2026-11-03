@@ -873,19 +873,25 @@ static LONG RecurviseDestroyPartitions(struct PartitionHandle *root)
         {
             if (OpenPartitionTable(partition) == 0)
             {
-                error += RecurviseDestroyPartitions(partition);
+                error = RecurviseDestroyPartitions(partition);
             }
             else
             {
                 APTR buffer = AllocMem(ZEROBUFFSIZE, MEMF_CLEAR);
-                /* Damage first blocks of partition */
-                WritePartitionDataQ(partition, buffer, ZEROBUFFSIZE, 0);
+                if (buffer == NULL)
+                    return ERROR_NO_FREE_STORE;
+                /* Damage first blocks of partition. Do not discard its
+                 * parent table if the requested wipe fails. */
+                error = WritePartitionDataQ(partition, buffer, ZEROBUFFSIZE, 0);
                 FreeMem(buffer, ZEROBUFFSIZE);
+                if (error)
+                    return error == TDERR_WriteProt
+                        ? ERROR_DISK_WRITE_PROTECTED : ERROR_UNKNOWN;
             }
+            if (error)
+                return error;
         }
     }
 
-    error += DestroyPartitionTable(root);
-
-    return error;
+    return DestroyPartitionTable(root);
 }
