@@ -67,15 +67,15 @@ int main(void)
     check(read_sector(&f, 2040, 1) && io_count == old,
           "metadata reads do not evict the recovered file windows");
     f.cd.cache_io_busy = 1;
-    check(CDCacheLowMemHandler(&f.cd) == MEM_DID_NOTHING,
+    check(CDCacheLowMemHandler(NULL, &f.cd, NULL) == MEM_DID_NOTHING,
           "in-flight I/O protects its buffers from reclamation");
     f.cd.cache_io_busy = 0;
-    check(CDCacheLowMemHandler(&f.cd) == MEM_TRY_AGAIN &&
+    check(CDCacheLowMemHandler(NULL, &f.cd, NULL) == MEM_TRY_AGAIN &&
           !f.cd.buffer_file2 && f.cd.buffer_data,
           "recovered secondary cache remains reclaimable");
-    check(CDCacheLowMemHandler(&f.cd) == MEM_TRY_AGAIN &&
+    check(CDCacheLowMemHandler(NULL, &f.cd, NULL) == MEM_TRY_AGAIN &&
           !f.cd.buffer_data, "recovered primary cache remains reclaimable");
-    check(CDCacheLowMemHandler(&f.cd) == MEM_DID_NOTHING,
+    check(CDCacheLowMemHandler(NULL, &f.cd, NULL) == MEM_DID_NOTHING,
           "fully reclaimed cache stops retrying memory handlers");
     allocations_left = 2;
     old = io_count;
