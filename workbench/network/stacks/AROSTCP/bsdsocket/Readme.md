@@ -67,6 +67,8 @@ socket-layer entry points (`sobind`, `soconnect`, `sosend`, `soreceive`, …), w
 to the protocol via `so->so_proto->pr_usrreq(so, PRU_*, …)`.
 A send or receive that would block returns `EWOULDBLOCK` when the socket is non-blocking
 (`FIONBIO`, `SS_NBIO`) or the call has `MSG_DONTWAIT`, which applies to that call only.
+That holds as well for a socket buffer held by another task's call on a shared socket - a receive
+with `MSG_WAITALL` sleeps holding it - as FreeBSD's `SBLOCKWAIT()`; a blocking call waits for it.
 
 Name lookup (`gethostnamadr.c`) is what `gethostbyname()`, `gethostbyname_r()`, Miami's
 `gethostbyname2()` and both `getaddrinfo()`s (Roadshow's and Miami's) share. An address literal is

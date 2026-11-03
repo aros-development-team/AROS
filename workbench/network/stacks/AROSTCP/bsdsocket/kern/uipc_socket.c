@@ -120,6 +120,21 @@ extern struct ifnet *ifunit(register char *);
 #endif
 
 /*
+ * Lock a socket buffer for a send or a receive. It is held by another call
+ * - one that sleeps holding it, as a receive with MSG_WAITALL does - only
+ * when tasks share the socket. A call that may not block (SS_NBIO, or this
+ * call's MSG_DONTWAIT) does not wait for it: EWOULDBLOCK, as FreeBSD's
+ * SBLOCKWAIT(flags). Any other waits, as before.
+ */
+static int
+sblock_call(struct sockbuf *sb, struct SocketBase *p, int nowait)
+{
+    if((sb->sb_flags & SB_LOCK) && nowait)
+        return EWOULDBLOCK;
+    return sblock(sb, p);
+}
+
+/*
  * Socket operation routines.
  * These routines are called by the routines in
  * sys_socket.c or from a system process, and
@@ -472,7 +487,8 @@ int flags;
 
 restart:
     s = splnet();       /* sowakeup() changes sb_flags at splnet */
-    error = sblock(&so->so_snd, uio->uio_procp);
+    error = sblock_call(&so->so_snd, uio->uio_procp,
+                        (so->so_state & SS_NBIO) || (flags & MSG_DONTWAIT));
     splx(s);
     if(error)
         goto out;
@@ -735,7 +751,8 @@ bad:
 
 restart:
     s = splnet();       /* sowakeup() changes sb_flags at splnet */
-    if(error = sblock(&so->so_rcv, uio->uio_procp)) {
+    if(error = sblock_call(&so->so_rcv, uio->uio_procp,
+                           (so->so_state & SS_NBIO) || (flags & MSG_DONTWAIT))) {
         splx(s);
         return (error);
     }
