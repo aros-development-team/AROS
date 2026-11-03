@@ -194,14 +194,22 @@ static ULONG msf2lsn(struct RMSF *msf)
 
 static VOID CD32_IntEnable(struct CD32Unit *cu, ULONG mask)
 {
+    /* The unit task and IRQ2 server share this shadow. Keep its update
+     * and the hardware store indivisible: an interrupt between them can
+     * acknowledge a completion, then have its hardware mask overwritten
+     * with the task's stale value, leaving IRQ2 permanently asserted. */
+    Disable();
     cu->cu_IntEnable |= mask;
     writel(cu->cu_IntEnable, AKIKO_CDINTENA);
+    Enable();
 }
 
 static VOID CD32_IntDisable(struct CD32Unit *cu, ULONG mask)
 {
+    Disable();
     cu->cu_IntEnable &= ~mask;
     writel(cu->cu_IntEnable, AKIKO_CDINTENA);
+    Enable();
 }
 
 static AROS_INTH1(CD32_XLCallbackInterrupt, struct CD32Unit *, cu)
