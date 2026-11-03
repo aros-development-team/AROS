@@ -226,6 +226,8 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
 
             if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41)) != NULL)
             {
+                ULONG ddres;
+
                 LIBBASE->vsd.vcsd_basebm = OOP_FindClass(CLID_Hidd_BitMap);
 
                 /* The gallium hidd (vc4gallium or v3d, by SoC) lives on
@@ -233,7 +235,11 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
                  * yet); it loads lazily from HIDD_Gfx_CreateObject,
                  * falling back to softpipe. */
 
-                if (AddDisplayDriver(LIBBASE->vsd.vcsd_VideoCoreGfxClass, NULL, TAG_DONE) == DD_OK)
+                ddres = AddDisplayDriver(LIBBASE->vsd.vcsd_VideoCoreGfxClass, NULL, TAG_DONE);
+
+                if (ddres != DD_OK)
+                    bug("[VideoCoreGfx] AddDisplayDriver failed (%lu)\n", (unsigned long)ddres);
+                else
                 {
                     D(bug("[VideoCoreGfx] Display Driver Registered\n"));
                     if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
@@ -251,6 +257,15 @@ failure:
     if (!(retval))
     {
         D(bug("[VideoCoreGfx] No VideoCore GPU Found\n"));
+
+        /* The GPU memory header lives in our base, which goes with this
+         * failure: take it out of the system memory list first. */
+        if (xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Node.ln_Succ)
+        {
+            Disable();
+            Remove((struct Node *)&xsd->vcsd_GPUMemManage);
+            Enable();
+        }
 
         FreeVec((APTR)xsd->vcsd_MBoxBuff);
 
