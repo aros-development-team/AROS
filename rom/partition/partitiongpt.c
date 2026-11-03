@@ -217,13 +217,25 @@ static ULONG GPT_ProbeFAT(struct Library *PartitionBase,
     return type;
 }
 
+static void GPT_UpdateGeometry(struct PartitionHandle *ph)
+{
+    ph->dg.dg_SectorSize = ph->de.de_SizeBlock << 2;
+    ph->dg.dg_Heads = ph->de.de_Surfaces;
+    ph->dg.dg_TrackSectors = ph->de.de_BlocksPerTrack;
+    ph->dg.dg_CylSectors = ph->dg.dg_Heads * ph->dg.dg_TrackSectors;
+    ph->dg.dg_Cylinders = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
+    ph->dg.dg_TotalSectors = ph->dg.dg_Cylinders * ph->dg.dg_CylSectors;
+    ph->dg.dg_BufMemType = ph->de.de_BufMemType;
+}
+
 static void GPT_PatchDosEnvec(struct Library *PartitionBase,
     struct PartitionHandle *ph, struct GPTPartition *p)
 {
     ULONG type   = 0;
     LONG bootpri = 0;
 
-    if (is_aros_uuid_le(&p->TypeID))
+    if (is_aros_uuid_le(&p->TypeID) &&
+        !uuid_cmp_le(&p->TypeID, &GPT_Type_AROS_RDB))
     {
         type    = AROS_LE2LONG(p->TypeID.time_low);
         /* This casting is needed for proper sign expansion */
@@ -246,8 +258,19 @@ static void GPT_PatchDosEnvec(struct Library *PartitionBase,
             type = GPT_ProbeFAT(PartitionBase, ph, p);
     }
     
+    /* RDB containers use block-based geometry, including when reopened.
+     * The child RDB carries its own geometry independently of the disk. */
+    if (uuid_cmp_le(&p->TypeID, &GPT_Type_AROS_RDB) &&
+        AROS_LE2QUAD(p->EndBlock) < 0xffffffffULL)
+    {
+        ph->de.de_Surfaces = 1;
+        ph->de.de_BlocksPerTrack = 1;
+        ph->de.de_LowCyl = AROS_LE2QUAD(p->StartBlock);
+        ph->de.de_HighCyl = AROS_LE2QUAD(p->EndBlock);
+    }
     setDosType(&ph->de, type);
     ph->de.de_BootPri = bootpri;
+    GPT_UpdateGeometry(ph);
 }
 
 static LONG GPTCheckHeader(struct Library *PartitionBase, struct PartitionHandle *root, struct GPTHeader *hdr, UQUAD block)
@@ -474,7 +497,10 @@ static void PartitionGPTClosePartitionTable(struct Library *PartitionBase, struc
 
     /* Free all partition entries */
     ForeachNodeSafe(&root->table->list, ph, ph2)
+    {
+        ClosePartitionTable(ph);
         FreeVec(ph);
+    }
 
     FreeMem(root->table->data, root->de.de_SizeBlock<<2);
 }
@@ -780,7 +806,6 @@ static LONG PartitionGPTSetPartitionAttrs(struct Library *PartitionBase, struct 
     {
         part->StartBlock = AROS_QUAD2LE(first);
         part->EndBlock = AROS_QUAD2LE(end);
-        initPartitionHandle(ph->root, ph, first, end - first + 1);
         CopyMem(de, &ph->de, sizeof(*de));
         if (is_aros_uuid_le(&part->TypeID))
             part->Flags1 = (part->Flags1 & ~AROS_LONG2LE(GPT_PF1_AROS_BOOTPRI)) |
@@ -960,6 +985,7 @@ static void PartitionGPTDeletePartition(struct Library *PartitionBase,
     struct PartitionHandle *ph)
 {
     Remove(&ph->ln);
+    ClosePartitionTable(ph);
     FreeVec(ph);
 }
 

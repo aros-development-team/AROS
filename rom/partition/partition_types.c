@@ -18,6 +18,9 @@ static const uuid_t GPT_Type_FreeBSD_Boot = MAKE_UUID(0x83BD6B9D, 0x7F41, 0x11DC
 static const uuid_t GPT_Type_FreeBSD_Data = MAKE_UUID(0x516E7CB4, 0x6ECF, 0x11D6, 0x8FF8, 0x00022D09712BULL);
 static const uuid_t GPT_Type_NetBSD_FFS   = MAKE_UUID(0x49F48D5A, 0xB10E, 0x11DC, 0xB99B, 0x0019D1879648ULL);
 
+/* RDSK identifies an RDB container, never a mountable filesystem. */
+const uuid_t GPT_Type_AROS_RDB = MAKE_UUID(0x5244534B, 0xBB67, 0x46C5, 0xAA4A, 0xF502CA018E5EULL);
+
 const struct TypeMapping PartTypes[] =
 {
     { 0x01, MAKE_ID('F','A','T','\0'), NULL                  }, /* DOS 12-bit FAT */

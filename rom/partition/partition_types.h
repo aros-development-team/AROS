@@ -8,5 +8,6 @@ struct TypeMapping
 };
 
 extern const struct TypeMapping PartTypes[];
+extern const uuid_t GPT_Type_AROS_RDB;
 
 ULONG MBR_FindDosType(UBYTE id);

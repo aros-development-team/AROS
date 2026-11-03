@@ -156,9 +156,8 @@ static UQUAD CylToBlock(struct DosEnvec *de, LONG cyl)
     return (UQUAD)(cyl * (de->de_Surfaces * de->de_BlocksPerTrack));
 }
 
-/* GPT has no extended/RDB container. Use named AROS filesystem partitions,
- * an optional ESP, and space reserved for a conventional GRUB BIOS install.
- * AROS Install-grub2 currently loads its core from the filesystem instead. */
+/* GPT holds an RDB container plus optional firmware/boot partitions.
+ * SYS and Work retain the same RDB filesystem settings as MBR installs. */
 static struct PartitionHandle *CreateGPTPartition(struct PartitionHandle *root,
     UQUAD first, UQUAD blocks, CONST_STRPTR name, const uuid_t *id, BOOL bootable)
 {
@@ -179,25 +178,19 @@ static struct PartitionHandle *CreateGPTPartition(struct PartitionHandle *root,
         PT_NAME, (IPTR)name, PT_BOOTABLE, bootable, PT_AUTOMOUNT, TRUE, TAG_DONE);
 }
 
-static uuid_t GPTDosType(const struct PartitionType *type)
-{
-    uuid_t id = MAKE_UUID(0, 0xBB67, 0x46C5, 0xAA4A, 0xF502CA018E5EULL);
-    id.time_low = ((ULONG)type->id[0] << 24) | ((ULONG)type->id[1] << 16) |
-        ((ULONG)type->id[2] << 8) | type->id[3];
-    return id;
-}
-
 static LONG CreateGPTLayout(struct PartitionHandle *root, ULONG sysSize,
     ULONG workSize, const struct PartitionType *sysType, const struct PartitionType *workType)
 {
     static const uuid_t bios = MAKE_UUID(0x21686148, 0x6449, 0x6E6F, 0x744E, 0x656564454649ULL);
     static const uuid_t esp = MAKE_UUID(0xC12A7328, 0xF81F, 0x11D2, 0xBA4B, 0x00A0C93EC93BULL);
+    static const uuid_t rdbID = MAKE_UUID(0x5244534B, 0xBB67, 0x46C5, 0xAA4A, 0xF502CA018E5EULL);
     struct PartitionHandle *ph, *next;
     UQUAD first = 0, last = 0, low = 0, high = 0, candidate;
     UQUAD blocksize = root->de.de_SizeBlock << 2;
     UQUAD align, biosblocks, bootblocks = 0, sysblocks, workblocks, available;
     BOOL hasBIOS = FALSE, hasESP = FALSE;
-    uuid_t sysID = GPTDosType(sysType), workID = GPTDosType(workType);
+    LONG error;
+    ULONG reserved = 0;
     ULONG bootSize = ARG(BOOTSIZE) ? *(LONG *)ARG(BOOTSIZE) : 0;
 
     if (root->table->type != PHPTT_GPT || blocksize > MB || MB % blocksize)
@@ -270,6 +263,10 @@ static LONG CreateGPTLayout(struct PartitionHandle *root, ULONG sysSize,
     if (available <= biosblocks || bootblocks > available - biosblocks)
         return ERROR_DISK_FULL;
     available -= biosblocks + bootblocks;
+    /* One aligned MiB includes the RDB metadata reserved area. */
+    if (available <= align)
+        return ERROR_DISK_FULL;
+    available -= align;
     sysblocks = sysSize ? (UQUAD)sysSize * MB / blocksize : available;
     if (sysblocks > (UQUAD)MAX_SIZE(sysType) * MB / blocksize)
         sysblocks = (UQUAD)MAX_SIZE(sysType) * MB / blocksize;
@@ -296,14 +293,31 @@ static LONG CreateGPTLayout(struct PartitionHandle *root, ULONG sysSize,
             return ERROR_NO_FREE_STORE;
         low += bootblocks;
     }
-    ph = CreateGPTPartition(root, low, sysblocks, (CONST_STRPTR)ARG(SYSNAME), &sysID, TRUE);
+    ph = CreateGPTPartition(root, low, align + sysblocks + workblocks,
+        "AROS RDB", &rdbID, FALSE);
     if (!ph)
         return ERROR_NO_FREE_STORE;
-    low += sysblocks;
-    if (workblocks && !CreateGPTPartition(root, low, workblocks,
-        (CONST_STRPTR)ARG(WORKNAME), &workID, FALSE))
-        return ERROR_NO_FREE_STORE;
-    return WritePartitionTable(root);
+    SetPartitionAttrsTags(ph, PT_AUTOMOUNT, FALSE, TAG_DONE);
+    error = CreatePartitionTable(ph, PHPTT_RDB);
+    if (error)
+        return error;
+    GetPartitionTableAttrsTags(ph, PTT_RESERVED, (IPTR)&reserved, TAG_DONE);
+    if (reserved > align)
+        error = ERROR_DISK_FULL;
+    else if (!CreateRDBPartition(ph, align, align + sysblocks - 1,
+        (CONST_STRPTR)ARG(SYSNAME), TRUE, sysType))
+        error = ERROR_NO_FREE_STORE;
+    else if (workblocks && !CreateRDBPartition(ph, align + sysblocks,
+        align + sysblocks + workblocks - 1,
+        (CONST_STRPTR)ARG(WORKNAME), FALSE, workType))
+        error = ERROR_NO_FREE_STORE;
+    /* Publish the container only after its RDB has been saved. */
+    if (!error)
+        error = WritePartitionTable(ph);
+    ClosePartitionTable(ph);
+    if (!error)
+        error = WritePartitionTable(root);
+    return error;
 }
 
 /*** Functions **************************************************************/
