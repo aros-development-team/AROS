@@ -2,6 +2,8 @@
     Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
 */
 
+#include <stdio.h>
+
 /* Prototypes for mandatory functions */
 void cleanup( void );
 
