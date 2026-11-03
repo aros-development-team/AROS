@@ -8,7 +8,6 @@
 #MM			kernel-hidd-gfx-headlessgfx \
 #MM			kernel-fs-afs		\
 #MM			kernel-fs-cdvdfs	\
-#MM			kernel-fs-cdfs		\
 #MM			kernel-fs-sfs		\
 #MM			kernel-fs-fat		\
 #MM			kernel-partition
