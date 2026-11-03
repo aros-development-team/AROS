@@ -69,6 +69,8 @@
 {
     fdesc *oldfdesc, *newfdesc;
 
+    /* Pin the source before concurrent close can remove it. */
+    __lock_fdtable();
     /* Fail if old FD is invalid */
     oldfdesc = __getfdesc(oldfd);
     if (!oldfdesc)
@@ -77,6 +79,7 @@
            Duplicate it through the owner's hook, which installs the same
            object at newfd and reserves newfd in fd.library. */
         APTR data;
+        __unlock_fdtable();
         const struct fd_hooks *hooks = __getfdhooks(oldfd, &data);
         if (hooks && hooks->fdh_dup)
         {
@@ -98,13 +101,16 @@
     }
 
     /* Do nothing if FDs are identical */
-    if (oldfd == newfd)
+    if (oldfd == newfd) {
+        __unlock_fdtable();
         return newfd;
+    }
 
     /* Allocate new FD or fail */
     newfdesc = __alloc_fdesc();
     if (!newfdesc)
     {
+        __unlock_fdtable();
         errno = ENOMEM;
         return -1;
     }
@@ -112,6 +118,8 @@
     /* Initialise new FD */
     newfdesc->fdflags = 0;
     newfdesc->fcb = oldfdesc->fcb;
+    __fcb_addref(newfdesc->fcb);
+    __unlock_fdtable();
 
     /* Put new FD into its slot (and deallocate any FD previously there) */
     int gotfd = __getfdslot(newfd);
@@ -119,15 +127,11 @@
     {
         /* Reservation failed: release the descriptor we just allocated so it
            is not leaked. errno was set by __getfdslot(). */
+        __fcb_release(newfdesc->fcb);
         __free_fdesc(newfdesc);
         return -1;
     }
 
-    /* Bumping the shared fcb's reference count must be atomic against a
-       concurrent close() of another descriptor onto the same fcb. */
-    __fcb_lock(newfdesc->fcb);
-    newfdesc->fcb->opencount++;
-    __fcb_unlock(newfdesc->fcb);
     __setfdesc(gotfd, newfdesc);
 
     return gotfd;

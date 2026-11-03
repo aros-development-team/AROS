@@ -60,6 +60,9 @@ struct fd_hooks
 LONG FD_Alloc(LONG startfd, fd_owner_t owner, APTR data, LONG *outfd);
 LONG FD_Reserve(LONG fd, fd_owner_t owner, APTR data);
 LONG FD_Free(LONG fd, fd_owner_t owner);
+/* Version 51: retain an existing reservation for an inherited descriptor.
+   Each successful retain must be balanced by FD_Free(). */
+LONG FD_Retain(LONG fd, fd_owner_t owner);
 LONG FD_Check(LONG fd);
 fd_owner_t FD_GetOwner(LONG fd);
 APTR FD_GetData(LONG fd);

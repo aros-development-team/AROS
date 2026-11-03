@@ -152,8 +152,20 @@ LONG launcher()
         return -1;
     }
 
+    /* GetParentTaskStorageSlot can name a worker's different CRT base. Tell
+       OpenLib which base actually issued this vfork before it copies fds. */
+    if (!__posixc_set_vfork_parent(udata->parent_posixcbase))
+    {
+        FreeSignal(child_signal);
+        udata->child_errno = ENOMEM;
+        SETCHILDSTATE(CHILD_STATE_SETUP_FAILED);
+        Signal(udata->parent, 1 << udata->parent_signal);
+        return -1;
+    }
+
     /* TODO: Can we avoid opening posixc.library for child process? */
     PosixCBase = (struct PosixCIntBase *)OpenLibrary((STRPTR) "posixc.library", 0);
+    __posixc_set_vfork_parent(NULL);
     if (PosixCBase)
     {
         PosixCBase->PosixCBase.StdCBase = (struct StdCBase *)OpenLibrary((STRPTR) "stdc.library", 0);
@@ -335,7 +347,10 @@ pid_t __vfork(jmp_buf env)
     if (setjmp(udata->parent_newexitjmp) == 0)
     {
         udata->parent_olderrorptr = __stdc_set_errorptr(&udata->child_error);
-        udata->child_error = *udata->parent_olderrorptr;
+        /* A pthread opens stdc without program startup. It has a valid
+           jmp_buf storage area, but no program-result pointer to inherit. */
+        udata->child_error = udata->parent_olderrorptr
+            ? *udata->parent_olderrorptr : 0;
         __stdc_set_exitjmp(udata->parent_newexitjmp, udata->parent_oldexitjmp);
 
         parent_enterpretendchild(udata);
@@ -440,13 +455,14 @@ static __attribute__((noinline)) void __vfork_exit_controlled_stack(struct vfork
 
     /* Save some data from udata before udata is being freed */
     _VFORK_COPYENV(env,udata->vfork_jmp);
+    pid_t child_id = GetETaskID(udata->child);
 
     D(bug("__vfork: Parent: freeing udata\n"));
     FreeMem(udata, sizeof(struct vfork_data));
 
     D(bug("__vfork: Parent jumping to jmp_buf %p\n", env));
     D(bug("__vfork: ip: %p, stack: %p\n", env->retaddr, env->regs[SP]));
-    vfork_longjmp(env, GetETaskID(udata->child));
+    vfork_longjmp(env, child_id);
 }
 
 static void parent_createchild(struct vfork_data *udata)

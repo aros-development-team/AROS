@@ -105,6 +105,7 @@ static fd_entry *fd_get_entry(struct fd_base *base, LONG fd)
 
         entry = &FDBase->fd_Table[fd];
         if (entry->owner == FD_OWNER_NONE) {
+            entry->references = 1;
             entry->owner = owner;
             entry->data = data;
             *outfd = fd;
@@ -181,6 +182,7 @@ static fd_entry *fd_get_entry(struct fd_base *base, LONG fd)
         goto done;
     }
 
+    entry->references = 1;
     entry->owner = owner;
     entry->data = data;
 
@@ -204,7 +206,8 @@ static fd_entry *fd_get_entry(struct fd_base *base, LONG fd)
         struct fd_base *, FDBase, 7, FD)
 
 /*  FUNCTION
-        Release a descriptor slot owned by a specific consumer.
+        Release one reference to a descriptor slot owned by a specific consumer.
+        The slot becomes available only when its last reference is released.
 
     INPUTS
         fd     - Descriptor number to release.
@@ -242,8 +245,10 @@ static fd_entry *fd_get_entry(struct fd_base *base, LONG fd)
         goto done;
     }
 
-    entry->owner = FD_OWNER_NONE;
-    entry->data = NULL;
+    if (--entry->references == 0) {
+        entry->owner = FD_OWNER_NONE;
+        entry->data = NULL;
+    }
 
  done:
     ReleaseSemaphore(&FDBase->fd_Lock);
@@ -464,6 +469,58 @@ static fd_entry *fd_get_entry(struct fd_base *base, LONG fd)
     entry->data = data;
 
  done:
+    ReleaseSemaphore(&FDBase->fd_Lock);
+    return error;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+
+    NAME */
+        AROS_LH2(LONG, FD_Retain,
+
+/*  SYNOPSIS */
+        AROS_LHA(LONG, fd, D0),
+        AROS_LHA(fd_owner_t, owner, D1),
+
+/*  LOCATION */
+        struct fd_base *, FDBase, 14, FD)
+
+/*  FUNCTION
+        Retain an existing descriptor reservation for an independent table
+        inheriting the same descriptor number. FD_Free releases one reference;
+        the number remains reserved until the last reference is released.
+
+    INPUTS
+        fd - Existing descriptor number.
+        owner - Expected descriptor owner.
+
+    RESULT
+        Zero on success, EBADF if the reservation does not match, EINVAL for
+        FD_OWNER_NONE, or EOVERFLOW if no further reference can be retained.
+
+    SEE ALSO
+        FD_Reserve(), FD_Free()
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    LONG error = 0;
+    fd_entry *entry;
+
+    if (owner == FD_OWNER_NONE)
+        return EINVAL;
+
+    ObtainSemaphore(&FDBase->fd_Lock);
+    entry = fd_get_entry(FDBase, fd);
+    if (!entry || entry->owner != owner)
+        error = EBADF;
+    else if (entry->references == (ULONG)-1)
+        error = EOVERFLOW;
+    else
+        entry->references++;
     ReleaseSemaphore(&FDBase->fd_Lock);
     return error;
 

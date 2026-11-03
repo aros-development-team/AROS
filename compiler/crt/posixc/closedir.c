@@ -47,33 +47,15 @@
 
 ******************************************************************************/
 {
-    fdesc *desc;
-
     if (!dir)
     {
         errno = EFAULT;
         return -1;
     }
 
-    desc = __getfdesc(dir->fd);
-    if (!desc)
-    {
-        errno = EBADF;
+    /* close() removes the descriptor atomically with table snapshots. */
+    if (close(dir->fd) < 0)
         return -1;
-    }
-
-    __fcb_lock(desc->fcb);
-    if (--desc->fcb->opencount == 0)
-    {
-        UnLock(desc->fcb->handle);
-        __fcb_unlock(desc->fcb);
-        __flock_release(desc->fcb);
-        FreeVec(desc->fcb);
-    }
-    else
-        __fcb_unlock(desc->fcb);
-    __free_fdesc(desc);
-    __setfdesc(dir->fd, NULL);
 
     FreeDosObject(DOS_FIB, dir->priv);
     free(dir);
