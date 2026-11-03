@@ -448,7 +448,8 @@ struct	tcpstat {
 #define	TCPCTL_PMTUD		10	/* IPv4 path MTU discovery (DF) */
 #define	TCPCTL_PMTUD_BLACKHOLE	11	/* path MTU black-hole detection */
 #define	TCPCTL_ECN		12	/* ECN: 0 off, 1 ask and accept, 2 accept */
-#define TCPCTL_MAXID		13
+#define	TCPCTL_PRR		13	/* proportional rate reduction (RFC 6937) */
+#define TCPCTL_MAXID		14
 
 #define TCPCTL_NAMES { \
 	{ 0, 0 }, \
@@ -464,6 +465,7 @@ struct	tcpstat {
 	{ "pmtud", CTLTYPE_INT }, \
 	{ "pmtud_blackhole", CTLTYPE_INT }, \
 	{ "ecn", CTLTYPE_INT }, \
+	{ "prr", CTLTYPE_INT }, \
 }
 
 #ifdef KERNEL

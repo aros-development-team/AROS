@@ -239,8 +239,10 @@ window as it reads changes it in every ACK). The scoreboard (`t_sack_blks`, `TCP
 ranges, the highest dropped when full) gives `IsLost()` (`tcp_sack_lostbound()`), `SetPipe()`
 (`tcp_compute_pipe()`) and `NextSeg()` (`tcp_sack_nextseg()`): on each ACK in recovery
 `tcp_sack_recover()` sends lost holes, each once (`snd_highrxt`, HighRxt), then new data, then
-other holes, within `ssthresh` - pipe, or what PRR (RFC 6937) allows when `tcp_do_prr` is set,
-from the data each ACK delivers. A partial ACK is one more ACK in recovery. `snd_cwnd` stays at
+other holes, within `ssthresh` - pipe, or what PRR (RFC 6937) allows from the data each ACK
+delivers when `tcp_do_prr` (sysctl `net.inet.tcp.prr`) is set. PRR is off by default: on the loss
+bench (random, several holes in a window, a lost retransmission, reordering) it made no
+difference either way. A partial ACK is one more ACK in recovery. `snd_cwnd` stays at
 what is in flight until the recovery ends, at `ssthresh`.
 
 Without SACK, loss recovery is NewReno (RFC 6582). A partial ACK in fast recovery resends the

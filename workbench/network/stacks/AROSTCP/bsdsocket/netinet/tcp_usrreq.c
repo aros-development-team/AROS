@@ -895,6 +895,8 @@ size_t newlen;
             tcp_do_ecn = v;
         return (error);
     }
+    case TCPCTL_PRR:
+        return (sysctl_int(oldp, oldlenp, newp, newlen, &tcp_do_prr));
     default:
         return (ENOPROTOOPT);
     }

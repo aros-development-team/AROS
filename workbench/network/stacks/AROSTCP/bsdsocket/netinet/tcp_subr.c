@@ -384,7 +384,9 @@ int	tcp_do_newreno = 1;	/* enable NewReno (RFC 3782) */
 /* ECN (RFC 3168): 0 off, 1 ask for it and accept it, 2 accept it when the
  * peer asks (the default of Linux, FreeBSD and Windows) */
 int	tcp_do_ecn = 2;
-int	tcp_do_prr = 0;		/* enable PRR (RFC 6937) - off by default */
+/* PRR (RFC 6937) in loss recovery with SACK: off until a measurement shows
+ * it helps here; sysctl net.inet.tcp.prr */
+int	tcp_do_prr = 0;
 int	tcp_do_pmtud = 1;	/* IPv4 path MTU discovery: DF on (RFC 1191) */
 /* path MTU black-hole detection (RFC 2923 section 2.1): on, as in XNU */
 int	tcp_do_pmtud_blackhole = 1;
