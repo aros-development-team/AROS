@@ -1,5 +1,0 @@
-src/*.o
-src/cdcontrol
-src/cdrom
-src/cdrom-handler
-src/checkcd
