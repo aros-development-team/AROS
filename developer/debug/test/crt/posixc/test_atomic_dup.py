@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-"""
-Compile the actual duplicate helper against a deterministic table harness.
+"""Compile the actual duplicate helper against a deterministic table harness."""
 
-A competing global owner takes the selected slot immediately before reserve;
-lookup/publication mocks also require the spanning table guard.
-"""
+# A competing global owner takes the selected slot immediately before reserve;
+# lookup/publication mocks also require the spanning table guard.
 from pathlib import Path
 import subprocess, tempfile
 root = Path(__file__).resolve().parents[5]
