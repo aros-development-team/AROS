@@ -253,7 +253,8 @@ static LONG FindWindowsPartition(STRPTR device, LONG unit)
     UBYTE id;
     struct PartitionType type;
     struct PartitionHandle *root, *partition;
-    LONG partition_no = -1, i = 0;
+    LONG partition_no = -1;
+    ULONG tableType = 0;
 
     D(bug("[InstallAROS] %s()\n", __func__));
 
@@ -261,19 +262,27 @@ static LONG FindWindowsPartition(STRPTR device, LONG unit)
     {
         if (OpenPartitionTable(root) == 0)
         {
-            /* Look for an active partition with a Windows FS */
-            ForeachNode(&root->table->list, partition)
+            GetPartitionTableAttrsTags(root, PTT_TYPE, (IPTR)&tableType, TAG_DONE);
+            /* Windows chainloading here supports primary MBR partitions. */
+            if (tableType == PHPTT_MBR)
             {
-                active = 0;
-                memset(&type, 0, sizeof(type));
-                GetPartitionAttrsTags
-                    (partition,
-                    PT_ACTIVE, (IPTR) & active,
-                    PT_TYPE, (IPTR) & type, TAG_DONE);
-                id = type.id[0];
-                if (active && (id == 0x7 || id == 0xb || id == 0xc))
-                    partition_no = i;
-                i++;
+                ForeachNode(&root->table->list, partition)
+                {
+                    active = 0;
+                    memset(&type, 0, sizeof(type));
+                    GetPartitionAttrsTags
+                        (partition,
+                        PT_ACTIVE, (IPTR) & active,
+                        PT_TYPE, (IPTR) & type, TAG_DONE);
+                    id = type.id[0];
+                    if (active && (id == 0x7 || id == 0xb || id == 0xc))
+                    {
+                        ULONG position = 0;
+                        GetPartitionAttrsTags(partition, PT_POSITION,
+                            (IPTR)&position, TAG_DONE);
+                        partition_no = position;
+                    }
+                }
             }
             ClosePartitionTable(root);
         }
