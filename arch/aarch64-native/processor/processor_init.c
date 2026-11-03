@@ -83,8 +83,9 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
     }
 
 #if defined(__AROSEXEC_SMP__)
-    if (waitmask)
-        Wait(waitmask);
+    /* Every probe, not just the first to finish */
+    while (waitmask)
+        waitmask &= ~Wait(waitmask);
     for (i = 0; i < ProcessorBase->cpucount; i++)
     {
         if (sigbits[i] >= 0)
