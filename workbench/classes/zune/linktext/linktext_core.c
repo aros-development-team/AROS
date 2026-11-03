@@ -288,11 +288,13 @@ int lt_link_fragment(const lt_content *c, const lt_line *l, lt_ulong nl, lt_ulon
                      lt_ulong f, lt_measure m, void *ctx, lt_ulong *line, long *x0, long *x1)
 {
     const lt_span *s = lt_link(c, link);
-    lt_ulong i, a, b;
+    lt_ulong i;
     if (!s || !nl) return 0;
     i = lt_line_of(l, nl, s->start);
     for (; i < nl && l[i].start < s->start + s->length; i++) {
         lt_ulong le = l[i].start + l[i].shown;
+        lt_ulong a, b;
+
         a = s->start > l[i].start ? s->start : l[i].start;
         b = s->start + s->length < le ? s->start + s->length : le;
         if (a >= b) continue;

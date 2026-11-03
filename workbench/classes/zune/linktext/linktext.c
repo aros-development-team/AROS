@@ -50,10 +50,9 @@ void lt_free(void *p) { if (p) FreeVec(p); }
 static long measure(void *ctx, const char *s, lt_ulong n, lt_ulong flags)
 {
     struct RastPort *rp = (struct RastPort *)ctx;
-    long w;
     if (flags & LT_BOLD) {
         ULONG old = SetSoftStyle(rp, FSF_BOLD, AskSoftStyle(rp));
-        w = TextLength(rp, (STRPTR)s, n);
+        long w = TextLength(rp, (STRPTR)s, n);
         SetSoftStyle(rp, old, AskSoftStyle(rp));
         return w;
     }
@@ -163,9 +162,9 @@ IPTR Linktext__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Linktext_DATA *d = INST_DATA(cl, obj);
     struct RastPort *rp = _rp(obj);
-    APTR clip = NULL, tclip;
+    APTR clip = NULL;
     BOOL partial = d->dirty_first >= 0;
-    LONG i, first = d->first, last = d->first + visible(d, obj), top = _mtop(obj), height = _mheight(obj);
+    LONG first = d->first, last = d->first + visible(d, obj), top = _mtop(obj), height = _mheight(obj);
 
     if (partial) {
         if (d->dirty_first > first) first = d->dirty_first;
@@ -178,6 +177,9 @@ IPTR Linktext__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     }
     DoSuperMethodA(cl, obj, (Msg)msg);
     if ((msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)) && d->content) {
+        APTR tclip;
+        LONG i;
+
         SetFont(rp, _font(obj));
         /* The window can be drawn at a new size before Show when only its
            height changed; a failed wrap keeps the lines there are. */
@@ -572,7 +574,7 @@ IPTR Linktext__MUIM_Linktext_SetContent(Class *cl, Object *obj, struct MUIP_Link
     for (i = 0; status == LT_OK && i < msg->SpanCount; i++) {
         in[i].start = msg->Spans[i].Start;
         in[i].length = msg->Spans[i].Length;
-        in[i].flags = msg->Spans[i].Flags & MUIV_Linktext_Span_Bold ? LT_BOLD : 0;
+        in[i].flags = (msg->Spans[i].Flags & MUIV_Linktext_Span_Bold) ? LT_BOLD : 0;
         in[i].target = (const char *)msg->Spans[i].Target;
         in[i].id = msg->Spans[i].ID;
     }
