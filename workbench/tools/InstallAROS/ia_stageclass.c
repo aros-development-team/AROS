@@ -1205,11 +1205,7 @@ IPTR InstallStage__MUIM_Partition(Class * CLASS, Object * self, Msg message)
                     bootMB = minimum;
                 CloseRootPartition(root);
             }
-#ifdef INSTALL_BL_PC_EFI
-            sprintf(tmparg, " BOOTSIZE=%lu BOOTTYPE=efi", bootMB);
-#else
             sprintf(tmparg, " BOOTSIZE=%lu BOOTTYPE=fat32", bootMB);
-#endif
             strcat(tmpcmd, tmparg);
         }
         /* Partition scheme to use? */

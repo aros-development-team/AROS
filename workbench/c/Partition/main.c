@@ -76,8 +76,8 @@
         QUIET -- Do not print any output. This option can only be used when
             FORCE is also specified.
         BOOTSIZE -- Size in megabytes of an optional boot partition.
-        BOOTTYPE -- "fat32" for a FAT32 data partition, or "efi" for an
-            EFI system partition. GPT uses the EFI system type for both.
+        BOOTTYPE -- "fat32" for an EFI system partition: type 0xEF on
+            MBR, or the EFI system partition GUID on GPT.
         SCHEME -- Specify the partition scheme to use 
                              mbr - (default)
                              gpt - 
@@ -203,8 +203,7 @@ static LONG CreateGPTLayout(struct PartitionHandle *root, ULONG sysSize,
     if (root->table->type != PHPTT_GPT || blocksize > MB || MB % blocksize)
         return ERROR_BAD_NUMBER;
     if (ARG(BOOTSIZE) && (!bootSize ||
-        (Stricmp((CONST_STRPTR)ARG(BOOTTYPE), "fat32") &&
-         Stricmp((CONST_STRPTR)ARG(BOOTTYPE), "efi"))))
+        Stricmp((CONST_STRPTR)ARG(BOOTTYPE), "fat32")))
         return ERROR_BAD_NUMBER;
     GetPartitionTableAttrsTags(root, PTT_FIRSTUSABLE, (IPTR)&first,
         PTT_LASTUSABLE, (IPTR)&last, TAG_DONE);
@@ -523,12 +522,11 @@ int main(void)
         /* Create Boot partition if it doesn't exist */
         if (bootPart == NULL)
         {
-            BOOL isEFI = Stricmp((CONST_STRPTR)ARG(BOOTTYPE), "efi") == 0;
-            ULONG fstype = isEFI ? 0xef : 0x0c;
+            ULONG fstype = 0xef; /* EFI system partition */
 
             D(bug("[C:Partition] Creating Boot partition (%u MB)\n", bootSize));
 
-            if (isEFI || Stricmp((CONST_STRPTR)ARG(BOOTTYPE), "fat32") == 0)
+            if (Stricmp((CONST_STRPTR)ARG(BOOTTYPE), "fat32") == 0)
             {
                 lowCyl = BlockToCyl(&root->de, rootLowBlock - 1) + 1;
                 reqHighCyl = lowCyl + MBsToCylinders(bootSize, &root->de);
