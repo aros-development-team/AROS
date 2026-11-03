@@ -249,10 +249,12 @@ BOOL BOOTLOADER_PartFixUp(struct InstallStage_DATA *data, IPTR systype)
 
 static LONG FindWindowsPartition(STRPTR device, LONG unit)
 {
-    IPTR active, id;
+    ULONG active;
+    UBYTE id;
     struct PartitionType type;
     struct PartitionHandle *root, *partition;
-    LONG partition_no = -1, i = 0;
+    LONG partition_no = -1;
+    ULONG tableType = 0;
 
     D(bug("[InstallAROS] %s()\n", __func__));
 
@@ -260,17 +262,27 @@ static LONG FindWindowsPartition(STRPTR device, LONG unit)
     {
         if (OpenPartitionTable(root) == 0)
         {
-            /* Look for an active partition with a Windows FS */
-            ForeachNode(&root->table->list, partition)
+            GetPartitionTableAttrsTags(root, PTT_TYPE, (IPTR)&tableType, TAG_DONE);
+            /* Windows chainloading here supports primary MBR partitions. */
+            if (tableType == PHPTT_MBR)
             {
-                GetPartitionAttrsTags
-                    (partition,
-                    PT_ACTIVE, (IPTR) & active,
-                    PT_TYPE, (IPTR) & type, TAG_DONE);
-                id = type.id[0];
-                if (active && (id == 0x7 || id == 0xb || id == 0xc))
-                    partition_no = i;
-                i++;
+                ForeachNode(&root->table->list, partition)
+                {
+                    active = 0;
+                    memset(&type, 0, sizeof(type));
+                    GetPartitionAttrsTags
+                        (partition,
+                        PT_ACTIVE, (IPTR) & active,
+                        PT_TYPE, (IPTR) & type, TAG_DONE);
+                    id = type.id[0];
+                    if (active && (id == 0x7 || id == 0xb || id == 0xc))
+                    {
+                        ULONG position = 0;
+                        GetPartitionAttrsTags(partition, PT_POSITION,
+                            (IPTR)&position, TAG_DONE);
+                        partition_no = position;
+                    }
+                }
             }
             ClosePartitionTable(root);
         }
@@ -509,7 +521,9 @@ void BOOTLOADER_DoInstall(Class * CLASS, Object * self)
 #if defined(INSTALL_BL_EFI)
     case BOOTLOADER_EFI:
         EFI_DoInstall(CLASS, self);
-        break;
+        if (data->inst_success == MUIV_Inst_InProgress)
+            SET(data->gauge2, MUIA_Gauge_Current, 100);
+        return;
 #endif
 #if defined(INSTALL_BL_GRUB2)
     case BOOTLOADER_GRUB2:
@@ -626,12 +640,22 @@ void BOOTLOADER_DoInstall(Class * CLASS, Object * self)
         break;
 #endif
     default:
-        /* TODO: support more bootloaders */
-        break;
+        /* No installation command exists for this bootloader. */
+        data->inst_success = MUIV_Inst_Failed;
+        return;
     }
 
+    if (data->inst_success != MUIV_Inst_InProgress)
+        return;
+
     D(bug("[InstallAROS] %s: executing '%s'\n", __func__, tmp));
-    Execute(tmp, NULL, NULL);
+    LONG result = SystemTagList(tmp, NULL);
+    LOG_Printf("bootloader returned %ld", result);
+    if (result != RETURN_OK)
+    {
+        data->inst_success = MUIV_Inst_Failed;
+        return;
+    }
     D(bug("[InstallAROS] %s: finished\n", __func__));
 
     SET(data->gauge2, MUIA_Gauge_Current, 100);

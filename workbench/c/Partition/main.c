@@ -179,6 +179,13 @@ int main(void)
             error = ERROR_REQUIRED_ARG_MISSING;
         }
 
+        if (ARG(BOOTTYPE) &&
+            Stricmp((CONST_STRPTR)ARG(BOOTTYPE), "fat32") != 0)
+        {
+            PutStr("ERROR: BOOTTYPE must be 'fat32'.\n");
+            error = ERROR_BAD_TEMPLATE;
+        }
+
         if (ARG(WORKSIZE) != (IPTR)NULL && ARG(SYSSIZE) == (IPTR)NULL)
         {
             PutStr("ERROR: Cannot specify WORKSIZE without SYSSIZE.\n");
@@ -305,15 +312,23 @@ int main(void)
     {
         /* Open the existing partition table, or create it if none exists */
         D(bug("[C:Partition] Opening existing root partition table..."));
-        if (OpenPartitionTable(root) != 0)
+        LONG openError = OpenPartitionTable(root);
+        if (openError != 0 && openError != 1 && !ARG(WIPE))
+        {
+            error = openError;
+            PutStr("*** ERROR: Cannot read the existing partition table; it has not been replaced.\n");
+            CloseRootPartition(root);
+            root = NULL;
+        }
+        else if (openError != 0)
         {
             D(bug("failed\n[C:Partition] Creating %s root partition table\n",
                   ARG(SCHEME) ? (char *)ARG(SCHEME) : "MBR"));
 
             /* Create a root partition table */
-            if ((error == 0) && (CreatePartitionTable(root, scheme) != 0))
+            error = CreatePartitionTable(root, scheme);
+            if (error != 0)
             {
-                error = ERROR_UNKNOWN;
                 PutStr("*** ERROR: Creating root partition table failed.\n");
                 CloseRootPartition(root);
                 root = NULL;
@@ -421,7 +436,8 @@ int main(void)
                 {
                     D(bug("[C:Partition] EBR container handle @ 0x%p\n", extPartition));
 
-                    if (CreatePartitionTable(extPartition, PHPTT_EBR) != 0)
+                    error = CreatePartitionTable(extPartition, PHPTT_EBR);
+                    if (error != 0)
                     {
                         PutStr("*** ERROR: Creating extended partition table failed.\n");
                         extPartition = NULL;
@@ -435,6 +451,7 @@ int main(void)
                 else
                 {
                     D(bug("[C:Partition] Failed to create EBR container\n"));
+                    error = ERROR_DISK_FULL;
                 }
             }
         }
@@ -547,8 +564,8 @@ int main(void)
                 error = ERROR_UNKNOWN;
 
             if (error == 0
-                && workSize != 0
-                && sysHighCyl < diskPart->de.de_HighCyl - diskPart->de.de_LowCyl)
+                && (workSize != 0 || ARG(MAXWORK))
+                && sysHighCyl < highCyl)
             {
                 /* Create Work partition (defaults to SFS) */
                 workPart = CreateRDBPartition(diskPart, sysHighCyl + 1, highCyl,
@@ -589,23 +606,22 @@ int main(void)
         if (!hasActive && activePart)
             SetPartitionAttrsTags(activePart, PT_ACTIVE, TRUE, TAG_DONE);
 
-        /* Save to disk and deallocate */
-        WritePartitionTable(diskPart);
-        ClosePartitionTable(diskPart);
-
-        if (parent == extPartition)
-        {
-            WritePartitionTable(extPartition);
-            ClosePartitionTable(extPartition);
-        }
-
-        /* Save to disk and deallocate */
-        WritePartitionTable(root);
-        ClosePartitionTable(root);
+        /* Write children before publishing them in their parent tables.
+         * With SCHEME=rdb, diskPart and root refer to the same table. */
+        error = WritePartitionTable(diskPart);
+        if (error == 0 && parent == extPartition)
+            error = WritePartitionTable(extPartition);
+        if (error == 0 && diskPart != root)
+            error = WritePartitionTable(root);
     }
 
     if (root != NULL)
+    {
+        /* Closing the root table recursively discards all child tables,
+         * including on an earlier creation or write failure. */
+        ClosePartitionTable(root);
         CloseRootPartition(root);
+    }
 
     if (!ARG(QUIET) && error == 0) Printf("Partitioning completed\n");
 
@@ -867,19 +883,25 @@ static LONG RecurviseDestroyPartitions(struct PartitionHandle *root)
         {
             if (OpenPartitionTable(partition) == 0)
             {
-                error += RecurviseDestroyPartitions(partition);
+                error = RecurviseDestroyPartitions(partition);
             }
             else
             {
                 APTR buffer = AllocMem(ZEROBUFFSIZE, MEMF_CLEAR);
-                /* Damage first blocks of partition */
-                WritePartitionDataQ(partition, buffer, ZEROBUFFSIZE, 0);
+                if (buffer == NULL)
+                    return ERROR_NO_FREE_STORE;
+                /* Damage first blocks of partition. Do not discard its
+                 * parent table if the requested wipe fails. */
+                error = WritePartitionDataQ(partition, buffer, ZEROBUFFSIZE, 0);
                 FreeMem(buffer, ZEROBUFFSIZE);
+                if (error)
+                    return error == TDERR_WriteProt
+                        ? ERROR_DISK_WRITE_PROTECTED : ERROR_UNKNOWN;
             }
+            if (error)
+                return error;
         }
     }
 
-    error += DestroyPartitionTable(root);
-
-    return error;
+    return DestroyPartitionTable(root);
 }

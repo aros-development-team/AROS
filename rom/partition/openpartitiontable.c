@@ -75,6 +75,7 @@
                 }
                 return retval;
             }
+            return ERROR_NO_FREE_STORE;
         }
         pst++;
     }
