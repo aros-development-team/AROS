@@ -209,6 +209,63 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
 
 
 /*
+    CMD_UPDATE: an NVM Flush of the unit's namespace. A controller with a
+    volatile write cache holds written data there until it is told to commit
+    it; without this, data the filesystem believes is on the medium is lost
+    when the power goes, and the pages being programmed at that moment read
+    back as unrecovered read errors. Flush is mandatory, and a controller
+    without a volatile cache completes it at once.
+*/
+static BOOL nvme_flush(struct IORequest *io)
+{
+    struct nvme_Unit *unit = (struct nvme_Unit *)io->io_Unit;
+    struct NVMEBase *NVMEBase = unit->au_Bus->ab_Base;
+    struct completionevent_handler ioehandle;
+    struct nvme_command cmdio;
+    struct nvme_queue *nvmeq;
+    ULONG nsid = (unit->au_UnitNum & ((1 << 12) - 1)) + 1;
+    int queueno;
+
+    memset(&cmdio, 0, sizeof(cmdio));
+    memset(&ioehandle, 0, sizeof(ioehandle));
+    nvme_dma_init(&ioehandle);
+
+    queueno = 1 + (KrnGetCPUNumber() % unit->au_Bus->ab_Dev->queuecnt);
+    nvmeq = unit->au_Bus->ab_Dev->dev_Queues[queueno];
+
+    ioehandle.ceh_Task = nvmeq->q_IOTask;
+    ioehandle.ceh_SigSet = SIGF_SINGLE;
+    ioehandle.ceh_Msg = io;
+
+    /* Off the unit's list before submission, as for a transfer */
+    ObtainSemaphore(&unit->au_Lock);
+    Remove(&io->io_Message.mn_Node);
+    ReleaseSemaphore(&unit->au_Lock);
+
+    cmdio.common.op.opcode = nvme_cmd_flush;
+    cmdio.common.nsid = AROS_LONG2LE(nsid);
+
+    if (nvme_submit_iocmd(nvmeq, &cmdio, &ioehandle) != 0) {
+        io->io_Error = IOERR_ABORTED;
+        ObtainSemaphore(&unit->au_Lock);
+        AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
+        ReleaseSemaphore(&unit->au_Lock);
+        return TRUE;
+    }
+
+    {
+        struct completionevent_handler *slot =
+            &nvmeq->ce_entries[cmdio.common.op.command_id];
+        ULONG spins = 4096;
+
+        while (spins-- && !slot->ceh_Reply && (slot->ceh_Msg == (APTR)io))
+            nvme_process_cq(nvmeq);
+    }
+
+    return FALSE;
+}
+
+/*
     Try to do IO commands. All commands which require talking with nvme devices
     will be handled slow, that is they will be passed to bus task which will
     execute them as soon as hardware will be free.
@@ -403,8 +460,7 @@ AROS_LH1(void, BeginIO,
 
     case CMD_UPDATE:
         D(bug("[NVME%02ld] TD_UPDATE\n", unit->au_UnitNum);)
-        // FIXME: Implement cache flush
-        done = TRUE;
+        done = nvme_flush(io);
         break;
 
     default:
