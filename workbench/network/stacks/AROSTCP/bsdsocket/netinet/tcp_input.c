@@ -1297,6 +1297,49 @@ trimthenstep6:
     }
 
     /*
+     * A reset first (RFC 9293 section 3.10.7.4): one outside the window is
+     * dropped. Before the trimming below, which would move one before the
+     * window into it.
+     *    SYN_RECEIVED STATE:
+     *	If passive open, return to LISTEN state.
+     *	If active open, inform user that connection was refused.
+     *    ESTABLISHED, FIN_WAIT_1, FIN_WAIT2, CLOSE_WAIT STATES:
+     *	Inform user that connection was reset, and close tcb.
+     *    CLOSING, LAST_ACK, TIME_WAIT STATES
+     *	Close the tcb.
+     */
+    if(tiflags & TH_RST) {
+        if(!(SEQ_GEQ(ti->ti_seq, tp->rcv_nxt) &&
+                SEQ_LT(ti->ti_seq, tp->rcv_nxt + tp->rcv_wnd)) &&
+                !(tp->rcv_wnd == 0 && ti->ti_seq == tp->rcv_nxt))
+            goto drop;
+        switch(tp->t_state) {
+
+        case TCPS_SYN_RECEIVED:
+            so->so_error = ECONNREFUSED;
+            goto close;
+
+        case TCPS_ESTABLISHED:
+        case TCPS_FIN_WAIT_1:
+        case TCPS_FIN_WAIT_2:
+        case TCPS_CLOSE_WAIT:
+            so->so_error = ECONNRESET;
+close:
+            tp->t_state = TCPS_CLOSED;
+            tcpstat.tcps_drops++;
+            tp = tcp_close(tp);
+            goto drop;
+
+        case TCPS_CLOSING:
+        case TCPS_LAST_ACK:
+        case TCPS_TIME_WAIT:
+            tp = tcp_close(tp);
+            goto drop;
+        }
+        goto drop;
+    }
+
+    /*
      * States other than LISTEN or SYN_SENT.
      * First check timestamp, if present.
      * Then check the connection count, if present.
@@ -1464,40 +1507,6 @@ trimthenstep6:
         tp->ts_recent_age = tcp_now;
         tp->ts_recent = to.to_tsval;
     }
-
-    /*
-     * If the RST bit is set examine the state:
-     *    SYN_RECEIVED STATE:
-     *	If passive open, return to LISTEN state.
-     *	If active open, inform user that connection was refused.
-     *    ESTABLISHED, FIN_WAIT_1, FIN_WAIT2, CLOSE_WAIT STATES:
-     *	Inform user that connection was reset, and close tcb.
-     *    CLOSING, LAST_ACK, TIME_WAIT STATES
-     *	Close the tcb.
-     */
-    if(tiflags & TH_RST) switch(tp->t_state) {
-
-        case TCPS_SYN_RECEIVED:
-            so->so_error = ECONNREFUSED;
-            goto close;
-
-        case TCPS_ESTABLISHED:
-        case TCPS_FIN_WAIT_1:
-        case TCPS_FIN_WAIT_2:
-        case TCPS_CLOSE_WAIT:
-            so->so_error = ECONNRESET;
-close:
-            tp->t_state = TCPS_CLOSED;
-            tcpstat.tcps_drops++;
-            tp = tcp_close(tp);
-            goto drop;
-
-        case TCPS_CLOSING:
-        case TCPS_LAST_ACK:
-        case TCPS_TIME_WAIT:
-            tp = tcp_close(tp);
-            goto drop;
-        }
 
     /*
      * If a SYN is in the window, then this is an

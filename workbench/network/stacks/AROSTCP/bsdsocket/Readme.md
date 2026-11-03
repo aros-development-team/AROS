@@ -301,6 +301,11 @@ TIME-WAIT) is off by default too: RFC 6247 moved it to Historic, as it lets a SY
 CC skip the three-way handshake. It is still in the source, and `tcp_do_rfc1644` (sysctl
 `net.inet.tcp.rfc1644`) turns it back on.
 
+### 5.5 Resets out of place
+
+A reset outside the receive window is dropped (RFC 9293 section 3.10.7.4), and so is one before
+it, which the 4.4BSD code took for one in it: it trimmed the segment to the window first.
+
 ---
 
 ## 6. Dual-stack IPv6 (TCP6 / UDP6)
