@@ -111,7 +111,6 @@ struct Volume
 
 #define VF_IS_TRACKDISK (1<<0)
 #define VF_IS_RDB       (1<<1)
-#define VF_IS_GPT       (1<<2)
 
 struct BlockNode
 {
@@ -588,11 +587,11 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
                             PT_STARTBLOCK, (IPTR)&first,
                             PT_ENDBLOCK, (IPTR)&last,
                             PT_POSITION, (IPTR)&position, TAG_DONE);
-                        if (volume->startblock == first && position < 255)
+                        if (volume->startblock >= first &&
+                            volume->startblock <= last && position < 255)
                         {
                             volume->partnum = position;
-                            volume->flags |= VF_IS_GPT;
-                            retval = TRUE;
+                            retval = findSubPartition(PartitionBase, volume, pn, 0);
                             break;
                         }
                     }
