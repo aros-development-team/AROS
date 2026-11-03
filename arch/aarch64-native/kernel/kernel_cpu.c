@@ -166,7 +166,14 @@ void cpu_Register()
 
     /* Built for this core by the boot CPU (bcm27xx_init) */
     if (__tls->ThisTask == NULL)
-        goto cpu_registerfatal;
+    {
+        /* cpu_Init counted it as running, but it will never schedule */
+        __atomic_and_fetch(&__arm_arosintern.ARMI_AffinityMask, ~(1U << cpunum), __ATOMIC_RELEASE);
+        bug("[Kernel:%02d] FATAL : no bootstrap task - core parked\n", cpunum);
+        KrnSpinUnLock(&startup_lock);
+        for (;;)
+            asm volatile("wfi");
+    }
 
     if (__arm_arosintern.ARMI_InitCore)
         __arm_arosintern.ARMI_InitCore(KernelBase, SysBase);
@@ -183,9 +190,6 @@ void cpu_Register()
 
     bug("[Kernel:%02d] Operational\n", cpunum);
 
-#if defined(__AROSEXEC_SMP__)
-cpu_registerfatal:
-#endif
     bug("[Kernel:%02d] Waiting for interrupts\n", cpunum);
 
     KrnSpinUnLock(&startup_lock);
