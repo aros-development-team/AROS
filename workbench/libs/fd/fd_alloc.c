@@ -492,6 +492,14 @@ static fd_entry *fd_get_entry(struct fd_base *base, LONG fd)
         inheriting the same descriptor number. FD_Free releases one reference;
         the number remains reserved until the last reference is released.
 
+        The owner data pointer is shared by all references to the reservation;
+        retaining a number does not retain or copy the object it points to.
+        The owner must keep that object valid until the final FD_Free(), or
+        use NULL as the owner data. A non-final FD_Free() leaves the data
+        pointer unchanged. FD_SetData() replaces it for every reference, not
+        just the calling table. Owners must synchronize data replacement and
+        object destruction with their hook users under their own lock.
+
     INPUTS
         fd - Existing descriptor number.
         owner - Expected descriptor owner.
