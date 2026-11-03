@@ -25,6 +25,7 @@ static int __init_stdio(struct StdCIOIntBase *StdCIOBase)
     struct Process *me = (struct Process *)FindTask(NULL);
 
     NewList((struct List *)&StdCIOBase->files);
+    StdCIOBase->stdioopener = me;
 
     if ((StdCIOBase->intstdin.fh = Input()))
     {
@@ -66,6 +67,7 @@ static int __init_stdio(struct StdCIOIntBase *StdCIOBase)
 static int __close_stdio(struct StdCIOIntBase *StdCIOBase)
 {
     struct FileHandle *_fh;
+    struct Process *me;
     FILE *stream;
 
     D(bug("[%s] %s: StdCIOBase = 0x%p, DOSBase = 0x%p\n", STDCNAME, __func__, StdCIOBase, DOSBase));
@@ -80,14 +82,21 @@ static int __close_stdio(struct StdCIOIntBase *StdCIOBase)
        started the C runtime itself, so the Shell's Close() dropped the
        program's buffered tail and its script stopped (2026-09-16). */
 #define STDCIO_FHF_MODEBITS (0x00000004 | 0x00000008)   /* FHF_LINEBUF | FHF_NOBUF */
-    if (StdCIOBase->intstdout.fh)
+    /* A library that opened us is closed at its expunge, from whatever task
+       flushes memory, long after the opener's handles were freed. Only the
+       opener, still holding the same handles, may touch them. */
+    me = (struct Process *)FindTask(NULL);
+    if (me != StdCIOBase->stdioopener)
+        me = NULL;
+
+    if (me && StdCIOBase->intstdout.fh && StdCIOBase->intstdout.fh == me->pr_COS)
     {
         _fh = BADDR(StdCIOBase->intstdout.fh);
         _fh->fh_Flags = (_fh->fh_Flags & ~STDCIO_FHF_MODEBITS)
                       | (StdCIOBase->intstdout.fhFlags & STDCIO_FHF_MODEBITS);
     }
 
-    if (StdCIOBase->intstdin.fh)
+    if (me && StdCIOBase->intstdin.fh && StdCIOBase->intstdin.fh == me->pr_CIS)
     {
         _fh = BADDR(StdCIOBase->intstdin.fh);
         _fh->fh_Flags = (_fh->fh_Flags & ~STDCIO_FHF_MODEBITS)

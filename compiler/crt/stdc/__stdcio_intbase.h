@@ -34,6 +34,7 @@ struct StdCIOIntBase
     void *streampool;
     struct MinList files;
     struct __sFILE intstdin, intstdout, intstderr;
+    struct Process *stdioopener;
 
     /* tmpnam.c */
     char tmpnambuffer[L_tmpnam];
