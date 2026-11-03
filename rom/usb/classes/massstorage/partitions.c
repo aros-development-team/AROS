@@ -239,6 +239,12 @@ static VOID AddPartitionVolume(struct NepClassMS *ncm,
         pp[3] = fssm->fssm_Flags;
         i = GetOffset(ncm, pn);
         blockspercyl = pp[4 + DE_BLKSPERTRACK] * pp[4 + DE_NUMHEADS];
+        /* A short RDB environment may not supply usable geometry. */
+        if (blockspercyl == 0)
+        {
+            FreeVec(pp);
+            return;
+        }
         if (i % blockspercyl != 0)
         {
             D(bug("[Boot] Start block of subtable not on cylinder boundary: "

@@ -66,6 +66,7 @@ ULONG AddFS(struct Library *PartitionBase, struct FileSysHandle *fs)
         return ERROR_NO_FREE_STORE;
 
     GetFileSystemAttrs(&fs->ln, FST_FSENTRY, fsrnode, TAG_DONE);
+    SetIoErr(0);
     fsrnode->fse_SegList = LoadFileSystem(&fs->ln);
 
     /*
@@ -108,6 +109,8 @@ ULONG AddFS(struct Library *PartitionBase, struct FileSysHandle *fs)
         return 0;
     }
 
-    /* InternalLoadSeg() will leave its error code in IoErr() */
-    return IoErr();
+    FreeVec(fsrnode);
+
+    /* In-memory loaders may be called without DOSBase and leave no IoErr. */
+    return IoErr() ? IoErr() : ERROR_NOT_EXECUTABLE;
 }
