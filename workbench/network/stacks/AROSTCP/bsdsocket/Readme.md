@@ -301,10 +301,16 @@ TIME-WAIT) is off by default too: RFC 6247 moved it to Historic, as it lets a SY
 CC skip the three-way handshake. It is still in the source, and `tcp_do_rfc1644` (sysctl
 `net.inet.tcp.rfc1644`) turns it back on.
 
-### 5.5 Resets out of place
+### 5.5 Resets, SYNs and ACKs out of place
 
-A reset outside the receive window is dropped (RFC 9293 section 3.10.7.4), and so is one before
-it, which the 4.4BSD code took for one in it: it trimmed the segment to the window first.
+A connection checks the segments that could end it or put data in it (RFC 5961, as FreeBSD and
+Linux). A reset outside the receive window is dropped, and so is one before it, which the 4.4BSD
+code took for one in it. Only a reset at exactly the next expected sequence number ends the
+connection; any other in the window gets a challenge ACK, which a peer that has lost the
+connection answers with a reset at that number. A SYN on a synchronized connection gets a
+challenge ACK too, not a reset, and so does a segment whose ACK is older than SND.UNA by more than
+the peer's largest window (section 5.2), whose data is dropped. Challenge ACKs are limited to 5 a
+second on each connection (section 7), not for all of them together.
 
 ---
 

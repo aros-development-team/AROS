@@ -540,6 +540,24 @@ tcp_prr_ack(struct tcpcb *tp, u_long delivered)
 }
 
 /*
+ * Whether a challenge ACK may go (RFC 5961 section 7): at most
+ * TCP_CHALLENGE_MAX a second on each connection, as FreeBSD (5 a second). A
+ * limit shared by all connections would let an attacker count the ones the
+ * stack sends, and learn from that whether a guess was in the window.
+ */
+#define TCP_CHALLENGE_MAX   5
+
+static int
+tcp_challenge_ok(struct tcpcb *tp)
+{
+    if(tcp_now - tp->t_challenge_time >= PR_SLOWHZ) {
+        tp->t_challenge_time = tcp_now;
+        tp->t_challenge_cnt = 0;
+    }
+    return tp->t_challenge_cnt++ < TCP_CHALLENGE_MAX;
+}
+
+/*
  * The IPv4 lookups do not know interfaces. When the socket they found is
  * bound to another interface than the one the segment came in by
  * (SO_BINDTODEVICE), or to one that went away (INP_BOUNDGONE), take a socket
@@ -1297,9 +1315,12 @@ trimthenstep6:
     }
 
     /*
-     * A reset first (RFC 9293 section 3.10.7.4): one outside the window is
-     * dropped. Before the trimming below, which would move one before the
-     * window into it.
+     * A reset first (RFC 9293 section 3.10.7.4, RFC 5961 section 3): one
+     * outside the window is dropped. One at exactly RCV.NXT closes the
+     * connection; any other in the window gets a challenge ACK - a peer
+     * that lost the connection answers it with a reset at the number it
+     * gives, one that cannot see the connection cannot. Before the trimming
+     * below, which would move one before the window into it.
      *    SYN_RECEIVED STATE:
      *	If passive open, return to LISTEN state.
      *	If active open, inform user that connection was refused.
@@ -1313,6 +1334,8 @@ trimthenstep6:
                 SEQ_LT(ti->ti_seq, tp->rcv_nxt + tp->rcv_wnd)) &&
                 !(tp->rcv_wnd == 0 && ti->ti_seq == tp->rcv_nxt))
             goto drop;
+        if(ti->ti_seq != tp->rcv_nxt)
+            goto challengeack;
         switch(tp->t_state) {
 
         case TCPS_SYN_RECEIVED:
@@ -1509,10 +1532,14 @@ close:
     }
 
     /*
-     * If a SYN is in the window, then this is an
-     * error and we send an RST and drop the connection.
+     * A SYN in the window (one before it has lost its SYN in the trimming,
+     * one after it was dropped). In SYN_RECEIVED, an error: a reset, and
+     * the connection is dropped. In a synchronized state (RFC 5961 section
+     * 4), a challenge ACK: a peer that restarted answers it with a reset.
      */
     if(tiflags & TH_SYN) {
+        if(tp->t_state != TCPS_SYN_RECEIVED)
+            goto challengeack;
         tp = tcp_drop(tp, ECONNRESET);
         goto dropwithreset;
     }
@@ -1597,6 +1624,14 @@ close:
     case TCPS_CLOSING:
     case TCPS_LAST_ACK:
     case TCPS_TIME_WAIT:
+
+        /*
+         * An ACK of what was sent more than the peer's largest window
+         * before SND.UNA (RFC 5961 section 5.2) is not from the peer, and
+         * would carry its data in: dropped, with a challenge ACK.
+         */
+        if(SEQ_LT(ti->ti_ack, tp->snd_una - tp->max_sndwnd))
+            goto challengeack;
 
         /*
          * SACK (RFC 6675): Fold any SACK blocks carried by this ACK
@@ -2154,6 +2189,18 @@ dropafterack:
     if(so->so_options & SO_DEBUG)
         tcp_trace(TA_DROP, ostate, tp, &tcp_saveti, 0);
 #endif
+    m_freem(m);
+    tp->t_flags |= TF_ACKNOW;
+    (void) tcp_output(tp);
+    return;
+
+challengeack:
+    /*
+     * A challenge ACK (RFC 5961): an ACK of RCV.NXT, the segment dropped;
+     * none beyond the rate limit.
+     */
+    if(!tcp_challenge_ok(tp))
+        goto drop;
     m_freem(m);
     tp->t_flags |= TF_ACKNOW;
     (void) tcp_output(tp);

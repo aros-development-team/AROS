@@ -239,6 +239,14 @@ struct tcpcb {
 	u_int	t_uto_ms;
 	u_long	t_acktime;
 
+/*
+ * Challenge ACKs (RFC 5961 section 7): how many this connection has sent
+ * since t_challenge_time (tcp_now), to send at most TCP_CHALLENGE_MAX a
+ * second.
+ */
+	u_long	t_challenge_time;
+	u_int	t_challenge_cnt;
+
 /* TUBA stuff */
 	caddr_t	t_tuba_pcb;		/* next level down pcb for TCP over z */
 };
