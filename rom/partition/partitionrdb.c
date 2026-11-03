@@ -129,18 +129,30 @@ static AROS_UFH4(LONG, SeekFunc,
     struct FileSysReader *fsr = (struct FileSysReader*)file;
     ULONG size = fsr->fsn->filesize;
     LONG oldpos = fsr->position;
-    QUAD newpos = pos;
+    ULONG base, newpos;
 
     switch (mode) {
-    case OFFSET_BEGINNING: break;
-    case OFFSET_END:       newpos += size; break;
-    case OFFSET_CURRENT:   newpos += oldpos; break;
+    case OFFSET_BEGINNING: base = 0; break;
+    case OFFSET_END:       base = size; break;
+    case OFFSET_CURRENT:   base = oldpos; break;
     default: return -1;
     }
 
-    /* The DOS seek callback returns a signed LONG position. */
-    if (newpos < 0 || newpos > size || newpos > 0x7fffffff)
-        return -1;
+    /* Filesize is capped at LONG_MAX when loading. Check before adding so
+     * signed offsets, including LONG_MIN, need no 64-bit arithmetic. */
+    if (pos < 0)
+    {
+        ULONG back = 0 - (ULONG)pos;
+        if (back > base)
+            return -1;
+        newpos = base - back;
+    }
+    else
+    {
+        if ((ULONG)pos > size - base)
+            return -1;
+        newpos = base + pos;
+    }
 
     fsr->position = newpos;
     fsr->count = 0;
@@ -430,16 +442,17 @@ static void PartitionRDBFreeFileSystem(struct FileSysHandle *fsh)
 struct RDBChain
 {
     ULONG anchor;
-    UQUAD power;
-    UQUAD length;
+    ULONG power;
+    ULONG length;
+    UQUAD blocks;
 };
 
 static BOOL PartitionRDBChainBlock(struct PartitionHandle *root, struct RDBChain *chain, ULONG block)
 {
-    UQUAD blocks = (UQUAD)(root->de.de_HighCyl - root->de.de_LowCyl + 1) *
-        root->de.de_Surfaces * root->de.de_BlocksPerTrack;
-
-    if (block >= blocks)
+    if (!chain->power)
+        chain->blocks = (UQUAD)(root->de.de_HighCyl - root->de.de_LowCyl + 1) *
+            root->de.de_Surfaces * root->de.de_BlocksPerTrack;
+    if (block >= chain->blocks)
         return FALSE;
     if (!chain->power)
     {
@@ -453,7 +466,8 @@ static BOOL PartitionRDBChainBlock(struct PartitionHandle *root, struct RDBChain
         if (++chain->length == chain->power)
         {
             chain->anchor = block;
-            chain->power *= 2;
+            /* A chain has at most ULONG_MAX non-terminal block addresses. */
+            chain->power = chain->power <= 0x7fffffff ? chain->power * 2 : (ULONG)-1;
             chain->length = 0;
         }
     }
@@ -511,13 +525,14 @@ ULONG block;
     if (fn->filesystem)
     {
         ULONG i;
-        UQUAD bytes = 0;
+        ULONG bytes = 0;
         struct RDBChain chain = {0};
 
         block = AROS_BE2LONG(fn->fhb.fhb_SegListBlocks);
         for (i = 0; i < size && block != (ULONG)-1; i++)
         {
             struct LoadSegBlock *lsb = PartitionRDBFileSysBlock(fn, i);
+            ULONG payload;
 
             if (!PartitionRDBChainBlock(root, &chain, block) ||
                 readBlock(PartitionBase, root, block, lsb) != 0 ||
@@ -526,9 +541,10 @@ ULONG block;
                 AROS_BE2LONG(lsb->lsb_SummedLongs) > fn->blockbytes / 4 ||
                 calcChkSum((ULONG *)lsb, AROS_BE2LONG(lsb->lsb_SummedLongs)) != 0)
                 break;
-            bytes += (AROS_BE2LONG(lsb->lsb_SummedLongs) - 5) * sizeof(ULONG);
-            if (bytes > 0x7fffffff)
+            payload = (AROS_BE2LONG(lsb->lsb_SummedLongs) - 5) * sizeof(ULONG);
+            if (payload > 0x7fffffff - bytes)
                 break;
+            bytes += payload;
             block = AROS_BE2LONG(lsb->lsb_Next);
         }
         if (i == size && block == (ULONG)-1)
