@@ -179,6 +179,13 @@ int main(void)
             error = ERROR_REQUIRED_ARG_MISSING;
         }
 
+        if (ARG(BOOTTYPE) &&
+            Stricmp((CONST_STRPTR)ARG(BOOTTYPE), "fat32") != 0)
+        {
+            PutStr("ERROR: BOOTTYPE must be 'fat32'.\n");
+            error = ERROR_BAD_TEMPLATE;
+        }
+
         if (ARG(WORKSIZE) != (IPTR)NULL && ARG(SYSSIZE) == (IPTR)NULL)
         {
             PutStr("ERROR: Cannot specify WORKSIZE without SYSSIZE.\n");
