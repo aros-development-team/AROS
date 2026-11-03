@@ -93,14 +93,14 @@ static BOOL capabilities(struct state *s)
     ULONG cur = HIDD_PCIDevice_ReadConfigByte(s->device, 0x34);
     unsigned count = 0;
     while (cur) {
-        UBYTE next, id, length, type, bar;
+        UBYTE next, id, type, bar;
         if (cur < 0x40 || cur > 0xfc || (cur & 3) || seen[cur] || ++count > 48)
             return FALSE;
         seen[cur] = 1;
         id = HIDD_PCIDevice_ReadConfigByte(s->device, cur);
         next = HIDD_PCIDevice_ReadConfigByte(s->device, cur + 1);
         if (id == VIRTIO_PCI_CAP_VENDOR_CFG) {
-            length = HIDD_PCIDevice_ReadConfigByte(s->device, cur + 2);
+            UBYTE length = HIDD_PCIDevice_ReadConfigByte(s->device, cur + 2);
             if (length < 16 || cur + length > 256) return FALSE;
             type = HIDD_PCIDevice_ReadConfigByte(s->device, cur + 3);
             bar = HIDD_PCIDevice_ReadConfigByte(s->device, cur + 4);
@@ -299,7 +299,7 @@ static BOOL render_probe(struct state *s)
         .resource = 1, .stride = PIXEL_WIDTH * 4, .layer_stride = PIXEL_BYTES };
     struct render_submit submit = { .header.type = GPU_SUBMIT_3D, .header.context = 1 };
     UBYTE *pixels;
-    ULONG pass, i, n, len;
+    ULONG pass, i, len;
     s->pixels = HIDD_PCIDriver_AllocPCIMem(s->driver, PIXEL_BYTES);
     if (!s->pixels) return FALSE;
     pixels = s->pixels;
@@ -311,7 +311,7 @@ static BOOL render_probe(struct state *s)
         !render_command(s, &backing, sizeof(backing), FALSE)) return FALSE;
     for (pass = 0; pass < 2; pass++) {
         UBYTE expected[4] = {pass ? 0 : 255, pass ? 255 : 0, 0, 255};
-        n = 0;
+        ULONG n = 0;
         if (!pass) {
             /* Create surface handle 1 on resource 1, RGBA8, level/layer zero. */
             submit.words[n++] = VIRGL_WORD(VIRGL_CREATE_OBJECT, VIRGL_OBJECT_SURFACE, 5);
@@ -344,7 +344,7 @@ static BOOL render_probe(struct state *s)
             }
         }
         printf("VirGL clear %lu: %ux%u RGBA=%u,%u,%u,%u; all pixels correct, fence=%llu\n",
-            (unsigned long)pass, PIXEL_WIDTH, PIXEL_WIDTH,
+            (unsigned long)pass, (unsigned)PIXEL_WIDTH, (unsigned)PIXEL_WIDTH,
             pixels[0], pixels[1], pixels[2], pixels[3], (unsigned long long)s->fence);
     }
     /* Copy into a second texture, preserving a blue border around each region. */
@@ -437,7 +437,7 @@ static BOOL render_probe(struct state *s)
 static BOOL run_probe(struct state *s, BOOL require_virgl, BOOL render)
 {
     UQUAD have, wanted;
-    ULONG caps, scanouts, generation, bytes, i;
+    ULONG caps, scanouts, bytes, i;
     struct gpu_display_info *display;
     BOOL virgl_capset = FALSE;
     if (s->common->device_status != 0) {
@@ -464,7 +464,7 @@ static BOOL run_probe(struct state *s, BOOL require_virgl, BOOL render)
     if (!(s->common->device_status & VIRTIO_CONFIG_S_FEATURES_OK)) return FALSE;
     printf("negotiated VIRGL: %s\n", (wanted & GPU_F_VIRGL) ? "yes" : "no");
     for (i = 0; i < 10; i++) {
-        generation = s->common->config_generation;
+        ULONG generation = s->common->config_generation;
         scanouts = *(volatile ULONG *)(s->config + 8);
         caps = *(volatile ULONG *)(s->config + 12);
         if (generation == s->common->config_generation) break;
@@ -537,6 +537,10 @@ static BOOL cleanup(struct state *s)
 
 int main(void)
 {
+#if !defined(__x86_64__)
+    puts("FAIL: this diagnostic supports x86_64 only");
+    return RETURN_FAIL;
+#else
     struct state s = {0};
     IPTR args[3] = {0};
     struct RDArgs *rda;
@@ -548,9 +552,6 @@ int main(void)
     int result = RETURN_FAIL;
     BOOL opened_oop = FALSE;
     puts("virtiogpuprobe 0.4: x86_64 PCI/control-queue diagnostic");
-#if !defined(__x86_64__)
-    puts("FAIL: this diagnostic supports x86_64 only"); return RETURN_FAIL;
-#endif
     rda = ReadArgs("RUN/S,REQUIREVIRGL/S,RENDER/S", args, NULL);
     if (!rda) { PrintFault(IoErr(), "virtiogpuprobe"); return RETURN_FAIL; }
     if (args[2] && !args[0]) { puts("FAIL: RENDER needs RUN"); goto done; }
@@ -606,4 +607,5 @@ int main(void)
     else puts("FAIL: qualification did not complete");
     FreeArgs(rda);
     return result;
+#endif
 }
