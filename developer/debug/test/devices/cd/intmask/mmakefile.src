@@ -1,0 +1,12 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+include $(SRCDIR)/config/aros.cfg
+
+# Host-side hardware model, selected through the native CD component rules.
+#MM
+test-devices-cd-intmask:
+	$(PYTHON) $(SRCDIR)/$(CURDIR)/host_test.py --cc "$(HOST_CC)"
+
+#MM
+test-devices-cd-intmask-quick: test-devices-cd-intmask
+
+%common

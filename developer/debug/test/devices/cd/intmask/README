@@ -1,0 +1,30 @@
+Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+CD32 interrupt-mask race regression
+===================================
+
+Run test-devices-cd-intmask or test-devices-cd-intmask-quick, selected beneath
+the native Amiga CD device test group, or run python3 host_test.py directly.
+The host compiler needs AddressSanitizer and UndefinedBehaviorSanitizer.
+
+The harness compiles the actual CD32_IntEnable/CD32_IntDisable functions
+from arch/m68k-amiga/devs/cd/cd32.c. It injects a completion interrupt between
+the task's shadow update and hardware store. The interrupt acknowledges its
+source through the same production helper. Real interrupt exclusion defers
+this event; the hardware model then delivers it once exclusion ends.
+
+All combinations of RXDMA, TXDMA, sector PBX and subcode masks exercise both
+enabling and disabling, with and without an outer disabled section. Tests
+check the composed task/interrupt result, agreement between the shadow and
+hardware, preservation of nesting, and that an acknowledged completion cannot
+keep IRQ2 asserted. The model does not duplicate the mask helper code.
+
+For a negative control, pass --source /path/to/original/cd32.c and
+--expect-failure. cd32.h must be alongside that source. Assertion failures
+must exit 20; sanitizer failures are not accepted as a successful control.
+
+Runtime evidence on a stock CD32 in Copperline 1.1.0: UFO stalls with the
+software mask 0x10000000 while Akiko CDINTENA is 0x18000000 and TXDMA is
+pending. The handler filters that bit out using the shadow and never masks
+it in hardware. Synchronizing the hardware with the shadow releases the
+interrupt storm and the intro resumes without changing the allocator.
