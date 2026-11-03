@@ -72,6 +72,7 @@ struct BitmapData {
 	ULONG               pxflags;                /* VCGFX_PX_*, 0 = the screens' 32bpp */
 	UBYTE               videofmt;               /* vHidd_VideoFmt_NV12/I420, 0 = RGB */
 	UBYTE               colorspace;             /* vHidd_ColorSpace_* of a video bitmap */
+	UBYTE               colorrange;             /* vHidd_ColorRange_* of a video bitmap */
 	ULONG               planeoff[2];            /* Video: chroma plane offsets in a page */
 	ULONG               cpitch;                 /* Video: chroma bytes per row */
 	ULONG               modew, modeh;           /* Screen: its mode's display size */

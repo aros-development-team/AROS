@@ -738,7 +738,7 @@ static void hvs5_plane_src(struct VideoCoreGfx_staticdata *xsd, struct vcgfx_pla
         s->cphys[0] = base + d->planeoff[0] + cy * d->cpitch
                     + cx * ((s->yuv == HVS_PXF_YUV420_2PLANE) ? 2 : 1);
         s->cphys[1] = base + d->planeoff[1] + cy * d->cpitch + cx;
-        vcgfx_yuv_csc(d->colorspace, s->csc);
+        vcgfx_yuv_csc(d->colorspace, d->colorrange, s->csc);
     }
 }
 
@@ -811,7 +811,8 @@ static ULONG hvs5_emit_planes(struct VideoCoreGfx_staticdata *xsd,
         need = lb;
         swords[i] = words;
 
-        bottom = vcgfx_plane_occlude(px, py, pw, ph, left, top, right, bottom);
+        if (!pl->pl_Alpha)  /* a blended plane hides nothing behind it */
+            bottom = vcgfx_plane_occlude(px, py, pw, ph, left, top, right, bottom);
     }
 
     if (bottom > top)
@@ -826,7 +827,7 @@ static ULONG hvs5_emit_planes(struct VideoCoreGfx_staticdata *xsd,
             continue;
 
         hvs5_plane_src(xsd, pl, &s);
-        hvs5_init_plane(base + n, HVS5_ALPHA_FIXED, swords[i]);
+        hvs5_init_plane(base + n, pl->pl_Alpha ? HVS5_ALPHA_PERPIXEL : HVS5_ALPHA_FIXED, swords[i]);
         hvs5_write_src(st, base + n, swords[i], slbm[i], &s, left, top, right, cb);
         n += swords[i];
     }

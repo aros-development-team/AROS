@@ -52,8 +52,9 @@ struct VideoCoreGfxDisplayData
  * primary's mode (vcsd_DispW x vcsd_DispH); only 32-bit bitmaps in
  * scanout memory get a plane, front first while the HVS budget lasts. */
 #define VCGFX_MAX_PLANES        16
-#define VCGFX_OVL_PLANES        8       /* overlay planes offered, above the primary;
+#define VCGFX_OVL_PLANES        8       /* overlay planes offered, above or below the primary;
                                          * the compositor's test commit keeps to the budget */
+#define VCGFX_PRIMARY_Z         VCGFX_OVL_PLANES    /* overlays take z 0 .. 2x this, all but it */
 
 struct vcgfx_plane
 {
@@ -64,6 +65,8 @@ struct vcgfx_plane
     ULONG                pl_SrcX, pl_SrcY, pl_SrcW, pl_SrcH;
     ULONG                pl_Pxf, pl_Bpp;    /* HVS format (0 = 32bpp) and bytes per pixel */
     ULONG                pl_Yuv;        /* HVS YUV format (luma 1 byte per pixel), 0 = RGB */
+    ULONG                pl_Z;          /* z order; the primary's is VCGFX_PRIMARY_Z */
+    BOOL                 pl_Alpha;      /* blended by its own (straight) alpha, else opaque */
     ULONG                pl_PtrWord;    /* VC4: its PTR0 in the newest list, 0 = none */
     ULONG                pl_PtrSkip;    /* and the bytes clipped off in front */
     BOOL                 pl_Shown;      /* the last list built had room for it */
@@ -179,6 +182,9 @@ struct VideoCoreGfx_staticdata {
         struct vcgfx_plane      vcsd_OvlPlane[VCGFX_OVL_PLANES];
         ULONG                   vcsd_NumPlanes;
         struct vcgfx_plane      vcsd_Plane[VCGFX_MAX_PLANES];   /* back to front */
+        LONG                    vcsd_PrimaryAt;     /* the primary's index there, -1 = none */
+        ULONG                   vcsd_PrimaryParts;  /* entries it takes: 1, or up to 5 when
+                                                     * only the part over planes below blends */
         UBYTE                  *vcsd_Backdrop;      /* fb page known to be black */
 
         struct SignalSemaphore  vcsd_ScanoutLock;
@@ -325,7 +331,8 @@ static inline ULONG vcgfx_native32(struct VideoCoreGfx_staticdata *xsd)
 static inline BOOL vcgfx_scanout_rgb(struct VideoCoreGfx_staticdata *xsd, ULONG stdpf,
                                      ULONG *pxflags)
 {
-    if (stdpf == vcgfx_native32(xsd))
+    if ((stdpf == vcgfx_native32(xsd))
+        || ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) && (stdpf == vHidd_StdPixFmt_RGBA32)))
         *pxflags = 0;
     else if ((stdpf == vHidd_StdPixFmt_BGRA32) || (stdpf == vHidd_StdPixFmt_BGR032))
         *pxflags = (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) ? VCGFX_PX_BGRA : 0;
@@ -353,10 +360,20 @@ void    vcgfx_mirror_rect(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
 BOOL    vcgfx_planes_commit(struct VideoCoreGfx_staticdata *xsd,
                             struct HIDD_PlaneState *states, ULONG count, ULONG flags);
 void    vcgfx_plane_moved(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
+void    vcgfx_plane_restyle(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
 void    vcgfx_plane_forget(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
 BOOL    vcgfx_plane_page(OOP_Class *cl, OOP_Object *bm, ULONG page, BOOL wait);
 BOOL    vcgfx_plane_shows(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
-void    vcgfx_yuv_csc(ULONG colorspace, ULONG csc[3]);
+/* YCbCr to RGB in 8-bit units, factors in Q22 (1.0 = 1 << 22):
+ * R = ky*(Y-y0) + rcr*Cr, G = ky*(Y-y0) + gcb*Cb + gcr*Cr, B = ky*(Y-y0) + bcb*Cb,
+ * Cb and Cr centred on 128. */
+struct vcgfx_yuvm
+{
+    LONG ky, rcr, gcb, gcr, bcb;
+    LONG y0;
+};
+void    vcgfx_yuv_matrix(ULONG colorspace, ULONG range, struct vcgfx_yuvm *m);
+void    vcgfx_yuv_csc(ULONG colorspace, ULONG range, ULONG csc[3]);
 BOOL    vcgfx_yuv_ok(struct VideoCoreGfx_staticdata *xsd, ULONG videofmt);
 
 #endif /* _VIDEOCOREGFX_CLASS_H */

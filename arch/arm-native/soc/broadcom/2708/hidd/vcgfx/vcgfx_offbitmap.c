@@ -379,6 +379,7 @@ static OOP_Object *vc4_scanout_new(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
         data->pxflags     = pxflags;
         data->videofmt    = videofmt;
         data->colorspace  = GetTagData(aHidd_BitMap_ColorSpace, vHidd_ColorSpace_BT601, msg->attrList);
+        data->colorrange  = GetTagData(aHidd_BitMap_ColorRange, vHidd_ColorRange_Limited, msg->attrList);
         if (videofmt == vHidd_VideoFmt_NV12)
         {
             data->planeoff[0] = pitch * height;
@@ -540,24 +541,39 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /**********  Bitmap::Set()  ***************************************/
 
 /* LeftEdge/TopEdge are how graphics.library drags a screen: the superclass
- * clamps and stores them, the plane follows. */
+ * clamps and stores them, the plane follows. A new colour space or range
+ * goes into the list of the plane showing the bitmap. */
 IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
     struct TagItem *tag, *tstate = msg->attrList;
-    BOOL moved = FALSE;
+    BOOL moved = FALSE, restyled = FALSE;
     ULONG idx;
     IPTR result;
 
     while ((tag = NextTagItem(&tstate)))
     {
-        if (IS_BM_ATTR(tag->ti_Tag, idx)
-            && ((idx == aoHidd_BitMap_LeftEdge) || (idx == aoHidd_BitMap_TopEdge)))
+        if (!IS_BM_ATTR(tag->ti_Tag, idx))
+            continue;
+        if ((idx == aoHidd_BitMap_LeftEdge) || (idx == aoHidd_BitMap_TopEdge))
             moved = TRUE;
+        else if ((idx == aoHidd_BitMap_ColorSpace) && data->videofmt)
+        {
+            data->colorspace = tag->ti_Data;
+            restyled = TRUE;
+        }
+        else if ((idx == aoHidd_BitMap_ColorRange) && data->videofmt)
+        {
+            data->colorrange = tag->ti_Data;
+            restyled = TRUE;
+        }
     }
 
     result = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (moved)
         vcgfx_plane_moved(XSD(cl), o);
+    if (restyled)
+        vcgfx_plane_restyle(XSD(cl), o);
     return result;
 }
 

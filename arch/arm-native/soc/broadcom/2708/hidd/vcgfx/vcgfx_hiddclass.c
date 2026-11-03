@@ -486,10 +486,12 @@ static void vc4_plane_scale(struct VideoCoreGfx_staticdata *xsd, ULONG *min, ULO
     }
 }
 
-/* Overlay planes above the primary, z by index: 32-bit screens and client
- * surfaces, 32 or 16 bit or video, in scanout memory. How many fit at once
- * is the budget's to say, in CommitPlanes(). With no colour key a video
- * partly covered goes off rather than show over what covers it. */
+/* Overlay planes above or below the primary, at any z but the primary's:
+ * 32-bit screens and client surfaces, 32 or 16 bit or video, in scanout
+ * memory; 32-bit ones may blend by their own alpha. Below, they show
+ * through the alpha of what is above. How many fit at once is the
+ * budget's to say, in CommitPlanes(). With no colour key a video partly
+ * covered goes off rather than show over what covers it. */
 ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_GetPlaneInfo *msg)
 {
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
@@ -501,7 +503,8 @@ ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Dis
 
     if (msg->index == 0)
     {
-        /* The base primary, but scaling a screen to fill the display */
+        /* The base primary, but scaling a screen to fill the display, and
+         * over the planes below it by its own alpha */
         struct pHidd_Display_GetPlaneInfo supmsg = *msg;
 
         supmsg.info    = &info;
@@ -509,6 +512,9 @@ ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Dis
         if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)&supmsg))
             return 0;
         vc4_plane_scale(xsd, &info.ScaleMin, &info.ScaleMax);
+        info.ZMin        = VCGFX_PRIMARY_Z;
+        info.ZMax        = VCGFX_PRIMARY_Z;
+        info.AlphaModes |= 1 << vHidd_CompAlpha_PerPixel;
         if (len > sizeof(info))
             len = sizeof(info);
         CopyMem(&info, msg->info, len);
@@ -516,15 +522,17 @@ ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Dis
     }
 
     info.Type       = vHidd_Plane_Overlay;
-    info.ZMin       = msg->index;
-    info.ZMax       = msg->index;
+    info.ZMin       = 0;
+    info.ZMax       = 2 * VCGFX_PRIMARY_Z;
     info.PixFmtMask = (1 << vcgfx_native32(xsd)) | (1 << vHidd_StdPixFmt_BGRA32)
                     | (1 << vHidd_StdPixFmt_BGR032) | (1 << vHidd_StdPixFmt_RGB16_LE)
                     | (1 << vHidd_StdPixFmt_RGB15_LE);
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+        info.PixFmtMask |= 1 << vHidd_StdPixFmt_RGBA32;     /* the screens' own, with alpha */
     if (vcgfx_yuv_ok(xsd, vHidd_VideoFmt_NV12))
         info.VideoFmtMask = (1 << vHidd_VideoFmt_NV12) | (1 << vHidd_VideoFmt_I420);
     vc4_plane_scale(xsd, &info.ScaleMin, &info.ScaleMax);
-    info.AlphaModes = 1 << vHidd_CompAlpha_None;
+    info.AlphaModes = (1 << vHidd_CompAlpha_None) | (1 << vHidd_CompAlpha_PerPixel);
     info.PosAlignX  = 1;
     info.PosAlignY  = 1;
     info.Flags      = PIF_NEEDS_DISPLAYMEM | PIF_HIDE_OBSCURED;
@@ -771,11 +779,15 @@ VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
             OOP_GetAttr(dst_pf, aHidd_PixFmt_BytesPerPixel, &dst_bpp);
             OOP_GetAttr(dst_pf, aHidd_PixFmt_StdPixFmt, &dst_std);
         }
-        /* Rows copy as they are only in one byte order; X and A are alike */
-        if (src_std == vHidd_StdPixFmt_BGRA32)
-            src_std = vHidd_StdPixFmt_BGR032;
-        if (dst_std == vHidd_StdPixFmt_BGRA32)
-            dst_std = vHidd_StdPixFmt_BGR032;
+        /* Rows copy as they are only in one byte order; X and A are alike
+         * but into alpha from none, which the superclass makes opaque */
+        if ((src_std == vHidd_StdPixFmt_BGRA32) || (dst_std != vHidd_StdPixFmt_BGRA32))
+        {
+            if (src_std == vHidd_StdPixFmt_BGRA32)
+                src_std = vHidd_StdPixFmt_BGR032;
+            if (dst_std == vHidd_StdPixFmt_BGRA32)
+                dst_std = vHidd_StdPixFmt_BGR032;
+        }
     }
 
     if (!src_buf || !dst_buf || src_bpp != 4 || dst_bpp != 4 || src_std != dst_std)
