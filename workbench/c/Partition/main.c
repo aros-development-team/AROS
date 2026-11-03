@@ -554,8 +554,8 @@ int main(void)
                 error = ERROR_UNKNOWN;
 
             if (error == 0
-                && workSize != 0
-                && sysHighCyl < diskPart->de.de_HighCyl - diskPart->de.de_LowCyl)
+                && (workSize != 0 || ARG(MAXWORK))
+                && sysHighCyl < highCyl)
             {
                 /* Create Work partition (defaults to SFS) */
                 workPart = CreateRDBPartition(diskPart, sysHighCyl + 1, highCyl,
