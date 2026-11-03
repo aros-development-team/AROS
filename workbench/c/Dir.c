@@ -115,6 +115,7 @@ struct DirLock
 
 /* Global variables */
 int g_indent;
+int g_skipped;      /* directories ALL could not list */
 struct UtilityBase *UtilityBase;
 
 /*  Prototypes  */
@@ -146,6 +147,9 @@ BOOL isAbove(BPTR lock, BPTR dir);
 static
 BOOL canEnter(LONG type, BPTR dirlock, CONST_STRPTR name,
               struct DirLock *path);
+
+static
+LONG skipFailed(LONG error, CONST_STRPTR dir);
 
 static
 TEXT* getLine(CONST_STRPTR prompt, TEXT *buffer, LONG buflen);
@@ -266,6 +270,10 @@ AROS_SH6(Dir, 50.10,
             Printf("Could not get information for %s\n", (IPTR)dir);
         }
         PrintFault(ioerr, NULL);
+    }
+    else if (g_skipped != 0)
+    {
+        error = RETURN_WARN;
     }
 
     CloseLibrary((struct Library *)UtilityBase);
@@ -571,6 +579,7 @@ LONG doPatternDir(CONST_STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles, BOOL
                         {
                             error = doDir(ap->ap_Buf, &up, all, doDirs,
                                           doFiles, inter);
+                            error = skipFailed(error, ap->ap_Buf);
                         }
                     }
                 }
@@ -701,6 +710,7 @@ LONG doDir(CONST_STRPTR dir, struct DirLock *path, BOOL all, BOOL doDirs,
                                     SetIoErr(ERROR_LINE_TOO_LONG);
                                     error = RETURN_ERROR;
                                 }
+                                error = skipFailed(error, newpath);
                                 FreeVec(newpath);
                             }
                             else
@@ -740,7 +750,13 @@ LONG doDir(CONST_STRPTR dir, struct DirLock *path, BOOL all, BOOL doDirs,
             error = RETURN_FAIL;
         }
 
-        UnLock(lock);
+        /* UnLock() resets IoErr(), which tells the caller why we failed */
+        {
+            LONG ioerr = IoErr();
+
+            UnLock(lock);
+            SetIoErr(ioerr);
+        }
     }
     else
     {
@@ -913,6 +929,23 @@ BOOL canEnter(LONG type, BPTR dirlock, CONST_STRPTR name,
     UnLock(lock);
 
     return enter;
+}
+
+
+/* A directory found by ALL that cannot be listed doesn't end the walk:
+   report it and go on with the next one. Only a break stops it. */
+static
+LONG skipFailed(LONG error, CONST_STRPTR dir)
+{
+    LONG ioerr = IoErr();
+
+    if (error == RETURN_OK || ioerr == ERROR_BREAK)
+        return error;
+
+    PrintFault(ioerr, dir);
+    g_skipped++;
+
+    return RETURN_OK;
 }
 
 
