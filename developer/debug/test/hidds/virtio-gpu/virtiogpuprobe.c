@@ -93,13 +93,14 @@ static BOOL capabilities(struct state *s)
     ULONG cur = HIDD_PCIDevice_ReadConfigByte(s->device, 0x34);
     unsigned count = 0;
     while (cur) {
-        UBYTE next, id, type, bar;
+        UBYTE next, id;
         if (cur < 0x40 || cur > 0xfc || (cur & 3) || seen[cur] || ++count > 48)
             return FALSE;
         seen[cur] = 1;
         id = HIDD_PCIDevice_ReadConfigByte(s->device, cur);
         next = HIDD_PCIDevice_ReadConfigByte(s->device, cur + 1);
         if (id == VIRTIO_PCI_CAP_VENDOR_CFG) {
+            UBYTE type, bar;
             UBYTE length = HIDD_PCIDevice_ReadConfigByte(s->device, cur + 2);
             if (length < 16 || cur + length > 256) return FALSE;
             type = HIDD_PCIDevice_ReadConfigByte(s->device, cur + 3);
