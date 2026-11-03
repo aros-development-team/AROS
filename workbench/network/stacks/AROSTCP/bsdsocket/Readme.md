@@ -233,11 +233,20 @@ Each `tcpcb` selects an algorithm via `t_cc_algo`; `CC_ALGO(tp)` resolves it and
 NewReno if unset. The initial congestion window follows **RFC 6928 IW10**
 (`snd_cwnd = MIN(10 · mss, MAX(2 · mss, 14600))`).
 
-Loss recovery is NewReno (RFC 6582), with PRR (RFC 6937) when `tcp_do_prr` is set. A partial ACK in
-fast recovery resends the first unacknowledged segment with `cwnd` covering the bytes it
-acknowledges plus that segment (snd_una has not advanced yet), deflates `cwnd`, and is then
-processed like any ACK, so `snd_una` advances and the retransmit timer runs again, as in FreeBSD's
-`tcp_newreno_partial_ack()`.
+Loss recovery on a connection with SACK follows RFC 6675, as in FreeBSD and Linux. An ACK that
+SACKs data not SACKed before is a duplicate whatever window it offers (a receiver that grows its
+window as it reads changes it in every ACK). The scoreboard (`t_sack_blks`, `TCP_SACK_BOARD`
+ranges, the highest dropped when full) gives `IsLost()` (`tcp_sack_lostbound()`), `SetPipe()`
+(`tcp_compute_pipe()`) and `NextSeg()` (`tcp_sack_nextseg()`): on each ACK in recovery
+`tcp_sack_recover()` sends lost holes, each once (`snd_highrxt`, HighRxt), then new data, then
+other holes, within `ssthresh` - pipe, or what PRR (RFC 6937) allows when `tcp_do_prr` is set,
+from the data each ACK delivers. A partial ACK is one more ACK in recovery. `snd_cwnd` stays at
+what is in flight until the recovery ends, at `ssthresh`.
+
+Without SACK, loss recovery is NewReno (RFC 6582). A partial ACK in fast recovery resends the
+first unacknowledged segment with `cwnd` covering the bytes it acknowledges plus that segment
+(snd_una has not advanced yet), deflates `cwnd`, and is then processed like any ACK, so `snd_una`
+advances and the retransmit timer runs again, as in FreeBSD's `tcp_newreno_partial_ack()`.
 
 ### 5.2 SYN cache and SYN cookies
 
