@@ -2,6 +2,7 @@
 
 #include "identity_file.h"
 #include "identity_map.h"
+#include "identity_store_recovery.h"
 
 #include <dos/dos.h>
 #include <exec/libraries.h>
@@ -19,18 +20,32 @@
 #define IDENTITY_NEW_PATH "ENVARC:Sys/camd-identities.iff.new"
 #define IDENTITY_BACKUP_PATH "ENVARC:Sys/camd-identities.iff.bak"
 
-enum load_state {
-    LOAD_MISSING = 0,
-    LOAD_VALID,
-    LOAD_INVALID
-};
-
 struct CAMDIdentityStoreAROS {
     struct CAMDIdentityMap *map;
     struct Library *uuid_base;
     UBYTE *file_bytes;
     ULONG file_capacity;
 };
+
+struct recovery_context {
+    struct CAMDIdentityStoreAROS *store;
+    struct CAMDIdentityRecordV1 *records;
+    size_t *record_count;
+};
+
+static CONST_STRPTR slot_path(enum CAMDIdentityStoreSlot slot)
+{
+    static CONST_STRPTR const paths[CAMD_IDENTITY_STORE_SLOT_COUNT] = {
+        IDENTITY_PATH,
+        IDENTITY_NEW_PATH,
+        IDENTITY_BACKUP_PATH
+    };
+
+    return slot >= CAMD_IDENTITY_STORE_MAIN &&
+                   slot < CAMD_IDENTITY_STORE_SLOT_COUNT
+               ? paths[slot]
+               : NULL;
+}
 
 static int path_exists(CONST_STRPTR path)
 {
@@ -42,7 +57,7 @@ static int path_exists(CONST_STRPTR path)
     return 1;
 }
 
-static enum load_state load_path(
+static enum CAMDIdentityStoreLoadState load_path(
     CONST_STRPTR path, UBYTE *bytes, ULONG byte_capacity,
     struct CAMDIdentityRecordV1 *records, size_t record_capacity,
     size_t *record_count)
@@ -54,57 +69,73 @@ static enum load_state load_path(
     *record_count = 0;
     file = Open(path, MODE_OLDFILE);
     if (!file)
-        return IoErr() == ERROR_OBJECT_NOT_FOUND ? LOAD_MISSING : LOAD_INVALID;
+        return IoErr() == ERROR_OBJECT_NOT_FOUND
+                   ? CAMD_IDENTITY_STORE_MISSING
+                   : CAMD_IDENTITY_STORE_INVALID;
     got = Read(file, bytes, (LONG)byte_capacity);
     extra = got >= 0 ? Read(file, &trailing, 1) : -1;
     Close(file);
     if (got < 0 || extra != 0)
-        return LOAD_INVALID;
+        return CAMD_IDENTITY_STORE_INVALID;
     if (camd_identity_file_decode(bytes, (size_t)got, records,
                                   record_capacity, record_count) !=
         CAMD_IDENTITY_FILE_OK)
-        return LOAD_INVALID;
-    return LOAD_VALID;
+        return CAMD_IDENTITY_STORE_INVALID;
+    return CAMD_IDENTITY_STORE_VALID;
 }
 
-static int replace_invalid_main(CONST_STRPTR candidate,
-                                enum load_state main_state)
+static enum CAMDIdentityStoreLoadState recovery_load(
+    void *opaque, enum CAMDIdentityStoreSlot slot)
 {
-    if (main_state == LOAD_INVALID && !DeleteFile(IDENTITY_PATH))
-        return 0;
-    if (!Rename(candidate, IDENTITY_PATH))
-        return 0;
-    DeleteFile(IDENTITY_BACKUP_PATH);
-    return 1;
+    struct recovery_context *context = opaque;
+
+    return load_path(slot_path(slot), context->store->file_bytes,
+                     context->store->file_capacity, context->records,
+                     IDENTITY_CAPACITY, context->record_count);
+}
+
+static int recovery_exists(void *opaque, enum CAMDIdentityStoreSlot slot)
+{
+    (void)opaque;
+    return path_exists(slot_path(slot));
+}
+
+static int recovery_remove(void *opaque, enum CAMDIdentityStoreSlot slot)
+{
+    (void)opaque;
+    return DeleteFile(slot_path(slot));
+}
+
+static int recovery_move(void *opaque, enum CAMDIdentityStoreSlot from,
+                         enum CAMDIdentityStoreSlot to)
+{
+    (void)opaque;
+    return Rename(slot_path(from), slot_path(to));
+}
+
+static void recovery_ops(struct CAMDIdentityStoreOpsV1 *ops,
+                         struct recovery_context *context)
+{
+    memset(ops, 0, sizeof(*ops));
+    ops->Size = sizeof(*ops);
+    ops->Version = 1;
+    ops->Context = context;
+    ops->Load = recovery_load;
+    ops->Exists = recovery_exists;
+    ops->Remove = recovery_remove;
+    ops->Move = recovery_move;
 }
 
 static int load_recoverable(struct CAMDIdentityStoreAROS *store,
                             struct CAMDIdentityRecordV1 *records,
                             size_t *record_count)
 {
-    enum load_state main_state, new_state, backup_state;
+    struct recovery_context context = { store, records, record_count };
+    struct CAMDIdentityStoreOpsV1 ops;
 
-    main_state = load_path(IDENTITY_PATH, store->file_bytes,
-                           store->file_capacity, records, IDENTITY_CAPACITY,
-                           record_count);
-    if (main_state == LOAD_VALID)
-        return 1;
-    new_state = load_path(IDENTITY_NEW_PATH, store->file_bytes,
-                          store->file_capacity, records, IDENTITY_CAPACITY,
-                          record_count);
-    if (new_state == LOAD_VALID)
-        return replace_invalid_main(IDENTITY_NEW_PATH, main_state);
-    backup_state = load_path(IDENTITY_BACKUP_PATH, store->file_bytes,
-                             store->file_capacity, records,
-                             IDENTITY_CAPACITY, record_count);
-    if (backup_state == LOAD_VALID)
-        return replace_invalid_main(IDENTITY_BACKUP_PATH, main_state);
-    if (main_state == LOAD_MISSING && new_state == LOAD_MISSING &&
-        backup_state == LOAD_MISSING) {
-        *record_count = 0;
-        return 1;
-    }
-    return 0;
+    *record_count = 0;
+    recovery_ops(&ops, &context);
+    return camd_identity_store_recover(&ops);
 }
 
 static uint32_t packed_word(const uint8_t *bytes)
@@ -147,23 +178,10 @@ static int write_new(struct CAMDIdentityStoreAROS *store, ULONG byte_count)
 
 static int install_new(void)
 {
-    int had_main = path_exists(IDENTITY_PATH);
+    struct CAMDIdentityStoreOpsV1 ops;
 
-    if (had_main) {
-        if (path_exists(IDENTITY_BACKUP_PATH) &&
-            !DeleteFile(IDENTITY_BACKUP_PATH))
-            return 0;
-        if (!Rename(IDENTITY_PATH, IDENTITY_BACKUP_PATH))
-            return 0;
-    }
-    if (!Rename(IDENTITY_NEW_PATH, IDENTITY_PATH)) {
-        if (had_main)
-            Rename(IDENTITY_BACKUP_PATH, IDENTITY_PATH);
-        return 0;
-    }
-    if (had_main)
-        DeleteFile(IDENTITY_BACKUP_PATH);
-    return 1;
+    recovery_ops(&ops, NULL);
+    return camd_identity_store_install(&ops);
 }
 
 static int commit_records(void *context,

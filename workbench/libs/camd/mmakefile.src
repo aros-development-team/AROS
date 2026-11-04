@@ -10,7 +10,7 @@ FILES :=    drivers clusters init camdwait mididistr midifromdriver \
 	    native_event_pump native_event_worker legacy_port_refs \
 	    native_worker_fanout legacy_output_backend \
 	    legacy_driver_output_backend identity_map identity_file \
-	    identity_store_aros
+	    identity_store_recovery identity_store_aros
 
 FUNCS := \
     lockcamd \
