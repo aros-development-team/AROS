@@ -22,7 +22,7 @@
 
 /*  FUNCTION
 		Takes a published endpoint away. Its clients' sessions stop
-		carrying anything and report CAMD_REGISTRY_RETIRED; they still
+		carrying anything and report CAMD_RESULT_RETIRED; they still
 		have to be closed. The publisher's signal is not sent any more
 		once this returns.
 

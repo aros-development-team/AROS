@@ -33,15 +33,15 @@
 		    CAMD_WAIT_FOREVER has no limit.
 
     RESULT
-		CAMD_REGISTRY_OK when nothing is queued any more,
-		CAMD_REGISTRY_QUEUE_FULL when the time is up and something
-		still is, or another CAMD_REGISTRY_ value.
+		CAMD_RESULT_OK when nothing is queued any more,
+		CAMD_RESULT_QUEUE_FULL when the time is up and something
+		still is, or another CAMD_RESULT_ value.
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
 		change. It is woken when the queue has been emptied; the time
 		is measured with CamdTime(). Without memory for its timer it
-		returns CAMD_REGISTRY_QUEUE_FULL early.
+		returns CAMD_RESULT_QUEUE_FULL early.
 
     EXAMPLE
 
@@ -61,10 +61,10 @@
 	LONG result,slot=-1;
 	BYTE bit;
 
-	if(session==NULL) return CAMD_REGISTRY_INVALID;
+	if(session==NULL) return camd_public_result(CAMD_REGISTRY_INVALID);
 
 	result=camd_registry_session_drain(CB(CamdBase)->EndpointRegistry,*session);
-	if(result!=CAMD_REGISTRY_QUEUE_FULL || milliseconds==0) return result;
+	if(result!=CAMD_REGISTRY_QUEUE_FULL || milliseconds==0) return camd_public_result(result);
 
 	/* The session's worker, or the publisher's read, signals this task
 	   when a queue has been emptied; the timer is for the limit. Without
@@ -72,7 +72,7 @@
 	   milliseconds instead. Every wait really blocks, so the worker runs
 	   also when the caller holds Forbid(). */
 	pause=OpenEndpointPause();
-	if(pause==NULL) return result;
+	if(pause==NULL) return camd_public_result(result);
 	bit=AllocSignal(-1);
 	if(bit>=0){
 		signals=1UL<<bit;
@@ -100,7 +100,7 @@
 	if(bit>=0) FreeSignal(bit);
 	CloseEndpointPause(pause);
 
-	return result;
+	return camd_public_result(result);
 
     AROS_LIBFUNC_EXIT
 }

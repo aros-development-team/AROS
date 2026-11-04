@@ -35,8 +35,8 @@
 		id - NULL, or filled in with the endpoint's stable ID.
 
     RESULT
-		CAMD_REGISTRY_OK, CAMD_REGISTRY_DUPLICATE while an endpoint of
-		that name is published, or another CAMD_REGISTRY_ value.
+		CAMD_RESULT_OK, CAMD_RESULT_DUPLICATE while an endpoint of
+		that name is published, or another CAMD_RESULT_ value.
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
@@ -64,14 +64,14 @@
 		endpoint->slot=0;
 		endpoint->generation=0;
 	}
-	if(request==NULL || endpoint==NULL) return CAMD_REGISTRY_INVALID;
+	if(request==NULL || endpoint==NULL) return camd_public_result(CAMD_REGISTRY_INVALID);
 
 	result=PublishAppEndpoint(request,endpoint,id,CamdBase);
 	if(result==CAMD_REGISTRY_OK){
 		OwnEndpointObject(ENDPOINT_OWNED_PUBLISHER,endpoint,CamdBase);
 	}
 
-	return result;
+	return camd_public_result(result);
 
     AROS_LIBFUNC_EXIT
 }

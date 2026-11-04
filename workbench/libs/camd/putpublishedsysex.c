@@ -32,8 +32,8 @@
 		length - the number of bytes.
 
     RESULT
-		CAMD_REGISTRY_OK, CAMD_REGISTRY_STALE for a withdrawn endpoint,
-		or another CAMD_REGISTRY_ value.
+		CAMD_RESULT_OK, CAMD_RESULT_STALE for a withdrawn endpoint,
+		or another CAMD_RESULT_ value.
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
@@ -52,9 +52,9 @@
 {
     AROS_LIBFUNC_INIT
 
-	if(endpoint==NULL) return CAMD_REGISTRY_INVALID;
+	if(endpoint==NULL) return camd_public_result(CAMD_REGISTRY_INVALID);
 
-	return PutAppEndpointSysEx(endpoint,bytes,length,CamdBase);
+	return camd_public_result(PutAppEndpointSysEx(endpoint,bytes,length,CamdBase));
 
     AROS_LIBFUNC_EXIT
 }

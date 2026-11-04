@@ -32,8 +32,8 @@
 		count - at least 1.
 
     RESULT
-		CAMD_REGISTRY_OK, CAMD_REGISTRY_QUEUE_FULL when the session's
-		queue has no room for all of them, or another CAMD_REGISTRY_
+		CAMD_RESULT_OK, CAMD_RESULT_QUEUE_FULL when the session's
+		queue has no room for all of them, or another CAMD_RESULT_
 		value.
 
     NOTES
@@ -56,10 +56,10 @@
 {
     AROS_LIBFUNC_INIT
 
-	if(session==NULL) return CAMD_REGISTRY_INVALID;
+	if(session==NULL) return camd_public_result(CAMD_REGISTRY_INVALID);
 
-	return camd_registry_session_send_midi1(CB(CamdBase)->EndpointRegistry,
-		*session,events,count);
+	return camd_public_result(camd_registry_session_send_midi1(CB(CamdBase)->EndpointRegistry,
+		*session,events,count));
 
     AROS_LIBFUNC_EXIT
 }

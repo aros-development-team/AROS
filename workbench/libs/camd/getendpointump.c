@@ -30,10 +30,10 @@
 		event - filled in with the message.
 
     RESULT
-		CAMD_REGISTRY_OK with a message, CAMD_REGISTRY_EMPTY when
-		there is none, CAMD_REGISTRY_QUEUE_FULL once after messages
-		were lost, CAMD_REGISTRY_UNSUPPORTED on a MIDI 1.0 session, or
-		another CAMD_REGISTRY_ value.
+		CAMD_RESULT_OK with a message, CAMD_RESULT_EMPTY when
+		there is none, CAMD_RESULT_QUEUE_FULL once after messages
+		were lost, CAMD_RESULT_UNSUPPORTED on a MIDI 1.0 session, or
+		another CAMD_RESULT_ value.
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
@@ -52,9 +52,9 @@
 {
     AROS_LIBFUNC_INIT
 
-	if(session==NULL || event==NULL) return CAMD_REGISTRY_INVALID;
+	if(session==NULL || event==NULL) return camd_public_result(CAMD_REGISTRY_INVALID);
 
-	return ReadEndpointReceiverUMP(session,event,CamdBase);
+	return camd_public_result(ReadEndpointReceiverUMP(session,event,CamdBase));
 
     AROS_LIBFUNC_EXIT
 }

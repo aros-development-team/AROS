@@ -29,8 +29,8 @@
 		session - from OpenEndpointSession().
 
     RESULT
-		CAMD_REGISTRY_OK, CAMD_REGISTRY_STALE for a session already
-		closed, or another CAMD_REGISTRY_ value.
+		CAMD_RESULT_OK, CAMD_RESULT_STALE for a session already
+		closed, or another CAMD_RESULT_ value.
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
@@ -51,7 +51,7 @@
 
 	LONG result;
 
-	if(session==NULL) return CAMD_REGISTRY_INVALID;
+	if(session==NULL) return camd_public_result(CAMD_REGISTRY_INVALID);
 
 	StopEndpointReceiver(session,CamdBase);
 	result=camd_registry_session_close(CB(CamdBase)->EndpointRegistry,*session);
@@ -59,7 +59,7 @@
 		DisownEndpointObject(ENDPOINT_OWNED_SESSION,session,CamdBase);
 	}
 
-	return result;
+	return camd_public_result(result);
 
     AROS_LIBFUNC_EXIT
 }

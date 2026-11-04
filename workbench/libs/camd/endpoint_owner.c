@@ -183,3 +183,34 @@ void FreeEndpointOwners(struct CamdBase *CamdBase)
     while ((node = RemHead((struct List *)&base->EndpointOwned)) != NULL)
         FreeMem(node, sizeof(struct EndpointOwned));
 }
+
+/*
+ * A record a caller hands in may be of another size than today's: a program
+ * built against an earlier header has a shorter one, one built against a
+ * later header a longer one. `given` starts with Size and Version. It is
+ * accepted when it has at least `least` bytes, which is the record as it
+ * first was, and when whatever it has beyond `size`, today's record, is zero:
+ * a later field left at zero asks for nothing this library lacks. `record`
+ * gets `size` bytes: the caller's, and zero for what its record did not
+ * have, so a field added later means its default at zero.
+ */
+BOOL TakeEndpointRecord(const APTR given, APTR record, ULONG size, ULONG least)
+{
+    const UBYTE *from = given;
+    ULONG have = *(const ULONG *)given;
+    ULONG i;
+
+    if (have < least)
+        return FALSE;
+    for (i = size; i < have; ++i) {
+        if (from[i] != 0)
+            return FALSE;
+    }
+    if (have > size)
+        have = size;
+    CopyMem(from, record, have);
+    for (i = have; i < size; ++i)
+        ((UBYTE *)record)[i] = 0;
+    *(ULONG *)record = size;
+    return TRUE;
+}

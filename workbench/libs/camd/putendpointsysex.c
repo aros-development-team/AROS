@@ -37,9 +37,9 @@
 		    read.
 
     RESULT
-		CAMD_REGISTRY_OK, CAMD_REGISTRY_TOO_LARGE past the session's
-		MaxSysExBytes, CAMD_REGISTRY_QUEUE_FULL, or another
-		CAMD_REGISTRY_ value.
+		CAMD_RESULT_OK, CAMD_RESULT_TOO_LARGE past the session's
+		MaxSysExBytes, CAMD_RESULT_QUEUE_FULL, or another
+		CAMD_RESULT_ value.
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
@@ -58,16 +58,16 @@
 {
     AROS_LIBFUNC_INIT
 
-	if(session==NULL) return CAMD_REGISTRY_INVALID;
+	if(session==NULL) return camd_public_result(CAMD_REGISTRY_INVALID);
 
 	if(time==NULL){
-		return camd_registry_session_send_midi1_sysex(
-			CB(CamdBase)->EndpointRegistry,*session,bytes,length,0,0,0,0);
+		return camd_public_result(camd_registry_session_send_midi1_sysex(
+			CB(CamdBase)->EndpointRegistry,*session,bytes,length,0,0,0,0));
 	}
 
-	return camd_registry_session_send_midi1_sysex(
+	return camd_public_result(camd_registry_session_send_midi1_sysex(
 		CB(CamdBase)->EndpointRegistry,*session,bytes,length,
-		time->TimeHigh,time->TimeLow,time->ClockDomain,time->Flags);
+		time->TimeHigh,time->TimeLow,time->ClockDomain,time->Flags));
 
     AROS_LIBFUNC_EXIT
 }

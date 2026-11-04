@@ -80,6 +80,25 @@ static struct EndpointPublisher *find_publisher(
     return publisher;
 }
 
+/* Names are compared without regard to the case of ASCII letters, as a
+ * driver's file name is: "Synth" and "synth" are one endpoint, with one
+ * stored ID, and cannot be published side by side. */
+static UBYTE fold_ascii(UBYTE byte)
+{
+    return (byte >= 'A' && byte <= 'Z') ? (UBYTE)(byte - 'A' + 'a') : byte;
+}
+
+static BOOL same_name(const char *a, const char *b)
+{
+    while (fold_ascii((UBYTE)*a) == fold_ascii((UBYTE)*b)) {
+        if (*a == '\0')
+            return TRUE;
+        ++a;
+        ++b;
+    }
+    return FALSE;
+}
+
 /* The same Name always gives the same key, so the same stored ID. */
 static LONG resolve_name(struct CAMDIdentityMap *map, uint32_t namespace_id,
                          const char *name, BOOL temporary,
@@ -87,7 +106,7 @@ static LONG resolve_name(struct CAMDIdentityMap *map, uint32_t namespace_id,
 {
     struct CAMDIdentityKeyV1 key;
     struct CAMDIdentityResolutionV1 resolution;
-    size_t length = strlen(name);
+    size_t length = strlen(name), n;
 
     memset(&key, 0, sizeof(key));
     key.Size = sizeof(key);
@@ -96,7 +115,8 @@ static LONG resolve_name(struct CAMDIdentityMap *map, uint32_t namespace_id,
     key.Confidence = CAMD_IDENTITY_CONFIGURED;
     key.Bytes[0] = 1;
     key.Bytes[1] = (uint8_t)length;
-    memcpy(&key.Bytes[2], name, length);
+    for (n = 0; n < length; ++n)
+        key.Bytes[2 + n] = fold_ascii((UBYTE)name[n]);
     key.ByteCount = (uint32_t)(2 + length);
     memset(&resolution, 0, sizeof(resolution));
     resolution.Size = sizeof(resolution);
@@ -122,7 +142,7 @@ static BOOL driver_named(const char *name, struct CamdBase *CamdBase)
 
     ObtainSemaphoreShared(CB(CamdBase)->CLSemaphore);
     for (driver = CB(CamdBase)->drivers; driver; driver = driver->next) {
-        if (strcmp(driver->mididevicedata->Name, name) == 0) {
+        if (same_name(driver->mididevicedata->Name, name)) {
             found = TRUE;
             break;
         }
@@ -144,8 +164,8 @@ BOOL AppEndpointNamed(const char *name, struct CamdBase *CamdBase)
     ObtainSemaphoreShared(&base->EndpointClientSemaphore);
     for (i = 0; i < ENDPOINT_PUBLISHERS; ++i) {
         if (base->EndpointPublishers[i].projection != NULL &&
-            strcmp(EndpointProjectionName(
-                       base->EndpointPublishers[i].projection), name) == 0) {
+            same_name(EndpointProjectionName(
+                          base->EndpointPublishers[i].projection), name)) {
             found = TRUE;
             break;
         }
@@ -192,13 +212,25 @@ LONG PublishAppEndpoint(const struct CAMDPublishRequestV1 *request,
     struct CAMDAppEndpointConfigV1 config;
     struct CAMDLegacyPortDescriptorV1 port;
     struct CAMDLegacyDriverDescriptorV1 descriptor;
+    struct CAMDPublishRequestV1 taken;
     uint32_t provider_kind, endpoint_kind;
     BOOL temporary;
     LONG result;
     ULONG i;
 
-    if (request->Size != sizeof(*request) || request->Version != 1 ||
-        request->Directions == 0 ||
+    /* The record first ended with ProductInstance, and an endpoint was a
+     * MIDI 1.0 one: that is what a record without DataFormat asks for. One
+     * that has the field has to say what it wants. */
+    if (request->Version != 1 ||
+        !TakeEndpointRecord((const APTR)request, &taken, sizeof(taken),
+                            offsetof(struct CAMDPublishRequestV1, DataFormat)))
+        return CAMD_REGISTRY_INVALID;
+    if (request->Size <= offsetof(struct CAMDPublishRequestV1, DataFormat)) {
+        taken.DataFormat = CAMD_DATA_FORMAT_MIDI1;
+        taken.Protocol = CAMD_PROTOCOL_MIDI1;
+    }
+    request = &taken;
+    if (request->Directions == 0 ||
         (request->Directions & ~CAMD_PROVIDER_DIRECTION_ALL) != 0 ||
         (request->Flags &
          ~(CAMD_PUBLISH_TEMPORARY | CAMD_PUBLISH_HOLD_UNTIL_DUE)) != 0 ||
@@ -222,6 +254,18 @@ LONG PublishAppEndpoint(const struct CAMDPublishRequestV1 *request,
     if (driver_named(request->Name, CamdBase)) {
         result = CAMD_REGISTRY_DUPLICATE;
         goto out;
+    }
+    /* So does an endpoint published under that name, whatever its ID. */
+    for (i = 0; i < ENDPOINT_PUBLISHERS; ++i) {
+        if (base->EndpointPublishers[i].app != NULL &&
+            !base->EndpointPublishers[i].withdrawn &&
+            base->EndpointPublishers[i].projection != NULL &&
+            same_name(EndpointProjectionName(
+                          base->EndpointPublishers[i].projection),
+                      request->Name)) {
+            result = CAMD_REGISTRY_DUPLICATE;
+            goto out;
+        }
     }
     for (i = 0; i < ENDPOINT_PUBLISHERS; ++i) {
         if (base->EndpointPublishers[i].app == NULL) {
@@ -383,6 +427,8 @@ static LONG emit_result(enum CAMDProviderResult result)
         return CAMD_REGISTRY_OK;
     if (result == CAMD_PROVIDER_TOO_LARGE)
         return CAMD_REGISTRY_TOO_LARGE;
+    if (result == CAMD_PROVIDER_UNSUPPORTED)
+        return CAMD_REGISTRY_UNSUPPORTED;
     return CAMD_REGISTRY_INVALID;
 }
 

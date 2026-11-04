@@ -297,6 +297,7 @@ static enum CAMDRegistryResult copy_topology(
     for (i = 0; i < group_count; ++i) {
         if (groups[i].Size != sizeof(groups[i]) || groups[i].Version != 1 ||
             groups[i].Group > 15 ||
+            (groups[i].Flags & ~CAMD_GROUP_FLAGS_ALL) != 0 ||
             !id_equal(&groups[i].EndpointID, &endpoint->ID) ||
             !memchr(groups[i].Name, '\0', sizeof(groups[i].Name)))
             return CAMD_REGISTRY_INVALID;
@@ -309,6 +310,9 @@ static enum CAMDRegistryResult copy_topology(
         if (blocks[i].Size != sizeof(blocks[i]) || blocks[i].Version != 1 ||
             blocks[i].FirstGroup > 15 || blocks[i].GroupCount == 0 ||
             blocks[i].GroupCount > 16 - blocks[i].FirstGroup ||
+            (blocks[i].Flags & ~CAMD_BLOCK_FLAGS_ALL) != 0 ||
+            ((blocks[i].Flags & CAMD_BLOCK_FLAG_MIDI1_31250) != 0 &&
+             (blocks[i].Flags & CAMD_BLOCK_FLAG_MIDI1) == 0) ||
             !id_equal(&blocks[i].EndpointID, &endpoint->ID) ||
             !memchr(blocks[i].Name, '\0', sizeof(blocks[i].Name)))
             return CAMD_REGISTRY_INVALID;
@@ -2190,4 +2194,25 @@ enum CAMDRegistryResult camd_snapshot_endpoint(
     *blocks = item->blocks;
     *block_count = item->block_count;
     return CAMD_REGISTRY_OK;
+}
+
+enum CAMDResult camd_public_result(enum CAMDRegistryResult result)
+{
+    switch (result) {
+    case CAMD_REGISTRY_OK:              return CAMD_RESULT_OK;
+    case CAMD_REGISTRY_INVALID:         return CAMD_RESULT_INVALID;
+    case CAMD_REGISTRY_NOMEM:           return CAMD_RESULT_NO_MEMORY;
+    case CAMD_REGISTRY_DUPLICATE:       return CAMD_RESULT_DUPLICATE;
+    case CAMD_REGISTRY_STALE:           return CAMD_RESULT_STALE;
+    case CAMD_REGISTRY_STATE:           return CAMD_RESULT_WRONG_STATE;
+    case CAMD_REGISTRY_RETIRED:         return CAMD_RESULT_RETIRED;
+    case CAMD_REGISTRY_RANGE:           return CAMD_RESULT_OUT_OF_RANGE;
+    case CAMD_REGISTRY_EMPTY:           return CAMD_RESULT_EMPTY;
+    case CAMD_REGISTRY_BUSY:            return CAMD_RESULT_BUSY;
+    case CAMD_REGISTRY_CALLBACK_FAILED: return CAMD_RESULT_FAILED;
+    case CAMD_REGISTRY_UNSUPPORTED:     return CAMD_RESULT_UNSUPPORTED;
+    case CAMD_REGISTRY_QUEUE_FULL:      return CAMD_RESULT_QUEUE_FULL;
+    case CAMD_REGISTRY_TOO_LARGE:       return CAMD_RESULT_TOO_LARGE;
+    }
+    return CAMD_RESULT_FAILED;
 }

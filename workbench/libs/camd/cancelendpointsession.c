@@ -28,7 +28,7 @@
 		session - from OpenEndpointSession().
 
     RESULT
-		CAMD_REGISTRY_OK, or another CAMD_REGISTRY_ value.
+		CAMD_RESULT_OK, or another CAMD_RESULT_ value.
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
@@ -48,9 +48,9 @@
 {
     AROS_LIBFUNC_INIT
 
-	if(session==NULL) return CAMD_REGISTRY_INVALID;
+	if(session==NULL) return camd_public_result(CAMD_REGISTRY_INVALID);
 
-	return camd_registry_session_cancel(CB(CamdBase)->EndpointRegistry,*session);
+	return camd_public_result(camd_registry_session_cancel(CB(CamdBase)->EndpointRegistry,*session));
 
     AROS_LIBFUNC_EXIT
 }

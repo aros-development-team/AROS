@@ -34,8 +34,8 @@
 		    with what the session got.
 
     RESULT
-		CAMD_REGISTRY_OK, CAMD_REGISTRY_UNSUPPORTED when the endpoint
-		does not carry what was requested, or another CAMD_REGISTRY_
+		CAMD_RESULT_OK, CAMD_RESULT_UNSUPPORTED when the endpoint
+		does not carry what was requested, or another CAMD_RESULT_
 		value.
 
     NOTES
@@ -68,6 +68,7 @@
 	struct CAMDRegistrySessionInfoV1 got;
 	struct CAMDSessionInfoV1 full;
 	struct CAMDHandleV1 handle;
+	struct CAMDSessionRequestV1 taken;
 	ULONG size;
 	LONG result;
 
@@ -75,15 +76,18 @@
 		session->slot=0;
 		session->generation=0;
 	}
-	if(request==NULL || session==NULL || request->Size!=sizeof(*request) ||
-	   request->Version!=1){
-		return CAMD_REGISTRY_INVALID;
+	/* MaxSysExBytes came after the first layout; zero is its default */
+	if(request==NULL || session==NULL || request->Version!=1 ||
+	   !TakeEndpointRecord(request,&taken,sizeof(taken),
+		offsetof(struct CAMDSessionRequestV1,MaxSysExBytes))){
+		return camd_public_result(CAMD_REGISTRY_INVALID);
 	}
+	request=&taken;
 	if(info!=NULL && (info->Size<2*sizeof(ULONG) || info->Version!=1)){
-		return CAMD_REGISTRY_INVALID;
+		return camd_public_result(CAMD_REGISTRY_INVALID);
 	}
 	if(request->Conversion!=CAMD_CONVERSION_NONE){
-		return CAMD_REGISTRY_UNSUPPORTED;
+		return camd_public_result(CAMD_REGISTRY_UNSUPPORTED);
 	}
 
 	open.Size=sizeof(open);
@@ -96,7 +100,7 @@
 	open.MaxSysExBytes=request->MaxSysExBytes;
 	result=camd_registry_session_open(CB(CamdBase)->EndpointRegistry,&open,
 		&handle);
-	if(result!=CAMD_REGISTRY_OK) return result;
+	if(result!=CAMD_REGISTRY_OK) return camd_public_result(result);
 
 	got.Size=sizeof(got);
 	got.Version=1;
@@ -109,7 +113,7 @@
 	}
 	if(result!=CAMD_REGISTRY_OK){
 		camd_registry_session_close(CB(CamdBase)->EndpointRegistry,handle);
-		return result;
+		return camd_public_result(result);
 	}
 
 	if(info!=NULL){
@@ -127,7 +131,7 @@
 	*session=handle;
 	OwnEndpointObject(ENDPOINT_OWNED_SESSION,session,CamdBase);
 
-	return CAMD_REGISTRY_OK;
+	return camd_public_result(CAMD_REGISTRY_OK);
 
     AROS_LIBFUNC_EXIT
 }

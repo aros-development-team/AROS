@@ -37,9 +37,9 @@
 		    are written, and Size is then the size of the full record.
 
     RESULT
-		CAMD_REGISTRY_OK, CAMD_REGISTRY_RANGE past the last endpoint or
-		the last block, CAMD_REGISTRY_STALE for a released snapshot, or
-		another CAMD_REGISTRY_ value.
+		CAMD_RESULT_OK, CAMD_RESULT_OUT_OF_RANGE past the last endpoint or
+		the last block, CAMD_RESULT_STALE for a released snapshot, or
+		another CAMD_RESULT_ value.
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
@@ -68,7 +68,7 @@
 
 	if(snapshot==NULL || info==NULL || info->Size<2*sizeof(ULONG) ||
 	   info->Version!=1){
-		return CAMD_REGISTRY_INVALID;
+		return camd_public_result(CAMD_REGISTRY_INVALID);
 	}
 
 	ObtainSemaphoreShared(&CB(CamdBase)->EndpointClientSemaphore);
@@ -89,7 +89,7 @@
 	}
 	ReleaseSemaphore(&CB(CamdBase)->EndpointClientSemaphore);
 
-	return result;
+	return camd_public_result(result);
 
     AROS_LIBFUNC_EXIT
 }

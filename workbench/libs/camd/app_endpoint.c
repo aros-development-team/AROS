@@ -439,6 +439,10 @@ static enum CAMDProviderResult app_send_ump(
 
     if (!session)
         return CAMD_PROVIDER_INVALID;
+    /* channel voice messages of the other protocol do not belong here */
+    if (camd_provider_validate_ump_protocol(events, event_count,
+            endpoint->config.Protocol) != CAMD_PROVIDER_OK)
+        return CAMD_PROVIDER_UNSUPPORTED;
     /* One item per message, so that the publisher takes them one by one;
      * the room for all of them is checked first. */
     {
@@ -825,6 +829,9 @@ enum CAMDProviderResult camd_app_endpoint_emit_ump(
     if (!endpoint || endpoint->config.DataFormat != CAMD_PROVIDER_FORMAT_UMP)
         return CAMD_PROVIDER_INVALID;
     valid = camd_provider_validate_ump(events, event_count);
+    if (valid == CAMD_PROVIDER_OK)
+        valid = camd_provider_validate_ump_protocol(
+            events, event_count, endpoint->config.Protocol);
     if (valid != CAMD_PROVIDER_OK)
         return valid;
     lock_acquire(&endpoint->lock);

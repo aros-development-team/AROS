@@ -176,6 +176,13 @@ enum CAMDProviderResult camd_provider_validate_midi1_sysex(
     const uint8_t *bytes, size_t byte_count);
 enum CAMDProviderResult camd_provider_validate_ump(
     const struct CAMDUMPEventV1 *events, size_t event_count);
+/* Whether every message may travel on an endpoint of that protocol: MIDI 1.0
+ * channel voice (type 2) only on a MIDI 1.0 one, MIDI 2.0 channel voice
+ * (type 4) only on a MIDI 2.0 one. Utility, system, data and stream types
+ * pass on both. The events have to be valid already. */
+enum CAMDProviderResult camd_provider_validate_ump_protocol(
+    const struct CAMDUMPEventV1 *events, size_t event_count,
+    uint32_t protocol);
 enum CAMDProviderResult camd_provider_validate_open_result(
     const struct CAMDProviderOpenRequestV1 *request,
     const struct CAMDProviderOpenResultV1 *result);

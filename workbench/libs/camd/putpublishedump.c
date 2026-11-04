@@ -33,9 +33,9 @@
 		count - at least 1.
 
     RESULT
-		CAMD_REGISTRY_OK, CAMD_REGISTRY_STALE for a withdrawn endpoint,
-		CAMD_REGISTRY_INVALID also for a MIDI 1.0 endpoint, or another
-		CAMD_REGISTRY_ value.
+		CAMD_RESULT_OK, CAMD_RESULT_STALE for a withdrawn endpoint,
+		CAMD_RESULT_INVALID also for a MIDI 1.0 endpoint, or another
+		CAMD_RESULT_ value.
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
@@ -54,9 +54,9 @@
 {
     AROS_LIBFUNC_INIT
 
-	if(endpoint==NULL) return CAMD_REGISTRY_INVALID;
+	if(endpoint==NULL) return camd_public_result(CAMD_REGISTRY_INVALID);
 
-	return PutAppEndpointUMP(endpoint,events,count,CamdBase);
+	return camd_public_result(PutAppEndpointUMP(endpoint,events,count,CamdBase));
 
     AROS_LIBFUNC_EXIT
 }

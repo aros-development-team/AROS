@@ -595,6 +595,9 @@ BOOL AppEndpointsRemain(struct CamdBase *CamdBase);
 struct CAMDPublishedStatsV1;
 LONG GetAppEndpointStats(const struct CAMDHandleV1 *handle,
 	struct CAMDPublishedStatsV1 *stats,struct CamdBase *CamdBase);
+/* Copies a record a caller hands in. See TakeEndpointRecord(). */
+BOOL TakeEndpointRecord(const APTR given,APTR record,ULONG size,ULONG least);
+
 void OwnEndpointObject(ULONG kind,const struct CAMDHandleV1 *handle,
 	struct CamdBase *CamdBase);
 void DisownEndpointObject(ULONG kind,const struct CAMDHandleV1 *handle,

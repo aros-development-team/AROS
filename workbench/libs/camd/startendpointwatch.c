@@ -34,7 +34,7 @@
 		    endpoints when the watch started.
 
     RESULT
-		CAMD_REGISTRY_OK, or another CAMD_REGISTRY_ value.
+		CAMD_RESULT_OK, or another CAMD_RESULT_ value.
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
@@ -58,7 +58,7 @@
 
 	LONG result;
 
-	if(watch==NULL) return CAMD_REGISTRY_INVALID;
+	if(watch==NULL) return camd_public_result(CAMD_REGISTRY_INVALID);
 	watch->slot=0;
 	watch->generation=0;
 
@@ -67,7 +67,7 @@
 		OwnEndpointObject(ENDPOINT_OWNED_WATCH,watch,CamdBase);
 	}
 
-	return result;
+	return camd_public_result(result);
 
     AROS_LIBFUNC_EXIT
 }

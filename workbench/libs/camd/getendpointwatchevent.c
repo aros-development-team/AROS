@@ -29,13 +29,13 @@
 		event - filled in with the change.
 
     RESULT
-		CAMD_REGISTRY_OK with a change, CAMD_REGISTRY_EMPTY when none
-		is left, CAMD_REGISTRY_STALE for an ended watch, or another
-		CAMD_REGISTRY_ value.
+		CAMD_RESULT_OK with a change, CAMD_RESULT_EMPTY when none
+		is left, CAMD_RESULT_STALE for an ended watch, or another
+		CAMD_RESULT_ value.
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
-		change. Read until CAMD_REGISTRY_EMPTY after
+		change. Read until CAMD_RESULT_EMPTY after
 		each signal. CAMD_ENDPOINT_EVENT_LOST means that changes were
 		dropped: take a new snapshot.
 
@@ -52,9 +52,9 @@
 {
     AROS_LIBFUNC_INIT
 
-	if(watch==NULL || event==NULL) return CAMD_REGISTRY_INVALID;
+	if(watch==NULL || event==NULL) return camd_public_result(CAMD_REGISTRY_INVALID);
 
-	return ReadEndpointWatcher(watch,event,CamdBase);
+	return camd_public_result(ReadEndpointWatcher(watch,event,CamdBase));
 
     AROS_LIBFUNC_EXIT
 }

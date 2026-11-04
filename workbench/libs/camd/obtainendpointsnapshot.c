@@ -33,7 +33,7 @@
 		    generation tells of a change the snapshot does not have.
 
     RESULT
-		CAMD_REGISTRY_OK, or another CAMD_REGISTRY_ value.
+		CAMD_RESULT_OK, or another CAMD_RESULT_ value.
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
@@ -56,24 +56,24 @@
 	struct CAMDEndpointSnapshot *taken;
 	LONG result;
 
-	if(snapshot==NULL) return CAMD_REGISTRY_INVALID;
+	if(snapshot==NULL) return camd_public_result(CAMD_REGISTRY_INVALID);
 	snapshot->slot=0;
 	snapshot->generation=0;
 	if(count!=NULL) *count=0;
 
 	result=camd_registry_snapshot(CB(CamdBase)->EndpointRegistry,&taken);
-	if(result!=CAMD_REGISTRY_OK) return result;
+	if(result!=CAMD_REGISTRY_OK) return camd_public_result(result);
 
 	result=AddEndpointSnapshot(taken,snapshot,CamdBase);
 	if(result!=CAMD_REGISTRY_OK){
 		camd_snapshot_destroy(taken);
-		return result;
+		return camd_public_result(result);
 	}
 	if(count!=NULL) *count=(ULONG)camd_snapshot_endpoint_count(taken);
 	if(generation!=NULL) *generation=camd_snapshot_generation(taken);
 	OwnEndpointObject(ENDPOINT_OWNED_SNAPSHOT,snapshot,CamdBase);
 
-	return CAMD_REGISTRY_OK;
+	return camd_public_result(CAMD_REGISTRY_OK);
 
     AROS_LIBFUNC_EXIT
 }

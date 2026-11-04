@@ -34,10 +34,10 @@
 		count - at least 1.
 
     RESULT
-		CAMD_REGISTRY_OK, CAMD_REGISTRY_QUEUE_FULL, CAMD_REGISTRY_INVALID
+		CAMD_RESULT_OK, CAMD_RESULT_QUEUE_FULL, CAMD_RESULT_INVALID
 		for a WordCount that does not fit the message type,
-		CAMD_REGISTRY_UNSUPPORTED on a MIDI 1.0 session, or another
-		CAMD_REGISTRY_ value.
+		CAMD_RESULT_UNSUPPORTED on a MIDI 1.0 session, or another
+		CAMD_RESULT_ value.
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
@@ -57,10 +57,10 @@
 {
     AROS_LIBFUNC_INIT
 
-	if(session==NULL) return CAMD_REGISTRY_INVALID;
+	if(session==NULL) return camd_public_result(CAMD_REGISTRY_INVALID);
 
-	return camd_registry_session_send_ump(CB(CamdBase)->EndpointRegistry,
-		*session,events,count);
+	return camd_public_result(camd_registry_session_send_ump(CB(CamdBase)->EndpointRegistry,
+		*session,events,count));
 
     AROS_LIBFUNC_EXIT
 }

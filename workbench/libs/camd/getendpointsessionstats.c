@@ -31,8 +31,8 @@
 		    are written, and Size is then the size of the full record.
 
     RESULT
-		CAMD_REGISTRY_OK, CAMD_REGISTRY_STALE for a closed session, or
-		another CAMD_REGISTRY_ value.
+		CAMD_RESULT_OK, CAMD_RESULT_STALE for a closed session, or
+		another CAMD_RESULT_ value.
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
@@ -57,17 +57,17 @@
 
 	if(session==NULL || stats==NULL || stats->Size<2*sizeof(ULONG) ||
 	   stats->Version!=1){
-		return CAMD_REGISTRY_INVALID;
+		return camd_public_result(CAMD_REGISTRY_INVALID);
 	}
 	result=camd_registry_session_stats(CB(CamdBase)->EndpointRegistry,
 		*session,&full);
-	if(result!=CAMD_REGISTRY_OK) return result;
+	if(result!=CAMD_REGISTRY_OK) return camd_public_result(result);
 
 	size=stats->Size<sizeof(full) ? stats->Size : sizeof(full);
 	CopyMem(&full,stats,size);
 	stats->Size=sizeof(full);
 
-	return CAMD_REGISTRY_OK;
+	return camd_public_result(CAMD_REGISTRY_OK);
 
     AROS_LIBFUNC_EXIT
 }

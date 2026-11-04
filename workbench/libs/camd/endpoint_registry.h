@@ -15,6 +15,29 @@
 
 #define CAMD_ENDPOINT_WATCH_MAX_EVENTS  32u
 
+/* What the registry and everything inside CAMD returns. Not public: a
+ * library function hands its caller camd_public_result() of it. */
+enum CAMDRegistryResult {
+    CAMD_REGISTRY_OK = 0,
+    CAMD_REGISTRY_INVALID,
+    CAMD_REGISTRY_NOMEM,
+    CAMD_REGISTRY_DUPLICATE,
+    CAMD_REGISTRY_STALE,
+    CAMD_REGISTRY_STATE,
+    CAMD_REGISTRY_RETIRED,
+    CAMD_REGISTRY_RANGE,
+    CAMD_REGISTRY_EMPTY,
+    CAMD_REGISTRY_BUSY,
+    CAMD_REGISTRY_CALLBACK_FAILED,
+    CAMD_REGISTRY_UNSUPPORTED,
+    CAMD_REGISTRY_QUEUE_FULL,
+    CAMD_REGISTRY_TOO_LARGE
+};
+
+/* The public value of an internal result. One that has none becomes
+ * CAMD_RESULT_FAILED. */
+enum CAMDResult camd_public_result(enum CAMDRegistryResult result);
+
 struct CAMDEndpointRegistry;
 struct CAMDEndpointSnapshot;
 struct CAMDEndpointWatch;

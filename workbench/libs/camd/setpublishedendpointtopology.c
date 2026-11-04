@@ -40,9 +40,9 @@
 		blockcount - the number of Function Blocks.
 
     RESULT
-		CAMD_REGISTRY_OK, CAMD_REGISTRY_INVALID for a Group past 15 or
-		a block that spans past it, CAMD_REGISTRY_DUPLICATE for a
-		Group or block number given twice, or another CAMD_REGISTRY_
+		CAMD_RESULT_OK, CAMD_RESULT_INVALID for a Group past 15 or
+		a block that spans past it, CAMD_RESULT_DUPLICATE for a
+		Group or block number given twice, or another CAMD_RESULT_
 		value. A refused set leaves the earlier one.
 
     NOTES
@@ -63,10 +63,10 @@
 {
     AROS_LIBFUNC_INIT
 
-	if(endpoint==NULL) return CAMD_REGISTRY_INVALID;
+	if(endpoint==NULL) return camd_public_result(CAMD_REGISTRY_INVALID);
 
-	return SetAppEndpointTopology(endpoint,groups,groupcount,blocks,
-		blockcount,CamdBase);
+	return camd_public_result(SetAppEndpointTopology(endpoint,groups,groupcount,blocks,
+		blockcount,CamdBase));
 
     AROS_LIBFUNC_EXIT
 }

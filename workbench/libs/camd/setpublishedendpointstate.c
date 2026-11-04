@@ -24,15 +24,15 @@
 /*  FUNCTION
 		Tells whether a published endpoint can carry anything now.
 		Offline it keeps its ID and its place in the snapshots, no
-		session opens and open sessions report CAMD_REGISTRY_STATE.
+		session opens and open sessions report CAMD_RESULT_WRONG_STATE.
 
     INPUTS
 		endpoint - from PublishEndpoint().
 		state - CAMD_ENDPOINT_AVAILABLE or CAMD_ENDPOINT_OFFLINE.
 
     RESULT
-		CAMD_REGISTRY_OK, CAMD_REGISTRY_STALE for a withdrawn endpoint,
-		or another CAMD_REGISTRY_ value.
+		CAMD_RESULT_OK, CAMD_RESULT_STALE for a withdrawn endpoint,
+		or another CAMD_RESULT_ value.
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
@@ -51,9 +51,9 @@
 {
     AROS_LIBFUNC_INIT
 
-	if(endpoint==NULL) return CAMD_REGISTRY_INVALID;
+	if(endpoint==NULL) return camd_public_result(CAMD_REGISTRY_INVALID);
 
-	return SetAppEndpointState(endpoint,state,CamdBase);
+	return camd_public_result(SetAppEndpointState(endpoint,state,CamdBase));
 
     AROS_LIBFUNC_EXIT
 }

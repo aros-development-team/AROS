@@ -93,6 +93,26 @@ enum CAMDProviderResult camd_provider_validate_ump(
     return CAMD_PROVIDER_OK;
 }
 
+enum CAMDProviderResult camd_provider_validate_ump_protocol(
+    const struct CAMDUMPEventV1 *events, size_t event_count,
+    uint32_t protocol)
+{
+    uint32_t refused;
+    size_t i;
+
+    if (protocol == CAMD_PROVIDER_PROTOCOL_MIDI1)
+        refused = 4;
+    else if (protocol == CAMD_PROVIDER_PROTOCOL_MIDI2)
+        refused = 2;
+    else
+        return CAMD_PROVIDER_INVALID;
+    for (i = 0; i < event_count; ++i) {
+        if ((events[i].Words[0] >> 28) == refused)
+            return CAMD_PROVIDER_UNSUPPORTED;
+    }
+    return CAMD_PROVIDER_OK;
+}
+
 enum CAMDProviderResult camd_provider_validate_open_result(
     const struct CAMDProviderOpenRequestV1 *request,
     const struct CAMDProviderOpenResultV1 *result)

@@ -38,16 +38,16 @@
 		    number of bytes of a System Exclusive message.
 
     RESULT
-		CAMD_REGISTRY_OK with a message, CAMD_REGISTRY_EMPTY when
-		there is none, CAMD_REGISTRY_TOO_LARGE when a System Exclusive
+		CAMD_RESULT_OK with a message, CAMD_RESULT_EMPTY when
+		there is none, CAMD_RESULT_TOO_LARGE when a System Exclusive
 		message does not fit in size (length tells how much it needs
-		and the message stays), CAMD_REGISTRY_STALE for a withdrawn
-		endpoint, or another CAMD_REGISTRY_ value.
+		and the message stays), CAMD_RESULT_STALE for a withdrawn
+		endpoint, or another CAMD_RESULT_ value.
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
 		change. Does not wait. Read until
-		CAMD_REGISTRY_EMPTY after each signal.
+		CAMD_RESULT_EMPTY after each signal.
 
     EXAMPLE
 
@@ -63,11 +63,11 @@
     AROS_LIBFUNC_INIT
 
 	if(endpoint==NULL || event==NULL || length==NULL){
-		return CAMD_REGISTRY_INVALID;
+		return camd_public_result(CAMD_REGISTRY_INVALID);
 	}
 	*length=0;
 
-	return GetAppEndpointMidi(endpoint,event,sysex,size,length,CamdBase);
+	return camd_public_result(GetAppEndpointMidi(endpoint,event,sysex,size,length,CamdBase));
 
     AROS_LIBFUNC_EXIT
 }
