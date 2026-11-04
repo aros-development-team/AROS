@@ -9,8 +9,8 @@
 #include <linux/mm.h>
 
 /* the pool every allocation in the driver comes from */
-APTR HIDDNouveauAlloc(ULONG size);
-VOID HIDDNouveauFree(APTR memory);
-IPTR HIDDNouveauAllocSize(CONST_APTR memory);
+APTR HIDDNVGfxAlloc(ULONG size);
+VOID HIDDNVGfxFree(APTR memory);
+IPTR HIDDNVGfxAllocSize(CONST_APTR memory);
 
 #endif /* _DRM_COMPAT_MEM_ */

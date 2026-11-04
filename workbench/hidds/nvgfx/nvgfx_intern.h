@@ -16,18 +16,18 @@
 /* The DRM file descriptor now lives in the nouveau_drm root object */
 #define NOUVEAU_DEV_FD(dev)         (nouveau_drm(&(dev)->object)->fd)
 /* drm-aros: the caller maintains this buffer's CPU cache for the ranges it exchanges */
-extern int drmNouveauBoSelfSync(int fd, uint32_t handle);
+extern int drmNVGfxBoSelfSync(int fd, uint32_t handle);
 #define NOUVEAU_DEV_DRM_VERSION(dev) (nouveau_drm(&(dev)->object)->version)
 
 #include LC_LIBDEFS_FILE
 
-#define CLID_Hidd_Gfx_Nouveau           "hidd.gfx.nvgfx"
-#define IID_Hidd_Gfx_Nouveau            "hidd.gfx.nvgfx"
+#define CLID_Hidd_Gfx_NVGfx           "hidd.gfx.nvgfx"
+#define IID_Hidd_Gfx_NVGfx            "hidd.gfx.nvgfx"
 
-#define HiddGfxNouveauAttrBase          __IHidd_Gfx_Nouveau
+#define HiddGfxNVGfxAttrBase          __IHidd_Gfx_NVGfx
 
 #ifndef __OOP_NOATTRBASES__
-extern OOP_AttrBase HiddGfxNouveauAttrBase;
+extern OOP_AttrBase HiddGfxNVGfxAttrBase;
 #endif
 
 extern struct SignalSemaphore globalLock;
@@ -79,7 +79,7 @@ static inline BOOL nouveau_semiplanar(ULONG fmt, ULONG *bps, ULONG *chalf, ULONG
 }
 #define KMSFMT_VIDEO        (KMSFMT_YUYV | KMSFMT_UYVY | KMSFMT_NV12 | KMSFMT_YUV420 | KMSFMT_P010)
 
-struct HIDDNouveauPlane
+struct HIDDNVGfxPlane
 {
     ULONG               id;             /* KMS plane object id */
     ULONG               formats;        /* KMSFMT_* it scans out */
@@ -108,7 +108,7 @@ struct HIDDNouveauPlane
 /* A decode target (aHidd_BitMap_DecodeTarget) holds a codec's whole set of surfaces */
 #define NOUVEAU_MAX_BUFFERS 32
 
-struct HIDDNouveauData
+struct HIDDNVGfxData
 {
     struct nouveau_bo   *cursor;
     ULONG               selectedcrtcid;
@@ -124,7 +124,7 @@ struct HIDDNouveauData
     /* scan-out planes */
     ULONG               selectedcrtcindex;  /* index of the crtc among the crtcs (plane masks, vblank) */
     ULONG               nplanes;            /* overlay planes usable on the crtc */
-    struct HIDDNouveauPlane planes[NOUVEAU_MAX_PLANES];
+    struct HIDDNVGfxPlane planes[NOUVEAU_MAX_PLANES];
     BOOL                vblank_ok;          /* the kernel answers vblank waits for the crtc */
     ULONG               vblanks;            /* last vblank sequence seen */
     BOOL                atomic;             /* every overlay has the atomic property set */
@@ -133,46 +133,46 @@ struct HIDDNouveauData
 };
 
 /* nvgfx_displayclass.c */
-VOID HIDDNouveauEnumPlanes(LONG fd, struct HIDDNouveauData *gfxdata);
-BOOL HIDDNouveauEnsureFB(OOP_Object *bm);
-BOOL HIDDNouveauEnsureBufferFB(OOP_Object *bm, ULONG buffer);
+VOID HIDDNVGfxEnumPlanes(LONG fd, struct HIDDNVGfxData *gfxdata);
+BOOL HIDDNVGfxEnsureFB(OOP_Object *bm);
+BOOL HIDDNVGfxEnsureBufferFB(OOP_Object *bm, ULONG buffer);
 /* PlaneSwap results */
 #define PLANESWAP_COMPOSED  0   /* not on a plane: the compositor shows the bitmap */
 #define PLANESWAP_DONE      1   /* the plane shows (or will show at the next vblank) newfbid */
 #define PLANESWAP_BUSY      2   /* no wait asked and the previous flip has not latched yet: nothing changed */
-LONG HIDDNouveauPlaneSwap(OOP_Object *display, ULONG oldfbid, ULONG newfbid, BOOL wait);
+LONG HIDDNVGfxPlaneSwap(OOP_Object *display, ULONG oldfbid, ULONG newfbid, BOOL wait);
 
-struct HIDDNouveauDisplayData
+struct HIDDNVGfxDisplayData
 {
     BOOL                nameasked;
     char                name[14];   /* EDID monitor descriptor: 13 chars + NUL */
 };
 
-#define CLID_Hidd_Display_Nouveau       "hidd.display.nvgfx"
-#define IID_Hidd_Display_Nouveau        "hidd.display.nvgfx"
+#define CLID_Hidd_Display_NVGfx       "hidd.display.nvgfx"
+#define IID_Hidd_Display_NVGfx        "hidd.display.nvgfx"
 
-#define CLID_Hidd_BitMap_Nouveau        "hidd.bitmap.nvgfx"
-#define IID_Hidd_BitMap_Nouveau         "hidd.bitmap.nvgfx"
+#define CLID_Hidd_BitMap_NVGfx        "hidd.bitmap.nvgfx"
+#define IID_Hidd_BitMap_NVGfx         "hidd.bitmap.nvgfx"
 
-#define HiddBitMapNouveauAttrBase __IHidd_BitMap_Nouveau
+#define HiddBitMapNVGfxAttrBase __IHidd_BitMap_NVGfx
 
 #ifndef __OOP_NOATTRBASES__
-extern OOP_AttrBase HiddBitMapNouveauAttrBase;
+extern OOP_AttrBase HiddBitMapNVGfxAttrBase;
 #endif
 
 enum
 {
     /* No private bitmap attributes at present */
-    num_Hidd_BitMap_Nouveau_Attrs
+    num_Hidd_BitMap_NVGfx_Attrs
 };
 
 #define IS_BITMAPNOUVEAU_ATTR(attr, idx) \
-    (((idx) = (attr) - HiddBitMapNouveauAttrBase) < num_Hidd_BitMap_Nouveau_Attrs)
+    (((idx) = (attr) - HiddBitMapNVGfxAttrBase) < num_Hidd_BitMap_NVGfx_Attrs)
 
-struct HIDDNouveauBitMapData
+struct HIDDNVGfxBitMapData
 {
     struct SignalSemaphore  semaphore;
-    struct HIDDNouveauData  *showngfx;  /* the gfx hidd this bitmap was last shown on (flip bookkeeping) */
+    struct HIDDNVGfxData  *showngfx;  /* the gfx hidd this bitmap was last shown on (flip bookkeeping) */
     struct nouveau_bo       *bo; /* Buffer object behind bitmap. Don't make any
                                     assumptions about buffer mapping (bo->map)
                                     state. This state however can only be changed
@@ -223,7 +223,7 @@ struct HIDDNouveauBitMapData
          * block-linear picture; the copy engine then detiles it into bo
          * (nvgfx_decode.c, HIDDNouveauDecodeSettle).
          */
-        struct HIDDNouveauDecode *dec;      /* session, NULL = nothing pending */
+        struct HIDDNVGfxDecode *dec;      /* session, NULL = nothing pending */
         ULONG               decseq;
         LONG                decslot;        /* pool slot holding the picture */
         UBYTE               decstate;       /* NOUVEAU_DECSTATE_* */
@@ -237,28 +237,17 @@ struct HIDDNouveauBitMapData
 #define NOUVEAU_DECSTATE_COPYING    2   /* copy-out issued, not waited for */
 #define NOUVEAU_DECSTATE_ERROR      3   /* the decoder reported an error */
 
-#define CLID_Hidd_I2C_Nouveau           "hidd.i2c.nvgfx"
-#define IID_Hidd_I2C_Nouveau            "hidd.i2c.nvgfx"
-
-#define HiddI2CNouveauAttrBase __IHidd_I2C_Nouveau
+/* class and interface IDs, shared with drm-compat/linux_i2c.c */
+#include <nvgfx_i2c.h>
 
 #ifndef __OOP_NOATTRBASES__
-extern OOP_AttrBase HiddI2CNouveauAttrBase;
+extern OOP_AttrBase HiddI2CNVGfxAttrBase;
 #endif
 
-enum
-{
-    aoHidd_I2C_Nouveau_Adapter,     /* [I..] The i2c_adapter object */
-    
-    num_Hidd_I2C_Nouveau_Attrs
-};
+#define IS_I2CNVGFX_ATTR(attr, idx) \
+    (((idx) = (attr) - HiddI2CNVGfxAttrBase) < num_Hidd_I2C_NVGfx_Attrs)
 
-#define aHidd_I2C_Nouveau_Adapter          (HiddI2CNouveauAttrBase + aoHidd_I2C_Nouveau_Adapter)
-
-#define IS_I2CNOUVEAU_ATTR(attr, idx) \
-    (((idx) = (attr) - HiddI2CNouveauAttrBase) < num_Hidd_I2C_Nouveau_Attrs)
-
-struct HIDDNouveauI2CData
+struct HIDDNVGfxI2CData
 {
     IPTR i2c_adapter;
 };
@@ -342,13 +331,13 @@ struct staticdata
     OOP_AttrBase    gfxAttrBase;
     OOP_AttrBase    displayAttrBase;
     OOP_AttrBase    dmenumAttrBase;
-    OOP_AttrBase    gfxNouveauAttrBase;
+    OOP_AttrBase    gfxNVGfxAttrBase;
     OOP_AttrBase    syncAttrBase;
     OOP_AttrBase    bitMapAttrBase;
     OOP_AttrBase    planarAttrBase;
-    OOP_AttrBase    i2cNouveauAttrBase;
+    OOP_AttrBase    i2cNVGfxAttrBase;
     OOP_AttrBase    gcAttrBase;
-    OOP_AttrBase    bitMapNouveauAttrBase;
+    OOP_AttrBase    bitMapNVGfxAttrBase;
     
     OOP_MethodID    mid_CopyMemBox16;
     OOP_MethodID    mid_CopyMemBox32;
@@ -400,8 +389,8 @@ void nouveau_compat_log(const char *fmt, ...);
    so anything queued for a displayable bitmap is kicked right away.
    Off-screen work is carried along by the on-screen blit that consumes
    it, or by the sync of a CPU access. */
-static inline VOID HIDDNouveauFlushDisplayable(struct CardData *carddata,
-    struct HIDDNouveauBitMapData *bmdata)
+static inline VOID HIDDNVGfxFlushDisplayable(struct CardData *carddata,
+    struct HIDDNVGfxBitMapData *bmdata)
 {
     if (!bmdata->displayable)
         return;
@@ -493,127 +482,127 @@ enum DMAObjects
 #define BLENDOP_ALPHA           13
 
 /* nvgfx_nvdd.c */
-BOOL HIDDNouveauGalliumSupported(struct CardData *carddata);
-OOP_Object *HIDDNouveauNVDDGalliumObject(struct staticdata *sd, OOP_Class *base,
+BOOL HIDDNVGfxGalliumSupported(struct CardData *carddata);
+OOP_Object *HIDDNVGfxNVDDGalliumObject(struct staticdata *sd, OOP_Class *base,
     OOP_Object *display, struct TagItem *attrs);
-OOP_Object *HIDDNouveauNVDDVulkanObject(struct staticdata *sd, OOP_Class *base,
+OOP_Object *HIDDNVGfxNVDDVulkanObject(struct staticdata *sd, OOP_Class *base,
     OOP_Object *display, struct TagItem *attrs);
-VOID HIDDNouveauNVDDExit(struct staticdata *sd);
+VOID HIDDNVGfxNVDDExit(struct staticdata *sd);
 
 /* nv_accel_common.c */
-BOOL HIDDNouveauAccelCommonInit(struct CardData * carddata);
-VOID HIDDNouveauAccelShutdown(struct CardData *carddata);
-BOOL HIDDNouveauAccelAllocSurface(struct CardData *carddata, ULONG width, ULONG height, UBYTE bpp, ULONG *pitch,
+BOOL HIDDNVGfxAccelCommonInit(struct CardData * carddata);
+VOID HIDDNVGfxAccelShutdown(struct CardData *carddata);
+BOOL HIDDNVGfxAccelAllocSurface(struct CardData *carddata, ULONG width, ULONG height, UBYTE bpp, ULONG *pitch,
     struct nouveau_bo **bo);
 
-BOOL NVAccelGetCtxSurf2DFormatFromPixmap(struct HIDDNouveauBitMapData * bmdata, LONG *fmt_ret);
+BOOL NVAccelGetCtxSurf2DFormatFromPixmap(struct HIDDNVGfxBitMapData * bmdata, LONG *fmt_ret);
 
 /* nv04_exa.c */
-VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
+VOID HIDDNVGfxNV04SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
     LONG pat0, LONG pat1);
-BOOL HIDDNouveauNV04FillSolidRect(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
+BOOL HIDDNVGfxNV04FillSolidRect(struct CardData * carddata,
+    struct HIDDNVGfxBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
     LONG maxY, ULONG drawmode, ULONG color);
-BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+BOOL HIDDNVGfxNV04CopySameFormat(struct CardData * carddata,
+    struct HIDDNVGfxBitMapData * srcdata, struct HIDDNVGfxBitMapData * destdata,
     LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG drawmode);
 
 /* nv10_exa.c */
-BOOL HIDDNouveauNV103DCopyBox(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+BOOL HIDDNVGfxNV103DCopyBox(struct CardData * carddata,
+    struct HIDDNVGfxBitMapData * srcdata, struct HIDDNVGfxBitMapData * destdata,
     LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG blendop);
 
 /* nv30_exa.c */
-BOOL HIDDNouveauNV303DCopyBox(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+BOOL HIDDNVGfxNV303DCopyBox(struct CardData * carddata,
+    struct HIDDNVGfxBitMapData * srcdata, struct HIDDNVGfxBitMapData * destdata,
     LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG blendop);
 
 /* nv40_exa.c */
-BOOL HIDDNouveauNV403DCopyBox(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+BOOL HIDDNVGfxNV403DCopyBox(struct CardData * carddata,
+    struct HIDDNVGfxBitMapData * srcdata, struct HIDDNVGfxBitMapData * destdata,
     LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG blendop);
 
 /* nv50_exa.c */
-VOID HIDDNouveauNV50SetPattern(struct CardData * carddata, LONG col0, 
+VOID HIDDNVGfxNV50SetPattern(struct CardData * carddata, LONG col0, 
     LONG col1, LONG pat0, LONG pat1);
-BOOL HIDDNouveauNV50FillSolidRect(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
+BOOL HIDDNVGfxNV50FillSolidRect(struct CardData * carddata,
+    struct HIDDNVGfxBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
     LONG maxY, ULONG drawmode, ULONG color);
-BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+BOOL HIDDNVGfxNV50CopySameFormat(struct CardData * carddata,
+    struct HIDDNVGfxBitMapData * srcdata, struct HIDDNVGfxBitMapData * destdata,
     LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG drawmode);
 
 /* nvc0_exa.c */
-VOID HIDDNouveauNVC0SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
+VOID HIDDNVGfxNVC0SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
 		  LONG pat0, LONG pat1);
-BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
+BOOL HIDDNVGfxNVC0FillSolidRect(struct CardData * carddata,
+    struct HIDDNVGfxBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
     LONG maxY, ULONG drawmode, ULONG color);
-typedef VOID (*HIDDNouveauStagingFn)(APTR rows, ULONG pitch, LONG line0,
+typedef VOID (*HIDDNVGfxStagingFn)(APTR rows, ULONG pitch, LONG line0,
     LONG lines, APTR ctx);
-BOOL HIDDNouveauNVC0StagingRect(struct CardData *carddata,
-    struct HIDDNouveauBitMapData *bmdata, LONG x, LONG y, LONG w, LONG h,
-    HIDDNouveauStagingFn fn, APTR ctx);
-BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+BOOL HIDDNVGfxNVC0StagingRect(struct CardData *carddata,
+    struct HIDDNVGfxBitMapData *bmdata, LONG x, LONG y, LONG w, LONG h,
+    HIDDNVGfxStagingFn fn, APTR ctx);
+BOOL HIDDNVGfxNVC0CopySameFormat(struct CardData * carddata,
+    struct HIDDNVGfxBitMapData * srcdata, struct HIDDNVGfxBitMapData * destdata,
     LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG drawmode);
 
 /* nvgfx_accel.c */
-BOOL HiddNouveauWriteFromRAM(
+BOOL HiddNVGfxWriteFromRAM(
     APTR src, ULONG srcPitch, HIDDT_StdPixFmt srcPixFmt,
     APTR dst, ULONG dstPitch,
     ULONG width, ULONG height,
     OOP_Class *cl, OOP_Object *o);
-BOOL HiddNouveauReadIntoRAM(
+BOOL HiddNVGfxReadIntoRAM(
     APTR src, ULONG srcPitch, 
     APTR dst, ULONG dstPitch, HIDDT_StdPixFmt dstPixFmt,
     ULONG width, ULONG height,
     OOP_Class *cl, OOP_Object *o);
-BOOL HiddNouveauAccelARGBUpload3D(
+BOOL HiddNVGfxAccelARGBUpload3D(
     UBYTE * srcpixels, ULONG srcpitch,
     LONG x, LONG y, LONG width, LONG height, 
     OOP_Class *cl, OOP_Object *o);
-BOOL HiddNouveauAccelAPENUpload3D(
+BOOL HiddNVGfxAccelAPENUpload3D(
     UBYTE * srcalpha, BOOL srcinvertalpha, ULONG srcpitch, ULONG srcpenrgb,
     LONG x, LONG y, LONG width, LONG height, 
     OOP_Class *cl, OOP_Object *o);
-VOID HIDDNouveauBitMapPutAlphaImage32(APTR dstmap, ULONG dstpitch,
+VOID HIDDNVGfxBitMapPutAlphaImage32(APTR dstmap, ULONG dstpitch,
     APTR srcbuff, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
-VOID HIDDNouveauBitMapPutAlphaImage16(APTR dstmap, ULONG dstpitch,
+VOID HIDDNVGfxBitMapPutAlphaImage16(APTR dstmap, ULONG dstpitch,
     APTR srcbuff, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
-VOID HIDDNouveauBitMapPutAlphaTemplate32(APTR dstmap, ULONG dstpitch,
+VOID HIDDNVGfxBitMapPutAlphaTemplate32(APTR dstmap, ULONG dstpitch,
     OOP_Object * gc, OOP_Object * bm, BOOL invertalpha,
     UBYTE * srcalpha, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
-VOID HIDDNouveauBitMapPutAlphaTemplate16(APTR dstmap, ULONG dstpitch,
+VOID HIDDNVGfxBitMapPutAlphaTemplate16(APTR dstmap, ULONG dstpitch,
     OOP_Object * gc, OOP_Object * bm, BOOL invertalpha,
     UBYTE * srcalpha, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
-VOID HIDDNouveauBitMapDrawSolidLine(struct HIDDNouveauBitMapData * bmdata,
+VOID HIDDNVGfxBitMapDrawSolidLine(struct HIDDNVGfxBitMapData * bmdata,
     OOP_Object * gc, LONG destX1, LONG destY1, LONG destX2, LONG destY2);
 
 /* nouveau_exa.c */
-BOOL HiddNouveauNVAccelUploadM2MF(
+BOOL HiddNVGfxNVAccelUploadM2MF(
     UBYTE * srcpixels, ULONG srcpitch, HIDDT_StdPixFmt srcPixFmt,
     LONG x, LONG y, LONG width, LONG height, 
     OOP_Class *cl, OOP_Object *o);
-BOOL HiddNouveauNVAccelDownloadM2MF(
+BOOL HiddNVGfxNVAccelDownloadM2MF(
     UBYTE * dstpixels, ULONG dstpitch, HIDDT_StdPixFmt dstPixFmt,
     LONG x, LONG y, LONG width, LONG height, 
     OOP_Class *cl, OOP_Object *o);
 
-VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible);
+VOID HIDDNVGfxShowCursor(OOP_Object * gfx, BOOL visible);
 /*
  * Nouveau does not compose screens itself: ShowViewPorts() declines,
  * ModeProperties reports no composition capability, and the display's
  * compositor shows whatever it composes through Hidd_Display::Show().
  */
-BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm);
-VOID HIDDNouveauSetOffsets(OOP_Object * bm, LONG newxoffset, LONG newyoffset);
+BOOL HIDDNVGfxSwitchToVideoMode(OOP_Object * bm);
+VOID HIDDNVGfxSetOffsets(OOP_Object * bm, LONG newxoffset, LONG newyoffset);
 
 /* Declaration of nouveau initialization functions */
 struct pci_dev;
@@ -624,7 +613,7 @@ extern void nouveau_shutdown(void);
 extern volatile int nouveau_shutting_down;
 
 /* Commom memory allocation */
-APTR HIDDNouveauAlloc(ULONG size);
-VOID HIDDNouveauFree(APTR memory);
+APTR HIDDNVGfxAlloc(ULONG size);
+VOID HIDDNVGfxFree(APTR memory);
 
 #endif /* _NOUVEAU_INTERN_H */

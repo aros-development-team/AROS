@@ -18,7 +18,7 @@
 #define NVPTR(x)                    (x)
 #define xf86ScreenToScrn(x)         (x)
 #define NVPtr                       struct CardData *
-#define PixmapPtr                   struct HIDDNouveauBitMapData *
+#define PixmapPtr                   struct HIDDNVGfxBitMapData *
 /* into the driver log: an acceleration setup failure must say which step failed */
 #define xf86DrvMsg(a, b, fmt, ...)  nvlog("[Nouveau] " fmt, ##__VA_ARGS__)
 #define ErrorF(msg, ...)            nvlog("[Nouveau] " msg, ##__VA_ARGS__)
@@ -180,8 +180,8 @@ static inline BOOL PICT_FORMAT_RGB(int format)
 }
 
 
-static inline VOID HIDDNouveauFillPictureFromBitMapData(struct Picture * pPict, 
-    struct HIDDNouveauBitMapData * bmdata)
+static inline VOID HIDDNVGfxFillPictureFromBitMapData(struct Picture * pPict, 
+    struct HIDDNVGfxBitMapData * bmdata)
 {
     /* pPict->format */
     if (bmdata->drawable.depth == 32)

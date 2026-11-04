@@ -451,7 +451,7 @@ NV04EXARectM2MF(NVPtr pNv, int w, int h, int cpp,
 
 /* AROS CODE */
 
-VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
+VOID HIDDNVGfxNV04SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
 		  LONG pat0, LONG pat1)
 {
     NV04EXASetPattern(carddata, clr0, clr1, pat0, pat1);
@@ -459,8 +459,8 @@ VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
 
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes buffer is not mapped */
-BOOL HIDDNouveauNV04FillSolidRect(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
+BOOL HIDDNVGfxNV04FillSolidRect(struct CardData * carddata,
+    struct HIDDNVGfxBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
     LONG maxY, ULONG drawmode, ULONG color)
 {
     if (!carddata->channel)
@@ -471,7 +471,7 @@ BOOL HIDDNouveauNV04FillSolidRect(struct CardData * carddata,
         NV04EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1, color);
         NV04EXADoneSolid(bmdata);
         bmdata->gpu_dirty = TRUE;
-		HIDDNouveauFlushDisplayable(carddata, bmdata);
+		HIDDNVGfxFlushDisplayable(carddata, bmdata);
         return TRUE;
     }
 
@@ -480,8 +480,8 @@ BOOL HIDDNouveauNV04FillSolidRect(struct CardData * carddata,
 
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes buffer is not mapped */
-BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+BOOL HIDDNVGfxNV04CopySameFormat(struct CardData * carddata,
+    struct HIDDNVGfxBitMapData * srcdata, struct HIDDNVGfxBitMapData * destdata,
     LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG drawmode)
 {
@@ -499,7 +499,7 @@ BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
         NV04EXADoneCopy(destdata);
         srcdata->gpu_dirty = TRUE;
         destdata->gpu_dirty = TRUE;
-		HIDDNouveauFlushDisplayable(carddata, destdata);
+		HIDDNVGfxFlushDisplayable(carddata, destdata);
         return TRUE;
     }
 

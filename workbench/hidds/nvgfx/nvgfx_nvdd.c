@@ -33,7 +33,7 @@ static struct staticdata *nvdd_sd;
  * display creates no gallium object, and gallium.library uses GL on
  * Vulkan or its software driver.
  */
-BOOL HIDDNouveauGalliumSupported(struct CardData *carddata)
+BOOL HIDDNVGfxGalliumSupported(struct CardData *carddata)
 {
     if (!carddata->dev)
         return FALSE;
@@ -54,7 +54,7 @@ BOOL HIDDNouveauGalliumSupported(struct CardData *carddata)
 static BOOL nvdd_bitmap_buffer(OOP_Object *bm, ULONG buffer, struct nvdd_buffer *out)
 {
     struct staticdata *sd = nvdd_sd;
-    struct HIDDNouveauBitMapData *bmdata;
+    struct HIDDNVGfxBitMapData *bmdata;
     struct nouveau_bo *bo;
     uint32_t name = 0;
 
@@ -107,7 +107,7 @@ static BOOL nvdd_display_copy(struct BitMap *bitmap, ULONG name, ULONG pitch, UL
 {
     struct staticdata *sd = nvdd_sd;
     struct CardData *carddata;
-    struct HIDDNouveauBitMapData srcdata, *dstdata;
+    struct HIDDNVGfxBitMapData srcdata, *dstdata;
     OOP_Object *bm;
     struct nouveau_bo *bo;
 
@@ -143,15 +143,15 @@ static BOOL nvdd_display_copy(struct BitMap *bitmap, ULONG name, ULONG pitch, UL
     {
     case NV_ARCH_30:
     case NV_ARCH_40:
-        HIDDNouveauNV04CopySameFormat(carddata, &srcdata, dstdata,
+        HIDDNVGfxNV04CopySameFormat(carddata, &srcdata, dstdata,
             srcx, srcy, dstx, dsty, width, height, 0x03 /* vHidd_GC_DrawMode_Copy */);
         break;
     case NV_TESLA:
-        HIDDNouveauNV50CopySameFormat(carddata, &srcdata, dstdata,
+        HIDDNVGfxNV50CopySameFormat(carddata, &srcdata, dstdata,
             srcx, srcy, dstx, dsty, width, height, 0x03);
         break;
     default:
-        HIDDNouveauNVC0CopySameFormat(carddata, &srcdata, dstdata,
+        HIDDNVGfxNVC0CopySameFormat(carddata, &srcdata, dstdata,
             srcx, srcy, dstx, dsty, width, height, 0x03);
         break;
     }
@@ -166,7 +166,7 @@ static void nvdd_host_fill(struct staticdata *sd, struct nvdd_host *host)
     memset(host, 0, sizeof(*host));
     host->size         = sizeof(*host);
     host->version      = NVDD_INTERFACE_VERSION;
-    host->drm          = HIDDNouveauDrmEntry();
+    host->drm          = HIDDNVGfxDrmEntry();
     host->chipset      = sd->carddata.dev ? sd->carddata.dev->chipset : 0;
     host->architecture = sd->carddata.Architecture;
     host->log          = nouveau_compat_log;
@@ -195,7 +195,7 @@ static struct Library *nvdd_open(struct staticdata *sd, struct Library **lib, BO
  * A gallium object of the card's gallium driver (nouveau.nvdd), NULL where
  * there is none (no library, or the card is not one it drives).
  */
-OOP_Object *HIDDNouveauNVDDGalliumObject(struct staticdata *sd, OOP_Class *base,
+OOP_Object *HIDDNVGfxNVDDGalliumObject(struct staticdata *sd, OOP_Class *base,
     OOP_Object *display, struct TagItem *attrs)
 {
     OOP_Object *obj = NULL;
@@ -224,7 +224,7 @@ OOP_Object *HIDDNouveauNVDDGalliumObject(struct staticdata *sd, OOP_Class *base,
  * from the display's CreateObject with no driver lock held: opening the
  * library may load it from disk.
  */
-OOP_Object *HIDDNouveauNVDDVulkanObject(struct staticdata *sd, OOP_Class *base,
+OOP_Object *HIDDNVGfxNVDDVulkanObject(struct staticdata *sd, OOP_Class *base,
     OOP_Object *display, struct TagItem *attrs)
 {
     OOP_Object *obj = NULL;
@@ -237,7 +237,7 @@ OOP_Object *HIDDNouveauNVDDVulkanObject(struct staticdata *sd, OOP_Class *base,
 
         /* NVK opens its own DRM client; display buffers it imports come
            from the display's (drm_entry.c) */
-        HIDDNouveauDrmEntrySetDisplay(NOUVEAU_DEV_FD(sd->carddata.dev));
+        HIDDNVGfxDrmEntrySetDisplay(NOUVEAU_DEV_FD(sd->carddata.dev));
         nvdd_host_fill(sd, &host);
         cl = NVDD_InitClass(sd->nvkNvdd, base, &host);
         if (!cl)
@@ -264,7 +264,7 @@ static void nvdd_close(struct Library **lib, const char *name)
 }
 
 /* driver exit: drop the classes and close the libraries */
-VOID HIDDNouveauNVDDExit(struct staticdata *sd)
+VOID HIDDNVGfxNVDDExit(struct staticdata *sd)
 {
     ULONG i;
 

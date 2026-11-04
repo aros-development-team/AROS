@@ -1092,12 +1092,12 @@ NVE0EXARectCopy(NVPtr pNv, int w, int h, int cpp,
 
 /* AROS CODE */
 
-VOID HIDDNouveauNVC0SetPattern(struct CardData *carddata, LONG clr0, LONG clr1, LONG pat0, LONG pat1)
+VOID HIDDNVGfxNVC0SetPattern(struct CardData *carddata, LONG clr0, LONG clr1, LONG pat0, LONG pat1)
 {
 	if (carddata->Architecture >= NV_BLACKWELL)
 		return;
 
-    struct HIDDNouveauBitMapData fake;
+    struct HIDDNVGfxBitMapData fake;
     fake.drawable.pScreen = carddata;
     NVC0EXASetPattern(&fake, clr0, clr1, pat0, pat1);
 }
@@ -1133,9 +1133,9 @@ nvc0_rop(ULONG mode, uint32_t s, uint32_t d)
  * sees the rows tightly packed (pitch = w * cpp), starting at line
  * `line0` of the rectangle. The rectangle has to lie inside the bitmap:
  * the copy engine has no clip. Takes and releases the GART semaphore. */
-BOOL HIDDNouveauNVC0StagingRect(struct CardData *carddata,
-    struct HIDDNouveauBitMapData *bmdata, LONG x, LONG y, LONG w, LONG h,
-    HIDDNouveauStagingFn fn, APTR ctx)
+BOOL HIDDNVGfxNVC0StagingRect(struct CardData *carddata,
+    struct HIDDNVGfxBitMapData *bmdata, LONG x, LONG y, LONG w, LONG h,
+    HIDDNVGfxStagingFn fn, APTR ctx)
 {
 	NVPtr pNv = carddata;
 	const int cpp = bmdata->bytesperpixel;
@@ -1201,7 +1201,7 @@ BOOL HIDDNouveauNVC0StagingRect(struct CardData *carddata,
 	}
 	ReleaseSemaphore(&carddata->gartsemaphore);
 	bmdata->gpu_dirty = TRUE;
-	HIDDNouveauFlushDisplayable(carddata, bmdata);
+	HIDDNVGfxFlushDisplayable(carddata, bmdata);
 	return TRUE;
 fail:
 	ReleaseSemaphore(&carddata->gartsemaphore);
@@ -1234,19 +1234,19 @@ nvc0_rop_rows(APTR rows, ULONG pitch, LONG line0, LONG lines, APTR ctx)
 }
 
 static BOOL
-nvc0_ce_rop_fill(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata,
+nvc0_ce_rop_fill(struct CardData *carddata, struct HIDDNVGfxBitMapData *bmdata,
 		 LONG x, LONG y, LONG w, LONG h, ULONG drawmode, ULONG color)
 {
 	struct nvc0_rop_ctx r = { drawmode, color, bmdata->bytesperpixel };
 
-	return HIDDNouveauNVC0StagingRect(carddata, bmdata, x, y, w, h,
+	return HIDDNVGfxNVC0StagingRect(carddata, bmdata, x, y, w, h,
 					  nvc0_rop_rows, &r);
 }
 
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes buffer is not mapped */
-BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
+BOOL HIDDNVGfxNVC0FillSolidRect(struct CardData * carddata,
+    struct HIDDNVGfxBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
     LONG maxY, ULONG drawmode, ULONG color)
 {
 	if (carddata->Architecture >= NV_BLACKWELL) {
@@ -1290,7 +1290,7 @@ BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
 					 fill))
 			return FALSE;
 		bmdata->gpu_dirty = TRUE;
-		HIDDNouveauFlushDisplayable(carddata, bmdata);
+		HIDDNVGfxFlushDisplayable(carddata, bmdata);
 		return TRUE;
 	}
     if (!carddata->channel)
@@ -1301,7 +1301,7 @@ BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
         NVC0EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1);
         NVC0EXADoneSolid(bmdata);
         bmdata->gpu_dirty = TRUE;
-		HIDDNouveauFlushDisplayable(carddata, bmdata);
+		HIDDNVGfxFlushDisplayable(carddata, bmdata);
         return TRUE;
     }
 
@@ -1310,8 +1310,8 @@ BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
 
 /* NOTE: Assumes lock on both bitmaps is already made */
 /* NOTE: Assumes both buffers are not mapped */
-BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+BOOL HIDDNVGfxNVC0CopySameFormat(struct CardData * carddata,
+    struct HIDDNVGfxBitMapData * srcdata, struct HIDDNVGfxBitMapData * destdata,
     LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG drawmode)
 {
@@ -1410,7 +1410,7 @@ BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
 			return FALSE;
 		srcdata->gpu_dirty = TRUE;
 		destdata->gpu_dirty = TRUE;
-		HIDDNouveauFlushDisplayable(carddata, destdata);
+		HIDDNVGfxFlushDisplayable(carddata, destdata);
 		return TRUE;
 	}
 
@@ -1423,7 +1423,7 @@ BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
         NVC0EXADoneCopy(destdata);
         srcdata->gpu_dirty = TRUE;
         destdata->gpu_dirty = TRUE;
-		HIDDNouveauFlushDisplayable(carddata, destdata);
+		HIDDNVGfxFlushDisplayable(carddata, destdata);
         return TRUE;
     }
 

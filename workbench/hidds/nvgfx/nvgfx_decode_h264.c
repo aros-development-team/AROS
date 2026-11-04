@@ -91,7 +91,7 @@ struct nvdec_h264
     struct nouveau_bo *filter, *intratop, *blkbuf;  /* Blackwell's H.264 application */
 };
 
-static BOOL h264_open(struct HIDDNouveauDecode *dec)
+static BOOL h264_open(struct HIDDNVGfxDecode *dec)
 {
     struct nvdec_h264 *h;
     ULONG mbs = (dec->width / 16) * (dec->height / 16);
@@ -123,7 +123,7 @@ static BOOL h264_open(struct HIDDNouveauDecode *dec)
     return TRUE;
 }
 
-static VOID h264_close(struct HIDDNouveauDecode *dec)
+static VOID h264_close(struct HIDDNVGfxDecode *dec)
 {
     struct nvdec_h264 *h = dec->cur.codecstate;
 
@@ -137,7 +137,7 @@ static VOID h264_close(struct HIDDNouveauDecode *dec)
     }
 }
 
-static BOOL h264_begin(struct HIDDNouveauDecode *dec)
+static BOOL h264_begin(struct HIDDNVGfxDecode *dec)
 {
     struct nvdec_h264 *h = dec->cur.codecstate;
 
@@ -263,7 +263,7 @@ static BOOL h264_slice_defaults(struct nvdec_h264 *h, const UBYTE *nal, ULONG le
     return FALSE;
 }
 
-static BOOL h264_params(struct HIDDNouveauDecode *dec, ULONG type, APTR data, ULONG size, ULONG count)
+static BOOL h264_params(struct HIDDNVGfxDecode *dec, ULONG type, APTR data, ULONG size, ULONG count)
 {
     struct nvdec_h264 *h = dec->cur.codecstate;
     ULONG i;
@@ -322,7 +322,7 @@ static BOOL h264_params(struct HIDDNouveauDecode *dec, ULONG type, APTR data, UL
  * before it (ffmpeg: one parameter buffer, then one data buffer, per slice).
  * Every slice gets a start code, as the decoder expects Annex B.
  */
-static BOOL h264_bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size)
+static BOOL h264_bitstream(struct HIDDNVGfxDecode *dec, APTR data, ULONG size)
 {
     struct nvdec_h264 *h = dec->cur.codecstate;
     ULONG first = h ? h->nextdata : 0, i;
@@ -356,7 +356,7 @@ static BOOL h264_bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size)
                 (unsigned long)i, (unsigned long)sl->dataoff, (unsigned long)sl->datasize, (unsigned long)size);
             return FALSE;
         }
-        p = HIDDNouveauDecodeBitstreamReserve(dec, 3 + sl->datasize);
+        p = HIDDNVGfxDecodeBitstreamReserve(dec, 3 + sl->datasize);
         if (!p)
             return FALSE;
         sl->offset = (ULONG)(p - (UBYTE *)dec->ring[dec->ringpos].bitstream->map);
@@ -405,7 +405,7 @@ static VOID h264_dpb_entry(nvdec_dpb_entry_s *e, const VAPictureH264 *ref, LONG 
     e->FrameIdx = (int)ref->frame_idx;
 }
 
-static ULONG h264_status(struct HIDDNouveauDecode *dec, ULONG *status)
+static ULONG h264_status(struct HIDDNVGfxDecode *dec, ULONG *status)
 {
     nvdec_status_s *st = (nvdec_status_s *)status;
     ULONG mbs = (dec->width / 16) * (dec->height / 16);
@@ -598,7 +598,7 @@ static VOID h264_initial_lists(const nvdec_h264_pic_s *pic, UBYTE *lists)
     }
 }
 
-static VOID h264_setup_bw(struct HIDDNouveauDecode *dec, const VAPictureParameterBufferH264 *pp,
+static VOID h264_setup_bw(struct HIDDNVGfxDecode *dec, const VAPictureParameterBufferH264 *pp,
     const nvdec_h264_pic_s *pic, UBYTE *page, BOOL intra)
 {
     ULONG *w = (ULONG *)(page + H264BW_PARAMS);
@@ -636,7 +636,7 @@ static VOID h264_setup_bw(struct HIDDNouveauDecode *dec, const VAPictureParamete
     w[15] = (width + 191) / 128;
 }
 
-static BOOL h264_zeroed(struct HIDDNouveauDecode *dec, ULONG size, struct nouveau_bo **bo)
+static BOOL h264_zeroed(struct HIDDNVGfxDecode *dec, ULONG size, struct nouveau_bo **bo)
 {
     if (nouveau_bo_new(dec->carddata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 4096, size, NULL, bo) ||
         nouveau_bo_map(*bo, NOUVEAU_BO_WR, dec->carddata->client))
@@ -645,7 +645,7 @@ static BOOL h264_zeroed(struct HIDDNouveauDecode *dec, ULONG size, struct nouvea
     return TRUE;
 }
 
-static BOOL h264_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFrame *f)
+static BOOL h264_submit(struct HIDDNVGfxDecode *dec, struct HIDDNVGfxDecodeFrame *f)
 {
     struct nvdec_h264 *h = dec->cur.codecstate;
     const VAPictureParameterBufferH264 *pp;
@@ -705,12 +705,12 @@ static BOOL h264_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
         refslot[i] = -1;
         if ((ref->flags & VA_PICTURE_H264_INVALID) || (ref->picture_id == VA_INVALID_SURFACE))
             continue;
-        if (!HIDDNouveauDecodeResolve(dec, ref->picture_id, &bm, &buffer))
+        if (!HIDDNVGfxDecodeResolve(dec, ref->picture_id, &bm, &buffer))
         {
             D(bug("[Nouveau] NVDEC: H.264 reference surface %lu unknown\n", (unsigned long)ref->picture_id));
             continue;
         }
-        slot = HIDDNouveauDecodeFindSlot(dec, bm, buffer);
+        slot = HIDDNVGfxDecodeFindSlot(dec, bm, buffer);
         if (slot < 0)
         {
             D(bug("[Nouveau] NVDEC: H.264 reference %lu (%p/%lu) is not in the pool any more\n",
@@ -722,7 +722,7 @@ static BOOL h264_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
         dec->slot[slot].lastuse = dec->frames;
         nrefs++;
     }
-    slot = HIDDNouveauDecodeAllocSlot(dec, dec->cur.bm, dec->cur.buffer, avoid);
+    slot = HIDDNVGfxDecodeAllocSlot(dec, dec->cur.bm, dec->cur.buffer, avoid);
     if (slot < 0)
         return FALSE;
     dec->cur.slot = slot;
@@ -748,7 +748,7 @@ static BOOL h264_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
      * 16 KB of luma and 3.5 KB of chroma are never written. The pad after
      * the slices is for the VLD's read-ahead.
      */
-    pad = HIDDNouveauDecodeBitstreamReserve(dec, 256);
+    pad = HIDDNVGfxDecodeBitstreamReserve(dec, 256);
     if (!pad)
         return FALSE;
     memset(pad, 0, 256);
@@ -902,7 +902,7 @@ static BOOL h264_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
         };
 
         /* NVIDIA's control word (traced): the old application takes the codec alone, this one does not */
-        if (!HIDDNouveauDecodeEmit(dec, f, slot, NULL, NVDEC_APPLICATION_ID_H264_BW, NVDEC_CONTROL_CODEC_H264 | 0x52050,
+        if (!HIDDNVGfxDecodeEmit(dec, f, slot, NULL, NVDEC_APPLICATION_ID_H264_BW, NVDEC_CONTROL_CODEC_H264 | 0x52050,
                                    extra, 3, m, 4))
             return FALSE;
     }
@@ -916,7 +916,7 @@ static BOOL h264_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
          * fields that take it as their direct-mode reference read stale data.
          */
         control = NVDEC_CONTROL_CODEC_H264;
-        if (!HIDDNouveauDecodeEmit(dec, f, slot, NULL, NVDEC_APPLICATION_ID_H264, control, NULL, 0, none, 1))
+        if (!HIDDNVGfxDecodeEmit(dec, f, slot, NULL, NVDEC_APPLICATION_ID_H264, control, NULL, 0, none, 1))
             return FALSE;
     }
     D(bug("[Nouveau] NVDEC: H.264 frame %lu: slot %ld, %lu refs, %lu slices, %lu bytes%s\n",
@@ -925,7 +925,7 @@ static BOOL h264_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
     return TRUE;
 }
 
-const struct HIDDNouveauDecodeOps HIDDNouveauDecodeH264Ops =
+const struct HIDDNVGfxDecodeOps HIDDNVGfxDecodeH264Ops =
 {
     h264_open, h264_close, h264_begin, h264_params, h264_bitstream, h264_submit, h264_status
 };

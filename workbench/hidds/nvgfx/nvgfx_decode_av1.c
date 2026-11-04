@@ -93,7 +93,7 @@ struct av1_state
     struct av1_saved    saved[NOUVEAU_DECODE_SLOTS];
 };
 
-static BOOL av1_zeroed(struct HIDDNouveauDecode *dec, ULONG flags, ULONG size, struct nouveau_bo **bo)
+static BOOL av1_zeroed(struct HIDDNVGfxDecode *dec, ULONG flags, ULONG size, struct nouveau_bo **bo)
 {
     if (nouveau_bo_new(dec->carddata->dev, flags | NOUVEAU_BO_MAP, 4096, size, NULL, bo) ||
         nouveau_bo_map(*bo, NOUVEAU_BO_WR, dec->carddata->client))
@@ -107,7 +107,7 @@ static BOOL av1_zeroed(struct HIDDNouveauDecode *dec, ULONG flags, ULONG size, s
 
 #define NV_ALIGN256(v)      ALIGN_UP((v), 256)
 
-static BOOL av1_open(struct HIDDNouveauDecode *dec)
+static BOOL av1_open(struct HIDDNVGfxDecode *dec)
 {
     struct av1_state *v = AllocMem(sizeof(*v), MEMF_PUBLIC | MEMF_CLEAR);
     ULONG w = dec->width, h = dec->height, cols64, rows64, sizes[6], total, i;
@@ -159,7 +159,7 @@ static BOOL av1_open(struct HIDDNouveauDecode *dec)
     return TRUE;
 }
 
-static VOID av1_close(struct HIDDNouveauDecode *dec)
+static VOID av1_close(struct HIDDNVGfxDecode *dec)
 {
     struct av1_state *v = dec->cur.codecstate;
 
@@ -177,7 +177,7 @@ static VOID av1_close(struct HIDDNouveauDecode *dec)
     dec->cur.codecstate = NULL;
 }
 
-static BOOL av1_begin(struct HIDDNouveauDecode *dec)
+static BOOL av1_begin(struct HIDDNVGfxDecode *dec)
 {
     struct av1_state *v = dec->cur.codecstate;
 
@@ -189,7 +189,7 @@ static BOOL av1_begin(struct HIDDNouveauDecode *dec)
     return TRUE;
 }
 
-static BOOL av1_params(struct HIDDNouveauDecode *dec, ULONG type, APTR data, ULONG size, ULONG count)
+static BOOL av1_params(struct HIDDNVGfxDecode *dec, ULONG type, APTR data, ULONG size, ULONG count)
 {
     struct av1_state *v = dec->cur.codecstate;
 
@@ -216,7 +216,7 @@ static BOOL av1_params(struct HIDDNouveauDecode *dec, ULONG type, APTR data, ULO
 }
 
 /* a tile group's data: kept whole; each tile's {start, end} from its slice parameter */
-static BOOL av1_bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size)
+static BOOL av1_bitstream(struct HIDDNVGfxDecode *dec, APTR data, ULONG size)
 {
     struct av1_state *v = dec->cur.codecstate;
     ULONG base = dec->cur.bitstreamlen, i;
@@ -224,7 +224,7 @@ static BOOL av1_bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size)
 
     if (!v->have_pp || !v->nsp)
         return FALSE;
-    p = HIDDNouveauDecodeBitstreamReserve(dec, size);
+    p = HIDDNVGfxDecodeBitstreamReserve(dec, size);
     if (!p)
         return FALSE;
     memcpy(p, data, size);
@@ -254,7 +254,7 @@ static VOID av1_cdf_drop(struct av1_state *v, LONG slot)
     v->saved[slot].cdf = 0;
 }
 
-static ULONG av1_status(struct HIDDNouveauDecode *dec, ULONG *status)
+static ULONG av1_status(struct HIDDNVGfxDecode *dec, ULONG *status)
 {
     nvdec_status_s *st = (nvdec_status_s *)status;
 
@@ -280,15 +280,15 @@ static LONG av1_rd(const VADecPictureParameterBufferAV1 *pp, LONG a, LONG b)
     return (diff & (m - 1)) - (diff & m);
 }
 
-static LONG av1_slot(struct HIDDNouveauDecode *dec, VASurfaceID surface)
+static LONG av1_slot(struct HIDDNVGfxDecode *dec, VASurfaceID surface)
 {
     OOP_Object *bm;
     ULONG buffer;
     LONG slot;
 
-    if ((surface == VA_INVALID_SURFACE) || !HIDDNouveauDecodeResolve(dec, surface, &bm, &buffer))
+    if ((surface == VA_INVALID_SURFACE) || !HIDDNVGfxDecodeResolve(dec, surface, &bm, &buffer))
         return -1;
-    slot = HIDDNouveauDecodeFindSlot(dec, bm, buffer);
+    slot = HIDDNVGfxDecodeFindSlot(dec, bm, buffer);
     if (slot >= 0)
         dec->slot[slot].lastuse = dec->frames;
     return slot;
@@ -358,7 +358,7 @@ static VOID av1_shear(const int32_t *m, WORD *out)
         out[k] = (WORD)(av1_round2signed(p[k], 6) * 64);
 }
 
-static BOOL av1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFrame *f)
+static BOOL av1_submit(struct HIDDNVGfxDecode *dec, struct HIDDNVGfxDecodeFrame *f)
 {
     struct av1_state *v = dec->cur.codecstate;
     const VADecPictureParameterBufferAV1 *pp;
@@ -424,17 +424,17 @@ static BOOL av1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
      * engine writes the grained picture there (the display buffer).
      */
     grain = pp->film_grain_info.film_grain_info_fields.bits.apply_grain;
-    slot = HIDDNouveauDecodeAllocSlot(dec, dec->cur.bm, dec->cur.buffer, avoid);
+    slot = HIDDNVGfxDecodeAllocSlot(dec, dec->cur.bm, dec->cur.buffer, avoid);
     if (slot < 0)
         return FALSE;
     dec->cur.slot = slot;
     dslot = slot;
     if (grain)
     {
-        if (!HIDDNouveauDecodeResolve(dec, pp->current_display_picture, &rbm, &rbuffer) ||
+        if (!HIDDNVGfxDecodeResolve(dec, pp->current_display_picture, &rbm, &rbuffer) ||
             (OOP_OCLASS(rbm) != dec->bmclass))
             return FALSE;
-        dslot = HIDDNouveauDecodeAllocSlot(dec, rbm, rbuffer, avoid | (1UL << slot));
+        dslot = HIDDNVGfxDecodeAllocSlot(dec, rbm, rbuffer, avoid | (1UL << slot));
         if ((dslot < 0) || (dslot == slot))
             return FALSE;
     }
@@ -843,7 +843,7 @@ static BOOL av1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
     }
 
     nouveau_staging_to_gpu(base, NOUVEAU_DECODE_PICSETUP_SIZE);
-    pad = HIDDNouveauDecodeBitstreamReserve(dec, 256);
+    pad = HIDDNVGfxDecodeBitstreamReserve(dec, 256);
     if (!pad)
         return FALSE;
     memset(pad, 0, 256);
@@ -901,14 +901,14 @@ static BOOL av1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
         for (i = 0; i < AV1_REFS; i++)
             map[i] = (refslot[i] >= 0) ? refslot[i] : slot;
         map[AV1_PIC_CUR] = slot;
-        if (!HIDDNouveauDecodeEmit(dec, f, AV1_PIC_CUR, map, NVDEC_APPLICATION_ID_AV1,
+        if (!HIDDNVGfxDecodeEmit(dec, f, AV1_PIC_CUR, map, NVDEC_APPLICATION_ID_AV1,
                                    NVDEC_CONTROL_CODEC_AV1 | 0x52050, extra, nextra, m, nm))
             return FALSE;
     }
     if (dslot != slot)
     {
         /* the grained picture: registered for the display surface, as EndFrame does for the target */
-        struct HIDDNouveauBitMapData *dbm = OOP_INST_DATA(dec->bmclass, rbm);
+        struct HIDDNVGfxBitMapData *dbm = OOP_INST_DATA(dec->bmclass, rbm);
 
         dec->slot[dslot].valid = TRUE;
         dec->slot[dslot].bm = rbm;
@@ -943,7 +943,7 @@ static BOOL av1_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
     return TRUE;
 }
 
-const struct HIDDNouveauDecodeOps HIDDNouveauDecodeAV1Ops =
+const struct HIDDNVGfxDecodeOps HIDDNVGfxDecodeAV1Ops =
 {
     av1_open, av1_close, av1_begin, av1_params, av1_bitstream, av1_submit, av1_status
 };

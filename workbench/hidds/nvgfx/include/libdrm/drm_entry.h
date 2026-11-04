@@ -6,8 +6,8 @@
     nouveau.hidd carries the kernel driver and its libdrm; the display and
     gallium code reach them by static linkage. Code with a libdrm of its
     own goes through this table instead: the Vulkan driver linked into
-    the module (HIDDNouveauDrmEntry()), and programs outside it, through
-    the one function nouveau.hidd exports, NouveauDrmEntry().
+    the module (HIDDNVGfxDrmEntry()), and programs outside it, through
+    the one function nvgfx.hidd exports, NVGfxDrmEntry().
 
     Every entry keeps the semantics of the libdrm function named beside
     it. An fd is what open() hands out and has meaning only through this
@@ -64,19 +64,19 @@ struct nouveau_drm_entry
 };
 
 /* Inside nvgfx.hidd */
-const struct nouveau_drm_entry *HIDDNouveauDrmEntry(void);
+const struct nouveau_drm_entry *HIDDNVGfxDrmEntry(void);
 /* The display's DRM client, which import_display_handle takes buffers from */
-void HIDDNouveauDrmEntrySetDisplay(int display_fd);
+void HIDDNVGfxDrmEntrySetDisplay(int display_fd);
 
 /*
  * nvgfx.hidd's exported function, the first user LVO of the module:
  *
- *     const struct nouveau_drm_entry *NouveauDrmEntry(void)
+ *     const struct nouveau_drm_entry *NVGfxDrmEntry(void)
  *
  * A caller opens "nvgfx.hidd" and calls through the base it got.
  */
-#define NouveauDrmEntry(base) \
-    AROS_LC0(const struct nouveau_drm_entry *, NouveauDrmEntry, \
-             struct Library *, (base), 5, Nouveau)
+#define NVGfxDrmEntry(base) \
+    AROS_LC0(const struct nouveau_drm_entry *, NVGfxDrmEntry, \
+             struct Library *, (base), 5, NVGfx)
 
 #endif /* LIBDRM_DRM_ENTRY_H */

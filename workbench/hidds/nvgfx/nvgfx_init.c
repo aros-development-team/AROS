@@ -12,14 +12,14 @@
 #include <aros/symbolsets.h>
 
 /* GLOBALS */
-APTR NouveauMemPool;
+APTR NVGfxMemPool;
 
 /* kernel.resource, for the DRM spinlock emulation (include/linux/spinlock.h) */
 APTR KernelBase;
 struct SignalSemaphore globalLock;
 /* GLOBALS END */
 
-static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
+static ULONG NVGfx_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct OOP_ABDescr attrbases[] = 
     {
@@ -30,11 +30,11 @@ static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
     { IID_Hidd_Gfx,             &LIBBASE->sd.gfxAttrBase },
     { IID_Hidd_Display,         &LIBBASE->sd.displayAttrBase },
     { IID_Hidd_DMEnum,          &LIBBASE->sd.dmenumAttrBase },
-    { IID_Hidd_Gfx_Nouveau,     &LIBBASE->sd.gfxNouveauAttrBase },
+    { IID_Hidd_Gfx_NVGfx,     &LIBBASE->sd.gfxNVGfxAttrBase },
     { IID_Hidd_PlanarBM,        &LIBBASE->sd.planarAttrBase },
-    { IID_Hidd_I2C_Nouveau,     &LIBBASE->sd.i2cNouveauAttrBase },
+    { IID_Hidd_I2C_NVGfx,       &LIBBASE->sd.i2cNVGfxAttrBase },
     { IID_Hidd_GC,              &LIBBASE->sd.gcAttrBase },
-    { IID_Hidd_BitMap_Nouveau,  &LIBBASE->sd.bitMapNouveauAttrBase },
+    { IID_Hidd_BitMap_NVGfx,  &LIBBASE->sd.bitMapNVGfxAttrBase },
     { NULL, NULL }
     };
 
@@ -69,21 +69,21 @@ static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
     InitSemaphore(&LIBBASE->sd.multibitmapsemaphore);
     InitSemaphore(&LIBBASE->sd.nvddLock);
 
-    NouveauMemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR | MEMF_SEM_PROTECTED, 32 * 1024, 16 * 1024);
+    NVGfxMemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR | MEMF_SEM_PROTECTED, 32 * 1024, 16 * 1024);
 
-    D(bug("[Nouveau] Nouveau_Init: done, pool 0x%p\n", NouveauMemPool));
+    D(bug("[Nouveau] Nouveau_Init: done, pool 0x%p\n", NVGfxMemPool));
 
     return TRUE;
 }
 
-static VOID Nouveau_Exit(LIBBASETYPEPTR LIBBASE)
+static VOID NVGfx_Exit(LIBBASETYPEPTR LIBBASE)
 {
     /* the 3D parts: the gallium and Vulkan libraries */
-    HIDDNouveauNVDDExit(&LIBBASE->sd);
-    if (NouveauMemPool)
+    HIDDNVGfxNVDDExit(&LIBBASE->sd);
+    if (NVGfxMemPool)
     {
-        DeletePool(NouveauMemPool);
-        NouveauMemPool = NULL;
+        DeletePool(NVGfxMemPool);
+        NVGfxMemPool = NULL;
     }
 }
 
@@ -93,10 +93,10 @@ static VOID Nouveau_Exit(LIBBASETYPEPTR LIBBASE)
 
 #define BUFF_GUARD (4 * 1024)
 
-APTR HIDDNouveauAlloc(ULONG size)
+APTR HIDDNVGfxAlloc(ULONG size)
 {
     ULONG guarded_size = size + (2 * BUFF_GUARD);
-    char *memory = (char *)AllocVecPooled(NouveauMemPool, guarded_size);
+    char *memory = (char *)AllocVecPooled(NVGfxMemPool, guarded_size);
     memory += BUFF_GUARD;
 
     char *start = (char *)memory - BUFF_GUARD;
@@ -128,7 +128,7 @@ APTR HIDDNouveauAlloc(ULONG size)
     return memory;
 }
 
-VOID HIDDNouveauFree(APTR memory)
+VOID HIDDNVGfxFree(APTR memory)
 {
     if (memory == NULL) return;
 
@@ -170,7 +170,7 @@ VOID HIDDNouveauFree(APTR memory)
     if (first != -1 && last != 0)
         bug("---- MEM CHECK: Damaged back guard for mem=%p(%d) from %d to %d\n", memory, size2, first * 4, last * 4);
 
-    FreeVecPooled(NouveauMemPool, start);
+    FreeVecPooled(NVGfxMemPool, start);
 }
 #else
 /*
@@ -181,7 +181,7 @@ VOID HIDDNouveauFree(APTR memory)
  */
 #define NOUVEAU_ALLOC_HEADER    16
 
-APTR HIDDNouveauAlloc(ULONG size)
+APTR HIDDNVGfxAlloc(ULONG size)
 {
     IPTR total = (IPTR)size + NOUVEAU_ALLOC_HEADER;
     IPTR *memory = AllocMem(total, MEMF_PUBLIC | MEMF_CLEAR);
@@ -193,7 +193,7 @@ APTR HIDDNouveauAlloc(ULONG size)
     return (APTR)((UBYTE *)memory + NOUVEAU_ALLOC_HEADER);
 }
 
-VOID HIDDNouveauFree(APTR memory)
+VOID HIDDNVGfxFree(APTR memory)
 {
     if (memory != NULL)
     {
@@ -202,7 +202,7 @@ VOID HIDDNouveauFree(APTR memory)
     }
 }
 
-IPTR HIDDNouveauAllocSize(CONST_APTR memory)
+IPTR HIDDNVGfxAllocSize(CONST_APTR memory)
 {
     if (memory != NULL)
     {
@@ -213,7 +213,7 @@ IPTR HIDDNouveauAllocSize(CONST_APTR memory)
 }
 #endif
 
-ADD2INITLIB(Nouveau_Init, 0);
-ADD2EXPUNGELIB(Nouveau_Exit, 0);
+ADD2INITLIB(NVGfx_Init, 0);
+ADD2EXPUNGELIB(NVGfx_Exit, 0);
 
 ADD2LIBS((STRPTR)"pci.hidd", 0, static struct Library *, PciHiddBase);

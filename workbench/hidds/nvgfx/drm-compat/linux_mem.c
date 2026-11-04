@@ -33,21 +33,21 @@ void *kmalloc(size_t size, gfp_t flags)
     if (size == 0)
         size = 1;
 
-    p = HIDDNouveauAlloc(size);
+    p = HIDDNVGfxAlloc(size);
     return p;
 }
 
 void kfree(const void *p)
 {
     if (p && p != ZERO_SIZE_PTR)
-        HIDDNouveauFree((APTR)p);
+        HIDDNVGfxFree((APTR)p);
 }
 
 size_t ksize(const void *p)
 {
     if (!p || p == ZERO_SIZE_PTR)
         return 0;
-    return HIDDNouveauAllocSize(p);
+    return HIDDNVGfxAllocSize(p);
 }
 
 void *krealloc(const void *p, size_t new_size, gfp_t flags)

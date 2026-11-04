@@ -62,7 +62,7 @@ struct vp9_dec
     UWORD               slotw[NOUVEAU_DECODE_SLOTS], sloth[NOUVEAU_DECODE_SLOTS];
 };
 
-static BOOL vp9_zeroed(struct HIDDNouveauDecode *dec, ULONG flags, ULONG size, struct nouveau_bo **bo)
+static BOOL vp9_zeroed(struct HIDDNVGfxDecode *dec, ULONG flags, ULONG size, struct nouveau_bo **bo)
 {
     if (nouveau_bo_new(dec->carddata->dev, flags | NOUVEAU_BO_MAP, 4096, size, NULL, bo) ||
         nouveau_bo_map(*bo, NOUVEAU_BO_WR, dec->carddata->client))
@@ -74,7 +74,7 @@ static BOOL vp9_zeroed(struct HIDDNouveauDecode *dec, ULONG flags, ULONG size, s
     return TRUE;
 }
 
-static BOOL vp9_open(struct HIDDNouveauDecode *dec)
+static BOOL vp9_open(struct HIDDNVGfxDecode *dec)
 {
     struct vp9_dec *v = AllocMem(sizeof(*v), MEMF_PUBLIC | MEMF_CLEAR);
     ULONG w64 = (dec->width + 63) / 64, h64 = (dec->height + 63) / 64, f, maxlog;
@@ -107,7 +107,7 @@ static BOOL vp9_open(struct HIDDNouveauDecode *dec)
     return TRUE;
 }
 
-static VOID vp9_close(struct HIDDNouveauDecode *dec)
+static VOID vp9_close(struct HIDDNVGfxDecode *dec)
 {
     struct vp9_dec *v = dec->cur.codecstate;
 
@@ -123,7 +123,7 @@ static VOID vp9_close(struct HIDDNouveauDecode *dec)
     dec->cur.codecstate = NULL;
 }
 
-static BOOL vp9_begin(struct HIDDNouveauDecode *dec)
+static BOOL vp9_begin(struct HIDDNVGfxDecode *dec)
 {
     struct vp9_dec *v = dec->cur.codecstate;
 
@@ -133,7 +133,7 @@ static BOOL vp9_begin(struct HIDDNouveauDecode *dec)
     return TRUE;
 }
 
-static BOOL vp9_params(struct HIDDNouveauDecode *dec, ULONG type, APTR data, ULONG size, ULONG count)
+static BOOL vp9_params(struct HIDDNVGfxDecode *dec, ULONG type, APTR data, ULONG size, ULONG count)
 {
     struct vp9_dec *v = dec->cur.codecstate;
 
@@ -159,7 +159,7 @@ static BOOL vp9_params(struct HIDDNouveauDecode *dec, ULONG type, APTR data, ULO
 }
 
 /* the whole frame, headers included, as NVIDIA's driver passes it */
-static BOOL vp9_bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size)
+static BOOL vp9_bitstream(struct HIDDNVGfxDecode *dec, APTR data, ULONG size)
 {
     struct vp9_dec *v = dec->cur.codecstate;
     ULONG off = 0, len = size;
@@ -173,7 +173,7 @@ static BOOL vp9_bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size)
         off = v->sp.slice_data_offset;
         len = v->sp.slice_data_size;
     }
-    p = HIDDNouveauDecodeBitstreamReserve(dec, len);
+    p = HIDDNVGfxDecodeBitstreamReserve(dec, len);
     if (!p)
         return FALSE;
     memcpy(p, (UBYTE *)data + off, len);
@@ -183,7 +183,7 @@ static BOOL vp9_bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size)
     return TRUE;
 }
 
-static ULONG vp9_status(struct HIDDNouveauDecode *dec, ULONG *status)
+static ULONG vp9_status(struct HIDDNVGfxDecode *dec, ULONG *status)
 {
     nvdec_status_s *st = (nvdec_status_s *)status;
 
@@ -197,14 +197,14 @@ static ULONG vp9_status(struct HIDDNouveauDecode *dec, ULONG *status)
 }
 
 /* the previous frame's backward adaptation: its counters, once it is done */
-static BOOL vp9_settle_pending(struct HIDDNouveauDecode *dec, struct vp9_dec *v)
+static BOOL vp9_settle_pending(struct HIDDNVGfxDecode *dec, struct vp9_dec *v)
 {
     const uint32_t *counts;
 
     if (!v->pending)
         return TRUE;
     v->pending = FALSE;
-    if (!HIDDNouveauDecodeWait(dec, v->pendseq))
+    if (!HIDDNVGfxDecodeWait(dec, v->pendseq))
         return FALSE;
     counts = (const uint32_t *)((UBYTE *)v->counts->map + v->pendring * VP9_COUNTS_STRIDE);
     nouveau_staging_from_gpu((APTR)counts, VP9_NVDEC_COUNTS_SIZE);
@@ -225,21 +225,21 @@ static VOID vp9_tiles(const struct vp9_hdr *h, ULONG w64, ULONG h64, UWORD *t)
         }
 }
 
-static LONG vp9_refslot(struct HIDDNouveauDecode *dec, VASurfaceID surface)
+static LONG vp9_refslot(struct HIDDNVGfxDecode *dec, VASurfaceID surface)
 {
     OOP_Object *bm;
     ULONG buffer;
     LONG slot;
 
-    if ((surface == VA_INVALID_SURFACE) || !HIDDNouveauDecodeResolve(dec, surface, &bm, &buffer))
+    if ((surface == VA_INVALID_SURFACE) || !HIDDNVGfxDecodeResolve(dec, surface, &bm, &buffer))
         return -1;
-    slot = HIDDNouveauDecodeFindSlot(dec, bm, buffer);
+    slot = HIDDNVGfxDecodeFindSlot(dec, bm, buffer);
     if (slot >= 0)
         dec->slot[slot].lastuse = dec->frames;
     return slot;
 }
 
-static BOOL vp9_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFrame *f)
+static BOOL vp9_submit(struct HIDDNVGfxDecode *dec, struct HIDDNVGfxDecodeFrame *f)
 {
     struct vp9_dec *v = dec->cur.codecstate;
     const VADecPictureParameterBufferVP9 *pp;
@@ -291,7 +291,7 @@ static BOOL vp9_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
         refs[1] = all[pp->pic_fields.bits.golden_ref_frame];
         refs[2] = all[pp->pic_fields.bits.alt_ref_frame];
     }
-    slot = HIDDNouveauDecodeAllocSlot(dec, dec->cur.bm, dec->cur.buffer, avoid);
+    slot = HIDDNVGfxDecodeAllocSlot(dec, dec->cur.bm, dec->cur.buffer, avoid);
     if (slot < 0)
         return FALSE;
     dec->cur.slot = slot;
@@ -307,7 +307,7 @@ static BOOL vp9_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
     if (v->segused && (intra || h->error_res || (v->ps.have_last &&
         ((h->width != v->ps.last_width) || (h->height != v->ps.last_height)))))
     {
-        if ((f->seq > 1) && !HIDDNouveauDecodeWait(dec, f->seq - 1))
+        if ((f->seq > 1) && !HIDDNVGfxDecodeWait(dec, f->seq - 1))
             return FALSE;
         memset(v->segmap->map, 0, 2 * v->segsize);
         v->segused = FALSE;
@@ -402,7 +402,7 @@ static BOOL vp9_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
     memset((UBYTE *)v->counts->map + ring * VP9_COUNTS_STRIDE, 0, VP9_COUNTS_STRIDE);
     nouveau_staging_to_gpu((UBYTE *)v->counts->map + ring * VP9_COUNTS_STRIDE, VP9_COUNTS_STRIDE);
 
-    pad = HIDDNouveauDecodeBitstreamReserve(dec, 256);
+    pad = HIDDNVGfxDecodeBitstreamReserve(dec, 256);
     if (!pad)
         return FALSE;
     memset(pad, 0, 256);
@@ -434,7 +434,7 @@ static BOOL vp9_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
         extra[4] = v->counts;
         extra[5] = v->blkbuf;
         /* NVIDIA's control word (gptimer, error concealment, mbtimer, event trace, PROD_RUN) */
-        if (!HIDDNouveauDecodeEmit(dec, f, VP9_CURR_FRAME_SFC, map, NVDEC_APPLICATION_ID_VP9,
+        if (!HIDDNVGfxDecodeEmit(dec, f, VP9_CURR_FRAME_SFC, map, NVDEC_APPLICATION_ID_VP9,
                                    NVDEC_CONTROL_CODEC_VP9 | 0x52050, extra, v->blkbuf ? 6 : 5, m, nm))
             return FALSE;
     }
@@ -458,7 +458,7 @@ static BOOL vp9_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
     return TRUE;
 }
 
-const struct HIDDNouveauDecodeOps HIDDNouveauDecodeVP9Ops =
+const struct HIDDNVGfxDecodeOps HIDDNVGfxDecodeVP9Ops =
 {
     vp9_open, vp9_close, vp9_begin, vp9_params, vp9_bitstream, vp9_submit, vp9_status
 };

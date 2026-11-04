@@ -44,7 +44,7 @@ static struct SignalSemaphore decodelock;
 static BOOL decodelock_init;
 static ULONG decode_sessions;           /* numbers the sessions' object handles */
 
-VOID HIDDNouveauDecodeInit(VOID)
+VOID HIDDNVGfxDecodeInit(VOID)
 {
     if (!decodelock_init)
     {
@@ -55,7 +55,7 @@ VOID HIDDNouveauDecodeInit(VOID)
 
 static inline VOID decode_lock(VOID)
 {
-    HIDDNouveauDecodeInit();
+    HIDDNVGfxDecodeInit();
     ObtainSemaphore(&decodelock);
 }
 
@@ -83,7 +83,7 @@ static inline VOID nvdec_data(struct nouveau_pushbuf *push, ULONG data)
     *push->cur++ = data;
 }
 
-VOID HIDDNouveauDecodeMethod(struct HIDDNouveauDecode *dec, ULONG mthd, ULONG data)
+VOID HIDDNVGfxDecodeMethod(struct HIDDNVGfxDecode *dec, ULONG mthd, ULONG data)
 {
     nvdec_begin(dec->pushbuf, mthd, 1);
     nvdec_data(dec->pushbuf, data);
@@ -145,7 +145,7 @@ static VOID nvdec_channel_del(struct nouveau_object **chan, struct nouveau_pushb
         nouveau_object_del(chan);
 }
 
-static VOID nvdec_session_kill(struct HIDDNouveauDecode *dec, const char *why);
+static VOID nvdec_session_kill(struct HIDDNVGfxDecode *dec, const char *why);
 
 #define NVDEC_SET_APPLICATION_ID            0x0200
 #define NVDEC_SEMAPHORE_A                   0x0240
@@ -170,7 +170,7 @@ static VOID nvdec_session_kill(struct HIDDNouveauDecode *dec, const char *why);
 #define NVDEC_EXECUTE_NOTIFY_ON_END         (1 << 0)
 #define NVDEC_SEMAPHORE_D_RELEASE_FLUSH     (1 << 8)    /* RELEASE, one word, flush enabled */
 
-BOOL HIDDNouveauDecodeEmit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFrame *f, LONG slot,
+BOOL HIDDNVGfxDecodeEmit(struct HIDDNVGfxDecode *dec, struct HIDDNVGfxDecodeFrame *f, LONG slot,
     const LONG *map, ULONG appid, ULONG control, struct nouveau_bo **extra, ULONG nextra,
     const ULONG *mthds, ULONG nmthds)
 {
@@ -202,25 +202,25 @@ BOOL HIDDNouveauDecodeEmit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDeco
         nvlog("[Nouveau] NVDEC: no push buffer space for the frame\n");
         return FALSE;
     }
-    HIDDNouveauDecodeMethod(dec, NVDEC_SET_APPLICATION_ID, appid);
-    HIDDNouveauDecodeMethod(dec, NVDEC_SET_CONTROL_PARAMS, control);
-    HIDDNouveauDecodeMethod(dec, NVDEC_SET_DRV_PIC_SETUP_OFFSET, (ULONG)(f->picsetup->offset >> 8));
-    HIDDNouveauDecodeMethod(dec, NVDEC_SET_IN_BUF_BASE_OFFSET, (ULONG)(f->bitstream->offset >> 8));
-    HIDDNouveauDecodeMethod(dec, NVDEC_SET_PICTURE_INDEX, slot);
+    HIDDNVGfxDecodeMethod(dec, NVDEC_SET_APPLICATION_ID, appid);
+    HIDDNVGfxDecodeMethod(dec, NVDEC_SET_CONTROL_PARAMS, control);
+    HIDDNVGfxDecodeMethod(dec, NVDEC_SET_DRV_PIC_SETUP_OFFSET, (ULONG)(f->picsetup->offset >> 8));
+    HIDDNVGfxDecodeMethod(dec, NVDEC_SET_IN_BUF_BASE_OFFSET, (ULONG)(f->bitstream->offset >> 8));
+    HIDDNVGfxDecodeMethod(dec, NVDEC_SET_PICTURE_INDEX, slot);
     /* codecs that want NVIDIA's minimal set (dec->minimal) get no slice offsets / history / display / histogram */
     if (!dec->minimal)
-        HIDDNouveauDecodeMethod(dec, NVDEC_SET_SLICE_OFFSETS_BUF_OFFSET,
+        HIDDNVGfxDecodeMethod(dec, NVDEC_SET_SLICE_OFFSETS_BUF_OFFSET,
             (ULONG)((f->picsetup->offset + NOUVEAU_DECODE_SLICEOFFS_OFFSET) >> 8));
     if (!dec->minimal || dec->coloc)
-        HIDDNouveauDecodeMethod(dec, NVDEC_SET_COLOC_DATA_OFFSET, dec->coloc ? (ULONG)(dec->coloc->offset >> 8) : 0);
+        HIDDNVGfxDecodeMethod(dec, NVDEC_SET_COLOC_DATA_OFFSET, dec->coloc ? (ULONG)(dec->coloc->offset >> 8) : 0);
     if (!dec->minimal || dec->history)
-        HIDDNouveauDecodeMethod(dec, NVDEC_SET_HISTORY_OFFSET, dec->history ? (ULONG)(dec->history->offset >> 8) : 0);
+        HIDDNVGfxDecodeMethod(dec, NVDEC_SET_HISTORY_OFFSET, dec->history ? (ULONG)(dec->history->offset >> 8) : 0);
     if (!dec->minimal)
     {
-        HIDDNouveauDecodeMethod(dec, NVDEC_SET_DISPLAY_BUF_SIZE, 0);
-        HIDDNouveauDecodeMethod(dec, NVDEC_SET_HISTOGRAM_OFFSET, 0);
+        HIDDNVGfxDecodeMethod(dec, NVDEC_SET_DISPLAY_BUF_SIZE, 0);
+        HIDDNVGfxDecodeMethod(dec, NVDEC_SET_HISTOGRAM_OFFSET, 0);
     }
-    HIDDNouveauDecodeMethod(dec, NVDEC_SET_NVDEC_STATUS_OFFSET,
+    HIDDNVGfxDecodeMethod(dec, NVDEC_SET_NVDEC_STATUS_OFFSET,
         (ULONG)((f->picsetup->offset + NOUVEAU_DECODE_STATUS_OFFSET) >> 8));
     /* every index gets a valid picture: unused ones point at the current one */
     {
@@ -234,15 +234,15 @@ BOOL HIDDNouveauDecodeEmit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDeco
             pics[i] = ((s >= 0) && ((ULONG)s < dec->nslots)) ? dec->slot[s].bo : dec->slot[cur].bo;
         }
         for (i = 0; i < NVDEC_PICTURE_SLOTS; i++)
-            HIDDNouveauDecodeMethod(dec, NVDEC_SET_PICTURE_LUMA_OFFSET0 + 4 * i, (ULONG)(pics[i]->offset >> 8));
+            HIDDNVGfxDecodeMethod(dec, NVDEC_SET_PICTURE_LUMA_OFFSET0 + 4 * i, (ULONG)(pics[i]->offset >> 8));
         for (i = 0; i < NVDEC_PICTURE_SLOTS; i++)
-            HIDDNouveauDecodeMethod(dec, NVDEC_SET_PICTURE_CHROMA_OFFSET0 + 4 * i,
+            HIDDNVGfxDecodeMethod(dec, NVDEC_SET_PICTURE_CHROMA_OFFSET0 + 4 * i,
                                     (ULONG)((pics[i]->offset + dec->chromaoff) >> 8));
     }
     if (!dec->minimal)
-        HIDDNouveauDecodeMethod(dec, NVDEC_SET_PIC_SCRATCH_BUF_OFFSET, 0);
+        HIDDNVGfxDecodeMethod(dec, NVDEC_SET_PIC_SCRATCH_BUF_OFFSET, 0);
     for (i = 0; i < nmthds; i++)
-        HIDDNouveauDecodeMethod(dec, mthds[2 * i], mthds[2 * i + 1]);
+        HIDDNVGfxDecodeMethod(dec, mthds[2 * i], mthds[2 * i + 1]);
     /*
      * Completion: the EXECUTE notify writes word 0 when the decode ends, but
      * the picture's last writes may still be in the engine's write buffer
@@ -250,14 +250,14 @@ BOOL HIDDNouveauDecodeEmit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDeco
      * picture is in memory; that is the word the session waits for (and the
      * host fence on the pool picture, HIDDNouveauDecodeSettle).
      */
-    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_A, (ULONG)(dec->sem->offset >> 32));
-    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_B, (ULONG)dec->sem->offset);
-    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_C, f->seq);
-    HIDDNouveauDecodeMethod(dec, NVDEC_EXECUTE, NVDEC_EXECUTE_NOTIFY_ON_END);
-    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_A, (ULONG)((dec->sem->offset + 4) >> 32));
-    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_B, (ULONG)(dec->sem->offset + 4));
-    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_C, f->seq);
-    HIDDNouveauDecodeMethod(dec, NVDEC_SEMAPHORE_D, NVDEC_SEMAPHORE_D_RELEASE_FLUSH);
+    HIDDNVGfxDecodeMethod(dec, NVDEC_SEMAPHORE_A, (ULONG)(dec->sem->offset >> 32));
+    HIDDNVGfxDecodeMethod(dec, NVDEC_SEMAPHORE_B, (ULONG)dec->sem->offset);
+    HIDDNVGfxDecodeMethod(dec, NVDEC_SEMAPHORE_C, f->seq);
+    HIDDNVGfxDecodeMethod(dec, NVDEC_EXECUTE, NVDEC_EXECUTE_NOTIFY_ON_END);
+    HIDDNVGfxDecodeMethod(dec, NVDEC_SEMAPHORE_A, (ULONG)((dec->sem->offset + 4) >> 32));
+    HIDDNVGfxDecodeMethod(dec, NVDEC_SEMAPHORE_B, (ULONG)(dec->sem->offset + 4));
+    HIDDNVGfxDecodeMethod(dec, NVDEC_SEMAPHORE_C, f->seq);
+    HIDDNVGfxDecodeMethod(dec, NVDEC_SEMAPHORE_D, NVDEC_SEMAPHORE_D_RELEASE_FLUSH);
     if (nouveau_pushbuf_kick(push))
     {
         nvdec_session_kill(dec, "the channel refused the frame");
@@ -277,7 +277,7 @@ static ULONG nvdec_pause(ULONG *step);
  * copy engine then resubmitted the dead channel's work from the compositor
  * (rejected, then a libdrm assertion halted the system). Decode lock held.
  */
-static VOID nvdec_session_kill(struct HIDDNouveauDecode *dec, const char *why)
+static VOID nvdec_session_kill(struct HIDDNVGfxDecode *dec, const char *why)
 {
     if (!dec->dead)
         nvlog("[Nouveau] NVDEC: session %p: %s; session failed\n", dec, why);
@@ -321,7 +321,7 @@ static BOOL nvdec_probe(struct CardData *carddata)
 struct nvdec_codec
 {
     LONG    profile;        /* VAProfile */
-    const struct HIDDNouveauDecodeOps *ops;
+    const struct HIDDNVGfxDecodeOps *ops;
     ULONG   maxw, maxh;
     ULONG   maxrefs;
     ULONG   fmts;           /* vHidd_VideoFmt_* bits the decoder writes for the profile */
@@ -341,33 +341,33 @@ struct nvdec_codec
 
 static const struct nvdec_codec nvdec_codecs[] =
 {
-    { VAProfileH264ConstrainedBaseline, &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT, FALSE },
-    { VAProfileH264Main,                &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT, FALSE },
-    { VAProfileH264High,                &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT, FALSE },
+    { VAProfileH264ConstrainedBaseline, &HIDDNVGfxDecodeH264Ops, 4096, 4096, 16, FMT_8BIT, FALSE },
+    { VAProfileH264Main,                &HIDDNVGfxDecodeH264Ops, 4096, 4096, 16, FMT_8BIT, FALSE },
+    { VAProfileH264High,                &HIDDNVGfxDecodeH264Ops, 4096, 4096, 16, FMT_8BIT, FALSE },
     /* 10-bit H.264: Blackwell's H.264 application (nvgfx_decode_h264.c) */
-    { VAProfileH264High10,              &HIDDNouveauDecodeH264Ops, 4096, 4096, 16, FMT_8BIT | FMT_10BIT, FALSE,
+    { VAProfileH264High10,              &HIDDNVGfxDecodeH264Ops, 4096, 4096, 16, FMT_8BIT | FMT_10BIT, FALSE,
       NVDEC_CLASS_BLACKWELL },
-    { VAProfileMPEG2Simple,             &HIDDNouveauDecodeMPEG2Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
-    { VAProfileMPEG2Main,               &HIDDNouveauDecodeMPEG2Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
-    { VAProfileVC1Simple,               &HIDDNouveauDecodeVC1Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
-    { VAProfileVC1Main,                 &HIDDNouveauDecodeVC1Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
-    { VAProfileVC1Advanced,             &HIDDNouveauDecodeVC1Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
-    { VAProfileVP8Version0_3,           &HIDDNouveauDecodeVP8Ops, 4096, 4096, 4, FMT_8BIT, FALSE },
+    { VAProfileMPEG2Simple,             &HIDDNVGfxDecodeMPEG2Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
+    { VAProfileMPEG2Main,               &HIDDNVGfxDecodeMPEG2Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
+    { VAProfileVC1Simple,               &HIDDNVGfxDecodeVC1Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
+    { VAProfileVC1Main,                 &HIDDNVGfxDecodeVC1Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
+    { VAProfileVC1Advanced,             &HIDDNVGfxDecodeVC1Ops, 4096, 4096, 3, FMT_8BIT, FALSE },
+    { VAProfileVP8Version0_3,           &HIDDNVGfxDecodeVP8Ops, 4096, 4096, 4, FMT_8BIT, FALSE },
     /* VP9: 8 reference slots */
-    { VAProfileVP9Profile0,             &HIDDNouveauDecodeVP9Ops, 8192, 8192, 8, FMT_8BIT, FALSE },
-    { VAProfileVP9Profile2,             &HIDDNouveauDecodeVP9Ops, 8192, 8192, 8, FMT_10BIT | FMT_12BIT, FALSE },
+    { VAProfileVP9Profile0,             &HIDDNVGfxDecodeVP9Ops, 8192, 8192, 8, FMT_8BIT, FALSE },
+    { VAProfileVP9Profile2,             &HIDDNVGfxDecodeVP9Ops, 8192, 8192, 8, FMT_10BIT | FMT_12BIT, FALSE },
     /* AV1 profile 0: 8 or 10-bit; 8 reference slots, and with film grain a second picture per frame */
-    { VAProfileAV1Profile0,             &HIDDNouveauDecodeAV1Ops, 8192, 8192, 15, FMT_8BIT | FMT_10BIT, FALSE },
+    { VAProfileAV1Profile0,             &HIDDNVGfxDecodeAV1Ops, 8192, 8192, 15, FMT_8BIT | FMT_10BIT, FALSE },
     /* HEVC: 16 picture slots at most (the long-term mask and POC differences are 16 wide) */
-    { VAProfileHEVCMain,                &HIDDNouveauDecodeHEVCOps, 8192, 8192, 15, FMT_8BIT, FALSE },
-    { VAProfileHEVCMain10,              &HIDDNouveauDecodeHEVCOps, 8192, 8192, 15, FMT_10BIT, FALSE },
+    { VAProfileHEVCMain,                &HIDDNVGfxDecodeHEVCOps, 8192, 8192, 15, FMT_8BIT, FALSE },
+    { VAProfileHEVCMain10,              &HIDDNVGfxDecodeHEVCOps, 8192, 8192, 15, FMT_10BIT, FALSE },
     /* a range-extension profile also carries lower bit depths: FFmpeg picks the surface format by the stream's */
-    { VAProfileHEVCMain12,              &HIDDNouveauDecodeHEVCOps, 8192, 8192, 15, FMT_8BIT | FMT_10BIT | FMT_12BIT, FALSE },
-    { VAProfileHEVCMain422_10,          &HIDDNouveauDecodeHEVCOps, 8192, 8192, 15, FMT_422_8 | FMT_422_10, FALSE },
-    { VAProfileHEVCMain422_12,          &HIDDNouveauDecodeHEVCOps, 8192, 8192, 15, FMT_422_8 | FMT_422_10 | FMT_422_12, FALSE },
-    { VAProfileHEVCMain444,             &HIDDNouveauDecodeHEVCOps, 8192, 8192, 15, FMT_444_8, FALSE },
-    { VAProfileHEVCMain444_10,          &HIDDNouveauDecodeHEVCOps, 8192, 8192, 15, FMT_444_8 | FMT_444_10, FALSE },
-    { VAProfileHEVCMain444_12,          &HIDDNouveauDecodeHEVCOps, 8192, 8192, 15, FMT_444_8 | FMT_444_10 | FMT_444_12, FALSE },
+    { VAProfileHEVCMain12,              &HIDDNVGfxDecodeHEVCOps, 8192, 8192, 15, FMT_8BIT | FMT_10BIT | FMT_12BIT, FALSE },
+    { VAProfileHEVCMain422_10,          &HIDDNVGfxDecodeHEVCOps, 8192, 8192, 15, FMT_422_8 | FMT_422_10, FALSE },
+    { VAProfileHEVCMain422_12,          &HIDDNVGfxDecodeHEVCOps, 8192, 8192, 15, FMT_422_8 | FMT_422_10 | FMT_422_12, FALSE },
+    { VAProfileHEVCMain444,             &HIDDNVGfxDecodeHEVCOps, 8192, 8192, 15, FMT_444_8, FALSE },
+    { VAProfileHEVCMain444_10,          &HIDDNVGfxDecodeHEVCOps, 8192, 8192, 15, FMT_444_8 | FMT_444_10, FALSE },
+    { VAProfileHEVCMain444_12,          &HIDDNVGfxDecodeHEVCOps, 8192, 8192, 15, FMT_444_8 | FMT_444_10 | FMT_444_12, FALSE },
     { VAProfileNone, NULL, 0, 0, 0, 0, FALSE }
 };
 
@@ -393,7 +393,7 @@ static const struct nvdec_codec *nvdec_codec_for(LONG profile)
     return NULL;
 }
 
-ULONG HIDDNouveauDecodeQuery(OOP_Class *cl, OOP_Object *display, LONG profile, ULONG width, ULONG height,
+ULONG HIDDNVGfxDecodeQuery(OOP_Class *cl, OOP_Object *display, LONG profile, ULONG width, ULONG height,
     struct HIDD_DecodeCaps *caps)
 {
     struct CardData *carddata = &(SD(cl)->carddata);
@@ -453,7 +453,7 @@ static BOOL nvdec_bo_new(struct CardData *carddata, ULONG flags, ULONG align, UL
     return TRUE;
 }
 
-static BOOL nvdec_frame_alloc(struct CardData *carddata, struct HIDDNouveauDecodeFrame *f, ULONG bitstreamsize)
+static BOOL nvdec_frame_alloc(struct CardData *carddata, struct HIDDNVGfxDecodeFrame *f, ULONG bitstreamsize)
 {
     if (!nvdec_bo_new(carddata, NOUVEAU_BO_GART | NOUVEAU_BO_MAP, 4096, bitstreamsize, NULL, &f->bitstream))
         return FALSE;
@@ -465,7 +465,7 @@ static BOOL nvdec_frame_alloc(struct CardData *carddata, struct HIDDNouveauDecod
     return TRUE;
 }
 
-static VOID nvdec_frame_free(struct HIDDNouveauDecodeFrame *f)
+static VOID nvdec_frame_free(struct HIDDNVGfxDecodeFrame *f)
 {
     if (f->bitstream)
         nouveau_bo_ref(NULL, &f->bitstream);
@@ -475,9 +475,9 @@ static VOID nvdec_frame_free(struct HIDDNouveauDecodeFrame *f)
 }
 
 /* Grow a frame's bitstream buffer; the frame is idle (BeginFrame waited for it) */
-UBYTE *HIDDNouveauDecodeBitstreamReserve(struct HIDDNouveauDecode *dec, ULONG bytes)
+UBYTE *HIDDNVGfxDecodeBitstreamReserve(struct HIDDNVGfxDecode *dec, ULONG bytes)
 {
-    struct HIDDNouveauDecodeFrame *f = &dec->ring[dec->ringpos];
+    struct HIDDNVGfxDecodeFrame *f = &dec->ring[dec->ringpos];
     ULONG need = dec->cur.bitstreamlen + bytes;
     UBYTE *p;
 
@@ -507,7 +507,7 @@ UBYTE *HIDDNouveauDecodeBitstreamReserve(struct HIDDNouveauDecode *dec, ULONG by
 #define NVDEC_POOL_TILE_MODE    0x010
 #define NVDEC_POOL_BLOCK_ROWS   16
 
-static BOOL nvdec_pool_alloc(struct HIDDNouveauDecode *dec, ULONG nslots)
+static BOOL nvdec_pool_alloc(struct HIDDNVGfxDecode *dec, ULONG nslots)
 {
     union nouveau_bo_config cfg;
     ULONG i;
@@ -549,7 +549,7 @@ static BOOL nvdec_pool_alloc(struct HIDDNouveauDecode *dec, ULONG nslots)
     return TRUE;
 }
 
-LONG HIDDNouveauDecodeFindSlot(struct HIDDNouveauDecode *dec, OOP_Object *bm, ULONG buffer)
+LONG HIDDNVGfxDecodeFindSlot(struct HIDDNVGfxDecode *dec, OOP_Object *bm, ULONG buffer)
 {
     ULONG i;
 
@@ -565,11 +565,11 @@ LONG HIDDNouveauDecodeFindSlot(struct HIDDNouveauDecode *dec, OOP_Object *bm, UL
  * frame's references). The evicted picture is copied out first if its
  * target still waits for it.
  */
-LONG HIDDNouveauDecodeAllocSlot(struct HIDDNouveauDecode *dec, OOP_Object *bm, ULONG buffer, ULONG avoid)
+LONG HIDDNVGfxDecodeAllocSlot(struct HIDDNVGfxDecode *dec, OOP_Object *bm, ULONG buffer, ULONG avoid)
 {
     LONG best = -1, i;
 
-    i = HIDDNouveauDecodeFindSlot(dec, bm, buffer);
+    i = HIDDNVGfxDecodeFindSlot(dec, bm, buffer);
     if (i >= 0)
         return i;
     for (i = 0; i < (LONG)dec->nslots; i++)
@@ -588,11 +588,11 @@ LONG HIDDNouveauDecodeAllocSlot(struct HIDDNouveauDecode *dec, OOP_Object *bm, U
         return -1;
     if (dec->slot[best].valid && dec->slot[best].bm)
     {
-        struct HIDDNouveauBitMapData *obmdata = OOP_INST_DATA(dec->bmclass, dec->slot[best].bm);
+        struct HIDDNVGfxBitMapData *obmdata = OOP_INST_DATA(dec->bmclass, dec->slot[best].bm);
         ULONG ob = dec->slot[best].buffer;
 
         if ((ob < obmdata->nbufs) && (obmdata->buf[ob].dec == dec) && (obmdata->buf[ob].decslot == best))
-            HIDDNouveauDecodeSettle(dec->carddata, obmdata, ob, TRUE, 0xffffffffUL);
+            HIDDNVGfxDecodeSettle(dec->carddata, obmdata, ob, TRUE, 0xffffffffUL);
     }
     dec->slot[best].valid = FALSE;
     dec->slot[best].bm = bm;
@@ -600,7 +600,7 @@ LONG HIDDNouveauDecodeAllocSlot(struct HIDDNouveauDecode *dec, OOP_Object *bm, U
     return best;
 }
 
-BOOL HIDDNouveauDecodeResolve(struct HIDDNouveauDecode *dec, ULONG surface, OOP_Object **bm, ULONG *buffer)
+BOOL HIDDNVGfxDecodeResolve(struct HIDDNVGfxDecode *dec, ULONG surface, OOP_Object **bm, ULONG *buffer)
 {
     struct HIDD_DecodeSurfaceMsg msg;
 
@@ -621,7 +621,7 @@ BOOL HIDDNouveauDecodeResolve(struct HIDDNouveauDecode *dec, ULONG surface, OOP_
 /*
  * Session open / close
  */
-BOOL HIDDNouveauDecodeOpen(OOP_Class *cl, OOP_Object *display, struct HIDDNouveauDecode *dec, LONG profile,
+BOOL HIDDNVGfxDecodeOpen(OOP_Class *cl, OOP_Object *display, struct HIDDNVGfxDecode *dec, LONG profile,
     ULONG width, ULONG height, struct Hook *resolve)
 {
     struct CardData *carddata = &(SD(cl)->carddata);
@@ -670,19 +670,19 @@ BOOL HIDDNouveauDecodeOpen(OOP_Class *cl, OOP_Object *display, struct HIDDNouvea
     return TRUE;
 
 fail:
-    HIDDNouveauDecodeClose(dec);
+    HIDDNVGfxDecodeClose(dec);
     decode_unlock();
     return FALSE;
 }
 
 /* Wait for everything the session submitted (its semaphore fence) */
-static VOID nvdec_session_idle(struct HIDDNouveauDecode *dec)
+static VOID nvdec_session_idle(struct HIDDNVGfxDecode *dec)
 {
     if (dec->sem && dec->frames)
         nouveau_bo_wait(dec->sem, NOUVEAU_BO_RDWR, dec->carddata->client);
 }
 
-VOID HIDDNouveauDecodeClose(struct HIDDNouveauDecode *dec)
+VOID HIDDNVGfxDecodeClose(struct HIDDNVGfxDecode *dec)
 {
     ULONG i;
 
@@ -707,12 +707,12 @@ VOID HIDDNouveauDecodeClose(struct HIDDNouveauDecode *dec)
     {
         if (dec->slot[i].valid && dec->slot[i].bm)
         {
-            struct HIDDNouveauBitMapData *bmdata = OOP_INST_DATA(dec->bmclass, dec->slot[i].bm);
+            struct HIDDNVGfxBitMapData *bmdata = OOP_INST_DATA(dec->bmclass, dec->slot[i].bm);
             ULONG b = dec->slot[i].buffer;
 
             if ((b < bmdata->nbufs) && (bmdata->buf[b].dec == dec))
             {
-                HIDDNouveauDecodeSettle(dec->carddata, bmdata, b, TRUE, 0xffffffffUL);
+                HIDDNVGfxDecodeSettle(dec->carddata, bmdata, b, TRUE, 0xffffffffUL);
                 bmdata->buf[b].dec = NULL;
                 bmdata->buf[b].decstate = NOUVEAU_DECSTATE_NONE;
             }
@@ -744,7 +744,7 @@ VOID HIDDNouveauDecodeClose(struct HIDDNouveauDecode *dec)
 /*
  * Decode targets (bitmap side)
  */
-BOOL HIDDNouveauDecodeTargetInit(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata)
+BOOL HIDDNVGfxDecodeTargetInit(struct CardData *carddata, struct HIDDNVGfxBitMapData *bmdata)
 {
     ULONG i;
 
@@ -760,20 +760,20 @@ BOOL HIDDNouveauDecodeTargetInit(struct CardData *carddata, struct HIDDNouveauBi
     return TRUE;
 }
 
-VOID HIDDNouveauDecodeTargetFree(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata)
+VOID HIDDNVGfxDecodeTargetFree(struct CardData *carddata, struct HIDDNVGfxBitMapData *bmdata)
 {
     ULONG i, s;
 
     decode_lock();
     for (i = 0; i < bmdata->nbufs; i++)
     {
-        struct HIDDNouveauDecode *dec = bmdata->buf[i].dec;
+        struct HIDDNVGfxDecode *dec = bmdata->buf[i].dec;
 
         if (bmdata->buf[i].shadow)
             nouveau_bo_ref(NULL, &bmdata->buf[i].shadow);
         if (!dec)
             continue;
-        HIDDNouveauDecodeSettle(carddata, bmdata, i, TRUE, 0xffffffffUL);
+        HIDDNVGfxDecodeSettle(carddata, bmdata, i, TRUE, 0xffffffffUL);
         /* the session's pool must not point at a bitmap that is going away */
         for (s = 0; s < dec->nslots; s++)
         {
@@ -792,7 +792,7 @@ VOID HIDDNouveauDecodeTargetFree(struct CardData *carddata, struct HIDDNouveauBi
     decode_unlock();
 }
 
-static inline BOOL nvdec_seq_done(struct HIDDNouveauDecode *dec, ULONG seq)
+static inline BOOL nvdec_seq_done(struct HIDDNVGfxDecode *dec, ULONG seq)
 {
     volatile ULONG *sem = (volatile ULONG *)dec->sem->map;
     ULONG v;
@@ -804,7 +804,7 @@ static inline BOOL nvdec_seq_done(struct HIDDNouveauDecode *dec, ULONG seq)
 }
 
 /* The decoder's status word for a frame, 0 = decoded without error */
-static ULONG nvdec_frame_status(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFrame *f)
+static ULONG nvdec_frame_status(struct HIDDNVGfxDecode *dec, struct HIDDNVGfxDecodeFrame *f)
 {
     ULONG *status = (ULONG *)((UBYTE *)f->picsetup->map + NOUVEAU_DECODE_STATUS_OFFSET);
 
@@ -813,7 +813,7 @@ static ULONG nvdec_frame_status(struct HIDDNouveauDecode *dec, struct HIDDNouvea
     return dec->ops->status(dec, status);
 }
 
-static ULONG nvdec_frame_error(struct HIDDNouveauDecode *dec, ULONG seq)
+static ULONG nvdec_frame_error(struct HIDDNVGfxDecode *dec, ULONG seq)
 {
     ULONG i;
 
@@ -828,13 +828,13 @@ static ULONG nvdec_frame_error(struct HIDDNouveauDecode *dec, ULONG seq)
  * it now and give the verdict to the target buffer, which may still be
  * waiting to be settled.
  */
-static VOID nvdec_frame_retire(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFrame *f)
+static VOID nvdec_frame_retire(struct HIDDNVGfxDecode *dec, struct HIDDNVGfxDecodeFrame *f)
 {
     if (!f->seq || f->checked || !f->bm)
         return;
     if (nvdec_frame_status(dec, f) && (OOP_OCLASS(f->bm) == dec->bmclass))
     {
-        struct HIDDNouveauBitMapData *bmdata = OOP_INST_DATA(dec->bmclass, f->bm);
+        struct HIDDNVGfxBitMapData *bmdata = OOP_INST_DATA(dec->bmclass, f->bm);
 
         if ((f->buffer < bmdata->nbufs) && (bmdata->buf[f->buffer].dec == dec) &&
             (bmdata->buf[f->buffer].decseq == f->seq) &&
@@ -912,7 +912,7 @@ static BOOL nvdec_ce_detile(struct CardData *carddata, struct nouveau_bo *src, U
 }
 
 /* Copy engine: pool slot (block-linear) -> target buffer (pitch-linear NV12) */
-static BOOL nvdec_copy_out(struct HIDDNouveauDecode *dec, struct HIDDNouveauBitMapData *bmdata, ULONG buffer, LONG slot)
+static BOOL nvdec_copy_out(struct HIDDNVGfxDecode *dec, struct HIDDNVGfxBitMapData *bmdata, ULONG buffer, LONG slot)
 {
     struct CardData *carddata = dec->carddata;
     struct nouveau_bo *src = dec->slot[slot].bo;
@@ -1003,7 +1003,7 @@ static BOOL nvdec_ce_linear(struct CardData *carddata, struct nouveau_bo *src, U
     return TRUE;
 }
 
-UBYTE *HIDDNouveauDecodeLockCPU(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata, ULONG buffer)
+UBYTE *HIDDNVGfxDecodeLockCPU(struct CardData *carddata, struct HIDDNVGfxBitMapData *bmdata, ULONG buffer)
 {
     struct nouveau_bo *bo = bmdata->buf[buffer].bo;
     struct nouveau_bo **shadow = &bmdata->buf[buffer].shadow;
@@ -1024,7 +1024,7 @@ UBYTE *HIDDNouveauDecodeLockCPU(struct CardData *carddata, struct HIDDNouveauBit
     return (UBYTE *)(*shadow)->map;
 }
 
-VOID HIDDNouveauDecodeUnlockCPU(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata, ULONG buffer,
+VOID HIDDNVGfxDecodeUnlockCPU(struct CardData *carddata, struct HIDDNVGfxBitMapData *bmdata, ULONG buffer,
     struct Rectangle *dirty)
 {
     struct nouveau_bo *bo = bmdata->buf[buffer].bo, *shadow = bmdata->buf[buffer].shadow;
@@ -1075,14 +1075,14 @@ static ULONG nvdec_pause(ULONG *step)
  * reference (libdrm only waits when the buffer's last listed use was a
  * write), and the copy-out then read rows the engine was still writing.
  */
-static BOOL nvdec_fence_done(struct HIDDNouveauDecode *dec)
+static BOOL nvdec_fence_done(struct HIDDNVGfxDecode *dec)
 {
     return !nouveau_bo_wait(dec->sem, NOUVEAU_BO_RDWR | NOUVEAU_BO_NOBLOCK, dec->carddata->client);
 }
 
 #define NVDEC_STALL_MS      3000    /* a frame takes under a millisecond: no answer by then = stopped */
 
-static BOOL nvdec_wait_unlocked(struct HIDDNouveauDecode *dec, ULONG seq, struct nouveau_bo *slotbo,
+static BOOL nvdec_wait_unlocked(struct HIDDNVGfxDecode *dec, ULONG seq, struct nouveau_bo *slotbo,
     ULONG timeoutms)
 {
     ULONG waited = 0, limit = (timeoutms == 0xffffffffUL) ? NVDEC_STALL_MS : timeoutms;
@@ -1114,7 +1114,7 @@ static BOOL nvdec_wait_unlocked(struct HIDDNouveauDecode *dec, ULONG seq, struct
 }
 
 /* For a codec that needs a finished frame's results (VP9's symbol counters); called with the lock held */
-BOOL HIDDNouveauDecodeWait(struct HIDDNouveauDecode *dec, ULONG seq)
+BOOL HIDDNVGfxDecodeWait(struct HIDDNVGfxDecode *dec, ULONG seq)
 {
     if (nvdec_seq_done(dec, seq))
         return TRUE;
@@ -1124,10 +1124,10 @@ BOOL HIDDNouveauDecodeWait(struct HIDDNouveauDecode *dec, ULONG seq)
     return FALSE;
 }
 
-ULONG HIDDNouveauDecodeSettle(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata, ULONG buffer,
+ULONG HIDDNVGfxDecodeSettle(struct CardData *carddata, struct HIDDNVGfxBitMapData *bmdata, ULONG buffer,
     BOOL wait, ULONG timeoutms)
 {
-    struct HIDDNouveauDecode *dec;
+    struct HIDDNVGfxDecode *dec;
     ULONG result = vHidd_DecodeStatus_Ready;
 
     if (buffer >= bmdata->nbufs)
@@ -1230,8 +1230,8 @@ retry:
 /*
  * The decode interface vectors (gfx.hidd calls them with iface = dec)
  */
-static BOOL nvdec_target_ok(struct HIDDNouveauDecode *dec, OOP_Object *bm, ULONG buffer,
-    struct HIDDNouveauBitMapData **bmdata)
+static BOOL nvdec_target_ok(struct HIDDNVGfxDecode *dec, OOP_Object *bm, ULONG buffer,
+    struct HIDDNVGfxBitMapData **bmdata)
 {
     if (!bm || (OOP_OCLASS(bm) != dec->bmclass))
         return FALSE;
@@ -1245,9 +1245,9 @@ static BOOL nvdec_target_ok(struct HIDDNouveauDecode *dec, OOP_Object *bm, ULONG
 
 static BOOL nvdec_BeginFrame(APTR obj, OOP_Object *bitmap, ULONG buffer)
 {
-    struct HIDDNouveauDecode *dec = obj;
-    struct HIDDNouveauBitMapData *bmdata;
-    struct HIDDNouveauDecodeFrame *f;
+    struct HIDDNVGfxDecode *dec = obj;
+    struct HIDDNVGfxBitMapData *bmdata;
+    struct HIDDNVGfxDecodeFrame *f;
     ULONG bps, chalf, cwide;
     BOOL ok;
 
@@ -1278,7 +1278,7 @@ static BOOL nvdec_BeginFrame(APTR obj, OOP_Object *bitmap, ULONG buffer)
     }
     /* a buffer decoded into again: whatever it still waits for is finished first */
     if (bmdata->buf[buffer].dec)
-        HIDDNouveauDecodeSettle(dec->carddata, bmdata, buffer, TRUE, 0xffffffffUL);
+        HIDDNVGfxDecodeSettle(dec->carddata, bmdata, buffer, TRUE, 0xffffffffUL);
     /* the ring entry must be idle: its last frame completed and was judged */
     f = &dec->ring[dec->ringpos];
     if (f->seq && !nvdec_seq_done(dec, f->seq))
@@ -1316,7 +1316,7 @@ static BOOL nvdec_BeginFrame(APTR obj, OOP_Object *bitmap, ULONG buffer)
 
 static BOOL nvdec_SubmitParams(APTR obj, ULONG type, APTR data, ULONG size, ULONG count)
 {
-    struct HIDDNouveauDecode *dec = obj;
+    struct HIDDNVGfxDecode *dec = obj;
     BOOL ok = FALSE;
 
     if (!dec->carddata || !dec->cur.open || dec->cur.failed || !data || !size || !count)
@@ -1331,7 +1331,7 @@ static BOOL nvdec_SubmitParams(APTR obj, ULONG type, APTR data, ULONG size, ULON
 
 static BOOL nvdec_SubmitBitstream(APTR obj, APTR data, ULONG size)
 {
-    struct HIDDNouveauDecode *dec = obj;
+    struct HIDDNVGfxDecode *dec = obj;
     BOOL ok = FALSE;
 
     if (!dec->carddata || !dec->cur.open || dec->cur.failed || !data || !size)
@@ -1346,9 +1346,9 @@ static BOOL nvdec_SubmitBitstream(APTR obj, APTR data, ULONG size)
 
 static BOOL nvdec_EndFrame(APTR obj)
 {
-    struct HIDDNouveauDecode *dec = obj;
-    struct HIDDNouveauBitMapData *bmdata;
-    struct HIDDNouveauDecodeFrame *f;
+    struct HIDDNVGfxDecode *dec = obj;
+    struct HIDDNVGfxBitMapData *bmdata;
+    struct HIDDNVGfxDecodeFrame *f;
     BOOL ok = FALSE;
 
     if (!dec->carddata || !dec->cur.open)
@@ -1399,27 +1399,27 @@ static BOOL nvdec_EndFrame(APTR obj)
 
 static ULONG nvdec_Sync(APTR obj, OOP_Object *bitmap, ULONG buffer, ULONG timeoutms)
 {
-    struct HIDDNouveauDecode *dec = obj;
-    struct HIDDNouveauBitMapData *bmdata;
+    struct HIDDNVGfxDecode *dec = obj;
+    struct HIDDNVGfxBitMapData *bmdata;
 
     if (!dec->carddata || !bitmap || (OOP_OCLASS(bitmap) != dec->bmclass))
         return vHidd_DecodeStatus_Error;
     bmdata = OOP_INST_DATA(dec->bmclass, bitmap);
-    return HIDDNouveauDecodeSettle(dec->carddata, bmdata, buffer, TRUE, timeoutms);
+    return HIDDNVGfxDecodeSettle(dec->carddata, bmdata, buffer, TRUE, timeoutms);
 }
 
 static ULONG nvdec_Status(APTR obj, OOP_Object *bitmap, ULONG buffer)
 {
-    struct HIDDNouveauDecode *dec = obj;
-    struct HIDDNouveauBitMapData *bmdata;
+    struct HIDDNVGfxDecode *dec = obj;
+    struct HIDDNVGfxBitMapData *bmdata;
 
     if (!dec->carddata || !bitmap || (OOP_OCLASS(bitmap) != dec->bmclass))
         return vHidd_DecodeStatus_Error;
     bmdata = OOP_INST_DATA(dec->bmclass, bitmap);
-    return HIDDNouveauDecodeSettle(dec->carddata, bmdata, buffer, FALSE, 0);
+    return HIDDNVGfxDecodeSettle(dec->carddata, bmdata, buffer, FALSE, 0);
 }
 
-const struct HIDD_DecodeInterface HIDDNouveauDecodeVectors =
+const struct HIDD_DecodeInterface HIDDNVGfxDecodeVectors =
 {
     sizeof(struct HIDD_DecodeInterface),
     nvdec_BeginFrame,
