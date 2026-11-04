@@ -59,14 +59,12 @@ void SendNotify(struct NotifyRequest *nr, struct Globals *glob)
         return;
     }
 
-    /* New message */
+    /* A failed allocation must not leave a phantom outstanding message. */
+    nm = AllocVec(sizeof(struct NotifyMessage), MEMF_PUBLIC | MEMF_CLEAR);
+    if (nm == NULL)
+        return;
     nr->nr_MsgCount++;
 
-    D(bug("[fat] request now has %ld messages outstanding\n",
-        nr->nr_MsgCount));
-
-    /* Allocate and build the message */
-    nm = AllocVec(sizeof(struct NotifyMessage), MEMF_PUBLIC | MEMF_CLEAR);
     nm->nm_ExecMessage.mn_ReplyPort = glob->notifyport;
     nm->nm_ExecMessage.mn_Length = sizeof(struct NotifyMessage);
     nm->nm_Class = NOTIFY_CLASS;
