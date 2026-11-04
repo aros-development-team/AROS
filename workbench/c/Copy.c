@@ -1575,18 +1575,21 @@ LONG IsPattern(STRPTR name, struct CopyData *cd)
 LONG IsMatchPattern(STRPTR name, struct CopyData *cd)
 {
     struct AnchorPath ap;
-    LONG ret = -1;
+    LONG ret = -1, error;
 
     ap.ap_BreakBits = 0;
     ap.ap_Flags     = APF_DOWILD;
     ap.ap_Strlen    = 0;
 
-    if (MatchFirst(name, &ap) == 0)
+    if ((error = MatchFirst(name, &ap)) == 0)
     {
         ret = (ap.ap_Flags & APF_ITSWILD) ? TRUE : FALSE;
-
-        MatchEnd(&ap);
     }
+
+    /* A failed first match can still own directory locks and chain nodes. */
+    MatchEnd(&ap);
+    if (error != 0)
+        SetIoErr(error);
 
     return ret;
 }
