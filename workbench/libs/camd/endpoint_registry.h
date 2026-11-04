@@ -82,6 +82,12 @@ enum CAMDRegistryResult camd_registry_session_open(
     const struct CAMDProviderOpenRequestV1 *request,
     struct CAMDHandleV1 *session);
 
+/* Writes the whole record. */
+enum CAMDRegistryResult camd_registry_session_stats(
+    struct CAMDEndpointRegistry *registry,
+    struct CAMDHandleV1 session,
+    struct CAMDSessionStatsV1 *stats);
+
 /* Sessions opened and not yet closed, including ones still closing. */
 size_t camd_registry_session_count(struct CAMDEndpointRegistry *registry);
 

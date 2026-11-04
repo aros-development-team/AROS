@@ -438,6 +438,14 @@ void LoadDriver(char *name,
 
 	if(mididevicedata==NULL) return;
 
+	/* A published endpoint of that name has the clusters the driver's
+	   ports would join. */
+	if(AppEndpointNamed(mididevicedata->Name,CamdBase)){
+		D(bug("camd.library: %s is a published endpoint's name; driver not loaded\n",mididevicedata->Name));
+		CloseMidiDevice(mididevicedata);
+		return;
+	}
+
 	if((mididevicedata->Flags&1)==0){
 #ifdef __AROS__
 		D(bug("%s: mididevicedata->Flags&1==0 is not not supported for AROS!\n",name));

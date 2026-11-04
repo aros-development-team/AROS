@@ -73,7 +73,9 @@ FUNCS := \
     setpublishedendpointstate \
     putpublishedmidi \
     putpublishedsysex \
-    getpublishedmidi
+    getpublishedmidi \
+    cancelendpointsession \
+    getendpointsessionstats
 
 #MM workbench-libs-camd-includes : \
 #MM     kernel-exec-includes \

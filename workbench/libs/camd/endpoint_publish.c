@@ -97,6 +97,45 @@ static LONG resolve_name(struct CAMDIdentityMap *map, uint32_t namespace_id,
     return CAMD_REGISTRY_OK;
 }
 
+static BOOL driver_named(const char *name, struct CamdBase *CamdBase)
+{
+    struct Drivers *driver;
+    BOOL found = FALSE;
+
+    ObtainSemaphoreShared(CB(CamdBase)->CLSemaphore);
+    for (driver = CB(CamdBase)->drivers; driver; driver = driver->next) {
+        if (strcmp(driver->mididevicedata->Name, name) == 0) {
+            found = TRUE;
+            break;
+        }
+    }
+    ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
+    return found;
+}
+
+/* Whether a published endpoint has that name, for LoadDriver(). A driver is
+ * in CAMD's list before this is asked, and PublishAppEndpoint() looks at
+ * that list with the semaphore held, so one of the two always sees the
+ * other. */
+BOOL AppEndpointNamed(const char *name, struct CamdBase *CamdBase)
+{
+    struct CamdBase_intern *base = CB(CamdBase);
+    BOOL found = FALSE;
+    ULONG i;
+
+    ObtainSemaphoreShared(&base->EndpointClientSemaphore);
+    for (i = 0; i < ENDPOINT_PUBLISHERS; ++i) {
+        if (base->EndpointPublishers[i].projection != NULL &&
+            strcmp(EndpointProjectionName(
+                       base->EndpointPublishers[i].projection), name) == 0) {
+            found = TRUE;
+            break;
+        }
+    }
+    ReleaseSemaphore(&base->EndpointClientSemaphore);
+    return found;
+}
+
 static BOOL terminated(const char *text, size_t size)
 {
     return memchr(text, '\0', size) != NULL;
@@ -134,6 +173,11 @@ LONG PublishAppEndpoint(const struct CAMDPublishRequestV1 *request,
 
     ObtainSemaphore(&base->EndpointClientSemaphore);
     reap_publishers(CamdBase);
+    /* A loaded driver of that name already owns the clusters. */
+    if (driver_named(request->Name, CamdBase)) {
+        result = CAMD_REGISTRY_DUPLICATE;
+        goto out;
+    }
     for (i = 0; i < ENDPOINT_PUBLISHERS; ++i) {
         if (base->EndpointPublishers[i].app == NULL) {
             publisher = &base->EndpointPublishers[i];
@@ -251,11 +295,20 @@ LONG SetAppEndpointState(const struct CAMDHandleV1 *handle, ULONG state,
     struct EndpointPublisher *publisher;
     LONG result = CAMD_REGISTRY_STALE;
 
-    ObtainSemaphoreShared(&base->EndpointClientSemaphore);
+    /* Exclusive: the endpoint's clusters change with its state. */
+    ObtainSemaphore(&base->EndpointClientSemaphore);
     publisher = find_publisher(handle, CamdBase);
-    if (publisher != NULL)
+    if (publisher != NULL) {
         result = camd_legacy_driver_adapter_set_state(publisher->adapter, 0,
                                                       state);
+        if (result == CAMD_REGISTRY_OK &&
+            !SetEndpointProjectionOnline(publisher->projection,
+                                         state == CAMD_ENDPOINT_AVAILABLE)) {
+            camd_legacy_driver_adapter_set_state(publisher->adapter, 0,
+                                                 CAMD_ENDPOINT_OFFLINE);
+            result = CAMD_REGISTRY_NOMEM;
+        }
+    }
     ReleaseSemaphore(&base->EndpointClientSemaphore);
     return result;
 }

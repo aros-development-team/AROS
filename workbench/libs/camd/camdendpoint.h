@@ -148,6 +148,19 @@ struct CAMDSessionRequestV1 {
     ULONG Signal;
 };
 
+/* Records since a session opened; each count stops at 0xffffffff. Sent and
+ * Rejected are an output session's: queued, and refused because the queue was
+ * full or the message too large. Received and Dropped are an input
+ * session's: queued for reading, and lost because its queue was full. */
+struct CAMDSessionStatsV1 {
+    ULONG Size;
+    ULONG Version;
+    ULONG Sent;
+    ULONG Rejected;
+    ULONG Received;
+    ULONG Dropped;
+};
+
 /* A program's own endpoint. Directions are as its clients see them:
  * CAMD_DIRECTION_OUTPUT when they can send to it, CAMD_DIRECTION_INPUT when
  * they can receive from it. Name identifies it: the same Name gets the same

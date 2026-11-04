@@ -565,6 +565,10 @@ struct EndpointProjection *CreateEndpointProjection(
 	struct CAMDAppEndpoint *app,const char *name,ULONG directions,
 	struct CamdBase *CamdBase);
 void DeleteEndpointProjection(struct EndpointProjection *projection);
+BOOL SetEndpointProjectionOnline(struct EndpointProjection *projection,
+	BOOL online);
+const char *EndpointProjectionName(struct EndpointProjection *projection);
+BOOL AppEndpointNamed(const char *name,struct CamdBase *CamdBase);
 BOOL ProjectMidiToEndpoint(struct DriverData *driverdata,ULONG msg);
 BOOL ProjectSysExToEndpoint(struct DriverData *driverdata,UBYTE *buffer);
 void Receiver_SuperTreat2(struct DriverData *driverdata,

@@ -81,6 +81,11 @@ struct session_slot {
     uint32_t requested_queue_capacity;
     uint32_t effective_queue_capacity;
     uint32_t max_sysex_bytes;
+    /* Saturating record counts, for camd_registry_session_stats(). */
+    uint32_t sent;
+    uint32_t rejected;
+    uint32_t received;
+    uint32_t dropped;
     void *provider_context;
     struct receive_bridge *receive_bridge;
     uint32_t receive_inflight;
@@ -896,6 +901,32 @@ out:
     return result;
 }
 
+enum CAMDRegistryResult camd_registry_session_stats(
+    struct CAMDEndpointRegistry *registry,
+    struct CAMDHandleV1 session_handle,
+    struct CAMDSessionStatsV1 *stats)
+{
+    struct session_slot *session;
+    enum CAMDRegistryResult result = CAMD_REGISTRY_OK;
+
+    if (!registry || !stats)
+        return CAMD_REGISTRY_INVALID;
+    core_lock_acquire(&registry->lock);
+    session = resolve_session(registry, session_handle);
+    if (!session) {
+        result = CAMD_REGISTRY_STALE;
+    } else {
+        stats->Size = sizeof(*stats);
+        stats->Version = 1;
+        stats->Sent = session->sent;
+        stats->Rejected = session->rejected;
+        stats->Received = session->received;
+        stats->Dropped = session->dropped;
+    }
+    core_lock_release(&registry->lock);
+    return result;
+}
+
 size_t camd_registry_session_count(struct CAMDEndpointRegistry *registry)
 {
     size_t count = 0, i;
@@ -990,6 +1021,30 @@ static enum CAMDRegistryResult prepare_session_callback(
     return CAMD_REGISTRY_OK;
 }
 
+static void count_records(uint32_t *counter, size_t records)
+{
+    if (records > UINT32_MAX - *counter)
+        *counter = UINT32_MAX;
+    else
+        *counter += (uint32_t)records;
+}
+
+/* Called with registry->lock held, before finish_session_callback(). */
+static void account_send(struct CAMDEndpointRegistry *registry,
+                         struct CAMDHandleV1 session_handle, size_t records,
+                         enum CAMDProviderResult callback_result)
+{
+    struct session_slot *session = resolve_session(registry, session_handle);
+
+    if (!session)
+        return;
+    if (callback_result == CAMD_PROVIDER_OK)
+        count_records(&session->sent, records);
+    else if (callback_result == CAMD_PROVIDER_QUEUE_FULL ||
+             callback_result == CAMD_PROVIDER_TOO_LARGE)
+        count_records(&session->rejected, records);
+}
+
 static enum CAMDRegistryResult finish_session_callback(
     struct CAMDEndpointRegistry *registry,
     struct CAMDHandleV1 session_handle,
@@ -1041,6 +1096,7 @@ enum CAMDRegistryResult camd_registry_session_send_midi1(
     core_lock_release(&registry->lock);
     callback_result = callback(context, provider_session, events, event_count);
     core_lock_acquire(&registry->lock);
+    account_send(registry, session_handle, event_count, callback_result);
     result = finish_session_callback(registry, session_handle, callback_result);
 out:
     core_lock_release(&registry->lock);
@@ -1089,6 +1145,7 @@ enum CAMDRegistryResult camd_registry_session_send_midi1_sysex(
     callback_result = callback(context, provider_session, bytes, byte_count,
                                time_high, time_low, clock_domain, flags);
     core_lock_acquire(&registry->lock);
+    account_send(registry, session_handle, 1, callback_result);
     result = finish_session_callback(registry, session_handle, callback_result);
 out:
     core_lock_release(&registry->lock);
@@ -1125,6 +1182,7 @@ enum CAMDRegistryResult camd_registry_session_send_ump(
     core_lock_release(&registry->lock);
     callback_result = callback(context, provider_session, events, event_count);
     core_lock_acquire(&registry->lock);
+    account_send(registry, session_handle, event_count, callback_result);
     result = finish_session_callback(registry, session_handle, callback_result);
 out:
     core_lock_release(&registry->lock);
@@ -1184,7 +1242,8 @@ static enum CAMDProviderResult receive_bridge_begin(
     return CAMD_PROVIDER_OK;
 }
 
-static void receive_bridge_end(struct receive_bridge *bridge)
+static void receive_bridge_end(struct receive_bridge *bridge, size_t records,
+                               enum CAMDProviderResult consumed)
 {
     struct CAMDEndpointRegistry *registry = bridge->registry;
     struct session_slot *session;
@@ -1201,6 +1260,10 @@ static void receive_bridge_end(struct receive_bridge *bridge)
         --session->receive_inflight;
         if (provider)
             --provider->callbacks_inflight;
+        if (consumed == CAMD_PROVIDER_OK)
+            count_records(&session->received, records);
+        else
+            count_records(&session->dropped, records);
     }
     core_lock_release(&registry->lock);
 }
@@ -1227,7 +1290,7 @@ static enum CAMDProviderResult receive_bridge_midi1(
     callback = bridge->consumer.SubmitMIDI1;
     consumer_context = bridge->consumer.Context;
     result = callback(consumer_context, events, event_count);
-    receive_bridge_end(bridge);
+    receive_bridge_end(bridge, event_count, result);
     return result;
 }
 
@@ -1256,7 +1319,7 @@ static enum CAMDProviderResult receive_bridge_midi1_sysex(
     consumer_context = bridge->consumer.Context;
     result = callback(consumer_context, bytes, byte_count, time_high, time_low,
                       clock_domain, flags);
-    receive_bridge_end(bridge);
+    receive_bridge_end(bridge, 1, result);
     return result;
 }
 
@@ -1282,7 +1345,7 @@ static enum CAMDProviderResult receive_bridge_ump(
     callback = bridge->consumer.SubmitUMP;
     consumer_context = bridge->consumer.Context;
     result = callback(consumer_context, events, event_count);
-    receive_bridge_end(bridge);
+    receive_bridge_end(bridge, event_count, result);
     return result;
 }
 

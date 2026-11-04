@@ -22,6 +22,8 @@ struct EndpointProjection {
     struct MidiDeviceData device;
     struct CAMDAppEndpoint *app;
     struct CamdBase *CamdBase;
+    ULONG directions;
+    BOOL attached;      /* in its clusters */
     char name[CAMD_ENDPOINT_NAME_BYTES];
 };
 
@@ -148,14 +150,75 @@ BOOL ProjectSysExToEndpoint(struct DriverData *driverdata, UBYTE *buffer)
     return TRUE;
 }
 
+/* Puts the endpoint in its clusters, where links may already be waiting.
+ * Must not hold CLSemaphore. */
+static BOOL attach_projection(struct EndpointProjection *projection)
+{
+    struct CamdBase *CamdBase = projection->CamdBase;
+    struct CAMDProviderReceiveSinkV1 sink;
+    BOOL attached;
+
+    if (projection->attached)
+        return TRUE;
+    ObtainSemaphore(CB(CamdBase)->CLSemaphore);
+    attached = AttachDriverData(&projection->driver, CamdBase);
+    ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
+    if (attached == FALSE)
+        return FALSE;
+    projection->attached = TRUE;
+    if ((projection->directions & CAMD_DIRECTION_INPUT) != 0) {
+        memset(&sink, 0, sizeof(sink));
+        sink.Size = sizeof(sink);
+        sink.Version = 1;
+        sink.Context = projection->driver.driverdatas[0];
+        sink.SubmitMIDI1 = project_midi1;
+        sink.SubmitMIDI1SysEx = project_sysex;
+        camd_app_endpoint_set_projection(projection->app, &sink);
+    }
+    return TRUE;
+}
+
+/* Takes the endpoint out of its clusters. Links of other programs stay there
+ * and wait, as they do for an unplugged port. Must not hold CLSemaphore. */
+static void detach_projection(struct EndpointProjection *projection)
+{
+    struct CamdBase *CamdBase = projection->CamdBase;
+
+    if (!projection->attached)
+        return;
+    /* No emit is in the sink once this returns. */
+    camd_app_endpoint_set_projection(projection->app, NULL);
+    /* A sender inside ProjectMidiToEndpoint() holds its cluster's semaphore,
+     * which detaching waits for. */
+    ObtainSemaphore(CB(CamdBase)->CLSemaphore);
+    DetachDriverData(&projection->driver, CamdBase);
+    ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
+    projection->attached = FALSE;
+}
+
+/* An offline endpoint leaves its clusters and comes back to them. */
+BOOL SetEndpointProjectionOnline(struct EndpointProjection *projection,
+                                 BOOL online)
+{
+    if (projection == NULL)
+        return TRUE;
+    if (online)
+        return attach_projection(projection);
+    detach_projection(projection);
+    return TRUE;
+}
+
+const char *EndpointProjectionName(struct EndpointProjection *projection)
+{
+    return projection->name;
+}
+
 /* Must not hold CLSemaphore. */
 struct EndpointProjection *CreateEndpointProjection(
     struct CAMDAppEndpoint *app, const char *name, ULONG directions,
     struct CamdBase *CamdBase)
 {
     struct EndpointProjection *projection;
-    struct CAMDProviderReceiveSinkV1 sink;
-    BOOL attached;
 
     projection = AllocMem(sizeof(*projection),
                           MEMF_ANY | MEMF_CLEAR | MEMF_PUBLIC);
@@ -180,44 +243,21 @@ struct EndpointProjection *CreateEndpointProjection(
         return NULL;
     }
     projection->driver.driverdatas[0]->Projection = app;
-
-    ObtainSemaphore(CB(CamdBase)->CLSemaphore);
-    attached = AttachDriverData(&projection->driver, CamdBase);
-    ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
-    if (attached == FALSE) {
+    projection->directions = directions;
+    if (!attach_projection(projection)) {
         FreeDriverData(&projection->driver, CamdBase);
         FreeMem(projection, sizeof(*projection));
         return NULL;
     }
-
-    if ((directions & CAMD_DIRECTION_INPUT) != 0) {
-        memset(&sink, 0, sizeof(sink));
-        sink.Size = sizeof(sink);
-        sink.Version = 1;
-        sink.Context = projection->driver.driverdatas[0];
-        sink.SubmitMIDI1 = project_midi1;
-        sink.SubmitMIDI1SysEx = project_sysex;
-        camd_app_endpoint_set_projection(app, &sink);
-    }
     return projection;
 }
 
-/* Takes the endpoint out of its clusters. Links of other programs stay there
- * and wait, as they do for an unplugged port. Must not hold CLSemaphore. */
+/* Must not hold CLSemaphore. */
 void DeleteEndpointProjection(struct EndpointProjection *projection)
 {
-    struct CamdBase *CamdBase;
-
     if (projection == NULL)
         return;
-    CamdBase = projection->CamdBase;
-    /* No emit is in the sink once this returns. */
-    camd_app_endpoint_set_projection(projection->app, NULL);
-    /* A sender inside ProjectMidiToEndpoint() holds its cluster's semaphore,
-     * which detaching waits for. */
-    ObtainSemaphore(CB(CamdBase)->CLSemaphore);
-    DetachDriverData(&projection->driver, CamdBase);
-    ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
-    FreeDriverData(&projection->driver, CamdBase);
+    detach_projection(projection);
+    FreeDriverData(&projection->driver, projection->CamdBase);
     FreeMem(projection, sizeof(*projection));
 }
