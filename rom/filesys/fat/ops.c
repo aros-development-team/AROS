@@ -1383,6 +1383,7 @@ LONG OpAddNotify(struct NotifyRequest *nr, struct Globals *glob)
         err =
             GetDirEntryByPath(&dh, nr->nr_FullName, strlen(nr->nr_FullName),
             &de, glob);
+        ReleaseDirHandle(&dh, glob);
         if (err != 0 && err != ERROR_OBJECT_NOT_FOUND)
             return err;
 

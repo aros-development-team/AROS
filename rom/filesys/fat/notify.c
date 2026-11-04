@@ -121,7 +121,10 @@ void SendNotifyByDirEntry(struct FSSuper *sb, struct DirEntry *de)
 
             if (GetDirEntryByPath(&sdh, nn->nr->nr_FullName,
                 strlen(nn->nr->nr_FullName), &sde, glob) != 0)
+            {
+                ReleaseDirHandle(&sdh, glob);
                 continue;
+            }
 
             if (sde.cluster == de->cluster && sde.index == de->index)
                 SendNotify(nn->nr, glob);
