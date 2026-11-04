@@ -184,6 +184,7 @@ static const struct ArdaCommand commands[] =
     { "TASKS",   arda_cmd_tasks,   "task snapshot; optional name filter"     },
     { "LOG",     arda_cmd_log,     "STATUS | READ [n] [SINCE=seq] [SRC=x] | CLEAR" },
     { "NET",     arda_cmd_net,     "STATUS | INTERFACES | ROUTES | ARP | STATS [IP|TCP|UDP]" },
+    { "SYMBOL",  arda_cmd_symbol,  "<addr>...: module, segment and symbol of each address" },
     { "QUIT",    cmd_quit,    "close this connection"                        },
     /* control mode (CONTROL switch): these change state */
     { "PUT",     arda_cmd_put,    "(control) <path> <size>: write the raw body that follows to a file" },
@@ -198,6 +199,8 @@ static const struct ArdaCommand commands[] =
     { "JOB",     arda_cmd_job,    "(control) <n>: one job's record"          },
     { "WAIT",    arda_cmd_wait,   "(control) <n> [secs]: wait for a job, OK RC <rc>" },
     { "REBOOT",  arda_cmd_reboot, "(control) cold reboot after the reply"    },
+    { "PEEK",    arda_cmd_peek,   "(control) <addr> [<len>] [Q]: hex dump, Q = 64-bit words with symbols" },
+    { "STACK",   arda_cmd_stack,  "(control) <task|0xaddr> [FROM=<addr>] [MAX=<bytes>] [ALL]: code pointers on a task's stack" },
     { NULL,      NULL,        NULL                                           }
 };
 

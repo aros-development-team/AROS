@@ -170,6 +170,20 @@ Raw bodies are the only place bytes outside printable ASCII travel; the line
 parser resumes right after them. Paths are AROS paths (`SYS:`, `RAM:`, ...)
 relative to the agent's current directory when not absolute.
 
+## Memory inspection (agent 0.3, protocol 1)
+
+`SYMBOL` is always available. `PEEK` and `STACK` read arbitrary memory, so
+they are control-mode commands, although they change nothing. A range is
+read only when all of it lies in a MemHeader (`TypeOfMem()`) or in a segment
+debug.library knows. Anything else gets `ERR 403` and is not touched, so a
+bad address cannot fault the agent. Numbers may be decimal or `0x` hex.
+
+| Command | Response |
+|---------|----------|
+| `SYMBOL <addr>...` | multi-line, one `ADDR=0x... SYM=<module>:<segment>:<symbol>+0x<off>` (or `SYM=none`) per address, up to 32. |
+| `PEEK <addr> [<len>] [Q]` | multi-line hex dump of `len` bytes (default 256, max 4096): `ADDR=0x... HEX="xx xx ..." ASCII="..."`, 16 bytes per line. With `Q`: 64-bit words, `ADDR=0x... VALUE=0x... [SYM=...]`, the address rounded down to 8. |
+| `STACK <task\|0xaddr> [FROM=<addr>] [MAX=<bytes>] [ALL]` | the task (exact name, or its address) and `SP= LOWER= UPPER= FROM= BYTES=`, then one `ADDR= OFF= VALUE= SYM=` line per stack word that points into a code (`text`) segment; `ALL` lists every word that resolves to any segment. The scan runs upwards from the saved SP, or from `FROM=` (e.g. the SP of a crash report), for `MAX` bytes (default 16 KiB, max 256 KiB), ending at the stack's upper bound. Then `SHOWN=`. |
+
 ## Versioning
 
 `VERSION` reports `ARDA/<protocol>`.  The protocol number only changes when
