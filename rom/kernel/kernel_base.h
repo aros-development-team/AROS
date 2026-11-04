@@ -112,6 +112,13 @@ struct KernelBase
 #endif
     KrnSymResolver_t    kb_gResolver;
     APTR                kb_gResolvPrivate;
+#if defined(__i386__) || defined(__x86_64__)
+    volatile ULONG      kb_gResolverGeneration;
+    volatile ULONG      kb_gResolverReaders;
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t          kb_gResolverSpinLock;
+#endif
+#endif
 };
 
 #ifdef KERNEL_SPARSE_EXCEPTIONS
