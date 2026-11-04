@@ -483,8 +483,14 @@ static inline void DWMAC_SpinUnlock(struct DWMACBase *base, spinlock_t *lock)
     Enable();
 }
 
+#if defined(__AROSEXEC_SMP__)
 #define DWMAC_PORT_LOCK(base, port)     DWMAC_SpinLock((base), &(port)->mp_SpinLock)
 #define DWMAC_PORT_UNLOCK(base, port)   DWMAC_SpinUnlock((base), &(port)->mp_SpinLock)
+#else
+/* struct MsgPort has no mp_SpinLock without SMP: Disable() alone guards the port */
+#define DWMAC_PORT_LOCK(base, port)     ((void)(port), DWMAC_SpinLock((base), NULL))
+#define DWMAC_PORT_UNLOCK(base, port)   ((void)(port), DWMAC_SpinUnlock((base), NULL))
+#endif
 #define DWMAC_LIST_LOCK(base, unit)     DWMAC_SpinLock((base), &(unit)->dwu_ListLock)
 #define DWMAC_LIST_UNLOCK(base, unit)   DWMAC_SpinUnlock((base), &(unit)->dwu_ListLock)
 
