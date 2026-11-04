@@ -64,7 +64,7 @@ LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len,
         D(bug("[fat] entry name has first byte 0x%02x,"
             " returning empty short name\n", raw[0]));
         *name = '\0';
-        len = 0;
+        *len = 0;
         return 0;
     }
 
