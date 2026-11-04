@@ -35,6 +35,9 @@
 
 #include <hidd/gfx.h>
 
+/* CopyBox dispatches CopyMemBox8/16/24/32 by bytes per pixel */
+GFX_ASSERT_BPP_METHODS(CopyMemBox);
+
 /*****************************************************************************************
 
     NAME
@@ -1068,46 +1071,30 @@ static VOID copybox_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBo
                  *        If this is fixed, we can even throw away HIDD_BM_CopyMemBoxXX at all, reducing
                  *        kickstart size.
                  */
-                switch(srcpf->bytes_per_pixel)
+                if (srcpf->bytes_per_pixel >= 1 && srcpf->bytes_per_pixel <= 4)
                 {
-                case 1:
                     /*
+                     * HIDD_BM_CopyMemBox8/16/24/32() according to bytes per pixel.
                      * In fact all these methods are static, they ignore object pointer, and it's
                      * needed only for OOP_DoMethod() to fetch class information.
                      * We use destination bitmap pointer, we can also source one.
                      */
-                    HIDD_BM_CopyMemBox8(msg->dest,
-                                        srcPixels, msg->srcX, msg->srcY,
-                                        destPixels, msg->destX, msg->destY,
-                                        msg->width, msg->height,
-                                        src_bytesperline, dest_bytesperline);
-                    return;
+                    struct pHidd_BitMap_CopyMemBox8 p;
 
-                case 2:
-                    HIDD_BM_CopyMemBox16(msg->dest,
-                                         srcPixels, msg->srcX, msg->srcY,
-                                         destPixels, msg->destX, msg->destY,
-                                         msg->width, msg->height,
-                                         src_bytesperline, dest_bytesperline);
+                    p.mID    = HiddBitMapBase + moHidd_BitMap_CopyMemBox8 + srcpf->bytes_per_pixel - 1;
+                    p.src    = srcPixels;
+                    p.srcX   = msg->srcX;
+                    p.srcY   = msg->srcY;
+                    p.dst    = destPixels;
+                    p.dstX   = msg->destX;
+                    p.dstY   = msg->destY;
+                    p.width  = msg->width;
+                    p.height = msg->height;
+                    p.srcMod = src_bytesperline;
+                    p.dstMod = dest_bytesperline;
+                    OOP_DoMethod(msg->dest, &p.mID);
                     return;
-
-                case 3:
-                    HIDD_BM_CopyMemBox24(msg->dest,
-                                         srcPixels, msg->srcX, msg->srcY,
-                                         destPixels, msg->destX, msg->destY,
-                                         msg->width, msg->height,
-                                         src_bytesperline, dest_bytesperline);
-                    return;
-
-                case 4:
-                    HIDD_BM_CopyMemBox32(msg->dest,
-                                         srcPixels, msg->srcX, msg->srcY,
-                                         destPixels, msg->destX, msg->destY,
-                                         msg->width, msg->height,
-                                         src_bytesperline, dest_bytesperline);
-                    return;
-
-                } /* switch(srcpf->bytes_per_pixel) */
+                }
            } /* srcpf == dstpf */
            else
            {
@@ -1263,16 +1250,22 @@ static VOID copybox_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBo
     GC_FG(gc) = memFG;
 }
 
-VOID GFXHIDD__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBox *msg)
+static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBoxMasked *msg);
+
+/*
+ * CursorFB de-masquerade and software pointer bracket, shared by CopyBox and
+ * CopyBoxMasked. pHidd_Gfx_CopyBoxMasked starts with the same fields as
+ * pHidd_Gfx_CopyBox; masked selects the implementation msg is really for.
+ */
+GFX_SHARED IPTR copybox_bracket(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBox *msg,
+                                BOOL masked)
 {
     OOP_Object *realsrc = cursorfb_realbitmap(CSD(cl), msg->src);
     OOP_Object *realdst = cursorfb_realbitmap(CSD(cl), msg->dest);
     OOP_Object *display = NULL;
     struct SignalSemaphore *sem = NULL;
     BOOL bracket = FALSE;
-
-    if (gfx_is_video_bm(cl, msg->src) || gfx_is_video_bm(cl, msg->dest))
-        return;
+    IPTR ret = 0;
 
     if (realdst)
         display = cursorfb_display(CSD(cl), msg->dest);
@@ -1314,8 +1307,10 @@ VOID GFXHIDD__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx
          * refuses these too lands here again with nothing left to unwrap
          * and takes the branch below, so this cannot recurse.
          */
-        OOP_DoMethod(obj, (OOP_Msg)msg);
+        ret = OOP_DoMethod(obj, (OOP_Msg)msg);
     }
+    else if (masked)
+        ret = copyboxmasked_impl(cl, obj, (struct pHidd_Gfx_CopyBoxMasked *)msg);
     else
         copybox_impl(cl, obj, msg);
 
@@ -1325,6 +1320,16 @@ VOID GFXHIDD__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx
             GfxDisplay_CursorRender(CSD(cl), display);
         ReleaseSemaphore(sem);
     }
+
+    return ret;
+}
+
+VOID GFXHIDD__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBox *msg)
+{
+    if (gfx_is_video_bm(cl, msg->src) || gfx_is_video_bm(cl, msg->dest))
+        return;
+
+    copybox_bracket(cl, obj, msg, FALSE);
 }
 
 /*****************************************************************************************
@@ -1619,57 +1624,8 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
 
 IPTR GFXHIDD__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBoxMasked *msg)
 {
-    OOP_Object *realsrc = cursorfb_realbitmap(CSD(cl), msg->src);
-    OOP_Object *realdst = cursorfb_realbitmap(CSD(cl), msg->dest);
-    OOP_Object *display = NULL;
-    struct SignalSemaphore *sem = NULL;
-    BOOL bracket = FALSE;
-    IPTR ret;
-
-    if (realdst)
-        display = cursorfb_display(CSD(cl), msg->dest);
-    else if (realsrc)
-        display = cursorfb_display(CSD(cl), msg->src);
-
-    if (display)
-    {
-        WORD w = msg->width, h = msg->height;
-
-        sem = GfxDisplay_CursorSem(CSD(cl), display);
-        ObtainSemaphore(sem);
-
-        if (realdst && GfxDisplay_CursorIntersects(CSD(cl), display, realdst,
-                msg->destX, msg->destY, msg->destX + w - 1, msg->destY + h - 1))
-            bracket = TRUE;
-        if (realsrc && GfxDisplay_CursorIntersects(CSD(cl), display, realsrc,
-                msg->srcX, msg->srcY, msg->srcX + w - 1, msg->srcY + h - 1))
-            bracket = TRUE;
-
-        if (bracket)
-            GfxDisplay_CursorRemove(CSD(cl), display);
-    }
-
     /* See CopyBox: give the driver a chance at its own bitmaps */
-    if (realsrc || realdst)
-    {
-        if (realsrc)
-            msg->src = realsrc;
-        if (realdst)
-            msg->dest = realdst;
-
-        ret = OOP_DoMethod(obj, (OOP_Msg)msg);
-    }
-    else
-        ret = copyboxmasked_impl(cl, obj, msg);
-
-    if (display)
-    {
-        if (bracket)
-            GfxDisplay_CursorRender(CSD(cl), display);
-        ReleaseSemaphore(sem);
-    }
-
-    return ret;
+    return copybox_bracket(cl, obj, (struct pHidd_Gfx_CopyBox *)msg, TRUE);
 }
 
 /*****************************************************************************************

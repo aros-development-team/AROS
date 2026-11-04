@@ -317,7 +317,7 @@ OOP_Class *init_cursorfbclass(struct class_static_data *csd)
     struct Library *OOPBase = csd->cs_OOPBase;
     OOP_Class *cl;
 
-    struct OOP_MethodDescr root_descr[num_Root_Methods + 1] =
+    static const struct OOP_MethodDescr root_descr[num_Root_Methods + 1] =
     {
         {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_new    , moRoot_New     },
         {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_dispose, moRoot_Dispose },
@@ -326,7 +326,7 @@ OOP_Class *init_cursorfbclass(struct class_static_data *csd)
         {NULL, 0UL }
     };
 
-    struct OOP_MethodDescr bitmap_descr[num_Hidd_BitMap_Methods + 1] =
+    static const struct OOP_MethodDescr bitmap_descr[num_Hidd_BitMap_Methods + 1] =
     {
         {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_fwd              , moHidd_BitMap_SetColors                },
         {(IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))cursorfb_putpixel         , moHidd_BitMap_PutPixel                 },
@@ -393,10 +393,10 @@ OOP_Class *init_cursorfbclass(struct class_static_data *csd)
         {NULL, 0UL }
     };
 
-    struct OOP_InterfaceDescr ifdescr[] =
+    static const struct OOP_InterfaceDescr ifdescr[] =
     {
-        {root_descr  , IID_Root        , num_Root_Methods        },
-        {bitmap_descr, IID_Hidd_BitMap , num_Hidd_BitMap_Methods },
+        {(struct OOP_MethodDescr *)root_descr  , IID_Root        , num_Root_Methods        },
+        {(struct OOP_MethodDescr *)bitmap_descr, IID_Hidd_BitMap , num_Hidd_BitMap_Methods },
         {NULL        , NULL            , 0                       }
     };
 

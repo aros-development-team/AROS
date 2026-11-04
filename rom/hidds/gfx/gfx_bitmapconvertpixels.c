@@ -65,16 +65,6 @@
         default: D(bug("RUBBISH BYTES PER PIXEL IN GET_TRUE_PIX()\n")); break;  \
     }
 
-#define GET_PAL_PIX(s, pix, pf, lut)        \
-    switch (pf->bytes_per_pixel) {          \
-        case 4: GETPIX32(s, pix); break;    \
-        case 3: GETPIX24(s, pix); break;    \
-        case 2: GETPIX16(s, pix); break;    \
-        case 1: GETPIX8 (s, pix); break;    \
-        default: D(bug("RUBBISH BYTES PER PIXEL IN GET_PAL_PIX()\n")); break;   \
-    }                                       \
-    pix = lut[pix];
-
 #define PUT_PAL_PIX(d, pix, pf)             \
     switch (pf->bytes_per_pixel) {          \
         case 4: PUTPIX32(d, pix); break;    \
@@ -301,8 +291,8 @@ static VOID true_to_pal(OOP_Class *cl, OOP_Object *o,
                 key = ((r & 0xF800) >> 1) | ((g & 0xF800) >> 6) | ((b & 0xF800) >> 11);
                 if (invlut[key] != 0xFFFF)
                 {
-                    PUT_PAL_PIX(d, invlut[key], dstfmt);
-                    continue;
+                    dstpix = invlut[key];
+                    goto put;
                 }
             }
 
@@ -342,6 +332,7 @@ static VOID true_to_pal(OOP_Class *cl, OOP_Object *o,
             D(bug("[ConvertPixels] Found color %u\n", dstpix));
             if (invlut)
                 invlut[key] = dstpix;
+put:
             PUT_PAL_PIX(d, dstpix, dstfmt);
         }
         src += msg->srcMod;
@@ -376,9 +367,10 @@ static VOID pal_to_true(OOP_Class *cl, OOP_Object *o,
         {
             ULONG srcpix = 0;
 
+            GET_PAL_PIX_CM(s, srcpix, srcfmt);
             if (lut)
             {
-                GET_PAL_PIX(s, srcpix, srcfmt, lut->pixels);
+                srcpix = lut->pixels[srcpix];
 
                 DB2(bug("0x%08lX ", srcpix));
                 /* We now have a pixel in Native32 format. Put it back */
@@ -394,7 +386,6 @@ static VOID pal_to_true(OOP_Class *cl, OOP_Object *o,
                     /* For optimization purposes we don't swap bytes after MAP_RGBA
                        in order not to swap them back when putting into destination
                        buffer. */
-                    GET_PAL_PIX_CM(s, srcpix, srcfmt);
                     HIDD_CM_GetColor(data->colmap, srcpix, &col);
                     red   = col.red;
                     green = col.green;
@@ -402,6 +393,8 @@ static VOID pal_to_true(OOP_Class *cl, OOP_Object *o,
                     alpha = col.alpha;
                     srcpix = MAP_RGBA(red, green, blue, alpha, dstfmt);
                 }
+                else
+                    srcpix = 0;
                 /* If there's neither pixlut nor colormap provided
                    we'll end up in all black. At least won't crash
                    and make the problem clearly visible */

@@ -132,23 +132,6 @@ static VOID init_def_tags(struct TagItem *tags, ULONG numtags)
 
 /****************************************************************************************/
 
-#define MAKE_SYNC(name,clock,hdisp,hstart,hend,htotal,vdisp,vstart,vend,vtotal,descr)   \
-    struct TagItem sync_ ## name[]={            \
-        { aHidd_Sync_PixelClock,    clock*1000  },  \
-        { aHidd_Sync_HDisp,         hdisp   },  \
-        { aHidd_Sync_HSyncStart,    hstart  },  \
-        { aHidd_Sync_HSyncEnd,      hend    },  \
-        { aHidd_Sync_HTotal,        htotal  },  \
-        { aHidd_Sync_VDisp,         vdisp   },  \
-        { aHidd_Sync_VSyncStart,    vstart  },  \
-        { aHidd_Sync_VSyncEnd,      vend    },  \
-        { aHidd_Sync_VTotal,        vtotal  },  \
-        { aHidd_Sync_Description,       (IPTR)descr},   \
-        { TAG_DONE, 0UL }}
-
-
-/****************************************************************************************/
-
 struct modequery
 {
     struct mode_db  *mdb;
@@ -360,6 +343,43 @@ static VOID free_mode_db(struct mode_db *mdb, OOP_Class *cl)
     return;
 }
 
+/*
+ * Default modes, used when the driver supplies pixel formats but no syncs.
+ * timing[] holds hdisp, hstart, hend, htotal, vdisp, vstart, vend, vtotal.
+ */
+#define DEFSYNC_TIMINGS 8
+
+struct default_sync
+{
+    ULONG       clock;                          /* kHz */
+    UWORD       timing[DEFSYNC_TIMINGS];
+    const char *descr;
+};
+
+static const UBYTE default_sync_attrs[DEFSYNC_TIMINGS] =
+{
+    aoHidd_Sync_HDisp, aoHidd_Sync_HSyncStart, aoHidd_Sync_HSyncEnd, aoHidd_Sync_HTotal,
+    aoHidd_Sync_VDisp, aoHidd_Sync_VSyncStart, aoHidd_Sync_VSyncEnd, aoHidd_Sync_VTotal
+};
+
+static const struct default_sync default_syncs[] =
+{
+    {  25174, {  640,  656,  752,  800,  480,  490,  492,  525 }, "Default:640x480"   },
+    {  36000, {  800,  824,  896, 1024,  600,  601,  603,  625 }, "Default:800x600"   },
+    /* 78654=60kHz, 75Hz. 65000=50kHz,62Hz */
+    {  65000, { 1024, 1048, 1184, 1344,  768,  771,  777,  806 }, "Default:1024x768"  },
+    {  80000, { 1152, 1216, 1328, 1456,  864,  870,  875,  916 }, "Default:1152x864"  },
+    { 108880, { 1280, 1360, 1496, 1712, 1024, 1025, 1028, 1060 }, "Default:1280x1024" },
+    { 155982, { 1600, 1632, 1792, 2048, 1200, 1210, 1218, 1270 }, "Default:1600x1200" },
+    /* "new" 16:10 modes */
+    {  83530, { 1280, 1344, 1480, 1680,  800,  801,  804,  828 }, "Default:1280x800"  },
+    { 106470, { 1440, 1520, 1672, 1904,  900,  901,  904,  932 }, "Default:1440x900"  },
+    { 147140, { 1680, 1784, 1968, 2256, 1050, 1051, 1054, 1087 }, "Default:1680x1050" },
+    { 173000, { 1920, 2048, 2248, 2576, 1080, 1083, 1088, 1120 }, "Default:1920x1080" },
+    { 154000, { 1920, 1968, 2000, 2080, 1200, 1203, 1209, 1235 }, "Default:1920x1200" },
+};
+#define NUM_DEFSYNCS (sizeof(default_syncs) / sizeof(default_syncs[0]))
+
 static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetags)
 {
     struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
@@ -367,63 +387,6 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
     struct TagItem          *tag, *tstate;
     struct HIDDDMEnumData *data;
     
-    MAKE_SYNC(640x480_60,   25174,
-         640,  656,  752,  800,
-         480,  490,  492,  525,
-         "Default:640x480");
-
-    MAKE_SYNC(800x600_56,   36000,  // 36000
-         800,  824,  896, 1024,
-         600,  601,  603,  625,
-         "Default:800x600");
-
-    MAKE_SYNC(1024x768_60, 65000,   //78654=60kHz, 75Hz. 65000=50kHz,62Hz
-        1024, 1048, 1184, 1344,
-         768,  771,  777,  806,
-        "Default:1024x768");
-
-    MAKE_SYNC(1152x864_60, 80000,
-        1152, 1216, 1328, 1456,
-         864,  870,  875,  916,
-        "Default:1152x864");
-
-    MAKE_SYNC(1280x1024_60, 108880,
-        1280, 1360, 1496, 1712,
-        1024, 1025, 1028, 1060,
-        "Default:1280x1024");
-
-    MAKE_SYNC(1600x1200_60, 155982,
-        1600, 1632, 1792, 2048,
-        1200, 1210, 1218, 1270,
-        "Default:1600x1200");
-
-    /* "new" 16:10 modes */
-
-    MAKE_SYNC(1280x800_60, 83530,
-        1280, 1344, 1480, 1680,
-        800, 801, 804, 828,
-        "Default:1280x800");
-
-    MAKE_SYNC(1440x900_60, 106470,
-                1440, 1520, 1672, 1904,
-                900, 901, 904, 932,
-                "Default:1440x900");
-
-    MAKE_SYNC(1680x1050_60, 147140,
-                1680, 1784, 1968, 2256,
-                1050, 1051, 1054, 1087,
-                "Default:1680x1050");
-
-    MAKE_SYNC(1920x1080_60, 173000,
-                1920, 2048, 2248, 2576,
-                1080, 1083, 1088, 1120,
-                "Default:1920x1080");
-
-    MAKE_SYNC(1920x1200_60, 154000,
-                1920, 1968, 2000, 2080,
-                1200, 1203, 1209, 1235,
-                "Default:1920x1200");
-
     struct mode_db          *mdb;
     
     HIDDT_PixelFormat       pixfmt_data;
@@ -433,22 +396,8 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
     
     ULONG                   numpfs = 0,numsyncs = 0;
     ULONG                   pfidx = 0, syncidx = 0;
+    BOOL                    defsyncs = FALSE;
     
-    struct TagItem temporary_tags[] = {
-        { aHidd_DMEnum_SyncTags,   (IPTR)sync_640x480_60   },
-        { aHidd_DMEnum_SyncTags,   (IPTR)sync_800x600_56   },
-        { aHidd_DMEnum_SyncTags,   (IPTR)sync_1024x768_60  },
-        { aHidd_DMEnum_SyncTags,   (IPTR)sync_1152x864_60  },
-        { aHidd_DMEnum_SyncTags,   (IPTR)sync_1280x1024_60 },
-        { aHidd_DMEnum_SyncTags,   (IPTR)sync_1600x1200_60 },
-        { aHidd_DMEnum_SyncTags,   (IPTR)sync_1280x800_60 },
-        { aHidd_DMEnum_SyncTags,   (IPTR)sync_1440x900_60 },
-        { aHidd_DMEnum_SyncTags,   (IPTR)sync_1680x1050_60 },
-        { aHidd_DMEnum_SyncTags,   (IPTR)sync_1920x1080_60 },
-        { aHidd_DMEnum_SyncTags,   (IPTR)sync_1920x1200_60 },
-        { TAG_MORE, 0UL }
-    };
-
     data = OOP_INST_DATA(cl, o);
     mdb = &data->mdb;
     InitSemaphore(&mdb->sema);
@@ -503,10 +452,8 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
     if (0 == numsyncs)
     {
         D(bug("!!! NO SYNC IN Gfx::RegisterModes() !!!\n!!! USING DEFAULT MODES !!!\n"));
-        temporary_tags[11].ti_Tag = TAG_MORE;
-        temporary_tags[11].ti_Data = (IPTR)modetags;
-        modetags = &temporary_tags[0];
-        numsyncs = 11;
+        defsyncs = TRUE;
+        numsyncs = NUM_DEFSYNCS;
     }
 
     ObtainSemaphore(&mdb->sema);
@@ -514,6 +461,41 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
     /* Allocate memory for mode db */
     if (!alloc_mode_db(&data->mdb, numsyncs, numpfs, cl))
         goto failure;
+
+    if (defsyncs)
+    {
+        /*
+         * Create the default syncs first, as if their aHidd_DMEnum_SyncTags
+         * came before modetags. One taglist is filled in for each of them.
+         */
+        struct TagItem synctags[DEFSYNC_TIMINGS + 3];
+        ULONG i;
+
+        for (; syncidx < NUM_DEFSYNCS; syncidx++)
+        {
+            const struct default_sync *ds = &default_syncs[syncidx];
+
+            synctags[0].ti_Tag  = aHidd_Sync_PixelClock;
+            synctags[0].ti_Data = ds->clock * 1000;
+            for (i = 0; i < DEFSYNC_TIMINGS; i++)
+            {
+                synctags[i + 1].ti_Tag  = HiddSyncAttrBase + default_sync_attrs[i];
+                synctags[i + 1].ti_Data = ds->timing[i];
+            }
+            synctags[DEFSYNC_TIMINGS + 1].ti_Tag  = aHidd_Sync_Description;
+            synctags[DEFSYNC_TIMINGS + 1].ti_Data = (IPTR)ds->descr;
+            synctags[DEFSYNC_TIMINGS + 2].ti_Tag  = TAG_DONE;
+            synctags[DEFSYNC_TIMINGS + 2].ti_Data = 0;
+
+            def_sync_tags[num_Hidd_Sync_Attrs].ti_Data = (IPTR)synctags;
+
+            mdb->syncs[syncidx] = OOP_NewObject(CSD(cl)->syncclass, NULL, def_sync_tags);
+            if (!mdb->syncs[syncidx]) {
+                D(bug("!!! UNABLE TO CREATE SYNC OBJECT IN Gfx::RegisterModes() !!!\n"));
+                goto failure;
+            }
+        }
+    }
     
     
     for (tstate = modetags; (tag = NextTagItem(&tstate));)
