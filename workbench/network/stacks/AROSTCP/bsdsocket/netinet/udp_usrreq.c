@@ -100,8 +100,8 @@ static	void udp_notify __P((struct inpcb *, int));
 /*
  * udp_savecontrol - the ancillary data inp asked for, from the IP header ip
  * of the datagram (as it arrived: before the checksum overwrote part of
- * it): its receive time (SO_TIMESTAMP), IP_RECVDSTADDR, IP_RECVTOS. NULL
- * when it asked for none.
+ * it): its receive time (SO_TIMESTAMP), IP_RECVDSTADDR, IP_RECVTOS,
+ * IP_RECVTTL. NULL when it asked for none.
  */
 static struct mbuf *
 udp_savecontrol(const struct inpcb *inp, const struct ip *ip)
@@ -124,6 +124,13 @@ udp_savecontrol(const struct inpcb *inp, const struct ip *ip)
         u_char tos = ip->ip_tos;
 
         *mp = sbcreatecontrol((caddr_t)&tos, sizeof(tos), IP_RECVTOS, IPPROTO_IP);
+        if(*mp)
+            mp = &(*mp)->m_next;
+    }
+    if(inp->inp_flags & INP_RECVTTL) {      /* one byte, as FreeBSD */
+        u_char ttl = ip->ip_ttl;
+
+        *mp = sbcreatecontrol((caddr_t)&ttl, sizeof(ttl), IP_RECVTTL, IPPROTO_IP);
         if(*mp)
             mp = &(*mp)->m_next;
     }

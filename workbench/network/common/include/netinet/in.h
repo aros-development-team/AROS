@@ -335,6 +335,7 @@ struct ip_opts {
 #define	IP_DROP_MEMBERSHIP	13	/* drop an IP group membership */
 #define	IP_ADD_SOURCE_MEMBERSHIP 25	/* add source-specific multicast */
 #define	IP_DROP_SOURCE_MEMBERSHIP 26	/* drop source-specific multicast */
+#define	IP_RECVTTL		65	/* bool; receive the TTL w/datagram */
 #define	IP_DONTFRAG		67	/* bool; send datagrams with DF, never fragmented */
 #define	IP_RECVTOS		68	/* bool; receive the TOS byte (ECN) w/datagram */
 
