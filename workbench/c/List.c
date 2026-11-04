@@ -59,6 +59,9 @@
                           (multi-user systems only, i.e. with security.library)
         LFORMAT       --  Specify the list output in printf-style
         ALL           --  List the contents of directories recursively
+                          (a link to a directory on the path walked to it,
+                          or above where the walk started, is listed but
+                          not entered)
 
 
         The following attributes of the LFORMAT strings are available
@@ -218,6 +221,7 @@ struct DirNode
 {
     struct MinNode  node;
     char           *dirname;
+    struct DirNode *parent;     /* the directory it was found in, by ALL */
 };
 
 
@@ -226,6 +230,7 @@ typedef struct _Statistics
     ULONG nFiles;
     ULONG nDirs;
     UQUAD nBlocks;
+    ULONG nErrors;
 } Statistics;
 
 
@@ -877,6 +882,106 @@ void printSummary(CONST_STRPTR dirname, int files, int dirs, int nBlocks,
 }
 
 
+/* Is lock the directory that holds path, as path was walked? */
+static BOOL isPathPart(BPTR lock, STRPTR path)
+{
+    STRPTR p = PathPart(path);
+    UBYTE  c = *p;
+    BPTR   dirlock;
+    BOOL   same = FALSE;
+
+    *p = 0;
+
+    if ((dirlock = Lock(path, SHARED_LOCK)))
+    {
+        same = (SameLock(lock, dirlock) == LOCK_SAME);
+        UnLock(dirlock);
+    }
+
+    *p = c;
+
+    return same;
+}
+
+
+/* Is lock dir or a directory above it? */
+static BOOL isAbove(BPTR lock, BPTR dir)
+{
+    BPTR parent;
+    BOOL same = FALSE;
+
+    dir = DupLock(dir);
+
+    while (dir && !same)
+    {
+        same = (SameLock(lock, dir) == LOCK_SAME);
+        parent = same ? BNULL : ParentDir(dir);
+        UnLock(dir);
+        dir = parent;
+    }
+
+    return same;
+}
+
+
+/* May ALL enter the soft link or hard-linked directory in ap? Not if
+   it leads to a file, or to a directory on the path walked to it or
+   above where the walk started (startparent), which would loop. One
+   that cannot be locked is entered, so that listing it reports the
+   error. */
+static BOOL canEnterLink(struct AnchorPath *ap, struct DirNode *current,
+                         BPTR startparent)
+{
+    struct FileInfoBlock *fib;
+    struct DirNode *node;
+    BPTR   lock, olddir;
+    BOOL   enter = TRUE;
+
+    /* By name in the directory being scanned: a soft link earlier in
+       ap_Buf may not resolve in the middle of a path. */
+    olddir = CurrentDir(ap->ap_Current->an_Lock);
+    lock = Lock(ap->ap_Info.fib_FileName, SHARED_LOCK);
+    CurrentDir(olddir);
+
+    if (!lock)
+    {
+        return TRUE;
+    }
+
+    if ((fib = AllocDosObject(DOS_FIB, NULL)))
+    {
+        if (Examine(lock, fib) && (fib->fib_DirEntryType < 0))
+        {
+            enter = FALSE;
+        }
+
+        FreeDosObject(DOS_FIB, fib);
+    }
+
+    if (enter && (SameLock(lock, ap->ap_Current->an_Lock) == LOCK_SAME))
+    {
+        enter = FALSE;
+    }
+
+    for (node = current; enter && (node != NULL); node = node->parent)
+    {
+        if (isPathPart(lock, node->dirname))
+        {
+            enter = FALSE;
+        }
+    }
+
+    if (enter && startparent && isAbove(lock, startparent))
+    {
+        enter = FALSE;
+    }
+
+    UnLock(lock);
+
+    return enter;
+}
+
+
 int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
              STRPTR parsedPattern, BOOL noHead, STRPTR lFormat, BOOL quick,
              BOOL dates, BOOL noDates, BOOL block, struct DateStamp *sinceDate,
@@ -885,12 +990,14 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
 {
     struct AnchorPath *ap;
     struct List DirList, FreeDirNodeList;
-    struct DirNode *dirnode, *prev_dirnode = NULL;
+    struct DirNode *dirnode, *prev_dirnode = NULL, *current = NULL;
+    BPTR   startparent = BNULL;
     
     ULONG  files = 0;
     ULONG  dirs = 0;
     ULONG  nBlocks = 0;
     LONG  error;
+    BOOL  queued = FALSE;
 
     NewList(&DirList);
     NewList(&FreeDirNodeList);
@@ -901,6 +1008,7 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
 
         if (ap == NULL)
         {
+            UnLock(startparent);
             return 0;
         }
 
@@ -925,6 +1033,12 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
                     }
                 }
             }
+        }
+
+        /* The directory above where ALL starts, for canEnterLink() */
+        if (all && (0 == error) && (current == NULL))
+        {
+            startparent = ParentDir(ap->ap_Current->an_Lock);
         }
 
         if (0 == error)
@@ -989,10 +1103,15 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
                                           subpatternStr,
                                           keys);
                 
-                    if (all && (ap->ap_Info.fib_DirEntryType >= 0))
+                    if (all && (ap->ap_Info.fib_DirEntryType >= 0) &&
+                        (((ap->ap_Info.fib_DirEntryType != ST_SOFTLINK) &&
+                          (ap->ap_Info.fib_DirEntryType != ST_LINKDIR)) ||
+                         canEnterLink(ap, current, startparent)))
                     {
                         if ((dirnode = AllocMem(sizeof(struct DirNode), MEMF_ANY)))
                         {
+                            dirnode->parent = current;
+
                             if ((dirnode->dirname = StrDup(ap->ap_Buf)))
                             {
                                 Insert(&DirList, (struct Node *)dirnode,
@@ -1045,6 +1164,15 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
         nBlocks = 0;
 
 
+        /* A directory found by ALL that cannot be listed doesn't end
+           the walk: report it and go on with the next one. */
+        if (error && queued && error != ERROR_BREAK)
+        {
+            PrintFault(error, filename);
+            stats->nErrors++;
+            error = 0;
+        }
+
         if (error) break;
         
         dirnode = (struct DirNode *)RemHead(&DirList);
@@ -1052,6 +1180,8 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
         if (dirnode != NULL)
         {
             filename = dirnode->dirname;
+            queued = TRUE;
+            current = dirnode;
             
             prev_dirnode = NULL;
             
@@ -1066,6 +1196,8 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
         FreeVec(dirnode->dirname);
         FreeMem(dirnode, sizeof(struct DirNode));
     }
+
+    UnLock(startparent);
     
     return error;
 }
@@ -1103,7 +1235,7 @@ int main(void)
     STRPTR   subpatternStr = NULL;
     BPTR     oldOutput = BNULL;
 
-    Statistics stats = { 0, 0, 0 };
+    Statistics stats = { 0, 0, 0, 0 };
 
     rda = ReadArgs(ARG_TEMPLATE, args, NULL);
 
@@ -1314,6 +1446,10 @@ int main(void)
             PrintFault(error, "List");
             result = RETURN_FAIL;
         }
+    }
+    else if (stats.nErrors != 0 && result == RETURN_OK)
+    {
+        result = RETURN_WARN;
     }
     
     if (parsedPattern != NULL)
