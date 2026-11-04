@@ -349,7 +349,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
         {
             if (name[src] != ' ')
             {
-                if (allowed_ascii[name[src]] == 1)
+                if (name[src] <= 127 && allowed_ascii[name[src]] == 1)
                 {
                     basis[dst] = '_';
                     seq = 1;
@@ -395,7 +395,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
         {
             if (name[src] != ' ')
             {
-                if (allowed_ascii[name[src]] == 1)
+                if (name[src] <= 127 && allowed_ascii[name[src]] == 1)
                 {
                     basis[dst] = '_';
                     seq = 1;
