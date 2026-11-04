@@ -99,6 +99,17 @@ typedef APTR GLAContext;
 #define GLA_PROFILE_CORE        1
 
 /*
+ * GLA_SwapInterval:        vertical blanks glASwapBuffers() waits for before
+ *                          its frame is shown. 0 (the default): swaps return
+ *                          at once and rendering is not tied to the display's
+ *                          refresh; a frame finished before the display took
+ *                          the previous one is not shown. 1: every swap waits
+ *                          for its frame to be on screen. Changed later with
+ *                          glASwapInterval().
+ */
+#define GLA_SwapInterval        (GLA_Dummy + 0x0043)
+
+/*
  * GLA API calls
  */
 

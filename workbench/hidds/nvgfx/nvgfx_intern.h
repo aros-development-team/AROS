@@ -1,0 +1,630 @@
+#ifndef _NOUVEAU_INTERN_H
+#define _NOUVEAU_INTERN_H
+/*
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+#include <exec/semaphores.h>
+#include <hidd/gfx.h>
+#include <hidd/i2c.h>
+#include <hidd/gallium.h>
+#include <hidd/vulkan_hidd.h>
+
+#include <nouveau.h>
+
+/* The DRM file descriptor now lives in the nouveau_drm root object */
+#define NOUVEAU_DEV_FD(dev)         (nouveau_drm(&(dev)->object)->fd)
+/* drm-aros: the caller maintains this buffer's CPU cache for the ranges it exchanges */
+extern int drmNouveauBoSelfSync(int fd, uint32_t handle);
+#define NOUVEAU_DEV_DRM_VERSION(dev) (nouveau_drm(&(dev)->object)->version)
+
+#include LC_LIBDEFS_FILE
+
+#define CLID_Hidd_Gfx_Nouveau           "hidd.gfx.nvgfx"
+#define IID_Hidd_Gfx_Nouveau            "hidd.gfx.nvgfx"
+
+#define HiddGfxNouveauAttrBase          __IHidd_Gfx_Nouveau
+
+#ifndef __OOP_NOATTRBASES__
+extern OOP_AttrBase HiddGfxNouveauAttrBase;
+#endif
+
+extern struct SignalSemaphore globalLock;
+
+/*
+ * Scan-out planes for the display compositor: the overlay planes of the
+ * selected crtc that scan out RGB (nv50 and later have one per head), plus
+ * the hardware cursor. Screen bitmaps are buffer objects already, so an
+ * overlay shows a screen from its own memory once it is a KMS framebuffer.
+ */
+#define NOUVEAU_MAX_PLANES  8
+
+#define KMSFMT_XRGB8888     (1 << 0)
+#define KMSFMT_ARGB8888     (1 << 1)
+#define KMSFMT_XBGR8888     (1 << 2)
+#define KMSFMT_ABGR8888     (1 << 3)
+#define KMSFMT_RGB565       (1 << 4)
+#define KMSFMT_XRGB1555     (1 << 5)
+#define KMSFMT_YUYV         (1 << 6)    /* packed 4:2:2 video, vHidd_VideoFmt_YUYV */
+#define KMSFMT_UYVY         (1 << 7)    /* vHidd_VideoFmt_UYVY */
+#define KMSFMT_NV12         (1 << 8)    /* semi-planar 4:2:0, vHidd_VideoFmt_NV12 */
+#define KMSFMT_YUV420       (1 << 9)    /* planar 4:2:0 (CGX I420), vHidd_VideoFmt_I420 */
+#define KMSFMT_P010         (1 << 10)   /* 10-bit semi-planar 4:2:0, vHidd_VideoFmt_P010 */
+
+/*
+ * Semi-planar video formats: a Y plane, then one plane of interleaved U/V
+ * pairs. bps: bytes per sample; chalf: the UV plane has half the picture's
+ * rows (4:2:0) or all of them (4:2:2, 4:4:4); cwide: its rows are this many
+ * Y rows long (4:4:4 has a UV pair per pixel: 2). FALSE for other formats.
+ */
+static inline BOOL nouveau_semiplanar(ULONG fmt, ULONG *bps, ULONG *chalf, ULONG *cwide)
+{
+    ULONG b = 1, h = 1, w = 1;
+
+    switch (fmt)
+    {
+    case vHidd_VideoFmt_NV12:                               break;
+    case vHidd_VideoFmt_P010: case vHidd_VideoFmt_P012:     b = 2; break;
+    case vHidd_VideoFmt_NV16:                               h = 0; break;
+    case vHidd_VideoFmt_P210: case vHidd_VideoFmt_P212:     b = 2; h = 0; break;
+    case vHidd_VideoFmt_NV24:                               h = 0; w = 2; break;
+    case vHidd_VideoFmt_P410: case vHidd_VideoFmt_P412:     b = 2; h = 0; w = 2; break;
+    default:                                                return FALSE;
+    }
+    if (bps)   *bps = b;
+    if (chalf) *chalf = h;
+    if (cwide) *cwide = w;
+    return TRUE;
+}
+#define KMSFMT_VIDEO        (KMSFMT_YUYV | KMSFMT_UYVY | KMSFMT_NV12 | KMSFMT_YUV420 | KMSFMT_P010)
+
+struct HIDDNouveauPlane
+{
+    ULONG               id;             /* KMS plane object id */
+    ULONG               formats;        /* KMSFMT_* it scans out */
+    ULONG               fbid;           /* framebuffer on it, 0 = off */
+    BOOL                dead;           /* its window channel timed out: not used again this boot */
+
+    /* DRM property ids (0 = the plane has none), read at enumeration */
+    ULONG               prop_fb_id, prop_crtc_id;
+    ULONG               prop_crtc_x, prop_crtc_y, prop_crtc_w, prop_crtc_h;
+    ULONG               prop_src_x, prop_src_y, prop_src_w, prop_src_h;
+    ULONG               prop_zpos;      /* "zpos" */
+    BOOL                zpos_mutable;
+    ULONG               zmin, zmax;     /* zpos range */
+    ULONG               prop_ckey;      /* nouveau's "colorkey" (dispnv50 windows) */
+
+    /* what the last commit programmed (SwapBuffers re-uses the geometry) */
+    LONG                crtc_x, crtc_y;
+    ULONG               crtc_w, crtc_h;
+    ULONG               src_x, src_y, src_w, src_h;     /* 16.16 */
+    ULONG               zpos;
+    ULONG               ckey;           /* property value, 0 = no key */
+};
+
+/* Buffers of one scan-out bitmap (aHidd_BitMap_Scanout); QueryScanout reports it */
+#define NOUVEAU_MAX_SCANOUT_BUFFERS 3
+/* A decode target (aHidd_BitMap_DecodeTarget) holds a codec's whole set of surfaces */
+#define NOUVEAU_MAX_BUFFERS 32
+
+struct HIDDNouveauData
+{
+    struct nouveau_bo   *cursor;
+    ULONG               selectedcrtcid;
+    APTR                selectedmode;
+    APTR                selectedconnector;
+    /* what the CRTC is scanning out now: a Show() of another framebuffer in
+       the same mode is a page flip, not a modeset (no blackout) */
+    APTR                shownmode;
+    ULONG               shownfb;
+    LONG                shownxoff, shownyoff;
+    ULONG               shownpitch, shownbpp;
+
+    /* scan-out planes */
+    ULONG               selectedcrtcindex;  /* index of the crtc among the crtcs (plane masks, vblank) */
+    ULONG               nplanes;            /* overlay planes usable on the crtc */
+    struct HIDDNouveauPlane planes[NOUVEAU_MAX_PLANES];
+    BOOL                vblank_ok;          /* the kernel answers vblank waits for the crtc */
+    ULONG               vblanks;            /* last vblank sequence seen */
+    BOOL                atomic;             /* every overlay has the atomic property set */
+    ULONG               maxfbw, maxfbh;     /* largest framebuffer the kernel takes */
+    ULONG               chipset;            /* nouveau_device chipset: decides the window class' formats */
+};
+
+/* nvgfx_displayclass.c */
+VOID HIDDNouveauEnumPlanes(LONG fd, struct HIDDNouveauData *gfxdata);
+BOOL HIDDNouveauEnsureFB(OOP_Object *bm);
+BOOL HIDDNouveauEnsureBufferFB(OOP_Object *bm, ULONG buffer);
+/* PlaneSwap results */
+#define PLANESWAP_COMPOSED  0   /* not on a plane: the compositor shows the bitmap */
+#define PLANESWAP_DONE      1   /* the plane shows (or will show at the next vblank) newfbid */
+#define PLANESWAP_BUSY      2   /* no wait asked and the previous flip has not latched yet: nothing changed */
+LONG HIDDNouveauPlaneSwap(OOP_Object *display, ULONG oldfbid, ULONG newfbid, BOOL wait);
+
+struct HIDDNouveauDisplayData
+{
+    BOOL                nameasked;
+    char                name[14];   /* EDID monitor descriptor: 13 chars + NUL */
+};
+
+#define CLID_Hidd_Display_Nouveau       "hidd.display.nvgfx"
+#define IID_Hidd_Display_Nouveau        "hidd.display.nvgfx"
+
+#define CLID_Hidd_BitMap_Nouveau        "hidd.bitmap.nvgfx"
+#define IID_Hidd_BitMap_Nouveau         "hidd.bitmap.nvgfx"
+
+#define HiddBitMapNouveauAttrBase __IHidd_BitMap_Nouveau
+
+#ifndef __OOP_NOATTRBASES__
+extern OOP_AttrBase HiddBitMapNouveauAttrBase;
+#endif
+
+enum
+{
+    /* No private bitmap attributes at present */
+    num_Hidd_BitMap_Nouveau_Attrs
+};
+
+#define IS_BITMAPNOUVEAU_ATTR(attr, idx) \
+    (((idx) = (attr) - HiddBitMapNouveauAttrBase) < num_Hidd_BitMap_Nouveau_Attrs)
+
+struct HIDDNouveauBitMapData
+{
+    struct SignalSemaphore  semaphore;
+    struct HIDDNouveauData  *showngfx;  /* the gfx hidd this bitmap was last shown on (flip bookkeeping) */
+    struct nouveau_bo       *bo; /* Buffer object behind bitmap. Don't make any
+                                    assumptions about buffer mapping (bo->map)
+                                    state. This state however can only be changed
+                                    when lock is held on bitmap */
+
+    ULONG   pitch;          /* Width of single data row in bytes */
+    UBYTE   bytesperpixel;  /* In bytes, how many bytes to store a pixel */
+    ULONG   stdfmt;         /* vHidd_StdPixFmt_* (Unknown for a video bitmap) */
+    ULONG   videoformat;    /* vHidd_VideoFmt_*, 0 = RGB; a video bitmap is scan-out only */
+    BOOL    gpu_dirty;      /* Engine work targeting this bo has been queued
+                               and not yet waited for. Any CPU access via the
+                               mapping must sync first (MAP_BUFFER does). */
+    struct
+    {
+        ULONG height;           /* Height of bitmap in pixels */
+        ULONG width;            /* Width of bitmap in pixels */
+        UBYTE bitsPerPixel;     /* In bits, how many bits used to represt the color */
+        UBYTE depth;            /* In bits, how many bits used to represt the color */
+        APTR  pScreen;          /* Pointer to CardData */
+    } drawable;
+
+    BOOL    displayable;    /* Can bitmap be displayed on screen */
+    
+    /* Information connected with display */
+    LONG        xoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */
+    LONG        yoffset;        /* Offset to bitmap point that is displayed as (0,0) on screen */
+    ULONG       fbid;           /* Contains ID under which bitmap 
+                                              is registered as framebuffer or 
+                                              0 otherwise */
+
+    /*
+     * Scan-out bitmap (aHidd_BitMap_Scanout): nbufs buffers of the same
+     * size and pitch; bo/fbid above always alias buf[front], so that every
+     * existing method sees the front buffer. nbufs == 0 for ordinary bitmaps.
+     */
+    ULONG       nbufs;
+    ULONG       front;          /* buffer scanned out / addressed by bo */
+    ULONG       back;           /* buffer a client should write next */
+    ULONG       planeoff[2];    /* planar video: byte offsets of the U (or UV) and V planes */
+    BOOL        decodetarget;   /* aHidd_BitMap_DecodeTarget: NVDEC output lands in the buffers */
+    struct
+    {
+        struct nouveau_bo   *bo;
+        ULONG               fbid;
+        /*
+         * Decode target: the last decode into this buffer. The session's
+         * semaphore reaching decseq means the decoder has finished its
+         * block-linear picture; the copy engine then detiles it into bo
+         * (nvgfx_decode.c, HIDDNouveauDecodeSettle).
+         */
+        struct HIDDNouveauDecode *dec;      /* session, NULL = nothing pending */
+        ULONG               decseq;
+        LONG                decslot;        /* pool slot holding the picture */
+        UBYTE               decstate;       /* NOUVEAU_DECSTATE_* */
+        struct nouveau_bo   *shadow;        /* GART copy the CPU gets for a lock (nvgfx_decode.c) */
+        BOOL                shadowlocked;   /* the current lock handed out the shadow */
+    } buf[NOUVEAU_MAX_BUFFERS];
+};
+
+#define NOUVEAU_DECSTATE_NONE       0   /* no decode pending */
+#define NOUVEAU_DECSTATE_DECODING   1   /* submitted; copy-out not issued */
+#define NOUVEAU_DECSTATE_COPYING    2   /* copy-out issued, not waited for */
+#define NOUVEAU_DECSTATE_ERROR      3   /* the decoder reported an error */
+
+#define CLID_Hidd_I2C_Nouveau           "hidd.i2c.nvgfx"
+#define IID_Hidd_I2C_Nouveau            "hidd.i2c.nvgfx"
+
+#define HiddI2CNouveauAttrBase __IHidd_I2C_Nouveau
+
+#ifndef __OOP_NOATTRBASES__
+extern OOP_AttrBase HiddI2CNouveauAttrBase;
+#endif
+
+enum
+{
+    aoHidd_I2C_Nouveau_Adapter,     /* [I..] The i2c_adapter object */
+    
+    num_Hidd_I2C_Nouveau_Attrs
+};
+
+#define aHidd_I2C_Nouveau_Adapter          (HiddI2CNouveauAttrBase + aoHidd_I2C_Nouveau_Adapter)
+
+#define IS_I2CNOUVEAU_ATTR(attr, idx) \
+    (((idx) = (attr) - HiddI2CNouveauAttrBase) < num_Hidd_I2C_Nouveau_Attrs)
+
+struct HIDDNouveauI2CData
+{
+    IPTR i2c_adapter;
+};
+
+
+struct CardData
+{
+    /* Card controlling objects */
+    ULONG                   Architecture;
+    BOOL                    IsPCIE;
+
+    LONG                    currentRop;
+
+    struct nouveau_device   *dev;                   /* Device object acquired from libdrm */
+    struct nouveau_client   *client;
+
+    struct nouveau_object   *channel;
+    struct nouveau_pushbuf  *pushbuf;
+    struct nouveau_bufctx   *bufctx;
+    struct nouveau_object   *notify0;
+
+    struct nouveau_object   *vblank_sem;
+    struct nouveau_object   *NvNull;
+    struct nouveau_object   *NvContextSurfaces;
+    struct nouveau_object   *NvImagePattern;
+    struct nouveau_object   *NvRop;
+    struct nouveau_object   *NvRectangle;
+    struct nouveau_object   *NvImageBlit;
+    struct nouveau_object   *NvMemFormat;
+    struct nouveau_object   *Nv2D;
+    struct nouveau_object   *Nv3D;
+    struct nouveau_object   *NvSW;
+    struct nouveau_object   *NvCOPY;
+    struct nouveau_bo       *scratch;
+
+    BOOL ce_enabled;
+    struct nouveau_object   *ce_channel;
+    struct nouveau_pushbuf  *ce_pushbuf;
+    struct nouveau_object   *NvCopy;
+    BOOL (*ce_rect)(struct nouveau_pushbuf *, struct nouveau_object *,
+            int, int, int,
+            struct nouveau_bo *, uint32_t, int, int, int, int, int,
+            struct nouveau_bo *, uint32_t, int, int, int, int, int);
+    BOOL (*ce_fill)(struct nouveau_pushbuf *, struct nouveau_object *, int,
+            struct nouveau_bo *, uint32_t, int, int, int, int, int, int,
+            uint32_t);
+
+    /* NVDEC (nvgfx_decode.c): the decoder class found on the first query */
+    ULONG nvdec_class;      /* NVxxB0 class the channel accepts, 0 = none */
+    LONG  nvdec_probe;      /* 0 = not tried, 1 = found, -1 = no decoder */
+    struct nouveau_bo       *GART;                  /* Buffer in GART for upload/download of images */
+    ULONG gart_pos;         /* Ring position in the GART buffer: uploads stream
+                               without waiting until the ring wraps */
+    struct SignalSemaphore  gartsemaphore;
+};
+
+struct staticdata
+{
+    char hardwarename[64];
+    OOP_Class       *basegc;            /* baseclass for CreateObject */
+    OOP_Class       *basebm;            /* baseclass for CreateObject */
+    OOP_Class       *basei2c;
+
+    OOP_Class       *gfxclass;
+    OOP_Class       *displayclass;
+    OOP_Class       *bmclass;
+    OOP_Class       *i2cclass;
+
+    /* the 3D parts opened on demand (nvgfx_nvdd.c) */
+    struct SignalSemaphore nvddLock;
+    struct Library  *galliumNvdd;       /* nouveau.nvdd, the gallium driver */
+    BOOL            galliumNvddFailed;  /* not there: do not look again */
+    struct Library  *nvkNvdd;           /* nvk.nvdd, the Vulkan driver */
+    BOOL            nvkNvddFailed;
+
+    OOP_Object      *display;
+    OOP_Object      *dmenum;
+
+    OOP_AttrBase    hiddAttrBase;
+    OOP_AttrBase    pixFmtAttrBase;
+    OOP_AttrBase    gfxAttrBase;
+    OOP_AttrBase    displayAttrBase;
+    OOP_AttrBase    dmenumAttrBase;
+    OOP_AttrBase    gfxNouveauAttrBase;
+    OOP_AttrBase    syncAttrBase;
+    OOP_AttrBase    bitMapAttrBase;
+    OOP_AttrBase    planarAttrBase;
+    OOP_AttrBase    i2cNouveauAttrBase;
+    OOP_AttrBase    gcAttrBase;
+    OOP_AttrBase    bitMapNouveauAttrBase;
+    
+    OOP_MethodID    mid_CopyMemBox16;
+    OOP_MethodID    mid_CopyMemBox32;
+    OOP_MethodID    mid_PutMem32Image16;
+    OOP_MethodID    mid_GetMem32Image16;
+    OOP_MethodID    mid_PutMemTemplate16;
+    OOP_MethodID    mid_PutMemTemplate32;
+    OOP_MethodID    mid_PutMemPattern16;
+    OOP_MethodID    mid_PutMemPattern32;
+    OOP_MethodID    mid_ConvertPixels;
+    OOP_MethodID    mid_GetPixFmt;
+    
+
+    struct CardData carddata;
+    
+    struct SignalSemaphore multibitmapsemaphore;
+};
+
+LIBBASETYPE 
+{
+    struct Library      base;
+    struct staticdata   sd;
+};
+
+#define METHOD(base, id, name) \
+  base ## __ ## id ## __ ## name (OOP_Class *cl, OOP_Object *o, struct p ## id ## _ ## name *msg)
+
+#define BASE(lib)                   ((LIBBASETYPEPTR)(lib))
+
+#define SD(cl)                      (&BASE(cl->UserData)->sd)
+
+#define LOCK_ENGINE                 { ObtainSemaphore(&globalLock); }
+#define UNLOCK_ENGINE               { ReleaseSemaphore(&globalLock); }
+
+#define LOCK_BITMAP                 { ObtainSemaphore(&bmdata->semaphore); }
+#define UNLOCK_BITMAP               { ReleaseSemaphore(&bmdata->semaphore); }
+
+#define LOCK_BITMAP_BM(bmdata)      { ObtainSemaphore(&(bmdata)->semaphore); }
+#define UNLOCK_BITMAP_BM(bmdata)    { ReleaseSemaphore(&(bmdata)->semaphore); }
+
+#define LOCK_MULTI_BITMAP           { ObtainSemaphore(&(SD(cl))->multibitmapsemaphore); }
+#define UNLOCK_MULTI_BITMAP         { ReleaseSemaphore(&(SD(cl))->multibitmapsemaphore); }
+
+void nouveau_compat_log(const char *fmt, ...);
+#define nvlog nouveau_compat_log
+
+/* Engine work is submitted lazily; a result nobody syncs for (the
+   last operation on a visible bitmap) still has to reach the display,
+   so anything queued for a displayable bitmap is kicked right away.
+   Off-screen work is carried along by the on-screen blit that consumes
+   it, or by the sync of a CPU access. */
+static inline VOID HIDDNouveauFlushDisplayable(struct CardData *carddata,
+    struct HIDDNouveauBitMapData *bmdata)
+{
+    if (!bmdata->displayable)
+        return;
+    if (carddata->pushbuf)
+        nouveau_pushbuf_kick(carddata->pushbuf);
+    if (carddata->ce_enabled && carddata->ce_pushbuf)
+        nouveau_pushbuf_kick(carddata->ce_pushbuf);
+}
+
+/* The staging buffer's CPU mapping is cached; these keep the rows a
+   transfer exchanges coherent with the engine, and only those rows. */
+#include <proto/exec.h>
+#include <exec/memory.h>
+static inline VOID nouveau_staging_to_gpu(APTR p, ULONG len)
+{
+    ULONG l = len;
+    CachePreDMA(p, &l, DMA_ReadFromRAM);
+}
+static inline VOID nouveau_staging_from_gpu(APTR p, ULONG len)
+{
+    ULONG l = len;
+    CachePostDMA(p, &l, 0);
+}
+
+#define MAP_BUFFER                  { if (!bmdata->bo->map) nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client); \
+                                      if (bmdata->gpu_dirty) { nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client); bmdata->gpu_dirty = FALSE; } }
+
+#define IS_NOUVEAU_BM_CLASS(x)      ((x) == SD(cl)->bmclass)
+
+/* Same ordering rules as the drm-compat accessors: riscv MMIO needs
+   explicit fences, see include/drm-compat/drm_compat_funcs.h */
+#if defined(__riscv)
+#define __nv_io_bw()                __asm__ __volatile__ ("fence w,o" : : : "memory")
+#define __nv_io_ar()                __asm__ __volatile__ ("fence i,r" : : : "memory")
+#else
+#define __nv_io_bw()                do { } while (0)
+#define __nv_io_ar()                do { } while (0)
+#endif
+
+#define hidd_writel(val, addr)      ({ __nv_io_bw(); *(volatile ULONG*)(IPTR)(addr) = (val); })
+#define hidd_readl(addr)            ({ ULONG __iol = *(volatile ULONG*)(IPTR)(addr); __nv_io_ar(); __iol; })
+#define hidd_writew(val, addr)      ({ __nv_io_bw(); *(volatile UWORD*)(IPTR)(addr) = (val); })
+#define hidd_readw(addr)            ({ UWORD __iow = *(volatile UWORD*)(IPTR)(addr); __nv_io_ar(); __iow; })
+
+enum DMAObjects 
+{
+    NvNullObject        = 0x00000000,
+    NvContextSurfaces   = 0x80000010, 
+    NvRop               = 0x80000011, 
+    NvImagePattern      = 0x80000012, 
+    NvClipRectangle     = 0x80000013, 
+    NvSolidLine         = 0x80000014, 
+    NvImageBlit         = 0x80000015, 
+    NvRectangle         = 0x80000016, 
+    NvScaledImage       = 0x80000017, 
+    NvMemFormat         = 0x80000018,
+    Nv3D                = 0x80000019,
+    NvImageFromCpu      = 0x8000001A,
+    NvContextBeta1      = 0x8000001B,
+    NvContextBeta4      = 0x8000001C,
+    Nv2D                = 0x80000020,
+    NvSW                = 0x80000021,
+    NvDmaFB             = 0xD8000001,
+    NvDmaTT             = 0xD8000002,
+    NvDmaNotifier0      = 0xD8000003,
+    NvVBlankSem         = 0xD8000004,
+};
+
+#define NV_ARCH_03  0x03
+#define NV_ARCH_04  0x04
+#define NV_ARCH_10  0x10
+#define NV_ARCH_20  0x20
+#define NV_ARCH_30  0x30
+#define NV_ARCH_40  0x40
+#define NV_TESLA    0x50
+#define NV_FERMI    0xc0
+#define NV_KEPLER   0xe0
+#define NV_MAXWELL  0x110
+#define NV_PASCAL   0x130
+#define NV_VOLTA    0x140
+#define NV_TURING   0x160
+#define NV_AMPERE   0x170
+#define NV_HOPPER   0x180
+#define NV_ADA      0x190
+#define NV_BLACKWELL 0x1a0
+
+#define BLENDOP_SOLID           1
+#define BLENDOP_ALPHA_PREMULT   3
+#define BLENDOP_ALPHA           13
+
+/* nvgfx_nvdd.c */
+BOOL HIDDNouveauGalliumSupported(struct CardData *carddata);
+OOP_Object *HIDDNouveauNVDDGalliumObject(struct staticdata *sd, OOP_Class *base,
+    OOP_Object *display, struct TagItem *attrs);
+OOP_Object *HIDDNouveauNVDDVulkanObject(struct staticdata *sd, OOP_Class *base,
+    OOP_Object *display, struct TagItem *attrs);
+VOID HIDDNouveauNVDDExit(struct staticdata *sd);
+
+/* nv_accel_common.c */
+BOOL HIDDNouveauAccelCommonInit(struct CardData * carddata);
+VOID HIDDNouveauAccelShutdown(struct CardData *carddata);
+BOOL HIDDNouveauAccelAllocSurface(struct CardData *carddata, ULONG width, ULONG height, UBYTE bpp, ULONG *pitch,
+    struct nouveau_bo **bo);
+
+BOOL NVAccelGetCtxSurf2DFormatFromPixmap(struct HIDDNouveauBitMapData * bmdata, LONG *fmt_ret);
+
+/* nv04_exa.c */
+VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
+    LONG pat0, LONG pat1);
+BOOL HIDDNouveauNV04FillSolidRect(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
+    LONG maxY, ULONG drawmode, ULONG color);
+BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
+    ULONG drawmode);
+
+/* nv10_exa.c */
+BOOL HIDDNouveauNV103DCopyBox(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
+    ULONG blendop);
+
+/* nv30_exa.c */
+BOOL HIDDNouveauNV303DCopyBox(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
+    ULONG blendop);
+
+/* nv40_exa.c */
+BOOL HIDDNouveauNV403DCopyBox(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
+    ULONG blendop);
+
+/* nv50_exa.c */
+VOID HIDDNouveauNV50SetPattern(struct CardData * carddata, LONG col0, 
+    LONG col1, LONG pat0, LONG pat1);
+BOOL HIDDNouveauNV50FillSolidRect(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
+    LONG maxY, ULONG drawmode, ULONG color);
+BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
+    ULONG drawmode);
+
+/* nvc0_exa.c */
+VOID HIDDNouveauNVC0SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
+		  LONG pat0, LONG pat1);
+BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
+    LONG maxY, ULONG drawmode, ULONG color);
+typedef VOID (*HIDDNouveauStagingFn)(APTR rows, ULONG pitch, LONG line0,
+    LONG lines, APTR ctx);
+BOOL HIDDNouveauNVC0StagingRect(struct CardData *carddata,
+    struct HIDDNouveauBitMapData *bmdata, LONG x, LONG y, LONG w, LONG h,
+    HIDDNouveauStagingFn fn, APTR ctx);
+BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
+    ULONG drawmode);
+
+/* nvgfx_accel.c */
+BOOL HiddNouveauWriteFromRAM(
+    APTR src, ULONG srcPitch, HIDDT_StdPixFmt srcPixFmt,
+    APTR dst, ULONG dstPitch,
+    ULONG width, ULONG height,
+    OOP_Class *cl, OOP_Object *o);
+BOOL HiddNouveauReadIntoRAM(
+    APTR src, ULONG srcPitch, 
+    APTR dst, ULONG dstPitch, HIDDT_StdPixFmt dstPixFmt,
+    ULONG width, ULONG height,
+    OOP_Class *cl, OOP_Object *o);
+BOOL HiddNouveauAccelARGBUpload3D(
+    UBYTE * srcpixels, ULONG srcpitch,
+    LONG x, LONG y, LONG width, LONG height, 
+    OOP_Class *cl, OOP_Object *o);
+BOOL HiddNouveauAccelAPENUpload3D(
+    UBYTE * srcalpha, BOOL srcinvertalpha, ULONG srcpitch, ULONG srcpenrgb,
+    LONG x, LONG y, LONG width, LONG height, 
+    OOP_Class *cl, OOP_Object *o);
+VOID HIDDNouveauBitMapPutAlphaImage32(APTR dstmap, ULONG dstpitch,
+    APTR srcbuff, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
+VOID HIDDNouveauBitMapPutAlphaImage16(APTR dstmap, ULONG dstpitch,
+    APTR srcbuff, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
+VOID HIDDNouveauBitMapPutAlphaTemplate32(APTR dstmap, ULONG dstpitch,
+    OOP_Object * gc, OOP_Object * bm, BOOL invertalpha,
+    UBYTE * srcalpha, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
+VOID HIDDNouveauBitMapPutAlphaTemplate16(APTR dstmap, ULONG dstpitch,
+    OOP_Object * gc, OOP_Object * bm, BOOL invertalpha,
+    UBYTE * srcalpha, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
+VOID HIDDNouveauBitMapDrawSolidLine(struct HIDDNouveauBitMapData * bmdata,
+    OOP_Object * gc, LONG destX1, LONG destY1, LONG destX2, LONG destY2);
+
+/* nouveau_exa.c */
+BOOL HiddNouveauNVAccelUploadM2MF(
+    UBYTE * srcpixels, ULONG srcpitch, HIDDT_StdPixFmt srcPixFmt,
+    LONG x, LONG y, LONG width, LONG height, 
+    OOP_Class *cl, OOP_Object *o);
+BOOL HiddNouveauNVAccelDownloadM2MF(
+    UBYTE * dstpixels, ULONG dstpitch, HIDDT_StdPixFmt dstPixFmt,
+    LONG x, LONG y, LONG width, LONG height, 
+    OOP_Class *cl, OOP_Object *o);
+
+VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible);
+/*
+ * Nouveau does not compose screens itself: ShowViewPorts() declines,
+ * ModeProperties reports no composition capability, and the display's
+ * compositor shows whatever it composes through Hidd_Display::Show().
+ */
+BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm);
+VOID HIDDNouveauSetOffsets(OOP_Object * bm, LONG newxoffset, LONG newyoffset);
+
+/* Declaration of nouveau initialization functions */
+struct pci_dev;
+extern struct pci_dev *nouveau_init_findcard(void);
+extern int nouveau_init_probe(struct pci_dev *pdev);
+extern int nouveau_init(void);
+extern void nouveau_shutdown(void);
+extern volatile int nouveau_shutting_down;
+
+/* Commom memory allocation */
+APTR HIDDNouveauAlloc(ULONG size);
+VOID HIDDNouveauFree(APTR memory);
+
+#endif /* _NOUVEAU_INTERN_H */

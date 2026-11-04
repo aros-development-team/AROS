@@ -1,0 +1,258 @@
+#   Build libnvk.a - NVK, Mesa's Vulkan driver for NVIDIA cards
+#   (src/nouveau/vulkan), for nvk.hidd.
+#
+#   What meson's libvulkan_nouveau links around the driver is built here
+#   as one archive: the nouveau winsys (src/nouveau/winsys), the MME
+#   macro assembler and simulators (src/nouveau/mme), the C side of the
+#   nvidia class headers (src/nouveau/headers: nv_push.c and the
+#   nv_push_<class>.h/.c class_parser.py writes), the Vulkan runtime's
+#   syncobj code and util's sync provider over libdrm, and xmlconfig for
+#   the driver's drirc options. NAK and NIL come from libnak (Rust, so this
+#   needs --enable-rust like libnak does); the Vulkan runtime and WSI from
+#   their own linklibs.
+#
+#   Mesa code reaches the kernel through libdrm; here that is nvk_drm.c,
+#   libdrm's API over the DRM device nvgfx.hidd exports
+#   (hidds/nvgfx/include/libdrm/drm_entry.h). No device node, no mmap:
+#   the sources that opened and mapped the node carry __AROS__ paths in
+#   mesa-26.2.5-aros.diff.
+#
+#   NVK's two OpenCL C kernels need mesa_clc (clang + libclc on the host);
+#   nvkcl.c carries them as NIR builder code instead. nv_cubin needs
+#   libelf; nv_cubin_stub.c stands in, the extension that uses it is
+#   experimental and off.
+#
+#   The entrypoint tables reference the nvk_*/wsi_*/vk_common_* functions
+#   weakly, so the module links this archive, libvulkan_wsi and
+#   libvulkan_runtime with --whole-archive, as meson's link_whole does.
+
+include $(SRCDIR)/config/aros.cfg
+
+CUR_MESADIR := src/nouveau/vulkan
+include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+-include $(SRCDIR)/tools/crosstools/rust.cfg
+
+#MM- mesa3d-linklib-nvk-yes : mesa3d-linklib-nvk
+#MM mesa3d-linklib-nvk : includes mesa3d-nvk-generate mesa3d-generate-vulkan-runtime mesa3d-generate-vulkan-wsi \
+#MM     mesa3d-linklib-nak mesa3d-linklib-vulkan-runtime mesa3d-linklib-vulkan-wsi \
+#MM     mesa3d-linklib-compiler mesa3d-linklib-mesautil linklibs-galliumauxiliary
+
+NVK_SRCDIR    := $(top_srcdir)/$(CUR_MESADIR)
+NVK_GENDIR    := $(top_builddir)/$(CUR_MESADIR)
+NVH_SRCDIR    := $(top_srcdir)/src/nouveau/headers
+NVH_GENDIR    := $(top_builddir)/src/nouveau/headers
+NIL_GENDIR    := $(top_builddir)/src/nouveau/nil
+WINSYS_SRCDIR := $(top_srcdir)/src/nouveau/winsys
+MME_SRCDIR    := $(top_srcdir)/src/nouveau/mme
+CUBIN_SRCDIR  := $(top_srcdir)/src/nouveau/cubin
+VK_RT_GENDIR  := $(top_builddir)/src/vulkan/runtime
+VK_UTIL_GENDIR := $(top_builddir)/src/vulkan/util
+WSI_GENDIR    := $(top_builddir)/src/vulkan/wsi
+
+# nvk_files in the driver's meson.build, minus the android file
+NVK_SOURCES := \
+    $(NVK_SRCDIR)/nvk_acceleration_structure \
+    $(NVK_SRCDIR)/nvk_buffer \
+    $(NVK_SRCDIR)/nvk_buffer_view \
+    $(NVK_SRCDIR)/nvk_cmd_buffer \
+    $(NVK_SRCDIR)/nvk_cmd_clear \
+    $(NVK_SRCDIR)/nvk_cmd_copy \
+    $(NVK_SRCDIR)/nvk_cmd_dispatch \
+    $(NVK_SRCDIR)/nvk_cmd_draw \
+    $(NVK_SRCDIR)/nvk_cmd_indirect \
+    $(NVK_SRCDIR)/nvk_cmd_meta \
+    $(NVK_SRCDIR)/nvk_cmd_pool \
+    $(NVK_SRCDIR)/nvk_cubin \
+    $(NVK_SRCDIR)/nvk_descriptor_set \
+    $(NVK_SRCDIR)/nvk_descriptor_set_layout \
+    $(NVK_SRCDIR)/nvk_descriptor_table \
+    $(NVK_SRCDIR)/nvk_device \
+    $(NVK_SRCDIR)/nvk_device_memory \
+    $(NVK_SRCDIR)/nvk_edb_bview_cache \
+    $(NVK_SRCDIR)/nvk_event \
+    $(NVK_SRCDIR)/nvk_format \
+    $(NVK_SRCDIR)/nvk_heap \
+    $(NVK_SRCDIR)/nvk_host_copy \
+    $(NVK_SRCDIR)/nvk_image \
+    $(NVK_SRCDIR)/nvk_image_view \
+    $(NVK_SRCDIR)/nvk_indirect_execution_set \
+    $(NVK_SRCDIR)/nvk_instance \
+    $(NVK_SRCDIR)/nvk_mem_arena \
+    $(NVK_SRCDIR)/nvk_mem_stream \
+    $(NVK_SRCDIR)/nvk_mme \
+    $(NVK_SRCDIR)/nvk_nir_lower_descriptors \
+    $(NVK_SRCDIR)/nvk_nir_lower_mesh_shader \
+    $(NVK_SRCDIR)/nvk_physical_device \
+    $(NVK_SRCDIR)/nvk_query_pool \
+    $(NVK_SRCDIR)/nvk_queue \
+    $(NVK_SRCDIR)/nvk_sampler \
+    $(NVK_SRCDIR)/nvk_shader \
+    $(NVK_SRCDIR)/nvk_upload_queue \
+    $(NVK_SRCDIR)/nvk_wsi \
+    $(NVK_SRCDIR)/layers/nvk_app_workarounds \
+    $(NVK_SRCDIR)/nvkmd/nouveau/nvkmd_nouveau_ctx \
+    $(NVK_SRCDIR)/nvkmd/nouveau/nvkmd_nouveau_dev \
+    $(NVK_SRCDIR)/nvkmd/nouveau/nvkmd_nouveau_mem \
+    $(NVK_SRCDIR)/nvkmd/nouveau/nvkmd_nouveau_pdev \
+    $(NVK_SRCDIR)/nvkmd/nouveau/nvkmd_nouveau_va \
+    $(NVK_SRCDIR)/nvkmd/nvkmd
+
+# libnouveau_ws, libnouveau_mme, libnouveau_cubin (nv_cubin.c replaced by
+# the stub), libnvidia_headers
+NVK_WINSYS_SOURCES := \
+    $(WINSYS_SRCDIR)/nouveau_bo \
+    $(WINSYS_SRCDIR)/nouveau_context \
+    $(WINSYS_SRCDIR)/nouveau_device
+
+NVK_MME_SOURCES := \
+    $(MME_SRCDIR)/mme_fermi \
+    $(MME_SRCDIR)/mme_fermi_builder \
+    $(MME_SRCDIR)/mme_fermi_sim \
+    $(MME_SRCDIR)/mme_sim \
+    $(MME_SRCDIR)/mme_tu104 \
+    $(MME_SRCDIR)/mme_tu104_builder \
+    $(MME_SRCDIR)/mme_tu104_sim
+
+NVK_CUBIN_SOURCES := \
+    $(CUBIN_SRCDIR)/nv_fatbin \
+    $(SRCDIR)/$(CURDIR)/nv_cubin_stub
+
+# the classes in nv_classes of src/nouveau/headers/meson.build
+NV_CLASSES := $(shell $(SED) -n "/^nv_classes = \[/,/^\]/p" $(NVH_SRCDIR)/meson.build | grep -o "'cl[0-9a-f]*'" | tr -d "'")
+NV_PUSH_GEN_SOURCES := $(addprefix $(NVH_GENDIR)/nv_push_,$(NV_CLASSES))
+
+NVK_HEADERS_SOURCES := \
+    $(NVH_SRCDIR)/nv_push \
+    $(NV_PUSH_GEN_SOURCES)
+
+# what the driver needs from the Vulkan runtime and util beyond their
+# linklibs: both are only built where libdrm is
+NVK_RUNTIME_SOURCES := \
+    $(top_srcdir)/src/vulkan/runtime/vk_drm_syncobj \
+    $(top_srcdir)/src/util/u_sync_provider \
+    $(top_srcdir)/src/util/xmlconfig
+
+NVK_AROS_SOURCES := \
+    $(SRCDIR)/$(CURDIR)/nvk_drm \
+    $(SRCDIR)/$(CURDIR)/nvkcl
+
+NVK_GEN_SOURCES := \
+    $(NVK_GENDIR)/nvk_entrypoints \
+    $(NVK_GENDIR)/nvk_drirc
+
+USER_INCLUDES := \
+    -I$(SRCDIR)/$(CURDIR)/include \
+    -I$(SRCDIR)/$(CURDIR) \
+    -I$(SRCDIR)/$(CURDIR)/../aros_compat \
+    -I$(top_srcdir)/include \
+    -I$(top_srcdir)/src \
+    -I$(NVK_SRCDIR) \
+    -I$(NVK_GENDIR) \
+    -I$(WINSYS_SRCDIR) \
+    -I$(MME_SRCDIR) \
+    -I$(CUBIN_SRCDIR) \
+    -I$(NVH_SRCDIR) \
+    -I$(NVH_SRCDIR)/nvidia/classes \
+    -I$(NVH_GENDIR) \
+    -I$(top_srcdir)/src/nouveau \
+    -I$(top_srcdir)/src/nouveau/drm \
+    -I$(top_srcdir)/src/nouveau/compiler \
+    -I$(top_srcdir)/src/nouveau/nil \
+    -I$(NIL_GENDIR) \
+    -I$(top_srcdir)/src/compiler \
+    -I$(top_srcdir)/src/compiler/nir \
+    -I$(top_builddir)/src \
+    -I$(top_builddir)/src/compiler \
+    -I$(top_builddir)/src/compiler/nir \
+    -I$(top_srcdir)/src/util \
+    -I$(top_builddir)/src/util \
+    -I$(top_srcdir)/src/util/format \
+    -I$(top_builddir)/src/util/format \
+    -I$(top_srcdir)/src/gallium/include \
+    -I$(top_srcdir)/src/gallium/auxiliary \
+    -I$(top_srcdir)/src/vulkan/runtime \
+    -I$(top_srcdir)/src/vulkan/util \
+    -I$(top_srcdir)/src/vulkan/wsi \
+    -I$(VK_RT_GENDIR) \
+    -I$(VK_UTIL_GENDIR) \
+    -I$(WSI_GENDIR) \
+    -iquote $(SRCDIR)/workbench/hidds/nvgfx/include
+
+# xmlconfig without expat (WITH_XMLCONFIG=0 reads the generated
+# driconf_static.h) and without regex, as the lavapipe and amdgpu builds
+# have it. HAVE_LIBDRM selects the real libdrm interface in util/libdrm.h
+# and util/u_sync_provider.h: nvk_drm.c answers it. USE_GCC_ATOMIC_BUILTINS
+# is what meson sets for this compiler: p_atomic_set() is then a statement,
+# which nvk_mem_arena.h returns from a void function.
+USER_CPPFLAGS += \
+    -DNO_AMIGA_LINKAGE_TYPES \
+    -DUSE_GCC_ATOMIC_BUILTINS \
+    -DPACKAGE_VERSION=\"$(MESAGLVERSION)\" \
+    -DHAVE_LIBDRM=1 \
+    -DWITH_XMLCONFIG=0 -DNO_REGEX \
+    -DMESA_VK_LOG=0 \
+    -DNDEBUG \
+    -include $(SRCDIR)/$(CURDIR)/../aros_compat/aros_mesa_compat.h \
+    -include $(SRCDIR)/$(CURDIR)/nvk_drm_names.h
+
+# the class headers' designated initialisers set members twice on purpose
+USER_CFLAGS += $(MESA_NOWARNFLAGS) $(NOWARN_UNUSED_FUNCTION) -Wno-override-init
+
+%build_linklib mmake=mesa3d-linklib-nvk \
+    libname=nvk \
+    libdir=$(top_libdir) \
+    objdir=$(NVK_GENDIR) \
+    files="$(NVK_SOURCES) $(NVK_WINSYS_SOURCES) $(NVK_MME_SOURCES) $(NVK_CUBIN_SOURCES) $(NVK_HEADERS_SOURCES) $(NVK_RUNTIME_SOURCES) $(NVK_AROS_SOURCES) $(NVK_GEN_SOURCES)"
+
+#
+# Generated files
+#
+
+# nvk_entrypoints (vk_entrypoints_gen), nvk_drirc (nvk_drirc_gen) and
+# driconf_static.h (for xmlconfig) are what meson generates for the
+# driver; git_sha1.h stands in for the one meson writes at the tree's
+# root (a release tarball has no git revision).
+NVK_PY_GENERATED := \
+    $(NVK_GENDIR)/nvk_entrypoints.c $(NVK_GENDIR)/nvk_entrypoints.h \
+    $(NVK_GENDIR)/nvk_drirc.c $(NVK_GENDIR)/nvk_drirc.h \
+    $(NVK_GENDIR)/driconf_static.h $(NVK_GENDIR)/git_sha1.h
+
+$(NVK_PY_GENERATED) &: $(top_srcdir)/src/vulkan/util/vk_entrypoints_gen.py $(top_srcdir)/src/vulkan/registry/vk.xml \
+        $(NVK_SRCDIR)/nvk_drirc_gen.py $(NVK_SRCDIR)/00-nvk-defaults.conf $(top_srcdir)/src/util/drirc_gen.py \
+        $(top_srcdir)/src/util/driconf_static.py $(top_srcdir)/src/util/00-mesa-defaults.conf
+	%mkdir_q dir="$(NVK_GENDIR)"
+	$(Q)$(ECHO) "Generating NVK entrypoints and drirc"
+	$(Q)VK_XML=$(top_srcdir)/src/vulkan/registry/vk.xml && \
+	PYTHONPATH="$(top_srcdir)/src/vulkan/util:$(top_srcdir)/src/util:$(top_srcdir)/src:$$PYTHONPATH" && \
+	export PYTHONPATH && \
+	$(PYTHON) $(top_srcdir)/src/vulkan/util/vk_entrypoints_gen.py \
+	  --xml "$$VK_XML" --beta false --proto --weak \
+	  --prefix nvk \
+	  --out-c "$(NVK_GENDIR)/nvk_entrypoints.c" \
+	  --out-h "$(NVK_GENDIR)/nvk_entrypoints.h" && \
+	$(PYTHON) $(NVK_SRCDIR)/nvk_drirc_gen.py \
+	  --import-path $(top_srcdir)/src/util \
+	  --drirc-src "$(NVK_GENDIR)/nvk_drirc.c" \
+	  --drirc-hdr "$(NVK_GENDIR)/nvk_drirc.h" \
+	  --validate $(NVK_SRCDIR)/00-nvk-defaults.conf && \
+	$(PYTHON) $(top_srcdir)/src/util/driconf_static.py \
+	  $(top_srcdir)/src/util/00-mesa-defaults.conf \
+	  "$(NVK_GENDIR)/driconf_static.h" && \
+	$(ECHO) '#define MESA_GIT_SHA1 ""' > "$(NVK_GENDIR)/git_sha1.h" \
+	|| ($(RM) $(NVK_PY_GENERATED); false)
+
+# nv_push_<class>.h/.c for every class and nv_push_class_dump.h, as
+# src/nouveau/headers/meson.build generates them
+NV_PUSH_GENERATED := $(addsuffix .c,$(NV_PUSH_GEN_SOURCES)) $(addsuffix .h,$(NV_PUSH_GEN_SOURCES)) \
+    $(NVH_GENDIR)/nv_push_class_dump.h
+
+$(NV_PUSH_GENERATED) &: $(SRCDIR)/$(CURDIR)/gen-nv-push.sh $(NVH_SRCDIR)/meson.build \
+        $(NVH_SRCDIR)/class_parser.py $(NVH_SRCDIR)/nv_push_class_dump_h.py $(NVH_SRCDIR)/util.py
+	$(Q)$(ECHO) "Generating nvidia class push headers"
+	$(Q)$(SHELL) $(SRCDIR)/$(CURDIR)/gen-nv-push.sh $(NVH_SRCDIR) $(NVH_GENDIR) "$(PYTHON)" \
+	|| ($(RM) $(NV_PUSH_GENERATED); false)
+
+#MM
+mesa3d-nvk-generate : $(NVK_PY_GENERATED) $(NV_PUSH_GENERATED)
+
+%common

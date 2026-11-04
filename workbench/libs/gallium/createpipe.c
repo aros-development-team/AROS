@@ -8,6 +8,9 @@
 #include <proto/intuition.h>
 
 #include <hidd/gfx.h>
+#include <hidd/vulkan_hidd.h>
+
+#include <string.h>
 
 #include "gallium_intern.h"
 
@@ -25,6 +28,72 @@ static void galliumstrjoin(char *dst, const char *a, const char *b)
     while (*b)
         *dst++ = *b++;
     *dst = '\0';
+}
+
+/*
+ * A Vulkan object: the display's (CreateObject asked for the Vulkan class),
+ * or, with no display, the software driver's. vulkan.hidd, and the
+ * software driver, are loaded here when first needed.
+ */
+static OOP_Object *GalliumVulkanObject(struct Library *GalliumBase, OOP_Object *display)
+{
+    struct GalliumBase *gb = GB(GalliumBase);
+    OOP_Class *vkclass;
+    OOP_AttrBase vkAB;
+    OOP_Object *vk = NULL;
+
+    if (!gb->vulkanhidd && !(gb->vulkanhidd = OpenLibrary("vulkan.hidd", 8)))
+        return NULL;
+    if (!(vkclass = OOP_FindClass(CLID_Hidd_Vulkan)) || !(vkAB = OOP_ObtainAttrBase(IID_Hidd_Vulkan)))
+        return NULL;
+    {
+        struct TagItem vktags[] =
+        {
+            { vkAB + aoHidd_Vulkan_InterfaceVersion, VULKAN_INTERFACE_VERSION },
+            { TAG_DONE, 0 }
+        };
+
+        if (display)
+            vk = HIDD_Display_CreateObject(display, vkclass, vktags);
+        else
+        {
+            if (!gb->lavapipehidd)
+                gb->lavapipehidd = OpenLibrary("lavapipe.hidd", 0);
+            if (gb->lavapipehidd)
+                vk = OOP_NewObject(NULL, "hidd.vulkan.lavapipe", vktags);
+        }
+    }
+    OOP_ReleaseAttrBase(IID_Hidd_Vulkan);
+    return vk;
+}
+
+/*
+ * GL on Vulkan: a Vulkan object wrapped by zink.hidd, which owns it from
+ * then on (and disposes it when it cannot use it).
+ */
+static OOP_Object *GalliumOnVulkan(struct Library *GalliumBase, OOP_Object *vk,
+                                   struct TagItem *galliumTags)
+{
+    struct GalliumBase *gb = GB(GalliumBase);
+
+    if (!vk)
+        return NULL;
+    D(bug("[Gallium] %s: Vulkan object @ 0x%p, trying zink\n", __PRETTY_FUNCTION__, vk));
+    if (!gb->zinkhidd)
+        gb->zinkhidd = OpenLibrary("zink.hidd", 0);
+    if (!gb->zinkhidd)
+    {
+        OOP_DisposeObject(vk);
+        return NULL;
+    }
+    {
+        struct TagItem ztags[] =
+        {
+            { aHidd_Gallium_VulkanObject, (IPTR)vk },
+            { TAG_MORE, (IPTR)galliumTags }
+        };
+        return OOP_NewObject(NULL, "hidd.gallium.zink", ztags);
+    }
 }
 
 /*****************************************************************************
@@ -106,12 +175,19 @@ static void galliumstrjoin(char *dst, const char *a, const char *b)
             if (display)
             {
                 *driver = HIDD_Display_CreateObject(display, GB(GalliumBase)->basegallium, galliumTags);
+                /* no gallium driver for the card: GL on its Vulkan driver, if it has one */
+                if (!*driver)
+                    *driver = GalliumOnVulkan(GalliumBase, GalliumVulkanObject(GalliumBase, display), galliumTags);
             }
         }
     }
 
     if (pubscreen)
         UnlockPubScreen(NULL, pubscreen);
+
+    /* the software fallback zink: GL on the software Vulkan driver */
+    if (!*driver && !strcmp(GB(GalliumBase)->fallback, "zink"))
+        *driver = GalliumOnVulkan(GalliumBase, GalliumVulkanObject(GalliumBase, NULL), galliumTags);
 
     if (!*driver)
     {

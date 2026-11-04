@@ -301,8 +301,8 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_fence.h mesa-26.2.5.ar
  MUST_CHECK bool nouveau_fence_new(struct nouveau_context *, struct nouveau_fence **);
  void nouveau_fence_cleanup(struct nouveau_context *);
 diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_screen.c mesa-26.2.5.aros/src/gallium/drivers/nouveau/nouveau_screen.c
---- mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_screen.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/drivers/nouveau/nouveau_screen.c	2026-10-24 22:32:44.544765107 +0100
+--- mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_screen.c
++++ mesa-26.2.5.aros/src/gallium/drivers/nouveau/nouveau_screen.c
 @@ -11,7 +11,9 @@
  #include "util/u_string.h"
  #include "util/hex.h"
@@ -375,6 +375,19 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_screen.c mesa-26.2.5.a
  
     nouveau_mm_destroy(screen->mm_GART);
     nouveau_mm_destroy(screen->mm_VRAM);
+@@ -484,7 +501,12 @@
+ 
+    nouveau_device_del(&screen->device);
+    nouveau_drm_del(&screen->drm);
++#if defined(__AROS__)
++   /* the screen's own DRM client (nouveau.nvdd), not a C library file */
++   drmClose(fd);
++#else
+    close(fd);
++#endif
+ 
+    disk_cache_destroy(screen->disk_shader_cache);
+    nouveau_fence_list_destroy(&screen->fence);
 diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_vp3_video.c mesa-26.2.5.aros/src/gallium/drivers/nouveau/nouveau_vp3_video.c
 --- mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_vp3_video.c	2026-10-14 16:12:24.000000000 +0100
 +++ mesa-26.2.5.aros/src/gallium/drivers/nouveau/nouveau_vp3_video.c	2026-10-24 22:32:44.544154907 +0100
@@ -586,6 +599,333 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/vc4/vc4_uniforms.c mesa-26.2.5.aros/sr
  }
  
  static void
+diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_device_info.py mesa-26.2.5.aros/src/gallium/drivers/zink/zink_device_info.py
+--- mesa-26.2.5/src/gallium/drivers/zink/zink_device_info.py
++++ mesa-26.2.5.aros/src/gallium/drivers/zink/zink_device_info.py
+@@ -858,6 +858,9 @@
+                %endif
+             %endif
+                   if (!screen->vk.${cmd.name()}) {
++            #ifdef __AROS__
++                     mesa_logw("ZINK: ${ext.name} is enabled but ${cmd.full_name} did not load");
++            #endif
+             #ifndef NDEBUG
+                      screen->vk.${cmd.name()} = (PFN_${cmd.full_name})zink_stub_${cmd.name()};
+             #else
+diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_public.h mesa-26.2.5.aros/src/gallium/drivers/zink/zink_public.h
+--- mesa-26.2.5/src/gallium/drivers/zink/zink_public.h	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/drivers/zink/zink_public.h	2026-11-03 00:23:45.731176310 +0000
+@@ -36,4 +36,14 @@
+ zink_drm_create_screen(int fd, const struct pipe_screen_config *config, struct renderonly *ro);
+ struct pipe_screen *
+ zink_win32_create_screen(uint64_t adapter_luid);
++
++#ifdef __AROS__
++#include <vulkan/vulkan_core.h>
++
++/* As zink_create_screen, but with the Vulkan driver's vkGetInstanceProcAddr
++ * supplied by the caller instead of loaded from the loader library. */
++struct pipe_screen *
++zink_create_screen_with_gipa(struct sw_winsys *winsys, const struct pipe_screen_config *config,
++                             PFN_vkGetInstanceProcAddr gipa);
++#endif
+ #endif
+diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_resource.c mesa-26.2.5.aros/src/gallium/drivers/zink/zink_resource.c
+--- mesa-26.2.5/src/gallium/drivers/zink/zink_resource.c
++++ mesa-26.2.5.aros/src/gallium/drivers/zink/zink_resource.c
+@@ -23,6 +23,17 @@
+ 
+ #include "zink_resource.h"
+ 
++#ifdef __AROS__
++/* AROS has no dma-buf fds: an imported buffer arrives as a display buffer's
++ * GEM handle in the fd's place (see libnvk's drmPrimeFDToHandle), which is
++ * passed on as it is and is not a file to close. */
++#define zink_dmabuf_dup(fd)   (fd)
++#define zink_dmabuf_close(fd) ((void)(fd))
++#else
++#define zink_dmabuf_dup(fd)   os_dupfd_cloexec(fd)
++#define zink_dmabuf_close(fd) close(fd)
++#endif
++
+ #include "zink_batch.h"
+ #include "zink_clear.h"
+ #include "zink_context.h"
+@@ -235,7 +246,7 @@
+       VKSCR(DestroyImage)(screen->dev, obj->image, NULL);
+    } else {
+ #if defined(ZINK_USE_DMABUF) && !defined(_WIN32)
+-      close(obj->handle);
++      zink_dmabuf_close(obj->handle);
+ #endif
+    }
+ 
+@@ -1087,7 +1098,7 @@
+    if (alloc_info->whandle) {
+       imfi.pNext = NULL;
+       imfi.handleType = alloc_info->external;
+-      imfi.fd = os_dupfd_cloexec(alloc_info->whandle->handle);
++      imfi.fd = zink_dmabuf_dup(alloc_info->whandle->handle);
+       if (imfi.fd < 0) {
+          mesa_loge("ZINK: failed to dup dmabuf fd: %s\n", strerror(errno));
+          return roc_fail_and_cleanup_object;
+@@ -1655,7 +1666,7 @@
+       obj->modifier_aspect = VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT << alloc_info->whandle->plane;
+       obj->plane_offsets[alloc_info->whandle->plane] = alloc_info->whandle->offset;
+       obj->plane_strides[alloc_info->whandle->plane] = alloc_info->whandle->stride;
+-      obj->handle = os_dupfd_cloexec(alloc_info->whandle->handle);
++      obj->handle = zink_dmabuf_dup(alloc_info->whandle->handle);
+       if (obj->handle < 0) {
+          mesa_loge("ZINK: failed to dup dmabuf fd: %s\n", strerror(errno));
+          return roc_fail_and_free_object;
+@@ -2405,7 +2416,7 @@
+ #ifdef ZINK_USE_DMABUF
+ 
+ #if !defined(_WIN32)
+-   memobj->whandle.handle = os_dupfd_cloexec(whandle->handle);
++   memobj->whandle.handle = zink_dmabuf_dup(whandle->handle);
+ #else
+    HANDLE source_target = GetCurrentProcess();
+    HANDLE out_handle;
+@@ -2426,7 +2437,7 @@
+    struct zink_memory_object *memobj = (struct zink_memory_object *)pmemobj;
+ 
+ #if !defined(_WIN32)
+-   close(memobj->whandle.handle);
++   zink_dmabuf_close(memobj->whandle.handle);
+ #else
+    CloseHandle(memobj->whandle.handle);
+ #endif /* _WIN32 */
+diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_screen.c mesa-26.2.5.aros/src/gallium/drivers/zink/zink_screen.c
+--- mesa-26.2.5/src/gallium/drivers/zink/zink_screen.c
++++ mesa-26.2.5.aros/src/gallium/drivers/zink/zink_screen.c
+@@ -3395,7 +3395,8 @@
+ }
+ 
+ static struct zink_screen *
+-zink_internal_create_screen(const struct pipe_screen_config *config, int64_t dev_major, int64_t dev_minor, uint64_t adapter_luid)
++zink_internal_create_screen(const struct pipe_screen_config *config, int64_t dev_major, int64_t dev_minor, uint64_t adapter_luid,
++                            PFN_vkGetInstanceProcAddr gipa)
+ {
+    if (os_get_option("ZINK_USE_LAVAPIPE")) {
+       mesa_loge("ZINK_USE_LAVAPIPE is obsolete. Use LIBGL_ALWAYS_SOFTWARE\n");
+@@ -3428,6 +3429,14 @@
+ 
+    u_trace_state_init();
+ 
++#ifdef __AROS__
++   if (gipa) {
++      /* No loader library: the caller's Vulkan driver supplies its
++       * vkGetInstanceProcAddr and everything else is reached through it.
++       * vkGetDeviceProcAddr is resolved once the instance exists. */
++      screen->vk_GetInstanceProcAddr = gipa;
++   } else {
++#endif
+    screen->loader_lib = util_dl_open(VK_LIBNAME);
+    if (!screen->loader_lib) {
+       if (!screen->driver_name_is_inferred)
+@@ -3443,7 +3452,12 @@
+          mesa_loge("ZINK: failed to get proc address");
+       goto fail;
+    }
++#ifdef __AROS__
++   }
++#endif
+ 
++#ifndef __AROS__
++   /* no driconf: the screen is created without a config */
+    if (config) {
+       driParseConfigFiles(config->options, config->options_info,
+                           &(driConfigFileParseParams) { .driverName = "zink" });
+@@ -3452,6 +3466,7 @@
+       screen->driconf.emulate_point_smooth = driQueryOptionb(config->options, "zink_emulate_point_smooth");
+       screen->driconf.zink_shader_object_enable = driQueryOptionb(config->options, "zink_shader_object_enable");
+    }
++#endif
+ 
+    simple_mtx_lock(&instance_lock);
+    if (++instance_refcount == 1) {
+@@ -3470,6 +3485,16 @@
+    screen->instance_info = &instance_info;
+    simple_mtx_unlock(&instance_lock);
+ 
++#ifdef __AROS__
++   if (!screen->vk_GetDeviceProcAddr)
++      screen->vk_GetDeviceProcAddr = (PFN_vkGetDeviceProcAddr)
++         screen->vk_GetInstanceProcAddr(screen->instance, "vkGetDeviceProcAddr");
++   if (!screen->vk_GetDeviceProcAddr) {
++      mesa_loge("ZINK: failed to get vkGetDeviceProcAddr");
++      goto fail;
++   }
++#endif
++
+    if (zink_debug & ZINK_DEBUG_VALIDATION) {
+       if (!screen->instance_info->have_layer_KHRONOS_validation &&
+           !screen->instance_info->have_layer_LUNARG_standard_validation) {
+@@ -3866,7 +3891,7 @@
+ struct pipe_screen *
+ zink_create_screen(struct sw_winsys *winsys, const struct pipe_screen_config *config)
+ {
+-   struct zink_screen *ret = zink_internal_create_screen(config, -1, -1, 0);
++   struct zink_screen *ret = zink_internal_create_screen(config, -1, -1, 0, NULL);
+    if (ret) {
+       ret->drm_fd = -1;
+    }
+@@ -3874,6 +3899,20 @@
+    return &ret->base;
+ }
+ 
++#ifdef __AROS__
++struct pipe_screen *
++zink_create_screen_with_gipa(struct sw_winsys *winsys, const struct pipe_screen_config *config,
++                             PFN_vkGetInstanceProcAddr gipa)
++{
++   struct zink_screen *ret = zink_internal_create_screen(config, -1, -1, 0, gipa);
++   if (ret) {
++      ret->drm_fd = -1;
++   }
++
++   return ret ? &ret->base : NULL;
++}
++#endif
++
+ static inline int
+ zink_render_rdev(int fd, int64_t *dev_major, int64_t *dev_minor)
+ {
+@@ -3918,7 +3957,7 @@
+    if (zink_render_rdev(fd, &dev_major, &dev_minor))
+       return NULL;
+ 
+-   ret = zink_internal_create_screen(config, dev_major, dev_minor, 0);
++   ret = zink_internal_create_screen(config, dev_major, dev_minor, 0, NULL);
+    if (!ret)
+       return NULL;
+ 
+@@ -3953,7 +3992,7 @@
+ struct pipe_screen *
+ zink_win32_create_screen(uint64_t adapter_luid)
+ {
+-   struct zink_screen *ret = zink_internal_create_screen(NULL, -1, -1, adapter_luid);
++   struct zink_screen *ret = zink_internal_create_screen(NULL, -1, -1, adapter_luid, NULL);
+    return ret ? &ret->base : NULL;
+ }
+ 
+@@ -3962,7 +4001,13 @@
+    /* this will be used by the zink_verify_*_extensions() functions on a
+     * release build
+     */
++#ifdef __AROS__
++   /* one stub serves every unloaded function: name the caller instead */
++   mesa_loge("ZINK: a Vulkan function was called without being loaded (from %p; stub at %p)",
++             __builtin_return_address(0), (void *)zink_stub_function_not_loaded);
++#else
+    mesa_loge("ZINK: a Vulkan function was called without being loaded");
++#endif
+    abort();
+ }
+ 
+diff -ruN mesa-26.2.5/src/gallium/frontends/lavapipe/lvp_device.c mesa-26.2.5.aros/src/gallium/frontends/lavapipe/lvp_device.c
+--- mesa-26.2.5/src/gallium/frontends/lavapipe/lvp_device.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/gallium/frontends/lavapipe/lvp_device.c	2026-11-03 00:34:37.071168419 +0000
+@@ -48,6 +48,18 @@
+ #include "nir.h"
+ #include "nir_builder.h"
+ 
++/*
++ * The acceleration structure build and the radix sort it uses are compute
++ * shaders the Vulkan runtime compiles from GLSL at build time; a build
++ * without glslang has no vk_acceleration_structure.c, and then the ray
++ * tracing extensions stay off.
++ */
++#ifdef LVP_NO_RAY_TRACING
++#define LVP_RAY_TRACING false
++#else
++#define LVP_RAY_TRACING true
++#endif
++
+ #if DETECT_OS_LINUX
+ #include <sys/mman.h>
+ #include <sys/resource.h>
+@@ -127,7 +139,7 @@
+ static const struct vk_device_extension_table lvp_device_extensions_supported = {
+    .KHR_8bit_storage                      = true,
+    .KHR_16bit_storage                     = true,
+-   .KHR_acceleration_structure            = true,
++   .KHR_acceleration_structure            = LVP_RAY_TRACING,
+    .KHR_bind_memory2                      = true,
+    .KHR_buffer_device_address             = true,
+    .KHR_create_renderpass2                = true,
+@@ -185,10 +197,10 @@
+    .KHR_multiview                         = true,
+    .KHR_push_descriptor                   = true,
+    .KHR_pipeline_library                  = true,
+-   .KHR_ray_query                         = true,
+-   .KHR_ray_tracing_maintenance1          = true,
+-   .KHR_ray_tracing_pipeline              = true,
+-   .KHR_ray_tracing_position_fetch        = true,
++   .KHR_ray_query                         = LVP_RAY_TRACING,
++   .KHR_ray_tracing_maintenance1          = LVP_RAY_TRACING,
++   .KHR_ray_tracing_pipeline              = LVP_RAY_TRACING,
++   .KHR_ray_tracing_position_fetch        = LVP_RAY_TRACING,
+    .KHR_relaxed_block_layout              = true,
+    .KHR_robustness2                       = true,
+    .KHR_sampler_mirror_clamp_to_edge      = true,
+@@ -276,7 +288,7 @@
+ #endif
+    .EXT_pipeline_creation_feedback        = true,
+    .EXT_pipeline_creation_cache_control   = true,
+-   .EXT_pipeline_library_group_handles    = true,
++   .EXT_pipeline_library_group_handles    = LVP_RAY_TRACING,
+    .EXT_pipeline_protected_access         = true,
+    .EXT_pipeline_robustness               = true,
+    .EXT_post_depth_coverage               = true,
+@@ -586,11 +598,11 @@
+       .pushDescriptor = true,
+ 
+       /* VK_KHR_acceleration_structure */
+-      .accelerationStructure = true,
++      .accelerationStructure = LVP_RAY_TRACING,
+       .accelerationStructureCaptureReplay = false,
+       .accelerationStructureIndirectBuild = false,
+       .accelerationStructureHostCommands = false,
+-      .descriptorBindingAccelerationStructureUpdateAfterBind = true,
++      .descriptorBindingAccelerationStructureUpdateAfterBind = LVP_RAY_TRACING,
+ 
+       /* VK_EXT_descriptor_buffer */
+       .descriptorBuffer = true,
+@@ -655,24 +667,24 @@
+       .advancedBlendCoherentOperations = true,
+ 
+       /* VK_KHR_ray_query */
+-      .rayQuery = true,
++      .rayQuery = LVP_RAY_TRACING,
+ 
+       /* VK_KHR_ray_tracing_maintenance1 */
+-      .rayTracingMaintenance1 = true,
+-      .rayTracingPipelineTraceRaysIndirect2 = true,
++      .rayTracingMaintenance1 = LVP_RAY_TRACING,
++      .rayTracingPipelineTraceRaysIndirect2 = LVP_RAY_TRACING,
+ 
+       /* VK_KHR_ray_tracing_pipeline */
+-      .rayTracingPipeline = true,
++      .rayTracingPipeline = LVP_RAY_TRACING,
+       .rayTracingPipelineShaderGroupHandleCaptureReplay = false,
+       .rayTracingPipelineShaderGroupHandleCaptureReplayMixed = false,
+-      .rayTracingPipelineTraceRaysIndirect = true,
+-      .rayTraversalPrimitiveCulling = true,
++      .rayTracingPipelineTraceRaysIndirect = LVP_RAY_TRACING,
++      .rayTraversalPrimitiveCulling = LVP_RAY_TRACING,
+ 
+       /* VK_EXT_pipeline_library_group_handles */
+-      .pipelineLibraryGroupHandles = true,
++      .pipelineLibraryGroupHandles = LVP_RAY_TRACING,
+ 
+       /* VK_KHR_ray_tracing_position_fetch */
+-      .rayTracingPositionFetch = true,
++      .rayTracingPositionFetch = LVP_RAY_TRACING,
+ 
+       /* VK_EXT_shader_object */
+       .shaderObject = true,
 diff -ruN mesa-26.2.5/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c mesa-26.2.5.aros/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c
 --- mesa-26.2.5/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c	2026-10-14 16:12:24.000000000 +0100
 +++ mesa-26.2.5.aros/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c	2026-10-24 22:32:44.547182506 +0100
@@ -987,6 +1327,662 @@ diff -ruN mesa-26.2.5/src/mesa/state_tracker/st_extensions.c mesa-26.2.5.aros/sr
        { { o(OES_texture_float) },
          { PIPE_FORMAT_R32G32B32A32_FLOAT } },
  
+diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvk_device_memory.c mesa-26.2.5.aros/src/nouveau/vulkan/nvk_device_memory.c
+--- mesa-26.2.5/src/nouveau/vulkan/nvk_device_memory.c
++++ mesa-26.2.5.aros/src/nouveau/vulkan/nvk_device_memory.c
+@@ -13,6 +13,7 @@
+ #include "util/u_atomic.h"
+ 
+ #include <inttypes.h>
++#include "util/log.h"
+ #include <sys/mman.h>
+ 
+ /* Supports opaque fd only */
+@@ -137,6 +138,12 @@
+    struct nvk_device_memory *mem;
+    VkResult result = VK_SUCCESS;
+ 
++#ifdef __AROS__
++   if (pAllocateInfo->allocationSize == 0)
++      mesa_loge("nvk: vkAllocateMemory of 0 B (type %u) from %p",
++                pAllocateInfo->memoryTypeIndex, __builtin_return_address(0));
++#endif
++
+    mem = vk_device_memory_create(&dev->vk, pAllocateInfo,
+                                  pAllocator, sizeof(*mem));
+    if (!mem)
+@@ -173,7 +180,7 @@
+       mem->dedicated_image = image;
+ 
+       if (image->vk.tiling == VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT &&
+-          image->vk.drm_format_mod != DRM_FORMAT_MOD_LINEAR) {
++          nvk_image_drm_mod(image) != DRM_FORMAT_MOD_LINEAR) {
+          /* This image might be shared with GL so we need to set the BO flags
+           * such that GL can bind and use it.
+           */
+@@ -299,7 +306,10 @@
+        *
+        * If the import fails, we leave the file descriptor open.
+        */
++#ifndef __AROS__
++      /* on AROS the "fd" is a display buffer's GEM handle, not a file */
+       close(fd_info->fd);
++#endif
+    }
+ 
+    struct nvk_memory_heap *heap = &pdev->mem_heaps[type->heapIndex];
+diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvk_format.c mesa-26.2.5.aros/src/nouveau/vulkan/nvk_format.c
+--- mesa-26.2.5/src/nouveau/vulkan/nvk_format.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/nouveau/vulkan/nvk_format.c	2026-11-03 01:25:14.441588603 +0000
+@@ -55,6 +55,14 @@
+ #define NV9097_SET_VERTEX_ATTRIBUTE_A_COMPONENT_BIT_WIDTHS_NONE \
+    NVK_VA_BIT_WIDTH_NONE
+ 
++#ifdef __AROS__
++/* exec/types.h, which pthread.h includes, defines FALSE and TRUE as
++ * values; the table below pastes them as class header tokens.
++ */
++#undef FALSE
++#undef TRUE
++#endif
++
+ #define VA_FMT64(vk_fmt, widths, widths_high, swap_rb, type) \
+    [VK_FORMAT_##vk_fmt] = \
+    { NV9097_SET_VERTEX_ATTRIBUTE_A_COMPONENT_BIT_WIDTHS_##widths, \
+diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvk_image.c mesa-26.2.5.aros/src/nouveau/vulkan/nvk_image.c
+--- mesa-26.2.5/src/nouveau/vulkan/nvk_image.c
++++ mesa-26.2.5.aros/src/nouveau/vulkan/nvk_image.c
+@@ -844,6 +844,9 @@
+    const struct nvk_physical_device *pdev = nvk_device_physical(dev);
+ 
+    vk_image_init(&dev->vk, &image->vk, pCreateInfo);
++#if !(DETECT_OS_LINUX || DETECT_OS_BSD || defined(__AROS__))
++   nvk_image_drm_mod(image) = DRM_FORMAT_MOD_INVALID;
++#endif
+ 
+    nil_image_usage_flags usage = 0;
+    if (image->vk.tiling == VK_IMAGE_TILING_LINEAR)
+@@ -908,7 +911,7 @@
+       if (result != VK_SUCCESS)
+          return result;
+ 
+-      image->vk.drm_format_mod = eci.drmFormatModifier;
++      nvk_image_drm_mod(image) = eci.drmFormatModifier;
+       for (uint8_t plane = 0; plane < eci.drmFormatModifierPlaneCount; plane++) {
+          explicit_row_stride_B[plane] = eci.pPlaneLayouts[plane].rowPitch;
+          explicit_offsets_B[plane] = eci.pPlaneLayouts[plane].offset;
+@@ -931,7 +934,7 @@
+          vk_find_struct_const(pCreateInfo->pNext,
+                               IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT);
+       if (mod_explicit_info) {
+-         image->vk.drm_format_mod = mod_explicit_info->drmFormatModifier;
++         nvk_image_drm_mod(image) = mod_explicit_info->drmFormatModifier;
+          /* Normally with explicit modifiers, the client specifies all strides,
+           * however in our case, we can only really make use of this in the linear
+           * case, and we can only create 2D non-array linear images, so ultimately
+@@ -951,14 +954,14 @@
+ 
+          enum pipe_format p_format =
+             nvk_format_to_pipe_format(image->vk.format);
+-         image->vk.drm_format_mod =
++         nvk_image_drm_mod(image) =
+             nil_select_best_drm_format_mod(&pdev->info, nil_format(p_format),
+                                            mod_list_info->drmFormatModifierCount,
+                                            mod_list_info->pDrmFormatModifiers);
+-         assert(image->vk.drm_format_mod != DRM_FORMAT_MOD_INVALID);
++         assert(nvk_image_drm_mod(image) != DRM_FORMAT_MOD_INVALID);
+       }
+ 
+-      if (image->vk.drm_format_mod == DRM_FORMAT_MOD_LINEAR) {
++      if (nvk_image_drm_mod(image) == DRM_FORMAT_MOD_LINEAR) {
+          for (uint8_t plane = 0; plane < image->plane_count; plane++) {
+             VkFormat format = ycbcr_info ?
+                ycbcr_info->planes[plane].format : image->vk.format;
+@@ -1026,7 +1029,7 @@
+       nil_info[plane] = (struct nil_image_init_info) {
+          .dim = vk_image_type_to_nil_dim(image->vk.image_type),
+          .format = nil_format(nvk_format_to_pipe_format(format)),
+-         .modifier = image->vk.drm_format_mod,
++         .modifier = nvk_image_drm_mod(image),
+          .extent_px = {
+             .width = image->vk.extent.width / width_scale,
+             .height = image->vk.extent.height / height_scale,
+@@ -1144,7 +1147,7 @@
+    }
+ 
+    if (image->zcull.nil.size_B > 0) {
+-      assert(image->vk.drm_format_mod == DRM_FORMAT_MOD_INVALID);
++      assert(nvk_image_drm_mod(image) == DRM_FORMAT_MOD_INVALID);
+       plane_offset_B = align64(plane_offset_B, image->zcull.nil.align_B);
+       image->zcull.plane_offset_B = plane_offset_B;
+       plane_offset_B += image->zcull.nil.size_B;
+@@ -1154,7 +1157,7 @@
+    }
+ 
+    if (image->stencil_copy_temp.nil.size_B > 0) {
+-      assert(image->vk.drm_format_mod == DRM_FORMAT_MOD_INVALID);
++      assert(nvk_image_drm_mod(image) == DRM_FORMAT_MOD_INVALID);
+       plane_offset_B =
+          align64(plane_offset_B, image->stencil_copy_temp.plane_align_B);
+       image->stencil_copy_temp.plane_offset_B = plane_offset_B;
+@@ -1359,7 +1362,7 @@
+       case VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS: {
+          VkMemoryDedicatedRequirements *dedicated = (void *)ext;
+          if (image->vk.tiling == VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT &&
+-             image->vk.drm_format_mod != DRM_FORMAT_MOD_LINEAR) {
++             nvk_image_drm_mod(image) != DRM_FORMAT_MOD_LINEAR) {
+             dedicated->prefersDedicatedAllocation = true;
+             dedicated->requiresDedicatedAllocation = true;
+          } else if (image->can_compress) {
+diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvk_image.h mesa-26.2.5.aros/src/nouveau/vulkan/nvk_image.h
+--- mesa-26.2.5/src/nouveau/vulkan/nvk_image.h
++++ mesa-26.2.5.aros/src/nouveau/vulkan/nvk_image.h
+@@ -9,6 +9,7 @@
+ #include "nvk_device_memory.h"
+ 
+ #include "vk_image.h"
++#include "util/detect_os.h"
+ 
+ #include "nil.h"
+ 
+@@ -96,6 +97,11 @@
+ struct nvk_image {
+    struct vk_image vk;
+ 
++#if !(DETECT_OS_LINUX || DETECT_OS_BSD || defined(__AROS__))
++   /* vk_image carries the modifier on Linux and BSD only */
++   uint64_t drm_format_mod;
++#endif
++
+    /** True if the planes are bound separately
+     *
+     * This is set based on VK_IMAGE_CREATE_DISJOINT_BIT
+@@ -153,6 +159,12 @@
+    uint32_t image_align_B;
+ };
+ 
++#if DETECT_OS_LINUX || DETECT_OS_BSD || defined(__AROS__)
++#define nvk_image_drm_mod(image) ((image)->vk.drm_format_mod)
++#else
++#define nvk_image_drm_mod(image) ((image)->drm_format_mod)
++#endif
++
+ VK_DEFINE_NONDISP_HANDLE_CASTS(nvk_image, vk.base, VkImage, VK_OBJECT_TYPE_IMAGE)
+ 
+ static inline uint64_t
+diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvk_instance.c mesa-26.2.5.aros/src/nouveau/vulkan/nvk_instance.c
+--- mesa-26.2.5/src/nouveau/vulkan/nvk_instance.c
++++ mesa-26.2.5.aros/src/nouveau/vulkan/nvk_instance.c
+@@ -16,6 +16,11 @@
+ #include "util/os_misc.h"
+ #include "util/u_debug.h"
+ 
++#ifdef __AROS__
++#include "util/list.h"
++#include <xf86drm.h>
++#endif
++
+ VKAPI_ATTR VkResult VKAPI_CALL
+ nvk_EnumerateInstanceVersion(uint32_t *pApiVersion)
+ {
+@@ -127,6 +132,33 @@
+       instance->debug_flags |= NVK_DEBUG_ZERO_MEMORY;
+ }
+ 
++#ifdef __AROS__
++/* The runtime enumerates by the device nodes libdrm lists; there are
++ * none here, so the one device libdrm describes is created directly.
++ */
++static VkResult
++nvk_enumerate_physical_devices(struct vk_instance *vk_instance)
++{
++   drmDevicePtr drm_device = NULL;
++   struct vk_physical_device *pdev;
++   VkResult result;
++
++   if (drmGetDeviceFromDevId(0, 0, &drm_device) != 0)
++      return VK_SUCCESS;
++
++   result = nvk_create_drm_physical_device(vk_instance, drm_device, &pdev);
++   drmFreeDevice(&drm_device);
++
++   if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
++      return VK_SUCCESS;
++   if (result != VK_SUCCESS)
++      return result;
++
++   list_addtail(&pdev->link, &vk_instance->physical_devices.list);
++   return VK_SUCCESS;
++}
++#endif
++
+ VKAPI_ATTR VkResult VKAPI_CALL
+ nvk_CreateInstance(const VkInstanceCreateInfo *pCreateInfo,
+                    const VkAllocationCallbacks *pAllocator,
+@@ -163,7 +195,22 @@
+    instance->vk.physical_devices.try_create_for_drm =
+       nvk_create_drm_physical_device;
+    instance->vk.physical_devices.destroy = nvk_physical_device_destroy;
++#ifdef __AROS__
++   instance->vk.physical_devices.enumerate = nvk_enumerate_physical_devices;
+ 
++   /* A module carries no build-id note; the driver version stands in for
++    * it in the cache keys.
++    */
++   {
++      static const char build[] = "nvk " PACKAGE_VERSION;
++      struct mesa_blake3 blake3;
++
++      STATIC_ASSERT(sizeof(instance->driver_build_sha) == BLAKE3_OUT_LEN);
++      _mesa_blake3_init(&blake3);
++      _mesa_blake3_update(&blake3, build, sizeof(build));
++      _mesa_blake3_final(&blake3, instance->driver_build_sha);
++   }
++#else
+    const struct build_id_note *note =
+       build_id_find_nhdr_for_addr(nvk_CreateInstance);
+    if (!note) {
+@@ -181,6 +228,7 @@
+ 
+    STATIC_ASSERT(sizeof(instance->driver_build_sha) == BLAKE3_KEY_LEN);
+    copy_build_id_to_sha1(instance->driver_build_sha, note);
++#endif
+ 
+    *pInstance = nvk_instance_to_handle(instance);
+    return VK_SUCCESS;
+diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvk_physical_device.c mesa-26.2.5.aros/src/nouveau/vulkan/nvk_physical_device.c
+--- mesa-26.2.5/src/nouveau/vulkan/nvk_physical_device.c
++++ mesa-26.2.5.aros/src/nouveau/vulkan/nvk_physical_device.c
+@@ -1660,8 +1660,13 @@
+        * snoops the CPU caches when it accesses memory across the PCI bus.
+        */
+       pdev->mem_types[pdev->mem_type_count++] = (VkMemoryType) {
++         /* On AROS not coherent: the bus may not snoop the CPU's caches,
++          * so system memory maps get explicit cache maintenance (see
++          * nvkmd_nouveau_alloc_tiled_mem()). */
+          .propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
++#ifndef __AROS__
+                           VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
++#endif
+                           VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+          .heapIndex = sysmem_heap_idx,
+       };
+diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c mesa-26.2.5.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c
+--- mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c
++++ mesa-26.2.5.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c
+@@ -7,8 +7,16 @@
+ 
+ #include "nouveau_bo.h"
+ #include "vk_log.h"
++#include "util/log.h"
++#include <errno.h>
++#include <inttypes.h>
+ 
+ #include <sys/mman.h>
++#ifdef __AROS__
++#include <xf86drm.h>
++#include <proto/exec.h>
++#include <exec/execbase.h>
++#endif
+ 
+ VkResult
+ nvkmd_nouveau_alloc_mem(struct nvkmd_dev *dev,
+@@ -17,6 +25,12 @@
+                         enum nvkmd_mem_flags flags,
+                         struct nvkmd_mem **mem_out)
+ {
++#ifdef __AROS__
++   /* the kernel refuses an empty buffer: name the caller asking for one */
++   if (size_B == 0)
++      mesa_loge("nvkmd: zero-size memory requested (align %" PRIu64 ", flags 0x%x) by %p",
++                align_B, (unsigned)flags, __builtin_return_address(0));
++#endif
+    return nvkmd_nouveau_alloc_tiled_mem(dev, log_obj, size_B, align_B,
+                                         0 /* pte_kind */, 0 /* tile_mode */,
+                                         flags, mem_out);
+@@ -131,6 +145,19 @@
+    if (force_mem_to_gart(dev->base.pdev, flags))
+       domains = NOUVEAU_WS_BO_GART;
+ 
++#ifdef __AROS__
++   /* The bus does not snoop the CPU's caches: a CPU map of system memory
++    * (GART) is cached and not coherent with the GPU, while a map of VRAM
++    * goes through the BAR and is. A coherent mapping is put in VRAM; GART
++    * maps get explicit cache maintenance (sync_to_gpu / sync_from_gpu).
++    */
++   bool cached_map = (domains == NOUVEAU_WS_BO_GART);
++   if (cached_map && (flags & NVKMD_MEM_COHERENT) && dev_info->vram_size_B > 0) {
++      domains = NOUVEAU_WS_BO_VRAM;
++      cached_map = false;
++   }
++#endif
++
+    /* Since not all callers care about the alignment and pass in zero to signal
+     * that, we enforce a minimum alignment equal to the system page size here,
+     * which is guaranteed to work.
+@@ -158,6 +185,11 @@
+       /* We assume that all discrete GPU maps are coherent.  They're either
+        * CPU memory or WB VRAM maps.
+        */
++#ifdef __AROS__
++      if (cached_map)
++         flags &= ~NVKMD_MEM_COHERENT;
++      else
++#endif
+       flags |= NVKMD_MEM_COHERENT;
+    }
+ 
+@@ -165,8 +197,15 @@
+                                                       size_B, align_B,
+                                                       pte_kind, tile_mode,
+                                                       nouveau_flags);
+-   if (bo == NULL)
++   if (bo == NULL) {
++#ifdef __AROS__
++      mesa_loge("nvkmd: buffer of %" PRIu64 " B (align %" PRIu64 ", kind %u, flags 0x%x, domains 0x%x) "
++                "refused (errno %d), requested by %p",
++                size_B, align_B, (unsigned)pte_kind, (unsigned)flags, (unsigned)domains, errno,
++                __builtin_return_address(0));
++#endif
+       return vk_errorf(log_obj, VK_ERROR_OUT_OF_DEVICE_MEMORY, "%m");
++   }
+ 
+    enum nvkmd_va_flags va_flags = 0;
+    if (domains == NOUVEAU_WS_BO_GART)
+@@ -241,10 +280,20 @@
+    if (map_flags & NVKMD_MEM_MAP_FIXED)
+       flags |= MAP_FIXED;
+ 
++#ifdef __AROS__
++   /* the kernel driver's own mapping of the object */
++   (void)prot;
++   (void)flags;
++   (void)fixed_addr;
++   void *map = drmMMap(dev->ws_dev->fd, mem->bo->handle);
++   if (map == NULL)
++      return vk_error(log_obj, VK_ERROR_MEMORY_MAP_FAILED);
++#else
+    void *map = mmap(fixed_addr, mem->base.size_B, prot, flags,
+                     dev->ws_dev->fd, mem->bo->map_handle);
+    if (map == MAP_FAILED)
+       return vk_error(log_obj, VK_ERROR_MEMORY_MAP_FAILED);
++#endif
+ 
+    *map_out = map;
+ 
+@@ -258,7 +307,14 @@
+ {
+    struct nvkmd_nouveau_mem *mem = nvkmd_nouveau_mem(_mem);
+ 
++#ifdef __AROS__
++   struct nvkmd_nouveau_dev *dev = nvkmd_nouveau_dev(_mem->dev);
++
++   (void)map;
++   drmMUnmap(dev->ws_dev->fd, mem->bo->handle);
++#else
+    munmap(map, mem->base.size_B);
++#endif
+ }
+ 
+ static VkResult
+@@ -269,8 +325,13 @@
+ {
+    struct nvkmd_nouveau_mem *mem = nvkmd_nouveau_mem(_mem);
+ 
++#ifdef __AROS__
++   /* not reached: has_overmap is off */
++   void *new_map = MAP_FAILED;
++#else
+    void *new_map = mmap(map, mem->base.size_B, PROT_NONE,
+                         MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
++#endif
+    if (new_map == MAP_FAILED) {
+       return vk_errorf(log_obj, VK_ERROR_MEMORY_MAP_FAILED,
+                        "Failed to map over original mapping");
+@@ -302,11 +363,50 @@
+    return nvkmd_nouveau_mem(_mem)->bo->handle;
+ }
+ 
++#ifdef __AROS__
++/* Cache maintenance for a cached map of system memory: what the CPU wrote
++ * is written back before the GPU reads it; stale lines are dropped before
++ * the CPU reads what the GPU wrote. The map is the memory's address. */
++static void *
++nvkmd_nouveau_mem_cpu_addr(struct nvkmd_mem *mem, uint64_t offset_B)
++{
++   void *map = mem->map ? mem->map : mem->client_map;
++
++   return map ? (uint8_t *)map + offset_B : NULL;
++}
++
++static void
++nvkmd_nouveau_mem_sync_to_gpu(struct nvkmd_mem *mem,
++                              uint64_t offset_B, uint64_t range_B)
++{
++   void *addr = nvkmd_nouveau_mem_cpu_addr(mem, offset_B);
++   ULONG len = range_B;
++
++   if (addr && len)
++      CachePreDMA(addr, &len, DMA_ReadFromRAM);
++}
++
++static void
++nvkmd_nouveau_mem_sync_from_gpu(struct nvkmd_mem *mem,
++                                uint64_t offset_B, uint64_t range_B)
++{
++   void *addr = nvkmd_nouveau_mem_cpu_addr(mem, offset_B);
++   ULONG len = range_B;
++
++   if (addr && len)
++      CachePostDMA(addr, &len, 0);
++}
++#endif
++
+ const struct nvkmd_mem_ops nvkmd_nouveau_mem_ops = {
+    .free = nvkmd_nouveau_mem_free,
+    .map = nvkmd_nouveau_mem_map,
+    .unmap = nvkmd_nouveau_mem_unmap,
+    .overmap = nvkmd_nouveau_mem_overmap,
++#ifdef __AROS__
++   .sync_to_gpu = nvkmd_nouveau_mem_sync_to_gpu,
++   .sync_from_gpu = nvkmd_nouveau_mem_sync_from_gpu,
++#endif
+    .export_dma_buf = nvkmd_nouveau_mem_export_dma_buf,
+    .log_handle = nvkmd_nouveau_mem_log_handle,
+ };
+diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_pdev.c mesa-26.2.5.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_pdev.c
+--- mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_pdev.c
++++ mesa-26.2.5.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_pdev.c
+@@ -19,15 +19,36 @@
+ #include "clc597.h"
+ #include "clc697.h"
+ 
++#ifdef __AROS__
++/* No device nodes, and no dma-buf. The mapping of an object is the kernel
++ * driver's own: neither at an address of our choosing nor replaceable.
++ */
++#define NVKMD_NOUVEAU_HAS_DMA_BUF      false
++#define NVKMD_NOUVEAU_HAS_HOST_MAP_CTL false
++#else
++#define NVKMD_NOUVEAU_HAS_DMA_BUF      true
++#define NVKMD_NOUVEAU_HAS_HOST_MAP_CTL true
++#endif
++
+ static bool
+ drm_device_is_nouveau(const char *path)
+ {
++#ifdef __AROS__
++   (void)path;
++   int fd = drmOpen("nouveau", "");
++   if (fd < 0)
++      return false;
++
++   const bool is_nouveau = drm_fd_is_nouveau(fd);
++   drmClose(fd);
++#else
+    int fd = open(path, O_RDWR | O_CLOEXEC);
+    if (fd < 0)
+       return false;
+ 
+    const bool is_nouveau = drm_fd_is_nouveau(fd);
+    close(fd);
++#endif
+ 
+    return is_nouveau;
+ }
+@@ -78,6 +99,10 @@
+       return VK_ERROR_INCOMPATIBLE_DRIVER;
+    }
+ 
++#ifdef __AROS__
++   /* no device nodes: a placeholder, reported as the render node */
++   const dev_t render_dev = 1;
++#else
+    struct stat st;
+    if (stat(drm_device->nodes[DRM_NODE_RENDER], &st)) {
+       nouveau_ws_device_destroy(ws_dev);
+@@ -86,6 +111,7 @@
+                        drm_device->nodes[DRM_NODE_RENDER]);
+    }
+    const dev_t render_dev = st.st_rdev;
++#endif
+ 
+    struct nvkmd_nouveau_pdev *pdev = CALLOC_STRUCT(nvkmd_nouveau_pdev);
+    if (pdev == NULL) {
+@@ -97,11 +123,11 @@
+    pdev->base.debug_flags = debug_flags;
+    pdev->base.dev_info = ws_dev->info;
+    pdev->base.kmd_info = (struct nvkmd_info) {
+-      .has_dma_buf = true,
++      .has_dma_buf = NVKMD_NOUVEAU_HAS_DMA_BUF,
+       .has_get_vram_used = nouveau_ws_device_vram_used(ws_dev) != 0,
+       .has_alloc_tiled = nouveau_ws_device_has_tiled_bo(ws_dev),
+-      .has_map_fixed = true,
+-      .has_overmap = true,
++      .has_map_fixed = NVKMD_NOUVEAU_HAS_HOST_MAP_CTL,
++      .has_overmap = NVKMD_NOUVEAU_HAS_HOST_MAP_CTL,
+       .has_compression = (ws_dev->nouveau_version >= 0x01000403 &&
+                           ws_dev->info.cls_eng3d >= TURING_A) ||
+                          (ws_dev->nouveau_version >= 0x01000402 &&
+@@ -110,6 +136,12 @@
+ 
+    /* We get this ourselves */
+    pdev->base.dev_info.nc_atom_size_B = util_cache_granularity();
++#ifdef __AROS__
++   /* no cache ops in util here: the CPU cache line, for the maintenance
++    * of cached (non-coherent) system memory maps */
++   if (!pdev->base.dev_info.nc_atom_size_B)
++      pdev->base.dev_info.nc_atom_size_B = 64;
++#endif
+ 
+    /* Nouveau uses the OS page size for all pages, regardless of whether they
+     * come from VRAM or system RAM.
+@@ -121,10 +153,12 @@
+ 
+    pdev->base.drm.render_dev = render_dev;
+ 
++#ifndef __AROS__
+    /* DRM primary is optional */
+    if ((drm_device->available_nodes & (1 << DRM_NODE_PRIMARY)) &&
+        !stat(drm_device->nodes[DRM_NODE_PRIMARY], &st))
+       pdev->base.drm.primary_dev = st.st_rdev;
++#endif
+ 
+    pdev->primary_fd = -1;
+    pdev->ws_dev = ws_dev;
+@@ -170,6 +204,9 @@
+    if (pdev->base.drm.primary_dev == 0)
+       return -1;
+ 
++#ifdef __AROS__
++   return -1;
++#else
+    drmDevicePtr drm_device = NULL;
+    int ret = drmGetDeviceFromDevId(pdev->base.drm.primary_dev, 0, &drm_device);
+    if (ret != 0)
+@@ -183,6 +220,7 @@
+    pdev->primary_fd = fd;
+ 
+    return pdev->primary_fd;
++#endif
+ }
+ 
+ const struct nvkmd_pdev_ops nvkmd_nouveau_pdev_ops = {
+diff -ruN mesa-26.2.5/src/nouveau/winsys/nouveau_bo.c mesa-26.2.5.aros/src/nouveau/winsys/nouveau_bo.c
+--- mesa-26.2.5/src/nouveau/winsys/nouveau_bo.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/nouveau/winsys/nouveau_bo.c	2026-11-03 00:48:02.269988514 +0000
+@@ -281,18 +281,29 @@
+       prot |= PROT_WRITE;
+ 
+ 
++#ifdef __AROS__
++   /* the kernel driver's own mapping of the object; prot has no meaning */
++   (void)prot;
++   return drmMMap(bo->dev->fd, bo->handle);
++#else
+    void *res = mmap(NULL, bo->size, prot, MAP_SHARED,
+                     bo->dev->fd, bo->map_handle);
+    if (res == MAP_FAILED)
+       return NULL;
+ 
+    return res;
++#endif
+ }
+ 
+ void
+ nouveau_ws_bo_unmap(struct nouveau_ws_bo *bo, void *ptr)
+ {
++#ifdef __AROS__
++   (void)ptr;
++   drmMUnmap(bo->dev->fd, bo->handle);
++#else
+    munmap(ptr, bo->size);
++#endif
+ }
+ 
+ bool
+diff -ruN mesa-26.2.5/src/nouveau/winsys/nouveau_device.c mesa-26.2.5.aros/src/nouveau/winsys/nouveau_device.c
+--- mesa-26.2.5/src/nouveau/winsys/nouveau_device.c	2026-10-14 16:12:24.000000000 +0100
++++ mesa-26.2.5.aros/src/nouveau/winsys/nouveau_device.c	2026-11-03 00:48:02.269668314 +0000
+@@ -436,7 +436,13 @@
+    uint64_t value = 0;
+    drmVersionPtr ver = NULL;
+ 
++#ifdef __AROS__
++   /* no device nodes: the card nouveau.hidd drives, through its libdrm */
++   (void)path;
++   int fd = drmOpen("nouveau", "");
++#else
+    int fd = open(path, O_RDWR | O_CLOEXEC);
++#endif
+    if (fd < 0)
+       goto out_open;
+ 
+@@ -566,7 +572,12 @@
+       drmFreeVersion(ver);
+ out_open:
+    FREE(device);
++#ifdef __AROS__
++   if (fd >= 0)
++      drmClose(fd);
++#else
+    close(fd);
++#endif
+    return NULL;
+ }
+ 
+@@ -579,7 +590,11 @@
+    _mesa_hash_table_destroy(device->bos, NULL);
+    simple_mtx_destroy(&device->bos_lock);
+ 
++#ifdef __AROS__
++   drmClose(device->fd);
++#else
+    close(device->fd);
++#endif
+    FREE(device);
+ }
+ 
 diff -ruN mesa-26.2.5/src/util/compiler.h mesa-26.2.5.aros/src/util/compiler.h
 --- mesa-26.2.5/src/util/compiler.h	2026-10-14 16:12:24.000000000 +0100
 +++ mesa-26.2.5.aros/src/util/compiler.h	2026-10-24 22:32:44.544814307 +0100
@@ -1000,6 +1996,80 @@ diff -ruN mesa-26.2.5/src/util/compiler.h mesa-26.2.5.aros/src/util/compiler.h
  #else /*__linux__ */
  #include <sys/endian.h>
  #define CPU_TO_LE32( x ) bswap32( x )
+diff -ruN mesa-26.2.5/src/util/log.c mesa-26.2.5.aros/src/util/log.c
+--- mesa-26.2.5/src/util/log.c
++++ mesa-26.2.5.aros/src/util/log.c
+@@ -50,6 +50,7 @@
+    MESA_LOG_CONTROL_SYSLOG = 1 << 2,
+    MESA_LOG_CONTROL_ANDROID = 1 << 3,
+    MESA_LOG_CONTROL_WINDBG = 1 << 4,
++   MESA_LOG_CONTROL_SERIAL = 1 << 5,
+    MESA_LOG_CONTROL_LOGGER_MASK = 0xff,
+ 
+    MESA_LOG_CONTROL_WAIT = 1 << 8,
+@@ -68,6 +69,7 @@
+    { "syslog", MESA_LOG_CONTROL_SYSLOG },
+    { "android", MESA_LOG_CONTROL_ANDROID },
+    { "windbg", MESA_LOG_CONTROL_WINDBG },
++   { "serial", MESA_LOG_CONTROL_SERIAL },
+    /* flags */
+    { "wait", MESA_LOG_CONTROL_WAIT },
+    { NULL, 0 },
+@@ -129,6 +131,11 @@
+        * visible, so communicate with the debugger instead */
+       mesa_log_control |= MESA_LOG_CONTROL_WINDBG;
+ #endif
++#ifdef __AROS__
++      /* a driver module's stderr goes nowhere: the debug output is where
++       * its messages can be read */
++      mesa_log_control |= MESA_LOG_CONTROL_SERIAL;
++#endif
+    }
+ 
+    mesa_max_log_level = MESA_DEFAULT_LOG_LEVEL;
+@@ -397,8 +404,32 @@
+ 
+ #endif /* DETECT_OS_ANDROID */
+ 
++#ifdef __AROS__
++extern int kprintf(const char *, ...);
++
++static void
++logger_serial(enum mesa_log_level level,
++              const char *tag,
++              const char *format,
++              va_list va)
++{
++   char local_msg[1024];
++   char *msg = logger_vasnprintf(local_msg, sizeof(local_msg),
++         LOGGER_VASNPRINTF_AFFIX_TAG |
++         LOGGER_VASNPRINTF_AFFIX_LEVEL |
++         LOGGER_VASNPRINTF_AFFIX_NEWLINE,
++         level, tag, format, va);
++
++   kprintf("[mesa] %s", msg);
++
++   if (msg != local_msg)
++      free(msg);
++}
++#endif
++
+ #if DETECT_OS_WINDOWS
+ 
++
+ static void
+ logger_windbg(enum mesa_log_level level,
+               const char *tag,
+@@ -461,6 +492,9 @@
+ #if DETECT_OS_WINDOWS
+       { MESA_LOG_CONTROL_WINDBG, logger_windbg },
+ #endif
++#ifdef __AROS__
++      { MESA_LOG_CONTROL_SERIAL, logger_serial },
++#endif
+    };
+ 
+    mesa_log_init();
 diff -ruN mesa-26.2.5/src/util/os_drm.h mesa-26.2.5.aros/src/util/os_drm.h
 --- mesa-26.2.5/src/util/os_drm.h	2026-10-14 16:12:24.000000000 +0100
 +++ mesa-26.2.5.aros/src/util/os_drm.h	2026-10-24 22:32:44.547133306 +0100
@@ -1423,3 +2493,45 @@ diff -ruN mesa-26.2.5/src/util/u_thread.h mesa-26.2.5.aros/src/util/u_thread.h
   */
  #define __THREAD_INITIAL_EXEC __thread
  #elif defined(__GLIBC__)
+diff -ruN mesa-26.2.5/src/vulkan/runtime/vk_image.c mesa-26.2.5.aros/src/vulkan/runtime/vk_image.c
+--- mesa-26.2.5/src/vulkan/runtime/vk_image.c
++++ mesa-26.2.5.aros/src/vulkan/runtime/vk_image.c
+@@ -23,7 +23,7 @@
+ 
+ #include "vk_image.h"
+ 
+-#if DETECT_OS_LINUX || DETECT_OS_BSD
++#if DETECT_OS_LINUX || DETECT_OS_BSD || defined(__AROS__)
+ #include <drm-uapi/drm_fourcc.h>
+ #endif
+ 
+@@ -105,7 +105,7 @@
+       vk_find_struct_const(pCreateInfo->pNext, WSI_IMAGE_CREATE_INFO_MESA);
+    image->wsi_legacy_scanout = wsi_info && wsi_info->scanout;
+ 
+-#if DETECT_OS_LINUX || DETECT_OS_BSD
++#if DETECT_OS_LINUX || DETECT_OS_BSD || defined(__AROS__)
+    image->drm_format_mod = ((1ULL << 56) - 1) /* DRM_FORMAT_MOD_INVALID */;
+ #endif
+ 
+@@ -185,7 +185,7 @@
+    vk_object_free(device, alloc, image);
+ }
+ 
+-#if DETECT_OS_LINUX || DETECT_OS_BSD
++#if DETECT_OS_LINUX || DETECT_OS_BSD || defined(__AROS__)
+ VKAPI_ATTR VkResult VKAPI_CALL
+ vk_common_GetImageDrmFormatModifierPropertiesEXT(UNUSED VkDevice device,
+                                                  VkImage _image,
+diff -ruN mesa-26.2.5/src/vulkan/runtime/vk_image.h mesa-26.2.5.aros/src/vulkan/runtime/vk_image.h
+--- mesa-26.2.5/src/vulkan/runtime/vk_image.h
++++ mesa-26.2.5.aros/src/vulkan/runtime/vk_image.h
+@@ -77,7 +77,7 @@
+    /* wsi_image_create_info::scanout */
+    bool wsi_legacy_scanout;
+ 
+-#if DETECT_OS_LINUX || DETECT_OS_BSD
++#if DETECT_OS_LINUX || DETECT_OS_BSD || defined(__AROS__)
+    /* VK_EXT_drm_format_modifier
+     *
+     * Initialized by vk_image_create/init() to DRM_FORMAT_MOD_INVALID.  It's

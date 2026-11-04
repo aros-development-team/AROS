@@ -157,6 +157,15 @@ static int Expunge(LIBBASETYPEPTR LIBBASE)
     if (LIBBASE->fallbackmodule)
         CloseLibrary(LIBBASE->fallbackmodule);
 
+    if (LIBBASE->zinkhidd)
+        CloseLibrary(LIBBASE->zinkhidd);
+
+    if (LIBBASE->lavapipehidd)
+        CloseLibrary(LIBBASE->lavapipehidd);
+
+    if (LIBBASE->vulkanhidd)
+        CloseLibrary(LIBBASE->vulkanhidd);
+
     if ((CONST_STRPTR)LIBBASE->fallback != softpipe_str)
         FreeVec(LIBBASE->fallback);
 

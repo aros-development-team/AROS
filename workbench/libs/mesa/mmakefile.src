@@ -74,6 +74,7 @@ MESA3DGL_SOURCES = \
             mesa3dgl_glagetprocaddress \
             mesa3dgl_glamakecurrent \
             mesa3dgl_glasetrast \
+            mesa3dgl_glaswapinterval \
             mesa3dgl_glaswapbuffers
 
 USER_INCLUDES += \

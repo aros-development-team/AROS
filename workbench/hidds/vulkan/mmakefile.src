@@ -42,17 +42,14 @@ USER_INCLUDES += \
     libname=vulkan \
     files="vulkan_loader"
 
-# VulkanProbe — ground-truth trigger for the radv path, the analog of
-# C:AmdgpuProbe. Drives vkCreateInstance -> EnumeratePhysicalDevices ->
-# CreateDevice + compute queue on the 9060, logging each stage to serial. Pure-C
-# client linking -lvulkan (vulkan_loader.c bridges vk* to the vulkan.hidd OOP
-# method, which dispatches to whichever driver registered a GPU — radeonsi.hidd
-# registers the 9060 at boot). Lives here (not in radeonsi) so it links clean,
-# not against the radeonsi module's Mesa-static LDFLAGS.
+# VulkanProbe: the Vulkan stack on whatever devices the loader finds (the
+# display's driver, else the software one): per device, a logical device, a
+# compute queue and a vkCmdFillBuffer checked through a mapping. A plain C
+# program linking -lvulkan.
 %build_prog mmake=hidd-vulkan-vulkanprobe \
     progname=VulkanProbe \
     files=test/VulkanProbe \
-    targetdir=$(AROS_C) \
+    targetdir=$(AROS_DEBUG)/Hardware \
     uselibs="vulkan"
 
 #MM- workbench-hidds: hidd-vulkan-vulkanprobe

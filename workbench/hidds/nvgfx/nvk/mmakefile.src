@@ -1,0 +1,37 @@
+include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
+
+# nvk.nvdd: the nvgfx driver's Vulkan part (Mesa's NVK) as a disk library,
+# opened by the driver the first time its display is asked for a Vulkan
+# object (include/nvdd/nvdd.h). NVK needs the Rust toolchain (its NAK
+# compiler); without it there is no nvk.nvdd and the display offers no
+# Vulkan.
+#MM- hidd-nvgfx : hidd-nvgfx-nvk-$(TARGET_RUST)
+#MM- hidd-nvgfx-nvk-yes : hidd-nvgfx-nvk
+#MM hidd-nvgfx-nvk : hidd-vulkan workbench-libs-z-linklib \
+#MM     mesa3d-linklib-nak mesa3d-linklib-vulkan-runtime mesa3d-linklib-vulkan-wsi mesa3d-linklib-nvk \
+#MM     mesa3d-linklib-mesautil mesa3d-linklib-compiler
+
+NVK_NVDD_SOURCES := \
+            nvk_nvdd \
+            ../arosc_emul \
+            $(SRCDIR)/workbench/libs/mesa/emul_arosc
+
+USER_INCLUDES := \
+            -I$(SRCDIR)/$(CURDIR)/../include \
+            -iquote $(SRCDIR)/workbench/libs/mesa/libnvk \
+            -I$(top_srcdir)/include
+
+USER_CPPFLAGS := $(MESA_COMPILEFLAGS) $(MESA_DEBUG)
+USER_CFLAGS := $(CFLAGS_GNU11)
+
+# NVK's entry point tables reference its functions weakly: whole archives,
+# as meson's link_whole.
+USER_LDFLAGS := \
+  -L$(top_libdir) \
+  -Wl,--whole-archive -lnvk -lvulkan_wsi -lvulkan_runtime -Wl,--no-whole-archive
+
+%build_module mmake=hidd-nvgfx-nvk modname=nvk modtype=library modsuffix=nvdd \
+    moduledir=Devs/Drivers conffile=nvk.conf \
+    files="$(NVK_NVDD_SOURCES)" alwayscxxlink=yes \
+    uselibs="oop nak nak_rs nil nil_rs z compiler mesautil pthread hiddstubs stdc"

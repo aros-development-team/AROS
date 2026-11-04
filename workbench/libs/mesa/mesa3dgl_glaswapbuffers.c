@@ -5,6 +5,7 @@
 #include <aros/debug.h>
 
 #include "util/os_misc.h"
+#include "util/os_time.h"
 #include "pipe/p_context.h"
 #include "pipe/p_defines.h"
 #include "pipe/p_screen.h"
@@ -67,7 +68,23 @@
         /* Flush rendering cache before blitting / flipping. ST_FLUSH_FRONT
          * also marks the framebuffer state dirty, so the next draw
          * revalidates the drawable and picks up a swapped attachment. */
-        st_context_flush(_ctx->st, ST_FLUSH_FRONT, NULL, NULL, NULL);
+        struct pipe_fence_handle *fence = NULL;
+        struct pipe_screen *screen = pipe->screen;
+
+        st_context_flush(_ctx->st, ST_FLUSH_FRONT, &fence, NULL, NULL);
+
+        /* The frame must be complete before it is shown. The blit below
+         * reads it back through the driver's own context, which can only
+         * wait for work this context has already submitted (a driver that
+         * flushes asynchronously - zink - may still hold the frame here);
+         * a flip shows the buffer as it is, and a driver that synchronises
+         * explicitly (NVK) does not hold the display back for the GPU.
+         * Wait for the flush's fence first. */
+        if (fence)
+        {
+            screen->fence_finish(screen, NULL, fence, OS_TIMEOUT_INFINITE);
+            screen->fence_reference(screen, &fence, NULL);
+        }
 
         if (_ctx->framebuffer->scanout)
         {

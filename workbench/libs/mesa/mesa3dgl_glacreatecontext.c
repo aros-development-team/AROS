@@ -110,6 +110,10 @@ static inline const void *gallium_core_get_api(void) { return (const void *)0; }
                      at least 3.2). Creation fails if it cannot be provided;
                      otherwise the highest available version is used.
 
+        GLA_SwapInterval - 0 (default): glASwapBuffers() does not wait for
+                     the display; 1: every swap waits until its frame is on
+                     screen. See glASwapInterval().
+
     RESULT
 
         A valid GL context or NULL of creation was not succesfull.
@@ -196,6 +200,8 @@ static inline const void *gallium_core_get_api(void) { return (const void *)0; }
         bug("%s: ERROR -  failed to fill ST Visual\n", __func__);
         goto error_out;
     }
+
+    ctx->swap_interval = GetTagData(GLA_SwapInterval, 0, tagList) ? 1 : 0;
 
     if (GetTagData(GLA_ContextProfile, GLA_PROFILE_COMPAT, tagList) == GLA_PROFILE_CORE)
     {

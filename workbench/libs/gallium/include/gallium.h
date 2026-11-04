@@ -66,12 +66,13 @@ typedef APTR PipeScreen_t;
 /* PipeScreen_t (from CreatePipeScreen() on the same pipe) that the
  * resources belong to (required). */
 #define SFB_PipeScreen      (SFB_Dummy + 7)
-/* BOOL: SwapScanoutFrameBuffer() never waits for the vertical blank.
- * Default: wait with 2 buffers (the displaced buffer is rendered next),
- * do not wait with 3. */
+/* BOOL: SwapScanoutFrameBuffer() queues the flip and does not wait for
+ * it (3 or more buffers only; with 2 the displaced buffer is rendered next,
+ * so swaps always wait). Default TRUE. Changeable later with
+ * SetScanoutFrameBufferAttr(SFBA_NoWait). */
 #define SFB_NoWait          (SFB_Dummy + 8)
 
-/* GetScanoutFrameBufferAttr() */
+/* GetScanoutFrameBufferAttr(), SetScanoutFrameBufferAttr() */
 #define SFBA_Dummy          (TAG_USER + 0x180)
 #define SFBA_Buffers        (SFBA_Dummy + 1)    /* number of colour buffers           */
 #define SFBA_BackBuffer     (SFBA_Dummy + 2)    /* index of the buffer to render next */
@@ -83,5 +84,6 @@ typedef APTR PipeScreen_t;
 #define SFBA_Window         (SFBA_Dummy + 8)    /* struct Window *, NULL when detached */
 #define SFBA_Swaps          (SFBA_Dummy + 9)    /* SwapScanoutFrameBuffer() calls so far */
 #define SFBA_PipeFormat     (SFBA_Dummy + 10)   /* enum pipe_format of the buffers    */
+#define SFBA_NoWait         (SFBA_Dummy + 11)   /* [GS] BOOL: swaps do not wait for the flip (3+ buffers only) */
 
 #endif

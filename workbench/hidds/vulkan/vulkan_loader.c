@@ -1,20 +1,15 @@
 /*
-    vulkan_loader.c — AROS Vulkan Loader (libvulkan.a)
+    vulkan_loader.c - AROS Vulkan Loader (libvulkan.a)
 
     Provides standard Vulkan entry points (vk*) that dispatch through
     vulkan.hidd via OOP method calls.
 
     This is the AROS equivalent of the Khronos Vulkan Loader (libvulkan.so
     on Linux).  Any AROS application that uses Vulkan should link -lvulkan.
-    The loader opens vulkan.hidd at first use and routes all calls through
-    VulkanDriverCallbacks to whichever driver is registered (venus.hidd,
-    llvmpipe.hidd, etc.).
-
-    GPU path for Venus (virgl/virtio-gpu):
-        vk*() → OOP_DoMethod(vk_obj, ...)
-              → vulkan.hidd → VulkanDriverCallbacks
-              → venus.hidd → vtest socket
-              → virglrenderer host → real GPU
+    At first use the loader asks the display driver of the default public
+    screen for its Vulkan object (CreateObject with the hidd.vulkan class),
+    or makes the software driver's, and routes every call to that object's
+    methods.
 
     Copyright 2025-2026, The AROS Development Team. All rights reserved.
 */
@@ -22,6 +17,9 @@
 #include <proto/oop.h>
 #include <proto/exec.h>
 #include <oop/oop.h>
+#include <proto/intuition.h>
+#include <intuition/screens.h>
+#include <hidd/gfx.h>
 #include <hidd/vulkan_hidd.h>
 #include <stdint.h>
 #include <string.h>
@@ -78,6 +76,19 @@ struct VkLoaderPhysicalDeviceMemoryBudgetPropertiesEXT {
 static OOP_Object   *vk_obj       = NULL;   /* HiddVulkan instance  */
 static OOP_MethodID  vk_mbase     = 0;      /* IID_Hidd_Vulkan base */
 static BOOL          vk_init_done = FALSE;
+static struct Library *vk_hiddbase = NULL; /* vulkan.hidd, for its class */
+static struct Library *vk_swbase = NULL;   /* lavapipe.hidd, the software fallback */
+
+/* The display's CreateObject, asked for an object of class cl */
+static OOP_Object *vk_display_createobject(OOP_Object *display, OOP_Class *cl, struct TagItem *tags)
+{
+    struct pHidd_Display_CreateObject msg;
+
+    msg.mID = OOP_GetMethodID(IID_Hidd_Display, moHidd_Display_CreateObject);
+    msg.cl = cl;
+    msg.attrList = tags;
+    return (OOP_Object *)OOP_DoMethod(display, (OOP_Msg)&msg);
+}
 
 /* ---- Loader-owned command trampolines ---------------------------- */
 
@@ -197,33 +208,73 @@ static void *vk_loader_local_proc(const char *pName)
 
 static void vk_loader_init(void)
 {
-    OOP_AttrBase attrBase;
+    struct Library *IntuitionBase;
+    struct Screen *scr;
+    OOP_Class *vkclass;
+    OOP_AttrBase attrBase, bmAttrBase;
+    struct TagItem tags[] = {
+        { 0, VULKAN_INTERFACE_VERSION },
+        { TAG_DONE, 0 }
+    };
 
     if (vk_init_done)
         return;
     vk_init_done = TRUE;
 
-    attrBase = OOP_ObtainAttrBase(IID_Hidd_Vulkan);
-    if (!attrBase)
+    /*
+     * The Vulkan object comes from the display driver of the default public
+     * screen, through CreateObject asked for the Vulkan class, as a gallium
+     * object does. vulkan.hidd stays open: it holds the class.
+     */
+    if (!vk_hiddbase && !(vk_hiddbase = OpenLibrary("vulkan.hidd", 8)))
         return;
+    vkclass = OOP_FindClass(CLID_Hidd_Vulkan);
+    attrBase = OOP_ObtainAttrBase(IID_Hidd_Vulkan);
+    bmAttrBase = OOP_ObtainAttrBase(IID_Hidd_BitMap);
+    IntuitionBase = OpenLibrary("intuition.library", 0);
+    tags[0].ti_Tag = attrBase + aoHidd_Vulkan_InterfaceVersion;
 
-    struct TagItem tags[] = {
-        { attrBase + aoHidd_Vulkan_InterfaceVersion, VULKAN_INTERFACE_VERSION },
-        { TAG_DONE, 0 }
-    };
-    vk_obj = OOP_NewObject(NULL, CLID_Hidd_Vulkan, tags);
-    OOP_ReleaseAttrBase(IID_Hidd_Vulkan);
+    if (vkclass && attrBase && bmAttrBase && IntuitionBase &&
+        (scr = LockPubScreen(NULL)))
+    {
+        struct BitMap *bm = scr->RastPort.BitMap;
+
+        if (bm && IS_HIDD_BM(bm) && HIDD_BM_OBJ(bm))
+        {
+            OOP_Object *display = NULL;
+            OOP_GetAttr(HIDD_BM_OBJ(bm), bmAttrBase + aoHidd_BitMap_Display, (IPTR *)&display);
+            if (display)
+                vk_obj = vk_display_createobject(display, vkclass, tags);
+        }
+        UnlockPubScreen(NULL, scr);
+    }
+
+    /* no Vulkan from the display: the software driver, as gallium.library does */
+    if (!vk_obj && attrBase)
+    {
+        if (!vk_swbase)
+            vk_swbase = OpenLibrary("lavapipe.hidd", 0);
+        if (vk_swbase)
+            vk_obj = OOP_NewObject(NULL, "hidd.vulkan.lavapipe", tags);
+    }
+
+    if (IntuitionBase)
+        CloseLibrary(IntuitionBase);
+    if (bmAttrBase)
+        OOP_ReleaseAttrBase(IID_Hidd_BitMap);
+    if (attrBase)
+        OOP_ReleaseAttrBase(IID_Hidd_Vulkan);
     if (!vk_obj)
         return;
 
-    /* Cache the method ID base — used for all subsequent dispatch */
+    /* Cache the method ID base - used for all subsequent dispatch */
     vk_mbase = OOP_GetMethodID(IID_Hidd_Vulkan, 0);
 }
 
 /* ---- Root Vulkan entry points ------------------------------------- */
 
 /*
- * vkGetInstanceProcAddr — THE root Vulkan entry point.
+ * vkGetInstanceProcAddr - THE root Vulkan entry point.
  * ggml-vulkan (and Vulkan-Hpp DispatchLoaderDynamic) bootstraps all
  * other function pointers through this call.
  */
@@ -702,7 +753,7 @@ void vkCmdDispatch(void *commandBuffer, uint32_t groupCountX,
 }
 
 /*
- * vkCmdCopyBuffer — called directly in ggml_vk_buffer_copy_async().
+ * vkCmdCopyBuffer - called directly in ggml_vk_buffer_copy_async().
  */
 void vkCmdCopyBuffer(void *commandBuffer, void *srcBuffer, void *dstBuffer,
                      uint32_t regionCount, const void *pRegions)

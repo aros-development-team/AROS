@@ -139,8 +139,33 @@ int gettimeofday (struct timeval * tv,struct timezone * tz)
 
 int usleep (useconds_t usec)
 {
-    IMPLEMENT();
-    return 0;
+    struct MsgPort * timerport;
+    struct timerequest * timereq;
+    int ret = -1;
+
+    if (usec == 0)
+        return 0;
+
+    timerport = CreateMsgPort();
+    timereq = (struct timerequest *)CreateIORequest(timerport, sizeof(*timereq));
+    if (timereq)
+    {
+        if (OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)timereq, 0) == 0)
+        {
+            timereq->tr_node.io_Command = TR_ADDREQUEST;
+            timereq->tr_time.tv_secs = usec / 1000000;
+            timereq->tr_time.tv_micro = usec % 1000000;
+            DoIO((struct IORequest *)timereq);
+            CloseDevice((struct IORequest *)timereq);
+            ret = 0;
+        }
+        DeleteIORequest((struct IORequest *)timereq);
+    }
+    DeleteMsgPort(timerport);
+
+    if (ret)
+        errno = EINTR;
+    return ret;
 }
 
 /*
