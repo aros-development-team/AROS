@@ -81,6 +81,9 @@
 #define RECEIVERPROCBUFFERSIZE 1025
 #define SYSEXRECEIVERPROCBUFFERSIZE 1025
 #define ENDPOINT_OUTPUT_SESSIONS 32
+#define ENDPOINT_OUTPUT_QUEUE 64
+#define ENDPOINT_OUTPUT_SYSEX 4096
+#define ENDPOINT_OUTPUT_BUDGET 16
 #define NUMBEROFSYSEXSTORECEIVE 1025
 
 struct MyMidiMessage2{
@@ -188,6 +191,10 @@ struct Drivers{
 	BPTR seglist;
 	struct MidiDeviceData *mididevicedata;
 	struct DriverData **driverdatas;
+
+	/* Private endpoint publication of the ports; NULL when not published. */
+	struct CAMDLegacyDriverOutputBackend *EndpointBackend;
+	struct CAMDLegacyDriverAdapter *EndpointAdapter;
 };
 
 
@@ -436,6 +443,10 @@ enum CAMDProviderResult AcquireDriverEndpointPort(
 enum CAMDProviderResult ReleaseDriverEndpointPort(
 	struct DriverData *driverdata,ULONG direction,struct CamdBase *CamdBase);
 BOOL DriverPortInUse(struct DriverData *driverdata);
+void PublishDriverEndpoints(struct Drivers *driver,char *path,
+	struct CamdBase *CamdBase);
+BOOL UnpublishDriverEndpoints(struct Drivers *driver,
+	struct CamdBase *CamdBase);
 
 void FreeDriverData(struct Drivers *driver,
 	struct CamdBase *CamdBase

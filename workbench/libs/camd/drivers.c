@@ -368,6 +368,10 @@ void FreeDriverData(struct Drivers *driver,
 	struct DriverData *driverdata;
 	ULONG lokke;
 
+	/* Endpoint sessions refer to the DriverData, so it stays while any
+	   is left. */
+	if(UnpublishDriverEndpoints(driver,CamdBase)==FALSE) return;
+
 	DetachDriverData(driver,CamdBase);
 
 	if(driver->driverdatas!=NULL){
@@ -470,7 +474,10 @@ void LoadDriver(char *name,
 		ObtainSemaphore(CB(CamdBase)->CLSemaphore);
 		attached=AttachDriverData(driver,CamdBase);
 		ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
-		if(attached==TRUE) return;
+		if(attached==TRUE){
+			PublishDriverEndpoints(driver,name,CamdBase);
+			return;
+		}
 	}
 
 	FreeDriverData(driver,CamdBase);
