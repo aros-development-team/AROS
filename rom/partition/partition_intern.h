@@ -28,7 +28,7 @@ struct PartitionBase_intern
      */
     struct Library *pb_DOSBase;
 
-    /* Private interface revision shared with partitionedit.library.
+    /* Private interface revision shared with ptedit.library.
      * Keep this last; bump PARTITION_PRIVATE_ABI whenever the handle,
      * table data or base layouts used by both libraries change. */
     ULONG pb_PrivateABI;
@@ -40,7 +40,7 @@ struct PartitionBase_intern
 
 #define PTYPE(x) ((struct PartitionType *)x)
 
-/* Last: partitionedit.library's libdefs include headers that need the above */
+/* Last: ptedit.library's libdefs include headers that need the above */
 #include LC_LIBDEFS_FILE
 
 #endif /* PARTITION_INTERN_H */

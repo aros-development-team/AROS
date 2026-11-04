@@ -144,7 +144,7 @@ static inline void PRINT_LE_UUID(char *s, uuid_t *id)
 
 #endif
 
-/* Shared by partition.library and partitionedit.library (partitiongpt_common.c) */
+/* Shared by partition.library and ptedit.library (partitiongpt_common.c) */
 UQUAD gpt_le64(const UQUAD *q);
 void GPT_PatchDosEnvec(struct Library *PartitionBase,
     struct PartitionHandle *ph, struct GPTPartition *p);

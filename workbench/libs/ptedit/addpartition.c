@@ -3,7 +3,7 @@
 
 */
 #include <utility/tagitem.h>
-#include "partitionedit_intern.h"
+#include "ptedit_intern.h"
 #include "platform.h"
 
 /*****************************************************************************
@@ -18,7 +18,7 @@
         AROS_LHA(const struct TagItem *  , taglist,    A2),
 
 /*  LOCATION */
-        struct Library *, PartitionEditBase, 7, PartitionEdit)
+        struct Library *, PtEditBase, 7, PtEdit)
 
 /*  FUNCTION
         Add a new partition.
@@ -55,10 +55,10 @@
 
     if (root->table)
     {
-    const struct PTEditFunctionTable *handler = PartitionEditFind(root->table->type);
+    const struct PTEditFunctionTable *handler = PtEditFind(root->table->type);
 
         if (handler && handler->addPartition)
-            return handler->addPartition(PEBASE(PartitionEditBase)->pe_PartitionBase, root, taglist);
+            return handler->addPartition(PEBASE(PtEditBase)->pe_PartitionBase, root, taglist);
     }
     return 0;
     AROS_LIBFUNC_EXIT

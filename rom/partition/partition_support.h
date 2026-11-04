@@ -42,7 +42,7 @@ struct PTFunctionTable
     const struct PartitionAttribute *partitionTableAttrs;
     const struct PartitionAttribute *partitionAttrs;
     struct Node *(*findFileSystem)	 (struct Library *, struct PartitionHandle *, const struct TagItem *);
-    /* Write support lives in partitionedit.library, see partitionedit_intern.h */
+    /* Write support lives in ptedit.library, see ptedit_intern.h */
 };
 
 struct BootFileSystem

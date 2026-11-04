@@ -6,7 +6,7 @@
 #define HDTOOLBOX_SUPPORT_H
 
 #include <proto/partition.h>
-#include <proto/partitionedit.h>
+#include <proto/ptedit.h>
 #include <proto/alib.h>
 #include <exec/nodes.h>
 #include <exec/lists.h>

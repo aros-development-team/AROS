@@ -18,7 +18,7 @@
 #include <libraries/partition.h>
 #include <resources/filesysres.h>
 
-#include "partitionedit_intern.h"
+#include "ptedit_intern.h"
 #include "partitionrdb.h"
 #include "partition_types.h"
 #include "platform.h"
@@ -501,7 +501,7 @@ struct RigidDiskBlock *rdb;
     return deviceError(writeBlock(PartitionBase, root, data->rdbblock, root->buffer));
 }
 
-const struct PTEditFunctionTable PartitionEditRDB =
+const struct PTEditFunctionTable PtEditRDB =
 {
     PHPTT_RDB,
     PartitionRDBWritePartitionTable,

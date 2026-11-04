@@ -30,7 +30,7 @@
 
 #include <string.h>
 
-#include "partitionedit_intern.h"
+#include "ptedit_intern.h"
 #include "partition_types.h"
 #include "partitiongpt.h"
 #include "partitionmbr.h"
@@ -493,7 +493,7 @@ static ULONG PartitionGPTDestroyPartitionTable(struct Library *PartitionBase,
     return deviceError(error);
 }
 
-const struct PTEditFunctionTable PartitionEditGPT =
+const struct PTEditFunctionTable PtEditGPT =
 {
     PHPTT_GPT,
     PartitionGPTWritePartitionTable,

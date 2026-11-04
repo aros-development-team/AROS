@@ -4,7 +4,7 @@
 
 #include <exec/memory.h>
 #include <proto/exec.h>
-#include "partitionedit_intern.h"
+#include "ptedit_intern.h"
 #include "platform.h"
 
 /*****************************************************************************
@@ -19,7 +19,7 @@
         AROS_LHA(ULONG,                    type,       D1),
 
 /*  LOCATION */
-        struct Library *, PartitionEditBase, 6, PartitionEdit)
+        struct Library *, PtEditBase, 6, PtEdit)
 
 /*  FUNCTION
         Create a new partition table.
@@ -51,7 +51,7 @@
 
     if (root->table == NULL)
     {
-        struct Library *PartitionBase = PEBASE(PartitionEditBase)->pe_PartitionBase;
+        struct Library *PartitionBase = PEBASE(PtEditBase)->pe_PartitionBase;
         struct PartitionTableInfo **pst;
 
         /* The new table is read, closed and queried through partition.library */
@@ -60,7 +60,7 @@
         {
             if (pst[0]->pti_Type == type)
             {
-                const struct PTEditFunctionTable *handler = PartitionEditFind(type);
+                const struct PTEditFunctionTable *handler = PtEditFind(type);
 
                 if (handler && handler->createPartitionTable)
                 {

@@ -5,7 +5,7 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <proto/partition.h>
-#include "partitionedit_intern.h"
+#include "ptedit_intern.h"
 #include "platform.h"
 
 /*****************************************************************************
@@ -19,7 +19,7 @@
         AROS_LHA(struct PartitionHandle *, root,       A1),
 
 /*  LOCATION */
-        struct Library *, PartitionEditBase, 11, PartitionEdit)
+        struct Library *, PtEditBase, 11, PtEdit)
 
 /*  FUNCTION
         Destroy a partition table by immediately overwriting table data on
@@ -51,8 +51,8 @@
 
     if (root->table)
     {
-    const struct PTEditFunctionTable *handler = PartitionEditFind(root->table->type);
-    struct Library *PartitionBase = PEBASE(PartitionEditBase)->pe_PartitionBase;
+    const struct PTEditFunctionTable *handler = PtEditFind(root->table->type);
+    struct Library *PartitionBase = PEBASE(PtEditBase)->pe_PartitionBase;
 
         if (handler && handler->destroyPartitionTable)
         {

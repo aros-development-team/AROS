@@ -2,7 +2,7 @@
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
-#include "partitionedit_intern.h"
+#include "ptedit_intern.h"
 #include "platform.h"
 
 /*****************************************************************************
@@ -16,7 +16,7 @@
         AROS_LHA(struct PartitionHandle *, root,       A1),
 
 /*  LOCATION */
-        struct Library *, PartitionEditBase, 5, PartitionEdit)
+        struct Library *, PtEditBase, 5, PtEdit)
 
 /*  FUNCTION
         Write a partition table; writing this partition table doesn't affect
@@ -44,10 +44,10 @@
 
     if (root->table)
     {
-        const struct PTEditFunctionTable *handler = PartitionEditFind(root->table->type);
+        const struct PTEditFunctionTable *handler = PtEditFind(root->table->type);
 
         if (handler && handler->writePartitionTable)
-            return handler->writePartitionTable(PEBASE(PartitionEditBase)->pe_PartitionBase, root);
+            return handler->writePartitionTable(PEBASE(PtEditBase)->pe_PartitionBase, root);
     }
 
     /* Can't write (no method) */

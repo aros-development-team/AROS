@@ -12,7 +12,7 @@
 #include <proto/utility.h>
 
 #include "partition_types.h"
-#include "partitionedit_intern.h"
+#include "ptedit_intern.h"
 #include "partitionmbr.h"
 #include "platform.h"
 #include "debug.h"
@@ -261,7 +261,7 @@ static ULONG PartitionMBRDestroyPartitionTable(struct Library *PartitionBase,
     return 0;
 }
 
-const struct PTEditFunctionTable PartitionEditMBR =
+const struct PTEditFunctionTable PtEditMBR =
 {
     PHPTT_MBR,
     PartitionMBRWritePartitionTable,

@@ -49,7 +49,7 @@ struct FileSysNode
 
 #define PartitionRDBUpdateGeometry PartitionUpdateGeometry
 
-/* Shared by partition.library and partitionedit.library (partitionrdb_common.c) */
+/* Shared by partition.library and ptedit.library (partitionrdb_common.c) */
 ULONG calcChkSum(ULONG *ptr, ULONG size);
 struct LoadSegBlock *PartitionRDBFileSysBlock(struct FileSysNode *fn, ULONG block);
 struct PartitionHandle *PartitionRDBAllocHandle(struct PartitionHandle *root);

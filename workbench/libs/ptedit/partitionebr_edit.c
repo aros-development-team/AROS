@@ -12,7 +12,7 @@
 #include <proto/utility.h>
 
 #include "partition_types.h"
-#include "partitionedit_intern.h"
+#include "ptedit_intern.h"
 #include "partitionmbr.h"
 #include "platform.h"
 #include "debug.h"
@@ -233,7 +233,7 @@ struct PartitionHandle *ph;
     return 0;
 }
 
-const struct PTEditFunctionTable PartitionEditEBR =
+const struct PTEditFunctionTable PtEditEBR =
 {
     PHPTT_EBR,
     PartitionEBRWritePartitionTable,

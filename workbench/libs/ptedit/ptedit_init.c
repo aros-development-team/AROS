@@ -1,16 +1,16 @@
 /*
    Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-   Desc: partitionedit.library initialization code
+   Desc: ptedit.library initialization code
 */
 
 #include <aros/symbolsets.h>
 #include <proto/exec.h>
 
-#include "partitionedit_intern.h"
+#include "ptedit_intern.h"
 #include LC_LIBDEFS_FILE
 
-static int PartitionEditInit(LIBBASETYPEPTR LIBBASE)
+static int PtEditInit(LIBBASETYPEPTR LIBBASE)
 {
     struct Library *PartitionBase = OpenLibrary("partition.library", PARTITION_MIN_VERSION);
 
@@ -30,7 +30,7 @@ static int PartitionEditInit(LIBBASETYPEPTR LIBBASE)
     return FALSE;
 }
 
-static int PartitionEditExpunge(LIBBASETYPEPTR LIBBASE)
+static int PtEditExpunge(LIBBASETYPEPTR LIBBASE)
 {
     if (LIBBASE->pe_PartitionBase)
         CloseLibrary(LIBBASE->pe_PartitionBase);
@@ -38,5 +38,5 @@ static int PartitionEditExpunge(LIBBASETYPEPTR LIBBASE)
     return TRUE;
 }
 
-ADD2INITLIB(PartitionEditInit, 0);
-ADD2EXPUNGELIB(PartitionEditExpunge, 0);
+ADD2INITLIB(PtEditInit, 0);
+ADD2EXPUNGELIB(PtEditExpunge, 0);

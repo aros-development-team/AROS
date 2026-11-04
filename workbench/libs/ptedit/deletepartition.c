@@ -2,7 +2,7 @@
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
-#include "partitionedit_intern.h"
+#include "ptedit_intern.h"
 #include "platform.h"
 
 /*****************************************************************************
@@ -16,7 +16,7 @@
         AROS_LHA(struct PartitionHandle *, ph, A1),
 
 /*  LOCATION */
-        struct Library *, PartitionEditBase, 8, PartitionEdit)
+        struct Library *, PtEditBase, 8, PtEdit)
 
 /*  FUNCTION
         Delete a partition along with its subpartitions.
@@ -42,10 +42,10 @@
 
     if (ph->root)
     {
-    const struct PTEditFunctionTable *handler = PartitionEditFind(ph->root->table->type);
+    const struct PTEditFunctionTable *handler = PtEditFind(ph->root->table->type);
 
         if (handler && handler->deletePartition)
-            handler->deletePartition(PEBASE(PartitionEditBase)->pe_PartitionBase, ph);
+            handler->deletePartition(PEBASE(PtEditBase)->pe_PartitionBase, ph);
     }
     AROS_LIBFUNC_EXIT
 }

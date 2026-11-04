@@ -1,10 +1,10 @@
-#ifndef PARTITIONEDIT_INTERN_H
-#define PARTITIONEDIT_INTERN_H
+#ifndef PTEDIT_INTERN_H
+#define PTEDIT_INTERN_H
 
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: Internal definitions for partitionedit.library
+    Desc: Internal definitions for ptedit.library
 */
 
 #include <exec/libraries.h>
@@ -13,7 +13,7 @@
 #include "partition_support.h"
 
 /*
- * partitionedit.library creates, edits and writes the partition tables
+ * ptedit.library creates, edits and writes the partition tables
  * opened by partition.library. Handles keep pointing at partition.library's
  * read-only PTFunctionTable, so closing and querying them works as usual;
  * the write side of each table type is looked up by its type.
@@ -21,13 +21,13 @@
 
 #define PARTITION_MIN_VERSION 4
 
-struct PartitionEditBase_intern
+struct PtEditBase_intern
 {
     struct Library lib;
     struct Library *pe_PartitionBase;   /* partition.library */
 };
 
-#define PEBASE(x) ((struct PartitionEditBase_intern *)(x))
+#define PEBASE(x) ((struct PtEditBase_intern *)(x))
 
 struct PTEditFunctionTable
 {
@@ -41,12 +41,12 @@ struct PTEditFunctionTable
     ULONG       (*destroyPartitionTable)   (struct Library *, struct PartitionHandle *);
 };
 
-extern const struct PTEditFunctionTable PartitionEditEBR;
-extern const struct PTEditFunctionTable PartitionEditMBR;
-extern const struct PTEditFunctionTable PartitionEditRDB;
-extern const struct PTEditFunctionTable PartitionEditGPT;
+extern const struct PTEditFunctionTable PtEditEBR;
+extern const struct PTEditFunctionTable PtEditMBR;
+extern const struct PTEditFunctionTable PtEditRDB;
+extern const struct PTEditFunctionTable PtEditGPT;
 
-const struct PTEditFunctionTable *PartitionEditFind(ULONG type);
+const struct PTEditFunctionTable *PtEditFind(ULONG type);
 
 /*
  * The handlers get partition.library's base as PartitionBase, so reads go
@@ -58,4 +58,4 @@ LONG PartitionWriteBlock(struct Library *PartitionBase, struct PartitionHandle *
 
 #define writeBlock PartitionWriteBlock
 
-#endif /* PARTITIONEDIT_INTERN_H */
+#endif /* PTEDIT_INTERN_H */

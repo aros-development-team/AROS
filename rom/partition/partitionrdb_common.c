@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
-    Desc: RDB helpers shared by partition.library and partitionedit.library
+    Desc: RDB helpers shared by partition.library and ptedit.library
 */
 
 #include <proto/exec.h>

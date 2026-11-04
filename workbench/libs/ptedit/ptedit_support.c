@@ -1,28 +1,28 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: partitionedit.library support functions
+    Desc: ptedit.library support functions
 */
 
 #include <proto/exec.h>
 
-#include "partitionedit_intern.h"
+#include "ptedit_intern.h"
 
-static const struct PTEditFunctionTable * const PartitionEditSupport[] =
+static const struct PTEditFunctionTable * const PtEditSupport[] =
 {
-    &PartitionEditGPT,
-    &PartitionEditMBR,
-    &PartitionEditEBR,
-    &PartitionEditRDB,
+    &PtEditGPT,
+    &PtEditMBR,
+    &PtEditEBR,
+    &PtEditRDB,
     NULL
 };
 
 /* Find the write side of a partition table type */
-const struct PTEditFunctionTable *PartitionEditFind(ULONG type)
+const struct PTEditFunctionTable *PtEditFind(ULONG type)
 {
     const struct PTEditFunctionTable * const *pst;
 
-    for (pst = PartitionEditSupport; *pst; pst++)
+    for (pst = PtEditSupport; *pst; pst++)
     {
         if ((*pst)->type == type)
             return *pst;

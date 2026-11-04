@@ -5,7 +5,7 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
-#include "partitionedit_intern.h"
+#include "ptedit_intern.h"
 
 /*****************************************************************************
 
@@ -19,7 +19,7 @@
         AROS_LHA2(UQUAD               , StartBlock, D1, D2),
 
 /*  LOCATION */
-        struct Library *, PartitionEditBase, 12, PartitionEdit)
+        struct Library *, PtEditBase, 12, PtEdit)
 
 /*  FUNCTION
         Write raw data to the partition.

@@ -13,7 +13,7 @@
 #include "debug.h"
 
 /*
- * Helpers shared by partition.library and partitionedit.library.
+ * Helpers shared by partition.library and ptedit.library.
  * PartitionBase is always partition.library's base here.
  */
 

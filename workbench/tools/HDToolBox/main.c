@@ -32,7 +32,7 @@ extern struct ListNode root;
 struct IntuitionBase    *IntuitionBase = NULL;
 struct GfxBase          *GfxBase = NULL;
 struct PartitionBase    *PartitionBase = NULL;
-struct Library          *PartitionEditBase = NULL;
+struct Library          *PtEditBase = NULL;
 
 LONG initEnv(char *device)
 {
@@ -51,10 +51,10 @@ LONG initEnv(char *device)
     PartitionBase = (struct PartitionBase *)OpenLibrary("partition.library", 4);
     if (!PartitionBase)
         return ERR_PARTITION;
-    /* Partition tables are created and written through partitionedit.library */
-    PartitionEditBase = OpenLibrary("partitionedit.library", 1);
-    if (!PartitionEditBase)
-        return ERR_PARTITIONEDIT;
+    /* Partition tables are created and written through ptedit.library */
+    PtEditBase = OpenLibrary("ptedit.library", 1);
+    if (!PtEditBase)
+        return ERR_PTEDIT;
 
     retval = initGUI();
     if (retval != ERR_NONE)
@@ -72,8 +72,8 @@ void uninitEnv()
     deinitGUI();
     freeDeviceList();
 
-    if (PartitionEditBase)
-        CloseLibrary(PartitionEditBase);
+    if (PtEditBase)
+        CloseLibrary(PtEditBase);
     if (PartitionBase)
         CloseLibrary((struct Library *)PartitionBase);
     if (GfxBase)
@@ -114,8 +114,8 @@ int main(int argc, char **argv)
     {
         waitMessage();
     }
-    else if (error == ERR_PARTITIONEDIT)
-        printf("Can't open partitionedit.library\n");
+    else if (error == ERR_PTEDIT)
+        printf("Can't open ptedit.library\n");
     else
         printf("Error %d\n", (int)error);
 

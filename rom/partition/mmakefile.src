@@ -1,7 +1,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-# Helpers compiled into both partition.library and partitionedit.library
+# Helpers also compiled into ptedit.library (workbench/libs/ptedit)
 COMMONFILES := \
 	partition_types \
 	partition_support \
@@ -35,34 +35,12 @@ FUNCS := \
 	loadbootfilesystems      \
 	readpartitiondata
 
-# partitionedit.library: the write side of the partition table handlers
-EDITFILES := \
-	$(COMMONFILES) \
-	partitionedit_support \
-	partitionebr_edit \
-	partitionmbr_edit \
-	partitionrdb_edit \
-	partitiongpt_edit
-
-EDITFUNCS := \
-	writepartitiontable \
-	createpartitiontable \
-	addpartition \
-	deletepartition \
-	setpartitiontableattrs \
-	setpartitionattrs \
-	destroypartitiontable \
-	writepartitiondata
-
 #MM kernel-partition-includes : \
 #MM    kernel-exec-includes \
 #MM    includes-copy
 #MM kernel-partition : core-linklibs linklibs-fatbpb workbench-libs-uuid-includes
 #MM kernel-partition-kobj : core-linklibs linklibs-fatbpb workbench-libs-uuid-includes
 #MM- core-linklibs: linklibs-partition
-#MM- workbench-libs : workbench-libs-partitionedit
-#MM workbench-libs-partitionedit-includes : kernel-partition-includes
-#MM workbench-libs-partitionedit : kernel-partition-includes linklibs-fatbpb workbench-libs-uuid-includes
 
 USER_CPPFLAGS := \
                -DUSE_EXEC_DEBUG \
@@ -76,9 +54,5 @@ endif
 %build_module mmake=kernel-partition \
     modname=partition modtype=library \
     files="partition_init $(FUNCS) $(FILES)" uselibs="debug loadseg fatbpb"
-
-%build_module mmake=workbench-libs-partitionedit \
-    modname=partitionedit modtype=library \
-    files="partitionedit_init $(EDITFUNCS) $(EDITFILES)" uselibs="fatbpb"
 
 %common
