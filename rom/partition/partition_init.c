@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 2001-2020, The AROS Development Team. All rights reserved.
+   Copyright (C) 2001-2026, The AROS Development Team. All rights reserved.
 
    Desc: Partition initialization code
 */
@@ -12,9 +12,24 @@
 #include "partition_support.h"
 #include LC_LIBDEFS_FILE
 
+const struct PTFunctionTable * const PartitionSupport[] =
+{
+    &PartitionGPT, /* The order of these two is important, GPT must be checked before MBR */
+    &PartitionMBR,
+    &PartitionEBR,
+    &PartitionRDB,
+    NULL
+};
+
+/* Keep RDB last. RDB scans up to 16 blocks and in case of
+ * MBR->EBR->RDB having RDB first detects RDB as root and
+ * causes MBR and EBR offsets not be taken into account
+ */
+
 static int PartitionInit(LIBBASETYPEPTR LIBBASE)
 {
     LIBBASE->partbase.tables =  (struct PartitionTableInfo **)PartitionSupport;
+    LIBBASE->pb_PrivateABI = PARTITION_PRIVATE_ABI;
     NewList(&LIBBASE->bootList);
     InitSemaphore(&LIBBASE->bootSem);
 

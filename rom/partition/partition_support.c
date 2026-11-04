@@ -1,9 +1,10 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
 */
 
 #include <proto/exec.h>
+#include <proto/partition.h>
 #include <devices/newstyle.h>
 #include <utility/tagitem.h>
 
@@ -11,18 +12,9 @@
 #include "partition_support.h"
 #include "debug.h"
 
-const struct PTFunctionTable * const PartitionSupport[] =
-{
-    &PartitionGPT, /* The order of these two is important, GPT must be checked before MBR */
-    &PartitionMBR,
-    &PartitionEBR,
-    &PartitionRDB,
-    NULL
-};
-
-/* Keep RDB last. RDB scans up to 16 blocks and in case of
- * MBR->EBR->RDB having RDB first detects RDB as root and
- * causes MBR and EBR offsets not be taken into account
+/*
+ * Helpers shared by partition.library and partitionedit.library.
+ * PartitionBase is always partition.library's base here.
  */
 
 /* get geometry */
@@ -94,7 +86,7 @@ ULONG start = 0;
 
     while (ph)
     {
-        start += ph->de.de_LowCyl*ph->de.de_BlocksPerTrack*ph->de.de_Surfaces;
+        start += PartitionDEStart(&ph->de);
         ph = ph->root;
     }
     return start;
@@ -195,4 +187,69 @@ void setDosType(struct DosEnvec *de, ULONG type)
         de->de_Reserved       = 2;
         de->de_BootBlocks     = 2;
     }
+}
+
+LONG readBlock(struct Library *PartitionBase, struct PartitionHandle *ph, ULONG block, void *mem)
+{
+    return ReadPartitionDataQ(ph, mem, ph->de.de_SizeBlock << 2, block);
+}
+
+/* Keep geometry consistent for newly created, edited and reopened partitions. */
+void PartitionUpdateGeometry(struct PartitionHandle *ph)
+{
+    ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
+    ph->dg.dg_SectorSize = ph->de.de_SizeBlock << 2;
+    ph->dg.dg_Heads = ph->de.de_Surfaces;
+    ph->dg.dg_TrackSectors = ph->de.de_BlocksPerTrack;
+    ph->dg.dg_CylSectors = ph->dg.dg_Heads * ph->dg.dg_TrackSectors;
+    ph->dg.dg_Cylinders = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
+    ph->dg.dg_TotalSectors = ph->dg.dg_CylSectors * ph->dg.dg_Cylinders;
+    ph->dg.dg_BufMemType = ph->de.de_BufMemType;
+}
+
+/* First block of a DosEnvec, in blocks of its parent */
+ULONG PartitionDEStart(const struct DosEnvec *de)
+{
+    return de->de_LowCyl * de->de_Surfaces * de->de_BlocksPerTrack;
+}
+
+/* Number of blocks covered by a DosEnvec */
+ULONG PartitionDECount(const struct DosEnvec *de)
+{
+    return (de->de_HighCyl - de->de_LowCyl + 1) * de->de_Surfaces * de->de_BlocksPerTrack;
+}
+
+UQUAD PartitionMulQ(ULONG a, ULONG b, ULONG c)
+{
+    return (UQUAD)a * b * c;
+}
+
+/* Common part of ReadPartitionDataQ()/WritePartitionDataQ() */
+LONG PartitionDoIO(struct PartitionHandle *ph, APTR buf, ULONG size, UQUAD block, UWORD cmd)
+{
+    UQUAD offset = (getStartBlock(ph) + block) * (ph->de.de_SizeBlock << 2);
+    struct IOExtTD *ioreq = ph->bd->ioreq;
+
+    ioreq->iotd_Req.io_Command = cmd;
+    ioreq->iotd_Req.io_Length  = size;
+    ioreq->iotd_Req.io_Data    = buf;
+    ioreq->iotd_Req.io_Offset  = offset;
+    ioreq->iotd_Req.io_Actual  = offset >> 32;
+    return DoIO((struct IORequest *)ioreq);
+}
+
+/* Free a child handle allocated with AllocMem() and AllocMem()'d private data */
+void PartitionFreeHandle(struct Library *PartitionBase, struct PartitionHandle *ph, ULONG datasize)
+{
+    ClosePartitionTable(ph);
+    FreeMem(ph->data, datasize);
+    FreeMem(ph, sizeof(struct PartitionHandle));
+}
+
+void PartitionFreeHandles(struct Library *PartitionBase, struct List *list, ULONG datasize)
+{
+    struct PartitionHandle *ph;
+
+    while ((ph = (struct PartitionHandle *)RemTail(list)))
+        PartitionFreeHandle(PartitionBase, ph, datasize);
 }

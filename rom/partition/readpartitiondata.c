@@ -20,7 +20,7 @@
         AROS_LHA2(UQUAD               , StartBlock, D1, D2),
 
 /*  LOCATION */
-        struct Library *, PartitionBase, 25, Partition)
+        struct Library *, PartitionBase, 18, Partition)
 
 /*  FUNCTION
         Read raw data from the partition.
@@ -50,16 +50,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    UQUAD offset = (getStartBlock(Partition) + StartBlock) * (Partition->de.de_SizeBlock << 2);
-    struct IOExtTD *ioreq = Partition->bd->ioreq;
-
-    ioreq->iotd_Req.io_Command = Partition->bd->cmdread;
-    ioreq->iotd_Req.io_Length  = DataSize;
-    ioreq->iotd_Req.io_Data    = Buffer;
-    ioreq->iotd_Req.io_Offset  = offset;
-    ioreq->iotd_Req.io_Actual  = offset >> 32;
-
-    return DoIO((struct IORequest *)ioreq);
+    return PartitionDoIO(Partition, Buffer, DataSize, StartBlock, Partition->bd->cmdread);
 
     AROS_LIBFUNC_EXIT
 }

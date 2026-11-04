@@ -21,7 +21,7 @@
         AROS_LHA(const struct TagItem *, taglist, A2),
 
 /*  LOCATION */
-        struct Library *, PartitionBase, 13, Partition)
+        struct Library *, PartitionBase, 9, Partition)
 
 /*  FUNCTION
         Get attributes of a partition table.

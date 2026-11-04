@@ -17,7 +17,7 @@
         AROS_LHA(const struct TagItem *, taglist, A2),
 
 /*  LOCATION */
-        struct Library *, PartitionBase, 20, Partition)
+        struct Library *, PartitionBase, 13, Partition)
 
 /*  FUNCTION
         Locate a filesystem handler in the partition.

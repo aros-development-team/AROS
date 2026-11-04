@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/alib.h>
@@ -32,6 +32,7 @@ extern struct ListNode root;
 struct IntuitionBase    *IntuitionBase = NULL;
 struct GfxBase          *GfxBase = NULL;
 struct PartitionBase    *PartitionBase = NULL;
+struct Library          *PartitionEditBase = NULL;
 
 LONG initEnv(char *device)
 {
@@ -47,9 +48,13 @@ LONG initEnv(char *device)
     GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
     if (!GfxBase)
         return ERR_GFX;
-    PartitionBase = (struct PartitionBase *)OpenLibrary("partition.library", 1);
+    PartitionBase = (struct PartitionBase *)OpenLibrary("partition.library", 4);
     if (!PartitionBase)
         return ERR_PARTITION;
+    /* Partition tables are created and written through partitionedit.library */
+    PartitionEditBase = OpenLibrary("partitionedit.library", 1);
+    if (!PartitionEditBase)
+        return ERR_PARTITIONEDIT;
 
     retval = initGUI();
     if (retval != ERR_NONE)
@@ -67,6 +72,8 @@ void uninitEnv()
     deinitGUI();
     freeDeviceList();
 
+    if (PartitionEditBase)
+        CloseLibrary(PartitionEditBase);
     if (PartitionBase)
         CloseLibrary((struct Library *)PartitionBase);
     if (GfxBase)
@@ -107,6 +114,8 @@ int main(int argc, char **argv)
     {
         waitMessage();
     }
+    else if (error == ERR_PARTITIONEDIT)
+        printf("Can't open partitionedit.library\n");
     else
         printf("Error %d\n", (int)error);
 

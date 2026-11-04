@@ -37,18 +37,12 @@ struct PTFunctionTable
     LONG        (*checkPartitionTable)     (struct Library *, struct PartitionHandle *);
     LONG        (*openPartitionTable)      (struct Library *, struct PartitionHandle *);
     void        (*closePartitionTable)     (struct Library *, struct PartitionHandle *);
-    LONG        (*writePartitionTable)     (struct Library *, struct PartitionHandle *);
-    LONG        (*createPartitionTable)    (struct Library *, struct PartitionHandle *);
-    struct PartitionHandle *(*addPartition)(struct Library *, struct PartitionHandle *, const struct TagItem *);
-    void        (*deletePartition)         (struct Library *, struct PartitionHandle *);
     LONG        (*getPartitionTableAttr)   (struct Library *, struct PartitionHandle *, const struct TagItem *);
-    LONG        (*setPartitionTableAttrs)  (struct Library *, struct PartitionHandle *, const struct TagItem *);
     LONG        (*getPartitionAttr)        (struct Library *, struct PartitionHandle *, const struct TagItem *);
-    LONG        (*setPartitionAttrs)       (struct Library *, struct PartitionHandle *, const struct TagItem *);
     const struct PartitionAttribute *partitionTableAttrs;
     const struct PartitionAttribute *partitionAttrs;
-    ULONG    	(*destroyPartitionTable) (struct Library *, struct PartitionHandle *);
     struct Node *(*findFileSystem)	 (struct Library *, struct PartitionHandle *, const struct TagItem *);
+    /* Write support lives in partitionedit.library, see partitionedit_intern.h */
 };
 
 struct BootFileSystem
@@ -76,22 +70,19 @@ LONG deviceError(LONG err);
 
 void initPartitionHandle(struct PartitionHandle *root, struct PartitionHandle *ph, ULONG first_sector, ULONG count_sector);
 void setDosType(struct DosEnvec *de, ULONG type);
+void PartitionUpdateGeometry(struct PartitionHandle *ph);
+void PartitionFreeHandle(struct Library *PartitionBase, struct PartitionHandle *ph, ULONG datasize);
+void PartitionFreeHandles(struct Library *PartitionBase, struct List *list, ULONG datasize);
+LONG PartitionDoIO(struct PartitionHandle *ph, APTR buf, ULONG size, UQUAD block, UWORD cmd);
+ULONG PartitionDEStart(const struct DosEnvec *de);
+ULONG PartitionDECount(const struct DosEnvec *de);
+UQUAD PartitionMulQ(ULONG a, ULONG b, ULONG c);
 
 unsigned int Crc32_ComputeBuf(unsigned int inCrc32, const void *buf, unsigned int bufLen);
 
 /* read a single block within partition ph */
-static inline LONG readBlock(struct Library *PartitionBase, struct PartitionHandle *ph, ULONG block, void *mem)
-{
-    return ReadPartitionDataQ(ph, mem, ph->de.de_SizeBlock << 2, block);
-}
-
-/* write a single block within partition ph */
-static inline LONG PartitionWriteBlock(struct Library *PartitionBase, struct PartitionHandle *ph, ULONG block, void *mem)
-{
-    return WritePartitionDataQ(ph, mem, ph->de.de_SizeBlock << 2, block);
-}
+LONG readBlock(struct Library *PartitionBase, struct PartitionHandle *ph, ULONG block, void *mem);
 
 #define getGeometry PartitionGetGeometry
-#define writeBlock  PartitionWriteBlock
 
 #endif /* PARTITION_SUPPORT_H */

@@ -1,8 +1,8 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
-#include "partition_support.h"
+#include "partitionedit_intern.h"
 #include "platform.h"
 
 /*****************************************************************************
@@ -18,7 +18,7 @@
        AROS_LHA(const struct TagItem *,   taglist,  A2),
 
 /*  LOCATION */
-       struct Library *, PartitionBase, 16, Partition)
+       struct Library *, PartitionEditBase, 10, PartitionEdit)
 
 /*  FUNCTION
         Set attributes of a partition
@@ -52,10 +52,10 @@
 
     if (ph->root)
     {
-    struct PTFunctionTable *handler = ph->root->table->handler;
+    const struct PTEditFunctionTable *handler = PartitionEditFind(ph->root->table->type);
 
-        if (handler->setPartitionAttrs)
-            return handler->setPartitionAttrs(PartitionBase, ph, taglist);
+        if (handler && handler->setPartitionAttrs)
+            return handler->setPartitionAttrs(PEBASE(PartitionEditBase)->pe_PartitionBase, ph, taglist);
     }
     return 1;
     AROS_LIBFUNC_EXIT

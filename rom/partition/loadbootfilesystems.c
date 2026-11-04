@@ -19,7 +19,7 @@
 /*  SYNOPSIS */
 
 /*  LOCATION */
-        struct Library *, PartitionBase, 24, Partition)
+        struct Library *, PartitionBase, 17, Partition)
 
 /*  FUNCTION
         Perform a deferred loading of boot filesystems.

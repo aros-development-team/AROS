@@ -1,12 +1,11 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
-#include "partition_intern.h"
-#include "partition_support.h"
+#include "partitionedit_intern.h"
 
 /*****************************************************************************
 
@@ -20,7 +19,7 @@
         AROS_LHA2(UQUAD               , StartBlock, D1, D2),
 
 /*  LOCATION */
-        struct Library *, PartitionBase, 26, Partition)
+        struct Library *, PartitionEditBase, 12, PartitionEdit)
 
 /*  FUNCTION
         Write raw data to the partition.
@@ -50,16 +49,7 @@
 {
     AROS_LIBFUNC_INIT
     
-    UQUAD offset = (getStartBlock(Partition) + StartBlock) * (Partition->de.de_SizeBlock << 2);
-    struct IOExtTD *ioreq = Partition->bd->ioreq;
+    return PartitionWriteData(Partition, Buffer, DataSize, StartBlock);
 
-    ioreq->iotd_Req.io_Command = Partition->bd->cmdwrite;
-    ioreq->iotd_Req.io_Length  = DataSize;
-    ioreq->iotd_Req.io_Data    = Buffer;
-    ioreq->iotd_Req.io_Offset  = offset;
-    ioreq->iotd_Req.io_Actual  = offset >> 32;
-
-    return DoIO((struct IORequest *)ioreq);
-    
     AROS_LIBFUNC_EXIT
 }

@@ -1,11 +1,15 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef PARTITIONGPT_H
 #define PARTITIONGPT_H
 
+#include <aros/macros.h>
+#include <libraries/partition.h>
 #include <libraries/uuid.h>
+
+#include <string.h>
 
 /* Type ID for legacy MBR */
 #define MBRT_GPT 0xEE
@@ -54,5 +58,96 @@ struct GPTPartition
 /* AROS-specific flags */
 #define GPT_PF1_AROS_BOOTABLE (1 << 28)
 #define GPT_PF1_AROS_BOOTPRI  0x000000FF	/* Mask for boot priority */
+
+/* In-memory partition handle, allocated with AllocVec() by both libraries */
+struct GPTPartitionHandle
+{
+    struct PartitionHandle ph;  /* Public part                */
+    ULONG entrySize;            /* Size of table entry        */
+    ULONG position;            /* Stable index in the on-disk entry array */
+    char name[37];              /* Name in ASCII              */
+                                /* Actual table entry follows */
+};
+
+#define GPTH(ph) ((struct GPTPartitionHandle *)ph)
+
+extern const uuid_t GPT_Type_Unused;
+extern const uuid_t GPT_Type_AROS;
+
+/*
+ * Little-endian UUID conversion and comparison.
+ * We can't use uuid.library here because it's not available during
+ * system bootup. However, we are going to use it for generation.
+ */
+static inline void uuid_from_le(uuid_t *to, uuid_t *id)
+{
+    to->time_low            = AROS_LE2LONG(id->time_low);
+    to->time_mid            = AROS_LE2WORD(id->time_mid);
+    to->time_hi_and_version = AROS_LE2WORD(id->time_hi_and_version);
+
+    /* Do not replace it with CopyMem(), gcc optimizes this nicely */
+    memcpy(&to->clock_seq_hi_and_reserved, &id->clock_seq_hi_and_reserved, 8);
+}
+
+static inline void uuid_to_le(uuid_t *to, uuid_t *id)
+{
+    to->time_low            = AROS_LONG2LE(id->time_low);
+    to->time_mid            = AROS_WORD2LE(id->time_mid);
+    to->time_hi_and_version = AROS_WORD2LE(id->time_hi_and_version);
+
+    /* Do not replace it with CopyMem(), gcc optimizes this nicely */
+    memcpy(&to->clock_seq_hi_and_reserved, &id->clock_seq_hi_and_reserved, 8);
+}
+
+static inline BOOL uuid_cmp_le(uuid_t *leid, const uuid_t *id)
+{
+    if (AROS_LE2LONG(leid->time_low) != id->time_low)
+        return FALSE;
+    if (AROS_LE2WORD(leid->time_mid) != id->time_mid)
+        return FALSE;
+    if (AROS_LE2WORD(leid->time_hi_and_version) != id->time_hi_and_version)
+        return FALSE;
+
+    return !memcmp(&leid->clock_seq_hi_and_reserved, &id->clock_seq_hi_and_reserved, 8);
+}
+
+/* For AROS we put DOS Type ID into first four bytes of UUID (time_low), so we ignore them. */
+static inline BOOL is_aros_uuid_le(uuid_t *leid)
+{
+    if (AROS_LE2WORD(leid->time_mid) != GPT_Type_AROS.time_mid)
+        return 0;
+    if (AROS_LE2WORD(leid->time_hi_and_version) != GPT_Type_AROS.time_hi_and_version)
+        return 0;
+
+    return !memcmp(&leid->clock_seq_hi_and_reserved, &GPT_Type_AROS.clock_seq_hi_and_reserved, 8);
+}
+
+#ifdef DEBUG_UUID
+
+static inline void PRINT_LE_UUID(char *s, uuid_t *id)
+{
+    unsigned int i;
+
+    bug("[GPT] %s UUID: 0x%08X-%04X-%04X-%02X%02X-", s,
+        AROS_LE2LONG(id->time_low), AROS_LE2WORD(id->time_mid), AROS_LE2WORD(id->time_hi_and_version),
+        id->clock_seq_hi_and_reserved, id->clock_seq_low);
+
+    for (i = 0; i < sizeof(id->node); i++)
+        bug("%02X", id->node[i]);
+
+    RawPutChar('\n');
+}
+
+#else
+
+#define PRINT_LE_UUID(s, id)
+
+#endif
+
+/* Shared by partition.library and partitionedit.library (partitiongpt_common.c) */
+UQUAD gpt_le64(const UQUAD *q);
+void GPT_PatchDosEnvec(struct Library *PartitionBase,
+    struct PartitionHandle *ph, struct GPTPartition *p);
+BOOL GPTEntryValid(struct GPTHeader *hdr, struct GPTPartition *p, BOOL limit32);
 
 #endif /* PARTITIONGPT_H */

@@ -1,10 +1,9 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
 */
 #include <utility/tagitem.h>
-#include "partition_intern.h"
-#include "partition_support.h"
+#include "partitionedit_intern.h"
 #include "platform.h"
 
 /*****************************************************************************
@@ -19,7 +18,7 @@
         AROS_LHA(const struct TagItem *  , taglist,    A2),
 
 /*  LOCATION */
-        struct Library *, PartitionBase, 11, Partition)
+        struct Library *, PartitionEditBase, 7, PartitionEdit)
 
 /*  FUNCTION
         Add a new partition.
@@ -56,10 +55,10 @@
 
     if (root->table)
     {
-    struct PTFunctionTable *handler = root->table->handler;
+    const struct PTEditFunctionTable *handler = PartitionEditFind(root->table->type);
 
-        if (handler->addPartition)
-            return handler->addPartition(PartitionBase, root, taglist);
+        if (handler && handler->addPartition)
+            return handler->addPartition(PEBASE(PartitionEditBase)->pe_PartitionBase, root, taglist);
     }
     return 0;
     AROS_LIBFUNC_EXIT

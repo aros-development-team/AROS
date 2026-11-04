@@ -1,10 +1,10 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/memory.h>
 #include <proto/exec.h>
-#include "partition_support.h"
+#include "partitionedit_intern.h"
 #include "platform.h"
 
 /*****************************************************************************
@@ -19,7 +19,7 @@
         AROS_LHA(ULONG,                    type,       D1),
 
 /*  LOCATION */
-        struct Library *, PartitionBase, 10, Partition)
+        struct Library *, PartitionEditBase, 6, PartitionEdit)
 
 /*  FUNCTION
         Create a new partition table.
@@ -51,14 +51,18 @@
 
     if (root->table == NULL)
     {
-        const struct PTFunctionTable * const *pst;
+        struct Library *PartitionBase = PEBASE(PartitionEditBase)->pe_PartitionBase;
+        struct PartitionTableInfo **pst;
 
-        pst = PartitionSupport;
+        /* The new table is read, closed and queried through partition.library */
+        pst = ((struct PartitionBase *)PartitionBase)->tables;
         while (pst[0])
         {
-            if (pst[0]->type == type)
+            if (pst[0]->pti_Type == type)
             {
-                if (pst[0]->createPartitionTable)
+                const struct PTEditFunctionTable *handler = PartitionEditFind(type);
+
+                if (handler && handler->createPartitionTable)
                 {
                     root->table = AllocMem
                         (
@@ -69,7 +73,7 @@
                     {
                         root->table->type = type;
                         root->table->handler = (APTR)*pst;
-                        retval = pst[0]->createPartitionTable(PartitionBase, root);
+                        retval = handler->createPartitionTable(PartitionBase, root);
                         if (retval != 0)
                         {
                             FreeMem(root->table, sizeof(struct PartitionTableHandler));

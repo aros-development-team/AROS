@@ -1,11 +1,11 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <proto/partition.h>
-#include "partition_support.h"
+#include "partitionedit_intern.h"
 #include "platform.h"
 
 /*****************************************************************************
@@ -19,7 +19,7 @@
         AROS_LHA(struct PartitionHandle *, root,       A1),
 
 /*  LOCATION */
-        struct Library *, PartitionBase, 19, Partition)
+        struct Library *, PartitionEditBase, 11, PartitionEdit)
 
 /*  FUNCTION
         Destroy a partition table by immediately overwriting table data on
@@ -51,10 +51,10 @@
 
     if (root->table)
     {
-    struct PTFunctionTable *handler = root->table->handler;
+    const struct PTEditFunctionTable *handler = PartitionEditFind(root->table->type);
+    struct Library *PartitionBase = PEBASE(PartitionEditBase)->pe_PartitionBase;
 
-#undef DestroyPartitionTable
-        if (handler->destroyPartitionTable)
+        if (handler && handler->destroyPartitionTable)
         {
             retval = handler->destroyPartitionTable(PartitionBase, root);
             if (retval == 0)

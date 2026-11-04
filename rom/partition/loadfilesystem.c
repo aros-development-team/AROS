@@ -16,7 +16,7 @@
         AROS_LHA(struct Node *, handle, A1),
 
 /*  LOCATION */
-        struct Library *, PartitionBase, 21, Partition)
+        struct Library *, PartitionBase, 14, Partition)
 
 /*  FUNCTION
         Load the specified filesystem as a DOS segment list.

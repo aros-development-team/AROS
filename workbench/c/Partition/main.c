@@ -112,6 +112,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/partition.h>
+#include <proto/partitionedit.h>
 #include <proto/utility.h>
 #include <libraries/uuid.h>
 #include <string.h>

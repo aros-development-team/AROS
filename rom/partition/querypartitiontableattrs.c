@@ -22,7 +22,7 @@ static const struct PartitionAttribute defaultPartitionTableAttrs[] =
         AROS_LHA(struct PartitionHandle *, table, A1),
 
 /*  LOCATION */
-        struct Library *, PartitionBase, 17, Partition)
+        struct Library *, PartitionBase, 11, Partition)
 
 /*  FUNCTION
         Query partition table attributes.
