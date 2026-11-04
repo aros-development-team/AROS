@@ -106,6 +106,7 @@ struct M68KEmuContext
     ULONG   lists_base;         /* ExecBase whose LibList etc. are set up */
     ULONG   cacr;               /* CacheControl() bits the program sees */
     ULONG   pch_stub;           /* 68k routine feeding characters to a hook */
+    ULONG   fmt_stub;           /* 68k routine feeding characters to a PutChProc */
     APTR    own_rps[32];        /* native twins of the program's own RastPorts */
 
     ULONG   entry_point;
