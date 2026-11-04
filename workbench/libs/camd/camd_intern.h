@@ -70,6 +70,7 @@
 #endif
 
 #include "legacy_port_refs.h"
+#include "native_worker_fanout.h"
 
 
 
@@ -79,6 +80,7 @@
 #define OUTBUFFERSIZE_RT 1025
 #define RECEIVERPROCBUFFERSIZE 1025
 #define SYSEXRECEIVERPROCBUFFERSIZE 1025
+#define ENDPOINT_OUTPUT_SESSIONS 32
 #define NUMBEROFSYSEXSTORECEIVE 1025
 
 struct MyMidiMessage2{
@@ -161,6 +163,8 @@ struct DriverData{
 
 	struct Process *ReceiverProc;
 	ULONG ReceiverSig;
+	LONG EndpointOutputSig;
+	struct CAMDNativeWorkerFanout *EndpointOutputFanout;
 
 	UWORD *re_start;
 	UWORD *re_write;

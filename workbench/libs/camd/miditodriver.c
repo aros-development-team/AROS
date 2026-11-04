@@ -89,6 +89,13 @@ static __inline void IncBuffer_rt(struct DriverData *data,UBYTE **buffer_rt){
 
 /* Transmitter functions. */
 
+static __inline void NotifyOutputCapacity(struct DriverData *driverdata){
+	if(driverdata->ReceiverProc!=NULL && driverdata->EndpointOutputSig>=0){
+		Signal(&driverdata->ReceiverProc->pr_Task,
+			1L<<driverdata->EndpointOutputSig);
+	}
+}
+
 ULONG Transmit_SysEx(struct DriverData *driverdata){
 	UBYTE ret=driverdata->buffer_sx[driverdata->buffercurrsend_sx];
 	driverdata->buffercurrsend_sx++;
@@ -96,6 +103,7 @@ ULONG Transmit_SysEx(struct DriverData *driverdata){
 		driverdata->realtimesysx=0;
 		driverdata->transmitfunc=NULL;
 		driverdata->issending_sx=0;
+		NotifyOutputCapacity(driverdata);
 	}
 	return ret;
 }
@@ -115,6 +123,7 @@ ULONG Transmit_Datas(struct DriverData *driverdata){
 		driverdata->transmitfunc=NULL;
 		IncBuffer(driverdata,&driverdata->buffercurrsend);
 		driverdata->unsent--;
+		NotifyOutputCapacity(driverdata);
 	}else{
 		driverdata->sendpos++;
 	}
@@ -140,6 +149,7 @@ ULONG Transmit_Status(struct DriverData *driverdata){
 		if(ret==0xf0){
 		  IncBuffer(driverdata,&driverdata->buffercurrsend);
 		  driverdata->unsent--;
+		  NotifyOutputCapacity(driverdata);
 		  driverdata->transmitfunc=Transmit_SysEx;
 		  return Transmit_SysEx(driverdata);
 		}
@@ -147,6 +157,7 @@ ULONG Transmit_Status(struct DriverData *driverdata){
 		if(len==0){
 			IncBuffer(driverdata,&driverdata->buffercurrsend);
 			driverdata->unsent--;
+			NotifyOutputCapacity(driverdata);
 		}else{
 			driverdata->transmitfunc=Transmit_Datas;
 			driverdata->sendpos=1;
@@ -197,6 +208,7 @@ ULONG ASM Transmitter(REG(a2) struct DriverData *driverdata){
 		ret=*driverdata->buffercurrsend_rt;
 		IncBuffer_rt(driverdata,&driverdata->buffercurrsend_rt);
 		driverdata->unsent_rt--;
+		NotifyOutputCapacity(driverdata);
 		return ret;
 	}
 

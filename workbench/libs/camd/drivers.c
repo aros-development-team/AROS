@@ -211,6 +211,12 @@ BOOL AllocDriverData(
 		InitSemaphore(&driverdata->sysexsemaphore);
 
 		camd_legacy_port_refs_init(&driverdata->openrefs);
+		if(camd_native_worker_fanout_create(
+			ENDPOINT_OUTPUT_SESSIONS,&driverdata->EndpointOutputFanout)!=
+		   CAMD_NATIVE_WORKER_FANOUT_OK){
+			return FALSE;
+		}
+		driverdata->EndpointOutputSig=-1;
 	}
 
 	return TRUE;
@@ -368,6 +374,10 @@ void FreeDriverData(struct Drivers *driver,
 		for(lokke=0;lokke<driver->numports;lokke++){
 			driverdata=driver->driverdatas[lokke];
 			if(driverdata!=NULL){
+				if(driverdata->EndpointOutputFanout!=NULL){
+					camd_native_worker_fanout_destroy(
+						driverdata->EndpointOutputFanout);
+				}
 				if(driverdata->buffer!=NULL){
 					FreeVec(driverdata->buffer);
 				}
