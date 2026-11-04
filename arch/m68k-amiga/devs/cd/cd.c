@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013-2026, The AROS Development Team
+ * Copyright (C) 2013, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -142,9 +142,10 @@ static BOOL cdRegisterVolume(struct cdUnit *unit, const struct DosEnvec *de)
 
         if (devnode)
         {
-            /* ODFileSystem needs room for directory traversal and name
-             * conversion, including when booted from a stock CD32. */
-            devnode->dn_StackSize = 32768;
+            /* CDVDFS peaks below 2 KB while booting Microcosm.  The generic
+             * MakeDosNode() default is 16 KB, all of it scarce chip RAM on
+             * a stock CD32. */
+            devnode->dn_StackSize = 4096;
             AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, NULL);
             
             return TRUE;

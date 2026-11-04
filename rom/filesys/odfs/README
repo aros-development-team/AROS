@@ -14,11 +14,21 @@ Build the resident, disk-loadable handler:
 
     make kernel-fs-odfs
 
-The result is L/ODFileSystem-handler. Native boot packages include it in
-place of cdrom-handler. The module registers the existing CDVD and CDFS
-DOS types plus CD01, and provides resident aliases for existing boot
-nodes and mountlists. New DOSDrivers name ODFileSystem-handler.
-Use a 32768-byte stack when mounting a standalone handler explicitly.
+The result is L/ODFileSystem-handler. This is an optional handler: the
+normal build dependencies, boot packages and existing DOSDrivers continue
+to use the existing filesystems. This module registers only CD01 and its
+own ODFileSystem resident name, without legacy filesystem aliases.
+
+To try it, build the target above and copy ODF0 to Storage/DOSDrivers.
+Adjust Device and Unit in that file for the drive or image device, then
+mount it explicitly. Choose an unused DOS device name and avoid mounting
+the same medium through two handlers at once. The example's 32768-byte
+stack request is conservative, not a measured minimum.
+
+Keep the upstream revision pinned for reproducible builds. Contributions
+back to ODFileSystem are encouraged so fixes can be shared across targets.
+The BSD-2-Clause license also permits AROS to modify and maintain its own
+copy, subject to the license's notice requirements.
 
 ODFileSystem supports ISO 9660/High Sierra, Rock Ridge, Joliet, UDF, HFS,
 HFS+, multisession data discs, and audio tracks as WAV or AIFF files.

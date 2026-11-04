@@ -1,0 +1,18 @@
+/* Optional ODFileSystem mount. Adjust Device and Unit before use. */
+FileSystem     = ODFileSystem-handler
+Device         = ata.device
+Unit           = 2
+BlockSize      = 2048
+Surfaces       = 1
+BlocksPerTrack = 1
+Reserved       = 0
+LowCyl         = 0
+HighCyl        = 0
+Buffers        = 20
+BufMemType     = 0
+DosType        = 0x43443031
+/* Conservative request, not a measured minimum. */
+StackSize      = 32768
+GlobVec        = -1
+ForceLoad      = 1
+Activate       = 1

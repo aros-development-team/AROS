@@ -11,5 +11,4 @@
 #MM			kernel-fs-cdfs		\
 #MM			kernel-fs-sfs		\
 #MM			kernel-fs-fat		\
-#MM			kernel-fs-odfs		\
 #MM			kernel-partition

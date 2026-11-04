@@ -51,7 +51,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     hidd-usb \
 #MM     kernel-partition \
 #MM     workbench-libs-workbench \
-#MM     kernel-fs-odfs \
+#MM     kernel-fs-cdvdfs \
 #MM     kernel-fs-fat \
 #MM     kernel-fs-sfs \
 #MM     kernel-fs-ram \

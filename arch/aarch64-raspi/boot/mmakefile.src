@@ -60,7 +60,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-filesystem-quick \
 #MM kernel-fs-con-quick \
 #MM kernel-fs-afs-quick \
-#MM kernel-fs-odfs-quick \
+#MM kernel-fs-cdvdfs-quick \
 #MM kernel-fs-fat-quick \
 #MM kernel-fs-sfs-quick \
 #MM kernel-fs-pfs3-quick \
@@ -134,7 +134,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-filesystem \
 #MM kernel-fs-con \
 #MM kernel-fs-afs \
-#MM kernel-fs-odfs \
+#MM kernel-fs-cdvdfs \
 #MM kernel-fs-fat \
 #MM kernel-fs-sfs \
 #MM kernel-fs-pfs3 \
@@ -223,7 +223,7 @@ PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup File
 PKG_RSRC_ARCH := processor battclock
 PKG_DEVS      := input gameport keyboard console sdcard nvme USBHardware/usb2otg USBHardware/pcixhci
 PKG_DEVS_ARCH := timer
-PKG_HANDLERS  := con ram ODFileSystem sfs fat afs pfs3
+PKG_HANDLERS  := con ram cdrom sfs fat afs pfs3
 # vcgfx drives the BCM283x VideoCore directly; on BCM2711 and BCM2712 only
 # its mailbox half runs, since each carries a different compositor. fbgfx is
 # the fallback, painting into the framebuffer the bootstrap set up, and takes

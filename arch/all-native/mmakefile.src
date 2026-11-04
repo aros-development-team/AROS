@@ -5,12 +5,12 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- kernel-fs-core:		\
 #MM	kernel-fs-afs		\
-#MM	kernel-fs-odfs	\
+#MM	kernel-fs-cdvdfs	\
 #MM	kernel-partition
 
 #MM- kernel-fs-core-kobj:		\
 #MM	kernel-fs-afs-kobj		\
-#MM	kernel-fs-odfs-kobj	\
+#MM	kernel-fs-cdvdfs-kobj	\
 #MM	kernel-partition-kobj
 
 #MM- kernel-fs-xtra:		\
@@ -23,7 +23,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM	kernel-fs-core
 
 FS_LIBS     := partition
-FS_CORE_HANDLERS := afs ODFileSystem
+FS_CORE_HANDLERS := afs cdrom
 FS_XTRA_HANDLERS := sfs pfs3 fat
 
 %make_package mmake=kernel-package-fs file=$(AROS_BOOT)/aros-fs.pkg packfmt=$(AROS_PACKAGE_FMT) \

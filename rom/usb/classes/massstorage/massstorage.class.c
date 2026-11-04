@@ -917,7 +917,7 @@ BOOL GM_UNIQUENAME(nLoadClassConfig)(struct NepMSBase *nh)
     strcpy(cdc->cdc_FATControl, ""); // FIXME
 
     cdc->cdc_CDDosType = 0x43444653; // FIXME
-    strcpy(cdc->cdc_CDFSName, "ODFileSystem-handler"); // FIXME
+    strcpy(cdc->cdc_CDFSName, "cdrom-handler"); // FIXME
     strcpy(cdc->cdc_CDControl, ""); // FIXME
     cdc->cdc_NTFSDosType = 0x4e544653; // FIXME
     strcpy(cdc->cdc_NTFSName, "ntfs-handler"); // FIXME

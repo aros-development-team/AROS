@@ -155,19 +155,13 @@ SFS:
 /* Entry for ISO image */
 
 CD0:
-        FileSystem     = ODFileSystem-handler
+        FileSystem     = cdrom-handler
         Device         = fdsk.device
         Unit           = 0
-        BlockSize      = 2048
         LowCyl         = 0
         HighCyl        = 0
         Surfaces       = 1
         BlocksPerTrack = 1
-        Reserved       = 0
-        BufMemType     = 0
-        DosType        = 0x43443031
-        StackSize      = 32768
-        GlobVec        = -1
-        ForceLoad      = 1
+        DOSType        = 0x41434400
         Activate       = 1
 #

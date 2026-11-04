@@ -1,15 +1,10 @@
-FileSystem     = ODFileSystem-handler
+FileSystem     = cdrom-handler
 Device         = diskimage.device
 Unit           = 4
 BlockSize      = 2048
 Surfaces       = 1
-BlocksPerTrack = 1
+BlocksPerTrack = 0
 LowCyl         = 0
 HighCyl        = 0
 Reserved       = 0
-BufMemType     = 0
-DosType        = 0x43443031
-StackSize      = 32768
-GlobVec        = -1
-ForceLoad      = 1
 Activate       = 1
