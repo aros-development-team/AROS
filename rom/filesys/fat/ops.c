@@ -762,6 +762,9 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
             goto rename_failed;
     }
 
+    /* Resolve watchers of the old path while that entry still exists. */
+    SendNotifyByDirEntry(sdh.ioh.sb, &sde);
+
     /* Keep the original lock until its directory entry is gone. */
     err = DeleteDirEntry(&sde, glob);
     if (err != 0)
