@@ -49,7 +49,8 @@
 /*
  * The sender's SACK scoreboard (RFC 6675): the ranges the peer has SACKed
  * above snd_una. A receiver reports at most 4 in one ACK, but with several
- * holes in a window there are more of them at a time.
+ * holes in a window there are more of them at a time. Each range is 8
+ * bytes in every tcpcb: 32 make it 224 bytes larger than the 4 before.
  */
 #define TCP_SACK_BOARD	32
 
