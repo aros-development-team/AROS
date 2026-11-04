@@ -37,9 +37,10 @@ It can also list the service types present on the link (RFC 6763 section
 - **Interfaces.** An IPv4 UDP 5353 socket for each usable IPv4 interface,
   bound with `SO_BINDTODEVICE`, and one IPv6 UDP 5353 socket joined to
   `ff02::fb` on every usable IPv6 link. `IPV6_PKTINFO` identifies the input
-  link and scoped destinations select the output link. The
-  interfaces are looked at every three seconds; one that came, went or
-  changed its address makes mdnsd probe again.
+  link and scoped destinations select the output link. Tentative, duplicate,
+  detached and deprecated IPv6 addresses are not used. AROSTCP signals mdnsd
+  when an address changes, and a three-second scan remains as a fallback; a
+  link that came, went or changed its usable address makes mdnsd probe again.
 - **Goodbye.** When it stops, or lets go of the stack, it withdraws the
   record with a time to live of zero.
 
@@ -188,8 +189,7 @@ Started by hand it runs until Ctrl-C.
   interface address. AAAA records are cached and available through
   `QueryRecordA()`, but an IPv6-only service does not complete legacy
   browse/resolve until a compatible extended event API is added.
-- One IPv6 link-local address is selected per interface. AROSTCP's public
-  address enumeration does not yet expose tentative/deprecated flags.
+- One usable IPv6 link-local address is selected per interface.
 - The number after a name that was lost is not remembered when mdnsd
   restarts: it starts from the system's name again.
 - At most eight interfaces.
