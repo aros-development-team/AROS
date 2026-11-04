@@ -87,7 +87,9 @@ FUNCS := \
     getpublishedendpointstats \
     getendpointidentitystore \
     getstoredendpointidentity \
-    forgetendpointidentity
+    forgetendpointidentity \
+    addmididevice \
+    removemididevice
 
 #MM workbench-libs-camd-includes : \
 #MM     kernel-exec-includes \
