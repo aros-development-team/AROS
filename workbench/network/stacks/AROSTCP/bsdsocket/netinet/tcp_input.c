@@ -181,7 +181,8 @@ tcp_sack_addblk(struct sackblk *nb, int *n, const struct sackblk *b)
  * then the blocks sent before, most recent first, as they stand now; then
  * the other runs. tcp_output() sends as many as fit, the first ones. All
  * are above rcv_nxt: a block below the ACK would read as a D-SACK (RFC
- * 2883), a segment received twice.
+ * 2883), a segment received twice. It walks the queue at most once per
+ * block (MAX_SACK_BLKS) and once more, however long the queue is.
  */
 static void
 tcp_sack_rcvblocks(struct tcpcb *tp, int have, tcp_seq s)
@@ -200,11 +201,19 @@ tcp_sack_rcvblocks(struct tcpcb *tp, int have, tcp_seq s)
         if(SEQ_LT(from, tp->t_dsack_blks[i].end) && tcp_sack_run(tp, from, &b))
             tcp_sack_addblk(nb, &n, &b);
     }
-    for(q = tp->t_segq; q; q = q->m_nextpkt) {
+    /* the other runs, one walk of the queue, until nb is full */
+    for(q = tp->t_segq; q && n < MAX_SACK_BLKS; ) {
         const struct tcpiphdr *ti = (const struct tcpiphdr *)q->m_pkthdr.header;
 
-        if(tcp_sack_run(tp, ti->ti_seq, &b))
-            tcp_sack_addblk(nb, &n, &b);
+        b.start = ti->ti_seq;
+        b.end = ti->ti_seq + ti->ti_len;
+        for(q = q->m_nextpkt; q; q = q->m_nextpkt) {
+            ti = (const struct tcpiphdr *)q->m_pkthdr.header;
+            if(ti->ti_seq != b.end)
+                break;
+            b.end = ti->ti_seq + ti->ti_len;
+        }
+        tcp_sack_addblk(nb, &n, &b);
     }
     for(i = 0; i < n; i++)
         tp->t_dsack_blks[i] = nb[i];
