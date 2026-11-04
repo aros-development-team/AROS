@@ -102,6 +102,8 @@ struct StackBitMapNode
 #define STACKNODEB_DISPLAYABLE   17
 #define STACKNODEF_DISPLAYABLE   (1 << STACKNODEB_DISPLAYABLE)
 
+#include "gfx_palette.h"
+
 struct HIDDCompositorData
 {
     struct class_static_data    *compcsd;       /* module static data (for the method bases) */
@@ -151,6 +153,7 @@ struct HIDDCompositorData
 
     struct MinList              bitmapstack;
     struct SignalSemaphore      semaphore;
+    struct GfxPaletteWorker      palette;
 
     struct Hook                 *backfillhook;
 

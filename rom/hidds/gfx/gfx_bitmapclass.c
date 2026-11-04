@@ -1168,6 +1168,19 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
             }
         }
 
+        if (ok && DMEnum__Internal__IsSoftwareMode(CSD(cl)->dmenumclass,
+                                                   data->dmenum, data->modeid))
+        {
+            /* Software modes have storage, but cannot be scanned out. */
+            if (data->framebuffer || data->scanout)
+                ok = FALSE;
+            else
+            {
+                data->displayable = FALSE;
+                data->compositable = TRUE;
+            }
+        }
+
         if (ok)
         {
             InitSemaphore(&data->lock);
@@ -1219,7 +1232,8 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
              *        missing entries, but is it so good?
              */
 
-            if (data->displayable)
+            if (data->displayable || (data->compositable && data->prot.pixfmt &&
+                                     IS_PALETTE(PF(data->prot.pixfmt))))
             {
                 data->colmap = OOP_NewObject(NULL, CLID_Hidd_ColorMap, colmap_tags);
                 if (NULL == data->colmap)
@@ -1463,6 +1477,14 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
     struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
     BOOL ret = TRUE;
 
+    if (!msg->numColors)
+        return TRUE;
+    if (!msg->colors)
+        return FALSE;
+
+    /* Protect the colormap object's lifetime, including replacement. */
+    ObtainSemaphore(&data->lock);
+
     /* Subclass has initialized HIDDT_Color->pixelVal field and such.
        Just copy it into the colortab.
     */
@@ -1481,6 +1503,7 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 
     if (NULL == data->colmap)
     {
+        ReleaseSemaphore(&data->lock);
         return FALSE;
     }
 
@@ -1489,12 +1512,14 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
                            msg->firstColor, msg->numColors,
                            data->prot.pixfmt))
     {
+        ReleaseSemaphore(&data->lock);
         return FALSE;
     }
 
     /* The changed palette invalidates any cached nearest-colour results */
     if (data->invlut)
         memset(data->invlut, 0xFF, 32768 * sizeof(UWORD));
+    ReleaseSemaphore(&data->lock);
 
     /* We may need to duplicate changes on framebuffer if running in mirrored mode */
     if (data->visible)
@@ -1508,6 +1533,9 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 
         ReleaseSemaphore(&data->lock);
     }
+
+    if (ret && data->prot.pixfmt && IS_PALETTE(PF(data->prot.pixfmt)))
+        Compositor__Internal__PaletteChanged(CSD(cl), data->display_obj);
 
     return ret;
 }
@@ -4596,7 +4624,8 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
         HIDDT_ModeID modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
         OOP_Object *sync, *pixfmt;
 
-        if (HIDD_DMEnum_GetMode(data->dmenum, modeid, &sync, &pixfmt))
+        if (!DMEnum__Internal__IsSoftwareMode(CSD(cl)->dmenumclass, data->dmenum, modeid) &&
+            HIDD_DMEnum_GetMode(data->dmenum, modeid, &sync, &pixfmt))
         {
             data->modeid = modeid;
             /*
@@ -4752,10 +4781,29 @@ OOP_Object *BM__Hidd_BitMap__SetColorMap(OOP_Class *cl, OOP_Object *o,
 
     data = OOP_INST_DATA(cl, o);
 
+    ObtainSemaphore(&data->lock);
     old = data->colmap;
     data->colmap = msg->colorMap;
+    ReleaseSemaphore(&data->lock);
+
+    if (data->prot.pixfmt && IS_PALETTE(PF(data->prot.pixfmt)))
+        Compositor__Internal__PaletteChanged(CSD(cl), data->display_obj);
 
     return old;
+}
+
+/* Copy under the bitmap's ownership lock; no colormap pointer escapes. */
+BOOL BM__Internal__SnapshotPalette(struct class_static_data *data_csd, OOP_Object *bitmap,
+                                 HIDDT_Color *colors, ULONG capacity)
+{
+    struct HIDDBitMapData *data = OOP_INST_DATA(data_csd->bitmapclass, bitmap);
+    BOOL present;
+
+    ObtainSemaphoreShared(&data->lock);
+    present = data->colmap != NULL;
+    CM__Internal__Snapshot(data_csd->colormapclass, data->colmap, colors, capacity);
+    ReleaseSemaphore(&data->lock);
+    return present;
 }
 
 /*****************************************************************************************

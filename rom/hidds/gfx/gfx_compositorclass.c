@@ -154,6 +154,16 @@ static BOOL comp_EnsureGraphics(struct HIDDCompositorData *compdata)
     return compdata->GraphicsBase != NULL;
 }
 
+BOOL Compositor__Internal__EnsurePaletteTask(OOP_Class *cl, OOP_Object *o)
+{
+    struct HIDDCompositorData *compdata;
+
+    if (!Compositor__Internal__CanHandleSoftware(cl, o))
+        return FALSE;
+    compdata = OOP_INST_DATA(cl, o);
+    return comp_EnsureGraphics(compdata) && GfxPaletteEnsure(compdata);
+}
+
 /*
  * ENV:SYS/compositor.prefs holds the enabled composition types. It can only
  * be read once DOS and ENV: exist, and only from a Process; it is tried on
@@ -506,6 +516,80 @@ static BOOL HIDDCompositorScaleBuffers(struct HIDDCompositorData *compdata, ULON
  * never seam. 'alpha' blends (source over) with the source alpha scaled by
  * 'opacity' instead of copying.
  */
+/* Each draw owns its buffers and a palette snapshot. Damage callbacks can run
+ * concurrently under the compositor's shared lock; no live CLUT escapes. */
+static void HIDDCompositorPaletteBlit(struct HIDDCompositorData *compdata, OOP_Object *target, OOP_Object *src,
+                                     LONG srcx0, LONG srcy0, LONG srcw, LONG srch,
+                                     LONG orgx, LONG orgy, LONG dstw, LONG dsth,
+                                     struct Rectangle *rect, UBYTE opacity, BOOL alpha)
+{
+    HIDDT_Color *colors;
+    HIDDT_Pixel *indices;
+    UBYTE *storage, *row;
+    LONG w, sw, sxfirst, sxlast, x, y, lastsy = -1;
+    ULONG indexbytes, rowbytes, available = ~(ULONG)0 - 257 * sizeof(*colors);
+
+    if (srcw <= 0 || srch <= 0 || dstw <= 0 || dsth <= 0)
+        return;
+    w = rect->MaxX - rect->MinX + 1;
+    sxfirst = disp2scr(rect->MinX - orgx, srcw, dstw);
+    sxlast = disp2scr(rect->MaxX - orgx, srcw, dstw);
+    sw = sxlast - sxfirst + 1;
+    if (w <= 0 || sw <= 0 || sxfirst < 0 || sxlast >= srcw ||
+        (ULONG)sw > (~(ULONG)0 / sizeof(*indices)) || (ULONG)w > (~(ULONG)0 / 4))
+        return;
+    indexbytes = sw * sizeof(*indices);
+    rowbytes = w * 4;
+    if (indexbytes > available || rowbytes > available - indexbytes)
+        return;
+    storage = AllocVec(257 * sizeof(*colors) + indexbytes + rowbytes, MEMF_ANY);
+    if (!storage)
+    {
+        GfxPaletteQueue(compdata);
+        return;
+    }
+    colors = (HIDDT_Color *)storage;
+    indices = (HIDDT_Pixel *)(colors + 257);
+    row = (UBYTE *)indices + indexbytes;
+    BM__Internal__SnapshotPalette(csd, src, colors, 256);
+    memset(&colors[256], 0, sizeof(*colors));
+    for (y = rect->MinY; y <= rect->MaxY; y++)
+    {
+        LONG sy = disp2scr(y - orgy, srch, dsth);
+
+        if (sy < 0 || sy >= srch)
+            continue;
+        if (sy != lastsy)
+        {
+            HIDD_BM_GetImage(src, (UBYTE *)indices, indexbytes,
+                            srcx0 + sxfirst, srcy0 + sy, sw, 1, vHidd_StdPixFmt_Native32);
+            for (x = 0; x < w; x++)
+            {
+                ULONG pen = indices[disp2scr(rect->MinX + x - orgx, srcw, dstw) - sxfirst];
+                HIDDT_Color *color = &colors[pen < 256 ? pen : 256];
+
+                row[4 * x] = alpha ? (((ULONG)(color->alpha >> 8) * opacity + 127) / 255) : 0xFF;
+                row[4 * x + 1] = color->red >> 8;
+                row[4 * x + 2] = color->green >> 8;
+                row[4 * x + 3] = color->blue >> 8;
+            }
+            lastsy = sy;
+        }
+        if (alpha)
+            HIDD_BM_PutAlphaImage(target, compdata->gc, row, rowbytes, rect->MinX, y, w, 1);
+        else
+            HIDD_BM_PutImage(target, compdata->gc, row, rowbytes, rect->MinX, y, w, 1, vHidd_StdPixFmt_ARGB32);
+    }
+    FreeVec(storage);
+}
+
+static BOOL HIDDCompositorPaletteBitMap(struct HIDDCompositorData *compdata, OOP_Object *bm)
+{
+    OOP_Object *pf = (OOP_Object *)OOP_GET(bm, aHidd_BitMap_PixFmt);
+
+    return pf && IS_PALETTE(PF(pf));
+}
+
 static void HIDDCompositorScaledBlit(struct HIDDCompositorData *compdata, OOP_Object *target, OOP_Object *src,
                                      LONG srcx0, LONG srcy0, LONG srcw, LONG srch,
                                      LONG orgx, LONG orgy, LONG dstw, LONG dsth,
@@ -519,6 +603,13 @@ static void HIDDCompositorScaledBlit(struct HIDDCompositorData *compdata, OOP_Ob
     LONG x, y;
     ULONG *srcbuf, *dstbuf;
     UWORD *map;
+
+    if (HIDDCompositorPaletteBitMap(compdata, src))
+    {
+        HIDDCompositorPaletteBlit(compdata, target, src, srcx0, srcy0, srcw, srch,
+                                 orgx, orgy, dstw, dsth, rect, opacity, alpha);
+        return;
+    }
 
     if ((w <= 0) || (sw <= 0) || !dstw || !dsth)
         return;
@@ -820,6 +911,10 @@ static void UpdateDisplayMode(struct HIDDCompositorData *compdata)
 
     modeid = FindBestHiddMode(compdata, wantedwidth, wantedheight, wanteddepth, &found_depth);
 
+    /* A software screen keeps its sync while using a native color format. */
+    if (DMEnum__Internal__IsSoftwareMode(csd->dmenumclass, compdata->dmenum, topmode))
+        topmode = DMEnum__Internal__GetBackingMode(csd->dmenumclass, compdata->dmenum, topmode);
+
     /* The front screen's own mode where it fits: its refresh rate too, which
      * FindBestHiddMode() does not look at, so composing never retimes the display */
     if ((topmode != vHidd_ModeID_Invalid) && (topmode != (HIDDT_ModeID)modeid))
@@ -832,7 +927,7 @@ static void UpdateDisplayMode(struct HIDDCompositorData *compdata)
         {
             comp_SyncSize(compdata, sync, &w, &h);
             OOP_GetAttr(pf, aHidd_PixFmt_Depth, &d);
-            if ((w == compdata->displayrect.MaxX + 1) && (h == compdata->displayrect.MaxY + 1)
+            if ((w == wantedwidth) && (h == wantedheight)
                 && (d == found_depth))
                 modeid = topmode;
         }
@@ -1212,6 +1307,8 @@ static BOOL HIDDCompositorPlaneFits(struct HIDDCompositorData *compdata, ULONG p
     OOP_Object *pf;
     IPTR stdpf = 0, w = 0, h = 0;
 
+    if (!(n->sbmflags & STACKNODEF_DISPLAYABLE))
+        return FALSE;
     if (pi->Type == vHidd_Plane_Cursor)
         return FALSE;
     if (n->haslayersurfaces || (n->sbmflags & COMPF_ALPHA))
@@ -2243,9 +2340,9 @@ static void HIDDCompositorRedrawSurfaceRect(struct HIDDCompositorData *compdata,
     if (!SURFACE_BLITTABLE(sn))
         return;     /* a video bitmap is never blitted: gfx.hidd has no conversion for it */
 
-    if (n->scaled)
+    if (n->scaled || HIDDCompositorPaletteBitMap(compdata, req->BitMap))
     {
-        /* The surface scales with its screen */
+        /* Palette sources also use the per-draw snapshot when unscaled. */
         struct Rectangle d;
 
         HIDDCompositorNodeMapRect(n, req->Dest.MinX, req->Dest.MinY, req->Dest.MaxX, req->Dest.MaxY, &d);
@@ -2329,7 +2426,7 @@ static inline void HIDDCompositorRedrawBitmap(struct HIDDCompositorData *compdat
     DREDRAWBM(bug("[Compositor] %s: Redraw HiddBitMap 0x%p, Rect[%d, %d - %d, %d]\n", __func__, n->bm,
                       rect->MinX, rect->MinY, rect->MaxX, rect->MaxY));
 
-    if (renderTarget && n->scaled)
+    if (renderTarget && (n->scaled || HIDDCompositorPaletteBitMap(compdata, n->bm)))
     {
         struct Rectangle nr;
 
@@ -2476,6 +2573,9 @@ static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compda
         dispvisregion = NULL;
     }
 
+    if (!dispvisregion)
+        GfxPaletteQueue(compdata);
+
     if (dispvisregion)
     {
         struct RegionRectangle *dispclrrect;
@@ -2558,6 +2658,37 @@ static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compda
             comp_UpdateDisplay(compdata, r);
         }
     }
+}
+
+/* Called by the palette worker, never by a getter or SetColors(). The stack
+ * lock pins only currently attached bitmaps and excludes CloseScreen(). */
+void Compositor__Internal__FlushPalette(struct HIDDCompositorData *compdata)
+{
+    struct StackBitMapNode *n;
+    BOOL redraw = FALSE;
+
+    LOCK_COMPOSITOR_WRITE
+    if (compdata->displaybitmap)
+    {
+        ForeachNode(&compdata->bitmapstack, n)
+        {
+            struct SurfaceNode *sn;
+
+            if (!(n->sbmflags & STACKNODEF_VISIBLE) || n->plane >= 0)
+                continue;
+            if (HIDDCompositorPaletteBitMap(compdata, n->bm))
+                redraw = TRUE;
+            ForeachNode(&n->surfaces, sn)
+            {
+                if (sn->plane < 0 && SURFACE_BLITTABLE(sn) &&
+                    HIDDCompositorPaletteBitMap(compdata, SNREQ(sn)->BitMap))
+                    redraw = TRUE;
+            }
+        }
+        if (redraw)
+            HIDDCompositorRedrawVisibleRegions(compdata, &compdata->displayrect);
+    }
+    UNLOCK_COMPOSITOR
 }
 
 /*
@@ -2693,6 +2824,9 @@ static BOOL HIDDCompositorNodeNeedsComposition(struct HIDDCompositorData *compda
 static BOOL HIDDCompositorNeedsComposition(struct HIDDCompositorData *compdata, struct StackBitMapNode *topnode)
 {
     struct Rectangle toprect;
+
+    if (!(topnode->sbmflags & STACKNODEF_DISPLAYABLE))
+        return TRUE;
 
     HIDDCompositorNodeRect(topnode, &toprect);
     if ((toprect.MinY > 0) || ((compdata->displayrect.MaxY - compdata->displayrect.MinY + 1) > topnode->dsth))
@@ -3050,6 +3184,10 @@ static void HIDDCompositorShowSingle(struct HIDDCompositorData *compdata, OOP_Ob
 {
     OOP_Object *fb = comp_FrameBuffer(compdata);
 
+    /* A failed software composition cannot fall back to hardware scanout. */
+    if (bm && !OOP_GET(bm, aHidd_BitMap_Displayable))
+        bm = NULL;
+
     /* Show the single top bitmap */
     compdata->topbitmap = bm;
     compdata->passthroughbm = bm;
@@ -3144,6 +3282,7 @@ OOP_Object *Compositor__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
 
         compdata = OOP_INST_DATA(cl, o);
         compdata->compcsd = CSD(cl);
+        GfxPaletteInit(compdata);
 
 
         compdata->display = (OOP_Object *)GetTagData(aHidd_Compositor_DisplayHidd, 0, msg->attrList);
@@ -3193,6 +3332,8 @@ OOP_Object *Compositor__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
 void Compositor__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct HIDDCompositorData *compdata = OOP_INST_DATA(cl, o);
+
+    GfxPaletteStop(compdata);
 
     D(bug("[Compositor] %s: HIDDCompositorData @ 0x%p\n", __func__, compdata));
 
@@ -3384,6 +3525,20 @@ OOP_Object *Compositor__Hidd_Compositor__BitMapStackChanged(OOP_Class *cl, OOP_O
     }
 
     comp_ReadPrefs(compdata);
+
+    /* Start before taking the compositor lock: the worker can take it too. */
+    for (vpdata = msg->data; vpdata; vpdata = vpdata->Next)
+    {
+        OOP_Object *pf = (OOP_Object *)OOP_GET(vpdata->Bitmap, aHidd_BitMap_PixFmt);
+
+        if (pf && IS_PALETTE(PF(pf)) && !GfxPaletteEnsure(compdata))
+        {
+            /* Optional refresh resources must not break native passthrough.
+             * Reconcile the old stack, then use the normal recovery path. */
+            ok = FALSE;
+            break;
+        }
+    }
 
     LOCK_COMPOSITOR_WRITE
 
