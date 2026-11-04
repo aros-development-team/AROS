@@ -37,7 +37,7 @@ QUAD __dos64_write(fcb *fcb, CONST_APTR buf, QUAD len);
 #define __DOS64_EXAMINE      0
 #define __DOS64_EXAMINE_FH   1
 #define __DOS64_EXAMINE_NEXT 2
-LONG __dos64_examine(BPTR obj, struct FileInfoBlock64 *fib, int what);
+LONG __dos64_examine(BPTR obj, struct FileInfoBlock *fib, int what);
 
 LONG __dos64_info(BPTR lock, struct InfoData64 *id);
 

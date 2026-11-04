@@ -146,6 +146,7 @@ struct InfoData {
 #define ED_DATE       5
 #define ED_COMMENT    6
 #define ED_OWNER      7
+#define ED_SIZE64     8
 struct ExAllData {
 	struct ExAllData *ed_Next;
 	UBYTE *ed_Name;
@@ -158,6 +159,7 @@ struct ExAllData {
 	UBYTE *ed_Comment;
 	UWORD  ed_OwnerUID;
 	UWORD  ed_OwnerGID;
+	uint64_t ed_Size64;
 };
 struct ExAllControl {
 	ULONG eac_Entries;

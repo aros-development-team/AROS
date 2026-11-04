@@ -23,17 +23,34 @@
  **********************************************************************/
 
 /*
- * MorphOS (tm) compatable extensions. These operate on the same
- * argument layout as their 32-bit counterparts, but with 64-bit
- * position/size values, and (for the EXAMINE variants) a
- * struct FileInfoBlock64 in place of the 32-bit FileInfoBlock.
+ * MorphOS (tm) compatible extensions (V51). 64-bit values are passed by
+ * pointer, so the packets are the same on 32-bit and 64-bit systems:
  *
- * NB: On 64-bit AROS builds the standard DosPacket argument and result
- * fields are already 64-bit wide (SIPTR), so 64-bit values are passed
- * directly in dp_Arg#/dp_Res1. On 32-bit builds these packets cannot
- * carry 64-bit values in the packet arguments; there the AmigaOS 4 (tm)
- * style packets (ACTION_*64, see <dos/dosextens.h>) together with
- * struct DosPacket64 (below) are used instead.
+ * ACTION_SEEK64           dp_Arg1 fh_Arg1, dp_Arg2 QUAD *position,
+ *                         dp_Arg3 mode, dp_Arg4 QUAD *oldposition
+ * ACTION_SET_FILE_SIZE64  dp_Arg1 fh_Arg1, dp_Arg2 QUAD *offset,
+ *                         dp_Arg3 mode, dp_Arg4 QUAD *newsize
+ * ACTION_LOCK_RECORD64    dp_Arg1 fh_Arg1, dp_Arg2 UQUAD *offset,
+ *                         dp_Arg3 UQUAD *length, dp_Arg4 mode,
+ *                         dp_Arg5 timeout
+ * ACTION_FREE_RECORD64    dp_Arg1 fh_Arg1, dp_Arg2 UQUAD *offset,
+ *                         dp_Arg3 UQUAD *length
+ * ACTION_QUERY_ATTR       dp_Arg1 attribute (FQA_), dp_Arg2 APTR storage,
+ *                         dp_Arg3 storage size
+ *
+ * dp_Res1 is DOSTRUE on success, or DOSFALSE with the error in dp_Res2;
+ * the results are stored through the pointers.
+ *
+ * ACTION_EXAMINE_OBJECT64, ACTION_EXAMINE_NEXT64 and ACTION_EXAMINE_FH64
+ * take the same arguments as the 32-bit packets (dp_Arg1 the lock, or
+ * fh_Arg1 for _FH64; dp_Arg2 a BPTR to a struct FileInfoBlock). The handler
+ * fills the standard fields and fib_Size64/fib_NumBlocks64 (see <dos/dos.h>),
+ * with fib_Size 0 for sizes above 2^31-1, and sets fib_ActExtFlags. The
+ * sender must set fib_ActExtFlags to 0 and fib_ReqExtFlags to the
+ * extensions it wants (or 0).
+ *
+ * A handler that does not know a packet answers DOSFALSE with
+ * ERROR_ACTION_NOT_KNOWN.
  */
 #ifndef ACTION_SEEK64
 #define ACTION_SEEK64                   26400
@@ -46,16 +63,28 @@
 #define ACTION_EXAMINE_FH64             26410
 #endif
 
+/* ACTION_QUERY_ATTR attributes (MorphOS (tm) compatible) */
+#ifndef FQA_MaxFileNameLength
+#define FQA_MaxFileNameLength           0   /* LONG */
+#define FQA_MaxVolumeNameLength         1   /* LONG */
+#define FQA_MaxFileSize                 2   /* QUAD */
+#define FQA_IsCaseSensitive             3   /* LONG */
+#define FQA_DeviceType                  4   /* LONG */
+#define FQA_NumBlocks                   6   /* QUAD */
+#define FQA_NumBlocksUsed               7   /* QUAD */
+#endif
+
 /*
  * AROS extension: 64-bit volume information.
  * Arguments as for ACTION_INFO, but dp_Arg2 points (BPTR) to a
- * struct InfoData64 instead of a 32-bit InfoData.
+ * struct InfoData64 (see <dos/dos.h>): the standard InfoData followed by
+ * the 64-bit block counts.
  */
 #define ACTION_INFO64                   2020
 
 #if (__WORDSIZE != 64)
 /*
- * AmigaOS 4 (tm) compatable 64-bit packet layout, used on 32-bit
+ * AmigaOS 4 (tm) compatible 64-bit packet layout, used on 32-bit
  * systems for the ACTION_CHANGE_FILE_POSITION64, ACTION_GET_FILE_POSITION64,
  * ACTION_CHANGE_FILE_SIZE64 and ACTION_GET_FILE_SIZE64 packets, where the
  * standard DosPacket fields are too small to carry 64-bit values.
@@ -65,7 +94,7 @@
  * dp_Arg1 field, set dp_Res0 to DP64_INIT, and place the 64-bit
  * argument(s) in the fields below.
  *
- * On 64-bit AROS builds this structure is not used (see above).
+ * On 64-bit AROS builds this structure is not used (see below).
  */
 struct DosPacket64
 {
@@ -86,6 +115,10 @@ struct DosPacket64
 };
 
 /*
+ * On 64-bit AROS the standard DosPacket argument and result fields are
+ * already 64-bit wide (SIPTR), so these four packets carry their 64-bit
+ * values directly in dp_Arg2/dp_Res1 of a standard packet there.
+ *
  * The padding above is deliberate and must not be removed. The 64-bit
  * fields of this packet sit at fixed offsets (dp_Res1 at 24, dp_Arg2 at
  * 40, dp_Arg5 at 56), which is what a handler on the other side reads
@@ -104,7 +137,7 @@ struct DosPacket64
  **********************************************************************/
 
 /* Objects allocatable with dos64.library/AllocDosObject64() */
-#define DOS64_FIB               1   /* struct FileInfoBlock64 */
+#define DOS64_FIB               1   /* struct FileInfoBlock   */
 #define DOS64_INFODATA          2   /* struct InfoData64      */
 #define DOS64_RECORDLOCK        3   /* struct RecordLock64    */
 

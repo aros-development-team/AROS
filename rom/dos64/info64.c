@@ -25,10 +25,14 @@
         Get information about a volume in the system, with 64-bit
         block counts.
 
+        The block starts with a standard InfoData; the 64-bit block
+        counts are in id_NumBlocks64 and id_NumBlocksUsed64.
+
         If the filesystem does not support the 64-bit query the
-        request is delegated to the 32-bit Info() and the result is
-        widened; block counts are then limited to what the filesystem
-        reports in 32 bits.
+        request is delegated to the 32-bit Info(), and the 64-bit
+        counts are taken from ACTION_QUERY_ATTR (FQA_NumBlocks,
+        FQA_NumBlocksUsed) when the filesystem answers it, otherwise
+        from the 32-bit counts.
 
     INPUTS
         lock           - a lock on any file on the volume for which
@@ -57,45 +61,42 @@
     AROS_LIBFUNC_INIT
 
     struct FileLock *fl = BADDR(lock);
-    struct InfoData32 *id32;
+    struct MsgPort *port = fl ? fl->fl_Task : GetFileSysTask();
+    SIPTR err = 0;
+    QUAD count;
     LONG ret;
 
 #if (__WORDSIZE == 64)
-    SIPTR err = 0;
-
-    ret = dos64_SendPkt(DOS64Base, fl ? fl->fl_Task : GetFileSysTask(),
-                        ACTION_INFO64, (SIPTR)lock,
+    ret = dos64_SendPkt(DOS64Base, port, ACTION_INFO64, (SIPTR)lock,
                         (SIPTR)MKBADDR(parameterBlock), 0, 0, 0, &err);
     if (ret)
         return ret;
     if (!dos64_UnsupportedAction(err))
         return DOSFALSE;
-#else
-    (void)fl;
 #endif
 
-    id32 = AllocVec(sizeof(struct InfoData32), MEMF_PUBLIC | MEMF_CLEAR);
-    if (id32 == NULL)
-    {
-        SetIoErr(ERROR_NO_FREE_STORE);
-        return DOSFALSE;
-    }
-
-    ret = Info(lock, (struct InfoData *)id32);
+    /* The block starts with a standard InfoData, so Info() can fill it */
+    ret = Info(lock, (struct InfoData *)parameterBlock);
     if (ret)
     {
-        parameterBlock->id_NumSoftErrors  = id32->id_NumSoftErrors;
-        parameterBlock->id_UnitNumber     = id32->id_UnitNumber;
-        parameterBlock->id_DiskState      = id32->id_DiskState;
-        parameterBlock->id_NumBlocks      = (UQUAD)(ULONG)id32->id_NumBlocks;
-        parameterBlock->id_NumBlocksUsed  = (UQUAD)(ULONG)id32->id_NumBlocksUsed;
-        parameterBlock->id_BytesPerBlock  = id32->id_BytesPerBlock;
-        parameterBlock->id_DiskType       = id32->id_DiskType;
-        parameterBlock->id_VolumeNode     = id32->id_VolumeNode;
-        parameterBlock->id_InUse          = id32->id_InUse;
+        parameterBlock->id_NumBlocks64     = (UQUAD)(ULONG)parameterBlock->id_NumBlocks;
+        parameterBlock->id_NumBlocksUsed64 = (UQUAD)(ULONG)parameterBlock->id_NumBlocksUsed;
+
+        /*
+         * Filesystems that exceed the 32-bit block counts report the full
+         * counts through the MorphOS style attribute query.
+         */
+        count = 0;
+        if (dos64_PktOK(dos64_SendPkt(DOS64Base, port, ACTION_QUERY_ATTR, FQA_NumBlocks,
+                                      (SIPTR)&count, sizeof(count), 0, 0, &err), err))
+            parameterBlock->id_NumBlocks64 = (UQUAD)count;
+        count = 0;
+        if (dos64_PktOK(dos64_SendPkt(DOS64Base, port, ACTION_QUERY_ATTR, FQA_NumBlocksUsed,
+                                      (SIPTR)&count, sizeof(count), 0, 0, &err), err))
+            parameterBlock->id_NumBlocksUsed64 = (UQUAD)count;
+        SetIoErr(0);
     }
 
-    FreeVec(id32);
     return ret;
 
     AROS_LIBFUNC_EXIT
