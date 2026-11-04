@@ -418,6 +418,10 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
 
     D(bug("[fat] basis name is '%.*s'\n", FAT_MAX_SHORT_NAME, basis));
 
+    /* 0xe5 in the first short-name byte is encoded as 0x05 on disk. */
+    if (basis[0] == 0xe5)
+        basis[0] = 0x05;
+
     /* Get a fresh handle on the current directory */
     InitDirHandle(short_de->sb, short_de->cluster, &dh, FALSE, glob);
 
