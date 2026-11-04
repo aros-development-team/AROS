@@ -588,7 +588,7 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
     BOOL move_directory;
     struct GlobalLock *gl;
     LONG err;
-    ULONG len;
+    ULONG len, rawlen;
 
     /* Get the source dir handle */
     InitDirHandle(glob->sb,
@@ -670,6 +670,25 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
         }
     }
     else if (err != ERROR_OBJECT_NOT_FOUND)
+    {
+        ReleaseDirHandle(&ddh, glob);
+        ReleaseDirHandle(&sdh, glob);
+        return err;
+    }
+
+    /* The raw spelling was checked above. Check the spelling we will store
+     * as well, allowing a rename back onto this same entry. */
+    rawlen = dnamelen;
+    err = NormalizeDirEntryName(&dname, &dnamelen);
+    if (err == 0 && dnamelen != rawlen)
+    {
+        err = GetDirEntryByName(&ddh, dname, dnamelen, &dde, glob);
+        if (err == 0 && (sde.cluster != dde.cluster || sde.index != dde.index))
+            err = ERROR_OBJECT_EXISTS;
+        else if (err == ERROR_OBJECT_NOT_FOUND)
+            err = 0;
+    }
+    if (err != 0)
     {
         ReleaseDirHandle(&ddh, glob);
         ReleaseDirHandle(&sdh, glob);

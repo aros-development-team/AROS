@@ -56,6 +56,7 @@ LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len,
 LONG GetDirEntryLongName(struct DirEntry *de, STRPTR name, ULONG *len);
 LONG GetDirEntryLongNameFrom(struct DirHandle *dh, struct DirEntry *de,
     STRPTR name, ULONG *len);
+LONG NormalizeDirEntryName(STRPTR *name, ULONG *len);
 LONG SetDirEntryName(struct DirEntry *de, STRPTR name, ULONG len);
 ULONG NumLongNameEntries(STRPTR name, ULONG len);
 

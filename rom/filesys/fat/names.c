@@ -269,6 +269,16 @@ LONG GetDirEntryLongNameFrom(struct DirHandle *dh, struct DirEntry *short_de,
     return err == 0 ? ERROR_OBJECT_NOT_FOUND : err;
 }
 
+/* Normalize only names being created; existing names are looked up exactly. */
+LONG NormalizeDirEntryName(STRPTR *name, ULONG *len)
+{
+    while (*len > 0 && (*name)[0] == ' ')
+        (*name)++, (*len)--;
+    while (*len > 0 && ((*name)[*len - 1] == ' ' || (*name)[*len - 1] == '.'))
+        (*len)--;
+    return *len == 0 ? ERROR_INVALID_COMPONENT_NAME : 0;
+}
+
 /* Set the name of an entry. This will set the long name too. It assumes
  * that there is room before the entry to store the long filename. If there
  * isn't, the whole thing will fail */
@@ -291,14 +301,6 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
         RawPutChars(name, len);
         bug("'\n");
     )
-
-    /* Discard leading spaces */
-    while (len > 0 && name[0] == ' ')
-        name++, len--;
-
-    /* Discard trailing spaces and dots */
-    while (len > 0 && (name[len - 1] == ' ' || name[len - 1] == '.'))
-        len--;
 
     /* Check for empty name and reserved names "." and ".." */
     if (len == 0 || (name[0] == '.'

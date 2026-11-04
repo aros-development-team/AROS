@@ -542,7 +542,7 @@ LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de,
 LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen,
     UBYTE attr, ULONG cluster, struct DirEntry *de, struct Globals *glob)
 {
-    ULONG gap;
+    ULONG gap, original_len = namelen;
     LONG err;
 
     D(
@@ -550,6 +550,19 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen,
         RawPutChars(name, namelen);
         bug("' attr 0x%02x cluster %ld)\n", attr, cluster);
     )
+
+    /* Use the same spelling for collision checks and the on-disk name.
+     * Keep normal lookups exact, including names written by other systems. */
+    if ((err = NormalizeDirEntryName(&name, &namelen)) != 0)
+        return err;
+    if (namelen != original_len)
+    {
+        err = GetDirEntryByName(dh, name, namelen, de, glob);
+        if (err == 0)
+            return ERROR_OBJECT_EXISTS;
+        if (err != ERROR_OBJECT_NOT_FOUND)
+            return err;
+    }
 
     /* Find out how many extra entries we need for the long name */
     gap = NumLongNameEntries(name, namelen);
