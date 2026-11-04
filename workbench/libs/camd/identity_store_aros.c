@@ -4,6 +4,7 @@
 #include "identity_map.h"
 #include "identity_store_recovery.h"
 
+#include <aros/debug.h>
 #include <dos/dos.h>
 #include <exec/libraries.h>
 #include <exec/memory.h>
@@ -25,6 +26,8 @@ struct CAMDIdentityStoreAROS {
     struct Library *uuid_base;
     UBYTE *file_bytes;
     ULONG file_capacity;
+    /* No complete snapshot could be read: leave the files as they are. */
+    int unreadable;
 };
 
 struct recovery_context {
@@ -191,6 +194,8 @@ static int commit_records(void *context,
     struct CAMDIdentityStoreAROS *store = context;
     size_t byte_count;
 
+    if (store->unreadable)
+        return 0;
     if (camd_identity_file_encode(records, record_count, store->file_bytes,
                                   store->file_capacity, &byte_count) !=
         CAMD_IDENTITY_FILE_OK)
@@ -219,9 +224,17 @@ struct CAMDIdentityStoreAROS *camd_identity_store_aros_create(void)
     store->file_capacity = (ULONG)file_capacity;
     store->file_bytes = AllocVec(store->file_capacity, MEMF_ANY | MEMF_CLEAR);
     store->uuid_base = OpenLibrary("uuid.library", 1);
-    if (!store->file_bytes || !store->uuid_base ||
-        !load_recoverable(store, records, &record_count))
+    if (!store->file_bytes || !store->uuid_base)
         goto fail;
+    /* Files that exist but hold no complete snapshot may be damaged or just
+     * unreadable now. Writing a new one over them could lose every stored
+     * ID, so this run gives temporary IDs instead and touches nothing. */
+    if (!load_recoverable(store, records, &record_count)) {
+        store->unreadable = 1;
+        record_count = 0;
+        bug("camd.library: " IDENTITY_PATH
+            " has no complete copy; endpoint IDs are temporary\n");
+    }
     memset(&config, 0, sizeof(config));
     config.Size = sizeof(config);
     config.Version = 1;
