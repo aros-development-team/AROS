@@ -46,6 +46,13 @@
  */
 #define MAX_SACK_BLKS	4
 
+/*
+ * The sender's SACK scoreboard (RFC 6675): the ranges the peer has SACKed
+ * above snd_una. A receiver reports at most 4 in one ACK, but with several
+ * holes in a window there are more of them at a time.
+ */
+#define TCP_SACK_BOARD	32
+
 struct sackblk {
 	tcp_seq	start;		/* left edge (first unacknowledged byte) */
 	tcp_seq	end;		/* right edge (next byte after SACK'd data) */
@@ -134,7 +141,7 @@ struct tcpcb {
 /* NewReno / SACK / ECN state */
 	u_short	t_flagsext;		/* extended flags (TF_NEWRENO etc.) */
 	u_short	t_num_sack_blks;	/* number of valid SACK blocks */
-	struct sackblk t_sack_blks[MAX_SACK_BLKS]; /* received SACK blocks */
+	struct sackblk t_sack_blks[TCP_SACK_BOARD]; /* the SACK scoreboard */
 	struct sackblk t_dsack_blks[MAX_SACK_BLKS]; /* SACK blocks to send */
 	u_short	t_num_dsack_blks;	/* number of SACK blocks to send */
 	tcp_seq	snd_fack;		/* forward ACK - highest SACKed seq */
@@ -251,6 +258,12 @@ struct tcpcb {
  * What this connection adds to tcp_now in its TSval (RFC 7323 section 5.4).
  */
 	u_int32_t t_ts_offset;
+
+/*
+ * Loss recovery with SACK (RFC 6675): the highest sequence number
+ * retransmitted in this recovery (HighRxt), so that a hole goes once.
+ */
+	tcp_seq	snd_highrxt;
 
 /* TUBA stuff */
 	caddr_t	t_tuba_pcb;		/* next level down pcb for TCP over z */
@@ -435,7 +448,8 @@ struct	tcpstat {
 #define	TCPCTL_PMTUD		10	/* IPv4 path MTU discovery (DF) */
 #define	TCPCTL_PMTUD_BLACKHOLE	11	/* path MTU black-hole detection */
 #define	TCPCTL_ECN		12	/* ECN: 0 off, 1 ask and accept, 2 accept */
-#define TCPCTL_MAXID		13
+#define	TCPCTL_PRR		13	/* proportional rate reduction (RFC 6937) */
+#define TCPCTL_MAXID		14
 
 #define TCPCTL_NAMES { \
 	{ 0, 0 }, \
@@ -451,6 +465,7 @@ struct	tcpstat {
 	{ "pmtud", CTLTYPE_INT }, \
 	{ "pmtud_blackhole", CTLTYPE_INT }, \
 	{ "ecn", CTLTYPE_INT }, \
+	{ "prr", CTLTYPE_INT }, \
 }
 
 #ifdef KERNEL
