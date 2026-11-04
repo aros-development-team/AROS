@@ -61,6 +61,20 @@ void RemoveEndpointSnapshot(const struct CAMDHandleV1 *handle,
         camd_snapshot_destroy(snapshot);
 }
 
+/* Called from expunge with the library closed, so no client is inside CAMD
+ * and the snapshot table needs no lock. */
+BOOL EndpointClientsRemain(struct CamdBase *CamdBase)
+{
+    struct CamdBase_intern *base = CB(CamdBase);
+    ULONG i;
+
+    for (i = 0; i < ENDPOINT_SNAPSHOTS; ++i) {
+        if (base->EndpointSnapshots[i] != NULL)
+            return TRUE;
+    }
+    return camd_registry_session_count(base->EndpointRegistry) != 0;
+}
+
 /* Snapshots a client did not release. CAMD must be expunging. */
 void FreeEndpointSnapshots(struct CamdBase *CamdBase)
 {

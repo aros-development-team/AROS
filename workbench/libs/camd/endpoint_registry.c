@@ -890,6 +890,21 @@ out:
     return result;
 }
 
+size_t camd_registry_session_count(struct CAMDEndpointRegistry *registry)
+{
+    size_t count = 0, i;
+
+    if (!registry)
+        return 0;
+    core_lock_acquire(&registry->lock);
+    for (i = 0; i < registry->session_count; ++i) {
+        if (registry->sessions[i].occupied)
+            ++count;
+    }
+    core_lock_release(&registry->lock);
+    return count;
+}
+
 enum CAMDRegistryResult camd_registry_session_info(
     struct CAMDEndpointRegistry *registry,
     struct CAMDHandleV1 session_handle,

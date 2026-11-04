@@ -463,6 +463,7 @@ struct CAMDEndpointSnapshot *FindEndpointSnapshot(
 void RemoveEndpointSnapshot(const struct CAMDHandleV1 *handle,
 	struct CamdBase *CamdBase);
 void FreeEndpointSnapshots(struct CamdBase *CamdBase);
+BOOL EndpointClientsRemain(struct CamdBase *CamdBase);
 
 void FreeDriverData(struct Drivers *driver,
 	struct CamdBase *CamdBase
