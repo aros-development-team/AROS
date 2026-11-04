@@ -44,7 +44,7 @@ rust-crates :
 # must exist (cargo refuses a [patch] path that does not), so the config target
 # fetches all of them; a program that does not use one only gets a warning.
 #MM rust-crates-config : rust-crates-libc rust-crates-getrandom02 rust-crates-getrandom03 rust-crates-getrandom04 \
-#MM     rust-crates-parking-lot-core
+#MM     rust-crates-parking-lot-core tools-crosstools-rust-abicheck
 %rust_patches_config mmake=rust-crates-config file=$(RUST_CRATES_CONFIG) \
     patches="libc=$(RUST_CRATESDIR)/$(RUST_CRATE_LIBC) \
         getrandom=$(RUST_CRATESDIR)/$(RUST_CRATE_GETRANDOM04) \

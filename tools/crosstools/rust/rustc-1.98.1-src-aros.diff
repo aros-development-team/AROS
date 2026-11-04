@@ -1382,7 +1382,7 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/aros/mod.rs rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/mod.rs
 --- rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/aros/mod.rs	1970-01-01 00:00:00.000000000 +0000
 +++ rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/mod.rs	2026-11-03 12:32:27.265692643 +0000
-@@ -0,0 +1,1145 @@
+@@ -0,0 +1,1147 @@
 +//! Bindings for the AROS C library (posixc.library / stdc.library) and
 +//! pthread.library, as shipped in the AROS SDK.
 +//!
@@ -1597,6 +1597,8 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +
 +    pub struct pthread_condattr_t {
 +        pub pshared: c_int,
++        // CLOCK_REALTIME unless pthread_condattr_setclock() changed it
++        pub cond_clock: clockid_t,
 +    }
 +
 +    pub struct pthread_rwlockattr_t {
