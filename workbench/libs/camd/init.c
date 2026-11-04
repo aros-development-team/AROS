@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 #include <proto/dos.h>
@@ -11,6 +11,7 @@
 
 #include "camd_intern.h"
 #include "endpoint_registry.h"
+#include "identity_store_aros.h"
 
 
 #ifdef __amigaos4__
@@ -36,6 +37,7 @@ BOOL InitCamd(struct CamdBase *CamdBase){
 		CB(CamdBase)->CLSemaphore=NULL;
 		return FALSE;
 	}
+	CB(CamdBase)->EndpointIdentity=camd_identity_store_aros_create();
 #ifndef __amigaos4__
 	NEWLIST(&CB(CamdBase)->mymidinodes);
 	NEWLIST(&CB(CamdBase)->midiclusters);
@@ -78,6 +80,8 @@ fail:
 #ifndef __amigaos4__
 	StopDriverWatch();
 #endif
+	camd_identity_store_aros_destroy(CB(CamdBase)->EndpointIdentity);
+	CB(CamdBase)->EndpointIdentity=NULL;
 	camd_registry_destroy(CB(CamdBase)->EndpointRegistry);
 	CB(CamdBase)->EndpointRegistry=NULL;
 	FreeMem(CB(CamdBase)->CLSemaphore,sizeof(struct SignalSemaphore));
@@ -128,6 +132,8 @@ void UninitCamd(struct CamdBase *CamdBase){
 		CloseMidiDevice(driver->mididevicedata);
 		driver=temp2;
 	}
+	camd_identity_store_aros_destroy(CB(CamdBase)->EndpointIdentity);
+	CB(CamdBase)->EndpointIdentity=NULL;
 	camd_registry_destroy(CB(CamdBase)->EndpointRegistry);
 	CB(CamdBase)->EndpointRegistry=NULL;
 

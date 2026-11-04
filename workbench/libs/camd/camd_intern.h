@@ -240,6 +240,7 @@ struct ClusterWatch{
 };
 
 struct CAMDEndpointRegistry;
+struct CAMDIdentityStoreAROS;
 
 struct CamdBase_intern{
 #ifndef __amigaos4__
@@ -272,6 +273,9 @@ struct CamdBase_intern{
 
     /* Private endpoint core. Its opaque registry owns its semaphore. */
     struct CAMDEndpointRegistry *EndpointRegistry;
+
+    /* Private stable-ID map. Failure is non-fatal for legacy CAMD. */
+    struct CAMDIdentityStoreAROS *EndpointIdentity;
 
 
 };

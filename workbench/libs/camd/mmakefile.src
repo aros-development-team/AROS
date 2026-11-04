@@ -9,7 +9,8 @@ FILES :=    drivers clusters init camdwait mididistr midifromdriver \
 	    provider_contract legacy_driver_adapter native_event_queue \
 	    native_event_pump native_event_worker legacy_port_refs \
 	    native_worker_fanout legacy_output_backend \
-	    legacy_driver_output_backend
+	    legacy_driver_output_backend identity_map identity_file \
+	    identity_store_aros
 
 FUNCS := \
     lockcamd \
@@ -60,7 +61,7 @@ FUNCS := \
 #MM     kernel-utility-includes \
 #MM     includes-copy
 
-#MM- workbench-libs-camd : linklibs
+#MM- workbench-libs-camd : linklibs workbench-libs-uuid-includes
 
 %build_module mmake=workbench-libs-camd \
     modname=camd modtype=library \
