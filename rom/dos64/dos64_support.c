@@ -267,7 +267,7 @@ static void dos64_FixSizeEntry(struct Dos64Base *DOS64Base, BPTR obj,
                                struct FileInfoBlock *fib, LONG action)
 {
     struct Process *me = (struct Process *)FindTask(NULL);
-    BPTR fh, old, dup;
+    BPTR fh;
 
     if (fib->fib_DirEntryType >= 0 || fib->fib_Size64 < 0x7FFFFFFF ||
         me->pr_Task.tc_Node.ln_Type != NT_PROCESS)
@@ -275,7 +275,8 @@ static void dos64_FixSizeEntry(struct Dos64Base *DOS64Base, BPTR obj,
 
     if (action == ACTION_EXAMINE_OBJECT)
     {
-        dup = DupLock(obj);
+        BPTR dup = DupLock(obj);
+
         if (dup == BNULL)
             return;
         fh = OpenFromLock(dup);
@@ -287,7 +288,8 @@ static void dos64_FixSizeEntry(struct Dos64Base *DOS64Base, BPTR obj,
     }
     else
     {
-        old = CurrentDir(obj);
+        BPTR old = CurrentDir(obj);
+
         fh = Open(fib->fib_FileName, MODE_OLDFILE);
         CurrentDir(old);
         if (fh == BNULL)
