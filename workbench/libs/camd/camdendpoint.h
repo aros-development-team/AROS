@@ -247,4 +247,23 @@ struct CAMDSessionInfoV1 {
     ULONG MaxSysExBytes;
 };
 
+/* The records hold 32-bit fields and bytes only, so they have these sizes on
+ * every target. A compiler that disagrees stops here. */
+#define CAMD_RECORD_SIZE(record, bytes) \
+    typedef char camd_size_of_##record[sizeof(struct record) == (bytes) ? 1 : -1]
+CAMD_RECORD_SIZE(CAMDHandleV1, 8);
+CAMD_RECORD_SIZE(CAMDEndpointIDV1, 16);
+CAMD_RECORD_SIZE(CAMDGenerationV1, 8);
+CAMD_RECORD_SIZE(CAMDEndpointInfoV1, 360);
+CAMD_RECORD_SIZE(CAMDEndpointWatchEventV1, 36);
+CAMD_RECORD_SIZE(CAMDMIDI1EventV1, 32);
+CAMD_RECORD_SIZE(CAMDUMPEventV1, 44);
+CAMD_RECORD_SIZE(CAMDGroupInfoV1, 100);
+CAMD_RECORD_SIZE(CAMDFunctionBlockInfoV1, 104);
+CAMD_RECORD_SIZE(CAMDSessionRequestV1, 48);
+CAMD_RECORD_SIZE(CAMDSessionInfoV1, 28);
+CAMD_RECORD_SIZE(CAMDSessionStatsV1, 24);
+CAMD_RECORD_SIZE(CAMDPublishRequestV1, 280);
+#undef CAMD_RECORD_SIZE
+
 #endif
