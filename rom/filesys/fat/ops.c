@@ -652,7 +652,8 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
     /* Now see if the wanted name is in this dir. If it exists, and is not a capilazation change, do nothing */
     if ((err = GetDirEntryByName(&ddh, dname, dnamelen, &dde, glob)) == 0)
     {
-        if ((dnamelen != snamelen) || (strnicmp(sname, dname, snamelen) != 0))
+        if (sde.cluster != dde.cluster || sde.index != dde.index ||
+            (dnamelen != snamelen) || (strnicmp(sname, dname, snamelen) != 0))
         {
             ReleaseDirHandle(&ddh, glob);
             ReleaseDirHandle(&sdh, glob);
