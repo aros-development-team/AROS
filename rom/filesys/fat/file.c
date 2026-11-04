@@ -411,6 +411,14 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant,
                 ioh->sector_offset = sector_offset - ioh->first_sector;
                 ioh->cur_sector = ioh->first_sector + sector_offset;
 
+                /* The fixed FAT12/16 root ends before the data area. */
+                if (ioh->cur_sector >= ioh->sb->first_rootdir_sector
+                    + ioh->sb->rootdir_sectors)
+                {
+                    RESET_HANDLE(ioh);
+                    return ERROR_NO_FREE_STORE;
+                }
+
                 D(bug("[fat] adjusted for cluster 0,"
                     " chunk starts in sector %ld\n", ioh->cur_sector));
             }

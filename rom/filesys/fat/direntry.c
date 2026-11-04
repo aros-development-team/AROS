@@ -499,7 +499,17 @@ LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de,
             {
                 err = GetDirEntry(dh, de->index + 1, de, glob);
                 if (err == ERROR_OBJECT_NOT_FOUND)
+                {
+                    /* FAT12/16 roots cannot grow. An exactly full root
+                     * needs no end marker beyond its last entry. */
+                    if (dh->ioh.first_cluster == 0)
+                    {
+                        if (de->index == last)
+                            break;
+                        return ERROR_NO_FREE_STORE;
+                    }
                     clusteradded = TRUE;
+                }
                 else if (err != 0)
                     return err;
                 de->e.entry.name[0] = 0x00;
