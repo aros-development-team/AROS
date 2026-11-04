@@ -69,6 +69,8 @@
 #  define CAMD_LIBBASE_DECL(a,b) a b = (a) ICamd->Data.LibBase;
 #endif
 
+#include "legacy_port_refs.h"
+
 
 
 /****************************************************************************************/
@@ -110,8 +112,9 @@ struct DriverData{
 	struct MidiDeviceData *mididevicedata;
 	LONG portnum;
 
-	BOOL isInOpen;		// Driver is opened if at least one of these two ones is TRUE
-	BOOL isOutOpen;
+	/* Legacy cluster directions and private endpoint sessions share one
+	   physical OpenPort()/ClosePort() transition through this state. */
+	struct CAMDLegacyPortRefs openrefs;
 
 	BOOL isAttached;		// innode and outnode are in their clusters
 
@@ -232,6 +235,8 @@ struct ClusterWatch{
 	struct ClusterWatchEvent events[CLUSTERWATCH_QUEUE];
 };
 
+struct CAMDEndpointRegistry;
+
 struct CamdBase_intern{
 #ifndef __amigaos4__
     struct Library library;
@@ -260,6 +265,10 @@ struct CamdBase_intern{
 
     /* StartClusterWatchA() handles, also under NotifySemaphore. */
     struct MinList clusterwatches;
+
+    /* Private endpoint core. Its opaque registry owns its semaphore. */
+    struct CAMDEndpointRegistry *EndpointRegistry;
+
 
 };
 
@@ -412,6 +421,13 @@ extern WORD MidiMsgType_status_data1(UBYTE status,UBYTE data1);
 
 BOOL OpenDriver(struct DriverData *driverdata,ULONG *ErrorCode,struct CamdBase *CamdBase);
 void CloseDriver(struct DriverData *driverdata,struct CamdBase *CamdBase);
+BOOL SetDriverLegacyUse(struct DriverData *driverdata,ULONG direction,
+	BOOL present,ULONG *ErrorCode,struct CamdBase *CamdBase);
+enum CAMDProviderResult AcquireDriverEndpointPort(
+	struct DriverData *driverdata,ULONG direction,struct CamdBase *CamdBase);
+enum CAMDProviderResult ReleaseDriverEndpointPort(
+	struct DriverData *driverdata,ULONG direction,struct CamdBase *CamdBase);
+BOOL DriverPortInUse(struct DriverData *driverdata);
 
 void FreeDriverData(struct Drivers *driver,
 	struct CamdBase *CamdBase

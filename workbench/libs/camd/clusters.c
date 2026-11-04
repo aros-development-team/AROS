@@ -212,15 +212,8 @@ void LinkHasBeenRemovedFromCluster(struct MidiCluster *cluster,struct CamdBase *
 	  
 	  /* We mark the hardware-receiver not to be in use. */
 	  
-	  if(driverdata->isOutOpen==TRUE){
-	    driverdata->isOutOpen=FALSE;
-	    
-	    /* And we close it if the hardware-sender is not in use either. */
-	    
-	    if(driverdata->isInOpen==FALSE){
-	      CloseDriver(driverdata,CamdBase);
-	    }
-	  }
+	  SetDriverLegacyUse(driverdata,CAMD_PROVIDER_DIRECTION_OUTPUT,
+	    FALSE,NULL,CamdBase);
 	  
 	}
 	break;
@@ -248,15 +241,8 @@ void LinkHasBeenRemovedFromCluster(struct MidiCluster *cluster,struct CamdBase *
 	  driverdata=(struct DriverData *)(((char *)driverdata-sizeof(struct Node)));
 	  /* We mark the hardware-sender not to be in use. */
 	  
-	  if(driverdata->isInOpen==TRUE){
-	    driverdata->isInOpen=FALSE;
-	    
-	    /* And we close it if the hardware-receiver is not in use either. */
-	    
-	    if(driverdata->isOutOpen==FALSE){
-	      CloseDriver(driverdata,CamdBase);
-	    }
-	  }
+	  SetDriverLegacyUse(driverdata,CAMD_PROVIDER_DIRECTION_INPUT,
+	    FALSE,NULL,CamdBase);
 	}
 	break;
       }
@@ -373,14 +359,8 @@ BOOL AddClusterReceiver(
 	if(node->ln_Type!=NT_USER-MLTYPE_NTypes){
 	  driverdata=FindSenderDriverInCluster(cluster);
 	  if(driverdata!=NULL){
-			if(driverdata->isInOpen==FALSE && driverdata->isOutOpen==FALSE){
-				if(OpenDriver(driverdata,ErrorCode,CamdBase)==FALSE){
-					return FALSE;
-				}
-			}
-			/* Also when the port is already open for output: the port
-			   must stay open while this receiver is linked. */
-			driverdata->isInOpen=TRUE;
+			if(SetDriverLegacyUse(driverdata,CAMD_PROVIDER_DIRECTION_INPUT,
+				TRUE,ErrorCode,CamdBase)==FALSE) return FALSE;
 		}
 		midilink=(struct MidiLink *)node;
 		ObtainSemaphore(&mycluster->semaphore);
@@ -420,12 +400,8 @@ BOOL AddClusterSender(
 	if(node->ln_Type!=NT_USER-MLTYPE_NTypes){
 		driverdata=FindReceiverDriverInCluster(cluster);
 		if(driverdata!=NULL){
-			if(driverdata->isInOpen==FALSE && driverdata->isOutOpen==FALSE){
-				if(OpenDriver(driverdata,ErrorCode,CamdBase)==FALSE){
-					return FALSE;
-				}
-			}
-			driverdata->isOutOpen=TRUE;
+			if(SetDriverLegacyUse(driverdata,CAMD_PROVIDER_DIRECTION_OUTPUT,
+				TRUE,ErrorCode,CamdBase)==FALSE) return FALSE;
 		}
 		midilink=(struct MidiLink *)node;
 		midilink->ml_Location=cluster;

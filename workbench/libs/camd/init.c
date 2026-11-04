@@ -10,6 +10,7 @@
 #include <proto/utility.h>
 
 #include "camd_intern.h"
+#include "endpoint_registry.h"
 
 
 #ifdef __amigaos4__
@@ -29,6 +30,12 @@ BOOL InitCamd(struct CamdBase *CamdBase){
 	InitSemaphore(CB(CamdBase)->CLSemaphore);
 	InitSemaphore(&CB(CamdBase)->DriverScanSemaphore);
 	InitSemaphore(&CB(CamdBase)->NotifySemaphore);
+	CB(CamdBase)->EndpointRegistry=camd_registry_create();
+	if(CB(CamdBase)->EndpointRegistry==NULL){
+		FreeMem(CB(CamdBase)->CLSemaphore,sizeof(struct SignalSemaphore));
+		CB(CamdBase)->CLSemaphore=NULL;
+		return FALSE;
+	}
 #ifndef __amigaos4__
 	NEWLIST(&CB(CamdBase)->mymidinodes);
 	NEWLIST(&CB(CamdBase)->midiclusters);
@@ -71,6 +78,8 @@ fail:
 #ifndef __amigaos4__
 	StopDriverWatch();
 #endif
+	camd_registry_destroy(CB(CamdBase)->EndpointRegistry);
+	CB(CamdBase)->EndpointRegistry=NULL;
 	FreeMem(CB(CamdBase)->CLSemaphore,sizeof(struct SignalSemaphore));
 	CB(CamdBase)->CLSemaphore=NULL;
 	return FALSE;
@@ -101,11 +110,10 @@ void UninitCamd(struct CamdBase *CamdBase){
 				driverdata=FindReceiverDriverInCluster(midicluster);
 			}
 			if(driverdata!=NULL){
-				if(driverdata->isInOpen==TRUE || driverdata->isOutOpen==TRUE){
-					driverdata->isInOpen=FALSE;
-					driverdata->isOutOpen=FALSE;
-					CloseDriver(driverdata,CamdBase);
-				}
+				SetDriverLegacyUse(driverdata,CAMD_PROVIDER_DIRECTION_INPUT,
+					FALSE,NULL,CamdBase);
+				SetDriverLegacyUse(driverdata,CAMD_PROVIDER_DIRECTION_OUTPUT,
+					FALSE,NULL,CamdBase);
 			}else{
 				RemoveCluster((struct MidiCluster *)node,CamdBase);	//Clients should have do this, but..
 			}
@@ -120,6 +128,9 @@ void UninitCamd(struct CamdBase *CamdBase){
 		CloseMidiDevice(driver->mididevicedata);
 		driver=temp2;
 	}
+	camd_registry_destroy(CB(CamdBase)->EndpointRegistry);
+	CB(CamdBase)->EndpointRegistry=NULL;
+
 
 	if(CB(CamdBase)->CLSemaphore!=NULL)
 	  FreeMem(CB(CamdBase)->CLSemaphore,sizeof(struct SignalSemaphore));
