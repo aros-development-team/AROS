@@ -562,7 +562,8 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen,
     /* Build the entry */
     FillDirEntry(de, attr, cluster, glob);
 
-    SetDirEntryName(de, name, namelen);
+    if ((err = SetDirEntryName(de, name, namelen)) != 0)
+        return err;
 
     if ((err = UpdateDirEntry(de, glob)) != 0)
     {
