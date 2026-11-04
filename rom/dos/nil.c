@@ -22,7 +22,7 @@ SIPTR handleNIL(LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3)
     case(ACTION_INFO): return (SIPTR)0;
     case(ACTION_FREE_LOCK):
     {
-        FreeMem((APTR)arg1, sizeof(struct FileLock));
+        FreeMem(BADDR(arg1), sizeof(struct FileLock));
         return (SIPTR)0;
     }
     case(ACTION_COPY_DIR_FH):
@@ -33,9 +33,9 @@ SIPTR handleNIL(LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3)
     }
     case(ACTION_FH_FROM_LOCK):
     {
-        struct FileHandle * fh = BADDR(arg2);
+        struct FileHandle * fh = BADDR(arg1);
         fh->fh_Interactive = DOSFALSE;
-        FreeMem((APTR)arg3, sizeof(struct FileLock));
+        FreeMem(BADDR(arg2), sizeof(struct FileLock));
         return (SIPTR)DOSTRUE;
     }
     case(ACTION_WRITE): return (SIPTR)arg3;
