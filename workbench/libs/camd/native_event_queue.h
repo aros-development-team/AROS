@@ -109,6 +109,25 @@ enum CAMDNativeQueueResult camd_native_queue_enqueue_midi1_sysex(
     uint32_t time_low,
     uint32_t clock_domain,
     uint32_t flags);
+/* Ordered by time instead of by arrival: an event with CAMD_EVENT_TIME_VALID
+ * goes behind every queued event of an earlier or equal time and in front of
+ * later ones, and one without it is treated as being for `now`. Each event
+ * is its own item; all of them are accepted or none. Times compare by signed
+ * difference. Use either these or the plain enqueues on a queue, not both. */
+enum CAMDNativeQueueResult camd_native_queue_enqueue_midi1_ordered(
+    struct CAMDNativeEventQueue *queue,
+    const struct CAMDMIDI1EventV1 *events,
+    size_t event_count,
+    uint32_t now);
+enum CAMDNativeQueueResult camd_native_queue_enqueue_midi1_sysex_ordered(
+    struct CAMDNativeEventQueue *queue,
+    const uint8_t *bytes,
+    size_t byte_count,
+    uint32_t time_high,
+    uint32_t time_low,
+    uint32_t clock_domain,
+    uint32_t flags,
+    uint32_t now);
 enum CAMDNativeQueueResult camd_native_queue_enqueue_ump(
     struct CAMDNativeEventQueue *queue,
     const struct CAMDUMPEventV1 *events,

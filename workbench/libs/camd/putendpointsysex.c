@@ -12,12 +12,13 @@
 
     NAME */
 
-	AROS_LH3(LONG, PutEndpointSysEx,
+	AROS_LH4(LONG, PutEndpointSysEx,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct CAMDHandleV1 *, session, A0),
 	AROS_LHA(UBYTE *, bytes, A1),
 	AROS_LHA(ULONG, length, D0),
+	AROS_LHA(struct CAMDMIDI1EventV1 *, time, A2),
 
 /*  LOCATION */
 	struct CamdBase *, CamdBase, 52, Camd)
@@ -30,6 +31,10 @@
 		session - from OpenEndpointSession().
 		bytes - the message, from its 0xF0 to its 0xF7.
 		length - the number of bytes.
+		time - NULL to send at once, or an event whose Flags,
+		    TimeHigh, TimeLow and ClockDomain give the message its
+		    time as for PutEndpointMidi(); its other fields are not
+		    read.
 
     RESULT
 		CAMD_REGISTRY_OK, CAMD_REGISTRY_TOO_LARGE past the session's
@@ -55,8 +60,14 @@
 
 	if(session==NULL) return CAMD_REGISTRY_INVALID;
 
+	if(time==NULL){
+		return camd_registry_session_send_midi1_sysex(
+			CB(CamdBase)->EndpointRegistry,*session,bytes,length,0,0,0,0);
+	}
+
 	return camd_registry_session_send_midi1_sysex(
-		CB(CamdBase)->EndpointRegistry,*session,bytes,length,0,0,0,0);
+		CB(CamdBase)->EndpointRegistry,*session,bytes,length,
+		time->TimeHigh,time->TimeLow,time->ClockDomain,time->Flags);
 
     AROS_LIBFUNC_EXIT
 }

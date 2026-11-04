@@ -44,6 +44,7 @@ struct CAMDAppEndpoint {
     int projecting;
     uint32_t session_count;
     int retiring;
+    uint32_t taken, emitted, clients_lost, legacy_lost;  /* under lock */
     struct CAMDProviderOpsV1 ops;
 };
 
@@ -134,12 +135,27 @@ static void notify(struct CAMDAppEndpoint *endpoint)
         call(context);
 }
 
-/* A UMP queue holds no MIDI 1.0 SysEx. */
-static uint32_t sysex_bytes(const struct CAMDAppEndpoint *endpoint)
+static void count(uint32_t *counter, size_t records)
 {
-    return endpoint->config.DataFormat == CAMD_PROVIDER_FORMAT_UMP
-               ? 0
-               : endpoint->config.MaxSysExBytes;
+    if (records > UINT32_MAX - *counter)
+        *counter = UINT32_MAX;
+    else
+        *counter += (uint32_t)records;
+}
+
+/* The session's SysEx limit: none in a UMP queue, and 1 as an impossible
+ * value when it asks for more than is allowed. */
+static uint32_t sysex_bytes(const struct CAMDAppEndpoint *endpoint,
+                            const struct CAMDProviderOpenRequestV1 *request)
+{
+    if (endpoint->config.DataFormat == CAMD_PROVIDER_FORMAT_UMP)
+        return 0;
+    if (request->MaxSysExBytes == 0)
+        return endpoint->config.MaxSysExBytes;
+    if (request->MaxSysExBytes < 2 ||
+        request->MaxSysExBytes > endpoint->config.LimitSysExBytes)
+        return 1;
+    return request->MaxSysExBytes;
 }
 
 static enum CAMDProviderResult app_open(
@@ -158,7 +174,8 @@ static enum CAMDProviderResult app_open(
         request->DataFormat != endpoint->config.DataFormat ||
         request->Protocol != endpoint->config.Protocol ||
         request->QueueCapacity == 0 ||
-        request->QueueCapacity > endpoint->config.MaxQueueCapacity)
+        request->QueueCapacity > endpoint->config.MaxQueueCapacity ||
+        sysex_bytes(endpoint, request) == 1)
         return CAMD_PROVIDER_UNSUPPORTED;
     session = app_alloc(sizeof(*session));
     if (!session)
@@ -171,7 +188,7 @@ static enum CAMDProviderResult app_open(
         queue_config.Version = 1;
         queue_config.DataFormat = endpoint->config.DataFormat;
         queue_config.Capacity = request->QueueCapacity;
-        queue_config.MaxSysExBytes = sysex_bytes(endpoint);
+        queue_config.MaxSysExBytes = sysex_bytes(endpoint, request);
         if (camd_native_queue_create(&queue_config, &session->queue) !=
             CAMD_NATIVE_QUEUE_OK) {
             app_free(session);
@@ -195,7 +212,7 @@ static enum CAMDProviderResult app_open(
     lock_release(&endpoint->lock);
     result->SessionContext = session;
     result->EffectiveQueueCapacity = request->QueueCapacity;
-    result->MaxSysExBytes = sysex_bytes(endpoint);
+    result->MaxSysExBytes = sysex_bytes(endpoint, request);
     return CAMD_PROVIDER_OK;
 }
 
@@ -430,6 +447,8 @@ enum CAMDProviderResult camd_app_endpoint_create(
         return CAMD_PROVIDER_CALLBACK_FAILED;
     }
     endpoint->config = *config;
+    if (endpoint->config.LimitSysExBytes < endpoint->config.MaxSysExBytes)
+        endpoint->config.LimitSysExBytes = endpoint->config.MaxSysExBytes;
     if (endpoint->config.DataFormat == 0) {
         endpoint->config.DataFormat = CAMD_PROVIDER_FORMAT_MIDI1;
         endpoint->config.Protocol = CAMD_PROVIDER_PROTOCOL_MIDI1;
@@ -512,6 +531,8 @@ enum CAMDProviderResult camd_app_endpoint_emit_midi1(
     if (endpoint->projecting)
         endpoint->projection.SubmitMIDI1(endpoint->projection.Context,
                                          events, event_count);
+    count(&endpoint->emitted, event_count);
+    count(&endpoint->clients_lost, (size_t)lost * event_count);
     lock_release(&endpoint->lock);
     if (dropped)
         *dropped = lost;
@@ -534,7 +555,7 @@ enum CAMDProviderResult camd_app_endpoint_emit_sysex(
     valid = camd_provider_validate_midi1_sysex(bytes, byte_count);
     if (valid != CAMD_PROVIDER_OK)
         return valid;
-    if (byte_count > endpoint->config.MaxSysExBytes)
+    if (byte_count > endpoint->config.LimitSysExBytes)
         return CAMD_PROVIDER_TOO_LARGE;
     lock_acquire(&endpoint->lock);
     for (session = endpoint->sessions; session; session = session->next) {
@@ -547,6 +568,8 @@ enum CAMDProviderResult camd_app_endpoint_emit_sysex(
     if (endpoint->projecting)
         endpoint->projection.SubmitMIDI1SysEx(endpoint->projection.Context,
                                               bytes, byte_count, 0, 0, 0, 0);
+    count(&endpoint->emitted, 1);
+    count(&endpoint->clients_lost, lost);
     lock_release(&endpoint->lock);
     if (dropped)
         *dropped = lost;
@@ -587,7 +610,7 @@ enum CAMDProviderResult camd_app_endpoint_take(
     struct CAMDNativeQueueHeadV1 head;
     struct CAMDNativeQueueSysExInfoV1 info;
     enum CAMDProviderResult result;
-    size_t count = 0;
+    size_t taken = 0;
 
     if (!endpoint || !event || !sysex_count || (!sysex && sysex_capacity) ||
         endpoint->config.DataFormat != CAMD_PROVIDER_FORMAT_MIDI1)
@@ -608,11 +631,15 @@ enum CAMDProviderResult camd_app_endpoint_take(
             result = queue_result(camd_native_queue_dequeue_midi1_sysex(
                 session->queue, sysex, sysex_capacity, &info));
             endpoint->last_taken = session;
+            if (result == CAMD_PROVIDER_OK)
+                count(&endpoint->taken, 1);
         }
     } else {
         result = queue_result(camd_native_queue_dequeue_midi1(
-            session->queue, event, 1, &count));
+            session->queue, event, 1, &taken));
         endpoint->last_taken = session;
+        if (result == CAMD_PROVIDER_OK)
+            count(&endpoint->taken, 1);
     }
     lock_release(&endpoint->lock);
     return result;
@@ -640,6 +667,8 @@ enum CAMDProviderResult camd_app_endpoint_emit_ump(
                                     event_count) != CAMD_PROVIDER_OK)
             ++lost;
     }
+    count(&endpoint->emitted, event_count);
+    count(&endpoint->clients_lost, (size_t)lost * event_count);
     lock_release(&endpoint->lock);
     if (dropped)
         *dropped = lost;
@@ -652,7 +681,7 @@ enum CAMDProviderResult camd_app_endpoint_take_ump(
     struct app_session *session;
     struct CAMDNativeQueueHeadV1 head;
     enum CAMDProviderResult result;
-    size_t count = 0;
+    size_t taken = 0;
 
     if (!endpoint || !event ||
         endpoint->config.DataFormat != CAMD_PROVIDER_FORMAT_UMP)
@@ -663,11 +692,36 @@ enum CAMDProviderResult camd_app_endpoint_take_ump(
         result = CAMD_PROVIDER_QUEUE_FULL;
     } else {
         result = queue_result(camd_native_queue_dequeue_ump(
-            session->queue, event, 1, &count));
+            session->queue, event, 1, &taken));
         endpoint->last_taken = session;
+        if (result == CAMD_PROVIDER_OK)
+            count(&endpoint->taken, 1);
     }
     lock_release(&endpoint->lock);
     return result;
+}
+
+static void legacy_lost(struct CAMDAppEndpoint *endpoint)
+{
+    lock_acquire(&endpoint->lock);
+    count(&endpoint->legacy_lost, 1);
+    lock_release(&endpoint->lock);
+}
+
+enum CAMDProviderResult camd_app_endpoint_stats(
+    struct CAMDAppEndpoint *endpoint, struct CAMDPublishedStatsV1 *stats)
+{
+    if (!endpoint || !stats)
+        return CAMD_PROVIDER_INVALID;
+    lock_acquire(&endpoint->lock);
+    stats->Size = sizeof(*stats);
+    stats->Version = 1;
+    stats->Taken = endpoint->taken;
+    stats->Emitted = endpoint->emitted;
+    stats->ClientsLost = endpoint->clients_lost;
+    stats->LegacyLost = endpoint->legacy_lost;
+    lock_release(&endpoint->lock);
+    return CAMD_PROVIDER_OK;
 }
 
 enum CAMDProviderResult camd_app_endpoint_inject_midi1(
@@ -679,8 +733,10 @@ enum CAMDProviderResult camd_app_endpoint_inject_midi1(
         return CAMD_PROVIDER_INVALID;
     result = camd_native_queue_enqueue_midi1_items(
         endpoint->projected->queue, event, 1);
-    if (result != CAMD_NATIVE_QUEUE_OK)
+    if (result != CAMD_NATIVE_QUEUE_OK) {
+        legacy_lost(endpoint);
         return queue_result(result);
+    }
     notify(endpoint);
     return CAMD_PROVIDER_OK;
 }
@@ -695,8 +751,10 @@ enum CAMDProviderResult camd_app_endpoint_inject_sysex(
         return CAMD_PROVIDER_INVALID;
     result = camd_native_queue_enqueue_midi1_sysex(
         endpoint->projected->queue, bytes, byte_count, 0, 0, 0, 0);
-    if (result != CAMD_NATIVE_QUEUE_OK)
+    if (result != CAMD_NATIVE_QUEUE_OK) {
+        legacy_lost(endpoint);
         return queue_result(result);
+    }
     notify(endpoint);
     return CAMD_PROVIDER_OK;
 }

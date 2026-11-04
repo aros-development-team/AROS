@@ -28,6 +28,7 @@ struct CAMDLegacyOutputBackend {
     size_t port_count;
     uint32_t max_queue_capacity;
     uint32_t max_sysex_bytes;
+    uint32_t limit_sysex_bytes;
     uint32_t worker_item_budget;
     uint32_t active_sessions;
     int retiring;
@@ -150,10 +151,11 @@ static enum CAMDProviderResult queue_result(
     return CAMD_PROVIDER_STATE;
 }
 
-/* Whether the head message may go to the port now. One that has to wait
- * tells the session's worker when to try again; the pump keeps it queued
- * because the caller then reports no room. Times compare by their signed
- * difference, so the clock may wrap. */
+/* Whether the head message may go to the port now. The queue is ordered by
+ * time, so when the head has to wait everything behind it does too. It tells
+ * the session's worker when to try again; the pump keeps it queued because
+ * the caller then reports no room. Times compare by their signed difference,
+ * so the clock may wrap. */
 static int due(struct output_session *session, uint32_t flags,
                uint32_t time_low)
 {
@@ -226,6 +228,18 @@ static void destroy_pipeline(struct output_session *session)
     session->pipeline_destroyed = 1;
 }
 
+/* The session's SysEx limit, 0 when it asks for more than is allowed. */
+static uint32_t session_sysex(const struct CAMDLegacyOutputBackend *backend,
+                              const struct CAMDProviderOpenRequestV1 *request)
+{
+    if (request->MaxSysExBytes == 0)
+        return backend->max_sysex_bytes;
+    if (request->MaxSysExBytes < 2 ||
+        request->MaxSysExBytes > backend->limit_sysex_bytes)
+        return 0;
+    return request->MaxSysExBytes;
+}
+
 static enum CAMDProviderResult open_input(
     struct CAMDLegacyOutputBackend *backend,
     const struct CAMDProviderOpenRequestV1 *request,
@@ -240,7 +254,8 @@ static enum CAMDProviderResult open_input(
         request->DataFormat != CAMD_PROVIDER_FORMAT_MIDI1 ||
         request->Protocol != CAMD_PROVIDER_PROTOCOL_MIDI1 ||
         request->QueueCapacity == 0 ||
-        request->QueueCapacity > backend->max_queue_capacity)
+        request->QueueCapacity > backend->max_queue_capacity ||
+        session_sysex(backend, request) == 0)
         return CAMD_PROVIDER_UNSUPPORTED;
     port = find_port(backend, &request->EndpointID);
     if (!port)
@@ -277,7 +292,7 @@ static enum CAMDProviderResult open_input(
     lock_release(&backend->lock);
     result->SessionContext = session;
     result->EffectiveQueueCapacity = request->QueueCapacity;
-    result->MaxSysExBytes = backend->max_sysex_bytes;
+    result->MaxSysExBytes = session_sysex(backend, request);
     return CAMD_PROVIDER_OK;
 }
 
@@ -419,7 +434,8 @@ static enum CAMDProviderResult backend_open(
         request->DataFormat != CAMD_PROVIDER_FORMAT_MIDI1 ||
         request->Protocol != CAMD_PROVIDER_PROTOCOL_MIDI1 ||
         request->QueueCapacity == 0 ||
-        request->QueueCapacity > backend->max_queue_capacity)
+        request->QueueCapacity > backend->max_queue_capacity ||
+        session_sysex(backend, request) == 0)
         return CAMD_PROVIDER_UNSUPPORTED;
     port = find_port(backend, &request->EndpointID);
     if (!port)
@@ -446,7 +462,7 @@ static enum CAMDProviderResult backend_open(
     queue_config.Version = 1;
     queue_config.DataFormat = CAMD_PROVIDER_FORMAT_MIDI1;
     queue_config.Capacity = request->QueueCapacity;
-    queue_config.MaxSysExBytes = backend->max_sysex_bytes;
+    queue_config.MaxSysExBytes = session_sysex(backend, request);
     if (camd_native_queue_create(&queue_config, &session->queue) !=
         CAMD_NATIVE_QUEUE_OK)
         goto fail;
@@ -462,7 +478,7 @@ static enum CAMDProviderResult backend_open(
     pump_config.Version = 1;
     pump_config.DataFormat = CAMD_PROVIDER_FORMAT_MIDI1;
     pump_config.MaxBatchRecords = 1;
-    pump_config.MaxSysExBytes = backend->max_sysex_bytes;
+    pump_config.MaxSysExBytes = session_sysex(backend, request);
     if (camd_native_pump_create(session->queue, &pump_config, &sink,
                                 &session->pump) != CAMD_NATIVE_PUMP_OK)
         goto fail;
@@ -488,7 +504,7 @@ static enum CAMDProviderResult backend_open(
     session->fanout_attached = 1;
     result->SessionContext = session;
     result->EffectiveQueueCapacity = request->QueueCapacity;
-    result->MaxSysExBytes = backend->max_sysex_bytes;
+    result->MaxSysExBytes = session_sysex(backend, request);
     return CAMD_PROVIDER_OK;
 
 fail:
@@ -533,6 +549,12 @@ static enum CAMDProviderResult backend_close(void *context,
     return CAMD_PROVIDER_OK;
 }
 
+/* The time an untimed message is for. Only with a clock. */
+static uint32_t now(struct output_session *session)
+{
+    return session->backend->callbacks.Now(session->port->Context);
+}
+
 /* A time in a clock this backend does not know cannot be kept. */
 static int known_clock(const struct CAMDMIDI1EventV1 *events,
                        size_t event_count)
@@ -561,8 +583,11 @@ static enum CAMDProviderResult backend_send_midi1(
         return CAMD_PROVIDER_INVALID;
     if (!known_clock(events, event_count))
         return CAMD_PROVIDER_INVALID;
-    result = camd_native_queue_enqueue_midi1_items(session->queue, events,
-                                                   event_count);
+    result = session->backend->callbacks.Now
+                 ? camd_native_queue_enqueue_midi1_ordered(
+                       session->queue, events, event_count, now(session))
+                 : camd_native_queue_enqueue_midi1_items(
+                       session->queue, events, event_count);
     if (result != CAMD_NATIVE_QUEUE_OK)
         return queue_result(result);
     /* Accepted records must never be replayed merely because a wake failed. */
@@ -582,9 +607,16 @@ static enum CAMDProviderResult backend_send_sysex(
     if (!backend || !session || session->backend != backend ||
         session->direction != CAMD_PROVIDER_DIRECTION_OUTPUT)
         return CAMD_PROVIDER_INVALID;
-    result = camd_native_queue_enqueue_midi1_sysex(
-        session->queue, bytes, byte_count, time_high, time_low,
-        clock_domain, flags);
+    if ((flags & CAMD_EVENT_TIME_VALID) != 0 &&
+        (clock_domain != CAMD_CLOCK_CAMD || time_high != 0))
+        return CAMD_PROVIDER_INVALID;
+    result = session->backend->callbacks.Now
+                 ? camd_native_queue_enqueue_midi1_sysex_ordered(
+                       session->queue, bytes, byte_count, time_high,
+                       time_low, clock_domain, flags, now(session))
+                 : camd_native_queue_enqueue_midi1_sysex(
+                       session->queue, bytes, byte_count, time_high,
+                       time_low, clock_domain, flags);
     if (result != CAMD_NATIVE_QUEUE_OK)
         return queue_result(result);
     camd_native_worker_wake(session->worker);
@@ -666,6 +698,8 @@ static int valid_config(const struct CAMDLegacyOutputBackendConfigV1 *config)
         config->PortCount == 0 ||
         config->PortCount > SIZE_MAX / sizeof(*config->Ports) ||
         config->MaxQueueCapacity == 0 || config->MaxSysExBytes < 2 ||
+        (config->LimitSysExBytes != 0 &&
+         config->LimitSysExBytes < config->MaxSysExBytes) ||
         config->WorkerItemBudget == 0)
         return 0;
     for (i = 0; i < config->PortCount; ++i) {
@@ -717,6 +751,9 @@ enum CAMDProviderResult camd_legacy_output_backend_create(
     backend->port_count = config->PortCount;
     backend->max_queue_capacity = config->MaxQueueCapacity;
     backend->max_sysex_bytes = config->MaxSysExBytes;
+    backend->limit_sysex_bytes = config->LimitSysExBytes
+                                     ? config->LimitSysExBytes
+                                     : config->MaxSysExBytes;
     backend->worker_item_budget = config->WorkerItemBudget;
     backend->ops.Size = sizeof(backend->ops);
     backend->ops.Version = 1;

@@ -40,7 +40,8 @@
 		New in V43 and provisional: the endpoint functions can still
 		change. Start the watch first and take a
 		snapshot afterwards, so that no change falls between the two.
-		End every watch before closing camd.library.
+		A watch a task still has when it closes camd.library for the
+		last time is ended then.
 
     EXAMPLE
 
@@ -55,11 +56,18 @@
 {
     AROS_LIBFUNC_INIT
 
+	LONG result;
+
 	if(watch==NULL) return CAMD_REGISTRY_INVALID;
 	watch->slot=0;
 	watch->generation=0;
 
-	return StartEndpointWatcher(watch,signal,generation,CamdBase);
+	result=StartEndpointWatcher(watch,signal,generation,CamdBase);
+	if(result==CAMD_REGISTRY_OK){
+		OwnEndpointObject(ENDPOINT_OWNED_WATCH,watch,CamdBase);
+	}
+
+	return result;
 
     AROS_LIBFUNC_EXIT
 }

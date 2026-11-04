@@ -82,12 +82,19 @@
 #define SYSEXRECEIVERPROCBUFFERSIZE 1025
 #define ENDPOINT_OUTPUT_SESSIONS 32
 #define ENDPOINT_OUTPUT_QUEUE 64
-#define ENDPOINT_OUTPUT_SYSEX 4096
+#define ENDPOINT_OUTPUT_SYSEX CAMD_SYSEX_BYTES_DEFAULT
+#define ENDPOINT_SYSEX_LIMIT CAMD_SYSEX_BYTES_LIMIT
 #define ENDPOINT_OUTPUT_BUDGET 16
 #define ENDPOINT_SNAPSHOTS 32
 #define ENDPOINT_RECEIVERS 64
 #define ENDPOINT_WATCHES 16
 #define ENDPOINT_PUBLISHERS 32
+
+/* What a task can leave behind; see OwnEndpointObject(). */
+#define ENDPOINT_OWNED_SNAPSHOT  1
+#define ENDPOINT_OWNED_SESSION   2
+#define ENDPOINT_OWNED_WATCH     3
+#define ENDPOINT_OWNED_PUBLISHER 4
 #define ENDPOINT_WATCH_EVENTS 32
 #define NUMBEROFSYSEXSTORECEIVE 1025
 
@@ -356,6 +363,13 @@ struct CamdBase_intern{
     /* Published endpoints, also under EndpointClientSemaphore. */
     struct EndpointPublisher EndpointPublishers[ENDPOINT_PUBLISHERS];
 
+    /* Which task has the library open how often, and which endpoint objects
+       it made, so that they go when it closes the library for the last
+       time. Under EndpointOwnerSemaphore, taken last. */
+    struct SignalSemaphore EndpointOwnerSemaphore;
+    struct MinList EndpointOpeners;
+    struct MinList EndpointOwned;
+
 
 };
 
@@ -528,6 +542,10 @@ void RemoveEndpointSnapshot(const struct CAMDHandleV1 *handle,
 	struct CamdBase *CamdBase);
 void FreeEndpointSnapshots(struct CamdBase *CamdBase);
 BOOL EndpointClientsRemain(struct CamdBase *CamdBase);
+struct timerequest;
+struct timerequest *OpenEndpointPause(void);
+void EndpointPause(struct timerequest *pause);
+void CloseEndpointPause(struct timerequest *pause);
 struct CAMDMIDI1EventV1;
 LONG StartEndpointReceiver(const struct CAMDHandleV1 *session,ULONG format,
 	ULONG capacity,ULONG maxsysex,ULONG signal,struct CamdBase *CamdBase);
@@ -565,6 +583,16 @@ LONG GetAppEndpointMidi(const struct CAMDHandleV1 *handle,
 	struct CAMDMIDI1EventV1 *event,UBYTE *sysex,ULONG size,ULONG *length,
 	struct CamdBase *CamdBase);
 BOOL AppEndpointsRemain(struct CamdBase *CamdBase);
+struct CAMDPublishedStatsV1;
+LONG GetAppEndpointStats(const struct CAMDHandleV1 *handle,
+	struct CAMDPublishedStatsV1 *stats,struct CamdBase *CamdBase);
+void OwnEndpointObject(ULONG kind,const struct CAMDHandleV1 *handle,
+	struct CamdBase *CamdBase);
+void DisownEndpointObject(ULONG kind,const struct CAMDHandleV1 *handle,
+	struct CamdBase *CamdBase);
+void TaskOpenedCamd(struct CamdBase *CamdBase);
+void TaskClosedCamd(struct CamdBase *CamdBase);
+void FreeEndpointOwners(struct CamdBase *CamdBase);
 struct CAMDGroupInfoV1;
 struct CAMDFunctionBlockInfoV1;
 LONG PutAppEndpointUMP(const struct CAMDHandleV1 *handle,

@@ -2,11 +2,25 @@
 
 #include <limits.h>
 #include <string.h>
+
+#ifdef __AROS__
 #include <exec/memory.h>
 #include <exec/semaphores.h>
 #include <proto/exec.h>
+#else
+#include <pthread.h>
+#include <stdlib.h>
+#endif
 
 #define GENERATE_ATTEMPTS 16
+
+struct identity_lock {
+#ifdef __AROS__
+    struct SignalSemaphore semaphore;
+#else
+    pthread_mutex_t mutex;
+#endif
+};
 
 struct identity_entry {
     struct CAMDIdentityRecordV1 record;
@@ -14,7 +28,7 @@ struct identity_entry {
 };
 
 struct CAMDIdentityMap {
-    struct SignalSemaphore lock;
+    struct identity_lock lock;
     struct identity_entry *entries;
     struct CAMDIdentityRecordV1 *commit_records;
     uint32_t capacity;
@@ -23,6 +37,64 @@ struct CAMDIdentityMap {
     CAMDIdentityGenerateFnV1 generate;
     CAMDIdentityCommitFnV1 commit;
 };
+
+static void *map_alloc(size_t size)
+{
+#ifdef __AROS__
+    if (size > (size_t)ULONG_MAX)
+        return NULL;
+    return AllocVec((ULONG)size, MEMF_ANY | MEMF_CLEAR);
+#else
+    return calloc(1, size);
+#endif
+}
+
+static void map_free(void *pointer)
+{
+#ifdef __AROS__
+    if (pointer)
+        FreeVec(pointer);
+#else
+    free(pointer);
+#endif
+}
+
+static int lock_init(struct identity_lock *lock)
+{
+#ifdef __AROS__
+    InitSemaphore(&lock->semaphore);
+    return 1;
+#else
+    return pthread_mutex_init(&lock->mutex, NULL) == 0;
+#endif
+}
+
+static void lock_destroy(struct identity_lock *lock)
+{
+#ifdef __AROS__
+    (void)lock;
+#else
+    pthread_mutex_destroy(&lock->mutex);
+#endif
+}
+
+static void lock_acquire(struct identity_lock *lock)
+{
+#ifdef __AROS__
+    ObtainSemaphore(&lock->semaphore);
+#else
+    pthread_mutex_lock(&lock->mutex);
+#endif
+}
+
+static void lock_release(struct identity_lock *lock)
+{
+#ifdef __AROS__
+    ReleaseSemaphore(&lock->semaphore);
+#else
+    pthread_mutex_unlock(&lock->mutex);
+#endif
+}
 
 static int id_is_zero(const struct CAMDEndpointIDV1 *id)
 {
@@ -136,24 +208,22 @@ enum CAMDIdentityMapResult camd_identity_map_create(
                 return CAMD_IDENTITY_MAP_COLLISION;
         }
     }
-    map = AllocVec(sizeof(*map), MEMF_ANY | MEMF_CLEAR);
+    map = map_alloc(sizeof(*map));
     if (!map)
         return CAMD_IDENTITY_MAP_NOMEM;
-    InitSemaphore(&map->lock);
+    if (!lock_init(&map->lock)) {
+        map_free(map);
+        return CAMD_IDENTITY_MAP_NOMEM;
+    }
     entry_bytes = (size_t)config->Capacity * sizeof(*map->entries);
     record_bytes = (size_t)config->Capacity * sizeof(*map->commit_records);
-    if (entry_bytes > ULONG_MAX || record_bytes > ULONG_MAX) {
-        FreeVec(map);
-        return CAMD_IDENTITY_MAP_INVALID;
-    }
-    map->entries = AllocVec((ULONG)entry_bytes, MEMF_ANY | MEMF_CLEAR);
-    map->commit_records = AllocVec((ULONG)record_bytes, MEMF_ANY | MEMF_CLEAR);
+    map->entries = map_alloc(entry_bytes);
+    map->commit_records = map_alloc(record_bytes);
     if (!map->entries || !map->commit_records) {
-        if (map->commit_records)
-            FreeVec(map->commit_records);
-        if (map->entries)
-            FreeVec(map->entries);
-        FreeVec(map);
+        map_free(map->commit_records);
+        map_free(map->entries);
+        lock_destroy(&map->lock);
+        map_free(map);
         return CAMD_IDENTITY_MAP_NOMEM;
     }
     map->capacity = config->Capacity;
@@ -173,11 +243,35 @@ void camd_identity_map_destroy(struct CAMDIdentityMap *map)
 {
     if (!map)
         return;
-    if (map->commit_records)
-        FreeVec(map->commit_records);
-    if (map->entries)
-        FreeVec(map->entries);
-    FreeVec(map);
+    map_free(map->commit_records);
+    map_free(map->entries);
+    lock_destroy(&map->lock);
+    map_free(map);
+}
+
+enum CAMDIdentityMapResult camd_identity_map_temporary(
+    struct CAMDIdentityMap *map, struct CAMDEndpointIDV1 *id)
+{
+    enum CAMDIdentityMapResult result = CAMD_IDENTITY_MAP_COLLISION;
+    unsigned int attempt;
+
+    if (!map || !id)
+        return CAMD_IDENTITY_MAP_INVALID;
+    lock_acquire(&map->lock);
+    for (attempt = 0; attempt < GENERATE_ATTEMPTS; ++attempt) {
+        if (!map->generate(map->callback_context, id)) {
+            result = CAMD_IDENTITY_MAP_GENERATOR;
+            break;
+        }
+        if (!id_is_zero(id) && !id_exists(map, id)) {
+            result = CAMD_IDENTITY_MAP_OK;
+            break;
+        }
+    }
+    lock_release(&map->lock);
+    if (result != CAMD_IDENTITY_MAP_OK)
+        memset(id, 0, sizeof(*id));
+    return result;
 }
 
 enum CAMDIdentityMapResult camd_identity_map_resolve(
@@ -192,7 +286,7 @@ enum CAMDIdentityMapResult camd_identity_map_resolve(
     if (!map || !valid_key(key) || !resolution ||
         resolution->Size != sizeof(*resolution) || resolution->Version != 1)
         return CAMD_IDENTITY_MAP_INVALID;
-    ObtainSemaphore(&map->lock);
+    lock_acquire(&map->lock);
     for (i = 0; i < map->count; ++i) {
         if (same_key(&map->entries[i].record, key)) {
             entry = &map->entries[i];
@@ -202,20 +296,20 @@ enum CAMDIdentityMapResult camd_identity_map_resolve(
     }
     if (!entry) {
         if (map->count == map->capacity) {
-            ReleaseSemaphore(&map->lock);
+            lock_release(&map->lock);
             return CAMD_IDENTITY_MAP_FULL;
         }
         memset(&id, 0, sizeof(id));
         for (attempt = 0; attempt < GENERATE_ATTEMPTS; ++attempt) {
             if (!map->generate(map->callback_context, &id)) {
-                ReleaseSemaphore(&map->lock);
+                lock_release(&map->lock);
                 return CAMD_IDENTITY_MAP_GENERATOR;
             }
             if (!id_is_zero(&id) && !id_exists(map, &id))
                 break;
         }
         if (attempt == GENERATE_ATTEMPTS) {
-            ReleaseSemaphore(&map->lock);
+            lock_release(&map->lock);
             return CAMD_IDENTITY_MAP_COLLISION;
         }
         entry = &map->entries[map->count++];
@@ -234,6 +328,6 @@ enum CAMDIdentityMapResult camd_identity_map_resolve(
                                           ? key->Confidence
                                           : CAMD_IDENTITY_EPHEMERAL;
     resolution->Existing = existing ? 1u : 0u;
-    ReleaseSemaphore(&map->lock);
+    lock_release(&map->lock);
     return CAMD_IDENTITY_MAP_OK;
 }

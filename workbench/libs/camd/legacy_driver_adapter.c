@@ -358,7 +358,9 @@ enum CAMDRegistryResult camd_legacy_driver_adapter_create(
         endpoint.ID = adapter->ports[i].descriptor.EndpointID;
         endpoint.ProviderID = descriptor->ProviderID;
         endpoint.State = CAMD_ENDPOINT_AVAILABLE;
-        endpoint.Flags = adapter->ports[i].descriptor.Flags;
+        /* The low bits tell a client which directions open. */
+        endpoint.Flags = adapter->ports[i].descriptor.Flags |
+                         adapter->ports[i].descriptor.Directions;
         endpoint.IdentityKind = descriptor->IdentityKind;
         endpoint.NativeDataFormats = adapter->descriptor.DataFormat;
         endpoint.ProtocolCapabilities = descriptor->ProtocolCapabilities;

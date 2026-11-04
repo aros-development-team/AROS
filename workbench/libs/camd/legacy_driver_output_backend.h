@@ -24,6 +24,7 @@ struct CAMDLegacyDriverOutputConfigV1 {
     uint32_t MaxQueueCapacity;
     uint32_t MaxSysExBytes;
     uint32_t WorkerItemBudget;
+    uint32_t LimitSysExBytes;
 };
 
 struct CAMDLegacyDriverOutputBackend;

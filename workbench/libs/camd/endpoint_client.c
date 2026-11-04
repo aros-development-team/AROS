@@ -6,6 +6,7 @@
  * foreign handle is refused instead of followed.
  */
 
+#include <devices/timer.h>
 #include <proto/exec.h>
 
 #include <string.h>
@@ -481,4 +482,44 @@ LONG ReadEndpointReceiverUMP(const struct CAMDHandleV1 *session,
     }
     ReleaseSemaphore(&base->EndpointClientSemaphore);
     return result;
+}
+
+/* A two-millisecond sleep for a caller that polls, from any task and also
+ * under Forbid(): it waits on timer.device with a port of its own. */
+struct timerequest *OpenEndpointPause(void)
+{
+    struct MsgPort *port = CreateMsgPort();
+    struct timerequest *pause = NULL;
+
+    if (port != NULL)
+        pause = (struct timerequest *)CreateIORequest(port, sizeof(*pause));
+    if (pause != NULL &&
+        OpenDevice((CONST_STRPTR)"timer.device", UNIT_MICROHZ,
+                   (struct IORequest *)pause, 0) == 0)
+        return pause;
+    if (pause != NULL)
+        DeleteIORequest((struct IORequest *)pause);
+    if (port != NULL)
+        DeleteMsgPort(port);
+    return NULL;
+}
+
+void EndpointPause(struct timerequest *pause)
+{
+    pause->tr_node.io_Command = TR_ADDREQUEST;
+    pause->tr_time.tv_secs = 0;
+    pause->tr_time.tv_micro = 2000;
+    DoIO((struct IORequest *)pause);
+}
+
+void CloseEndpointPause(struct timerequest *pause)
+{
+    struct MsgPort *port;
+
+    if (pause == NULL)
+        return;
+    port = pause->tr_node.io_Message.mn_ReplyPort;
+    CloseDevice((struct IORequest *)pause);
+    DeleteIORequest((struct IORequest *)pause);
+    DeleteMsgPort(port);
 }

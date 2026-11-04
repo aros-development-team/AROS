@@ -23,6 +23,7 @@ struct queue_lock {
 struct queue_slot {
     uint32_t kind;
     uint32_t batch_count;
+    uint32_t key;   /* ordered enqueues: the time the item is for */
     struct CAMDMIDI1EventV1 midi1;
     struct CAMDUMPEventV1 ump;
     struct CAMDNativeQueueSysExInfoV1 sysex;
@@ -47,6 +48,7 @@ struct CAMDNativeEventQueue {
     uint64_t next_checkout;
     uint64_t active_checkout;
     uint32_t checked_out_records;
+    int ordered;    /* an ordered enqueue has happened */
 };
 
 static void *queue_alloc(size_t size, int clear)
@@ -157,9 +159,11 @@ enum CAMDNativeQueueResult camd_native_queue_create(
 #endif
     slot_bytes = (size_t)config->Capacity * sizeof(struct queue_slot);
     if (config->DataFormat == CAMD_PROVIDER_FORMAT_MIDI1) {
-        if (config->MaxSysExBytes > SIZE_MAX / config->Capacity)
+        /* One region per slot and one to swap through. */
+        if (config->Capacity == UINT32_MAX ||
+            config->MaxSysExBytes > SIZE_MAX / ((size_t)config->Capacity + 1))
             return CAMD_NATIVE_QUEUE_RANGE;
-        sysex_bytes = (size_t)config->Capacity * config->MaxSysExBytes;
+        sysex_bytes = ((size_t)config->Capacity + 1) * config->MaxSysExBytes;
     }
     queue = queue_alloc(sizeof(*queue), 1);
     if (!queue)
@@ -219,6 +223,121 @@ static void commit_records(struct CAMDNativeEventQueue *queue,
     counter_add(&queue->accepted, record_count);
     if (queue->used > queue->high_water)
         queue->high_water = queue->used;
+}
+
+/* Copies one slot, with its SysEx bytes, to another place. */
+static void move_slot(struct CAMDNativeEventQueue *queue, uint32_t from,
+                      uint32_t to)
+{
+    queue->slots[to] = queue->slots[from];
+    if (queue->slots[from].kind == CAMD_NATIVE_QUEUE_ITEM_MIDI1_SYSEX)
+        memcpy(sysex_slot(queue, to), sysex_slot(queue, from),
+               queue->slots[from].sysex.ByteCount);
+}
+
+/* Lock held and room reserved. Puts one single-record item behind every
+ * item whose key is not later than its own, so equal keys keep their order.
+ * Keys compare by signed difference, so they may wrap. An item the consumer
+ * has checked out is never moved, nor anything put in front of it. */
+static void insert_ordered(struct CAMDNativeEventQueue *queue,
+                           const struct queue_slot *item,
+                           const uint8_t *sysex_bytes)
+{
+    uint32_t place = queue->used, index;
+
+    while (place > queue->checked_out_records) {
+        uint32_t before = queue_index(queue, queue->head, place - 1);
+
+        if (queue->slots[before].batch_count != 1 ||
+            (int32_t)(queue->slots[before].key - item->key) <= 0)
+            break;
+        move_slot(queue, before, queue_index(queue, queue->head, place));
+        --place;
+    }
+    index = queue_index(queue, queue->head, place);
+    queue->slots[index] = *item;
+    if (sysex_bytes)
+        memcpy(sysex_slot(queue, index), sysex_bytes, item->sysex.ByteCount);
+    queue->ordered = 1;
+    commit_records(queue, 1);
+}
+
+static uint32_t event_key(uint32_t flags, uint32_t time_low, uint32_t now)
+{
+    return (flags & CAMD_EVENT_TIME_VALID) != 0 ? time_low : now;
+}
+
+enum CAMDNativeQueueResult camd_native_queue_enqueue_midi1_ordered(
+    struct CAMDNativeEventQueue *queue,
+    const struct CAMDMIDI1EventV1 *events, size_t event_count, uint32_t now)
+{
+    enum CAMDNativeQueueResult result;
+    struct queue_slot item;
+    size_t i;
+
+    if (!queue)
+        return CAMD_NATIVE_QUEUE_INVALID;
+    if (queue->format != CAMD_PROVIDER_FORMAT_MIDI1)
+        return CAMD_NATIVE_QUEUE_WRONG_FORMAT;
+    if (camd_provider_validate_midi1(events, event_count) != CAMD_PROVIDER_OK)
+        return CAMD_NATIVE_QUEUE_INVALID;
+    if (event_count > UINT32_MAX)
+        return CAMD_NATIVE_QUEUE_RANGE;
+    queue_lock_acquire(&queue->lock);
+    result = reserve_records(queue, event_count);
+    if (result == CAMD_NATIVE_QUEUE_OK) {
+        for (i = 0; i < event_count; ++i) {
+            memset(&item, 0, sizeof(item));
+            item.kind = CAMD_NATIVE_QUEUE_ITEM_MIDI1;
+            item.batch_count = 1;
+            item.key = event_key(events[i].Flags, events[i].TimeLow, now);
+            item.midi1 = events[i];
+            insert_ordered(queue, &item, NULL);
+        }
+    }
+    queue_lock_release(&queue->lock);
+    return result;
+}
+
+enum CAMDNativeQueueResult camd_native_queue_enqueue_midi1_sysex_ordered(
+    struct CAMDNativeEventQueue *queue, const uint8_t *bytes,
+    size_t byte_count, uint32_t time_high, uint32_t time_low,
+    uint32_t clock_domain, uint32_t flags, uint32_t now)
+{
+    enum CAMDNativeQueueResult result;
+    struct queue_slot item;
+
+    if (!queue)
+        return CAMD_NATIVE_QUEUE_INVALID;
+    if (queue->format != CAMD_PROVIDER_FORMAT_MIDI1)
+        return CAMD_NATIVE_QUEUE_WRONG_FORMAT;
+    if (camd_provider_validate_midi1_sysex(bytes, byte_count) !=
+        CAMD_PROVIDER_OK)
+        return CAMD_NATIVE_QUEUE_INVALID;
+    queue_lock_acquire(&queue->lock);
+    if (byte_count > queue->max_sysex_bytes || byte_count > UINT32_MAX) {
+        counter_add(&queue->oversize_rejections, 1);
+        result = CAMD_NATIVE_QUEUE_TOO_LARGE;
+        goto out;
+    }
+    result = reserve_records(queue, 1);
+    if (result != CAMD_NATIVE_QUEUE_OK)
+        goto out;
+    memset(&item, 0, sizeof(item));
+    item.kind = CAMD_NATIVE_QUEUE_ITEM_MIDI1_SYSEX;
+    item.batch_count = 1;
+    item.key = event_key(flags, time_low, now);
+    item.sysex.Size = sizeof(item.sysex);
+    item.sysex.Version = 1;
+    item.sysex.ByteCount = (uint32_t)byte_count;
+    item.sysex.Flags = flags;
+    item.sysex.TimeHigh = time_high;
+    item.sysex.TimeLow = time_low;
+    item.sysex.ClockDomain = clock_domain;
+    insert_ordered(queue, &item, bytes);
+out:
+    queue_lock_release(&queue->lock);
+    return result;
 }
 
 static enum CAMDNativeQueueResult enqueue_midi1(
@@ -641,6 +760,35 @@ out:
     return result;
 }
 
+/* Lock held, nothing checked out. */
+static void settle_head(struct CAMDNativeEventQueue *queue)
+{
+    uint32_t place = 0;
+
+    while (place + 1 < queue->used) {
+        uint32_t here = queue_index(queue, queue->head, place);
+        uint32_t next = queue_index(queue, queue->head, place + 1);
+        struct queue_slot moved;
+
+        if (queue->slots[here].batch_count != 1 ||
+            queue->slots[next].batch_count != 1 ||
+            (int32_t)(queue->slots[here].key - queue->slots[next].key) <= 0)
+            break;
+        /* Swap through the spare slot region past the last one. */
+        moved = queue->slots[here];
+        if (moved.kind == CAMD_NATIVE_QUEUE_ITEM_MIDI1_SYSEX)
+            memcpy(sysex_slot(queue, queue->capacity),
+                   sysex_slot(queue, here), moved.sysex.ByteCount);
+        move_slot(queue, next, here);
+        queue->slots[next] = moved;
+        if (moved.kind == CAMD_NATIVE_QUEUE_ITEM_MIDI1_SYSEX)
+            memcpy(sysex_slot(queue, next),
+                   sysex_slot(queue, queue->capacity),
+                   moved.sysex.ByteCount);
+        ++place;
+    }
+}
+
 static enum CAMDNativeQueueResult finish_checkout(
     struct CAMDNativeEventQueue *queue,
     const struct CAMDNativeQueueCheckoutV1 *checkout, int commit)
@@ -665,6 +813,10 @@ static enum CAMDNativeQueueResult finish_checkout(
     }
     queue->active_checkout = 0;
     queue->checked_out_records = 0;
+    /* An item that came in while the head was checked out could not go in
+     * front of it. Now that the head is back, let it sink to its place. */
+    if (!commit && queue->ordered)
+        settle_head(queue);
 out:
     queue_lock_release(&queue->lock);
     return result;

@@ -21,7 +21,9 @@ struct CAMDAppEndpointConfigV1 {
     uint32_t Version;
     uint32_t Directions;        /* as clients see them */
     uint32_t MaxQueueCapacity;  /* per output session */
-    uint32_t MaxSysExBytes;
+    uint32_t MaxSysExBytes;     /* a session's limit unless it asks */
+    uint32_t LimitSysExBytes;   /* the most a session may ask for and the
+                                   publisher may emit; 0 for MaxSysExBytes */
     uint32_t MaxSessions;
     /* What every session carries. Both 0 for native MIDI 1.0; with UMP
      * MaxSysExBytes is not used and there is no legacy side. */
@@ -79,6 +81,10 @@ enum CAMDProviderResult camd_app_endpoint_inject_sysex(
 enum CAMDProviderResult camd_app_endpoint_set_projection(
     struct CAMDAppEndpoint *endpoint,
     const struct CAMDProviderReceiveSinkV1 *sink);
+
+/* Saturating counts since the endpoint was created. */
+enum CAMDProviderResult camd_app_endpoint_stats(
+    struct CAMDAppEndpoint *endpoint, struct CAMDPublishedStatsV1 *stats);
 
 /* The publisher is gone: Notify is not called any more. */
 void camd_app_endpoint_detach(struct CAMDAppEndpoint *endpoint);

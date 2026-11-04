@@ -216,6 +216,7 @@ enum CAMDProviderResult camd_legacy_driver_output_backend_create(
     backend_config.PortCount = config->PortCount;
     backend_config.MaxQueueCapacity = config->MaxQueueCapacity;
     backend_config.MaxSysExBytes = config->MaxSysExBytes;
+    backend_config.LimitSysExBytes = config->LimitSysExBytes;
     backend_config.WorkerItemBudget = config->WorkerItemBudget;
     result = camd_legacy_output_backend_create(&backend_config,
                                                 &binding->backend);

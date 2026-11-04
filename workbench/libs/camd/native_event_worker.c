@@ -317,7 +317,11 @@ enum CAMDNativeWorkerResult camd_native_worker_create(
     worker->process = CreateNewProcTags(
         NP_Entry, (IPTR)worker_entry,
         NP_Name, (IPTR)"CAMD native event worker",
-        NP_Priority, 0,
+        /* Above ordinary programs, so that scheduled output is on time, and
+         * one below a port's receiver process (36): a driver that hands
+         * bytes back in the sender's task, as the loopback driver does,
+         * relies on the receiver getting in between them. */
+        NP_Priority, 35,
         NP_UserData, (IPTR)worker,
         TAG_END);
     if (!worker->process)

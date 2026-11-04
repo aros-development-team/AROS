@@ -47,7 +47,8 @@
 		the port receives from then on; read it with
 		GetEndpointMidi(). The task that opens an input session is
 		the one signalled, with the request's Signal.
-		Close every session before closing camd.library.
+		A session a task still has open when it closes camd.library
+		for the last time is closed then.
 
     EXAMPLE
 
@@ -92,6 +93,7 @@
 	open.DataFormat=request->DataFormat;
 	open.Protocol=request->Protocol;
 	open.QueueCapacity=request->QueueCapacity;
+	open.MaxSysExBytes=request->MaxSysExBytes;
 	result=camd_registry_session_open(CB(CamdBase)->EndpointRegistry,&open,
 		&handle);
 	if(result!=CAMD_REGISTRY_OK) return result;
@@ -123,6 +125,7 @@
 		info->Size=sizeof(full);
 	}
 	*session=handle;
+	OwnEndpointObject(ENDPOINT_OWNED_SESSION,session,CamdBase);
 
 	return CAMD_REGISTRY_OK;
 

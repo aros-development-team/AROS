@@ -50,7 +50,10 @@
 {
     AROS_LIBFUNC_INIT
 
-	if(endpoint!=NULL) WithdrawAppEndpoint(endpoint,CamdBase);
+	if(endpoint!=NULL){
+		DisownEndpointObject(ENDPOINT_OWNED_PUBLISHER,endpoint,CamdBase);
+		WithdrawAppEndpoint(endpoint,CamdBase);
+	}
 
     AROS_LIBFUNC_EXIT
 }

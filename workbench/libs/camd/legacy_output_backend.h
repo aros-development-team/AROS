@@ -54,8 +54,10 @@ struct CAMDLegacyOutputBackendConfigV1 {
     const struct CAMDLegacyOutputPortV1 *Ports;
     size_t PortCount;
     uint32_t MaxQueueCapacity;
-    uint32_t MaxSysExBytes;
+    uint32_t MaxSysExBytes;     /* a session's limit unless it asks */
     uint32_t WorkerItemBudget;
+    uint32_t LimitSysExBytes;   /* the most a session may ask for; 0 for
+                                   MaxSysExBytes */
 };
 
 struct CAMDLegacyOutputBackend;

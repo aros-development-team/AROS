@@ -56,6 +56,11 @@ struct CAMDGenerationV1 {
     ULONG low;
 };
 
+/* CAMDEndpointInfoV1.Flags: the directions sessions open in, with the
+ * values of CAMD_DIRECTION_INPUT and CAMD_DIRECTION_OUTPUT. */
+#define CAMD_ENDPOINT_FLAG_INPUT         CAMD_DIRECTION_INPUT
+#define CAMD_ENDPOINT_FLAG_OUTPUT        CAMD_DIRECTION_OUTPUT
+
 enum CAMDEndpointStateV1 {
     CAMD_ENDPOINT_REGISTERED = 1,
     CAMD_ENDPOINT_DISCOVERING,
@@ -130,9 +135,11 @@ enum CAMDRegistryResult {
  *
  * Sent to a driver's port with CAMD_EVENT_TIME_VALID, the message is handed
  * to the port when CamdTime() reaches TimeLow, or at once when that time has
- * passed; without the flag it is handed over at once. A session's messages
- * keep their order, so one that waits holds back those queued after it.
- * A published endpoint gets the time as the client gave it.
+ * passed; without the flag it is handed over at once. A session hands its
+ * messages over by time: one that waits does not hold back an earlier or
+ * untimed one sent after it, and messages for the same time keep the order
+ * they were sent in. A published endpoint gets the time as the client gave
+ * it.
  *
  * A received message has the flag set and the time it reached the session,
  * unless its sender already gave it a time. */
@@ -191,7 +198,13 @@ struct CAMDFunctionBlockInfoV1 {
 
 /* QueueCapacity is the least number of native records to reserve. Signal is
  * for an input session: the number of the signal the opening task gets when
- * something arrives, or CAMD_SIGNAL_NONE. */
+ * something arrives, or CAMD_SIGNAL_NONE. MaxSysExBytes is the longest
+ * MIDI 1.0 SysEx message the session should carry, up to
+ * CAMD_SYSEX_BYTES_LIMIT, or 0 for CAMD_SYSEX_BYTES_DEFAULT; longer messages
+ * are refused when sent and dropped when received. */
+#define CAMD_SYSEX_BYTES_DEFAULT         4096u
+#define CAMD_SYSEX_BYTES_LIMIT           65536u
+
 struct CAMDSessionRequestV1 {
     ULONG Size;
     ULONG Version;
@@ -202,6 +215,7 @@ struct CAMDSessionRequestV1 {
     ULONG Conversion;
     ULONG QueueCapacity;
     ULONG Signal;
+    ULONG MaxSysExBytes;
 };
 
 /* Records since a session opened; each count stops at 0xffffffff. Sent and
@@ -216,6 +230,34 @@ struct CAMDSessionStatsV1 {
     ULONG Received;
     ULONG Dropped;
 };
+
+/* Records since an endpoint was published; each count stops at 0xffffffff.
+ * Taken: what the publisher took. Emitted: what it sent. ClientsLost: sent
+ * records a receiving client's full queue lost, counted once per client.
+ * LegacyLost: what legacy links sent while the publisher did not read. */
+struct CAMDPublishedStatsV1 {
+    ULONG Size;
+    ULONG Version;
+    ULONG Taken;
+    ULONG Emitted;
+    ULONG ClientsLost;
+    ULONG LegacyLost;
+};
+
+/* CAMDPublishRequestV1.Flags. TEMPORARY: give the endpoint an ID for this
+ * time only instead of the one stored for its Name; nothing is stored. An
+ * endpoint also gets a temporary ID, with CAMD_IDENTITY_TEMPORARY as its
+ * IdentityKind, when the store of IDs is full. */
+#define CAMD_PUBLISH_TEMPORARY           (1u << 0)
+
+/* CAMDEndpointInfoV1.IdentityKind: how far the ID can be relied on to come
+ * back. The values below CAMD_IDENTITY_TEMPORARY are stored. */
+#define CAMD_IDENTITY_STORED_BY_NAME     2u  /* a published endpoint's Name */
+#define CAMD_IDENTITY_STORED_BY_PATH     3u  /* a driver's file and port */
+#define CAMD_IDENTITY_TEMPORARY          4u  /* for this run only */
+
+/* DrainEndpointSession(): wait as long as it takes. */
+#define CAMD_WAIT_FOREVER                0xffffffffu
 
 /* A program's own endpoint. Directions are as its clients see them:
  * CAMD_DIRECTION_OUTPUT when they can send to it, CAMD_DIRECTION_INPUT when
@@ -234,6 +276,7 @@ struct CAMDPublishRequestV1 {
     char ProductInstance[CAMD_ENDPOINT_PRODUCT_BYTES];
     ULONG DataFormat;   /* CAMD_DATA_FORMAT_MIDI1 or CAMD_DATA_FORMAT_UMP */
     ULONG Protocol;     /* CAMD_PROTOCOL_MIDI1, or _MIDI2 with UMP */
+    ULONG Flags;        /* CAMD_PUBLISH_ bits */
 };
 
 /* What an open session got. MaxSysExBytes is zero for UMP. */
@@ -260,10 +303,11 @@ CAMD_RECORD_SIZE(CAMDMIDI1EventV1, 32);
 CAMD_RECORD_SIZE(CAMDUMPEventV1, 44);
 CAMD_RECORD_SIZE(CAMDGroupInfoV1, 100);
 CAMD_RECORD_SIZE(CAMDFunctionBlockInfoV1, 104);
-CAMD_RECORD_SIZE(CAMDSessionRequestV1, 48);
+CAMD_RECORD_SIZE(CAMDSessionRequestV1, 52);
 CAMD_RECORD_SIZE(CAMDSessionInfoV1, 28);
 CAMD_RECORD_SIZE(CAMDSessionStatsV1, 24);
-CAMD_RECORD_SIZE(CAMDPublishRequestV1, 280);
+CAMD_RECORD_SIZE(CAMDPublishRequestV1, 284);
+CAMD_RECORD_SIZE(CAMDPublishedStatsV1, 24);
 #undef CAMD_RECORD_SIZE
 
 #endif

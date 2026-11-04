@@ -35,7 +35,23 @@ static int ExpungeCamd(struct CamdBase *CamdBase)
     return TRUE;
 }
 
+/* Counted per task, so that a task's endpoint objects can go with its last
+   close of the library. */
+static int OpenCamd(struct CamdBase *CamdBase)
+{
+    TaskOpenedCamd(CamdBase);
+    return TRUE;
+}
+
+static int CloseCamd(struct CamdBase *CamdBase)
+{
+    TaskClosedCamd(CamdBase);
+    return TRUE;
+}
+
 ADD2INITLIB(InitCamd, 0);
+ADD2OPENLIB(OpenCamd, 0);
+ADD2CLOSELIB(CloseCamd, 0);
 ADD2EXPUNGELIB(ExpungeCamd, 0);
 
 #else

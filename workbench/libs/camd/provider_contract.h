@@ -55,6 +55,9 @@ struct CAMDProviderOpenRequestV1 {
     uint32_t DataFormat;
     uint32_t Protocol;
     uint32_t QueueCapacity;
+    /* The longest MIDI 1.0 SysEx message the session should carry; 0 for the
+     * provider's usual limit. More than the provider allows is refused. */
+    uint32_t MaxSysExBytes;
 };
 
 /* Sessions are unidirectional. QueueCapacity is a minimum reservation; a

@@ -41,8 +41,9 @@
     NOTES
 		New in V43 and provisional: the endpoint functions can still
 		change. The same name gets the same ID
-		again, also after a reboot. Withdraw every endpoint before
-		closing camd.library.
+		again, also after a reboot. An endpoint a task still
+		publishes when it closes camd.library for the last time is
+		withdrawn then.
 
     EXAMPLE
 
@@ -57,13 +58,20 @@
 {
     AROS_LIBFUNC_INIT
 
+	LONG result;
+
 	if(endpoint!=NULL){
 		endpoint->slot=0;
 		endpoint->generation=0;
 	}
 	if(request==NULL || endpoint==NULL) return CAMD_REGISTRY_INVALID;
 
-	return PublishAppEndpoint(request,endpoint,id,CamdBase);
+	result=PublishAppEndpoint(request,endpoint,id,CamdBase);
+	if(result==CAMD_REGISTRY_OK){
+		OwnEndpointObject(ENDPOINT_OWNED_PUBLISHER,endpoint,CamdBase);
+	}
+
+	return result;
 
     AROS_LIBFUNC_EXIT
 }

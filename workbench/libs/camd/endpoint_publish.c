@@ -70,8 +70,8 @@ static struct EndpointPublisher *find_publisher(
 
 /* The same Name always gives the same key, so the same stored ID. */
 static LONG resolve_name(struct CAMDIdentityMap *map, uint32_t namespace_id,
-                         const char *name, struct CAMDEndpointIDV1 *id,
-                         uint32_t *kind)
+                         const char *name, BOOL temporary,
+                         struct CAMDEndpointIDV1 *id, uint32_t *kind)
 {
     struct CAMDIdentityKeyV1 key;
     struct CAMDIdentityResolutionV1 resolution;
@@ -89,11 +89,17 @@ static LONG resolve_name(struct CAMDIdentityMap *map, uint32_t namespace_id,
     memset(&resolution, 0, sizeof(resolution));
     resolution.Size = sizeof(resolution);
     resolution.Version = 1;
-    if (camd_identity_map_resolve(map, &key, &resolution) !=
-        CAMD_IDENTITY_MAP_OK)
+    if (!temporary &&
+        camd_identity_map_resolve(map, &key, &resolution) ==
+            CAMD_IDENTITY_MAP_OK) {
+        *id = resolution.ID;
+        *kind = resolution.EffectiveConfidence;
+        return CAMD_REGISTRY_OK;
+    }
+    /* Asked for, or the store is full: an ID for this time only. */
+    if (camd_identity_map_temporary(map, id) != CAMD_IDENTITY_MAP_OK)
         return CAMD_REGISTRY_NOMEM;
-    *id = resolution.ID;
-    *kind = resolution.EffectiveConfidence;
+    *kind = CAMD_IDENTITY_EPHEMERAL;
     return CAMD_REGISTRY_OK;
 }
 
@@ -141,6 +147,27 @@ static BOOL terminated(const char *text, size_t size)
     return memchr(text, '\0', size) != NULL;
 }
 
+/* A name CAMD can show and, for a MIDI 1.0 endpoint, build cluster names
+ * from: printable, and short enough that "<name>.out.0" fits where cluster
+ * names are reported whole. */
+static BOOL usable_name(const char *name, ULONG format)
+{
+    size_t length = 0;
+
+    if (!terminated(name, CAMD_ENDPOINT_NAME_BYTES))
+        return FALSE;
+    for (; name[length] != '\0'; ++length) {
+        UBYTE byte = (UBYTE)name[length];
+
+        if (byte < 0x20 || byte == 0x7f)
+            return FALSE;
+    }
+    if (length == 0 || name[0] == ' ' || name[length - 1] == ' ')
+        return FALSE;
+    return format != CAMD_DATA_FORMAT_MIDI1 ||
+           length <= CWE_NAMESIZE - sizeof(".out.0");
+}
+
 /* The calling task is the one that gets the signal. */
 LONG PublishAppEndpoint(const struct CAMDPublishRequestV1 *request,
                         struct CAMDHandleV1 *handle,
@@ -154,15 +181,16 @@ LONG PublishAppEndpoint(const struct CAMDPublishRequestV1 *request,
     struct CAMDLegacyPortDescriptorV1 port;
     struct CAMDLegacyDriverDescriptorV1 descriptor;
     uint32_t provider_kind, endpoint_kind;
+    BOOL temporary;
     LONG result;
     ULONG i;
 
     if (request->Size != sizeof(*request) || request->Version != 1 ||
         request->Directions == 0 ||
         (request->Directions & ~CAMD_PROVIDER_DIRECTION_ALL) != 0 ||
+        (request->Flags & ~CAMD_PUBLISH_TEMPORARY) != 0 ||
+        !usable_name(request->Name, request->DataFormat) ||
         (request->Signal != CAMD_SIGNAL_NONE && request->Signal > 31) ||
-        !terminated(request->Name, sizeof(request->Name)) ||
-        request->Name[0] == '\0' ||
         !terminated(request->ProductInstance,
                     sizeof(request->ProductInstance)) ||
         camd_provider_native_path(request->DataFormat, request->Protocol) ==
@@ -200,10 +228,15 @@ LONG PublishAppEndpoint(const struct CAMDPublishRequestV1 *request,
     memset(&descriptor, 0, sizeof(descriptor));
     descriptor.Size = sizeof(descriptor);
     descriptor.Version = 1;
+    temporary = (request->Flags & CAMD_PUBLISH_TEMPORARY) != 0;
     result = resolve_name(map, NAMESPACE_APP_PROVIDER, request->Name,
-                          &descriptor.ProviderID, &provider_kind);
+                          temporary, &descriptor.ProviderID, &provider_kind);
+    /* Both stored or both temporary: an endpoint whose provider's ID did
+     * not fit in the store does not take a place there either. */
     if (result == CAMD_REGISTRY_OK)
         result = resolve_name(map, NAMESPACE_APP_ENDPOINT, request->Name,
+                              temporary ||
+                                  provider_kind == CAMD_IDENTITY_EPHEMERAL,
                               &port.EndpointID, &endpoint_kind);
     if (result != CAMD_REGISTRY_OK)
         goto out;
@@ -214,6 +247,7 @@ LONG PublishAppEndpoint(const struct CAMDPublishRequestV1 *request,
     config.Directions = request->Directions;
     config.MaxQueueCapacity = ENDPOINT_OUTPUT_QUEUE;
     config.MaxSysExBytes = ENDPOINT_OUTPUT_SYSEX;
+    config.LimitSysExBytes = ENDPOINT_SYSEX_LIMIT;
     config.MaxSessions = ENDPOINT_OUTPUT_SESSIONS;
     config.DataFormat = request->DataFormat;
     config.Protocol = request->Protocol;
@@ -449,6 +483,25 @@ LONG SetAppEndpointTopology(const struct CAMDHandleV1 *handle,
     if (publisher != NULL)
         result = camd_legacy_driver_adapter_set_topology(
             publisher->adapter, 0, groups, group_count, blocks, block_count);
+    ReleaseSemaphore(&base->EndpointClientSemaphore);
+    return result;
+}
+
+LONG GetAppEndpointStats(const struct CAMDHandleV1 *handle,
+                         struct CAMDPublishedStatsV1 *stats,
+                         struct CamdBase *CamdBase)
+{
+    struct CamdBase_intern *base = CB(CamdBase);
+    struct EndpointPublisher *publisher;
+    LONG result = CAMD_REGISTRY_STALE;
+
+    ObtainSemaphoreShared(&base->EndpointClientSemaphore);
+    publisher = find_publisher(handle, CamdBase);
+    if (publisher != NULL)
+        result = camd_app_endpoint_stats(publisher->app, stats) ==
+                         CAMD_PROVIDER_OK
+                     ? CAMD_REGISTRY_OK
+                     : CAMD_REGISTRY_INVALID;
     ReleaseSemaphore(&base->EndpointClientSemaphore);
     return result;
 }

@@ -133,19 +133,16 @@ BOOL ProjectMidiToEndpoint(struct DriverData *driverdata, ULONG msg)
         event.Bytes[2] = 0;
     if (event.Length < 2)
         event.Bytes[1] = 0;
-    if (camd_app_endpoint_inject_midi1(driverdata->Projection, &event) !=
-        CAMD_PROVIDER_OK)
-        ++driverdata->EndpointInputDropped;
+    /* The endpoint counts what it had no room for. */
+    camd_app_endpoint_inject_midi1(driverdata->Projection, &event);
     return TRUE;
 }
 
 /* A complete SysEx message from SysEx2Driver(). */
 BOOL ProjectSysExToEndpoint(struct DriverData *driverdata, UBYTE *buffer)
 {
-    if (camd_app_endpoint_inject_sysex(driverdata->Projection, buffer,
-                                       (size_t)GetSysXLen(buffer)) !=
-        CAMD_PROVIDER_OK)
-        ++driverdata->EndpointInputDropped;
+    camd_app_endpoint_inject_sysex(driverdata->Projection, buffer,
+                                   (size_t)GetSysXLen(buffer));
     driverdata->issending_sx = 0;
     return TRUE;
 }

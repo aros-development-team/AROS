@@ -62,6 +62,13 @@ void PublishDriverEndpoints(struct Drivers *driver, char *path,
     resolved = camd_legacy_identity_set_resolve(map, path, count,
                                                 &provider_id, ids, &kind);
     if (resolved != CAMD_IDENTITY_MAP_OK) {
+        /* The store is full or cannot take them: IDs for this run. */
+        resolved = camd_identity_map_temporary(map, &provider_id);
+        for (i = 0; i < count && resolved == CAMD_IDENTITY_MAP_OK; ++i)
+            resolved = camd_identity_map_temporary(map, &ids[i]);
+        kind = CAMD_IDENTITY_EPHEMERAL;
+    }
+    if (resolved != CAMD_IDENTITY_MAP_OK) {
         D(bug("camd.library: %s has no endpoint identity (%ld)\n",
               driver->mididevicedata->Name, (long)resolved));
         goto done;
@@ -91,6 +98,7 @@ void PublishDriverEndpoints(struct Drivers *driver, char *path,
     config.PortCount = count;
     config.MaxQueueCapacity = ENDPOINT_OUTPUT_QUEUE;
     config.MaxSysExBytes = ENDPOINT_OUTPUT_SYSEX;
+    config.LimitSysExBytes = ENDPOINT_SYSEX_LIMIT;
     config.WorkerItemBudget = ENDPOINT_OUTPUT_BUDGET;
     if (camd_legacy_driver_output_backend_create(&config, &backend) !=
         CAMD_PROVIDER_OK)
@@ -122,12 +130,8 @@ void PublishDriverEndpoints(struct Drivers *driver, char *path,
         goto done;
     }
 
-    /* From here on the receiver processes deliver to input sessions. A port
-     * whose SysEx buffer could not be had still publishes; it then delivers
-     * no SysEx. */
+    /* From here on the receiver processes deliver to input sessions. */
     for (i = 0; i < count; ++i) {
-        driver->driverdatas[i]->EndpointSysEx =
-            AllocVec(ENDPOINT_OUTPUT_SYSEX, MEMF_ANY);
         driver->driverdatas[i]->EndpointSysExLength = 0;
         driver->driverdatas[i]->EndpointBackend = backend;
     }
@@ -212,6 +216,10 @@ void DeliverDriverEndpointSysEx(struct DriverData *driverdata, UBYTE data)
 {
     uint32_t dropped = 0;
 
+    /* The buffer comes with a port's first SysEx message: most ports never
+     * receive one. Without memory this port delivers no SysEx. */
+    if (driverdata->EndpointSysEx == NULL && data == 0xf0)
+        driverdata->EndpointSysEx = AllocVec(ENDPOINT_SYSEX_LIMIT, MEMF_ANY);
     if (driverdata->EndpointSysEx == NULL)
         return;
     if (data == 0xf0) {
@@ -224,7 +232,7 @@ void DeliverDriverEndpointSysEx(struct DriverData *driverdata, UBYTE data)
         driverdata->EndpointSysExLength = 0;
         return;
     }
-    if (driverdata->EndpointSysExLength < ENDPOINT_OUTPUT_SYSEX)
+    if (driverdata->EndpointSysExLength < ENDPOINT_SYSEX_LIMIT)
         driverdata->EndpointSysEx[driverdata->EndpointSysExLength++] = data;
     else
         driverdata->EndpointSysExOverflow = TRUE;

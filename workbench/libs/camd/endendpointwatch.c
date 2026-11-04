@@ -48,7 +48,10 @@
 {
     AROS_LIBFUNC_INIT
 
-	if(watch!=NULL) EndEndpointWatcher(watch,CamdBase);
+	if(watch!=NULL){
+		DisownEndpointObject(ENDPOINT_OWNED_WATCH,watch,CamdBase);
+		EndEndpointWatcher(watch,CamdBase);
+	}
 
     AROS_LIBFUNC_EXIT
 }

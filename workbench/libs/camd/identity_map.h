@@ -1,6 +1,8 @@
 #ifndef CAMD_IDENTITY_MAP_H
 #define CAMD_IDENTITY_MAP_H
 
+/* Private persistent mapping from provider evidence keys to opaque CAMD IDs. */
+
 #include "endpoint_registry.h"
 
 #include <stddef.h>
@@ -33,6 +35,7 @@ struct CAMDIdentityKeyV1 {
     uint8_t Bytes[CAMD_IDENTITY_KEY_BYTES];
 };
 
+/* This is the versioned persistence record. Reserved must be zero. */
 struct CAMDIdentityRecordV1 {
     uint32_t Size;
     uint32_t Version;
@@ -54,6 +57,9 @@ struct CAMDIdentityResolutionV1 {
 
 typedef int (*CAMDIdentityGenerateFnV1)(
     void *context, struct CAMDEndpointIDV1 *id);
+/* Atomically replace persistent storage with this complete record set. The
+ * callback must not reenter the map. A zero return leaves every new mapping
+ * usable only as an in-memory ephemeral identity. */
 typedef int (*CAMDIdentityCommitFnV1)(
     void *context, const struct CAMDIdentityRecordV1 *records,
     size_t record_count);
@@ -75,6 +81,12 @@ enum CAMDIdentityMapResult camd_identity_map_create(
     const struct CAMDIdentityMapConfigV1 *config,
     struct CAMDIdentityMap **map);
 void camd_identity_map_destroy(struct CAMDIdentityMap *map);
+
+/* An ID that belongs to no key and is not stored: for one run only. It
+ * differs from every ID the map holds. */
+enum CAMDIdentityMapResult camd_identity_map_temporary(
+    struct CAMDIdentityMap *map, struct CAMDEndpointIDV1 *id);
+
 enum CAMDIdentityMapResult camd_identity_map_resolve(
     struct CAMDIdentityMap *map, const struct CAMDIdentityKeyV1 *key,
     struct CAMDIdentityResolutionV1 *resolution);

@@ -12,11 +12,12 @@
 
     NAME */
 
-	AROS_LH2(LONG, ObtainEndpointSnapshot,
+	AROS_LH3(LONG, ObtainEndpointSnapshot,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct CAMDHandleV1 *, snapshot, A0),
 	AROS_LHA(ULONG *, count, A1),
+	AROS_LHA(struct CAMDGenerationV1 *, generation, A2),
 
 /*  LOCATION */
 	struct CamdBase *, CamdBase, 46, Camd)
@@ -27,14 +28,17 @@
     INPUTS
 		snapshot - filled in with the snapshot's handle.
 		count - filled in with the number of endpoints, or NULL.
+		generation - filled in with the generation of the endpoints
+		    the snapshot shows, or NULL. A watch event with a later
+		    generation tells of a change the snapshot does not have.
 
     RESULT
 		CAMD_REGISTRY_OK, or another CAMD_REGISTRY_ value.
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
-		change. Release every snapshot before
-		closing camd.library.
+		change. A snapshot a task still holds when
+		it closes camd.library for the last time is released then.
 
     EXAMPLE
 
@@ -66,6 +70,8 @@
 		return result;
 	}
 	if(count!=NULL) *count=(ULONG)camd_snapshot_endpoint_count(taken);
+	if(generation!=NULL) *generation=camd_snapshot_generation(taken);
+	OwnEndpointObject(ENDPOINT_OWNED_SNAPSHOT,snapshot,CamdBase);
 
 	return CAMD_REGISTRY_OK;
 

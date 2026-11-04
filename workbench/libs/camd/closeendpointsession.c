@@ -49,11 +49,17 @@
 {
     AROS_LIBFUNC_INIT
 
+	LONG result;
+
 	if(session==NULL) return CAMD_REGISTRY_INVALID;
 
 	StopEndpointReceiver(session,CamdBase);
+	result=camd_registry_session_close(CB(CamdBase)->EndpointRegistry,*session);
+	if(result==CAMD_REGISTRY_OK){
+		DisownEndpointObject(ENDPOINT_OWNED_SESSION,session,CamdBase);
+	}
 
-	return camd_registry_session_close(CB(CamdBase)->EndpointRegistry,*session);
+	return result;
 
     AROS_LIBFUNC_EXIT
 }

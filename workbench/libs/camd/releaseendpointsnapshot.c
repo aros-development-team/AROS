@@ -47,7 +47,10 @@
 {
     AROS_LIBFUNC_INIT
 
-	if(snapshot!=NULL) RemoveEndpointSnapshot(snapshot,CamdBase);
+	if(snapshot!=NULL){
+		DisownEndpointObject(ENDPOINT_OWNED_SNAPSHOT,snapshot,CamdBase);
+		RemoveEndpointSnapshot(snapshot,CamdBase);
+	}
 
     AROS_LIBFUNC_EXIT
 }
