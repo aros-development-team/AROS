@@ -2,7 +2,8 @@
 #define CAMD_LEGACY_DRIVER_ADAPTER_H
 
 /*
- * Private adapter from fixed-port CAMD MIDI 1.0 drivers to the endpoint core.
+ * Private adapter from fixed-port MIDI 1.0 backends to the endpoint core:
+ * CAMD's legacy drivers and the endpoints programs publish.
  *
  * Existing CAMD 41/42 cluster traffic does not pass through this object.  The
  * adapter publishes the same physical ports for endpoint clients and forwards
@@ -34,6 +35,9 @@ struct CAMDLegacyDriverDescriptorV1 {
     const struct CAMDProviderOpsV1 *BackendOps;
     const struct CAMDLegacyPortDescriptorV1 *Ports;
     size_t PortCount;
+    /* NULL for "camd-legacy"; at most CAMD_ENDPOINT_TRANSPORT_BYTES - 1
+     * characters, copied. */
+    const char *Transport;
 };
 
 struct CAMDLegacyDriverAdapter;
@@ -46,6 +50,11 @@ enum CAMDRegistryResult camd_legacy_driver_adapter_create(
     struct CAMDEndpointRegistry *registry,
     const struct CAMDLegacyDriverDescriptorV1 *descriptor,
     struct CAMDLegacyDriverAdapter **adapter);
+
+/* CAMD_ENDPOINT_AVAILABLE or CAMD_ENDPOINT_OFFLINE for one published port. */
+enum CAMDRegistryResult camd_legacy_driver_adapter_set_state(
+    struct CAMDLegacyDriverAdapter *adapter, size_t port_index,
+    uint32_t state);
 
 enum CAMDRegistryResult camd_legacy_driver_adapter_begin_retire(
     struct CAMDLegacyDriverAdapter *adapter);

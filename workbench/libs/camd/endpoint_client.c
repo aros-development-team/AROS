@@ -80,6 +80,8 @@ BOOL EndpointClientsRemain(struct CamdBase *CamdBase)
         if (base->EndpointWatchers[i].watch != NULL)
             return TRUE;
     }
+    if (AppEndpointsRemain(CamdBase))
+        return TRUE;
     return camd_registry_session_count(base->EndpointRegistry) != 0;
 }
 

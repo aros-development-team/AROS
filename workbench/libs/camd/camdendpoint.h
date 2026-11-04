@@ -148,6 +148,21 @@ struct CAMDSessionRequestV1 {
     ULONG Signal;
 };
 
+/* A program's own endpoint. Directions are as its clients see them:
+ * CAMD_DIRECTION_OUTPUT when they can send to it, CAMD_DIRECTION_INPUT when
+ * they can receive from it. Name identifies it: the same Name gets the same
+ * stable ID again, and only one endpoint of a Name is published at a time.
+ * Signal is the number of the signal the publishing task gets when a client
+ * sent something, or CAMD_SIGNAL_NONE. */
+struct CAMDPublishRequestV1 {
+    ULONG Size;
+    ULONG Version;
+    ULONG Directions;
+    ULONG Signal;
+    char Name[CAMD_ENDPOINT_NAME_BYTES];
+    char ProductInstance[CAMD_ENDPOINT_PRODUCT_BYTES];
+};
+
 /* What an open session got. MaxSysExBytes is zero for UMP. */
 struct CAMDSessionInfoV1 {
     ULONG Size;

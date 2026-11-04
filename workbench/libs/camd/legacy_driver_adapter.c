@@ -196,7 +196,9 @@ static int validate_descriptor(
         descriptor->Version != 1 || id_is_zero(&descriptor->ProviderID) ||
         !descriptor->BackendOps || !descriptor->Ports ||
         descriptor->PortCount == 0 ||
-        descriptor->PortCount > SIZE_MAX / sizeof(struct legacy_port))
+        descriptor->PortCount > SIZE_MAX / sizeof(struct legacy_port) ||
+        (descriptor->Transport &&
+         strlen(descriptor->Transport) >= CAMD_ENDPOINT_TRANSPORT_BYTES))
         return 0;
     ops = descriptor->BackendOps;
     if (ops->Size != sizeof(*ops) || ops->Version != 1 || !ops->Open ||
@@ -302,6 +304,7 @@ enum CAMDRegistryResult camd_legacy_driver_adapter_create(
     adapter->backend_ops = *descriptor->BackendOps;
     adapter->descriptor.BackendOps = &adapter->backend_ops;
     adapter->descriptor.Ports = NULL;
+    adapter->descriptor.Transport = NULL;
     adapter->port_count = descriptor->PortCount;
     for (i = 0; i < adapter->port_count; ++i) {
         adapter->ports[i].descriptor = descriptor->Ports[i];
@@ -340,7 +343,9 @@ enum CAMDRegistryResult camd_legacy_driver_adapter_create(
         memcpy(endpoint.ProductInstance,
                adapter->ports[i].descriptor.ProductInstance,
                sizeof(endpoint.ProductInstance));
-        memcpy(endpoint.Transport, "camd-legacy", sizeof("camd-legacy"));
+        strncpy(endpoint.Transport,
+                descriptor->Transport ? descriptor->Transport : "camd-legacy",
+                sizeof(endpoint.Transport) - 1);
         result = camd_registry_publish(registry, adapter->provider, &endpoint,
                                        NULL, 0, NULL, 0,
                                        &adapter->ports[i].owner_lease);
@@ -362,6 +367,20 @@ fail:
     adapter_free(adapter->ports);
     adapter_free(adapter);
     return result;
+}
+
+enum CAMDRegistryResult camd_legacy_driver_adapter_set_state(
+    struct CAMDLegacyDriverAdapter *adapter, size_t port_index,
+    uint32_t state)
+{
+    if (!adapter || port_index >= adapter->port_count ||
+        (state != CAMD_ENDPOINT_AVAILABLE && state != CAMD_ENDPOINT_OFFLINE))
+        return CAMD_REGISTRY_INVALID;
+    if (adapter->retiring || !adapter->ports[port_index].owner_lease_live)
+        return CAMD_REGISTRY_RETIRED;
+    return camd_registry_set_state(adapter->registry,
+                                   adapter->ports[port_index].owner_lease,
+                                   state);
 }
 
 enum CAMDRegistryResult camd_legacy_driver_adapter_begin_retire(

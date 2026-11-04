@@ -11,7 +11,8 @@ FILES :=    drivers clusters init camdwait mididistr midifromdriver \
 	    native_worker_fanout legacy_output_backend \
 	    legacy_driver_output_backend identity_map identity_file \
 	    identity_store_recovery identity_store_aros legacy_identity_key \
-	    legacy_identity_set driver_endpoints endpoint_client
+	    legacy_identity_set driver_endpoints endpoint_client \
+	    app_endpoint endpoint_publish
 
 FUNCS := \
     lockcamd \
@@ -66,7 +67,13 @@ FUNCS := \
     getendpointmidi \
     startendpointwatch \
     getendpointwatchevent \
-    endendpointwatch
+    endendpointwatch \
+    publishendpoint \
+    withdrawendpoint \
+    setpublishedendpointstate \
+    putpublishedmidi \
+    putpublishedsysex \
+    getpublishedmidi
 
 #MM workbench-libs-camd-includes : \
 #MM     kernel-exec-includes \

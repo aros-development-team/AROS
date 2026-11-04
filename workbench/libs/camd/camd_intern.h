@@ -87,6 +87,7 @@
 #define ENDPOINT_SNAPSHOTS 32
 #define ENDPOINT_RECEIVERS 64
 #define ENDPOINT_WATCHES 16
+#define ENDPOINT_PUBLISHERS 32
 #define ENDPOINT_WATCH_EVENTS 32
 #define NUMBEROFSYSEXSTORECEIVE 1025
 
@@ -264,6 +265,20 @@ struct CAMDEndpointSnapshot;
 struct CAMDNativeEventQueue;
 struct CAMDEndpointWatch;
 
+struct CAMDAppEndpoint;
+struct CAMDLegacyDriverAdapter;
+
+/* A PublishEndpoint() handle. The slot is free while app is NULL; withdrawn
+   marks one whose publisher has gone and that waits for its clients. */
+struct EndpointPublisher{
+	struct CAMDAppEndpoint *app;
+	struct CAMDLegacyDriverAdapter *adapter;
+	ULONG generation;
+	BOOL withdrawn;
+	struct Task *task;
+	ULONG signal;			// signal number, or CAMD_SIGNAL_NONE
+};
+
 /* A StartEndpointWatch() handle. */
 struct EndpointWatcher{
 	struct CAMDEndpointWatch *watch;	// NULL while the slot is free
@@ -328,6 +343,9 @@ struct CamdBase_intern{
 
     /* Endpoint watches, also under EndpointClientSemaphore. */
     struct EndpointWatcher EndpointWatchers[ENDPOINT_WATCHES];
+
+    /* Published endpoints, also under EndpointClientSemaphore. */
+    struct EndpointPublisher EndpointPublishers[ENDPOINT_PUBLISHERS];
 
 
 };
@@ -517,6 +535,24 @@ LONG ReadEndpointWatcher(const struct CAMDHandleV1 *handle,
 	struct CAMDEndpointWatchEventV1 *event,struct CamdBase *CamdBase);
 void EndEndpointWatcher(const struct CAMDHandleV1 *handle,
 	struct CamdBase *CamdBase);
+struct CAMDPublishRequestV1;
+struct CAMDEndpointIDV1;
+LONG PublishAppEndpoint(const struct CAMDPublishRequestV1 *request,
+	struct CAMDHandleV1 *handle,struct CAMDEndpointIDV1 *id,
+	struct CamdBase *CamdBase);
+void WithdrawAppEndpoint(const struct CAMDHandleV1 *handle,
+	struct CamdBase *CamdBase);
+LONG SetAppEndpointState(const struct CAMDHandleV1 *handle,ULONG state,
+	struct CamdBase *CamdBase);
+LONG PutAppEndpointMidi(const struct CAMDHandleV1 *handle,
+	const struct CAMDMIDI1EventV1 *events,ULONG count,
+	struct CamdBase *CamdBase);
+LONG PutAppEndpointSysEx(const struct CAMDHandleV1 *handle,
+	const UBYTE *bytes,ULONG length,struct CamdBase *CamdBase);
+LONG GetAppEndpointMidi(const struct CAMDHandleV1 *handle,
+	struct CAMDMIDI1EventV1 *event,UBYTE *sysex,ULONG size,ULONG *length,
+	struct CamdBase *CamdBase);
+BOOL AppEndpointsRemain(struct CamdBase *CamdBase);
 void DeliverDriverEndpointMidi(struct DriverData *driverdata,
 	struct MyMidiMessage2 *msg2);
 void DeliverDriverEndpointSysEx(struct DriverData *driverdata,UBYTE data);
