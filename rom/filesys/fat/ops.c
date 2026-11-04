@@ -106,6 +106,9 @@ static LONG MoveToSubdir(struct DirHandle *dh, UBYTE **pname,
             return err;
         }
 
+        if (!(de.e.entry.attr & ATTR_DIRECTORY))
+            return ERROR_OBJECT_WRONG_TYPE;
+
         InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(&de), dh, TRUE, glob);
     }
 
