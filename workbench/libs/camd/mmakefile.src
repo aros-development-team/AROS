@@ -75,7 +75,14 @@ FUNCS := \
     putpublishedsysex \
     getpublishedmidi \
     cancelendpointsession \
-    getendpointsessionstats
+    getendpointsessionstats \
+    putendpointump \
+    getendpointump \
+    putpublishedump \
+    getpublishedump \
+    setpublishedendpointtopology \
+    getendpointgroup \
+    getendpointfunctionblock
 
 #MM workbench-libs-camd-includes : \
 #MM     kernel-exec-includes \

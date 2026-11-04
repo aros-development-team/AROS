@@ -13,29 +13,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define CAMD_TOPOLOGY_NAME_BYTES        64u
 #define CAMD_ENDPOINT_WATCH_MAX_EVENTS  32u
-
-struct CAMDGroupInfoV1 {
-    uint32_t Size;
-    uint32_t Version;
-    struct CAMDEndpointIDV1 EndpointID;
-    uint32_t Group;
-    uint32_t Flags;
-    uint32_t Protocol;
-    char Name[CAMD_TOPOLOGY_NAME_BYTES];
-};
-
-struct CAMDFunctionBlockInfoV1 {
-    uint32_t Size;
-    uint32_t Version;
-    struct CAMDEndpointIDV1 EndpointID;
-    uint32_t Number;
-    uint32_t Flags;
-    uint32_t FirstGroup;
-    uint32_t GroupCount;
-    char Name[CAMD_TOPOLOGY_NAME_BYTES];
-};
 
 struct CAMDEndpointRegistry;
 struct CAMDEndpointSnapshot;

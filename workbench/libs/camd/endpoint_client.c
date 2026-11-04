@@ -167,6 +167,30 @@ static enum CAMDProviderResult receiver_sysex(
     return queue_to_provider(result);
 }
 
+static enum CAMDProviderResult receiver_ump(
+    void *context, const struct CAMDUMPEventV1 *events, size_t event_count)
+{
+    struct EndpointReceiver *receiver = context;
+    struct CAMDUMPEventV1 event;
+    enum CAMDNativeQueueResult result = CAMD_NATIVE_QUEUE_OK, queued;
+    size_t i;
+
+    for (i = 0; i < event_count; ++i) {
+        event = events[i];
+        if ((event.Flags & CAMD_EVENT_TIME_VALID) == 0) {
+            event.Flags |= CAMD_EVENT_TIME_VALID;
+            event.TimeHigh = 0;
+            event.TimeLow = CamdClock();
+            event.ClockDomain = CAMD_CLOCK_CAMD;
+        }
+        queued = camd_native_queue_enqueue_ump(receiver->queue, &event, 1);
+        if (queued != CAMD_NATIVE_QUEUE_OK)
+            result = queued;
+    }
+    receiver_arrived(receiver, result);
+    return queue_to_provider(result);
+}
+
 /* EndpointClientSemaphore must be held. */
 static struct EndpointReceiver *find_receiver(
     const struct CAMDHandleV1 *session, struct CamdBase *CamdBase)
@@ -187,8 +211,8 @@ static struct EndpointReceiver *find_receiver(
 
 /* Gives an open input session its queue and starts it receiving. The
  * calling task is the one that gets the signal. */
-LONG StartEndpointReceiver(const struct CAMDHandleV1 *session, ULONG capacity,
-                           ULONG maxsysex, ULONG signal,
+LONG StartEndpointReceiver(const struct CAMDHandleV1 *session, ULONG format,
+                           ULONG capacity, ULONG maxsysex, ULONG signal,
                            struct CamdBase *CamdBase)
 {
     struct CamdBase_intern *base = CB(CamdBase);
@@ -215,7 +239,7 @@ LONG StartEndpointReceiver(const struct CAMDHandleV1 *session, ULONG capacity,
     memset(&config, 0, sizeof(config));
     config.Size = sizeof(config);
     config.Version = 1;
-    config.DataFormat = CAMD_PROVIDER_FORMAT_MIDI1;
+    config.DataFormat = format;
     config.Capacity = capacity;
     config.MaxSysExBytes = maxsysex;
     if (camd_native_queue_create(&config, &receiver->queue) !=
@@ -225,6 +249,7 @@ LONG StartEndpointReceiver(const struct CAMDHandleV1 *session, ULONG capacity,
     }
     receiver->task = FindTask(NULL);
     receiver->signal = signal;
+    receiver->format = format;
     receiver->lost = FALSE;
     receiver->session = *session;
 
@@ -234,6 +259,7 @@ LONG StartEndpointReceiver(const struct CAMDHandleV1 *session, ULONG capacity,
     sink.Context = receiver;
     sink.SubmitMIDI1 = receiver_midi1;
     sink.SubmitMIDI1SysEx = receiver_sysex;
+    sink.SubmitUMP = receiver_ump;
     result = camd_registry_session_start_receive(base->EndpointRegistry,
                                                  *session, &sink);
     if (result != CAMD_REGISTRY_OK) {
@@ -282,6 +308,8 @@ LONG ReadEndpointReceiver(const struct CAMDHandleV1 *session,
     receiver = find_receiver(session, CamdBase);
     if (receiver == NULL) {
         result = CAMD_REGISTRY_STALE;
+    } else if (receiver->format != CAMD_DATA_FORMAT_MIDI1) {
+        result = CAMD_REGISTRY_UNSUPPORTED;
     } else if (receiver->lost) {
         receiver->lost = FALSE;
         result = CAMD_REGISTRY_QUEUE_FULL;
@@ -424,4 +452,33 @@ void EndEndpointWatcher(const struct CAMDHandleV1 *handle,
         watcher->watch = NULL;
     }
     ReleaseSemaphore(&base->EndpointClientSemaphore);
+}
+
+LONG ReadEndpointReceiverUMP(const struct CAMDHandleV1 *session,
+                             struct CAMDUMPEventV1 *event,
+                             struct CamdBase *CamdBase)
+{
+    struct CamdBase_intern *base = CB(CamdBase);
+    struct EndpointReceiver *receiver;
+    size_t count = 0;
+    LONG result;
+
+    ObtainSemaphoreShared(&base->EndpointClientSemaphore);
+    receiver = find_receiver(session, CamdBase);
+    if (receiver == NULL) {
+        result = CAMD_REGISTRY_STALE;
+    } else if (receiver->format != CAMD_DATA_FORMAT_UMP) {
+        result = CAMD_REGISTRY_UNSUPPORTED;
+    } else if (receiver->lost) {
+        receiver->lost = FALSE;
+        result = CAMD_REGISTRY_QUEUE_FULL;
+    } else {
+        result = camd_native_queue_dequeue_ump(receiver->queue, event, 1,
+                                               &count) ==
+                         CAMD_NATIVE_QUEUE_OK && count == 1
+                     ? CAMD_REGISTRY_OK
+                     : CAMD_REGISTRY_EMPTY;
+    }
+    ReleaseSemaphore(&base->EndpointClientSemaphore);
+    return result;
 }

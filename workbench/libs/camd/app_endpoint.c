@@ -27,6 +27,7 @@ struct app_session {
     struct app_session *next;
     uint32_t direction;
     struct CAMDNativeEventQueue *queue;         /* output sessions */
+    uint32_t capacity;                          /* of queue, in records */
     struct CAMDProviderReceiveSinkV1 sink;      /* input sessions */
     int receiving;
 };
@@ -133,6 +134,14 @@ static void notify(struct CAMDAppEndpoint *endpoint)
         call(context);
 }
 
+/* A UMP queue holds no MIDI 1.0 SysEx. */
+static uint32_t sysex_bytes(const struct CAMDAppEndpoint *endpoint)
+{
+    return endpoint->config.DataFormat == CAMD_PROVIDER_FORMAT_UMP
+               ? 0
+               : endpoint->config.MaxSysExBytes;
+}
+
 static enum CAMDProviderResult app_open(
     void *context, const struct CAMDProviderOpenRequestV1 *request,
     struct CAMDProviderOpenResultV1 *result)
@@ -146,8 +155,8 @@ static enum CAMDProviderResult app_open(
     if ((request->Direction != CAMD_PROVIDER_DIRECTION_INPUT &&
          request->Direction != CAMD_PROVIDER_DIRECTION_OUTPUT) ||
         (request->Direction & ~endpoint->config.Directions) != 0 ||
-        request->DataFormat != CAMD_PROVIDER_FORMAT_MIDI1 ||
-        request->Protocol != CAMD_PROVIDER_PROTOCOL_MIDI1 ||
+        request->DataFormat != endpoint->config.DataFormat ||
+        request->Protocol != endpoint->config.Protocol ||
         request->QueueCapacity == 0 ||
         request->QueueCapacity > endpoint->config.MaxQueueCapacity)
         return CAMD_PROVIDER_UNSUPPORTED;
@@ -160,14 +169,15 @@ static enum CAMDProviderResult app_open(
         memset(&queue_config, 0, sizeof(queue_config));
         queue_config.Size = sizeof(queue_config);
         queue_config.Version = 1;
-        queue_config.DataFormat = CAMD_PROVIDER_FORMAT_MIDI1;
+        queue_config.DataFormat = endpoint->config.DataFormat;
         queue_config.Capacity = request->QueueCapacity;
-        queue_config.MaxSysExBytes = endpoint->config.MaxSysExBytes;
+        queue_config.MaxSysExBytes = sysex_bytes(endpoint);
         if (camd_native_queue_create(&queue_config, &session->queue) !=
             CAMD_NATIVE_QUEUE_OK) {
             app_free(session);
             return CAMD_PROVIDER_CALLBACK_FAILED;
         }
+        session->capacity = request->QueueCapacity;
     }
     lock_acquire(&endpoint->lock);
     if (endpoint->retiring ||
@@ -185,7 +195,7 @@ static enum CAMDProviderResult app_open(
     lock_release(&endpoint->lock);
     result->SessionContext = session;
     result->EffectiveQueueCapacity = request->QueueCapacity;
-    result->MaxSysExBytes = endpoint->config.MaxSysExBytes;
+    result->MaxSysExBytes = sysex_bytes(endpoint);
     return CAMD_PROVIDER_OK;
 }
 
@@ -262,6 +272,40 @@ static enum CAMDProviderResult app_send_sysex(
     return CAMD_PROVIDER_OK;
 }
 
+static enum CAMDProviderResult app_send_ump(
+    void *context, void *session_context,
+    const struct CAMDUMPEventV1 *events, size_t event_count)
+{
+    struct CAMDAppEndpoint *endpoint = context;
+    struct app_session *session = output_session(endpoint, session_context);
+    enum CAMDNativeQueueResult result;
+    size_t i;
+
+    if (!session)
+        return CAMD_PROVIDER_INVALID;
+    /* One item per message, so that the publisher takes them one by one;
+     * the room for all of them is checked first. */
+    {
+        struct CAMDNativeQueueStatsV1 stats;
+
+        memset(&stats, 0, sizeof(stats));
+        stats.Size = sizeof(stats);
+        stats.Version = 1;
+        if (camd_native_queue_stats(session->queue, &stats) !=
+            CAMD_NATIVE_QUEUE_OK)
+            return CAMD_PROVIDER_STATE;
+        if (event_count > session->capacity - stats.PendingRecords)
+            return CAMD_PROVIDER_QUEUE_FULL;
+    }
+    for (i = 0; i < event_count; ++i) {
+        result = camd_native_queue_enqueue_ump(session->queue, &events[i], 1);
+        if (result != CAMD_NATIVE_QUEUE_OK)
+            return queue_result(result);
+    }
+    notify(endpoint);
+    return CAMD_PROVIDER_OK;
+}
+
 /* QUEUE_FULL while the publisher has not taken everything yet. */
 static enum CAMDProviderResult app_drain(void *context, void *session_context)
 {
@@ -304,7 +348,9 @@ static enum CAMDProviderResult app_start_receive(
     if (!endpoint || !session || session->endpoint != endpoint ||
         session->direction != CAMD_PROVIDER_DIRECTION_INPUT || !sink ||
         sink->Size != sizeof(*sink) || sink->Version != 1 ||
-        !sink->SubmitMIDI1 || !sink->SubmitMIDI1SysEx)
+        (endpoint->config.DataFormat == CAMD_PROVIDER_FORMAT_UMP
+             ? !sink->SubmitUMP
+             : !sink->SubmitMIDI1 || !sink->SubmitMIDI1SysEx))
         return CAMD_PROVIDER_INVALID;
     lock_acquire(&endpoint->lock);
     if (session->receiving) {
@@ -371,7 +417,10 @@ enum CAMDProviderResult camd_app_endpoint_create(
         config->Directions == 0 ||
         (config->Directions & ~CAMD_PROVIDER_DIRECTION_ALL) != 0 ||
         config->MaxQueueCapacity == 0 || config->MaxSysExBytes < 2 ||
-        config->MaxSessions == 0)
+        config->MaxSessions == 0 ||
+        ((config->DataFormat || config->Protocol) &&
+         camd_provider_native_path(config->DataFormat, config->Protocol) ==
+             0))
         return CAMD_PROVIDER_INVALID;
     endpoint = app_alloc(sizeof(*endpoint));
     if (!endpoint)
@@ -381,7 +430,12 @@ enum CAMDProviderResult camd_app_endpoint_create(
         return CAMD_PROVIDER_CALLBACK_FAILED;
     }
     endpoint->config = *config;
-    if ((config->Directions & CAMD_PROVIDER_DIRECTION_OUTPUT) != 0) {
+    if (endpoint->config.DataFormat == 0) {
+        endpoint->config.DataFormat = CAMD_PROVIDER_FORMAT_MIDI1;
+        endpoint->config.Protocol = CAMD_PROVIDER_PROTOCOL_MIDI1;
+    }
+    if (endpoint->config.DataFormat == CAMD_PROVIDER_FORMAT_MIDI1 &&
+        (config->Directions & CAMD_PROVIDER_DIRECTION_OUTPUT) != 0) {
         struct CAMDNativeQueueConfigV1 queue_config;
 
         memset(&queue_config, 0, sizeof(queue_config));
@@ -410,6 +464,7 @@ enum CAMDProviderResult camd_app_endpoint_create(
     endpoint->ops.Close = app_close;
     endpoint->ops.SendMIDI1 = app_send_midi1;
     endpoint->ops.SendMIDI1SysEx = app_send_sysex;
+    endpoint->ops.SendUMP = app_send_ump;
     endpoint->ops.StartReceive = app_start_receive;
     endpoint->ops.StopReceive = app_stop_receive;
     endpoint->ops.Drain = app_drain;
@@ -441,7 +496,8 @@ enum CAMDProviderResult camd_app_endpoint_emit_midi1(
 
     if (dropped)
         *dropped = 0;
-    if (!endpoint)
+    if (!endpoint ||
+        endpoint->config.DataFormat != CAMD_PROVIDER_FORMAT_MIDI1)
         return CAMD_PROVIDER_INVALID;
     valid = camd_provider_validate_midi1(events, event_count);
     if (valid != CAMD_PROVIDER_OK)
@@ -472,7 +528,8 @@ enum CAMDProviderResult camd_app_endpoint_emit_sysex(
 
     if (dropped)
         *dropped = 0;
-    if (!endpoint)
+    if (!endpoint ||
+        endpoint->config.DataFormat != CAMD_PROVIDER_FORMAT_MIDI1)
         return CAMD_PROVIDER_INVALID;
     valid = camd_provider_validate_midi1_sysex(bytes, byte_count);
     if (valid != CAMD_PROVIDER_OK)
@@ -532,7 +589,8 @@ enum CAMDProviderResult camd_app_endpoint_take(
     enum CAMDProviderResult result;
     size_t count = 0;
 
-    if (!endpoint || !event || !sysex_count || (!sysex && sysex_capacity))
+    if (!endpoint || !event || !sysex_count || (!sysex && sysex_capacity) ||
+        endpoint->config.DataFormat != CAMD_PROVIDER_FORMAT_MIDI1)
         return CAMD_PROVIDER_INVALID;
     *sysex_count = 0;
     lock_acquire(&endpoint->lock);
@@ -553,6 +611,58 @@ enum CAMDProviderResult camd_app_endpoint_take(
         }
     } else {
         result = queue_result(camd_native_queue_dequeue_midi1(
+            session->queue, event, 1, &count));
+        endpoint->last_taken = session;
+    }
+    lock_release(&endpoint->lock);
+    return result;
+}
+
+enum CAMDProviderResult camd_app_endpoint_emit_ump(
+    struct CAMDAppEndpoint *endpoint, const struct CAMDUMPEventV1 *events,
+    size_t event_count, uint32_t *dropped)
+{
+    struct app_session *session;
+    enum CAMDProviderResult valid;
+    uint32_t lost = 0;
+
+    if (dropped)
+        *dropped = 0;
+    if (!endpoint || endpoint->config.DataFormat != CAMD_PROVIDER_FORMAT_UMP)
+        return CAMD_PROVIDER_INVALID;
+    valid = camd_provider_validate_ump(events, event_count);
+    if (valid != CAMD_PROVIDER_OK)
+        return valid;
+    lock_acquire(&endpoint->lock);
+    for (session = endpoint->sessions; session; session = session->next) {
+        if (session->receiving &&
+            session->sink.SubmitUMP(session->sink.Context, events,
+                                    event_count) != CAMD_PROVIDER_OK)
+            ++lost;
+    }
+    lock_release(&endpoint->lock);
+    if (dropped)
+        *dropped = lost;
+    return CAMD_PROVIDER_OK;
+}
+
+enum CAMDProviderResult camd_app_endpoint_take_ump(
+    struct CAMDAppEndpoint *endpoint, struct CAMDUMPEventV1 *event)
+{
+    struct app_session *session;
+    struct CAMDNativeQueueHeadV1 head;
+    enum CAMDProviderResult result;
+    size_t count = 0;
+
+    if (!endpoint || !event ||
+        endpoint->config.DataFormat != CAMD_PROVIDER_FORMAT_UMP)
+        return CAMD_PROVIDER_INVALID;
+    lock_acquire(&endpoint->lock);
+    session = next_with_message(endpoint, &head);
+    if (!session) {
+        result = CAMD_PROVIDER_QUEUE_FULL;
+    } else {
+        result = queue_result(camd_native_queue_dequeue_ump(
             session->queue, event, 1, &count));
         endpoint->last_taken = session;
     }

@@ -38,6 +38,9 @@ struct CAMDLegacyDriverDescriptorV1 {
     /* NULL for "camd-legacy"; at most CAMD_ENDPOINT_TRANSPORT_BYTES - 1
      * characters, copied. */
     const char *Transport;
+    /* What every port carries. Both 0 for native MIDI 1.0. */
+    uint32_t DataFormat;
+    uint32_t Protocol;
 };
 
 struct CAMDLegacyDriverAdapter;
@@ -55,6 +58,13 @@ enum CAMDRegistryResult camd_legacy_driver_adapter_create(
 enum CAMDRegistryResult camd_legacy_driver_adapter_set_state(
     struct CAMDLegacyDriverAdapter *adapter, size_t port_index,
     uint32_t state);
+
+/* Replaces one port's Groups and Function Blocks as a whole. EndpointID in
+ * the records is filled in here. */
+enum CAMDRegistryResult camd_legacy_driver_adapter_set_topology(
+    struct CAMDLegacyDriverAdapter *adapter, size_t port_index,
+    struct CAMDGroupInfoV1 *groups, size_t group_count,
+    struct CAMDFunctionBlockInfoV1 *blocks, size_t block_count);
 
 enum CAMDRegistryResult camd_legacy_driver_adapter_begin_retire(
     struct CAMDLegacyDriverAdapter *adapter);

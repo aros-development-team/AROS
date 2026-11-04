@@ -164,7 +164,9 @@ LONG PublishAppEndpoint(const struct CAMDPublishRequestV1 *request,
         !terminated(request->Name, sizeof(request->Name)) ||
         request->Name[0] == '\0' ||
         !terminated(request->ProductInstance,
-                    sizeof(request->ProductInstance)))
+                    sizeof(request->ProductInstance)) ||
+        camd_provider_native_path(request->DataFormat, request->Protocol) ==
+            0)
         return CAMD_REGISTRY_INVALID;
     /* Without the identity store there is no stable ID to give. */
     map = camd_identity_store_aros_map(base->EndpointIdentity);
@@ -213,6 +215,8 @@ LONG PublishAppEndpoint(const struct CAMDPublishRequestV1 *request,
     config.MaxQueueCapacity = ENDPOINT_OUTPUT_QUEUE;
     config.MaxSysExBytes = ENDPOINT_OUTPUT_SYSEX;
     config.MaxSessions = ENDPOINT_OUTPUT_SESSIONS;
+    config.DataFormat = request->DataFormat;
+    config.Protocol = request->Protocol;
     config.Notify = publisher_notify;
     config.NotifyContext = publisher;
     if (camd_app_endpoint_create(&config, &publisher->app) !=
@@ -228,7 +232,9 @@ LONG PublishAppEndpoint(const struct CAMDPublishRequestV1 *request,
         ++publisher->generation;
 
     descriptor.IdentityKind = endpoint_kind;
-    descriptor.ProtocolCapabilities = CAMD_PROVIDER_PROTOCOL_MIDI1;
+    descriptor.ProtocolCapabilities = request->Protocol;
+    descriptor.DataFormat = request->DataFormat;
+    descriptor.Protocol = request->Protocol;
     descriptor.BackendContext = camd_app_endpoint_context(publisher->app);
     descriptor.BackendOps = camd_app_endpoint_ops(publisher->app);
     descriptor.Ports = &port;
@@ -247,11 +253,14 @@ LONG PublishAppEndpoint(const struct CAMDPublishRequestV1 *request,
         reap_publishers(CamdBase);
         goto out;
     }
-    /* Its legacy clusters. Without them old programs could not reach it,
-     * so the endpoint is not left published half-way. */
-    publisher->projection = CreateEndpointProjection(
-        publisher->app, request->Name, request->Directions, CamdBase);
-    if (publisher->projection == NULL) {
+    /* A MIDI 1.0 endpoint's legacy clusters. Without them old programs
+     * could not reach it, so it is not left published half-way. UMP has no
+     * cluster form. */
+    if (request->DataFormat == CAMD_DATA_FORMAT_MIDI1)
+        publisher->projection = CreateEndpointProjection(
+            publisher->app, request->Name, request->Directions, CamdBase);
+    if (request->DataFormat == CAMD_DATA_FORMAT_MIDI1 &&
+        publisher->projection == NULL) {
         camd_app_endpoint_detach(publisher->app);
         camd_legacy_driver_adapter_begin_retire(publisher->adapter);
         publisher->withdrawn = TRUE;
@@ -379,8 +388,67 @@ LONG GetAppEndpointMidi(const struct CAMDHandleV1 *handle,
         else if (taken == CAMD_PROVIDER_QUEUE_FULL)
             result = CAMD_REGISTRY_EMPTY;
         else
-            result = CAMD_REGISTRY_INVALID;
+            result = CAMD_REGISTRY_UNSUPPORTED;
     }
+    ReleaseSemaphore(&base->EndpointClientSemaphore);
+    return result;
+}
+
+LONG PutAppEndpointUMP(const struct CAMDHandleV1 *handle,
+                       const struct CAMDUMPEventV1 *events, ULONG count,
+                       struct CamdBase *CamdBase)
+{
+    struct CamdBase_intern *base = CB(CamdBase);
+    struct EndpointPublisher *publisher;
+    LONG result = CAMD_REGISTRY_STALE;
+
+    ObtainSemaphoreShared(&base->EndpointClientSemaphore);
+    publisher = find_publisher(handle, CamdBase);
+    if (publisher != NULL)
+        result = emit_result(camd_app_endpoint_emit_ump(
+            publisher->app, events, count, NULL));
+    ReleaseSemaphore(&base->EndpointClientSemaphore);
+    return result;
+}
+
+LONG GetAppEndpointUMP(const struct CAMDHandleV1 *handle,
+                       struct CAMDUMPEventV1 *event,
+                       struct CamdBase *CamdBase)
+{
+    struct CamdBase_intern *base = CB(CamdBase);
+    struct EndpointPublisher *publisher;
+    enum CAMDProviderResult taken;
+    LONG result = CAMD_REGISTRY_STALE;
+
+    ObtainSemaphoreShared(&base->EndpointClientSemaphore);
+    publisher = find_publisher(handle, CamdBase);
+    if (publisher != NULL) {
+        taken = camd_app_endpoint_take_ump(publisher->app, event);
+        if (taken == CAMD_PROVIDER_OK)
+            result = CAMD_REGISTRY_OK;
+        else if (taken == CAMD_PROVIDER_QUEUE_FULL)
+            result = CAMD_REGISTRY_EMPTY;
+        else
+            result = CAMD_REGISTRY_UNSUPPORTED;
+    }
+    ReleaseSemaphore(&base->EndpointClientSemaphore);
+    return result;
+}
+
+LONG SetAppEndpointTopology(const struct CAMDHandleV1 *handle,
+                            struct CAMDGroupInfoV1 *groups, ULONG group_count,
+                            struct CAMDFunctionBlockInfoV1 *blocks,
+                            ULONG block_count, struct CamdBase *CamdBase)
+{
+    struct CamdBase_intern *base = CB(CamdBase);
+    struct EndpointPublisher *publisher;
+    LONG result = CAMD_REGISTRY_STALE;
+
+    ObtainSemaphoreShared(&base->EndpointClientSemaphore);
+    publisher = find_publisher(handle, CamdBase);
+    if (publisher != NULL)
+        result = camd_legacy_driver_adapter_set_topology(
+            publisher->adapter, 0, groups, group_count, blocks, block_count);
     ReleaseSemaphore(&base->EndpointClientSemaphore);
     return result;
 }

@@ -20,6 +20,7 @@ typedef uint8_t UBYTE;
 #define CAMD_ENDPOINT_NAME_BYTES       128u
 #define CAMD_ENDPOINT_PRODUCT_BYTES    128u
 #define CAMD_ENDPOINT_TRANSPORT_BYTES   32u
+#define CAMD_TOPOLOGY_NAME_BYTES        64u
 
 /* The container a session carries, fixed when it is opened. */
 #define CAMD_DATA_FORMAT_MIDI1           (1u << 0)
@@ -149,6 +150,45 @@ struct CAMDMIDI1EventV1 {
 /* CAMDSessionRequestV1.Signal when the opener wants no signal. */
 #define CAMD_SIGNAL_NONE                 0xffffffffu
 
+/* One complete Universal MIDI Packet message of WordCount words, each in
+ * the machine's byte order. WordCount has to be what the message type in the
+ * top four bits of Words[0] calls for. Flags and the time fields are as in
+ * CAMDMIDI1EventV1. CAMD carries the words and does not interpret them. */
+struct CAMDUMPEventV1 {
+    ULONG Size;
+    ULONG Version;
+    ULONG WordCount;
+    ULONG Flags;
+    ULONG Words[4];
+    ULONG TimeHigh;
+    ULONG TimeLow;
+    ULONG ClockDomain;
+};
+
+/* The Groups a UMP endpoint uses, and its Function Blocks: FirstGroup and
+ * GroupCount name the Groups a block spans. A publisher sets them with
+ * SetPublishedEndpointTopology(); CAMD checks their ranges and nothing else. */
+struct CAMDGroupInfoV1 {
+    ULONG Size;
+    ULONG Version;
+    struct CAMDEndpointIDV1 EndpointID;
+    ULONG Group;
+    ULONG Flags;
+    ULONG Protocol;
+    char Name[CAMD_TOPOLOGY_NAME_BYTES];
+};
+
+struct CAMDFunctionBlockInfoV1 {
+    ULONG Size;
+    ULONG Version;
+    struct CAMDEndpointIDV1 EndpointID;
+    ULONG Number;
+    ULONG Flags;
+    ULONG FirstGroup;
+    ULONG GroupCount;
+    char Name[CAMD_TOPOLOGY_NAME_BYTES];
+};
+
 /* QueueCapacity is the least number of native records to reserve. Signal is
  * for an input session: the number of the signal the opening task gets when
  * something arrives, or CAMD_SIGNAL_NONE. */
@@ -179,7 +219,9 @@ struct CAMDSessionStatsV1 {
 
 /* A program's own endpoint. Directions are as its clients see them:
  * CAMD_DIRECTION_OUTPUT when they can send to it, CAMD_DIRECTION_INPUT when
- * they can receive from it. Name identifies it: the same Name gets the same
+ * they can receive from it. DataFormat and Protocol are what every session
+ * with it carries; only a MIDI 1.0 endpoint gets legacy clusters. Name
+ * identifies it: the same Name gets the same
  * stable ID again, and only one endpoint of a Name is published at a time.
  * Signal is the number of the signal the publishing task gets when a client
  * sent something, or CAMD_SIGNAL_NONE. */
@@ -190,6 +232,8 @@ struct CAMDPublishRequestV1 {
     ULONG Signal;
     char Name[CAMD_ENDPOINT_NAME_BYTES];
     char ProductInstance[CAMD_ENDPOINT_PRODUCT_BYTES];
+    ULONG DataFormat;   /* CAMD_DATA_FORMAT_MIDI1 or CAMD_DATA_FORMAT_UMP */
+    ULONG Protocol;     /* CAMD_PROTOCOL_MIDI1, or _MIDI2 with UMP */
 };
 
 /* What an open session got. MaxSysExBytes is zero for UMP. */

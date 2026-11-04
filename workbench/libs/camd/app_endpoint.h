@@ -23,6 +23,10 @@ struct CAMDAppEndpointConfigV1 {
     uint32_t MaxQueueCapacity;  /* per output session */
     uint32_t MaxSysExBytes;
     uint32_t MaxSessions;
+    /* What every session carries. Both 0 for native MIDI 1.0; with UMP
+     * MaxSysExBytes is not used and there is no legacy side. */
+    uint32_t DataFormat;
+    uint32_t Protocol;
     /* Called, outside the endpoint's lock, when a client queued something.
      * May be NULL. */
     void (*Notify)(void *context);
@@ -54,6 +58,13 @@ enum CAMDProviderResult camd_app_endpoint_emit_sysex(
 enum CAMDProviderResult camd_app_endpoint_take(
     struct CAMDAppEndpoint *endpoint, struct CAMDMIDI1EventV1 *event,
     uint8_t *sysex, size_t sysex_capacity, size_t *sysex_count);
+
+/* The same for a UMP endpoint, one complete message at a time. */
+enum CAMDProviderResult camd_app_endpoint_emit_ump(
+    struct CAMDAppEndpoint *endpoint, const struct CAMDUMPEventV1 *events,
+    size_t event_count, uint32_t *dropped);
+enum CAMDProviderResult camd_app_endpoint_take_ump(
+    struct CAMDAppEndpoint *endpoint, struct CAMDUMPEventV1 *event);
 
 /* The legacy side of the endpoint, for CAMD's cluster projection. inject
  * queues what a legacy sender sent, on a queue of MaxQueueCapacity records of

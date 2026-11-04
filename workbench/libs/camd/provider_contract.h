@@ -47,18 +47,6 @@ enum CAMDProviderResult {
     CAMD_PROVIDER_TOO_LARGE
 };
 
-/* A complete host-endian Universal MIDI Packet plus CAMD timing envelope. */
-struct CAMDUMPEventV1 {
-    uint32_t Size;
-    uint32_t Version;
-    uint32_t WordCount;
-    uint32_t Flags;
-    uint32_t Words[4];
-    uint32_t TimeHigh;
-    uint32_t TimeLow;
-    uint32_t ClockDomain;
-};
-
 struct CAMDProviderOpenRequestV1 {
     uint32_t Size;
     uint32_t Version;

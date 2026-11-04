@@ -40,8 +40,9 @@
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
-		change. Only CAMD_DATA_FORMAT_MIDI1 sessions
-		open so far. Existing clusters and links keep working on the
+		change. Nothing converts between MIDI 1.0
+		and UMP: the request has to name what the endpoint carries.
+		Existing clusters and links keep working on the
 		same port, which is opened once. An input session gets what
 		the port receives from then on; read it with
 		GetEndpointMidi(). The task that opens an input session is
@@ -100,8 +101,9 @@
 	result=camd_registry_session_info(CB(CamdBase)->EndpointRegistry,
 		handle,&got);
 	if(result==CAMD_REGISTRY_OK && got.Direction==CAMD_DIRECTION_INPUT){
-		result=StartEndpointReceiver(&handle,got.EffectiveQueueCapacity,
-			got.MaxSysExBytes,request->Signal,CamdBase);
+		result=StartEndpointReceiver(&handle,got.DataFormat,
+			got.EffectiveQueueCapacity,got.MaxSysExBytes,request->Signal,
+			CamdBase);
 	}
 	if(result!=CAMD_REGISTRY_OK){
 		camd_registry_session_close(CB(CamdBase)->EndpointRegistry,handle);

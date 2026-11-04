@@ -12,6 +12,7 @@
 
 struct legacy_port {
     struct CAMDLegacyPortDescriptorV1 descriptor;
+    struct CAMDEndpointInfoV1 info;     /* as published; State kept current */
     struct CAMDHandleV1 owner_lease;
     int owner_lease_live;
 };
@@ -87,8 +88,8 @@ static enum CAMDProviderResult adapter_open(
     port = find_port(adapter, &request->EndpointID);
     if (!port)
         return CAMD_PROVIDER_INVALID;
-    if (request->DataFormat != CAMD_PROVIDER_FORMAT_MIDI1 ||
-        request->Protocol != CAMD_PROVIDER_PROTOCOL_MIDI1 ||
+    if (request->DataFormat != adapter->descriptor.DataFormat ||
+        request->Protocol != adapter->descriptor.Protocol ||
         request->Direction == 0 ||
         (request->Direction & ~port->Directions) != 0)
         return CAMD_PROVIDER_UNSUPPORTED;
@@ -126,6 +127,16 @@ static enum CAMDProviderResult adapter_send_midi1_sysex(
     return adapter->backend_ops.SendMIDI1SysEx(
         adapter->descriptor.BackendContext, session_context, bytes,
         byte_count, time_high, time_low, clock_domain, flags);
+}
+
+static enum CAMDProviderResult adapter_send_ump(
+    void *context, void *session_context,
+    const struct CAMDUMPEventV1 *events, size_t event_count)
+{
+    struct CAMDLegacyDriverAdapter *adapter = context;
+
+    return adapter->backend_ops.SendUMP(adapter->descriptor.BackendContext,
+                                        session_context, events, event_count);
 }
 
 static enum CAMDProviderResult adapter_start_receive(
@@ -221,9 +232,17 @@ static int validate_descriptor(
                 return 0;
         }
     }
+    if (camd_provider_native_path(
+            descriptor->DataFormat ? descriptor->DataFormat
+                                   : CAMD_PROVIDER_FORMAT_MIDI1,
+            descriptor->Protocol ? descriptor->Protocol
+                                 : CAMD_PROVIDER_PROTOCOL_MIDI1) == 0)
+        return 0;
     if ((directions & CAMD_PROVIDER_DIRECTION_OUTPUT) != 0 &&
-        (!ops->SendMIDI1 || !ops->SendMIDI1SysEx || !ops->Drain ||
-         !ops->Cancel))
+        (!ops->Drain || !ops->Cancel ||
+         (descriptor->DataFormat == CAMD_PROVIDER_FORMAT_UMP
+              ? !ops->SendUMP
+              : !ops->SendMIDI1 || !ops->SendMIDI1SysEx)))
         return 0;
     if ((directions & CAMD_PROVIDER_DIRECTION_INPUT) != 0 &&
         (!ops->StartReceive || !ops->StopReceive))
@@ -241,6 +260,7 @@ static void initialize_provider_ops(struct CAMDLegacyDriverAdapter *adapter)
     ops->Close = adapter_close;
     ops->SendMIDI1 = adapter_send_midi1;
     ops->SendMIDI1SysEx = adapter_send_midi1_sysex;
+    ops->SendUMP = adapter_send_ump;
     ops->StartReceive = adapter_start_receive;
     ops->StopReceive = adapter_stop_receive;
     ops->Drain = adapter_drain;
@@ -305,6 +325,10 @@ enum CAMDRegistryResult camd_legacy_driver_adapter_create(
     adapter->descriptor.BackendOps = &adapter->backend_ops;
     adapter->descriptor.Ports = NULL;
     adapter->descriptor.Transport = NULL;
+    if (adapter->descriptor.DataFormat == 0)
+        adapter->descriptor.DataFormat = CAMD_PROVIDER_FORMAT_MIDI1;
+    if (adapter->descriptor.Protocol == 0)
+        adapter->descriptor.Protocol = CAMD_PROVIDER_PROTOCOL_MIDI1;
     adapter->port_count = descriptor->PortCount;
     for (i = 0; i < adapter->port_count; ++i) {
         adapter->ports[i].descriptor = descriptor->Ports[i];
@@ -315,7 +339,8 @@ enum CAMDRegistryResult camd_legacy_driver_adapter_create(
     provider.Size = sizeof(provider);
     provider.Version = 1;
     provider.ProviderID = descriptor->ProviderID;
-    provider.NativePaths = CAMD_PROVIDER_PATH_MIDI1;
+    provider.NativePaths = camd_provider_native_path(
+        adapter->descriptor.DataFormat, adapter->descriptor.Protocol);
     provider.Directions = directions;
     provider.Context = adapter;
     provider.Ops = &adapter->provider_ops;
@@ -335,9 +360,9 @@ enum CAMDRegistryResult camd_legacy_driver_adapter_create(
         endpoint.State = CAMD_ENDPOINT_AVAILABLE;
         endpoint.Flags = adapter->ports[i].descriptor.Flags;
         endpoint.IdentityKind = descriptor->IdentityKind;
-        endpoint.NativeDataFormats = CAMD_DATA_FORMAT_MIDI1;
+        endpoint.NativeDataFormats = adapter->descriptor.DataFormat;
         endpoint.ProtocolCapabilities = descriptor->ProtocolCapabilities;
-        endpoint.CurrentProtocol = CAMD_PROVIDER_PROTOCOL_MIDI1;
+        endpoint.CurrentProtocol = adapter->descriptor.Protocol;
         memcpy(endpoint.Name, adapter->ports[i].descriptor.Name,
                sizeof(endpoint.Name));
         memcpy(endpoint.ProductInstance,
@@ -359,6 +384,7 @@ enum CAMDRegistryResult camd_legacy_driver_adapter_create(
             goto fail;
         }
         adapter->ports[i].owner_lease_live = 1;
+        adapter->ports[i].info = endpoint;
     }
     *adapter_out = adapter;
     return CAMD_REGISTRY_OK;
@@ -373,14 +399,42 @@ enum CAMDRegistryResult camd_legacy_driver_adapter_set_state(
     struct CAMDLegacyDriverAdapter *adapter, size_t port_index,
     uint32_t state)
 {
+    enum CAMDRegistryResult result;
+
     if (!adapter || port_index >= adapter->port_count ||
         (state != CAMD_ENDPOINT_AVAILABLE && state != CAMD_ENDPOINT_OFFLINE))
         return CAMD_REGISTRY_INVALID;
     if (adapter->retiring || !adapter->ports[port_index].owner_lease_live)
         return CAMD_REGISTRY_RETIRED;
-    return camd_registry_set_state(adapter->registry,
-                                   adapter->ports[port_index].owner_lease,
-                                   state);
+    result = camd_registry_set_state(adapter->registry,
+                                     adapter->ports[port_index].owner_lease,
+                                     state);
+    if (result == CAMD_REGISTRY_OK)
+        adapter->ports[port_index].info.State = state;
+    return result;
+}
+
+enum CAMDRegistryResult camd_legacy_driver_adapter_set_topology(
+    struct CAMDLegacyDriverAdapter *adapter, size_t port_index,
+    struct CAMDGroupInfoV1 *groups, size_t group_count,
+    struct CAMDFunctionBlockInfoV1 *blocks, size_t block_count)
+{
+    struct legacy_port *port;
+    size_t i;
+
+    if (!adapter || port_index >= adapter->port_count ||
+        (group_count && !groups) || (block_count && !blocks))
+        return CAMD_REGISTRY_INVALID;
+    port = &adapter->ports[port_index];
+    if (adapter->retiring || !port->owner_lease_live)
+        return CAMD_REGISTRY_RETIRED;
+    for (i = 0; i < group_count; ++i)
+        groups[i].EndpointID = port->info.ID;
+    for (i = 0; i < block_count; ++i)
+        blocks[i].EndpointID = port->info.ID;
+    return camd_registry_replace(adapter->registry, port->owner_lease,
+                                 &port->info, groups, group_count, blocks,
+                                 block_count);
 }
 
 enum CAMDRegistryResult camd_legacy_driver_adapter_begin_retire(

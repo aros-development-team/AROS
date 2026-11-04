@@ -301,6 +301,7 @@ struct EndpointReceiver{
 	struct CAMDNativeEventQueue *queue;
 	struct Task *task;
 	ULONG signal;			// signal number, or CAMD_SIGNAL_NONE
+	ULONG format;			// CAMD_DATA_FORMAT_MIDI1 or _UMP
 	BOOL lost;			// the queue was full since the last read
 };
 struct CAMDIdentityStoreAROS;
@@ -528,8 +529,11 @@ void RemoveEndpointSnapshot(const struct CAMDHandleV1 *handle,
 void FreeEndpointSnapshots(struct CamdBase *CamdBase);
 BOOL EndpointClientsRemain(struct CamdBase *CamdBase);
 struct CAMDMIDI1EventV1;
-LONG StartEndpointReceiver(const struct CAMDHandleV1 *session,ULONG capacity,
-	ULONG maxsysex,ULONG signal,struct CamdBase *CamdBase);
+LONG StartEndpointReceiver(const struct CAMDHandleV1 *session,ULONG format,
+	ULONG capacity,ULONG maxsysex,ULONG signal,struct CamdBase *CamdBase);
+struct CAMDUMPEventV1;
+LONG ReadEndpointReceiverUMP(const struct CAMDHandleV1 *session,
+	struct CAMDUMPEventV1 *event,struct CamdBase *CamdBase);
 void StopEndpointReceiver(const struct CAMDHandleV1 *session,
 	struct CamdBase *CamdBase);
 LONG ReadEndpointReceiver(const struct CAMDHandleV1 *session,
@@ -561,6 +565,16 @@ LONG GetAppEndpointMidi(const struct CAMDHandleV1 *handle,
 	struct CAMDMIDI1EventV1 *event,UBYTE *sysex,ULONG size,ULONG *length,
 	struct CamdBase *CamdBase);
 BOOL AppEndpointsRemain(struct CamdBase *CamdBase);
+struct CAMDGroupInfoV1;
+struct CAMDFunctionBlockInfoV1;
+LONG PutAppEndpointUMP(const struct CAMDHandleV1 *handle,
+	const struct CAMDUMPEventV1 *events,ULONG count,struct CamdBase *CamdBase);
+LONG GetAppEndpointUMP(const struct CAMDHandleV1 *handle,
+	struct CAMDUMPEventV1 *event,struct CamdBase *CamdBase);
+LONG SetAppEndpointTopology(const struct CAMDHandleV1 *handle,
+	struct CAMDGroupInfoV1 *groups,ULONG group_count,
+	struct CAMDFunctionBlockInfoV1 *blocks,ULONG block_count,
+	struct CamdBase *CamdBase);
 struct EndpointProjection *CreateEndpointProjection(
 	struct CAMDAppEndpoint *app,const char *name,ULONG directions,
 	struct CamdBase *CamdBase);

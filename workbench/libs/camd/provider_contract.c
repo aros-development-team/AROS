@@ -80,8 +80,14 @@ enum CAMDProviderResult camd_provider_validate_ump(
     if (!events || event_count == 0)
         return CAMD_PROVIDER_INVALID;
     for (i = 0; i < event_count; ++i) {
+        /* Words per message type, UMP 1.1: 32-bit types 0-2 and 6-7, 64-bit
+         * 3-4 and 8-A, 96-bit B-C, 128-bit 5 and D-F. */
+        static const uint8_t words[16] = {
+            1, 1, 1, 2, 2, 4, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4
+        };
+
         if (events[i].Size != sizeof(events[i]) || events[i].Version != 1 ||
-            events[i].WordCount == 0 || events[i].WordCount > 4)
+            events[i].WordCount != words[events[i].Words[0] >> 28])
             return CAMD_PROVIDER_INVALID;
     }
     return CAMD_PROVIDER_OK;
