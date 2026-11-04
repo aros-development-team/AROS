@@ -622,34 +622,40 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
         return err;
     }
 
-    /* Check the source and dest dirs. If either is read-only, do nothing */
-    err = GetDirEntry(&sdh, 0, &dde, glob);
-    if (err != 0)
+    /* The root has no dot entry; slot zero belongs to an unrelated object. */
+    if (sdh.ioh.first_cluster != glob->sb->rootdir_cluster)
     {
-        ReleaseDirHandle(&ddh, glob);
-        ReleaseDirHandle(&sdh, glob);
-        return err;
+        err = GetDirEntry(&sdh, 0, &dde, glob);
+        if (err != 0)
+        {
+            ReleaseDirHandle(&ddh, glob);
+            ReleaseDirHandle(&sdh, glob);
+            return err;
+        }
+        if (dde.e.entry.attr & ATTR_READ_ONLY)
+        {
+            D(bug("[fat] source dir is read only, doing nothing\n"));
+            ReleaseDirHandle(&ddh, glob);
+            ReleaseDirHandle(&sdh, glob);
+            return ERROR_WRITE_PROTECTED;
+        }
     }
-    if (dde.e.entry.attr & ATTR_READ_ONLY)
+    if (ddh.ioh.first_cluster != glob->sb->rootdir_cluster)
     {
-        D(bug("[fat] source dir is read only, doing nothing\n"));
-        ReleaseDirHandle(&ddh, glob);
-        ReleaseDirHandle(&sdh, glob);
-        return ERROR_WRITE_PROTECTED;
-    }
-    err = GetDirEntry(&ddh, 0, &dde, glob);
-    if (err != 0)
-    {
-        ReleaseDirHandle(&ddh, glob);
-        ReleaseDirHandle(&sdh, glob);
-        return err;
-    }
-    if (dde.e.entry.attr & ATTR_READ_ONLY)
-    {
-        D(bug("[fat] dest dir is read only, doing nothing\n"));
-        ReleaseDirHandle(&ddh, glob);
-        ReleaseDirHandle(&sdh, glob);
-        return ERROR_WRITE_PROTECTED;
+        err = GetDirEntry(&ddh, 0, &dde, glob);
+        if (err != 0)
+        {
+            ReleaseDirHandle(&ddh, glob);
+            ReleaseDirHandle(&sdh, glob);
+            return err;
+        }
+        if (dde.e.entry.attr & ATTR_READ_ONLY)
+        {
+            D(bug("[fat] dest dir is read only, doing nothing\n"));
+            ReleaseDirHandle(&ddh, glob);
+            ReleaseDirHandle(&sdh, glob);
+            return ERROR_WRITE_PROTECTED;
+        }
     }
 
     /* Now see if the wanted name is in this dir. If it exists, and is not a capilazation change, do nothing */
