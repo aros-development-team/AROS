@@ -280,6 +280,10 @@ BOOL Midi2Driver_internal(
 	ULONG maxbuff
 ){
 
+	if(driverdata->Projection!=NULL){
+		return ProjectMidiToEndpoint(driverdata,msg);
+	}
+
 #ifdef __AMIGAOS__
 	if((driverdata->mididevicedata->Flags&1)==0){
 		return Midi2Driver_internal_oldformat(driverdata,msg,maxbuff);
@@ -319,6 +323,10 @@ BOOL Midi2Driver_internal(
 
 
 BOOL SysEx2Driver(struct DriverData *driverdata,UBYTE *buffer){
+
+	if(driverdata->Projection!=NULL){
+		return ProjectSysExToEndpoint(driverdata,buffer);
+	}
 
 #ifdef __AMIGAOS__
 	if((driverdata->mididevicedata->Flags&1)==0){

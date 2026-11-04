@@ -55,6 +55,20 @@ enum CAMDProviderResult camd_app_endpoint_take(
     struct CAMDAppEndpoint *endpoint, struct CAMDMIDI1EventV1 *event,
     uint8_t *sysex, size_t sysex_capacity, size_t *sysex_count);
 
+/* The legacy side of the endpoint, for CAMD's cluster projection. inject
+ * queues what a legacy sender sent, on a queue of MaxQueueCapacity records of
+ * its own that take serves in turn with the sessions; it needs the output
+ * direction. The projection sink gets everything emit gives to the input
+ * sessions, with the endpoint locked; NULL removes it. */
+enum CAMDProviderResult camd_app_endpoint_inject_midi1(
+    struct CAMDAppEndpoint *endpoint, const struct CAMDMIDI1EventV1 *event);
+enum CAMDProviderResult camd_app_endpoint_inject_sysex(
+    struct CAMDAppEndpoint *endpoint, const uint8_t *bytes,
+    size_t byte_count);
+enum CAMDProviderResult camd_app_endpoint_set_projection(
+    struct CAMDAppEndpoint *endpoint,
+    const struct CAMDProviderReceiveSinkV1 *sink);
+
 /* The publisher is gone: Notify is not called any more. */
 void camd_app_endpoint_detach(struct CAMDAppEndpoint *endpoint);
 

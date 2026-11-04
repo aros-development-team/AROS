@@ -203,6 +203,18 @@ LONG PublishAppEndpoint(const struct CAMDPublishRequestV1 *request,
         reap_publishers(CamdBase);
         goto out;
     }
+    /* Its legacy clusters. Without them old programs could not reach it,
+     * so the endpoint is not left published half-way. */
+    publisher->projection = CreateEndpointProjection(
+        publisher->app, request->Name, request->Directions, CamdBase);
+    if (publisher->projection == NULL) {
+        camd_app_endpoint_detach(publisher->app);
+        camd_legacy_driver_adapter_begin_retire(publisher->adapter);
+        publisher->withdrawn = TRUE;
+        reap_publishers(CamdBase);
+        result = CAMD_REGISTRY_NOMEM;
+        goto out;
+    }
     handle->slot = i;
     handle->generation = publisher->generation;
     if (id != NULL)
@@ -222,6 +234,8 @@ void WithdrawAppEndpoint(const struct CAMDHandleV1 *handle,
     ObtainSemaphore(&base->EndpointClientSemaphore);
     publisher = find_publisher(handle, CamdBase);
     if (publisher != NULL) {
+        DeleteEndpointProjection(publisher->projection);
+        publisher->projection = NULL;
         camd_app_endpoint_detach(publisher->app);
         camd_legacy_driver_adapter_begin_retire(publisher->adapter);
         publisher->withdrawn = TRUE;

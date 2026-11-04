@@ -109,6 +109,8 @@ struct MyMidiCluster{
 	ULONG recverrors;	// driver receive errors and overruns
 };
 
+struct CAMDAppEndpoint;
+
 struct DriverData{
 	struct Node outnode;								// Used for the outcluster's receiverlist
 	struct Node innode;								// Used for the incluster's senderlist
@@ -182,6 +184,10 @@ struct DriverData{
 	ULONG EndpointSysExLength;
 	BOOL EndpointSysExOverflow;
 	ULONG EndpointInputDropped;	// messages an input session had no room for
+
+	/* Set on the port that stands for a published endpoint in its legacy
+	   clusters: what is sent to it goes to that endpoint, not to a driver. */
+	struct CAMDAppEndpoint *Projection;
 
 	UWORD *re_start;
 	UWORD *re_write;
@@ -265,13 +271,15 @@ struct CAMDEndpointSnapshot;
 struct CAMDNativeEventQueue;
 struct CAMDEndpointWatch;
 
-struct CAMDAppEndpoint;
 struct CAMDLegacyDriverAdapter;
+
+struct EndpointProjection;
 
 /* A PublishEndpoint() handle. The slot is free while app is NULL; withdrawn
    marks one whose publisher has gone and that waits for its clients. */
 struct EndpointPublisher{
 	struct CAMDAppEndpoint *app;
+	struct EndpointProjection *projection;	// its legacy clusters
 	struct CAMDLegacyDriverAdapter *adapter;
 	ULONG generation;
 	BOOL withdrawn;
@@ -553,6 +561,16 @@ LONG GetAppEndpointMidi(const struct CAMDHandleV1 *handle,
 	struct CAMDMIDI1EventV1 *event,UBYTE *sysex,ULONG size,ULONG *length,
 	struct CamdBase *CamdBase);
 BOOL AppEndpointsRemain(struct CamdBase *CamdBase);
+struct EndpointProjection *CreateEndpointProjection(
+	struct CAMDAppEndpoint *app,const char *name,ULONG directions,
+	struct CamdBase *CamdBase);
+void DeleteEndpointProjection(struct EndpointProjection *projection);
+BOOL ProjectMidiToEndpoint(struct DriverData *driverdata,ULONG msg);
+BOOL ProjectSysExToEndpoint(struct DriverData *driverdata,UBYTE *buffer);
+void Receiver_SuperTreat2(struct DriverData *driverdata,
+	struct MyMidiMessage2 *msg2);
+BOOL AllocDriverData(struct Drivers *driver,
+	struct MidiDeviceData *mididevicedata,struct CamdBase *CamdBase);
 void DeliverDriverEndpointMidi(struct DriverData *driverdata,
 	struct MyMidiMessage2 *msg2);
 void DeliverDriverEndpointSysEx(struct DriverData *driverdata,UBYTE data);

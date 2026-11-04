@@ -36,6 +36,11 @@ struct CAMDAppEndpoint {
     struct CAMDAppEndpointConfigV1 config;
     struct app_session *sessions;       /* under lock */
     struct app_session *last_taken;     /* under lock; for taking in turn */
+    /* What legacy senders sent: always the last in sessions, never counted
+     * and never closed. NULL without the output direction. */
+    struct app_session *projected;
+    struct CAMDProviderReceiveSinkV1 projection;    /* under lock */
+    int projecting;
     uint32_t session_count;
     int retiring;
     struct CAMDProviderOpsV1 ops;
@@ -376,6 +381,29 @@ enum CAMDProviderResult camd_app_endpoint_create(
         return CAMD_PROVIDER_CALLBACK_FAILED;
     }
     endpoint->config = *config;
+    if ((config->Directions & CAMD_PROVIDER_DIRECTION_OUTPUT) != 0) {
+        struct CAMDNativeQueueConfigV1 queue_config;
+
+        memset(&queue_config, 0, sizeof(queue_config));
+        queue_config.Size = sizeof(queue_config);
+        queue_config.Version = 1;
+        queue_config.DataFormat = CAMD_PROVIDER_FORMAT_MIDI1;
+        queue_config.Capacity = config->MaxQueueCapacity;
+        queue_config.MaxSysExBytes = config->MaxSysExBytes;
+        endpoint->projected = app_alloc(sizeof(*endpoint->projected));
+        if (!endpoint->projected ||
+            camd_native_queue_create(&queue_config,
+                                     &endpoint->projected->queue) !=
+                CAMD_NATIVE_QUEUE_OK) {
+            app_free(endpoint->projected);
+            lock_destroy(&endpoint->lock);
+            app_free(endpoint);
+            return CAMD_PROVIDER_CALLBACK_FAILED;
+        }
+        endpoint->projected->endpoint = endpoint;
+        endpoint->projected->direction = CAMD_PROVIDER_DIRECTION_OUTPUT;
+        endpoint->sessions = endpoint->projected;
+    }
     endpoint->ops.Size = sizeof(endpoint->ops);
     endpoint->ops.Version = 1;
     endpoint->ops.Open = app_open;
@@ -425,6 +453,9 @@ enum CAMDProviderResult camd_app_endpoint_emit_midi1(
                                       event_count) != CAMD_PROVIDER_OK)
             ++lost;
     }
+    if (endpoint->projecting)
+        endpoint->projection.SubmitMIDI1(endpoint->projection.Context,
+                                         events, event_count);
     lock_release(&endpoint->lock);
     if (dropped)
         *dropped = lost;
@@ -456,6 +487,9 @@ enum CAMDProviderResult camd_app_endpoint_emit_sysex(
                 CAMD_PROVIDER_OK)
             ++lost;
     }
+    if (endpoint->projecting)
+        endpoint->projection.SubmitMIDI1SysEx(endpoint->projection.Context,
+                                              bytes, byte_count, 0, 0, 0, 0);
     lock_release(&endpoint->lock);
     if (dropped)
         *dropped = lost;
@@ -526,6 +560,53 @@ enum CAMDProviderResult camd_app_endpoint_take(
     return result;
 }
 
+enum CAMDProviderResult camd_app_endpoint_inject_midi1(
+    struct CAMDAppEndpoint *endpoint, const struct CAMDMIDI1EventV1 *event)
+{
+    enum CAMDNativeQueueResult result;
+
+    if (!endpoint || !endpoint->projected)
+        return CAMD_PROVIDER_INVALID;
+    result = camd_native_queue_enqueue_midi1_items(
+        endpoint->projected->queue, event, 1);
+    if (result != CAMD_NATIVE_QUEUE_OK)
+        return queue_result(result);
+    notify(endpoint);
+    return CAMD_PROVIDER_OK;
+}
+
+enum CAMDProviderResult camd_app_endpoint_inject_sysex(
+    struct CAMDAppEndpoint *endpoint, const uint8_t *bytes,
+    size_t byte_count)
+{
+    enum CAMDNativeQueueResult result;
+
+    if (!endpoint || !endpoint->projected)
+        return CAMD_PROVIDER_INVALID;
+    result = camd_native_queue_enqueue_midi1_sysex(
+        endpoint->projected->queue, bytes, byte_count, 0, 0, 0, 0);
+    if (result != CAMD_NATIVE_QUEUE_OK)
+        return queue_result(result);
+    notify(endpoint);
+    return CAMD_PROVIDER_OK;
+}
+
+enum CAMDProviderResult camd_app_endpoint_set_projection(
+    struct CAMDAppEndpoint *endpoint,
+    const struct CAMDProviderReceiveSinkV1 *sink)
+{
+    if (!endpoint ||
+        (sink && (sink->Size != sizeof(*sink) || sink->Version != 1 ||
+                  !sink->SubmitMIDI1 || !sink->SubmitMIDI1SysEx)))
+        return CAMD_PROVIDER_INVALID;
+    lock_acquire(&endpoint->lock);
+    if (sink)
+        endpoint->projection = *sink;
+    endpoint->projecting = sink != NULL;
+    lock_release(&endpoint->lock);
+    return CAMD_PROVIDER_OK;
+}
+
 void camd_app_endpoint_detach(struct CAMDAppEndpoint *endpoint)
 {
     if (!endpoint)
@@ -547,6 +628,10 @@ enum CAMDProviderResult camd_app_endpoint_destroy(
         return CAMD_PROVIDER_STATE;
     }
     lock_release(&endpoint->lock);
+    if (endpoint->projected) {
+        camd_native_queue_destroy(endpoint->projected->queue);
+        app_free(endpoint->projected);
+    }
     lock_destroy(&endpoint->lock);
     app_free(endpoint);
     return CAMD_PROVIDER_OK;

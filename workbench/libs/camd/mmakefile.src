@@ -12,7 +12,7 @@ FILES :=    drivers clusters init camdwait mididistr midifromdriver \
 	    legacy_driver_output_backend identity_map identity_file \
 	    identity_store_recovery identity_store_aros legacy_identity_key \
 	    legacy_identity_set driver_endpoints endpoint_client \
-	    app_endpoint endpoint_publish
+	    app_endpoint endpoint_publish endpoint_projection
 
 FUNCS := \
     lockcamd \
