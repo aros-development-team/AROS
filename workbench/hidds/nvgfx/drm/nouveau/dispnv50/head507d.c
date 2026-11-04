@@ -73,21 +73,27 @@ head507d_ovly(struct nv50_head *head, struct nv50_head_atom *asyh)
 
 	if (asyh->ovly.cpp) {
 		switch (asyh->ovly.cpp) {
-		case 4: bounds |= NVDEF(NV507D, HEAD_SET_BASE_CHANNEL_USAGE_BOUNDS, PIXEL_DEPTH, BPP_32); break;
-		case 2: bounds |= NVDEF(NV507D, HEAD_SET_BASE_CHANNEL_USAGE_BOUNDS, PIXEL_DEPTH, BPP_16); break;
+		case 4: bounds |= NVDEF(NV507D, HEAD_SET_OVERLAY_USAGE_BOUNDS, PIXEL_DEPTH, BPP_32); break;
+		case 2: bounds |= NVDEF(NV507D, HEAD_SET_OVERLAY_USAGE_BOUNDS, PIXEL_DEPTH, BPP_16); break;
 		default:
 			WARN_ON(1);
 			break;
 		}
-		bounds |= NVDEF(NV507D, HEAD_SET_BASE_CHANNEL_USAGE_BOUNDS, USABLE, TRUE);
+		bounds |= NVDEF(NV507D, HEAD_SET_OVERLAY_USAGE_BOUNDS, USABLE, TRUE);
 	} else {
-		bounds |= NVDEF(NV507D, HEAD_SET_BASE_CHANNEL_USAGE_BOUNDS, PIXEL_DEPTH, BPP_16);
+		bounds |= NVDEF(NV507D, HEAD_SET_OVERLAY_USAGE_BOUNDS, PIXEL_DEPTH, BPP_16);
 	}
 
 	if ((ret = PUSH_WAIT(push, 2)))
 		return ret;
 
-	PUSH_MTHD(push, NV507D, HEAD_SET_BASE_CHANNEL_USAGE_BOUNDS(i), bounds);
+	/*
+	 * Overlay bounds live at 0x0904. Upstream 6.18 writes the base bounds
+	 * (0x0900) here: the overlay is never made usable (its first UPDATE
+	 * fails INVALID_STATE) and disabling it marks the active base channel
+	 * unusable (the next core UPDATE fails INVALID_STATE).
+	 */
+	PUSH_MTHD(push, NV507D, HEAD_SET_OVERLAY_USAGE_BOUNDS(i), bounds);
 	return 0;
 }
 

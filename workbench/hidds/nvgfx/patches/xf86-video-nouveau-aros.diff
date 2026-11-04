@@ -1965,7 +1965,7 @@
  
 -#include "dixstruct.h"
 -#include "scrnintstr.h"
-+#include "nouveau_intern.h"
++#include "nvgfx_intern.h"
  
 -#include "fb.h"
 +/* Some overriding defines for AROS */

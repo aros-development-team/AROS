@@ -12,6 +12,7 @@
 #include <graphics/displayinfo.h>
 #include <graphics/driver.h>
 #include <proto/utility.h>
+#include <proto/dos.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -47,13 +48,17 @@
 #define GART_BUFFER_SIZE    (12 * 1024 * 1024)
 
 /* HELPER FUNCTIONS */
+
+/* Connector probing at start-up: up to 6 looks, 0.5 s apart */
+#define SELECT_ATTEMPTS     6
+#define SELECT_RETRY_TICKS  25
 static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * selectedconnector,
     drmModeCrtcPtr * selectedcrtc)
 {
     *selectedconnector = NULL;
     *selectedcrtc = NULL;
     drmModeResPtr drmmode = NULL;
-    LONG i; ULONG crtc_id;
+    LONG i, attempt; ULONG crtc_id;
 
     LOCK_ENGINE
 
@@ -66,26 +71,38 @@ static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * select
         return FALSE;
     }
     
-    /* Selecting connector */
-    for (i = 0; i < drmmode->count_connectors; i++)
+    /*
+     * Selecting connector. A sink whose hot-plug line is not up yet when
+     * we look reads as disconnected, and nothing here looks again later
+     * (no hotplug handling), so give it a few chances before giving up.
+     */
+    for (attempt = 0; attempt < SELECT_ATTEMPTS && !(*selectedconnector); attempt++)
     {
-        drmModeConnectorPtr connector = drmModeGetConnector(fd, drmmode->connectors[i]);
-
-        if (connector)
+        if (attempt)
         {
-            nvlog("[Nouveau] connector %u type %u status %u modes %d\n", connector->connector_id,
-                connector->connector_type, connector->connection, connector->count_modes);
-            if (connector->connection == DRM_MODE_CONNECTED)
-            {
-                /* Found connected connector */
-                *selectedconnector = connector;
-                break;
-            }
-            
-            drmModeFreeConnector(connector);
+            nvlog("[Nouveau] no connected connector yet, probing again (%ld)\n", (long)attempt);
+            Delay(SELECT_RETRY_TICKS);
         }
-        else
-            nvlog("[Nouveau] connector %u: no information\n", drmmode->connectors[i]);
+        for (i = 0; i < drmmode->count_connectors; i++)
+        {
+            drmModeConnectorPtr connector = drmModeGetConnector(fd, drmmode->connectors[i]);
+
+            if (connector)
+            {
+                nvlog("[Nouveau] connector %u type %u status %u modes %d\n", connector->connector_id,
+                    connector->connector_type, connector->connection, connector->count_modes);
+                if (connector->connection == DRM_MODE_CONNECTED)
+                {
+                    /* Found connected connector */
+                    *selectedconnector = connector;
+                    break;
+                }
+            
+                drmModeFreeConnector(connector);
+            }
+            else
+                nvlog("[Nouveau] connector %u: no information\n", drmmode->connectors[i]);
+        }
     }
     
     if (!(*selectedconnector))
@@ -96,11 +113,42 @@ static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * select
         return FALSE;
     }
 
-    /* Selecting first available CRTC */
-    if (drmmode->count_crtcs > 0)
+    /*
+     * Selecting the CRTC: the one already driving this connector (the
+     * head the firmware lit, inherited by the kernel) if there is one,
+     * otherwise the first one the connector's encoder can use, and only
+     * then simply the first CRTC.
+     */
+    crtc_id = 0;
+    {
+        drmModeConnectorPtr conn = *selectedconnector;
+        drmModeEncoderPtr enc = NULL;
+
+        if (conn->encoder_id)
+            enc = drmModeGetEncoder(fd, conn->encoder_id);
+        else if (conn->count_encoders > 0)
+            enc = drmModeGetEncoder(fd, conn->encoders[0]);
+
+        if (enc)
+        {
+            if (enc->crtc_id)
+                crtc_id = enc->crtc_id;
+            else
+            {
+                for (i = 0; i < drmmode->count_crtcs && i < 32; i++)
+                {
+                    if (enc->possible_crtcs & (1u << i))
+                    {
+                        crtc_id = drmmode->crtcs[i];
+                        break;
+                    }
+                }
+            }
+            drmModeFreeEncoder(enc);
+        }
+    }
+    if (!crtc_id && drmmode->count_crtcs > 0)
         crtc_id = drmmode->crtcs[0];
-    else
-        crtc_id = 0;
 
     *selectedcrtc = drmModeGetCrtc(fd, crtc_id);
     if (!(*selectedcrtc))

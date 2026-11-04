@@ -246,12 +246,12 @@ USER_CPPFLAGS := -D__KERNEL__ -DCONFIG_NOUVEAU_DEBUG=5 -DCONFIG_NOUVEAU_DEBUG_DE
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_STRICT_ALIASING) $(NOWARN_UNUSED_BUT_SET_VARIABLE) $(NOWARN_UNUSED_VARIABLE) $(NOWARN_UNUSED_FUNCTION) $(NOWARN_MISSING_BRACES)
 USER_CFLAGS := $(NOWARN_FLAGS) $(CFLAGS_GNU11) -fno-strict-aliasing
 
-NVGFX_HIDD_C_SOURCES := \
+NVGFX_DRM_C_SOURCES := \
             $(AROS_DRM_CORE_SOURCES) \
             $(AROS_DRM_NVIDIA_SOURCES)
 
 %build_linklib mmake=hidd-nvgfx-drm libname=drm_nouveau \
-    files="$(NOUVEAU_DRM_C_SOURCES)" srcdir="$(SRCDIR)/$(CURDIR)" usetree=yes
+    files="$(NVGFX_DRM_C_SOURCES)" srcdir="$(SRCDIR)/$(CURDIR)" usetree=yes
 
 #################################################
 # xf86-video-nouveau + hidd codes -> nouveau.hidd

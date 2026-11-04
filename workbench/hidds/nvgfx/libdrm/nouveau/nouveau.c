@@ -158,6 +158,22 @@ nouveau_object_notifier_new(struct nouveau_object *parent, uint64_t handle,
    return 0;
 }
 
+/* The software class under its pre-NVIF number (0x006e, 0x016e, 0x506e,
+ * 0x906e), as the 2D code asks for it: through NVIF the kernel knows only
+ * the NVIF_CLASS_SW_* numbers and refuses the old ones (-EINVAL). Upstream
+ * libdrm makes these objects with GROBJ_ALLOC, which translates them. */
+static int32_t
+nouveau_object_nvif_class(uint32_t oclass)
+{
+   switch (oclass) {
+   case 0x006e: return NVIF_CLASS_SW_NV04;
+   case 0x016e: return NVIF_CLASS_SW_NV10;
+   case 0x506e: return NVIF_CLASS_SW_NV50;
+   case 0x906e: return NVIF_CLASS_SW_GF100;
+   default:     return oclass;
+   }
+}
+
 static int
 nouveau_object_subchan_new(struct nouveau_object *parent, uint64_t handle, uint32_t oclass,
                            struct nouveau_object *obj)
@@ -176,7 +192,7 @@ nouveau_object_subchan_new(struct nouveau_object *parent, uint64_t handle, uint3
       .new = {
          .handle = handle,
          .object = (uintptr_t)obj,
-         .oclass = oclass,
+         .oclass = nouveau_object_nvif_class(oclass),
          .route = NVIF_IOCTL_V0_ROUTE_NVIF,
          .token = (uintptr_t)obj,
          .version = 0,

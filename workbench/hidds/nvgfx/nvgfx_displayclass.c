@@ -46,6 +46,12 @@ VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible)
     struct CardData * carddata = &(SD(cl)->carddata);
     struct nouveau_device *nvdev = carddata->dev;
 
+    /* Nothing is scanned out yet: with atomic modesetting the kernel
+     * refuses a cursor on a CRTC that is off (-EINVAL). The mode switch
+     * shows the cursor once the CRTC is on. */
+    if (!gfxdata->shownfb)
+        return;
+
     LOCK_ENGINE
 
     if (visible)
@@ -959,6 +965,17 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, SetCursorPos)
     OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfx);
     gfxdata = OOP_INST_DATA(SD(cl)->gfxclass, gfx);
 
+    /*
+     * Not before the first mode switch. The kernel turns a cursor move
+     * into an atomic commit on the CRTC; before this driver has set a
+     * mode that is a commit on the head the firmware lit, whose output
+     * LUT was never armed, and the display engine rejects the LUT-only
+     * update (INVALID_STATE, then a core notifier timeout). The mode
+     * switch shows the cursor; the next move places it.
+     */
+    if (!gfxdata->shownfb)
+        return TRUE;
+
     LOCK_ENGINE
     drmModeMoveCursor(NOUVEAU_DEV_FD(nvdev), gfxdata->selectedcrtcid, msg->x, msg->y);
     UNLOCK_ENGINE
@@ -1500,11 +1517,11 @@ LONG HIDDNouveauPlaneSwap(OOP_Object *display, ULONG oldfbid, ULONG newfbid, BOO
     p->fbid = newfbid;
     if (HIDDNouveauPlanesCheckTimeouts(NOUVEAU_DEV_FD(nvdev), gfxdata, 1UL << (p - gfxdata->planes)))
         return PLANESWAP_COMPOSED;  /* the window died: the bitmap is composed from now on */
-    /* A blocking atomic commit returns once the new buffer has latched, so
-     * the old one is already off scan-out; waiting for another vblank on
-     * top of it would hold every swap for a second frame. */
-    if (wait && !gfxdata->atomic)
-        HIDDNouveauWaitVBlank(NOUVEAU_DEV_FD(nvdev), gfxdata);
+    /* A blocking commit returns once the new buffer has latched, so the
+     * old one is already off scan-out - also the legacy SETPLANE, which
+     * the kernel runs as a blocking atomic commit (update_plane is
+     * drm_atomic_helper_update_plane). Waiting for another vblank on top
+     * of it held every swap for a second frame: 30 fps at 60 Hz. */
     return PLANESWAP_DONE;
 }
 

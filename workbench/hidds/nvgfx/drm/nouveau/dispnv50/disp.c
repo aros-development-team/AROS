@@ -1963,8 +1963,17 @@ nv50_sor_atomic_enable(struct drm_encoder *encoder, struct drm_atomic_state *sta
 	 * display before us, so RM never saw AUDIO=OPTIMAL for it and there is no
 	 * audio path behind it - an ELD pushed later is accepted and ignored.
 	 * Release it so the acquire below asks for one that has the audio path.
+	 *
+	 * Only for GSP-RM. On the nvkm path a release runs nvkm_outp_route(),
+	 * which on GM20x and later (route.set) unroutes the pad from the SOR
+	 * at once while the head is still scanning out, and the acquire then
+	 * no longer sees the OR as armed and may pick another one. GM204 on
+	 * HDMI: PRIVRING faults on the head's HDMI registers, then core
+	 * notifier timeouts and no signal. nvkm keeps the armed OR anyway
+	 * (nvkm_outp_acquire_or, first preference).
 	 */
-	if (nvif_outp_acquired(outp) && hda && !outp->or.hda)
+	if (nvif_outp_acquired(outp) && hda && !outp->or.hda &&
+	    nvkm_gsp_rm(nvxx_device(drm)->gsp))
 		nvif_outp_release(outp);
 
 	if (!nvif_outp_acquired(outp))

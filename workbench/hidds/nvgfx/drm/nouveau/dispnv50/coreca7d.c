@@ -307,8 +307,30 @@ coreca7d_init(struct nv50_core *core)
 		PUSH_MTHD(push, NVCA7D, HEAD_SET_TILE_MASK(i), 0);
 	}
 
-	core->assign_windows = true;
-	return PUSH_KICK(push);
+	/*
+	 * Assign the windows now, in a core update of its own. Upstream does it
+	 * in the first commit's core update; here that commit is either a
+	 * modeset, where the firmware's head no longer counts as live and the
+	 * window gets an owner without physical windows (Xid 56, state 0x12),
+	 * or a commit that also carries the inherited head's never-armed output
+	 * LUT (Xid 56, state 0x41). Either way RM rejects the update and the
+	 * commit waits out the 2 s core notifier timeout.
+	 */
+	if ((ret = PUSH_KICK(push)) || (ret = coreca7d_wndw_owner(core)))
+		return ret;
+	{
+		u32 interlock[NV50_DISP_INTERLOCK__SIZE] = {};
+		struct nv50_disp *disp = core->disp;
+
+		core->func->ntfy_init(disp->sync, NV50_DISP_CORE_NTFY);
+		if ((ret = core->func->update(core, interlock, true)))
+			return ret;
+		if (core->func->ntfy_wait_done(disp->sync, NV50_DISP_CORE_NTFY,
+					       core->chan.base.device))
+			printk(KERN_ERR "[nouveau] window assignment: core notifier timeout\n");
+	}
+	core->assign_windows = false;
+	return 0;
 }
 
 static const struct nv50_core_func

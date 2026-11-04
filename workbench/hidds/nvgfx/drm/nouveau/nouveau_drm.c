@@ -1533,6 +1533,8 @@ MODULE_LICENSE("GPL and additional rights");
 
 #if defined(__AROS__)
 #include <proto/dos.h>
+#include <proto/exec.h>
+#include <dos/dosextens.h>
 
 /* module parameters come from environment variables of the same name */
 char *
@@ -1540,8 +1542,40 @@ nouveau_aros_getenv(const char *name)
 {
 	char buf[256];
 
-	if (GetVar((STRPTR)name, buf, sizeof(buf), GVF_GLOBAL_ONLY) <= 0)
-		return NULL;
+	if (GetVar((STRPTR)name, buf, sizeof(buf), GVF_GLOBAL_ONLY) <= 0) {
+		/*
+		 * The driver starts with the display monitors, before the
+		 * startup sequence has created ENV: and copied ENVARC: into
+		 * it: a saved setting is read from ENVARC: itself.
+		 */
+		char path[128];
+		BPTR fh;
+		LONG len;
+
+		struct Process *me = (struct Process *)FindTask(NULL);
+		APTR win = NULL;
+
+		snprintf(path, sizeof(path), "ENVARC:%s", name);
+		/* no "insert volume" requester while ENVARC: is not assigned yet */
+		if (me->pr_Task.tc_Node.ln_Type == NT_PROCESS) {
+			win = me->pr_WindowPtr;
+			me->pr_WindowPtr = (APTR)-1;
+		}
+		fh = Open((STRPTR)path, MODE_OLDFILE);
+		if (me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+			me->pr_WindowPtr = win;
+		if (!fh)
+			return NULL;
+		len = Read(fh, buf, sizeof(buf) - 1);
+		Close(fh);
+		if (len <= 0)
+			return NULL;
+		buf[len] = 0;
+		while (len > 0 && (buf[len - 1] == '\n' || buf[len - 1] == '\r'))
+			buf[--len] = 0;
+		if (!len)
+			return NULL;
+	}
 	return kstrdup(buf, GFP_KERNEL);
 }
 
@@ -1584,6 +1618,11 @@ nouveau_aros_params(void)
 	if ((v = nouveau_aros_getenv("NOUVEAU_WNDW_LIVE_OWNER"))) {
 		extern int nouveau_wndw_live_owner;
 		nouveau_wndw_live_owner = (*v != '0');
+		kfree(v);
+	}
+	if ((v = nouveau_aros_getenv("DRM_DEBUG"))) {	/* drm.debug: the category mask, e.g. 0x14 = KMS + ATOMIC */
+		extern unsigned long __drm_debug;
+		__drm_debug = simple_strtoul(v, NULL, 0);
 		kfree(v);
 	}
 	if ((v = nouveau_aros_getenv("NOUVEAU_DECODE"))) {

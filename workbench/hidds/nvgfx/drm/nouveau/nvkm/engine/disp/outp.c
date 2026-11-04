@@ -263,6 +263,12 @@ nvkm_outp_detect(struct nvkm_outp *outp)
 		 */
 		if (outp->info.type == DCB_OUTPUT_DP)
 			return 0;
+
+		/* Do what the comment above says: UNKNOWN, so DRM probes DDC.
+		 * Falling through with ret == 0 reported NOT_PRESENT and DDC
+		 * was never tried (GT216 HDMI: every connector disconnected).
+		 */
+		return -EINVAL;
 	}
 
 	return ret;

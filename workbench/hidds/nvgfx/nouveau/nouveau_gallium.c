@@ -89,6 +89,28 @@ static struct nouveau_bo *nvdd_resource_bo(struct pipe_resource *resource, ULONG
     }
 }
 
+/* The nv30 family; nv50 and nvc0 are told apart from it only */
+static BOOL nvdd_is_nv30(void)
+{
+    switch (gl_host.chipset & ~0xf)
+    {
+    case 0x30: case 0x40: case 0x60:
+        return TRUE;
+    }
+    return FALSE;
+}
+
+/* The nv50 family (Tesla) */
+static BOOL nvdd_is_nv50(void)
+{
+    switch (gl_host.chipset & ~0xf)
+    {
+    case 0x50: case 0x80: case 0x90: case 0xa0:
+        return TRUE;
+    }
+    return FALSE;
+}
+
 /* ---- the class ---- */
 
 static OOP_Object *NVDDGallium__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
@@ -123,6 +145,17 @@ static VOID NVDDGallium__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Ge
         {
         case aoHidd_Gallium_InterfaceVersion:
             *msg->storage = GALLIUM_INTERFACE_VERSION;
+            return;
+
+        /* nv50 and nvc0 colour buffers stay tiled: the 2D engine copy in
+           DisplayResource reads the tiled layout (the imported buffer
+           carries its memtype and tile mode), and neither family renders
+           a linear colour buffer with a depth buffer - nv50 rejects the
+           draw (RT_LINEAR_WITH_ZETA), nvc0 drops the depth buffer. The
+           nv30 2D copy cannot read a swizzled buffer, so nv30 keeps
+           linear ones. */
+        case aoHidd_Gallium_LinearDisplay:
+            *msg->storage = nvdd_is_nv30();
             return;
         }
     }
@@ -243,6 +276,11 @@ static APTR NVDDGallium__Hidd_Gallium__ResourceFromBitMap(OOP_Class *cl, OOP_Obj
     enum pipe_format format;
 
     if (!pscreen || !msg->bitmap || !pscreen->resource_from_handle || !gl_host.bitmap_buffer)
+        return NULL;
+    /* An nv50 linear colour buffer cannot be rendered with a depth buffer
+       bound (the draw fails with RT_LINEAR_WITH_ZETA): no scan-out buffers,
+       GL keeps tiled colour buffers and the DisplayResource copy. */
+    if (nvdd_is_nv50())
         return NULL;
     if (!gl_host.bitmap_buffer(msg->bitmap, msg->buffer, &buf))
         return NULL;
