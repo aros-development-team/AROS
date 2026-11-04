@@ -31,6 +31,7 @@ BOOL InitCamd(struct CamdBase *CamdBase){
 	InitSemaphore(CB(CamdBase)->CLSemaphore);
 	InitSemaphore(&CB(CamdBase)->DriverScanSemaphore);
 	InitSemaphore(&CB(CamdBase)->NotifySemaphore);
+	InitSemaphore(&CB(CamdBase)->EndpointClientSemaphore);
 	CB(CamdBase)->EndpointRegistry=camd_registry_create();
 	if(CB(CamdBase)->EndpointRegistry==NULL){
 		FreeMem(CB(CamdBase)->CLSemaphore,sizeof(struct SignalSemaphore));
@@ -132,6 +133,7 @@ void UninitCamd(struct CamdBase *CamdBase){
 		CloseMidiDevice(driver->mididevicedata);
 		driver=temp2;
 	}
+	FreeEndpointSnapshots(CamdBase);
 	camd_identity_store_aros_destroy(CB(CamdBase)->EndpointIdentity);
 	CB(CamdBase)->EndpointIdentity=NULL;
 	camd_registry_destroy(CB(CamdBase)->EndpointRegistry);

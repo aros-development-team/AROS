@@ -4,63 +4,17 @@
 /*
  * Executable model of CAMD's private endpoint registry.
  *
- * This is deliberately not installed as a public header.  It validates the
- * data and lifetime invariants that must precede the version 43 ABI review.
+ * This is not an installed header.  The client records it shares with the
+ * provisional version 43 surface are in camdendpoint.h.
  */
+
+#include "camdendpoint.h"
 
 #include <stddef.h>
 #include <stdint.h>
 
-#define CAMD_ENDPOINT_NAME_BYTES       128u
-#define CAMD_ENDPOINT_PRODUCT_BYTES    128u
-#define CAMD_ENDPOINT_TRANSPORT_BYTES   32u
 #define CAMD_TOPOLOGY_NAME_BYTES        64u
 #define CAMD_ENDPOINT_WATCH_MAX_EVENTS  32u
-
-#define CAMD_DATA_FORMAT_MIDI1           (1u << 0)
-#define CAMD_DATA_FORMAT_UMP             (1u << 1)
-#define CAMD_DATA_FORMAT_ALL             (CAMD_DATA_FORMAT_MIDI1 | \
-                                          CAMD_DATA_FORMAT_UMP)
-
-struct CAMDHandleV1 {
-    uint32_t slot;
-    uint32_t generation;
-};
-
-struct CAMDEndpointIDV1 {
-    uint32_t word[4];
-};
-
-struct CAMDGenerationV1 {
-    uint32_t high;
-    uint32_t low;
-};
-
-enum CAMDEndpointStateV1 {
-    CAMD_ENDPOINT_REGISTERED = 1,
-    CAMD_ENDPOINT_DISCOVERING,
-    CAMD_ENDPOINT_AVAILABLE,
-    CAMD_ENDPOINT_OFFLINE,
-    CAMD_ENDPOINT_RETIRING,
-    CAMD_ENDPOINT_RETIRED
-};
-
-struct CAMDEndpointInfoV1 {
-    uint32_t Size;
-    uint32_t Version;
-    struct CAMDEndpointIDV1 ID;
-    struct CAMDEndpointIDV1 ProviderID;
-    uint32_t State;
-    uint32_t Flags;
-    uint32_t IdentityKind;
-    uint32_t NativeDataFormats;
-    uint32_t ProtocolCapabilities;
-    uint32_t CurrentProtocol;
-    struct CAMDGenerationV1 Generation;
-    char Name[CAMD_ENDPOINT_NAME_BYTES];
-    char ProductInstance[CAMD_ENDPOINT_PRODUCT_BYTES];
-    char Transport[CAMD_ENDPOINT_TRANSPORT_BYTES];
-};
 
 struct CAMDGroupInfoV1 {
     uint32_t Size;
@@ -97,23 +51,6 @@ struct CAMDEndpointWatchEventV1 {
     struct CAMDGenerationV1 Generation;
     struct CAMDEndpointIDV1 EndpointID;
     uint32_t Type;
-};
-
-enum CAMDRegistryResult {
-    CAMD_REGISTRY_OK = 0,
-    CAMD_REGISTRY_INVALID,
-    CAMD_REGISTRY_NOMEM,
-    CAMD_REGISTRY_DUPLICATE,
-    CAMD_REGISTRY_STALE,
-    CAMD_REGISTRY_STATE,
-    CAMD_REGISTRY_RETIRED,
-    CAMD_REGISTRY_RANGE,
-    CAMD_REGISTRY_EMPTY,
-    CAMD_REGISTRY_BUSY,
-    CAMD_REGISTRY_CALLBACK_FAILED,
-    CAMD_REGISTRY_UNSUPPORTED,
-    CAMD_REGISTRY_QUEUE_FULL,
-    CAMD_REGISTRY_TOO_LARGE
 };
 
 struct CAMDEndpointRegistry;

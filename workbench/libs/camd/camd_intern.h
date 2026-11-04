@@ -84,6 +84,7 @@
 #define ENDPOINT_OUTPUT_QUEUE 64
 #define ENDPOINT_OUTPUT_SYSEX 4096
 #define ENDPOINT_OUTPUT_BUDGET 16
+#define ENDPOINT_SNAPSHOTS 32
 #define NUMBEROFSYSEXSTORECEIVE 1025
 
 struct MyMidiMessage2{
@@ -247,6 +248,7 @@ struct ClusterWatch{
 };
 
 struct CAMDEndpointRegistry;
+struct CAMDEndpointSnapshot;
 struct CAMDIdentityStoreAROS;
 
 struct CamdBase_intern{
@@ -283,6 +285,12 @@ struct CamdBase_intern{
 
     /* Private stable-ID map. Failure is non-fatal for legacy CAMD. */
     struct CAMDIdentityStoreAROS *EndpointIdentity;
+
+    /* ObtainEndpointSnapshot() handles: a slot is free while NULL, and its
+       generation tells a handle from an earlier one in the same slot. */
+    struct SignalSemaphore EndpointClientSemaphore;
+    struct CAMDEndpointSnapshot *EndpointSnapshots[ENDPOINT_SNAPSHOTS];
+    ULONG EndpointSnapshotGenerations[ENDPOINT_SNAPSHOTS];
 
 
 };
@@ -447,6 +455,14 @@ void PublishDriverEndpoints(struct Drivers *driver,char *path,
 	struct CamdBase *CamdBase);
 BOOL UnpublishDriverEndpoints(struct Drivers *driver,
 	struct CamdBase *CamdBase);
+struct CAMDHandleV1;
+LONG AddEndpointSnapshot(struct CAMDEndpointSnapshot *snapshot,
+	struct CAMDHandleV1 *handle,struct CamdBase *CamdBase);
+struct CAMDEndpointSnapshot *FindEndpointSnapshot(
+	const struct CAMDHandleV1 *handle,struct CamdBase *CamdBase);
+void RemoveEndpointSnapshot(const struct CAMDHandleV1 *handle,
+	struct CamdBase *CamdBase);
+void FreeEndpointSnapshots(struct CamdBase *CamdBase);
 
 void FreeDriverData(struct Drivers *driver,
 	struct CamdBase *CamdBase

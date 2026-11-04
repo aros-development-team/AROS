@@ -11,7 +11,7 @@ FILES :=    drivers clusters init camdwait mididistr midifromdriver \
 	    native_worker_fanout legacy_output_backend \
 	    legacy_driver_output_backend identity_map identity_file \
 	    identity_store_recovery identity_store_aros legacy_identity_key \
-	    legacy_identity_set driver_endpoints
+	    legacy_identity_set driver_endpoints endpoint_client
 
 FUNCS := \
     lockcamd \
@@ -54,7 +54,15 @@ FUNCS := \
     camdtime \
     startclusterwatcha \
     endclusterwatch \
-    getclusterwatchevent
+    getclusterwatchevent \
+    obtainendpointsnapshot \
+    releaseendpointsnapshot \
+    getendpointinfo \
+    openendpointsession \
+    closeendpointsession \
+    putendpointmidi \
+    putendpointsysex \
+    drainendpointsession
 
 #MM workbench-libs-camd-includes : \
 #MM     kernel-exec-includes \
@@ -67,5 +75,9 @@ FUNCS := \
 %build_module mmake=workbench-libs-camd \
     modname=camd modtype=library \
     files="$(FUNCS) $(FILES) camd_init"
+
+INCLUDE_FILES := camdendpoint.h
+
+%copy_includes path=midi
 
 %common

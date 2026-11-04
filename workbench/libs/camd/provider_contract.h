@@ -21,8 +21,8 @@
                                         CAMD_PROVIDER_PATH_UMP_MIDI1 | \
                                         CAMD_PROVIDER_PATH_UMP_MIDI2)
 
-#define CAMD_PROVIDER_DIRECTION_INPUT  (1u << 0)
-#define CAMD_PROVIDER_DIRECTION_OUTPUT (1u << 1)
+#define CAMD_PROVIDER_DIRECTION_INPUT  CAMD_DIRECTION_INPUT
+#define CAMD_PROVIDER_DIRECTION_OUTPUT CAMD_DIRECTION_OUTPUT
 #define CAMD_PROVIDER_DIRECTION_ALL    (CAMD_PROVIDER_DIRECTION_INPUT | \
                                         CAMD_PROVIDER_DIRECTION_OUTPUT)
 
@@ -32,8 +32,8 @@ enum CAMDProviderDataFormatV1 {
 };
 
 enum CAMDProviderProtocolV1 {
-    CAMD_PROVIDER_PROTOCOL_MIDI1 = 1,
-    CAMD_PROVIDER_PROTOCOL_MIDI2 = 2
+    CAMD_PROVIDER_PROTOCOL_MIDI1 = CAMD_PROTOCOL_MIDI1,
+    CAMD_PROVIDER_PROTOCOL_MIDI2 = CAMD_PROTOCOL_MIDI2
 };
 
 enum CAMDProviderResult {
@@ -45,19 +45,6 @@ enum CAMDProviderResult {
     CAMD_PROVIDER_CALLBACK_FAILED,
     CAMD_PROVIDER_QUEUE_FULL,
     CAMD_PROVIDER_TOO_LARGE
-};
-
-/* A complete non-SysEx MIDI 1.0 message. Bytes are in wire order and Length
- * is 1..3. Running status never crosses an event boundary. */
-struct CAMDMIDI1EventV1 {
-    uint32_t Size;
-    uint32_t Version;
-    uint32_t Length;
-    uint8_t Bytes[4];
-    uint32_t Flags;
-    uint32_t TimeHigh;
-    uint32_t TimeLow;
-    uint32_t ClockDomain;
 };
 
 /* A complete host-endian Universal MIDI Packet plus CAMD timing envelope. */
