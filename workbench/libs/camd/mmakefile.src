@@ -13,7 +13,7 @@ FILES :=    drivers clusters init camdwait mididistr midifromdriver \
 	    identity_store_recovery identity_store_aros legacy_identity_key \
 	    legacy_identity_set driver_endpoints endpoint_client \
 	    app_endpoint endpoint_publish endpoint_projection \
-	    endpoint_owner
+	    endpoint_owner endpoint_identity
 
 FUNCS := \
     lockcamd \
@@ -84,7 +84,10 @@ FUNCS := \
     setpublishedendpointtopology \
     getendpointgroup \
     getendpointfunctionblock \
-    getpublishedendpointstats
+    getpublishedendpointstats \
+    getendpointidentitystore \
+    getstoredendpointidentity \
+    forgetendpointidentity
 
 #MM workbench-libs-camd-includes : \
 #MM     kernel-exec-includes \
@@ -93,6 +96,12 @@ FUNCS := \
 #MM     includes-copy
 
 #MM- workbench-libs-camd : linklibs workbench-libs-uuid-includes
+
+# CAMD_TEST_HOOKS=yes in the environment of make builds in what the test
+# runners need to make things fail; see identity_store_aros.c.
+ifeq ($(CAMD_TEST_HOOKS),yes)
+USER_CPPFLAGS += -DCAMD_TEST_HOOKS
+endif
 
 %build_module mmake=workbench-libs-camd \
     modname=camd modtype=library \

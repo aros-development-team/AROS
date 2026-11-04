@@ -8,9 +8,9 @@
  * values and layouts can still change.
  *
  * Every record starts with Size and Version, holds no pointers and has the
- * same layout on every target. The file has four parts: what every caller
- * needs, looking at endpoints, sessions with an endpoint, and publishing
- * an endpoint of one's own.
+ * same layout on every target. The file has five parts: what every caller
+ * needs, looking at endpoints, sessions with an endpoint, publishing an
+ * endpoint of one's own, and the store of IDs.
  *
  * Records CAMD fills in: the caller sets Size and Version, CAMD writes at
  * most Size bytes and sets Size to the size of the full record, so a
@@ -359,6 +359,49 @@ struct CAMDPublishedStatsV1 {
 };
 
 /* ------------------------------------------------------------------------
+ * 5. The store of IDs
+ * ------------------------------------------------------------------------ */
+
+/* CAMDIdentityStoreInfoV1.State. */
+#define CAMD_IDENTITY_STORE_COMPLETE     1u  /* read whole, or begun anew */
+#define CAMD_IDENTITY_STORE_RECOVERED    2u  /* read from the backup, or from
+                                                a replacement that was not
+                                                finished; whole again now */
+#define CAMD_IDENTITY_STORE_UNREADABLE   3u  /* files but no complete copy:
+                                                they are left as they are and
+                                                every ID is temporary */
+#define CAMD_IDENTITY_STORE_ABSENT       4u  /* could not be set up at all */
+
+/* Stored is how many IDs the store holds and Capacity how many it can. */
+struct CAMDIdentityStoreInfoV1 {
+    ULONG Size;
+    ULONG Version;
+    ULONG State;
+    ULONG Stored;
+    ULONG Capacity;
+};
+
+/* CAMDStoredIdentityV1.Flags. */
+#define CAMD_STORED_IDENTITY_PROVIDER    (1u << 0)  /* of what offers endpoints:
+                                                       a driver, a publisher */
+#define CAMD_STORED_IDENTITY_IN_USE      (1u << 1)  /* something has it now */
+
+/* One stored ID and what it is stored for. Kind is
+ * CAMD_IDENTITY_STORED_BY_NAME, with a published endpoint's Name, or
+ * CAMD_IDENTITY_STORED_BY_PATH, with a driver's file name in Name and, for
+ * an endpoint, its port number in Port. Names are as stored: in lower case.
+ * An endpoint and what offers it have an ID each. */
+struct CAMDStoredIdentityV1 {
+    ULONG Size;
+    ULONG Version;
+    struct CAMDEndpointIDV1 ID;
+    ULONG Kind;
+    ULONG Flags;
+    ULONG Port;
+    char Name[CAMD_ENDPOINT_NAME_BYTES];
+};
+
+/* ------------------------------------------------------------------------
  * The records hold 32-bit fields and bytes only, so they have these sizes on
  * every target. A compiler that disagrees stops here.
  * ------------------------------------------------------------------------ */
@@ -378,6 +421,8 @@ CAMD_RECORD_SIZE(CAMDSessionInfoV1, 28);
 CAMD_RECORD_SIZE(CAMDSessionStatsV1, 24);
 CAMD_RECORD_SIZE(CAMDPublishRequestV1, 284);
 CAMD_RECORD_SIZE(CAMDPublishedStatsV1, 24);
+CAMD_RECORD_SIZE(CAMDIdentityStoreInfoV1, 20);
+CAMD_RECORD_SIZE(CAMDStoredIdentityV1, 164);
 #undef CAMD_RECORD_SIZE
 
 #endif

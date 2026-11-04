@@ -331,3 +331,72 @@ enum CAMDIdentityMapResult camd_identity_map_resolve(
     lock_release(&map->lock);
     return CAMD_IDENTITY_MAP_OK;
 }
+
+uint32_t camd_identity_map_count(struct CAMDIdentityMap *map)
+{
+    uint32_t count;
+
+    if (!map)
+        return 0;
+    lock_acquire(&map->lock);
+    count = map->count;
+    lock_release(&map->lock);
+    return count;
+}
+
+uint32_t camd_identity_map_capacity(struct CAMDIdentityMap *map)
+{
+    return map ? map->capacity : 0;
+}
+
+enum CAMDIdentityMapResult camd_identity_map_get(
+    struct CAMDIdentityMap *map, uint32_t index,
+    struct CAMDIdentityRecordV1 *record, uint32_t *persistent)
+{
+    enum CAMDIdentityMapResult result = CAMD_IDENTITY_MAP_MISSING;
+
+    if (!map || !record)
+        return CAMD_IDENTITY_MAP_INVALID;
+    lock_acquire(&map->lock);
+    if (index < map->count) {
+        *record = map->entries[index].record;
+        if (persistent)
+            *persistent = map->entries[index].persistent ? 1u : 0u;
+        result = CAMD_IDENTITY_MAP_OK;
+    }
+    lock_release(&map->lock);
+    return result;
+}
+enum CAMDIdentityMapResult camd_identity_map_remove(
+    struct CAMDIdentityMap *map, const struct CAMDEndpointIDV1 *id)
+{
+    enum CAMDIdentityMapResult result = CAMD_IDENTITY_MAP_MISSING;
+    struct identity_entry removed;
+    uint32_t i, at;
+
+    if (!map || !id || id_is_zero(id))
+        return CAMD_IDENTITY_MAP_INVALID;
+    lock_acquire(&map->lock);
+    for (at = 0; at < map->count; ++at) {
+        if (id_equal(&map->entries[at].record.ID, id))
+            break;
+    }
+    if (at < map->count) {
+        removed = map->entries[at];
+        for (i = at; i + 1 < map->count; ++i)
+            map->entries[i] = map->entries[i + 1];
+        --map->count;
+        memset(&map->entries[map->count], 0, sizeof(map->entries[0]));
+        result = CAMD_IDENTITY_MAP_OK;
+        /* What storage holds has to lose it too, or it is back next time. */
+        if (removed.persistent && !commit_all(map)) {
+            for (i = map->count; i > at; --i)
+                map->entries[i] = map->entries[i - 1];
+            map->entries[at] = removed;
+            ++map->count;
+            result = CAMD_IDENTITY_MAP_STORAGE;
+        }
+    }
+    lock_release(&map->lock);
+    return result;
+}

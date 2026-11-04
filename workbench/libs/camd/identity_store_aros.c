@@ -28,7 +28,47 @@ struct CAMDIdentityStoreAROS {
     ULONG file_capacity;
     /* No complete snapshot could be read: leave the files as they are. */
     int unreadable;
+    /* The slot the records came from, or -1 when there was no file. */
+    int loaded_slot;
 };
+
+/*
+ * Test hook, compiled in with CAMD_TEST_HOOKS only (see mmakefile.src). The
+ * variable CAMD_IDENTITY_FAULT holds a number n: the n-th call that changes
+ * a file fails once, counted from the creation of the store. A failed Write
+ * leaves half of the data behind, a failed Close still closes, and the
+ * others do nothing. tools/camd-compat-hosted.sh fails each call in turn
+ * and checks that no stored ID is lost.
+ */
+#ifdef CAMD_TEST_HOOKS
+static LONG fault_at, fault_calls;
+
+static void fault_setup(void)
+{
+    char text[16];
+    LONG value = 0;
+
+    fault_at = fault_calls = 0;
+    if (GetVar("CAMD_IDENTITY_FAULT", text, sizeof(text), GVF_GLOBAL_ONLY) > 0 &&
+        StrToLong(text, &value) > 0 && value > 0) {
+        fault_at = value;
+        bug("camd.library: CAMD_IDENTITY_FAULT fails file call %ld\n",
+            (long)value);
+    }
+}
+
+static int fault_now(const char *what)
+{
+    if (fault_at == 0 || ++fault_calls != fault_at)
+        return 0;
+    bug("camd.library: CAMD_IDENTITY_FAULT failed %s (call %ld)\n", what,
+        (long)fault_calls);
+    return 1;
+}
+#else
+#define fault_setup()
+#define fault_now(what) 0
+#endif
 
 struct recovery_context {
     struct CAMDIdentityStoreAROS *store;
@@ -91,10 +131,14 @@ static enum CAMDIdentityStoreLoadState recovery_load(
     void *opaque, enum CAMDIdentityStoreSlot slot)
 {
     struct recovery_context *context = opaque;
+    enum CAMDIdentityStoreLoadState state;
 
-    return load_path(slot_path(slot), context->store->file_bytes,
-                     context->store->file_capacity, context->records,
-                     IDENTITY_CAPACITY, context->record_count);
+    state = load_path(slot_path(slot), context->store->file_bytes,
+                      context->store->file_capacity, context->records,
+                      IDENTITY_CAPACITY, context->record_count);
+    if (state == CAMD_IDENTITY_STORE_VALID)
+        context->store->loaded_slot = (int)slot;
+    return state;
 }
 
 static int recovery_exists(void *opaque, enum CAMDIdentityStoreSlot slot)
@@ -106,6 +150,8 @@ static int recovery_exists(void *opaque, enum CAMDIdentityStoreSlot slot)
 static int recovery_remove(void *opaque, enum CAMDIdentityStoreSlot slot)
 {
     (void)opaque;
+    if (fault_now("DeleteFile"))
+        return 0;
     return DeleteFile(slot_path(slot));
 }
 
@@ -113,6 +159,8 @@ static int recovery_move(void *opaque, enum CAMDIdentityStoreSlot from,
                          enum CAMDIdentityStoreSlot to)
 {
     (void)opaque;
+    if (fault_now("Rename"))
+        return 0;
     return Rename(slot_path(from), slot_path(to));
 }
 
@@ -164,17 +212,24 @@ static int generate_id(void *context, struct CAMDEndpointIDV1 *id)
 
 static int write_new(struct CAMDIdentityStoreAROS *store, ULONG byte_count)
 {
-    BPTR file = Open(IDENTITY_NEW_PATH, MODE_NEWFILE);
+    BPTR file;
     LONG written;
     int ok;
 
+    if (fault_now("Open"))
+        return 0;
+    file = Open(IDENTITY_NEW_PATH, MODE_NEWFILE);
     if (!file)
         return 0;
-    written = Write(file, store->file_bytes, (LONG)byte_count);
-    ok = written == (LONG)byte_count && Flush(file);
-    if (!Close(file))
+    if (fault_now("Write"))
+        written = Write(file, store->file_bytes, (LONG)(byte_count / 2));
+    else
+        written = Write(file, store->file_bytes, (LONG)byte_count);
+    ok = written == (LONG)byte_count && !fault_now("Flush") && Flush(file);
+    if (!Close(file) || (ok && fault_now("Close")))
         ok = 0;
-    if (!ok)
+    /* A fault may leave the half-written file: recovery has to cope. */
+    if (!ok && !fault_now("DeleteFile"))
         DeleteFile(IDENTITY_NEW_PATH);
     return ok;
 }
@@ -226,6 +281,8 @@ struct CAMDIdentityStoreAROS *camd_identity_store_aros_create(void)
     store->uuid_base = OpenLibrary("uuid.library", 1);
     if (!store->file_bytes || !store->uuid_base)
         goto fail;
+    store->loaded_slot = -1;
+    fault_setup();
     /* Files that exist but hold no complete snapshot may be damaged or just
      * unreadable now. Writing a new one over them could lose every stored
      * ID, so this run gives temporary IDs instead and touches nothing. */
@@ -277,4 +334,16 @@ struct CAMDIdentityMap *camd_identity_store_aros_map(
     struct CAMDIdentityStoreAROS *store)
 {
     return store ? store->map : NULL;
+}
+
+unsigned int camd_identity_store_aros_state(
+    struct CAMDIdentityStoreAROS *store)
+{
+    if (!store)
+        return CAMD_IDENTITY_STORE_ABSENT;
+    if (store->unreadable)
+        return CAMD_IDENTITY_STORE_UNREADABLE;
+    if (store->loaded_slot > (int)CAMD_IDENTITY_STORE_MAIN)
+        return CAMD_IDENTITY_STORE_RECOVERED;
+    return CAMD_IDENTITY_STORE_COMPLETE;
 }

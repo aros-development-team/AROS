@@ -16,7 +16,9 @@ enum CAMDIdentityMapResult {
     CAMD_IDENTITY_MAP_NOMEM,
     CAMD_IDENTITY_MAP_FULL,
     CAMD_IDENTITY_MAP_COLLISION,
-    CAMD_IDENTITY_MAP_GENERATOR
+    CAMD_IDENTITY_MAP_GENERATOR,
+    CAMD_IDENTITY_MAP_MISSING,
+    CAMD_IDENTITY_MAP_STORAGE
 };
 
 enum CAMDIdentityConfidenceV1 {
@@ -90,5 +92,24 @@ enum CAMDIdentityMapResult camd_identity_map_temporary(
 enum CAMDIdentityMapResult camd_identity_map_resolve(
     struct CAMDIdentityMap *map, const struct CAMDIdentityKeyV1 *key,
     struct CAMDIdentityResolutionV1 *resolution);
+
+/* How many mappings the map holds, and how many it has room for. */
+uint32_t camd_identity_map_count(struct CAMDIdentityMap *map);
+uint32_t camd_identity_map_capacity(struct CAMDIdentityMap *map);
+
+/* A copy of mapping number index, counted from 0 in no particular order,
+ * and whether it is stored. CAMD_IDENTITY_MAP_MISSING beyond the last. The
+ * order changes when a mapping is removed. */
+enum CAMDIdentityMapResult camd_identity_map_get(
+    struct CAMDIdentityMap *map, uint32_t index,
+    struct CAMDIdentityRecordV1 *record, uint32_t *persistent);
+
+/* Forgets the mapping to this ID: its key gets a new ID the next time it is
+ * resolved. A stored mapping goes from storage first, and stays when that
+ * fails (CAMD_IDENTITY_MAP_STORAGE). CAMD_IDENTITY_MAP_MISSING when no
+ * mapping has the ID. Whether something still uses the ID is the caller's
+ * to know. */
+enum CAMDIdentityMapResult camd_identity_map_remove(
+    struct CAMDIdentityMap *map, const struct CAMDEndpointIDV1 *id);
 
 #endif

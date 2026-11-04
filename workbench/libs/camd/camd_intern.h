@@ -595,6 +595,18 @@ BOOL AppEndpointsRemain(struct CamdBase *CamdBase);
 struct CAMDPublishedStatsV1;
 LONG GetAppEndpointStats(const struct CAMDHandleV1 *handle,
 	struct CAMDPublishedStatsV1 *stats,struct CamdBase *CamdBase);
+/* The identity namespaces of published endpoints and their publishers. */
+#define NAMESPACE_APP_PROVIDER 0x41505256u  /* 'APRV' */
+#define NAMESPACE_APP_ENDPOINT 0x41454e44u  /* 'AEND' */
+
+/* endpoint_identity.c */
+LONG ReadIdentityStore(struct CAMDIdentityStoreInfoV1 *info,
+	struct CamdBase *CamdBase);
+LONG ReadStoredIdentity(ULONG index,struct CAMDStoredIdentityV1 *identity,
+	struct CamdBase *CamdBase);
+LONG ForgetStoredIdentity(const struct CAMDEndpointIDV1 *id,
+	struct CamdBase *CamdBase);
+
 /* Copies a record a caller hands in. See TakeEndpointRecord(). */
 BOOL TakeEndpointRecord(const APTR given,APTR record,ULONG size,ULONG least);
 

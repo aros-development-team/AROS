@@ -16,8 +16,6 @@
 #include "identity_store_aros.h"
 #include "legacy_driver_adapter.h"
 
-#define NAMESPACE_APP_PROVIDER 0x41505256u  /* 'APRV' */
-#define NAMESPACE_APP_ENDPOINT 0x41454e44u  /* 'AEND' */
 
 /* Runs in the task of the client that sent something. */
 static void publisher_notify(void *context)
