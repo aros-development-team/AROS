@@ -217,6 +217,7 @@ struct Drivers{
 	struct Drivers *next;
 	ULONG numports;
 	BPTR seglist;
+	BOOL inMemory;
 	struct MidiDeviceData *mididevicedata;
 	struct DriverData **driverdatas;
 
@@ -676,6 +677,14 @@ void LoadDriver(char *name,
 
 struct Drivers *FindPrevDriverForMidiDeviceData(
 	struct MidiDeviceData *mididevicedata,
+	struct CamdBase *CamdBase
+);
+struct Drivers *FindDriverForMidiDeviceData(
+	struct MidiDeviceData *mididevicedata,
+	struct CamdBase *CamdBase
+);
+BOOL MidiDeviceNameIsLoaded(
+	CONST_STRPTR name,
 	struct CamdBase *CamdBase
 );
 

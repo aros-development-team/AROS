@@ -418,6 +418,30 @@ struct Drivers *FindPrevDriverForMidiDeviceData(
 	return temp;
 }
 
+struct Drivers *FindDriverForMidiDeviceData(
+	struct MidiDeviceData *mididevicedata,
+	struct CamdBase *CamdBase
+){
+	struct Drivers *driver;
+
+	for(driver=CB(CamdBase)->drivers;driver;driver=driver->next){
+		if(driver->mididevicedata==mididevicedata) return driver;
+	}
+	return NULL;
+}
+
+BOOL MidiDeviceNameIsLoaded(
+	CONST_STRPTR name,
+	struct CamdBase *CamdBase
+){
+	struct Drivers *driver;
+
+	for(driver=CB(CamdBase)->drivers;driver;driver=driver->next){
+		if(mystrcmp((char *)name,driver->mididevicedata->Name)) return TRUE;
+	}
+	return FALSE;
+}
+
 #ifdef __amigaos4__
 void LoadDriver(char *name,
 	struct CamdIFace *ICamd

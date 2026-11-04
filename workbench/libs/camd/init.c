@@ -131,9 +131,15 @@ void UninitCamd(struct CamdBase *CamdBase){
 
 	while(driver!=NULL){
 		temp2=driver->next;
-		(*driver->mididevicedata->Expunge)();
 		FreeDriverData(driver,CamdBase);
-		CloseMidiDevice(driver->mididevicedata);
+		if(driver->mididevicedata->Expunge!=NULL)
+			(*driver->mididevicedata->Expunge)();
+		if(driver->inMemory){
+			CB(CamdBase)->drivers=driver->next;
+			FreeMem(driver,sizeof(struct Drivers));
+		}else{
+			CloseMidiDevice(driver->mididevicedata);
+		}
 		driver=temp2;
 	}
 	FreeEndpointSnapshots(CamdBase);
