@@ -286,7 +286,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
 {
     struct Globals *glob = short_de->sb->glob;
     UBYTE basis[FAT_MAX_SHORT_NAME];
-    ULONG nlong;
+    ULONG nlong, written = 0;
     LONG src, dst, i, left, root_end;
     ULONG seq = 0, cur = 0;
     UBYTE tail[8];
@@ -493,10 +493,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
     {
         /* Get the previous entry */
         if ((err = GetDirEntry(&dh, de.index - 1, &de, glob)) != 0)
-        {
-            ReleaseDirHandle(&dh, glob);
-            return err;
-        }
+            goto name_failed;
 
         /* It must be unused (or end of directory) */
         if (de.e.entry.name[0] != 0xe5 && de.e.entry.name[0] != 0x00)
@@ -504,21 +501,8 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
             D(bug("[fat] index %ld appears to be in use, aborting long name\n",
                 de.index));
 
-            /* Clean up any long name entries we already added */
-            while ((err = GetDirEntry(&dh, de.index + 1, &de, glob)) == 0
-                && (de.e.entry.attr & ATTR_LONG_NAME_MASK))
-            {
-                de.e.entry.name[0] = 0xe5;
-                if ((err = UpdateDirEntry(&de, glob)) != 0)
-                {
-                    /* FIXME: leaving in corrupt state? */
-                    ReleaseDirHandle(&dh, glob);
-                    return err;
-                }
-            }
-
-            ReleaseDirHandle(&dh, glob);
-            return ERROR_NO_FREE_STORE;
+            err = ERROR_NO_FREE_STORE;
+            goto name_failed;
         }
 
         D(bug("[fat] building long name entry %ld\n", de.index));
@@ -557,7 +541,9 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
             de.e.long_entry.order |= 0x40;
 
         /* Write the entry out */
-        UpdateDirEntry(&de, glob);
+        if ((err = UpdateDirEntry(&de, glob)) != 0)
+            goto name_failed;
+        written++;
 
         D(bug("[fat] wrote long name entry %ld order 0x%02x\n", de.index,
             de.e.long_entry.order));
@@ -572,6 +558,21 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
         short_de->e.entry.attr |= ATTR_HIDDEN;
 
     return 0;
+
+name_failed:
+    /* Only discard entries written by this attempt. Preserve the first
+     * error even if cleanup also fails. The short entry is not published. */
+    while (written > 0)
+    {
+        if (GetDirEntry(&dh, short_de->index - written, &de, glob) != 0)
+            break;
+        de.e.entry.name[0] = 0xe5;
+        if (UpdateDirEntry(&de, glob) != 0)
+            break;
+        written--;
+    }
+    ReleaseDirHandle(&dh, glob);
+    return err;
 }
 
 /* Return the number of long name entries that are required to store this

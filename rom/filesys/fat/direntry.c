@@ -582,6 +582,7 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen,
     {
         D(bug(
             "[fat] couldn't update base directory entry, creation failed\n"));
+        DeleteDirEntry(de, glob);
         return err;
     }
 
