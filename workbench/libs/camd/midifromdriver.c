@@ -56,6 +56,10 @@ void Receiver_SysExSuperTreat(
 	struct MidiLink *midilink;
 	struct MyMidiNode *mymidinode;
 
+	if(driverdata->EndpointBackend!=NULL){
+		DeliverDriverEndpointSysEx(driverdata,data);
+	}
+
 	ObtainSemaphoreShared(&driverdata->incluster->semaphore);
 
 		if(! (IsListEmpty(&driverdata->incluster->cluster.mcl_Receivers))){
@@ -83,6 +87,12 @@ void Receiver_SuperTreat2(
 	struct MidiLink *midilink;
 	struct MyMidiNode *mymidinode;
 	ULONG msg;
+
+	/* Only a driver's port has endpoint sessions, not ParseMidi()'s
+	   parser. */
+	if(driverdata->EndpointBackend!=NULL){
+		DeliverDriverEndpointMidi(driverdata,msg2);
+	}
 
 	ObtainSemaphoreShared(&driverdata->incluster->semaphore);
 

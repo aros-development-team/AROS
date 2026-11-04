@@ -2,8 +2,9 @@
  * Publishes a loaded driver's fixed ports in the private endpoint registry.
  *
  * Legacy cluster traffic does not pass through these objects, and a failure
- * here leaves the driver's clusters working. Only output is published until
- * the input handoff exists.
+ * here leaves the driver's clusters working. Output sessions have their own
+ * queue and worker; input sessions get each complete message the port's
+ * receiver process parses, beside the port's legacy cluster.
  */
 
 #include <exec/memory.h>
@@ -75,7 +76,7 @@ void PublishDriverEndpoints(struct Drivers *driver, char *path,
         ports[i].Size = sizeof(ports[i]);
         ports[i].Version = 1;
         ports[i].EndpointID = ids[i];
-        ports[i].Directions = CAMD_PROVIDER_DIRECTION_OUTPUT;
+        ports[i].Directions = CAMD_PROVIDER_DIRECTION_ALL;
         mysprintf(CamdBase, name, "%s.%ld", driver->mididevicedata->Name,
                   (long)i);
         name[sizeof(ports[i].Name) - 1] = '\0';
@@ -121,6 +122,16 @@ void PublishDriverEndpoints(struct Drivers *driver, char *path,
         goto done;
     }
 
+    /* From here on the receiver processes deliver to input sessions. A port
+     * whose SysEx buffer could not be had still publishes; it then delivers
+     * no SysEx. */
+    for (i = 0; i < count; ++i) {
+        driver->driverdatas[i]->EndpointSysEx =
+            AllocVec(ENDPOINT_OUTPUT_SYSEX, MEMF_ANY);
+        driver->driverdatas[i]->EndpointSysExLength = 0;
+        driver->driverdatas[i]->EndpointBackend = backend;
+    }
+
     D(bug("camd.library: %s published %ld endpoints, identity kind %ld\n",
           driver->mididevicedata->Name, (long)count, (long)kind));
     show_id("provider", 0, &provider_id);
@@ -153,6 +164,14 @@ BOOL UnpublishDriverEndpoints(struct Drivers *driver,
         driver->EndpointAdapter = NULL;
     }
     if (driver->EndpointBackend != NULL) {
+        ULONG i;
+
+        /* No session is left, so every port is closed for endpoints and its
+         * receiver process delivers nothing any more. */
+        for (i = 0; driver->driverdatas != NULL && i < driver->numports; ++i) {
+            if (driver->driverdatas[i] != NULL)
+                driver->driverdatas[i]->EndpointBackend = NULL;
+        }
         if (camd_legacy_driver_output_backend_destroy(
                 driver->EndpointBackend) != CAMD_PROVIDER_OK) {
             D(bug("camd.library: %s output sessions are still open\n",
@@ -162,4 +181,63 @@ BOOL UnpublishDriverEndpoints(struct Drivers *driver,
         driver->EndpointBackend = NULL;
     }
     return TRUE;
+}
+
+/* Called by the port's receiver process for each complete short message. */
+void DeliverDriverEndpointMidi(struct DriverData *driverdata,
+                               struct MyMidiMessage2 *msg2)
+{
+    struct CAMDMIDI1EventV1 event;
+    uint32_t dropped = 0;
+
+    if (msg2->len < 1 || msg2->len > 3)
+        return;
+    memset(&event, 0, sizeof(event));
+    event.Size = sizeof(event);
+    event.Version = 1;
+    event.Length = msg2->len;
+    event.Bytes[0] = msg2->status;
+    event.Bytes[1] = msg2->data1;
+    event.Bytes[2] = msg2->data2;
+    camd_legacy_driver_output_backend_receive_midi1(
+        driverdata->EndpointBackend, (size_t)driverdata->portnum, &event,
+        &dropped);
+    driverdata->EndpointInputDropped += dropped;
+}
+
+/* Called by the port's receiver process for each SysEx byte: 0xF0 starts a
+ * message, 0xF7 ends it and 0xFF tells that the driver broke it off. Input
+ * sessions get complete messages only. */
+void DeliverDriverEndpointSysEx(struct DriverData *driverdata, UBYTE data)
+{
+    uint32_t dropped = 0;
+
+    if (driverdata->EndpointSysEx == NULL)
+        return;
+    if (data == 0xf0) {
+        driverdata->EndpointSysExLength = 0;
+        driverdata->EndpointSysExOverflow = FALSE;
+    } else if (driverdata->EndpointSysExLength == 0) {
+        return;
+    }
+    if (data == 0xff) {
+        driverdata->EndpointSysExLength = 0;
+        return;
+    }
+    if (driverdata->EndpointSysExLength < ENDPOINT_OUTPUT_SYSEX)
+        driverdata->EndpointSysEx[driverdata->EndpointSysExLength++] = data;
+    else
+        driverdata->EndpointSysExOverflow = TRUE;
+    if (data == 0xf7) {
+        if (driverdata->EndpointSysExOverflow) {
+            ++driverdata->EndpointInputDropped;
+        } else {
+            camd_legacy_driver_output_backend_receive_sysex(
+                driverdata->EndpointBackend, (size_t)driverdata->portnum,
+                driverdata->EndpointSysEx, driverdata->EndpointSysExLength,
+                &dropped);
+            driverdata->EndpointInputDropped += dropped;
+        }
+        driverdata->EndpointSysExLength = 0;
+    }
 }

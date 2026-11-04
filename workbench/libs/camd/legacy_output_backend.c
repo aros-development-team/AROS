@@ -24,6 +24,7 @@ struct CAMDLegacyOutputBackend {
     struct backend_lock lock;
     struct CAMDLegacyOutputCallbacksV1 callbacks;
     struct CAMDLegacyOutputPortV1 *ports;
+    struct output_session **inputs;     /* per port, under lock */
     size_t port_count;
     uint32_t max_queue_capacity;
     uint32_t max_sysex_bytes;
@@ -43,6 +44,11 @@ struct output_session {
     int fanout_attached;
     int port_acquired;
     int pipeline_destroyed;
+    uint32_t direction;
+    /* Input sessions only; all under the backend lock. */
+    struct output_session *next_input;
+    struct CAMDProviderReceiveSinkV1 sink;
+    int receiving;
 };
 
 static void *backend_alloc(size_t size)
@@ -196,6 +202,178 @@ static void destroy_pipeline(struct output_session *session)
     session->pipeline_destroyed = 1;
 }
 
+static enum CAMDProviderResult open_input(
+    struct CAMDLegacyOutputBackend *backend,
+    const struct CAMDProviderOpenRequestV1 *request,
+    struct CAMDProviderOpenResultV1 *result)
+{
+    struct CAMDLegacyOutputPortV1 *port;
+    struct output_session *session;
+    enum CAMDProviderResult provider_result;
+    size_t index;
+
+    if (!backend->callbacks.AcquireInput ||
+        request->DataFormat != CAMD_PROVIDER_FORMAT_MIDI1 ||
+        request->Protocol != CAMD_PROVIDER_PROTOCOL_MIDI1 ||
+        request->QueueCapacity == 0 ||
+        request->QueueCapacity > backend->max_queue_capacity)
+        return CAMD_PROVIDER_UNSUPPORTED;
+    port = find_port(backend, &request->EndpointID);
+    if (!port)
+        return CAMD_PROVIDER_INVALID;
+    index = (size_t)(port - backend->ports);
+    lock_acquire(&backend->lock);
+    if (backend->retiring || backend->active_sessions == UINT32_MAX) {
+        lock_release(&backend->lock);
+        return backend->retiring ? CAMD_PROVIDER_RETIRED
+                                 : CAMD_PROVIDER_STATE;
+    }
+    ++backend->active_sessions;
+    lock_release(&backend->lock);
+
+    session = backend_alloc(sizeof(*session));
+    if (!session) {
+        release_reservation(backend);
+        return CAMD_PROVIDER_CALLBACK_FAILED;
+    }
+    session->backend = backend;
+    session->port = port;
+    session->direction = CAMD_PROVIDER_DIRECTION_INPUT;
+    session->pipeline_destroyed = 1;
+    provider_result = backend->callbacks.AcquireInput(port->Context);
+    if (provider_result != CAMD_PROVIDER_OK) {
+        backend_free(session);
+        release_reservation(backend);
+        return provider_result;
+    }
+    session->port_acquired = 1;
+    lock_acquire(&backend->lock);
+    session->next_input = backend->inputs[index];
+    backend->inputs[index] = session;
+    lock_release(&backend->lock);
+    result->SessionContext = session;
+    result->EffectiveQueueCapacity = request->QueueCapacity;
+    result->MaxSysExBytes = backend->max_sysex_bytes;
+    return CAMD_PROVIDER_OK;
+}
+
+static enum CAMDProviderResult close_input(
+    struct CAMDLegacyOutputBackend *backend, struct output_session *session)
+{
+    struct output_session **link;
+    enum CAMDProviderResult result;
+
+    /* Out of the list first: no delivery can then reach the session. */
+    lock_acquire(&backend->lock);
+    link = &backend->inputs[session->port - backend->ports];
+    while (*link && *link != session)
+        link = &(*link)->next_input;
+    if (*link)
+        *link = session->next_input;
+    session->receiving = 0;
+    lock_release(&backend->lock);
+    if (session->port_acquired) {
+        result = backend->callbacks.ReleaseInput(session->port->Context);
+        if (result != CAMD_PROVIDER_OK)
+            return result;
+        session->port_acquired = 0;
+    }
+    backend_free(session);
+    release_reservation(backend);
+    return CAMD_PROVIDER_OK;
+}
+
+static enum CAMDProviderResult backend_start_receive(
+    void *context, void *session_context,
+    const struct CAMDProviderReceiveSinkV1 *sink)
+{
+    struct CAMDLegacyOutputBackend *backend = context;
+    struct output_session *session = session_context;
+
+    if (!backend || !session || session->backend != backend ||
+        session->direction != CAMD_PROVIDER_DIRECTION_INPUT || !sink ||
+        sink->Size != sizeof(*sink) || sink->Version != 1 ||
+        !sink->SubmitMIDI1 || !sink->SubmitMIDI1SysEx)
+        return CAMD_PROVIDER_INVALID;
+    lock_acquire(&backend->lock);
+    if (session->receiving) {
+        lock_release(&backend->lock);
+        return CAMD_PROVIDER_STATE;
+    }
+    session->sink = *sink;
+    session->receiving = 1;
+    lock_release(&backend->lock);
+    return CAMD_PROVIDER_OK;
+}
+
+/* Deliveries hold the lock, so none is in a sink once this returns. */
+static enum CAMDProviderResult backend_stop_receive(void *context,
+                                                    void *session_context)
+{
+    struct CAMDLegacyOutputBackend *backend = context;
+    struct output_session *session = session_context;
+
+    if (!backend || !session || session->backend != backend ||
+        session->direction != CAMD_PROVIDER_DIRECTION_INPUT)
+        return CAMD_PROVIDER_INVALID;
+    lock_acquire(&backend->lock);
+    session->receiving = 0;
+    lock_release(&backend->lock);
+    return CAMD_PROVIDER_OK;
+}
+
+enum CAMDProviderResult camd_legacy_output_backend_receive_midi1(
+    struct CAMDLegacyOutputBackend *backend, size_t port_index,
+    const struct CAMDMIDI1EventV1 *event, uint32_t *dropped)
+{
+    struct output_session *session;
+    uint32_t lost = 0;
+
+    if (dropped)
+        *dropped = 0;
+    if (!backend || port_index >= backend->port_count || !event)
+        return CAMD_PROVIDER_INVALID;
+    lock_acquire(&backend->lock);
+    for (session = backend->inputs[port_index]; session;
+         session = session->next_input) {
+        if (session->receiving &&
+            session->sink.SubmitMIDI1(session->sink.Context, event, 1) !=
+                CAMD_PROVIDER_OK)
+            ++lost;
+    }
+    lock_release(&backend->lock);
+    if (dropped)
+        *dropped = lost;
+    return CAMD_PROVIDER_OK;
+}
+
+enum CAMDProviderResult camd_legacy_output_backend_receive_sysex(
+    struct CAMDLegacyOutputBackend *backend, size_t port_index,
+    const uint8_t *bytes, size_t byte_count, uint32_t *dropped)
+{
+    struct output_session *session;
+    uint32_t lost = 0;
+
+    if (dropped)
+        *dropped = 0;
+    if (!backend || port_index >= backend->port_count || !bytes ||
+        byte_count < 2)
+        return CAMD_PROVIDER_INVALID;
+    lock_acquire(&backend->lock);
+    for (session = backend->inputs[port_index]; session;
+         session = session->next_input) {
+        if (session->receiving &&
+            session->sink.SubmitMIDI1SysEx(session->sink.Context, bytes,
+                                           byte_count, 0, 0, 0, 0) !=
+                CAMD_PROVIDER_OK)
+            ++lost;
+    }
+    lock_release(&backend->lock);
+    if (dropped)
+        *dropped = lost;
+    return CAMD_PROVIDER_OK;
+}
+
 static enum CAMDProviderResult backend_open(
     void *context, const struct CAMDProviderOpenRequestV1 *request,
     struct CAMDProviderOpenResultV1 *result)
@@ -209,6 +387,9 @@ static enum CAMDProviderResult backend_open(
     struct CAMDProviderReceiveSinkV1 sink;
     enum CAMDProviderResult provider_result = CAMD_PROVIDER_CALLBACK_FAILED;
 
+    if (backend && request && result &&
+        request->Direction == CAMD_PROVIDER_DIRECTION_INPUT)
+        return open_input(backend, request, result);
     if (!backend || !request || !result ||
         request->Direction != CAMD_PROVIDER_DIRECTION_OUTPUT ||
         request->DataFormat != CAMD_PROVIDER_FORMAT_MIDI1 ||
@@ -235,6 +416,7 @@ static enum CAMDProviderResult backend_open(
     }
     session->backend = backend;
     session->port = port;
+    session->direction = CAMD_PROVIDER_DIRECTION_OUTPUT;
     memset(&queue_config, 0, sizeof(queue_config));
     queue_config.Size = sizeof(queue_config);
     queue_config.Version = 1;
@@ -306,6 +488,8 @@ static enum CAMDProviderResult backend_close(void *context,
 
     if (!backend || !session || session->backend != backend)
         return CAMD_PROVIDER_INVALID;
+    if (session->direction == CAMD_PROVIDER_DIRECTION_INPUT)
+        return close_input(backend, session);
     if (session->fanout_attached) {
         if (camd_native_worker_fanout_detach(
                 session->port->CapacityFanout, session->fanout_handle) !=
@@ -333,7 +517,8 @@ static enum CAMDProviderResult backend_send_midi1(
     struct output_session *session = session_context;
     enum CAMDNativeQueueResult result;
 
-    if (!backend || !session || session->backend != backend)
+    if (!backend || !session || session->backend != backend ||
+        session->direction != CAMD_PROVIDER_DIRECTION_OUTPUT)
         return CAMD_PROVIDER_INVALID;
     result = camd_native_queue_enqueue_midi1_items(session->queue, events,
                                                    event_count);
@@ -353,7 +538,8 @@ static enum CAMDProviderResult backend_send_sysex(
     struct output_session *session = session_context;
     enum CAMDNativeQueueResult result;
 
-    if (!backend || !session || session->backend != backend)
+    if (!backend || !session || session->backend != backend ||
+        session->direction != CAMD_PROVIDER_DIRECTION_OUTPUT)
         return CAMD_PROVIDER_INVALID;
     result = camd_native_queue_enqueue_midi1_sysex(
         session->queue, bytes, byte_count, time_high, time_low,
@@ -371,7 +557,8 @@ static enum CAMDProviderResult backend_drain(void *context,
     struct output_session *session = session_context;
     struct CAMDNativeQueueStatsV1 stats;
 
-    if (!backend || !session || session->backend != backend)
+    if (!backend || !session || session->backend != backend ||
+        session->direction != CAMD_PROVIDER_DIRECTION_OUTPUT)
         return CAMD_PROVIDER_INVALID;
     memset(&stats, 0, sizeof(stats));
     stats.Size = sizeof(stats);
@@ -392,7 +579,8 @@ static enum CAMDProviderResult backend_cancel(void *context,
     struct output_session *session = session_context;
     size_t cancelled;
 
-    if (!backend || !session || session->backend != backend)
+    if (!backend || !session || session->backend != backend ||
+        session->direction != CAMD_PROVIDER_DIRECTION_OUTPUT)
         return CAMD_PROVIDER_INVALID;
     return queue_result(camd_native_queue_cancel(session->queue, &cancelled));
 }
@@ -431,7 +619,9 @@ static int valid_config(const struct CAMDLegacyOutputBackendConfigV1 *config)
         config->Callbacks.Size != sizeof(config->Callbacks) ||
         config->Callbacks.Version != 1 || !config->Callbacks.Acquire ||
         !config->Callbacks.Release || !config->Callbacks.SubmitMIDI1 ||
-        !config->Callbacks.SubmitMIDI1SysEx || !config->Ports ||
+        !config->Callbacks.SubmitMIDI1SysEx ||
+        !config->Callbacks.AcquireInput != !config->Callbacks.ReleaseInput ||
+        !config->Ports ||
         config->PortCount == 0 ||
         config->PortCount > SIZE_MAX / sizeof(*config->Ports) ||
         config->MaxQueueCapacity == 0 || config->MaxSysExBytes < 2 ||
@@ -471,7 +661,11 @@ enum CAMDProviderResult camd_legacy_output_backend_create(
         return CAMD_PROVIDER_CALLBACK_FAILED;
     }
     backend->ports = backend_alloc(config->PortCount * sizeof(*backend->ports));
-    if (!backend->ports) {
+    backend->inputs = backend_alloc(config->PortCount *
+                                    sizeof(*backend->inputs));
+    if (!backend->ports || !backend->inputs) {
+        backend_free(backend->inputs);
+        backend_free(backend->ports);
         lock_destroy(&backend->lock);
         backend_free(backend);
         return CAMD_PROVIDER_CALLBACK_FAILED;
@@ -489,6 +683,10 @@ enum CAMDProviderResult camd_legacy_output_backend_create(
     backend->ops.Close = backend_close;
     backend->ops.SendMIDI1 = backend_send_midi1;
     backend->ops.SendMIDI1SysEx = backend_send_sysex;
+    if (config->Callbacks.AcquireInput) {
+        backend->ops.StartReceive = backend_start_receive;
+        backend->ops.StopReceive = backend_stop_receive;
+    }
     backend->ops.Drain = backend_drain;
     backend->ops.Cancel = backend_cancel;
     backend->ops.BeginShutdown = backend_begin_shutdown;
@@ -520,6 +718,7 @@ enum CAMDProviderResult camd_legacy_output_backend_destroy(
         return CAMD_PROVIDER_STATE;
     }
     lock_release(&backend->lock);
+    backend_free(backend->inputs);
     backend_free(backend->ports);
     lock_destroy(&backend->lock);
     backend_free(backend);

@@ -22,7 +22,8 @@
 
 /*  FUNCTION
 		Closes a session. Messages not yet sent are dropped; call
-		DrainEndpointSession() first to have them sent.
+		DrainEndpointSession() first to have them sent. Messages
+		received and not yet read are dropped too.
 
     INPUTS
 		session - from OpenEndpointSession().
@@ -49,6 +50,8 @@
     AROS_LIBFUNC_INIT
 
 	if(session==NULL) return CAMD_REGISTRY_INVALID;
+
+	StopEndpointReceiver(session,CamdBase);
 
 	return camd_registry_session_close(CB(CamdBase)->EndpointRegistry,*session);
 

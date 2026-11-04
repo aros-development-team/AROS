@@ -85,6 +85,7 @@
 #define ENDPOINT_OUTPUT_SYSEX 4096
 #define ENDPOINT_OUTPUT_BUDGET 16
 #define ENDPOINT_SNAPSHOTS 32
+#define ENDPOINT_RECEIVERS 64
 #define NUMBEROFSYSEXSTORECEIVE 1025
 
 struct MyMidiMessage2{
@@ -170,6 +171,15 @@ struct DriverData{
 	LONG EndpointOutputSig;
 	struct CAMDNativeWorkerFanout *EndpointOutputFanout;
 
+	/* Set while the port is a published endpoint. The receiver process
+	   hands what it parses to the endpoint's input sessions and collects
+	   each SysEx message here first. */
+	struct CAMDLegacyDriverOutputBackend *EndpointBackend;
+	UBYTE *EndpointSysEx;
+	ULONG EndpointSysExLength;
+	BOOL EndpointSysExOverflow;
+	ULONG EndpointInputDropped;	// messages an input session had no room for
+
 	UWORD *re_start;
 	UWORD *re_write;
 	UWORD *re_end;
@@ -249,6 +259,16 @@ struct ClusterWatch{
 
 struct CAMDEndpointRegistry;
 struct CAMDEndpointSnapshot;
+struct CAMDNativeEventQueue;
+
+/* The client side of an open input session. */
+struct EndpointReceiver{
+	struct CAMDHandleV1 session;	// generation 0 while the slot is free
+	struct CAMDNativeEventQueue *queue;
+	struct Task *task;
+	ULONG signal;			// signal number, or CAMD_SIGNAL_NONE
+	BOOL lost;			// the queue was full since the last read
+};
 struct CAMDIdentityStoreAROS;
 
 struct CamdBase_intern{
@@ -291,6 +311,9 @@ struct CamdBase_intern{
     struct SignalSemaphore EndpointClientSemaphore;
     struct CAMDEndpointSnapshot *EndpointSnapshots[ENDPOINT_SNAPSHOTS];
     ULONG EndpointSnapshotGenerations[ENDPOINT_SNAPSHOTS];
+
+    /* Input sessions' queues, also under EndpointClientSemaphore. */
+    struct EndpointReceiver EndpointReceivers[ENDPOINT_RECEIVERS];
 
 
 };
@@ -464,6 +487,17 @@ void RemoveEndpointSnapshot(const struct CAMDHandleV1 *handle,
 	struct CamdBase *CamdBase);
 void FreeEndpointSnapshots(struct CamdBase *CamdBase);
 BOOL EndpointClientsRemain(struct CamdBase *CamdBase);
+struct CAMDMIDI1EventV1;
+LONG StartEndpointReceiver(const struct CAMDHandleV1 *session,ULONG capacity,
+	ULONG maxsysex,ULONG signal,struct CamdBase *CamdBase);
+void StopEndpointReceiver(const struct CAMDHandleV1 *session,
+	struct CamdBase *CamdBase);
+LONG ReadEndpointReceiver(const struct CAMDHandleV1 *session,
+	struct CAMDMIDI1EventV1 *event,UBYTE *sysex,ULONG size,ULONG *length,
+	struct CamdBase *CamdBase);
+void DeliverDriverEndpointMidi(struct DriverData *driverdata,
+	struct MyMidiMessage2 *msg2);
+void DeliverDriverEndpointSysEx(struct DriverData *driverdata,UBYTE data);
 
 void FreeDriverData(struct Drivers *driver,
 	struct CamdBase *CamdBase

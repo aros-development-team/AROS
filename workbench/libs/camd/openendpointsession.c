@@ -40,9 +40,12 @@
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
-		change. Only CAMD_DIRECTION_OUTPUT sessions
-		of CAMD_DATA_FORMAT_MIDI1 open so far. Existing clusters and
-		links keep working on the same port, which is opened once.
+		change. Only CAMD_DATA_FORMAT_MIDI1 sessions
+		open so far. Existing clusters and links keep working on the
+		same port, which is opened once. An input session gets what
+		the port receives from then on; read it with
+		GetEndpointMidi(). The task that opens an input session is
+		the one signalled, with the request's Signal.
 		Close every session before closing camd.library.
 
     EXAMPLE
@@ -50,7 +53,8 @@
     BUGS
 
     SEE ALSO
-		CloseEndpointSession(), PutEndpointMidi(), PutEndpointSysEx()
+		CloseEndpointSession(), PutEndpointMidi(), PutEndpointSysEx(),
+		GetEndpointMidi()
 
     INTERNALS
 
@@ -91,15 +95,20 @@
 		&handle);
 	if(result!=CAMD_REGISTRY_OK) return result;
 
+	got.Size=sizeof(got);
+	got.Version=1;
+	result=camd_registry_session_info(CB(CamdBase)->EndpointRegistry,
+		handle,&got);
+	if(result==CAMD_REGISTRY_OK && got.Direction==CAMD_DIRECTION_INPUT){
+		result=StartEndpointReceiver(&handle,got.EffectiveQueueCapacity,
+			got.MaxSysExBytes,request->Signal,CamdBase);
+	}
+	if(result!=CAMD_REGISTRY_OK){
+		camd_registry_session_close(CB(CamdBase)->EndpointRegistry,handle);
+		return result;
+	}
+
 	if(info!=NULL){
-		got.Size=sizeof(got);
-		got.Version=1;
-		result=camd_registry_session_info(CB(CamdBase)->EndpointRegistry,
-			handle,&got);
-		if(result!=CAMD_REGISTRY_OK){
-			camd_registry_session_close(CB(CamdBase)->EndpointRegistry,handle);
-			return result;
-		}
 		full.Size=sizeof(full);
 		full.Version=1;
 		full.Direction=got.Direction;

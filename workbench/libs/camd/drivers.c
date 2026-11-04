@@ -378,6 +378,9 @@ void FreeDriverData(struct Drivers *driver,
 		for(lokke=0;lokke<driver->numports;lokke++){
 			driverdata=driver->driverdatas[lokke];
 			if(driverdata!=NULL){
+				if(driverdata->EndpointSysEx!=NULL){
+					FreeVec(driverdata->EndpointSysEx);
+				}
 				if(driverdata->EndpointOutputFanout!=NULL){
 					camd_native_worker_fanout_destroy(
 						driverdata->EndpointOutputFanout);

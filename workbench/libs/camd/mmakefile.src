@@ -62,7 +62,8 @@ FUNCS := \
     closeendpointsession \
     putendpointmidi \
     putendpointsysex \
-    drainendpointsession
+    drainendpointsession \
+    getendpointmidi
 
 #MM workbench-libs-camd-includes : \
 #MM     kernel-exec-includes \

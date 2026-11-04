@@ -55,6 +55,30 @@ static enum CAMDProviderResult release_output(void *context)
     return result;
 }
 
+static enum CAMDProviderResult acquire_input(void *context)
+{
+    struct driver_output_port *port = context;
+    enum CAMDProviderResult result;
+
+    ObtainSemaphore(CB(port->camd_base)->CLSemaphore);
+    result = AcquireDriverEndpointPort(
+        port->driver_data, CAMD_PROVIDER_DIRECTION_INPUT, port->camd_base);
+    ReleaseSemaphore(CB(port->camd_base)->CLSemaphore);
+    return result;
+}
+
+static enum CAMDProviderResult release_input(void *context)
+{
+    struct driver_output_port *port = context;
+    enum CAMDProviderResult result;
+
+    ObtainSemaphore(CB(port->camd_base)->CLSemaphore);
+    result = ReleaseDriverEndpointPort(
+        port->driver_data, CAMD_PROVIDER_DIRECTION_INPUT, port->camd_base);
+    ReleaseSemaphore(CB(port->camd_base)->CLSemaphore);
+    return result;
+}
+
 static enum CAMDProviderResult submit_midi1(
     void *context, const struct CAMDMIDI1EventV1 *event)
 {
@@ -179,6 +203,8 @@ enum CAMDProviderResult camd_legacy_driver_output_backend_create(
     backend_config.Callbacks.Release = release_output;
     backend_config.Callbacks.SubmitMIDI1 = submit_midi1;
     backend_config.Callbacks.SubmitMIDI1SysEx = submit_sysex;
+    backend_config.Callbacks.AcquireInput = acquire_input;
+    backend_config.Callbacks.ReleaseInput = release_input;
     backend_config.Ports = ports;
     backend_config.PortCount = config->PortCount;
     backend_config.MaxQueueCapacity = config->MaxQueueCapacity;
@@ -207,6 +233,28 @@ void *camd_legacy_driver_output_backend_context(
 {
     return backend ? camd_legacy_output_backend_context(backend->backend)
                    : NULL;
+}
+
+enum CAMDProviderResult camd_legacy_driver_output_backend_receive_midi1(
+    struct CAMDLegacyDriverOutputBackend *backend, size_t port_index,
+    const struct CAMDMIDI1EventV1 *event, uint32_t *dropped)
+{
+    if (!backend)
+        return CAMD_PROVIDER_INVALID;
+    return camd_legacy_output_backend_receive_midi1(backend->backend,
+                                                    port_index, event,
+                                                    dropped);
+}
+
+enum CAMDProviderResult camd_legacy_driver_output_backend_receive_sysex(
+    struct CAMDLegacyDriverOutputBackend *backend, size_t port_index,
+    const uint8_t *bytes, size_t byte_count, uint32_t *dropped)
+{
+    if (!backend)
+        return CAMD_PROVIDER_INVALID;
+    return camd_legacy_output_backend_receive_sysex(backend->backend,
+                                                    port_index, bytes,
+                                                    byte_count, dropped);
 }
 
 enum CAMDProviderResult camd_legacy_driver_output_backend_destroy(

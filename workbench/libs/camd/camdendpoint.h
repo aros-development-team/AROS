@@ -112,7 +112,12 @@ struct CAMDMIDI1EventV1 {
     ULONG ClockDomain;
 };
 
-/* QueueCapacity is the least number of native records to reserve. */
+/* CAMDSessionRequestV1.Signal when the opener wants no signal. */
+#define CAMD_SIGNAL_NONE                 0xffffffffu
+
+/* QueueCapacity is the least number of native records to reserve. Signal is
+ * for an input session: the number of the signal the opening task gets when
+ * something arrives, or CAMD_SIGNAL_NONE. */
 struct CAMDSessionRequestV1 {
     ULONG Size;
     ULONG Version;
@@ -122,6 +127,7 @@ struct CAMDSessionRequestV1 {
     ULONG Protocol;
     ULONG Conversion;
     ULONG QueueCapacity;
+    ULONG Signal;
 };
 
 /* What an open session got. MaxSysExBytes is zero for UMP. */

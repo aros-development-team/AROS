@@ -2,11 +2,13 @@
 #define CAMD_LEGACY_OUTPUT_BACKEND_H
 
 /*
- * Private bounded output backend for fixed-port MIDI 1.0 drivers.
+ * Private backend for fixed-port MIDI 1.0 drivers.
  *
- * Each provider session owns one native MIDI 1.0 queue, pump and worker. The
+ * Each output session owns one native MIDI 1.0 queue, pump and worker. The
  * physical port owns the fan-out used to retry blocked workers when driver
- * capacity is released. No MIDI 1.0 event is converted to UMP.
+ * capacity is released. An input session owns no queue: the driver's
+ * task-context receiver hands each complete message to the sinks of the
+ * port's receiving sessions. No MIDI 1.0 event is converted to UMP.
  */
 
 #include "native_worker_fanout.h"
@@ -29,6 +31,9 @@ struct CAMDLegacyOutputCallbacksV1 {
     CAMDLegacyOutputPortFnV1 Release;
     CAMDLegacyOutputMIDI1FnV1 SubmitMIDI1;
     CAMDLegacyOutputSysExFnV1 SubmitMIDI1SysEx;
+    /* Both NULL when the ports cannot be opened for input. */
+    CAMDLegacyOutputPortFnV1 AcquireInput;
+    CAMDLegacyOutputPortFnV1 ReleaseInput;
 };
 
 struct CAMDLegacyOutputPortV1 {
@@ -61,6 +66,16 @@ const struct CAMDProviderOpsV1 *camd_legacy_output_backend_ops(
     struct CAMDLegacyOutputBackend *backend);
 void *camd_legacy_output_backend_context(
     struct CAMDLegacyOutputBackend *backend);
+
+/* What port port_index received, for its receiving input sessions. Call from
+ * task context, one port at a time; a sink that has no room loses the message
+ * and *dropped, when given, counts those sinks. */
+enum CAMDProviderResult camd_legacy_output_backend_receive_midi1(
+    struct CAMDLegacyOutputBackend *backend, size_t port_index,
+    const struct CAMDMIDI1EventV1 *event, uint32_t *dropped);
+enum CAMDProviderResult camd_legacy_output_backend_receive_sysex(
+    struct CAMDLegacyOutputBackend *backend, size_t port_index,
+    const uint8_t *bytes, size_t byte_count, uint32_t *dropped);
 
 /* Fails with STATE while an open or live session still owns the backend. */
 enum CAMDProviderResult camd_legacy_output_backend_destroy(

@@ -1,7 +1,7 @@
 #ifndef CAMD_LEGACY_DRIVER_OUTPUT_BACKEND_H
 #define CAMD_LEGACY_DRIVER_OUTPUT_BACKEND_H
 
-/* Private AROS binding from the bounded MIDI 1.0 output backend to DriverData. */
+/* Private AROS binding from the MIDI 1.0 driver backend to DriverData. */
 
 #include "legacy_output_backend.h"
 
@@ -36,6 +36,14 @@ const struct CAMDProviderOpsV1 *camd_legacy_driver_output_backend_ops(
     struct CAMDLegacyDriverOutputBackend *backend);
 void *camd_legacy_driver_output_backend_context(
     struct CAMDLegacyDriverOutputBackend *backend);
+
+/* What port port_index received, from its receiver process. */
+enum CAMDProviderResult camd_legacy_driver_output_backend_receive_midi1(
+    struct CAMDLegacyDriverOutputBackend *backend, size_t port_index,
+    const struct CAMDMIDI1EventV1 *event, uint32_t *dropped);
+enum CAMDProviderResult camd_legacy_driver_output_backend_receive_sysex(
+    struct CAMDLegacyDriverOutputBackend *backend, size_t port_index,
+    const uint8_t *bytes, size_t byte_count, uint32_t *dropped);
 
 /* Retryable: returns STATE while provider sessions still own the backend. */
 enum CAMDProviderResult camd_legacy_driver_output_backend_destroy(
