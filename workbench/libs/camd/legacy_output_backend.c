@@ -150,6 +150,26 @@ static enum CAMDProviderResult queue_result(
     return CAMD_PROVIDER_STATE;
 }
 
+/* Whether the head message may go to the port now. One that has to wait
+ * tells the session's worker when to try again; the pump keeps it queued
+ * because the caller then reports no room. Times compare by their signed
+ * difference, so the clock may wrap. */
+static int due(struct output_session *session, uint32_t flags,
+               uint32_t time_low)
+{
+    int32_t ahead;
+
+    if ((flags & CAMD_EVENT_TIME_VALID) == 0 ||
+        !session->backend->callbacks.Now)
+        return 1;
+    ahead = (int32_t)(time_low -
+                      session->backend->callbacks.Now(session->port->Context));
+    if (ahead <= 0)
+        return 1;
+    camd_native_worker_wake_after(session->worker, (uint32_t)ahead);
+    return 0;
+}
+
 static enum CAMDProviderResult submit_midi1(
     void *context, const struct CAMDMIDI1EventV1 *events, size_t event_count)
 {
@@ -157,6 +177,8 @@ static enum CAMDProviderResult submit_midi1(
 
     if (!session || !events || event_count != 1)
         return CAMD_PROVIDER_INVALID;
+    if (!due(session, events->Flags, events->TimeLow))
+        return CAMD_PROVIDER_QUEUE_FULL;
     return session->backend->callbacks.SubmitMIDI1(session->port->Context,
                                                     events);
 }
@@ -170,6 +192,8 @@ static enum CAMDProviderResult submit_sysex(
 
     if (!session)
         return CAMD_PROVIDER_INVALID;
+    if (!due(session, flags, time_low))
+        return CAMD_PROVIDER_QUEUE_FULL;
     return session->backend->callbacks.SubmitMIDI1SysEx(
         session->port->Context, bytes, byte_count, time_high, time_low,
         clock_domain, flags);
@@ -509,6 +533,21 @@ static enum CAMDProviderResult backend_close(void *context,
     return CAMD_PROVIDER_OK;
 }
 
+/* A time in a clock this backend does not know cannot be kept. */
+static int known_clock(const struct CAMDMIDI1EventV1 *events,
+                       size_t event_count)
+{
+    size_t i;
+
+    for (i = 0; i < event_count; ++i) {
+        if ((events[i].Flags & CAMD_EVENT_TIME_VALID) != 0 &&
+            (events[i].ClockDomain != CAMD_CLOCK_CAMD ||
+             events[i].TimeHigh != 0))
+            return 0;
+    }
+    return 1;
+}
+
 static enum CAMDProviderResult backend_send_midi1(
     void *context, void *session_context,
     const struct CAMDMIDI1EventV1 *events, size_t event_count)
@@ -519,6 +558,8 @@ static enum CAMDProviderResult backend_send_midi1(
 
     if (!backend || !session || session->backend != backend ||
         session->direction != CAMD_PROVIDER_DIRECTION_OUTPUT)
+        return CAMD_PROVIDER_INVALID;
+    if (!known_clock(events, event_count))
         return CAMD_PROVIDER_INVALID;
     result = camd_native_queue_enqueue_midi1_items(session->queue, events,
                                                    event_count);

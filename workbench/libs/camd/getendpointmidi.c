@@ -31,7 +31,8 @@
 
     INPUTS
 		session - from OpenEndpointSession().
-		event - filled in with a short message.
+		event - filled in with a short message, or with the time of
+		    a System Exclusive message and a Length of 0.
 		sysex - where a System Exclusive message is copied to.
 		size - the room at sysex.
 		length - filled in with 0 for a short message, or with the

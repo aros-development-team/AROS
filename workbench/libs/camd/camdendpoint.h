@@ -117,8 +117,24 @@ enum CAMDRegistryResult {
     CAMD_REGISTRY_TOO_LARGE
 };
 
+/* CAMDMIDI1EventV1.Flags: the time fields hold a time. */
+#define CAMD_EVENT_TIME_VALID            (1u << 0)
+
+/* ClockDomain: TimeLow is CamdTime(), milliseconds that wrap after 2^32, and
+ * TimeHigh is 0. The only clock so far. */
+#define CAMD_CLOCK_CAMD                  1u
+
 /* A complete non-SysEx MIDI 1.0 message. Bytes are in wire order and Length
- * is 1..3. Running status never crosses an event boundary. */
+ * is 1..3. Running status never crosses an event boundary.
+ *
+ * Sent to a driver's port with CAMD_EVENT_TIME_VALID, the message is handed
+ * to the port when CamdTime() reaches TimeLow, or at once when that time has
+ * passed; without the flag it is handed over at once. A session's messages
+ * keep their order, so one that waits holds back those queued after it.
+ * A published endpoint gets the time as the client gave it.
+ *
+ * A received message has the flag set and the time it reached the session,
+ * unless its sender already gave it a time. */
 struct CAMDMIDI1EventV1 {
     ULONG Size;
     ULONG Version;

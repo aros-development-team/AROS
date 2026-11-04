@@ -51,6 +51,12 @@ enum CAMDNativeWorkerResult camd_native_worker_create(
 enum CAMDNativeWorkerResult camd_native_worker_wake(
     struct CAMDNativeEventWorker *worker);
 
+/* For the pump's downstream callback, which runs in the worker: when the
+ * pump then reports that it is blocked, the worker runs it again after at
+ * most this long, without a wake. Zero is taken as one millisecond. */
+enum CAMDNativeWorkerResult camd_native_worker_wake_after(
+    struct CAMDNativeEventWorker *worker, uint32_t milliseconds);
+
 #ifdef __AROS__
 /* Interrupt-safe AROS capacity notification.  Unlike the task-context wake,
  * this only calls Exec Signal() and does not acquire a semaphore or update

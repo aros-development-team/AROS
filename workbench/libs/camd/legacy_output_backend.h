@@ -34,6 +34,9 @@ struct CAMDLegacyOutputCallbacksV1 {
     /* Both NULL when the ports cannot be opened for input. */
     CAMDLegacyOutputPortFnV1 AcquireInput;
     CAMDLegacyOutputPortFnV1 ReleaseInput;
+    /* The CAMD_CLOCK_CAMD time in milliseconds. NULL sends every message at
+     * once, whatever its time. */
+    uint32_t (*Now)(void *context);
 };
 
 struct CAMDLegacyOutputPortV1 {

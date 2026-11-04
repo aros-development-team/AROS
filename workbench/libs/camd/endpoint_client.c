@@ -123,10 +123,25 @@ static enum CAMDProviderResult receiver_midi1(
     void *context, const struct CAMDMIDI1EventV1 *events, size_t event_count)
 {
     struct EndpointReceiver *receiver = context;
-    enum CAMDNativeQueueResult result;
+    struct CAMDMIDI1EventV1 event;
+    enum CAMDNativeQueueResult result = CAMD_NATIVE_QUEUE_OK, queued;
+    size_t i;
 
-    result = camd_native_queue_enqueue_midi1_items(receiver->queue, events,
-                                                   event_count);
+    /* One at a time, so that each can get its arrival time; what does not
+     * fit is lost, as the newest always is on input. */
+    for (i = 0; i < event_count; ++i) {
+        event = events[i];
+        if ((event.Flags & CAMD_EVENT_TIME_VALID) == 0) {
+            event.Flags |= CAMD_EVENT_TIME_VALID;
+            event.TimeHigh = 0;
+            event.TimeLow = CamdClock();
+            event.ClockDomain = CAMD_CLOCK_CAMD;
+        }
+        queued = camd_native_queue_enqueue_midi1_items(receiver->queue,
+                                                       &event, 1);
+        if (queued != CAMD_NATIVE_QUEUE_OK)
+            result = queued;
+    }
     receiver_arrived(receiver, result);
     return queue_to_provider(result);
 }
@@ -139,6 +154,12 @@ static enum CAMDProviderResult receiver_sysex(
     struct EndpointReceiver *receiver = context;
     enum CAMDNativeQueueResult result;
 
+    if ((flags & CAMD_EVENT_TIME_VALID) == 0) {
+        flags |= CAMD_EVENT_TIME_VALID;
+        time_high = 0;
+        time_low = CamdClock();
+        clock_domain = CAMD_CLOCK_CAMD;
+    }
     result = camd_native_queue_enqueue_midi1_sysex(
         receiver->queue, bytes, byte_count, time_high, time_low,
         clock_domain, flags);
@@ -283,6 +304,14 @@ LONG ReadEndpointReceiver(const struct CAMDHandleV1 *session,
                     receiver->queue, sysex, size, &info);
                 result = got == CAMD_NATIVE_QUEUE_OK ? CAMD_REGISTRY_OK
                                                      : CAMD_REGISTRY_EMPTY;
+                /* The message's time, in an event without bytes. */
+                memset(event, 0, sizeof(*event));
+                event->Size = sizeof(*event);
+                event->Version = 1;
+                event->Flags = info.Flags;
+                event->TimeHigh = info.TimeHigh;
+                event->TimeLow = info.TimeLow;
+                event->ClockDomain = info.ClockDomain;
             }
         } else {
             got = camd_native_queue_dequeue_midi1(receiver->queue, event, 1,

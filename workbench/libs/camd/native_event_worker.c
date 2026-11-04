@@ -4,6 +4,7 @@
 #include <string.h>
 
 #ifdef __AROS__
+#include <devices/timer.h>
 #include <dos/dos.h>
 #include <dos/dostags.h>
 #include <exec/memory.h>
@@ -14,6 +15,7 @@
 #else
 #include <pthread.h>
 #include <stdlib.h>
+#include <time.h>
 #endif
 
 struct worker_lock {
@@ -38,6 +40,7 @@ struct CAMDNativeEventWorker {
     int stop_requested;
     int exited;
     int stop_completed;
+    uint32_t retry_after_ms;    /* from camd_native_worker_wake_after() */
 #ifdef __AROS__
     struct Process *process;
     LONG wake_signal;
@@ -157,19 +160,62 @@ static void worker_entry(void)
 {
     struct CAMDNativeEventWorker *worker = FindTask(NULL)->tc_UserData;
     LONG signal_number = AllocSignal(-1);
+    struct MsgPort *timer_port = CreateMsgPort();
+    struct timerequest *timer = NULL;
+    BOOL timer_open = FALSE;
 
+    /* The timer is for camd_native_worker_wake_after(). */
+    if (timer_port)
+        timer = (struct timerequest *)CreateIORequest(timer_port,
+                                                      sizeof(*timer));
+    if (timer &&
+        OpenDevice((CONST_STRPTR)"timer.device", UNIT_MICROHZ,
+                   (struct IORequest *)timer, 0) == 0)
+        timer_open = TRUE;
     lock_acquire(&worker->lock);
-    if (signal_number == -1) {
+    if (signal_number == -1 || !timer_open) {
         worker->state = CAMD_NATIVE_WORKER_FAILED;
         worker->exited = 1;
         lock_release(&worker->lock);
+        if (timer_open)
+            CloseDevice((struct IORequest *)timer);
+        if (timer)
+            DeleteIORequest((struct IORequest *)timer);
+        if (timer_port)
+            DeleteMsgPort(timer_port);
+        if (signal_number != -1)
+            FreeSignal(signal_number);
         return;
     }
     worker->wake_signal = signal_number;
     worker->state = CAMD_NATIVE_WORKER_IDLE;
     lock_release(&worker->lock);
     for (;;) {
-        ULONG signals = Wait((1UL << signal_number) | SIGBREAKF_CTRL_C);
+        ULONG wake_mask = 1UL << signal_number;
+        ULONG timer_mask = 1UL << timer_port->mp_SigBit;
+        ULONG signals;
+        uint32_t retry;
+
+        lock_acquire(&worker->lock);
+        retry = worker->retry_after_ms;
+        worker->retry_after_ms = 0;
+        lock_release(&worker->lock);
+        if (retry != 0) {
+            timer->tr_node.io_Command = TR_ADDREQUEST;
+            timer->tr_time.tv_secs = retry / 1000;
+            timer->tr_time.tv_micro = (retry % 1000) * 1000;
+            SendIO((struct IORequest *)timer);
+            signals = Wait(wake_mask | timer_mask | SIGBREAKF_CTRL_C);
+            if (!CheckIO((struct IORequest *)timer))
+                AbortIO((struct IORequest *)timer);
+            WaitIO((struct IORequest *)timer);
+            SetSignal(0, timer_mask);
+            /* Its time has come: run the pump as for a wake. */
+            if (signals & timer_mask)
+                signals |= wake_mask;
+        } else {
+            signals = Wait(wake_mask | SIGBREAKF_CTRL_C);
+        }
 
         if (signals & SIGBREAKF_CTRL_C)
             break;
@@ -186,6 +232,9 @@ static void worker_entry(void)
         }
         lock_release(&worker->lock);
     }
+    CloseDevice((struct IORequest *)timer);
+    DeleteIORequest((struct IORequest *)timer);
+    DeleteMsgPort(timer_port);
     FreeSignal(signal_number);
     lock_acquire(&worker->lock);
     if (worker->state != CAMD_NATIVE_WORKER_FAILED)
@@ -201,8 +250,27 @@ static void *worker_entry(void *opaque)
     lock_acquire(&worker->lock);
     worker->state = CAMD_NATIVE_WORKER_IDLE;
     for (;;) {
-        while (!worker->wake_pending && !worker->stop_requested)
-            pthread_cond_wait(&worker->condition, &worker->lock.mutex);
+        while (!worker->wake_pending && !worker->stop_requested) {
+            struct timespec until;
+            uint32_t retry = worker->retry_after_ms;
+
+            worker->retry_after_ms = 0;
+            if (retry == 0) {
+                pthread_cond_wait(&worker->condition, &worker->lock.mutex);
+                continue;
+            }
+            clock_gettime(CLOCK_REALTIME, &until);
+            until.tv_sec += retry / 1000;
+            until.tv_nsec += (long)(retry % 1000) * 1000000L;
+            if (until.tv_nsec >= 1000000000L) {
+                until.tv_nsec -= 1000000000L;
+                ++until.tv_sec;
+            }
+            /* Its time has come: run the pump as for a wake. */
+            if (pthread_cond_timedwait(&worker->condition,
+                                       &worker->lock.mutex, &until) != 0)
+                worker->wake_pending = 1;
+        }
         if (worker->stop_requested)
             break;
         worker->wake_pending = 0;
@@ -306,6 +374,17 @@ enum CAMDNativeWorkerResult camd_native_worker_wake(
     worker->wake_pending = 1;
     pthread_cond_signal(&worker->condition);
 #endif
+    lock_release(&worker->lock);
+    return CAMD_NATIVE_WORKER_OK;
+}
+
+enum CAMDNativeWorkerResult camd_native_worker_wake_after(
+    struct CAMDNativeEventWorker *worker, uint32_t milliseconds)
+{
+    if (!worker)
+        return CAMD_NATIVE_WORKER_INVALID;
+    lock_acquire(&worker->lock);
+    worker->retry_after_ms = milliseconds ? milliseconds : 1;
     lock_release(&worker->lock);
     return CAMD_NATIVE_WORKER_OK;
 }

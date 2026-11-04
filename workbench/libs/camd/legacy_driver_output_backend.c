@@ -79,6 +79,12 @@ static enum CAMDProviderResult release_input(void *context)
     return result;
 }
 
+static uint32_t now_ms(void *context)
+{
+    (void)context;
+    return CamdClock();
+}
+
 static enum CAMDProviderResult submit_midi1(
     void *context, const struct CAMDMIDI1EventV1 *event)
 {
@@ -205,6 +211,7 @@ enum CAMDProviderResult camd_legacy_driver_output_backend_create(
     backend_config.Callbacks.SubmitMIDI1SysEx = submit_sysex;
     backend_config.Callbacks.AcquireInput = acquire_input;
     backend_config.Callbacks.ReleaseInput = release_input;
+    backend_config.Callbacks.Now = now_ms;
     backend_config.Ports = ports;
     backend_config.PortCount = config->PortCount;
     backend_config.MaxQueueCapacity = config->MaxQueueCapacity;

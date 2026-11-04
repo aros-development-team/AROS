@@ -39,7 +39,9 @@
     NOTES
 		New in V43 and provisional: the endpoint functions can still
 		change. Does not wait. SysEx goes through
-		PutEndpointSysEx().
+		PutEndpointSysEx(). An event with CAMD_EVENT_TIME_VALID is
+		handed to a driver's port when CamdTime() reaches its TimeLow,
+		and holds back the session's later messages until then.
 
     EXAMPLE
 
