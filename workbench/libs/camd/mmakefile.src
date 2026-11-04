@@ -8,7 +8,8 @@ FILES :=    drivers clusters init camdwait mididistr midifromdriver \
 	    unlinkmidilink getmidilinkfromownernode camdclock endpoint_registry \
 	    provider_contract legacy_driver_adapter native_event_queue \
 	    native_event_pump native_event_worker legacy_port_refs \
-	    native_worker_fanout
+	    native_worker_fanout legacy_output_backend \
+	    legacy_driver_output_backend
 
 FUNCS := \
     lockcamd \
