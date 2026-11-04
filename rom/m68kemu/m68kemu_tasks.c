@@ -773,22 +773,49 @@ void m68k_native_proc_exit(IPTR rc, IPTR data)
     m68k_context_release(ctx);
 }
 
-/* dos -498: CreateNewProc(D1=tags): NP_Entry is 68k code of the program */
-IPTR m68k_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
+static char *proc_name(struct M68KEmuContext *ctx, ULONG data)
 {
-    ULONG state = M68KEmu_GetD(cpu, 1), ti;
+    ULONG len;
+    char *name;
+
+    if (!m68k_in_mem(ctx, data, 1))
+        return NULL;
+    len = strnlen((char *)ctx->mem + data, ctx->mem_size - data);
+    if ((name = AllocVec(len + 1, MEMF_ANY)))
+    {
+        memcpy(name, ctx->mem + data, len);
+        name[len] = 0;
+    }
+    return name;
+}
+
+/* A process of the program: from CreateNewProc tags, or CreateProc's name,
+   priority, seglist and stack; NP_Entry or the seglist is 68k code */
+static IPTR create_proc(struct M68KEmuContext *ctx, void *cpu, ULONG state,
+                        ULONG name68k, LONG pri, ULONG seglist, ULONG stacksize)
+{
+    ULONG ti, tags = state;
     struct M68KChild *ch;
     struct TagItem t[20];
     struct Process *p;
     char *name = NULL;
     int n = 0;
-    ULONG seglist = 0;
 
     if (!(ch = AllocVec(sizeof(*ch), MEMF_CLEAR)))
         return 0;
     ch->ctx = ctx;
     ch->stacksize = 16384;
-    while ((ti = m68k_next_tag(ctx, &state)) && n < 12)
+    if (stacksize > ch->stacksize)
+        ch->stacksize = (stacksize + 15) & ~15;
+    if (name68k && (name = proc_name(ctx, name68k)))
+    {
+        t[n].ti_Tag = NP_Name; t[n++].ti_Data = (IPTR)name;
+    }
+    if (pri)
+    {
+        t[n].ti_Tag = NP_Priority; t[n++].ti_Data = (IPTR)pri;
+    }
+    while (state && (ti = m68k_next_tag(ctx, &state)) && n < 12)
     {
         ULONG tag = m68k_read32(ctx, ti), data = m68k_read32(ctx, ti + 4);
 
@@ -801,13 +828,8 @@ IPTR m68k_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
         case NP_ExitData:   ch->exitdata = data; break;
         case NP_Priority:   t[n].ti_Tag = tag; t[n++].ti_Data = (IPTR)(LONG)data; break;
         case NP_Name:
-            if (m68k_in_mem(ctx, data, 1))
+            if ((name = proc_name(ctx, data)))
             {
-                ULONG len = strnlen((char *)ctx->mem + data, ctx->mem_size - data);
-                if (!(name = AllocVec(len + 1, MEMF_ANY)))
-                    break;
-                memcpy(name, ctx->mem + data, len);
-                name[len] = 0;
                 t[n].ti_Tag = tag; t[n++].ti_Data = (IPTR)name;
             }
             break;
@@ -827,9 +849,13 @@ IPTR m68k_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
             break;
         }
     }
-    /* a program LoadSeg() gave it: a 68k one runs in this one's memory, a
-       native one (Directory Opus starting the WBStartup programs) natively */
-    if (!ch->entry && seglist)
+    /* a segment of the program itself, its code after the link (a program
+       that detaches its second hunk): run here; a program LoadSeg() gave
+       it: a 68k one runs in this one's memory, a native one (Directory
+       Opus starting the WBStartup programs) natively */
+    if (!ch->entry && seglist && seglist < (M68KEMU_HANDLE_BASE >> 2) && m68k_in_mem(ctx, seglist << 2, 8))
+        ch->entry = (seglist << 2) + 4;
+    else if (!ch->entry && seglist)
     {
         BPTR seg = m68k_bptr_in(ctx, seglist);
         IPTR hunk = 0;
@@ -879,9 +905,9 @@ IPTR m68k_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
     {
         if (ctx->trace_calls || ctx->trace_end)
         {
-            ULONG st = M68KEmu_GetD(cpu, 1), t2;
+            ULONG st = tags, t2;
             bug("[m68kemu] CreateNewProc: no 68k entry (%08lx), not started; tags:\n", (unsigned long)ch->entry);
-            while ((t2 = m68k_next_tag(ctx, &st)))
+            while (st && (t2 = m68k_next_tag(ctx, &st)))
                 bug("[m68kemu]   %08lx = %08lx\n", (unsigned long)m68k_read32(ctx, t2), (unsigned long)m68k_read32(ctx, t2 + 4));
         }
         FreeVec(ch);
@@ -907,6 +933,20 @@ IPTR m68k_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
         return 0;
     }
     return m68k_process_of(ctx, &p->pr_Task);
+}
+
+/* dos -498: CreateNewProc(D1=tags) */
+IPTR m68k_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
+{
+    return create_proc(ctx, cpu, M68KEmu_GetD(cpu, 1), 0, 0, 0, 0);
+}
+
+/* dos -138: CreateProc(D1=name, D2=pri, D3=seglist, D4=stack) -> the process's port */
+IPTR m68k_dos_CreateProc(struct M68KEmuContext *ctx, void *cpu)
+{
+    IPTR proc = create_proc(ctx, cpu, 0, M68KEmu_GetD(cpu, 1), (LONG)M68KEmu_GetD(cpu, 2),
+                            M68KEmu_GetD(cpu, 3), M68KEmu_GetD(cpu, 4));
+    return proc ? proc + M68K_PR_MSGPORT : 0;
 }
 
 /* dos -492: Cli(): the program's CommandLineInterface, a BPTR */

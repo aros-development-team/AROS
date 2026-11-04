@@ -330,7 +330,7 @@ ULONG m68k_process_of(struct M68KEmuContext *ctx, struct Task *task)
                 memset(ctx->mem + m68k_cli, 0, M68K_SIZEOF_CLI);
                 m68k_write32(ctx, m68k + M68K_PR_CLI, m68k_cli >> 2);
                 m68k_write32(ctx, m68k_cli + M68K_CLI_DEFAULTSTACK, 4096);
-                m68k_write32(ctx, m68k_cli + M68K_CLI_MODULE, ctx->seg_start ? (ctx->seg_start >> 2) : 1);
+                m68k_write32(ctx, m68k_cli + M68K_CLI_MODULE, ctx->seg_start ? ((ctx->seg_start - 4) >> 2) : 1);
                 if (ctx->program_name[0])
                 {
                     ULONG len = (ULONG)strnlen(ctx->program_name, sizeof(ctx->program_name) - 1);
@@ -2816,14 +2816,6 @@ static IPTR thunk_dos_Delay_m(struct M68KEmuContext *ctx, void *cpu)
     return 0;
 }
 
-static IPTR thunk_dos_CreateProc(struct M68KEmuContext *ctx, void *cpu)
-{
-    struct MsgPort *port = CreateProc((CONST_STRPTR)m68k_to_host(ctx, THUNK_D(1)),
-                                     THUNK_D(2), m68k_bptr_in(ctx, THUNK_D(3)), THUNK_D(4));
-    if (!port) return 0;
-    return shadow_create_by_name(ctx, "MsgPort", port);
-}
-
 /* ── DOS: CLI Init ── */
 
 static IPTR thunk_dos_CliInitNewcli(struct M68KEmuContext *ctx, void *cpu)
@@ -3190,7 +3182,7 @@ const struct M68KThunkEntry m68kemu_thunks_dos[] = {
     { 570, thunk_dos_SetProgramName_m },
     { 582, thunk_dos_SetPrompt_m },
     { 492, m68k_dos_Cli },
-    { 138, thunk_dos_CreateProc },
+    { 138, m68k_dos_CreateProc },
     { 930, thunk_dos_CliInitNewcli },
     { 936, thunk_dos_CliInitRun },
     { 150, thunk_dos_LoadSeg },
