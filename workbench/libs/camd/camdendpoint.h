@@ -81,6 +81,24 @@ struct CAMDEndpointInfoV1 {
     char Transport[CAMD_ENDPOINT_TRANSPORT_BYTES];
 };
 
+/* A change to the endpoints, read from a watch. After CAMD_ENDPOINT_EVENT_LOST
+ * events are missing: take a new snapshot. */
+enum CAMDEndpointWatchEventTypeV1 {
+    CAMD_ENDPOINT_EVENT_ADDED = 1,
+    CAMD_ENDPOINT_EVENT_UPDATED,
+    CAMD_ENDPOINT_EVENT_OFFLINE,
+    CAMD_ENDPOINT_EVENT_RETIRED,
+    CAMD_ENDPOINT_EVENT_LOST
+};
+
+struct CAMDEndpointWatchEventV1 {
+    ULONG Size;
+    ULONG Version;
+    struct CAMDGenerationV1 Generation;
+    struct CAMDEndpointIDV1 EndpointID;
+    ULONG Type;
+};
+
 /* What the endpoint functions return. */
 enum CAMDRegistryResult {
     CAMD_REGISTRY_OK = 0,

@@ -171,6 +171,8 @@ struct CAMDEndpointWatch {
     size_t count;
     int lost;
     struct CAMDGenerationV1 lost_generation;
+    void (*notify)(void *context);
+    void *notify_context;
 };
 
 typedef char endpoint_size_must_be_360[
@@ -221,6 +223,8 @@ static void notify_watches(struct CAMDEndpointRegistry *registry,
         if (watch->lost || watch->count == watch->capacity) {
             watch->lost = 1;
             watch->lost_generation = registry->generation;
+            if (watch->notify)
+                watch->notify(watch->notify_context);
             continue;
         }
         tail = (watch->head + watch->count) % watch->capacity;
@@ -232,6 +236,8 @@ static void notify_watches(struct CAMDEndpointRegistry *registry,
         event->EndpointID = *id;
         event->Type = type;
         ++watch->count;
+        if (watch->notify)
+            watch->notify(watch->notify_context);
     }
 }
 
@@ -2033,6 +2039,22 @@ enum CAMDRegistryResult camd_endpoint_watch_read(
     }
     core_lock_release(&registry->lock);
     return result;
+}
+
+enum CAMDRegistryResult camd_endpoint_watch_set_notify(
+    struct CAMDEndpointWatch *watch, void (*notify)(void *context),
+    void *context)
+{
+    struct CAMDEndpointRegistry *registry;
+
+    if (!watch || !watch->registry)
+        return CAMD_REGISTRY_INVALID;
+    registry = watch->registry;
+    core_lock_acquire(&registry->lock);
+    watch->notify = notify;
+    watch->notify_context = context;
+    core_lock_release(&registry->lock);
+    return CAMD_REGISTRY_OK;
 }
 
 void camd_endpoint_watch_end(struct CAMDEndpointWatch *watch)

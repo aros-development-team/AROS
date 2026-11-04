@@ -76,6 +76,10 @@ BOOL EndpointClientsRemain(struct CamdBase *CamdBase)
         if (base->EndpointSnapshots[i] != NULL)
             return TRUE;
     }
+    for (i = 0; i < ENDPOINT_WATCHES; ++i) {
+        if (base->EndpointWatchers[i].watch != NULL)
+            return TRUE;
+    }
     return camd_registry_session_count(base->EndpointRegistry) != 0;
 }
 
@@ -288,4 +292,105 @@ LONG ReadEndpointReceiver(const struct CAMDHandleV1 *session,
     }
     ReleaseSemaphore(&base->EndpointClientSemaphore);
     return result;
+}
+
+/* Runs with the registry locked, in whatever task changed an endpoint. */
+static void watcher_notify(void *context)
+{
+    struct EndpointWatcher *watcher = context;
+
+    if (watcher->signal != CAMD_SIGNAL_NONE)
+        Signal(watcher->task, 1UL << watcher->signal);
+}
+
+/* The calling task is the one that gets the signal. */
+LONG StartEndpointWatcher(struct CAMDHandleV1 *handle, ULONG signal,
+                          struct CAMDGenerationV1 *generation,
+                          struct CamdBase *CamdBase)
+{
+    struct CamdBase_intern *base = CB(CamdBase);
+    struct EndpointWatcher *watcher = NULL;
+    struct CAMDGenerationV1 started;
+    LONG result;
+    ULONG i;
+
+    if (signal != CAMD_SIGNAL_NONE && signal > 31)
+        return CAMD_REGISTRY_INVALID;
+
+    ObtainSemaphore(&base->EndpointClientSemaphore);
+    for (i = 0; i < ENDPOINT_WATCHES; ++i) {
+        if (base->EndpointWatchers[i].watch == NULL) {
+            watcher = &base->EndpointWatchers[i];
+            break;
+        }
+    }
+    if (watcher == NULL) {
+        ReleaseSemaphore(&base->EndpointClientSemaphore);
+        return CAMD_REGISTRY_NOMEM;
+    }
+    result = camd_registry_watch_start(base->EndpointRegistry,
+                                       ENDPOINT_WATCH_EVENTS,
+                                       &watcher->watch, &started);
+    if (result == CAMD_REGISTRY_OK) {
+        if (++watcher->generation == 0)
+            ++watcher->generation;
+        watcher->task = FindTask(NULL);
+        watcher->signal = signal;
+        camd_endpoint_watch_set_notify(watcher->watch, watcher_notify,
+                                       watcher);
+        handle->slot = i;
+        handle->generation = watcher->generation;
+        if (generation != NULL)
+            *generation = started;
+    } else {
+        watcher->watch = NULL;
+    }
+    ReleaseSemaphore(&base->EndpointClientSemaphore);
+    return result;
+}
+
+/* EndpointClientSemaphore must be held. */
+static struct EndpointWatcher *find_watcher(
+    const struct CAMDHandleV1 *handle, struct CamdBase *CamdBase)
+{
+    struct CamdBase_intern *base = CB(CamdBase);
+
+    if (handle->slot >= ENDPOINT_WATCHES || handle->generation == 0 ||
+        base->EndpointWatchers[handle->slot].watch == NULL ||
+        base->EndpointWatchers[handle->slot].generation != handle->generation)
+        return NULL;
+    return &base->EndpointWatchers[handle->slot];
+}
+
+LONG ReadEndpointWatcher(const struct CAMDHandleV1 *handle,
+                         struct CAMDEndpointWatchEventV1 *event,
+                         struct CamdBase *CamdBase)
+{
+    struct CamdBase_intern *base = CB(CamdBase);
+    struct EndpointWatcher *watcher;
+    LONG result = CAMD_REGISTRY_STALE;
+
+    ObtainSemaphoreShared(&base->EndpointClientSemaphore);
+    watcher = find_watcher(handle, CamdBase);
+    if (watcher != NULL)
+        result = camd_endpoint_watch_read(watcher->watch, event);
+    ReleaseSemaphore(&base->EndpointClientSemaphore);
+    return result;
+}
+
+void EndEndpointWatcher(const struct CAMDHandleV1 *handle,
+                        struct CamdBase *CamdBase)
+{
+    struct CamdBase_intern *base = CB(CamdBase);
+    struct EndpointWatcher *watcher;
+
+    ObtainSemaphore(&base->EndpointClientSemaphore);
+    watcher = find_watcher(handle, CamdBase);
+    if (watcher != NULL) {
+        /* Ending it takes the registry lock, so no notify is running or
+         * comes afterwards. */
+        camd_endpoint_watch_end(watcher->watch);
+        watcher->watch = NULL;
+    }
+    ReleaseSemaphore(&base->EndpointClientSemaphore);
 }

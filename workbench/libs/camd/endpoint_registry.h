@@ -37,22 +37,6 @@ struct CAMDFunctionBlockInfoV1 {
     char Name[CAMD_TOPOLOGY_NAME_BYTES];
 };
 
-enum CAMDEndpointWatchEventTypeV1 {
-    CAMD_ENDPOINT_EVENT_ADDED = 1,
-    CAMD_ENDPOINT_EVENT_UPDATED,
-    CAMD_ENDPOINT_EVENT_OFFLINE,
-    CAMD_ENDPOINT_EVENT_RETIRED,
-    CAMD_ENDPOINT_EVENT_LOST
-};
-
-struct CAMDEndpointWatchEventV1 {
-    uint32_t Size;
-    uint32_t Version;
-    struct CAMDGenerationV1 Generation;
-    struct CAMDEndpointIDV1 EndpointID;
-    uint32_t Type;
-};
-
 struct CAMDEndpointRegistry;
 struct CAMDEndpointSnapshot;
 struct CAMDEndpointWatch;
@@ -199,6 +183,12 @@ enum CAMDRegistryResult camd_registry_watch_start(
 enum CAMDRegistryResult camd_endpoint_watch_read(
     struct CAMDEndpointWatch *watch,
     struct CAMDEndpointWatchEventV1 *event);
+
+/* notify runs with the registry locked each time the watch gains an event or
+ * loses one: it may signal a task and must not call the registry. */
+enum CAMDRegistryResult camd_endpoint_watch_set_notify(
+    struct CAMDEndpointWatch *watch, void (*notify)(void *context),
+    void *context);
 
 void camd_endpoint_watch_end(struct CAMDEndpointWatch *watch);
 

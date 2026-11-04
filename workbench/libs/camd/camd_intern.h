@@ -86,6 +86,8 @@
 #define ENDPOINT_OUTPUT_BUDGET 16
 #define ENDPOINT_SNAPSHOTS 32
 #define ENDPOINT_RECEIVERS 64
+#define ENDPOINT_WATCHES 16
+#define ENDPOINT_WATCH_EVENTS 32
 #define NUMBEROFSYSEXSTORECEIVE 1025
 
 struct MyMidiMessage2{
@@ -260,6 +262,15 @@ struct ClusterWatch{
 struct CAMDEndpointRegistry;
 struct CAMDEndpointSnapshot;
 struct CAMDNativeEventQueue;
+struct CAMDEndpointWatch;
+
+/* A StartEndpointWatch() handle. */
+struct EndpointWatcher{
+	struct CAMDEndpointWatch *watch;	// NULL while the slot is free
+	ULONG generation;
+	struct Task *task;
+	ULONG signal;			// signal number, or CAMD_SIGNAL_NONE
+};
 
 /* The client side of an open input session. */
 struct EndpointReceiver{
@@ -314,6 +325,9 @@ struct CamdBase_intern{
 
     /* Input sessions' queues, also under EndpointClientSemaphore. */
     struct EndpointReceiver EndpointReceivers[ENDPOINT_RECEIVERS];
+
+    /* Endpoint watches, also under EndpointClientSemaphore. */
+    struct EndpointWatcher EndpointWatchers[ENDPOINT_WATCHES];
 
 
 };
@@ -494,6 +508,14 @@ void StopEndpointReceiver(const struct CAMDHandleV1 *session,
 	struct CamdBase *CamdBase);
 LONG ReadEndpointReceiver(const struct CAMDHandleV1 *session,
 	struct CAMDMIDI1EventV1 *event,UBYTE *sysex,ULONG size,ULONG *length,
+	struct CamdBase *CamdBase);
+struct CAMDGenerationV1;
+struct CAMDEndpointWatchEventV1;
+LONG StartEndpointWatcher(struct CAMDHandleV1 *handle,ULONG signal,
+	struct CAMDGenerationV1 *generation,struct CamdBase *CamdBase);
+LONG ReadEndpointWatcher(const struct CAMDHandleV1 *handle,
+	struct CAMDEndpointWatchEventV1 *event,struct CamdBase *CamdBase);
+void EndEndpointWatcher(const struct CAMDHandleV1 *handle,
 	struct CamdBase *CamdBase);
 void DeliverDriverEndpointMidi(struct DriverData *driverdata,
 	struct MyMidiMessage2 *msg2);
