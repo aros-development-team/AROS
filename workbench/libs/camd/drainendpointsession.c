@@ -39,8 +39,8 @@
 
     NOTES
 		New in V43 and provisional: the endpoint functions can still
-		change. It looks again every two milliseconds; the time is
-		measured with CamdTime(). Without memory for its timer it
+		change. It is woken when the queue has been emptied; the time
+		is measured with CamdTime(). Without memory for its timer it
 		returns CAMD_REGISTRY_QUEUE_FULL early.
 
     EXAMPLE
@@ -56,27 +56,48 @@
 {
     AROS_LIBFUNC_INIT
 
-	struct timerequest *pause=NULL;
-	ULONG start=CamdClock();
-	LONG result;
+	struct timerequest *pause;
+	ULONG start=CamdClock(),elapsed,wait,signals=0;
+	LONG result,slot=-1;
+	BYTE bit;
 
 	if(session==NULL) return CAMD_REGISTRY_INVALID;
 
-	/* The session's worker or the publisher empties the queue;
-	   QUEUE_FULL means something is still in it. */
+	result=camd_registry_session_drain(CB(CamdBase)->EndpointRegistry,*session);
+	if(result!=CAMD_REGISTRY_QUEUE_FULL || milliseconds==0) return result;
+
+	/* The session's worker, or the publisher's read, signals this task
+	   when a queue has been emptied; the timer is for the limit. Without
+	   a signal or a place among the waiting tasks it looks every two
+	   milliseconds instead. Every wait really blocks, so the worker runs
+	   also when the caller holds Forbid(). */
+	pause=OpenEndpointPause();
+	if(pause==NULL) return result;
+	bit=AllocSignal(-1);
+	if(bit>=0){
+		signals=1UL<<bit;
+		SetSignal(0,signals);
+		slot=AddEndpointDrainer(signals,CamdBase);
+		if(slot<0) signals=0;
+	}
+
 	for(;;){
 		result=camd_registry_session_drain(CB(CamdBase)->EndpointRegistry,
 			*session);
 		if(result!=CAMD_REGISTRY_QUEUE_FULL) break;
-		if(milliseconds!=CAMD_WAIT_FOREVER &&
-		   CamdClock()-start>=milliseconds) break;
-		/* A real wait. CamdWait() returns at once when its helper
-		   process has not run since the last call, which is always
-		   so for a caller that holds Forbid(). */
-		if(pause==NULL) pause=OpenEndpointPause();
-		if(pause==NULL) break;
-		EndpointPause(pause);
+		elapsed=CamdClock()-start;
+		if(milliseconds!=CAMD_WAIT_FOREVER && elapsed>=milliseconds) break;
+		wait=signals!=0 ? 1000 : 2;
+		if(milliseconds!=CAMD_WAIT_FOREVER && milliseconds-elapsed<wait){
+			wait=milliseconds-elapsed;
+		}
+		if(wait==0) wait=1;
+		EndpointPause(pause,wait,signals);
+		SetSignal(0,signals);
 	}
+
+	RemoveEndpointDrainer(slot,CamdBase);
+	if(bit>=0) FreeSignal(bit);
 	CloseEndpointPause(pause);
 
 	return result;

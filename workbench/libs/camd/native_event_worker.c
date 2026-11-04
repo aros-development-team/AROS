@@ -41,6 +41,8 @@ struct CAMDNativeEventWorker {
     int exited;
     int stop_completed;
     uint32_t retry_after_ms;    /* from camd_native_worker_wake_after() */
+    void (*idle)(void *context);
+    void *idle_context;
 #ifdef __AROS__
     struct Process *process;
     LONG wake_signal;
@@ -146,6 +148,8 @@ static int pump_until_wait(struct CAMDNativeEventWorker *worker)
         lock_release(&worker->lock);
         if (result == CAMD_NATIVE_PUMP_OK)
             continue;
+        if (result == CAMD_NATIVE_PUMP_EMPTY && worker->idle)
+            worker->idle(worker->idle_context);
         if (result == CAMD_NATIVE_PUMP_EMPTY ||
             result == CAMD_NATIVE_PUMP_BLOCKED ||
             result == CAMD_NATIVE_PUMP_DOWNSTREAM ||
@@ -311,6 +315,8 @@ enum CAMDNativeWorkerResult camd_native_worker_create(
     }
     worker->pump = pump;
     worker->item_budget = config->ItemBudget;
+    worker->idle = config->Idle;
+    worker->idle_context = config->IdleContext;
     worker->state = CAMD_NATIVE_WORKER_STARTING;
 #ifdef __AROS__
     worker->wake_signal = -1;

@@ -79,6 +79,13 @@ static enum CAMDProviderResult release_input(void *context)
     return result;
 }
 
+static void drained(void *context)
+{
+    struct driver_output_port *port = context;
+
+    NotifyEndpointDrained(port->camd_base);
+}
+
 static uint32_t now_ms(void *context)
 {
     (void)context;
@@ -212,6 +219,7 @@ enum CAMDProviderResult camd_legacy_driver_output_backend_create(
     backend_config.Callbacks.AcquireInput = acquire_input;
     backend_config.Callbacks.ReleaseInput = release_input;
     backend_config.Callbacks.Now = now_ms;
+    backend_config.Callbacks.Drained = drained;
     backend_config.Ports = ports;
     backend_config.PortCount = config->PortCount;
     backend_config.MaxQueueCapacity = config->MaxQueueCapacity;

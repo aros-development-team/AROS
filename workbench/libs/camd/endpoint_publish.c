@@ -28,6 +28,18 @@ static void publisher_notify(void *context)
         Signal(publisher->task, 1UL << publisher->signal);
 }
 
+static uint32_t publisher_now(void *context)
+{
+    (void)context;
+    return CamdClock();
+}
+
+/* The publisher took a message: a client may be waiting for that. */
+static void publisher_taken(void *context)
+{
+    NotifyEndpointDrained(context);
+}
+
 /* EndpointClientSemaphore must be held exclusively. Frees what withdrawn
  * endpoints no client holds any more. */
 static void reap_publishers(struct CamdBase *CamdBase)
@@ -188,7 +200,10 @@ LONG PublishAppEndpoint(const struct CAMDPublishRequestV1 *request,
     if (request->Size != sizeof(*request) || request->Version != 1 ||
         request->Directions == 0 ||
         (request->Directions & ~CAMD_PROVIDER_DIRECTION_ALL) != 0 ||
-        (request->Flags & ~CAMD_PUBLISH_TEMPORARY) != 0 ||
+        (request->Flags &
+         ~(CAMD_PUBLISH_TEMPORARY | CAMD_PUBLISH_HOLD_UNTIL_DUE)) != 0 ||
+        ((request->Flags & CAMD_PUBLISH_HOLD_UNTIL_DUE) != 0 &&
+         request->DataFormat != CAMD_DATA_FORMAT_MIDI1) ||
         !usable_name(request->Name, request->DataFormat) ||
         (request->Signal != CAMD_SIGNAL_NONE && request->Signal > 31) ||
         !terminated(request->ProductInstance,
@@ -253,6 +268,10 @@ LONG PublishAppEndpoint(const struct CAMDPublishRequestV1 *request,
     config.Protocol = request->Protocol;
     config.Notify = publisher_notify;
     config.NotifyContext = publisher;
+    config.Taken = publisher_taken;
+    config.TakenContext = CamdBase;
+    if ((request->Flags & CAMD_PUBLISH_HOLD_UNTIL_DUE) != 0)
+        config.Now = publisher_now;
     if (camd_app_endpoint_create(&config, &publisher->app) !=
         CAMD_PROVIDER_OK) {
         publisher->app = NULL;
@@ -326,6 +345,8 @@ void WithdrawAppEndpoint(const struct CAMDHandleV1 *handle,
         camd_app_endpoint_detach(publisher->app);
         camd_legacy_driver_adapter_begin_retire(publisher->adapter);
         publisher->withdrawn = TRUE;
+        /* Whoever waits for its sessions to drain will wait in vain. */
+        NotifyEndpointDrained(CamdBase);
     }
     reap_publishers(CamdBase);
     ReleaseSemaphore(&base->EndpointClientSemaphore);

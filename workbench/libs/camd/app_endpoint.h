@@ -11,7 +11,7 @@
  * client session has closed.
  */
 
-#include "provider_contract.h"
+#include "native_event_worker.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -29,8 +29,19 @@ struct CAMDAppEndpointConfigV1 {
      * MaxSysExBytes is not used and there is no legacy side. */
     uint32_t DataFormat;
     uint32_t Protocol;
-    /* Called, outside the endpoint's lock, when a client queued something.
-     * May be NULL. */
+    /* With Now, a MIDI 1.0 endpoint keeps each client message that has a
+     * time until that time has come: the publisher is notified and can take
+     * it only then, in time order per session. Each output session then has
+     * a worker of its own. NULL hands every message over as it arrives,
+     * with its time for the publisher to keep. */
+    uint32_t (*Now)(void *context);
+    void *NowContext;
+    /* Called, outside the endpoint's lock, each time the publisher took a
+     * message, for whoever waits for a session to be drained. May be NULL. */
+    void (*Taken)(void *context);
+    void *TakenContext;
+    /* Called, outside the endpoint's lock, when a client queued something
+     * the publisher can take. May be NULL. */
     void (*Notify)(void *context);
     void *NotifyContext;
 };

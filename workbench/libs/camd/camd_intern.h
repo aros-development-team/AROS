@@ -89,6 +89,7 @@
 #define ENDPOINT_RECEIVERS 64
 #define ENDPOINT_WATCHES 16
 #define ENDPOINT_PUBLISHERS 32
+#define ENDPOINT_DRAINERS 16
 
 /* What a task can leave behind; see OwnEndpointObject(). */
 #define ENDPOINT_OWNED_SNAPSHOT  1
@@ -363,6 +364,11 @@ struct CamdBase_intern{
     /* Published endpoints, also under EndpointClientSemaphore. */
     struct EndpointPublisher EndpointPublishers[ENDPOINT_PUBLISHERS];
 
+    /* Tasks inside DrainEndpointSession(), and the signal each waits for.
+       Read and written under Forbid(), since session workers signal them. */
+    struct Task *EndpointDrainers[ENDPOINT_DRAINERS];
+    ULONG EndpointDrainSignals[ENDPOINT_DRAINERS];
+
     /* Which task has the library open how often, and which endpoint objects
        it made, so that they go when it closes the library for the last
        time. Under EndpointOwnerSemaphore, taken last. */
@@ -544,7 +550,10 @@ void FreeEndpointSnapshots(struct CamdBase *CamdBase);
 BOOL EndpointClientsRemain(struct CamdBase *CamdBase);
 struct timerequest;
 struct timerequest *OpenEndpointPause(void);
-void EndpointPause(struct timerequest *pause);
+void EndpointPause(struct timerequest *pause,ULONG milliseconds,ULONG signals);
+LONG AddEndpointDrainer(ULONG signals,struct CamdBase *CamdBase);
+void RemoveEndpointDrainer(LONG slot,struct CamdBase *CamdBase);
+void NotifyEndpointDrained(struct CamdBase *CamdBase);
 void CloseEndpointPause(struct timerequest *pause);
 struct CAMDMIDI1EventV1;
 LONG StartEndpointReceiver(const struct CAMDHandleV1 *session,ULONG format,

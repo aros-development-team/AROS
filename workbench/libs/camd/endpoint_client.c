@@ -484,8 +484,8 @@ LONG ReadEndpointReceiverUMP(const struct CAMDHandleV1 *session,
     return result;
 }
 
-/* A two-millisecond sleep for a caller that polls, from any task and also
- * under Forbid(): it waits on timer.device with a port of its own. */
+/* A timer of the calling task's own, for sleeps that really wait, also
+ * under Forbid(). */
 struct timerequest *OpenEndpointPause(void)
 {
     struct MsgPort *port = CreateMsgPort();
@@ -504,12 +504,68 @@ struct timerequest *OpenEndpointPause(void)
     return NULL;
 }
 
-void EndpointPause(struct timerequest *pause)
+/* Sleeps that long, or until one of the signals arrives, whichever is first.
+ * The signals stay set for the caller to see. */
+void EndpointPause(struct timerequest *pause, ULONG milliseconds,
+                   ULONG signals)
 {
+    ULONG timer = 1UL << pause->tr_node.io_Message.mn_ReplyPort->mp_SigBit;
+
     pause->tr_node.io_Command = TR_ADDREQUEST;
-    pause->tr_time.tv_secs = 0;
-    pause->tr_time.tv_micro = 2000;
-    DoIO((struct IORequest *)pause);
+    pause->tr_time.tv_secs = milliseconds / 1000;
+    pause->tr_time.tv_micro = (milliseconds % 1000) * 1000;
+    SendIO((struct IORequest *)pause);
+    Wait(timer | signals);
+    if (!CheckIO((struct IORequest *)pause))
+        AbortIO((struct IORequest *)pause);
+    WaitIO((struct IORequest *)pause);
+    SetSignal(0, timer);
+}
+
+/* A task that waits for a session to be drained names the signal it wants.
+ * Returns its place, or -1 when all are taken: it then has to poll. */
+LONG AddEndpointDrainer(ULONG signals, struct CamdBase *CamdBase)
+{
+    struct CamdBase_intern *base = CB(CamdBase);
+    LONG slot = -1;
+    ULONG i;
+
+    Forbid();
+    for (i = 0; i < ENDPOINT_DRAINERS; ++i) {
+        if (base->EndpointDrainers[i] == NULL) {
+            base->EndpointDrainSignals[i] = signals;
+            base->EndpointDrainers[i] = FindTask(NULL);
+            slot = (LONG)i;
+            break;
+        }
+    }
+    Permit();
+    return slot;
+}
+
+void RemoveEndpointDrainer(LONG slot, struct CamdBase *CamdBase)
+{
+    if (slot < 0)
+        return;
+    Forbid();
+    CB(CamdBase)->EndpointDrainers[slot] = NULL;
+    Permit();
+}
+
+/* A session handed over what it had, or its endpoint went: called from
+ * session workers and from the publishing functions. It tells every waiting
+ * task, which then looks at its own session. */
+void NotifyEndpointDrained(struct CamdBase *CamdBase)
+{
+    struct CamdBase_intern *base = CB(CamdBase);
+    ULONG i;
+
+    Forbid();
+    for (i = 0; i < ENDPOINT_DRAINERS; ++i) {
+        if (base->EndpointDrainers[i] != NULL)
+            Signal(base->EndpointDrainers[i], base->EndpointDrainSignals[i]);
+    }
+    Permit();
 }
 
 void CloseEndpointPause(struct timerequest *pause)

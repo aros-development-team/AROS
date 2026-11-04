@@ -487,6 +487,10 @@ static enum CAMDProviderResult backend_open(
     worker_config.Size = sizeof(worker_config);
     worker_config.Version = 1;
     worker_config.ItemBudget = backend->worker_item_budget;
+    if (backend->callbacks.Drained) {
+        worker_config.Idle = backend->callbacks.Drained;
+        worker_config.IdleContext = port->Context;
+    }
     if (camd_native_worker_create(session->pump, &worker_config,
                                   &session->worker) != CAMD_NATIVE_WORKER_OK)
         goto fail;

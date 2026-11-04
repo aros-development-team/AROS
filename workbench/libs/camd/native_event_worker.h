@@ -24,6 +24,10 @@ struct CAMDNativeWorkerConfigV1 {
     uint32_t Size;
     uint32_t Version;
     uint32_t ItemBudget;
+    /* Called in the worker each time the pump finds its queue empty. May be
+     * NULL. It must not stop or destroy the worker. */
+    void (*Idle)(void *context);
+    void *IdleContext;
 };
 
 struct CAMDNativeWorkerStatsV1 {

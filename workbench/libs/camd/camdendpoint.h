@@ -249,6 +249,12 @@ struct CAMDPublishedStatsV1 {
  * endpoint also gets a temporary ID, with CAMD_IDENTITY_TEMPORARY as its
  * IdentityKind, when the store of IDs is full. */
 #define CAMD_PUBLISH_TEMPORARY           (1u << 0)
+/* HOLD_UNTIL_DUE, for a MIDI 1.0 endpoint: CAMD keeps each message a client
+ * sent with a time until that time has come, and only then signals the
+ * publisher and lets it take the message, in time order per client session.
+ * Without it the publisher takes messages as they arrive and reads their
+ * times itself. */
+#define CAMD_PUBLISH_HOLD_UNTIL_DUE      (1u << 1)
 
 /* CAMDEndpointInfoV1.IdentityKind: how far the ID can be relied on to come
  * back. The values below CAMD_IDENTITY_TEMPORARY are stored. */

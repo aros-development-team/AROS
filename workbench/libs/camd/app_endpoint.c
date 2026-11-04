@@ -1,5 +1,6 @@
 #include "app_endpoint.h"
 
+#include "native_event_pump.h"
 #include "native_event_queue.h"
 
 #include <limits.h>
@@ -28,6 +29,12 @@ struct app_session {
     uint32_t direction;
     struct CAMDNativeEventQueue *queue;         /* output sessions */
     uint32_t capacity;                          /* of queue, in records */
+    /* Only when the endpoint holds messages for their time: queue is then
+     * ordered by time, and the worker moves what is due to ready, which is
+     * what the publisher takes from. */
+    struct CAMDNativeEventQueue *ready;
+    struct CAMDNativeEventPump *pump;
+    struct CAMDNativeEventWorker *worker;
     struct CAMDProviderReceiveSinkV1 sink;      /* input sessions */
     int receiving;
 };
@@ -158,6 +165,119 @@ static uint32_t sysex_bytes(const struct CAMDAppEndpoint *endpoint,
     return request->MaxSysExBytes;
 }
 
+static int holds(const struct CAMDAppEndpoint *endpoint)
+{
+    return endpoint->config.Now != NULL &&
+           endpoint->config.DataFormat == CAMD_PROVIDER_FORMAT_MIDI1;
+}
+
+/* What the publisher takes from. */
+static struct CAMDNativeEventQueue *source(const struct app_session *session)
+{
+    return session->ready ? session->ready : session->queue;
+}
+
+/* The worker's downstream: a due message moves to the ready queue. One that
+ * is not due yet, or finds no room, stays where it is; the worker tries
+ * again at its time, or when the publisher has taken something. */
+static int held(struct app_session *session, uint32_t flags,
+                uint32_t time_low)
+{
+    int32_t ahead;
+
+    if ((flags & CAMD_EVENT_TIME_VALID) == 0)
+        return 0;
+    ahead = (int32_t)(time_low - session->endpoint->config.Now(
+                                     session->endpoint->config.NowContext));
+    if (ahead <= 0)
+        return 0;
+    camd_native_worker_wake_after(session->worker, (uint32_t)ahead);
+    return 1;
+}
+
+static enum CAMDProviderResult ready_midi1(
+    void *context, const struct CAMDMIDI1EventV1 *events, size_t event_count)
+{
+    struct app_session *session = context;
+    enum CAMDNativeQueueResult result;
+
+    if (event_count != 1)
+        return CAMD_PROVIDER_INVALID;
+    if (held(session, events->Flags, events->TimeLow))
+        return CAMD_PROVIDER_QUEUE_FULL;
+    result = camd_native_queue_enqueue_midi1_items(session->ready, events, 1);
+    if (result != CAMD_NATIVE_QUEUE_OK)
+        return queue_result(result);
+    notify(session->endpoint);
+    return CAMD_PROVIDER_OK;
+}
+
+static enum CAMDProviderResult ready_sysex(
+    void *context, const uint8_t *bytes, size_t byte_count,
+    uint32_t time_high, uint32_t time_low, uint32_t clock_domain,
+    uint32_t flags)
+{
+    struct app_session *session = context;
+    enum CAMDNativeQueueResult result;
+
+    if (held(session, flags, time_low))
+        return CAMD_PROVIDER_QUEUE_FULL;
+    result = camd_native_queue_enqueue_midi1_sysex(
+        session->ready, bytes, byte_count, time_high, time_low, clock_domain,
+        flags);
+    if (result != CAMD_NATIVE_QUEUE_OK)
+        return queue_result(result);
+    notify(session->endpoint);
+    return CAMD_PROVIDER_OK;
+}
+
+static void free_session(struct app_session *session)
+{
+    if (session->worker) {
+        camd_native_worker_stop(session->worker);
+        camd_native_worker_destroy(session->worker);
+    }
+    camd_native_pump_destroy(session->pump);
+    camd_native_queue_destroy(session->ready);
+    camd_native_queue_destroy(session->queue);
+    app_free(session);
+}
+
+/* The second queue, pump and worker of a session that holds messages. */
+static int start_holding(struct app_session *session,
+                         const struct CAMDNativeQueueConfigV1 *queue_config)
+{
+    struct CAMDNativePumpConfigV1 pump_config;
+    struct CAMDNativeWorkerConfigV1 worker_config;
+    struct CAMDProviderReceiveSinkV1 sink;
+
+    if (camd_native_queue_create(queue_config, &session->ready) !=
+        CAMD_NATIVE_QUEUE_OK)
+        return 0;
+    memset(&sink, 0, sizeof(sink));
+    sink.Size = sizeof(sink);
+    sink.Version = 1;
+    sink.Context = session;
+    sink.SubmitMIDI1 = ready_midi1;
+    sink.SubmitMIDI1SysEx = ready_sysex;
+    memset(&pump_config, 0, sizeof(pump_config));
+    pump_config.Size = sizeof(pump_config);
+    pump_config.Version = 1;
+    pump_config.DataFormat = CAMD_PROVIDER_FORMAT_MIDI1;
+    pump_config.MaxBatchRecords = 1;
+    pump_config.MaxSysExBytes = queue_config->MaxSysExBytes;
+    if (camd_native_pump_create(session->queue, &pump_config, &sink,
+                                &session->pump) != CAMD_NATIVE_PUMP_OK)
+        return 0;
+    memset(&worker_config, 0, sizeof(worker_config));
+    worker_config.Size = sizeof(worker_config);
+    worker_config.Version = 1;
+    worker_config.ItemBudget = 16;
+    return camd_native_worker_create(session->pump, &worker_config,
+                                     &session->worker) ==
+           CAMD_NATIVE_WORKER_OK;
+}
+
 static enum CAMDProviderResult app_open(
     void *context, const struct CAMDProviderOpenRequestV1 *request,
     struct CAMDProviderOpenResultV1 *result)
@@ -190,8 +310,9 @@ static enum CAMDProviderResult app_open(
         queue_config.Capacity = request->QueueCapacity;
         queue_config.MaxSysExBytes = sysex_bytes(endpoint, request);
         if (camd_native_queue_create(&queue_config, &session->queue) !=
-            CAMD_NATIVE_QUEUE_OK) {
-            app_free(session);
+            CAMD_NATIVE_QUEUE_OK ||
+            (holds(endpoint) && !start_holding(session, &queue_config))) {
+            free_session(session);
             return CAMD_PROVIDER_CALLBACK_FAILED;
         }
         session->capacity = request->QueueCapacity;
@@ -202,8 +323,7 @@ static enum CAMDProviderResult app_open(
         int retiring = endpoint->retiring;
 
         lock_release(&endpoint->lock);
-        camd_native_queue_destroy(session->queue);
-        app_free(session);
+        free_session(session);
         return retiring ? CAMD_PROVIDER_RETIRED : CAMD_PROVIDER_STATE;
     }
     session->next = endpoint->sessions;
@@ -235,8 +355,8 @@ static enum CAMDProviderResult app_close(void *context, void *session_context)
     if (endpoint->last_taken == session)
         endpoint->last_taken = NULL;
     lock_release(&endpoint->lock);
-    camd_native_queue_destroy(session->queue);
-    app_free(session);
+    /* Its worker may be notifying the endpoint; it is stopped unlocked. */
+    free_session(session);
     return CAMD_PROVIDER_OK;
 }
 
@@ -261,6 +381,15 @@ static enum CAMDProviderResult app_send_midi1(
 
     if (!session)
         return CAMD_PROVIDER_INVALID;
+    if (session->worker) {
+        result = camd_native_queue_enqueue_midi1_ordered(
+            session->queue, events, event_count,
+            endpoint->config.Now(endpoint->config.NowContext));
+        if (result != CAMD_NATIVE_QUEUE_OK)
+            return queue_result(result);
+        camd_native_worker_wake(session->worker);
+        return CAMD_PROVIDER_OK;
+    }
     result = camd_native_queue_enqueue_midi1_items(session->queue, events,
                                                    event_count);
     if (result != CAMD_NATIVE_QUEUE_OK)
@@ -280,6 +409,16 @@ static enum CAMDProviderResult app_send_sysex(
 
     if (!session)
         return CAMD_PROVIDER_INVALID;
+    if (session->worker) {
+        result = camd_native_queue_enqueue_midi1_sysex_ordered(
+            session->queue, bytes, byte_count, time_high, time_low,
+            clock_domain, flags,
+            endpoint->config.Now(endpoint->config.NowContext));
+        if (result != CAMD_NATIVE_QUEUE_OK)
+            return queue_result(result);
+        camd_native_worker_wake(session->worker);
+        return CAMD_PROVIDER_OK;
+    }
     result = camd_native_queue_enqueue_midi1_sysex(
         session->queue, bytes, byte_count, time_high, time_low,
         clock_domain, flags);
@@ -329,6 +468,8 @@ static enum CAMDProviderResult app_drain(void *context, void *session_context)
     struct CAMDAppEndpoint *endpoint = context;
     struct app_session *session = output_session(endpoint, session_context);
     struct CAMDNativeQueueStatsV1 stats;
+    uint32_t pending, takeable;
+    int retiring;
 
     if (!session)
         return CAMD_PROVIDER_INVALID;
@@ -338,9 +479,28 @@ static enum CAMDProviderResult app_drain(void *context, void *session_context)
     if (camd_native_queue_stats(session->queue, &stats) !=
         CAMD_NATIVE_QUEUE_OK)
         return CAMD_PROVIDER_STATE;
-    if (stats.PendingRecords == 0)
+    pending = stats.PendingRecords;
+    takeable = pending;
+    if (session->ready) {
+        /* What waits for its time is pending but not there to take. */
+        if (camd_native_queue_stats(session->ready, &stats) !=
+            CAMD_NATIVE_QUEUE_OK)
+            return CAMD_PROVIDER_STATE;
+        takeable = stats.PendingRecords;
+        pending += takeable;
+    }
+    if (pending == 0)
         return CAMD_PROVIDER_OK;
-    notify(endpoint);
+    /* Nobody takes anything from a withdrawn endpoint any more. */
+    lock_acquire(&endpoint->lock);
+    retiring = endpoint->retiring;
+    lock_release(&endpoint->lock);
+    if (retiring)
+        return CAMD_PROVIDER_RETIRED;
+    if (session->worker)
+        camd_native_worker_wake(session->worker);
+    if (takeable != 0)
+        notify(endpoint);
     return CAMD_PROVIDER_QUEUE_FULL;
 }
 
@@ -352,6 +512,8 @@ static enum CAMDProviderResult app_cancel(void *context, void *session_context)
 
     if (!session)
         return CAMD_PROVIDER_INVALID;
+    if (session->ready)
+        camd_native_queue_cancel(session->ready, &cancelled);
     return queue_result(camd_native_queue_cancel(session->queue, &cancelled));
 }
 
@@ -591,7 +753,7 @@ static struct app_session *next_with_message(
             memset(head, 0, sizeof(*head));
             head->Size = sizeof(*head);
             head->Version = 1;
-            if (camd_native_queue_peek(session->queue, head) ==
+            if (camd_native_queue_peek(source(session), head) ==
                 CAMD_NATIVE_QUEUE_OK)
                 return session;
         }
@@ -629,19 +791,24 @@ enum CAMDProviderResult camd_app_endpoint_take(
             info.Size = sizeof(info);
             info.Version = 1;
             result = queue_result(camd_native_queue_dequeue_midi1_sysex(
-                session->queue, sysex, sysex_capacity, &info));
+                source(session), sysex, sysex_capacity, &info));
             endpoint->last_taken = session;
             if (result == CAMD_PROVIDER_OK)
                 count(&endpoint->taken, 1);
         }
     } else {
         result = queue_result(camd_native_queue_dequeue_midi1(
-            session->queue, event, 1, &taken));
+            source(session), event, 1, &taken));
         endpoint->last_taken = session;
         if (result == CAMD_PROVIDER_OK)
             count(&endpoint->taken, 1);
     }
+    /* There is room in its ready queue again. */
+    if (session && session->worker && result == CAMD_PROVIDER_OK)
+        camd_native_worker_wake(session->worker);
     lock_release(&endpoint->lock);
+    if (result == CAMD_PROVIDER_OK && endpoint->config.Taken)
+        endpoint->config.Taken(endpoint->config.TakenContext);
     return result;
 }
 
@@ -698,6 +865,8 @@ enum CAMDProviderResult camd_app_endpoint_take_ump(
             count(&endpoint->taken, 1);
     }
     lock_release(&endpoint->lock);
+    if (result == CAMD_PROVIDER_OK && endpoint->config.Taken)
+        endpoint->config.Taken(endpoint->config.TakenContext);
     return result;
 }
 
