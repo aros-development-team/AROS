@@ -227,7 +227,11 @@ LONG GetDirEntryLongNameFrom(struct DirHandle *dh, struct DirEntry *short_de,
                 if (u == 0x0000 || u == 0xFFFF)
                     terminated = TRUE;
                 else
+                {
+                    if (c == buf + FAT_MAX_LONG_FILENAME)
+                        return ERROR_OBJECT_NOT_FOUND;
                     *c++ = glob->from_unicode[u];
+                }
             }
             for (i = 0; i < 6 && !terminated; i++)
             {
@@ -235,7 +239,11 @@ LONG GetDirEntryLongNameFrom(struct DirHandle *dh, struct DirEntry *short_de,
                 if (u == 0x0000 || u == 0xFFFF)
                     terminated = TRUE;
                 else
+                {
+                    if (c == buf + FAT_MAX_LONG_FILENAME)
+                        return ERROR_OBJECT_NOT_FOUND;
                     *c++ = glob->from_unicode[u];
+                }
             }
             for (i = 0; i < 2 && !terminated; i++)
             {
@@ -243,7 +251,11 @@ LONG GetDirEntryLongNameFrom(struct DirHandle *dh, struct DirEntry *short_de,
                 if (u == 0x0000 || u == 0xFFFF)
                     terminated = TRUE;
                 else
+                {
+                    if (c == buf + FAT_MAX_LONG_FILENAME)
+                        return ERROR_OBJECT_NOT_FOUND;
                     *c++ = glob->from_unicode[u];
+                }
             }
         }
 
@@ -276,7 +288,8 @@ LONG NormalizeDirEntryName(STRPTR *name, ULONG *len)
         (*name)++, (*len)--;
     while (*len > 0 && ((*name)[*len - 1] == ' ' || (*name)[*len - 1] == '.'))
         (*len)--;
-    return *len == 0 ? ERROR_INVALID_COMPONENT_NAME : 0;
+    return *len == 0 || *len > FAT_MAX_LONG_FILENAME
+        ? ERROR_INVALID_COMPONENT_NAME : 0;
 }
 
 /* Set the name of an entry. This will set the long name too. It assumes
