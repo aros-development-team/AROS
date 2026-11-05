@@ -250,14 +250,118 @@ static IPTR thunk_exec_RemIntServer(struct M68KEmuContext *ctx, void *cpu)
     return 0;
 }
 
+/* ── ciaa.resource, ciab.resource: AddICRVector(D0=bit, A1=interrupt) gives
+   a timer its code, which runs each time the timer reaches zero (the
+   emulator's CIA timers count the E clock); the other sources never fire ── */
+static IPTR cia_vector(struct M68KEmuContext *ctx, void *cpu, int chip, BOOL add)
+{
+    ULONG bit = THUNK_D(0) & 7, is = THUNK_A(1);
+    struct M68KCiaTimer *t;
+
+    if (bit > 1 || !is)
+        return 0;
+    t = &ctx->cia_timer[chip][bit];
+    if (add)
+    {
+        if (t->owner)
+            return t->owner;
+        t->owner = is;
+        t->code = m68k_read32(ctx, is + 18);
+        t->data = m68k_read32(ctx, is + 14);
+        ctx->cia_icr_enable[chip] |= 1 << bit;
+        if (ctx->trace_calls)
+            bug("[m68kemu] cia%c timer %c vector: code %08lx data %08lx\n", 'a' + chip, 'A' + bit,
+                (unsigned long)t->code, (unsigned long)t->data);
+        return 0;
+    }
+    if (t->owner == is)
+    {
+        t->owner = t->code = t->data = 0;
+        t->armed = FALSE;
+    }
+    return 0;
+}
+
+static IPTR cia_able(struct M68KEmuContext *ctx, void *cpu, int chip)
+{
+    ULONG mask = THUNK_D(0);
+    UBYTE old = ctx->cia_icr_enable[chip];
+
+    if (mask & 0x80)
+        ctx->cia_icr_enable[chip] |= mask & 0x1F;
+    else
+        ctx->cia_icr_enable[chip] &= ~(mask & 0x1F);
+    return old;
+}
+
+static IPTR ciaa_AddICRVector(struct M68KEmuContext *ctx, void *cpu) { return cia_vector(ctx, cpu, 0, TRUE); }
+static IPTR ciaa_RemICRVector(struct M68KEmuContext *ctx, void *cpu) { return cia_vector(ctx, cpu, 0, FALSE); }
+static IPTR ciaa_AbleICR(struct M68KEmuContext *ctx, void *cpu) { return cia_able(ctx, cpu, 0); }
+static IPTR ciab_AddICRVector(struct M68KEmuContext *ctx, void *cpu) { return cia_vector(ctx, cpu, 1, TRUE); }
+static IPTR ciab_RemICRVector(struct M68KEmuContext *ctx, void *cpu) { return cia_vector(ctx, cpu, 1, FALSE); }
+static IPTR ciab_AbleICR(struct M68KEmuContext *ctx, void *cpu) { return cia_able(ctx, cpu, 1); }
+static IPTR cia_SetICR(struct M68KEmuContext *ctx, void *cpu) { return 0; }
+
+static const struct M68KThunkEntry cia_a_tab[] = {
+    { 6, ciaa_AddICRVector }, { 12, ciaa_RemICRVector }, { 18, ciaa_AbleICR }, { 24, cia_SetICR },
+};
+static const struct M68KThunkEntry cia_b_tab[] = {
+    { 6, ciab_AddICRVector }, { 12, ciab_RemICRVector }, { 18, ciab_AbleICR }, { 24, cia_SetICR },
+};
+
+/* -180: Cause(A1=interrupt): the software interrupt's code runs now, with
+   A1 its is_Data and A5 its is_Code as exec calls it */
+static IPTR thunk_exec_Cause(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG is = THUNK_A(1), code, data, regs[15];
+    struct M68KTaskState *ts = m68k_ts(ctx);
+    UWORD i;
+
+    if (!is || !m68k_in_mem(ctx, is, 22))
+        return 0;
+    code = m68k_read32(ctx, is + 18);
+    data = m68k_read32(ctx, is + 14);
+    if (!code || !m68k_in_mem(ctx, code, 2))
+        return 0;
+    /* Caused while it runs: once more after it returns, as exec queues it */
+    for (i = 0; i < ts->cause_depth; i++)
+        if (ts->cause_is[i] == is)
+        {
+            ts->cause_again |= 1 << i;
+            return 0;
+        }
+    if (ts->cause_depth >= 8)
+        return 0;
+    i = ts->cause_depth++;
+    ts->cause_is[i] = is;
+    do
+    {
+        ts->cause_again &= ~(1 << i);
+        memset(regs, 0, sizeof(regs));
+        regs[9] = data;
+        regs[13] = code;
+        regs[14] = ctx->m68k_sysbase;
+        M68KEmu_Call68k(ctx, cpu, code, regs);
+    } while (ts->cause_again & (1 << i));
+    ts->cause_depth--;
+    return 0;
+}
+
 /* -498: OpenResource(A1=name) -> D0=resource. A native resource base is a
    64-bit pointer the m68k side would call into; only a thunked one is usable,
    anything else reads as absent. */
 static IPTR thunk_exec_OpenResource(struct M68KEmuContext *ctx, void *cpu)
 {
     const char *name = (const char *)THUNK_PTR(1);
+    ULONG base;
     if (!name) return 0;
-    return (IPTR)M68KEmu_FindLibBase(ctx, name);
+    base = M68KEmu_FindLibBase(ctx, name);
+    if (!base && (!strcmp(name, "ciaa.resource") || !strcmp(name, "ciab.resource")))
+    {
+        const struct M68KThunkEntry *tab = name[3] == 'b' ? cia_b_tab : cia_a_tab;
+        base = M68KEmu_SetupLibBase(ctx, ctx->num_libs, name, m68k_lib_vectors(tab, 4, NULL, 0), tab, 4, NULL, 0);
+    }
+    return (IPTR)base;
 }
 
 /* -414: CloseLibrary(A1=library) */
@@ -1316,9 +1420,18 @@ static IPTR thunk_exec_WaitPort(struct M68KEmuContext *ctx, void *cpu)
     if (port)
     {
         struct Message *m;
-        m68k_gil_release(ctx);
-        m = WaitPort(port);
-        m68k_gil_obtain(ctx);
+        if (port->mp_SigTask == FindTask(NULL) && port->mp_Flags == PA_SIGNAL)
+        {
+            while (IsListEmpty(&port->mp_MsgList))
+                m68k_wait_sigs(ctx, 1UL << port->mp_SigBit);
+            m = (struct Message *)port->mp_MsgList.lh_Head;
+        }
+        else
+        {
+            m68k_gil_release(ctx);
+            m = WaitPort(port);
+            m68k_gil_obtain(ctx);
+        }
         if (ctx->trace_calls) bug("[m68kemu] WaitPort: woke with %p (sigbit %d task %p)\n", m, port->mp_SigBit, port->mp_SigTask);
         return m ? (IPTR)mp : 0;        /* non-zero; the program then calls GetMsg */
     }
@@ -1471,13 +1584,10 @@ static IPTR thunk_exec_PutMsg_m(struct M68KEmuContext *ctx, void *cpu)
 /* exec -318: Wait(D0=signalSet): the program's other tasks run meanwhile */
 static IPTR thunk_exec_Wait_m(struct M68KEmuContext *ctx, void *cpu)
 {
-    ULONG sigs = THUNK_D(0), r;
+    ULONG sigs = THUNK_D(0);
 
     window_flags_in(ctx);
-    m68k_gil_release(ctx);
-    r = Wait(sigs);
-    m68k_gil_obtain(ctx);
-    return r;
+    return m68k_wait_sigs(ctx, sigs);
 }
 
 /* ── DOS notification: the request the handler sees is a native copy ──
@@ -1865,6 +1975,7 @@ const struct M68KThunkEntry m68kemu_thunks_exec[] = {
     { 552, thunk_exec_OpenLibrary },
     { 408, thunk_exec_OldOpenLibrary },
     { 498, thunk_exec_OpenResource },
+    { 180, thunk_exec_Cause },
     { 168, thunk_exec_AddIntServer },
     { 174, thunk_exec_RemIntServer },
     { 414, thunk_exec_CloseLibrary },
@@ -2038,7 +2149,7 @@ static IPTR thunk_dos_FPuts(struct M68KEmuContext *ctx, void *cpu)
 static IPTR thunk_dos_Delay(struct M68KEmuContext *ctx, void *cpu)
 {
     window_flags_in(ctx);
-    Delay((ULONG)THUNK_D(1));
+    m68k_delay_ticks(ctx, (ULONG)THUNK_D(1));
     return 0;
 }
 
@@ -2886,9 +2997,7 @@ static IPTR thunk_dos_Delay_m(struct M68KEmuContext *ctx, void *cpu)
     ULONG ticks = THUNK_D(1);
 
     window_flags_in(ctx);
-    m68k_gil_release(ctx);
-    Delay(ticks);
-    m68k_gil_obtain(ctx);
+    m68k_delay_ticks(ctx, ticks);
     return 0;
 }
 
@@ -6814,7 +6923,10 @@ static IPTR thunk_gfx_BltBitMap_m(struct M68KEmuContext *ctx, void *cpu)
 static IPTR thunk_gfx_WaitTOF_m(struct M68KEmuContext *ctx, void *cpu)
 {
     window_flags_in(ctx);
-    WaitTOF();
+    if (m68k_cia_armed(ctx))
+        m68k_delay_ticks(ctx, 1);
+    else
+        WaitTOF();
     return 0;
 }
 

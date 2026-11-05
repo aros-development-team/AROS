@@ -74,6 +74,9 @@ struct M68KFakeLibBase
    the program's own process and each process it creates have one */
 #define M68KEMU_MAX_NEST  8
 #define M68KEMU_MAX_TASKS 32
+struct timerequest;
+struct M68KPaula;
+
 struct M68KTaskState
 {
     struct MinNode node;                  /* on more_tasks when not in the table */
@@ -93,6 +96,10 @@ struct M68KTaskState
     BOOL    running;                      /* a process of the program ends when this is cleared (the program itself: ctx->running) */
     APTR    stash[16];                    /* tag data translated for an object not made yet */
     UWORD   nstash;
+    struct MsgPort *cia_port;             /* timer.device requests that wake its waits for CIA timers */
+    struct timerequest *cia_req, *delay_req;
+    ULONG   cause_is[8];                  /* the software interrupts Cause() is running ... */
+    UBYTE   cause_depth, cause_again;     /* ... and which were Caused again meanwhile */
 };
 
 struct M68KEmuContext
@@ -228,6 +235,18 @@ struct M68KEmuContext
        timers and TOD derived from the E clock on every read; writes only
        keep latches and control registers. */
     struct { UWORD ta_latch, tb_latch; UBYTE cra, crb, pra, prb, ddra, ddrb; ULONG tod_base; } cia[2];
+    /* CIA timer interrupts (AddICRVector on the cia resources): a running
+       timer that reaches zero runs the vector's code, as a level 6
+       autovector while 68k code runs, from the thunk the program waits in
+       otherwise */
+    #define M68KEMU_CIA_STUB     0x190   /* 68k stub (34 bytes, 0x190-0x1B1) */
+    #define M68KEMU_CIA_DATA     0x1B4   /* cell: is_Data of the firing vector */
+    #define M68KEMU_CIA_CODE     0x1B8   /* cell: is_Code */
+    struct M68KCiaTimer { ULONG owner, code, data, next_e, period; BOOL armed; } cia_timer[2][2];
+    UBYTE   cia_icr_enable[2];
+    BOOL    cia_irq;            /* level 6 asserted, waiting for the stub to start */
+    ULONG   cia_count;
+    struct M68KPaula *paula;    /* the audio registers, forwarded to audio.device */
     ULONG   vbl_code;
     ULONG   vbl_data;
     BOOL    vbl_irq;            /* level 3 asserted, waiting for the stub to start */
@@ -299,6 +318,17 @@ BPTR  m68k_bptr_in(struct M68KEmuContext *ctx, ULONG v);
 void  m68k_bptr_drop(struct M68KEmuContext *ctx, ULONG v);
 void  m68k_low_write_trap(struct M68KEmuContext *ctx, ULONG addr, const char *who);
 void  m68k_planar_touch(struct M68KEmuContext *ctx, ULONG addr, ULONG nbytes);
+void  m68k_cia_timer_control(struct M68KEmuContext *ctx, int chip, int timer, UBYTE cr);
+BOOL  m68k_cia_armed(struct M68KEmuContext *ctx);
+ULONG m68k_cia_next_us(struct M68KEmuContext *ctx);
+BOOL  m68k_cia_due(struct M68KEmuContext *ctx, ULONG *code, ULONG *data);
+ULONG m68k_wait_sigs(struct M68KEmuContext *ctx, ULONG sigs);        /* m68kemu_tasks.c */
+void  m68k_delay_ticks(struct M68KEmuContext *ctx, ULONG ticks);
+void  m68k_ts_timers_free(struct M68KTaskState *ts);
+void  m68k_paula_attach(struct M68KEmuContext *ctx, struct IORequest *io);   /* m68kemu_devices.c */
+void  m68k_paula_write(struct M68KEmuContext *ctx, UWORD reg, UWORD val);
+UWORD m68k_paula_dmacon(struct M68KEmuContext *ctx);
+void  m68k_paula_free(struct M68KEmuContext *ctx);
 BOOL  m68k_vbl_due(struct M68KEmuContext *ctx);
 void  m68k_vbl_close(struct M68KEmuContext *ctx);
 ULONG m68k_eclock_now(struct M68KEmuContext *ctx, ULONG *freq);
