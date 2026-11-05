@@ -20,6 +20,10 @@
 #include <aros/x86_64/cpucontext.h>
 #elif defined(__i386__)
 #include <aros/i386/cpucontext.h>
+#elif defined(__riscv)
+#include <aros/riscv64/cpucontext.h>
+#elif defined(__aarch64__)
+#include <aros/aarch64/cpucontext.h>
 #endif
 
 /*****************************************************************************
@@ -249,6 +253,8 @@
                     *storeval = (IPTR)regs->esp;
 #elif defined(__x86_64__)
                     *storeval = (IPTR)regs->rsp;
+#elif defined(__riscv) || defined(__aarch64__)
+                    *storeval = (IPTR)regs->sp;
 #endif
                 }
             }
@@ -259,7 +265,7 @@
                 if (storeval && GetETask(task))
                 {
                     struct ExceptionContext *regs = (struct ExceptionContext *)GetETask(task)->et_RegFrame;
-#if defined(__mc68000__) 
+#if defined(__mc68000__) || defined(__riscv) || defined(__aarch64__)
                     *storeval = (IPTR)regs->pc;
 #elif defined(__i386__) 
                     *storeval = (IPTR)regs->eip;
