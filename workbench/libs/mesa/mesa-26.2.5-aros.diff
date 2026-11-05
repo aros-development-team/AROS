@@ -2027,12 +2027,13 @@ diff -ruN mesa-26.2.5/src/util/log.c mesa-26.2.5.aros/src/util/log.c
     }
  
     mesa_max_log_level = MESA_DEFAULT_LOG_LEVEL;
-@@ -397,8 +404,32 @@
+@@ -397,8 +404,38 @@
  
  #endif /* DETECT_OS_ANDROID */
  
 +#ifdef __AROS__
-+extern int kprintf(const char *, ...);
++#include <exec/rawfmt.h>
++#include <proto/exec.h>
 +
 +static void
 +logger_serial(enum mesa_log_level level,
@@ -2047,7 +2048,12 @@ diff -ruN mesa-26.2.5/src/util/log.c mesa-26.2.5.aros/src/util/log.c
 +         LOGGER_VASNPRINTF_AFFIX_NEWLINE,
 +         level, tag, format, va);
 +
-+   kprintf("[mesa] %s", msg);
++   /* exec's debug output: arossupport's kprintf takes the kernel's
++    * debug lock on SMP pc targets, which a module cannot link */
++   {
++      IPTR args[1] = { (IPTR)msg };
++      RawDoFmt("[mesa] %s", (RAWARG)args, RAWFMTFUNC_SERIAL, NULL);
++   }
 +
 +   if (msg != local_msg)
 +      free(msg);
