@@ -556,6 +556,10 @@ LONG doPatternDir(CONST_STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles, BOOL
         FreeVec(ap);
     }
 
+    for (int i = 0; i < files.num; i++)
+        FreeVec(files.entries[i]);
+    FreeVec(files.entries);
+
     SetIoErr(ioerr);
 
     return error;
