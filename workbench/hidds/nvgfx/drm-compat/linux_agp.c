@@ -39,8 +39,8 @@ void agp_backend_release(struct agp_bridge_data * bridge)
 
 void agp_free_memory(struct agp_memory * mem)
 {
-    HIDDNouveauFree(mem->pages);
-    HIDDNouveauFree(mem);
+    HIDDNVGfxFree(mem->pages);
+    HIDDNVGfxFree(mem);
 }
 
 struct agp_memory *agp_allocate_memory(struct agp_bridge_data * bridge, 
@@ -52,8 +52,8 @@ struct agp_memory *agp_allocate_memory(struct agp_bridge_data * bridge,
         return NULL;
     }
     
-    struct agp_memory * mem = HIDDNouveauAlloc(sizeof(struct agp_memory));
-    mem->pages = HIDDNouveauAlloc(sizeof(struct page *) * num_pages);
+    struct agp_memory * mem = HIDDNVGfxAlloc(sizeof(struct agp_memory));
+    mem->pages = HIDDNVGfxAlloc(sizeof(struct page *) * num_pages);
     mem->page_count = 0; /* Not a typo, will be filled later */
     mem->type = type;
     mem->is_flushed = FALSE;
@@ -109,7 +109,7 @@ struct agp_bridge_data * agp_find_bridge(struct pci_dev *dev)
         {
             IPTR mode = 0, aperbase = 0, apersize = 0;
 
-            global_agp_bridge = HIDDNouveauAlloc(sizeof(struct agp_bridge_data));
+            global_agp_bridge = HIDDNVGfxAlloc(sizeof(struct agp_bridge_data));
             global_agp_bridge->agpbridgedevice = (IPTR)bridgedevice;
 
             OOP_GetAttr(bridgedevice, aHidd_AGPBridgeDevice_Mode, (APTR)&mode);

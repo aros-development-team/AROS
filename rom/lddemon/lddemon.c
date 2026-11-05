@@ -185,6 +185,12 @@ static BPTR LDLoad(struct IntLDDemonBase *ldBase, struct Process *caller, STRPTR
         }
         if (caller->pr_Task.tc_Node.ln_Type == NT_PROCESS)
         {
+            /* Borrow the caller's directories only for this lookup: the
+               caller may unlock them once it has its reply, and a later
+               load made from LDDemon's own context (a library opened
+               while another one initialises) would use a freed lock. */
+            BPTR oldCurrentDir = me->pr_CurrentDir;
+
             /* Try the current directory of the caller */
 
             D(bug("[LDLoad] Process\n"));
@@ -203,6 +209,7 @@ static BPTR LDLoad(struct IntLDDemonBase *ldBase, struct Process *caller, STRPTR
                 if ((!seglist) && path)
                     seglist = LDLoadSeg(path);
             }
+            me->pr_CurrentDir = oldCurrentDir;
         }
 
         if (path) {

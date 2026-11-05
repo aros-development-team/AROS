@@ -28,20 +28,20 @@
 #undef HiddGfxAttrBase
 #undef HiddDisplayAttrBase
 #undef HiddDMEnumAttrBase
-#undef HiddGfxNouveauAttrBase
+#undef HiddGfxNVGfxAttrBase
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
-#undef HiddBitMapNouveauAttrBase
+#undef HiddBitMapNVGfxAttrBase
 
 #define HiddAttrBase          (SD(cl)->hiddAttrBase)
 #define HiddPixFmtAttrBase          (SD(cl)->pixFmtAttrBase)
 #define HiddGfxAttrBase             (SD(cl)->gfxAttrBase)
 #define HiddDisplayAttrBase         (SD(cl)->displayAttrBase)
 #define HiddDMEnumAttrBase          (SD(cl)->dmenumAttrBase)
-#define HiddGfxNouveauAttrBase      (SD(cl)->gfxNouveauAttrBase)
+#define HiddGfxNVGfxAttrBase      (SD(cl)->gfxNVGfxAttrBase)
 #define HiddSyncAttrBase            (SD(cl)->syncAttrBase)
 #define HiddBitMapAttrBase          (SD(cl)->bitMapAttrBase)
-#define HiddBitMapNouveauAttrBase   (SD(cl)->bitMapNouveauAttrBase)
+#define HiddBitMapNVGfxAttrBase   (SD(cl)->bitMapNVGfxAttrBase)
 
 #define MAX_BITMAP_WIDTH    4096
 #define MAX_BITMAP_HEIGHT   4096
@@ -52,7 +52,7 @@
 /* Connector probing at start-up: up to 6 looks, 0.5 s apart */
 #define SELECT_ATTEMPTS     6
 #define SELECT_RETRY_TICKS  25
-static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * selectedconnector,
+static BOOL HIDDNVGfxSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * selectedconnector,
     drmModeCrtcPtr * selectedcrtc)
 {
     *selectedconnector = NULL;
@@ -173,7 +173,7 @@ static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * select
  * the display asked for first, then whatever sits closest to 60Hz.
  * Lower is better.
  */
-static LONG HIDDNouveauModeRank(drmModeModeInfoPtr mode)
+static LONG HIDDNVGfxModeRank(drmModeModeInfoPtr mode)
 {
     LONG off;
 
@@ -187,7 +187,7 @@ static LONG HIDDNouveauModeRank(drmModeModeInfoPtr mode)
     return off;
 }
 
-static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, drmModeConnectorPtr connector)
+static struct TagItem * HIDDNVGfxCreateSyncTagsFromConnector(OOP_Class * cl, drmModeConnectorPtr connector)
 {
     struct TagItem * syncs = NULL;
     ULONG modescount = connector->count_modes;
@@ -198,7 +198,7 @@ static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, d
         
     /* One entry per mode plus the terminator: the list is consumed
        via TAG_MORE, so it must end in TAG_DONE. */
-    syncs = HIDDNouveauAlloc(sizeof(struct TagItem) * (modescount + 1));
+    syncs = HIDDNVGfxAlloc(sizeof(struct TagItem) * (modescount + 1));
     
     /*
      * The list arrives ordered the way a display driver likes it -
@@ -229,8 +229,8 @@ static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, d
             best = start;
             for (j = start + 1; j < end; j++)
             {
-                if (HIDDNouveauModeRank(&connector->modes[j]) <
-                    HIDDNouveauModeRank(&connector->modes[best]))
+                if (HIDDNVGfxModeRank(&connector->modes[j]) <
+                    HIDDNVGfxModeRank(&connector->modes[best]))
                     best = j;
             }
 
@@ -247,7 +247,7 @@ static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, d
 
     for (i = 0; i < modescount; i++)
     {
-        struct TagItem * sync = HIDDNouveauAlloc(sizeof(struct TagItem) * 15);
+        struct TagItem * sync = HIDDNVGfxAlloc(sizeof(struct TagItem) * 15);
         LONG j = 0;
         
         drmModeModeInfoPtr mode = &connector->modes[i];
@@ -269,7 +269,7 @@ static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, d
         sync[j].ti_Tag = aHidd_Sync_VMax;           sync[j++].ti_Data = MAX_BITMAP_HEIGHT;
         
         /* Name */
-        STRPTR syncname = HIDDNouveauAlloc(32);
+        STRPTR syncname = HIDDNVGfxAlloc(32);
         sprintf(syncname, "NV:%dx%d@%d", mode->hdisplay, mode->vdisplay, mode->vrefresh);
         
         sync[j].ti_Tag = aHidd_Sync_Description;   sync[j++].ti_Data = (IPTR)syncname;
@@ -310,7 +310,7 @@ static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, d
  */
 bool nouveau_aros_boot_display;
 
-static BOOL HIDDNouveauReleaseBootDisplays(struct pci_dev *pdev,
+static BOOL HIDDNVGfxReleaseBootDisplays(struct pci_dev *pdev,
     struct DisplayHandover *handover)
 {
     struct DisplayRange ranges[7];
@@ -391,7 +391,7 @@ extern int nouveau_window_planes;
 
 static struct CardData *nouveau_shutdown_carddata;
 
-static AROS_INTH1(HIDDNouveauShutdownHandler, struct Interrupt *, handler)
+static AROS_INTH1(HIDDNVGfxShutdownHandler, struct Interrupt *, handler)
 {
     AROS_INTFUNC_INIT
 
@@ -408,7 +408,7 @@ static AROS_INTH1(HIDDNouveauShutdownHandler, struct Interrupt *, handler)
         if (nouveau_shutdown_carddata)
         {
             bug("[nouveau] shutting down: draining and freeing channels\n");
-            HIDDNouveauAccelShutdown(nouveau_shutdown_carddata);
+            HIDDNVGfxAccelShutdown(nouveau_shutdown_carddata);
         }
         nouveau_shutdown();
     }
@@ -420,7 +420,7 @@ static AROS_INTH1(HIDDNouveauShutdownHandler, struct Interrupt *, handler)
 
 static struct Interrupt nouveau_shutdown_interrupt;
 
-static void HIDDNouveauInstallShutdownHandler(struct CardData *carddata)
+static void HIDDNVGfxInstallShutdownHandler(struct CardData *carddata)
 {
     nouveau_shutdown_carddata = carddata;
     if (nouveau_shutdown_interrupt.is_Code)
@@ -429,14 +429,14 @@ static void HIDDNouveauInstallShutdownHandler(struct CardData *carddata)
     nouveau_shutdown_interrupt.is_Node.ln_Type = NT_INTERRUPT;
     nouveau_shutdown_interrupt.is_Node.ln_Pri  = -48;
     nouveau_shutdown_interrupt.is_Node.ln_Name = "nvgfx.hidd";
-    nouveau_shutdown_interrupt.is_Code         = (VOID_FUNC)HIDDNouveauShutdownHandler;
+    nouveau_shutdown_interrupt.is_Code         = (VOID_FUNC)HIDDNVGfxShutdownHandler;
     nouveau_shutdown_interrupt.is_Data         = &nouveau_shutdown_interrupt;
     AddResetCallback(&nouveau_shutdown_interrupt);
 }
 
 /* PUBLIC METHODS */
 /* DRM connector type -> vHidd_ConnectorType_* (0 = unknown) */
-static ULONG HIDDNouveauConnectorType(uint32_t drmtype)
+static ULONG HIDDNVGfxConnectorType(uint32_t drmtype)
 {
     switch (drmtype)
     {
@@ -461,7 +461,7 @@ static ULONG HIDDNouveauConnectorType(uint32_t drmtype)
     }
 }
 
-OOP_Object * METHOD(Nouveau, Root, New)
+OOP_Object * METHOD(NVGfx, Root, New)
 {
     drmModeCrtcPtr selectedcrtc = NULL;
     drmModeConnectorPtr selectedconnector = NULL;
@@ -486,7 +486,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
     handover = (struct DisplayHandover *)GetTagData(DDRVA_Handover, 0, msg->attrList);
     if (handover)
     {
-        if (!HIDDNouveauReleaseBootDisplays(pdev, handover))
+        if (!HIDDNVGfxReleaseBootDisplays(pdev, handover))
             return NULL;
     }
     else
@@ -495,7 +495,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
     if (nouveau_init_probe(pdev) < 0)
         return NULL;
 
-    HIDDNouveauInstallShutdownHandler(&(SD(cl)->carddata));
+    HIDDNVGfxInstallShutdownHandler(&(SD(cl)->carddata));
 
     LOCK_ENGINE
 
@@ -519,7 +519,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
 
     /* Select crtc and connector */
-    if (!HIDDNouveauSelectConnectorCrtc(NOUVEAU_DEV_FD(nvdev), &selectedconnector, &selectedcrtc))
+    if (!HIDDNVGfxSelectConnectorCrtc(NOUVEAU_DEV_FD(nvdev), &selectedconnector, &selectedcrtc))
     {
         nvlog("[Nouveau] Not able to select connector and crtc\n");
 
@@ -532,7 +532,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
     drmModeFreeCrtc(selectedcrtc);
 
     /* Read connector and build sync tags */
-    syncs = HIDDNouveauCreateSyncTagsFromConnector(cl, selectedconnector);
+    syncs = HIDDNVGfxCreateSyncTagsFromConnector(cl, selectedconnector);
     if (syncs == NULL)
     {
         nvlog("[Nouveau] Not able to read any sync modes\n");
@@ -651,14 +651,14 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
         if (o)
         {
-            struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
+            struct HIDDNVGfxData * gfxdata = OOP_INST_DATA(cl, o);
             /* Pass local information to class */
             gfxdata->selectedcrtcid = selectedcrtcid;
             gfxdata->selectedmode = NULL;
             gfxdata->selectedconnector = selectedconnector;
             /* The crtc's overlay planes and vblank counter, for the display compositor */
             gfxdata->chipset = nvdev->chipset;
-            HIDDNouveauEnumPlanes(NOUVEAU_DEV_FD(nvdev), gfxdata);
+            HIDDNVGfxEnumPlanes(NOUVEAU_DEV_FD(nvdev), gfxdata);
             /*
              * Volta and later (chipset 0x140+) drive the display through
              * windows rather than the base/overlay channels; the window a
@@ -691,16 +691,16 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 extern int nouveau_decode_enable;
                 BOOL decoder = nouveau_decode_enable && (nvdev->chipset >= 0x160);
 
-                HIDDNouveauDecodeInit();
+                HIDDNVGfxDecodeInit();
                 struct TagItem displaytags[] =
                 {
                     { aHidd_Display_GfxHidd,       (IPTR)o        },
                     { aHidd_Display_ModeTags,      (IPTR)modetags },
                     { aHidd_Display_ConnectorType,
-                      HIDDNouveauConnectorType(selectedconnector->connector_type) },
+                      HIDDNVGfxConnectorType(selectedconnector->connector_type) },
                     { aHidd_Display_ConnectorID,   selectedconnector->connector_type_id },
-                    { decoder ? aHidd_Display_DecodeVectors : TAG_IGNORE, (IPTR)&HIDDNouveauDecodeVectors },
-                    { decoder ? aHidd_Display_DecodeDataSize : TAG_IGNORE, sizeof(struct HIDDNouveauDecode) },
+                    { decoder ? aHidd_Display_DecodeVectors : TAG_IGNORE, (IPTR)&HIDDNVGfxDecodeVectors },
+                    { decoder ? aHidd_Display_DecodeDataSize : TAG_IGNORE, sizeof(struct HIDDNVGfxDecode) },
                     { TAG_DONE,                    0              }
                 };
                 SD(cl)->display = OOP_NewObject(SD(cl)->displayclass, NULL, displaytags);
@@ -786,7 +786,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
             /* Initialize acceleration objects */
         
-            if (!HIDDNouveauAccelCommonInit(carddata))
+            if (!HIDDNVGfxAccelCommonInit(carddata))
                 nvlog("[Nouveau] acceleration setup failed, running unaccelerated\n");
 
             /* Allocate GART scratch buffer */
@@ -803,7 +803,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
                are maintained where they are exchanged instead
                (nouveau_staging_to_gpu / _from_gpu). */
             if (carddata->GART)
-                drmNouveauBoSelfSync(NOUVEAU_DEV_FD(carddata->dev), carddata->GART->handle);
+                drmNVGfxBoSelfSync(NOUVEAU_DEV_FD(carddata->dev), carddata->GART->handle);
 
             InitSemaphore(&carddata->gartsemaphore);
             
@@ -816,10 +816,10 @@ OOP_Object * METHOD(Nouveau, Root, New)
             case(NV_ARCH_20):
             case(NV_ARCH_30):
             case(NV_ARCH_40):
-                HIDDNouveauNV04SetPattern(carddata, ~0, ~0, ~0, ~0);
+                HIDDNVGfxNV04SetPattern(carddata, ~0, ~0, ~0, ~0);
                 break;
             case(NV_TESLA):
-                HIDDNouveauNV50SetPattern(carddata, ~0, ~0, ~0, ~0);
+                HIDDNVGfxNV50SetPattern(carddata, ~0, ~0, ~0, ~0);
                 break;
             case(NV_FERMI):
             case(NV_KEPLER):
@@ -831,7 +831,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
             case(NV_HOPPER):
             case(NV_ADA):
             case(NV_BLACKWELL):
-                HIDDNouveauNVC0SetPattern(carddata, ~0, ~0, ~0, ~0);
+                HIDDNVGfxNVC0SetPattern(carddata, ~0, ~0, ~0, ~0);
                 break;
             }
         }
@@ -849,21 +849,21 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
 /* FIXME: IMPLEMENT DISPOSE BITMAP - REMOVE FROM FB IF MARKED AS SUCH */
 
-VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
+VOID METHOD(NVGfx, Hidd_Gfx, CopyBox)
 {
     OOP_Class * srcclass = OOP_OCLASS(msg->src);
     OOP_Class * destclass = OOP_OCLASS(msg->dest);
 
     /* A video bitmap (aHidd_BitMap_VideoFormat) is scan-out only: nothing blits it */
-    if ((IS_NOUVEAU_BM_CLASS(srcclass) && ((struct HIDDNouveauBitMapData *)OOP_INST_DATA(srcclass, msg->src))->videoformat) ||
-        (IS_NOUVEAU_BM_CLASS(destclass) && ((struct HIDDNouveauBitMapData *)OOP_INST_DATA(destclass, msg->dest))->videoformat))
+    if ((IS_NOUVEAU_BM_CLASS(srcclass) && ((struct HIDDNVGfxBitMapData *)OOP_INST_DATA(srcclass, msg->src))->videoformat) ||
+        (IS_NOUVEAU_BM_CLASS(destclass) && ((struct HIDDNVGfxBitMapData *)OOP_INST_DATA(destclass, msg->dest))->videoformat))
         return;
 
     if (IS_NOUVEAU_BM_CLASS(srcclass) && IS_NOUVEAU_BM_CLASS(destclass))
     {
         /* FIXME: add checks for pixel format, etc */
-        struct HIDDNouveauBitMapData * srcdata = OOP_INST_DATA(srcclass, msg->src);
-        struct HIDDNouveauBitMapData * destdata = OOP_INST_DATA(destclass, msg->dest);
+        struct HIDDNVGfxBitMapData * srcdata = OOP_INST_DATA(srcclass, msg->src);
+        struct HIDDNVGfxBitMapData * destdata = OOP_INST_DATA(destclass, msg->dest);
         struct CardData * carddata = &(SD(cl)->carddata);
         BOOL ret = FALSE;
         
@@ -884,12 +884,12 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
         case(NV_ARCH_20):
         case(NV_ARCH_30):
         case(NV_ARCH_40):
-            ret = HIDDNouveauNV04CopySameFormat(carddata, srcdata, destdata, 
+            ret = HIDDNVGfxNV04CopySameFormat(carddata, srcdata, destdata, 
                         msg->srcX, msg->srcY, msg->destX, msg->destY, 
                         msg->width, msg->height, GC_DRMD(msg->gc));
             break;
         case(NV_TESLA):
-            ret = HIDDNouveauNV50CopySameFormat(carddata, srcdata, destdata, 
+            ret = HIDDNVGfxNV50CopySameFormat(carddata, srcdata, destdata, 
                         msg->srcX, msg->srcY, msg->destX, msg->destY, 
                         msg->width, msg->height, GC_DRMD(msg->gc));
             break;
@@ -903,7 +903,7 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
         case(NV_HOPPER):
         case(NV_ADA):
         case(NV_BLACKWELL):
-            ret = HIDDNouveauNVC0CopySameFormat(carddata, srcdata, destdata, 
+            ret = HIDDNVGfxNVC0CopySameFormat(carddata, srcdata, destdata, 
                         msg->srcX, msg->srcY, msg->destX, msg->destY, 
                         msg->width, msg->height, GC_DRMD(msg->gc));
             break;
@@ -925,7 +925,7 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
     
 }
 
-VOID METHOD(Nouveau, Root, Get)
+VOID METHOD(NVGfx, Root, Get)
 {
     ULONG idx;
 

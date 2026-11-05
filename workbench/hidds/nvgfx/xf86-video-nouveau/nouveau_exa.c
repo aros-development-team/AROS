@@ -544,12 +544,12 @@ nouveau_exa_init(ScreenPtr pScreen)
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes lock on GART object is already made */
 /* NOTE: Assumes buffer is not mapped */
-BOOL HiddNouveauNVAccelUploadM2MF(
+BOOL HiddNVGfxNVAccelUploadM2MF(
     UBYTE * srcpixels, ULONG srcpitch, HIDDT_StdPixFmt srcPixFmt,
     LONG x, LONG y, LONG width, LONG height,
     OOP_Class *cl, OOP_Object *o)
 {
-    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    struct HIDDNVGfxBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
 
     PixmapPtr pdpix = bmdata;
@@ -619,7 +619,7 @@ BOOL HiddNouveauNVAccelUploadM2MF(
         }
         dst = (char *)pNv->GART->map + pNv->gart_pos;
 
-        HiddNouveauWriteFromRAM( (APTR)srcpixels, srcpitch, srcPixFmt, dst, tmp_pitch,
+        HiddNVGfxWriteFromRAM( (APTR)srcpixels, srcpitch, srcPixFmt, dst, tmp_pitch,
             width, lines, cl, o);
         nouveau_staging_to_gpu(dst, tmp_pitch * lines);
         srcpixels += srcpitch * lines;
@@ -643,12 +643,12 @@ BOOL HiddNouveauNVAccelUploadM2MF(
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes lock on GART object is already made */
 /* NOTE: Assumes buffer is not mapped */
-BOOL HiddNouveauNVAccelDownloadM2MF(
+BOOL HiddNVGfxNVAccelDownloadM2MF(
     UBYTE * dstpixels, ULONG dstpitch, HIDDT_StdPixFmt dstPixFmt,
     LONG x, LONG y, LONG width, LONG height,
     OOP_Class *cl, OOP_Object *o)
 {
-    struct HIDDNouveauBitMapData *bmdata = OOP_INST_DATA(cl, o);
+    struct HIDDNVGfxBitMapData *bmdata = OOP_INST_DATA(cl, o);
     struct CardData *carddata = &(SD(cl)->carddata);
 
     PixmapPtr pspix = bmdata;
@@ -691,7 +691,7 @@ BOOL HiddNouveauNVAccelDownloadM2MF(
         src = pNv->GART->map;
 
         nouveau_staging_from_gpu(src, tmp_pitch * lines);
-        HiddNouveauReadIntoRAM(src, tmp_pitch, dstpixels, dstpitch,
+        HiddNVGfxReadIntoRAM(src, tmp_pitch, dstpixels, dstpitch,
             dstPixFmt, width, lines, cl, o);
         dstpixels += dstpitch * lines;
 

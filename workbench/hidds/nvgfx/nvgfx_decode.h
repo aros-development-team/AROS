@@ -21,7 +21,7 @@
 #define NOUVEAU_DECODE_RING         4       /* frames in flight per session */
 #define NOUVEAU_DECODE_MAX_SLICES   8191    /* slice offsets per frame: one per macroblock at 1080p fits */
 
-struct HIDDNouveauDecodeSlot
+struct HIDDNVGfxDecodeSlot
 {
     struct nouveau_bo   *bo;                /* luma at 0, chroma at chromaoff; block-linear */
     OOP_Object          *bm;                /* the (bitmap, buffer) this picture was decoded for */
@@ -30,7 +30,7 @@ struct HIDDNouveauDecodeSlot
     BOOL                valid;              /* holds a decoded picture */
 };
 
-struct HIDDNouveauDecodeFrame
+struct HIDDNVGfxDecodeFrame
 {
     struct nouveau_bo   *bitstream;         /* GART: the slices of one frame */
     struct nouveau_bo   *picsetup;          /* GART: picture setup + slice offsets + status */
@@ -41,14 +41,14 @@ struct HIDDNouveauDecodeFrame
     BOOL                checked;            /* its status was read */
 };
 
-struct HIDDNouveauDecode
+struct HIDDNVGfxDecode
 {
     struct CardData     *carddata;
     OOP_Object          *display;
     OOP_Class           *bmclass;           /* the nouveau bitmap class, for the targets */
     struct Hook         *resolve;           /* surface id -> (bitmap, buffer) */
     LONG                profile;            /* VAProfile */
-    const struct HIDDNouveauDecodeOps *ops; /* the codec's translation */
+    const struct HIDDNVGfxDecodeOps *ops; /* the codec's translation */
     ULONG               width, height;      /* coded picture size (macroblock aligned) */
     ULONG               bpp;                /* bytes per sample: 1 = 8-bit, 2 = 10/12-bit */
     ULONG               chalf;              /* chroma plane: half the rows (4:2:0), else all (4:2:2, 4:4:4) */
@@ -70,9 +70,9 @@ struct HIDDNouveauDecode
     struct nouveau_object   *nvdec;         /* the NVxxB0 decoder object */
     ULONG               oclass;             /* its class */
 
-    struct HIDDNouveauDecodeSlot slot[NOUVEAU_DECODE_SLOTS];
+    struct HIDDNVGfxDecodeSlot slot[NOUVEAU_DECODE_SLOTS];
     ULONG               nslots;
-    struct HIDDNouveauDecodeFrame ring[NOUVEAU_DECODE_RING];
+    struct HIDDNVGfxDecodeFrame ring[NOUVEAU_DECODE_RING];
     ULONG               ringpos;
     struct nouveau_bo   *coloc;             /* VRAM: colocated motion data (per slot) */
     struct nouveau_bo   *history;           /* VRAM: decoder history / scratch */
@@ -116,12 +116,12 @@ struct HIDDNouveauDecode
 #define NOUVEAU_DECODE_STATUS_OFFSET        0x9000  /* nvdec_status_s, zeroed per frame */
 
 /* nvgfx_decode.c helpers for the codec files */
-LONG HIDDNouveauDecodeFindSlot(struct HIDDNouveauDecode *dec, OOP_Object *bm, ULONG buffer);
-LONG HIDDNouveauDecodeAllocSlot(struct HIDDNouveauDecode *dec, OOP_Object *bm, ULONG buffer, ULONG avoid);
-BOOL HIDDNouveauDecodeResolve(struct HIDDNouveauDecode *dec, ULONG surface, OOP_Object **bm, ULONG *buffer);
-UBYTE *HIDDNouveauDecodeBitstreamReserve(struct HIDDNouveauDecode *dec, ULONG bytes);
-BOOL HIDDNouveauDecodeWait(struct HIDDNouveauDecode *dec, ULONG seq);   /* frame seq finished (lock held) */
-VOID HIDDNouveauDecodeMethod(struct HIDDNouveauDecode *dec, ULONG mthd, ULONG data);
+LONG HIDDNVGfxDecodeFindSlot(struct HIDDNVGfxDecode *dec, OOP_Object *bm, ULONG buffer);
+LONG HIDDNVGfxDecodeAllocSlot(struct HIDDNVGfxDecode *dec, OOP_Object *bm, ULONG buffer, ULONG avoid);
+BOOL HIDDNVGfxDecodeResolve(struct HIDDNVGfxDecode *dec, ULONG surface, OOP_Object **bm, ULONG *buffer);
+UBYTE *HIDDNVGfxDecodeBitstreamReserve(struct HIDDNVGfxDecode *dec, ULONG bytes);
+BOOL HIDDNVGfxDecodeWait(struct HIDDNVGfxDecode *dec, ULONG seq);   /* frame seq finished (lock held) */
+VOID HIDDNVGfxDecodeMethod(struct HIDDNVGfxDecode *dec, ULONG mthd, ULONG data);
 /*
  * Submit a frame whose picture setup, bitstream, slice offsets and status
  * area are in f: the common methods (application, control, buffers, the 17
@@ -133,7 +133,7 @@ VOID HIDDNouveauDecodeMethod(struct HIDDNouveauDecode *dec, ULONG mthd, ULONG da
  * the current picture); NULL = decoder index i is pool slot i (H.264, HEVC).
  * slot is then the decoder index of the current picture.
  */
-BOOL HIDDNouveauDecodeEmit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFrame *f, LONG slot,
+BOOL HIDDNVGfxDecodeEmit(struct HIDDNVGfxDecode *dec, struct HIDDNVGfxDecodeFrame *f, LONG slot,
     const LONG *map, ULONG appid, ULONG control, struct nouveau_bo **extra, ULONG nextra,
     const ULONG *mthds, ULONG nmthds);
 
@@ -142,46 +142,46 @@ BOOL HIDDNouveauDecodeEmit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDeco
  * data in, the decoder's picture setup and method stream out. The core
  * (nvgfx_decode.c) owns sessions, the picture pool, fences and copy-out.
  */
-struct HIDDNouveauDecodeOps
+struct HIDDNVGfxDecodeOps
 {
-    BOOL  (*open)     (struct HIDDNouveauDecode *dec);          /* codec buffers, state */
-    VOID  (*close)    (struct HIDDNouveauDecode *dec);
-    BOOL  (*begin)    (struct HIDDNouveauDecode *dec);          /* a frame starts */
-    BOOL  (*params)   (struct HIDDNouveauDecode *dec, ULONG type, APTR data, ULONG size, ULONG count);
-    BOOL  (*bitstream)(struct HIDDNouveauDecode *dec, APTR data, ULONG size);
-    BOOL  (*submit)   (struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFrame *f);
-    ULONG (*status)   (struct HIDDNouveauDecode *dec, ULONG *status);  /* error code of a finished frame, 0 = good */
+    BOOL  (*open)     (struct HIDDNVGfxDecode *dec);          /* codec buffers, state */
+    VOID  (*close)    (struct HIDDNVGfxDecode *dec);
+    BOOL  (*begin)    (struct HIDDNVGfxDecode *dec);          /* a frame starts */
+    BOOL  (*params)   (struct HIDDNVGfxDecode *dec, ULONG type, APTR data, ULONG size, ULONG count);
+    BOOL  (*bitstream)(struct HIDDNVGfxDecode *dec, APTR data, ULONG size);
+    BOOL  (*submit)   (struct HIDDNVGfxDecode *dec, struct HIDDNVGfxDecodeFrame *f);
+    ULONG (*status)   (struct HIDDNVGfxDecode *dec, ULONG *status);  /* error code of a finished frame, 0 = good */
 };
 
-extern const struct HIDDNouveauDecodeOps HIDDNouveauDecodeH264Ops;
-extern const struct HIDDNouveauDecodeOps HIDDNouveauDecodeHEVCOps;
-extern const struct HIDDNouveauDecodeOps HIDDNouveauDecodeMPEG2Ops;
-extern const struct HIDDNouveauDecodeOps HIDDNouveauDecodeVC1Ops;
-extern const struct HIDDNouveauDecodeOps HIDDNouveauDecodeVP8Ops;
-extern const struct HIDDNouveauDecodeOps HIDDNouveauDecodeVP9Ops;
-extern const struct HIDDNouveauDecodeOps HIDDNouveauDecodeAV1Ops;
+extern const struct HIDDNVGfxDecodeOps HIDDNVGfxDecodeH264Ops;
+extern const struct HIDDNVGfxDecodeOps HIDDNVGfxDecodeHEVCOps;
+extern const struct HIDDNVGfxDecodeOps HIDDNVGfxDecodeMPEG2Ops;
+extern const struct HIDDNVGfxDecodeOps HIDDNVGfxDecodeVC1Ops;
+extern const struct HIDDNVGfxDecodeOps HIDDNVGfxDecodeVP8Ops;
+extern const struct HIDDNVGfxDecodeOps HIDDNVGfxDecodeVP9Ops;
+extern const struct HIDDNVGfxDecodeOps HIDDNVGfxDecodeAV1Ops;
 
 /* nvgfx_decode.c: implementation behind the display class methods */
-VOID HIDDNouveauDecodeInit(VOID);               /* once, from the hidd's New */
-ULONG HIDDNouveauDecodeQuery(OOP_Class *cl, OOP_Object *display, LONG profile, ULONG width, ULONG height,
+VOID HIDDNVGfxDecodeInit(VOID);               /* once, from the hidd's New */
+ULONG HIDDNVGfxDecodeQuery(OOP_Class *cl, OOP_Object *display, LONG profile, ULONG width, ULONG height,
     struct HIDD_DecodeCaps *caps);
-BOOL HIDDNouveauDecodeOpen(OOP_Class *cl, OOP_Object *display, struct HIDDNouveauDecode *dec, LONG profile,
+BOOL HIDDNVGfxDecodeOpen(OOP_Class *cl, OOP_Object *display, struct HIDDNVGfxDecode *dec, LONG profile,
     ULONG width, ULONG height, struct Hook *resolve);
-VOID HIDDNouveauDecodeClose(struct HIDDNouveauDecode *dec);
-extern const struct HIDD_DecodeInterface HIDDNouveauDecodeVectors;
+VOID HIDDNVGfxDecodeClose(struct HIDDNVGfxDecode *dec);
+extern const struct HIDD_DecodeInterface HIDDNVGfxDecodeVectors;
 
 /* Per decode-target buffer state, kept in the bitmap (nvgfx_bitmapclass.c) */
-BOOL HIDDNouveauDecodeTargetInit(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata);
-VOID HIDDNouveauDecodeTargetFree(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata);
+BOOL HIDDNVGfxDecodeTargetInit(struct CardData *carddata, struct HIDDNVGfxBitMapData *bmdata);
+VOID HIDDNVGfxDecodeTargetFree(struct CardData *carddata, struct HIDDNVGfxBitMapData *bmdata);
 /* Make buffer 'buffer' of a decode target hold its last decode: issue the
    copy-out if it is still pending and, with wait, wait for it. Returns a
    vHidd_DecodeStatus_* value. timeoutms ~0 = for ever (wait only) */
 /* CPU access to a decode target buffer through a GART copy: the address, or NULL to map
    the buffer itself; the unlock copies a written copy back (dirty NULL = all of it) */
-UBYTE *HIDDNouveauDecodeLockCPU(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata, ULONG buffer);
-VOID HIDDNouveauDecodeUnlockCPU(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata, ULONG buffer,
+UBYTE *HIDDNVGfxDecodeLockCPU(struct CardData *carddata, struct HIDDNVGfxBitMapData *bmdata, ULONG buffer);
+VOID HIDDNVGfxDecodeUnlockCPU(struct CardData *carddata, struct HIDDNVGfxBitMapData *bmdata, ULONG buffer,
     struct Rectangle *dirty);
-ULONG HIDDNouveauDecodeSettle(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata, ULONG buffer,
+ULONG HIDDNVGfxDecodeSettle(struct CardData *carddata, struct HIDDNVGfxBitMapData *bmdata, ULONG buffer,
     BOOL wait, ULONG timeoutms);
 
 #endif /* NOUVEAU_DECODE_H */

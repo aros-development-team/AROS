@@ -315,27 +315,21 @@ QUAD __dos64_write(fcb *fcb, CONST_APTR buf, QUAD len)
     return r;
 }
 
-static void __dos64_widenfib(const struct FileInfoBlock32 *src,
-                             struct FileInfoBlock64 *dst)
+/* Derive the 64-bit fields of a FileInfoBlock filled by a 32-bit examine */
+static void __dos64_fib32to64(struct FileInfoBlock *fib)
 {
-    dst->fib_DiskKey      = src->fib_DiskKey;
-    dst->fib_DirEntryType = src->fib_DirEntryType;
-    memcpy(dst->fib_FileName, src->fib_FileName, sizeof(dst->fib_FileName));
-    dst->fib_Protection   = src->fib_Protection;
-    dst->fib_EntryType    = src->fib_EntryType;
-    dst->fib_Size         = (UQUAD)(ULONG)src->fib_Size;
-    dst->fib_NumBlocks    = (UQUAD)(ULONG)src->fib_NumBlocks;
-    dst->fib_Date         = src->fib_Date;
-    memcpy(dst->fib_Comment, src->fib_Comment, sizeof(dst->fib_Comment));
-    dst->fib_OwnerUID     = src->fib_OwnerUID;
-    dst->fib_OwnerGID     = src->fib_OwnerGID;
-    memset(dst->fib_Reserved, 0, sizeof(dst->fib_Reserved));
+    UQUAD size = (UQUAD)(ULONG)fib->fib_Size;
+
+    fib->fib_Size64      = size;
+    fib->fib_NumBlocks64 = (UQUAD)(ULONG)fib->fib_NumBlocks;
+    fib->fib_ActExtFlags = 0;
+    if (size > 0x7FFFFFFFULL)
+        fib->fib_Size = 0;
 }
 
-LONG __dos64_examine(BPTR obj, struct FileInfoBlock64 *fib, int what)
+LONG __dos64_examine(BPTR obj, struct FileInfoBlock *fib, int what)
 {
     struct Library *DOS64Base = __dos64_base();
-    struct FileInfoBlock32 *fib32;
     LONG ret = DOSFALSE;
 
     if (DOS64Base != NULL)
@@ -352,56 +346,40 @@ LONG __dos64_examine(BPTR obj, struct FileInfoBlock64 *fib, int what)
         return DOSFALSE;
     }
 
-    fib32 = AllocDosObject(DOS_FIB, NULL);
-    if (fib32 == NULL)
-        return DOSFALSE;
-
+    /* The 64-bit fields share the block, so examine into it directly */
     switch (what)
     {
     case __DOS64_EXAMINE:
-        ret = Examine(obj, (struct FileInfoBlock *)fib32);
+        ret = Examine(obj, fib);
         break;
     case __DOS64_EXAMINE_FH:
-        ret = ExamineFH(obj, (struct FileInfoBlock *)fib32);
+        ret = ExamineFH(obj, fib);
         break;
     case __DOS64_EXAMINE_NEXT:
-        /* Propagate the enumeration state into the temporary block */
-        fib32->fib_DiskKey = fib->fib_DiskKey;
-        memcpy(fib32->fib_FileName, fib->fib_FileName,
-               sizeof(fib32->fib_FileName));
-        ret = ExNext(obj, (struct FileInfoBlock *)fib32);
+        ret = ExNext(obj, fib);
         break;
     }
 
     if (ret)
-        __dos64_widenfib(fib32, fib);
+        __dos64_fib32to64(fib);
 
-    FreeDosObject(DOS_FIB, fib32);
     return ret;
 }
 
 LONG __dos64_info(BPTR lock, struct InfoData64 *id)
 {
     struct Library *DOS64Base = __dos64_base();
-    struct InfoData32 id32;
     LONG ret;
 
     if (DOS64Base != NULL)
         return Info64(lock, id);
 
-    memset(&id32, 0, sizeof(id32));
-    ret = Info(lock, (struct InfoData *)&id32);
+    /* InfoData64 starts with a standard InfoData */
+    ret = Info(lock, (struct InfoData *)id);
     if (ret)
     {
-        id->id_NumSoftErrors  = id32.id_NumSoftErrors;
-        id->id_UnitNumber     = id32.id_UnitNumber;
-        id->id_DiskState      = id32.id_DiskState;
-        id->id_NumBlocks      = (UQUAD)(ULONG)id32.id_NumBlocks;
-        id->id_NumBlocksUsed  = (UQUAD)(ULONG)id32.id_NumBlocksUsed;
-        id->id_BytesPerBlock  = id32.id_BytesPerBlock;
-        id->id_DiskType       = id32.id_DiskType;
-        id->id_VolumeNode     = id32.id_VolumeNode;
-        id->id_InUse          = id32.id_InUse;
+        id->id_NumBlocks64     = (UQUAD)(ULONG)id->id_NumBlocks;
+        id->id_NumBlocksUsed64 = (UQUAD)(ULONG)id->id_NumBlocksUsed;
     }
     return ret;
 }

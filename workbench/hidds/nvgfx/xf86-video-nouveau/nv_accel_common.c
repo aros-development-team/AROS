@@ -793,7 +793,7 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
  * drained and freed (the kernel idles each one as it is freed) before
  * GSP-RM is told the driver is leaving. The engine lock is taken and
  * never released - nothing may submit again. */
-VOID HIDDNouveauAccelShutdown(struct CardData *carddata)
+VOID HIDDNVGfxAccelShutdown(struct CardData *carddata)
 {
     ObtainSemaphore(&globalLock);
 
@@ -810,7 +810,7 @@ VOID HIDDNouveauAccelShutdown(struct CardData *carddata)
     }
 }
 
-BOOL HIDDNouveauAccelCommonInit(struct CardData *carddata)
+BOOL HIDDNVGfxAccelCommonInit(struct CardData *carddata)
 {
     if (NVAccelCommonInit(carddata))
     {
@@ -822,7 +822,7 @@ BOOL HIDDNouveauAccelCommonInit(struct CardData *carddata)
     return FALSE;
 }
 
-BOOL HIDDNouveauAccelAllocSurface(struct CardData *carddata, ULONG width, ULONG height, UBYTE bpp, ULONG *pitch, struct nouveau_bo **bo)
+BOOL HIDDNVGfxAccelAllocSurface(struct CardData *carddata, ULONG width, ULONG height, UBYTE bpp, ULONG *pitch, struct nouveau_bo **bo)
 {
     return nouveau_allocate_surface(carddata, width, height, bpp, NOUVEAU_CREATE_PIXMAP_SCANOUT, pitch, bo);
 }

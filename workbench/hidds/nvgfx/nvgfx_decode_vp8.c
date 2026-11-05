@@ -112,7 +112,7 @@ struct vp8_state
     struct nouveau_bo   *prob;
 };
 
-static BOOL vp8_zeroed(struct HIDDNouveauDecode *dec, ULONG size, struct nouveau_bo **bo)
+static BOOL vp8_zeroed(struct HIDDNVGfxDecode *dec, ULONG size, struct nouveau_bo **bo)
 {
     if (nouveau_bo_new(dec->carddata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 4096, size, NULL, bo) ||
         nouveau_bo_map(*bo, NOUVEAU_BO_WR, dec->carddata->client))
@@ -121,7 +121,7 @@ static BOOL vp8_zeroed(struct HIDDNouveauDecode *dec, ULONG size, struct nouveau
     return TRUE;
 }
 
-static BOOL vp8_open(struct HIDDNouveauDecode *dec)
+static BOOL vp8_open(struct HIDDNVGfxDecode *dec)
 {
     struct vp8_state *v = AllocMem(sizeof(*v), MEMF_PUBLIC | MEMF_CLEAR);
 
@@ -136,7 +136,7 @@ static BOOL vp8_open(struct HIDDNouveauDecode *dec)
     return TRUE;
 }
 
-static VOID vp8_close(struct HIDDNouveauDecode *dec)
+static VOID vp8_close(struct HIDDNVGfxDecode *dec)
 {
     struct vp8_state *v = dec->cur.codecstate;
 
@@ -148,7 +148,7 @@ static VOID vp8_close(struct HIDDNouveauDecode *dec)
     dec->cur.codecstate = NULL;
 }
 
-static BOOL vp8_begin(struct HIDDNouveauDecode *dec)
+static BOOL vp8_begin(struct HIDDNVGfxDecode *dec)
 {
     struct vp8_state *v = dec->cur.codecstate;
 
@@ -158,7 +158,7 @@ static BOOL vp8_begin(struct HIDDNouveauDecode *dec)
     return TRUE;
 }
 
-static BOOL vp8_params(struct HIDDNouveauDecode *dec, ULONG type, APTR data, ULONG size, ULONG count)
+static BOOL vp8_params(struct HIDDNVGfxDecode *dec, ULONG type, APTR data, ULONG size, ULONG count)
 {
     struct vp8_state *v = dec->cur.codecstate;
 
@@ -189,7 +189,7 @@ static BOOL vp8_params(struct HIDDNouveauDecode *dec, ULONG type, APTR data, ULO
  * passes it (traced): the uncompressed chunk is not in the bitstream; its
  * fields are in the picture setup.
  */
-static BOOL vp8_bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size)
+static BOOL vp8_bitstream(struct HIDDNVGfxDecode *dec, APTR data, ULONG size)
 {
     struct vp8_state *v = dec->cur.codecstate;
     const VASliceParameterBufferVP8 *sp = &v->sp;
@@ -203,7 +203,7 @@ static BOOL vp8_bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size)
         off = sp->slice_data_offset;
         len = sp->slice_data_size;
     }
-    p = HIDDNouveauDecodeBitstreamReserve(dec, len);
+    p = HIDDNVGfxDecodeBitstreamReserve(dec, len);
     if (!p)
         return FALSE;
     memcpy(p, (UBYTE *)data + off, len);
@@ -212,7 +212,7 @@ static BOOL vp8_bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size)
     return TRUE;
 }
 
-static ULONG vp8_status(struct HIDDNouveauDecode *dec, ULONG *status)
+static ULONG vp8_status(struct HIDDNVGfxDecode *dec, ULONG *status)
 {
     nvdec_status_s *st = (nvdec_status_s *)status;
     ULONG mbs = ((dec->width + 15) / 16) * ((dec->height + 15) / 16);
@@ -228,21 +228,21 @@ static ULONG vp8_status(struct HIDDNouveauDecode *dec, ULONG *status)
     return st->error_status ? st->error_status : 1;
 }
 
-static LONG vp8_refslot(struct HIDDNouveauDecode *dec, VASurfaceID surface)
+static LONG vp8_refslot(struct HIDDNVGfxDecode *dec, VASurfaceID surface)
 {
     OOP_Object *bm;
     ULONG buffer;
     LONG slot;
 
-    if (!HIDDNouveauDecodeResolve(dec, surface, &bm, &buffer))
+    if (!HIDDNVGfxDecodeResolve(dec, surface, &bm, &buffer))
         return -1;
-    slot = HIDDNouveauDecodeFindSlot(dec, bm, buffer);
+    slot = HIDDNVGfxDecodeFindSlot(dec, bm, buffer);
     if (slot >= 0)
         dec->slot[slot].lastuse = dec->frames;
     return slot;
 }
 
-static BOOL vp8_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFrame *f)
+static BOOL vp8_submit(struct HIDDNVGfxDecode *dec, struct HIDDNVGfxDecodeFrame *f)
 {
     struct vp8_state *v = dec->cur.codecstate;
     const VAPictureParameterBufferVP8 *pp;
@@ -272,7 +272,7 @@ static BOOL vp8_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
     if (golden >= 0) avoid |= 1UL << golden;
     if (altref >= 0) avoid |= 1UL << altref;
     if (last >= 0)   avoid |= 1UL << last;
-    slot = HIDDNouveauDecodeAllocSlot(dec, dec->cur.bm, dec->cur.buffer, avoid);
+    slot = HIDDNVGfxDecodeAllocSlot(dec, dec->cur.bm, dec->cur.buffer, avoid);
     if (slot < 0)
         return FALSE;
     dec->cur.slot = slot;
@@ -289,7 +289,7 @@ static BOOL vp8_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
     ((ULONG *)((UBYTE *)f->picsetup->map + NOUVEAU_DECODE_SLICEOFFS_OFFSET))[0] = 0;
     ((ULONG *)((UBYTE *)f->picsetup->map + NOUVEAU_DECODE_SLICEOFFS_OFFSET))[1] = dec->cur.bitstreamlen;
     datalen = dec->cur.bitstreamlen;
-    pad = HIDDNouveauDecodeBitstreamReserve(dec, 256);
+    pad = HIDDNVGfxDecodeBitstreamReserve(dec, 256);
     if (!pad)
         return FALSE;
     memset(pad, 0, 256);
@@ -320,7 +320,7 @@ static BOOL vp8_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
         mt[0] = NVDEC_VP8_SET_PROB_DATA_OFFSET;
         mt[1] = (ULONG)(v->prob->offset >> 8);
         /* NVIDIA's control word (gptimer, error concealment, mbtimer, event trace, PROD_RUN) */
-        if (!HIDDNouveauDecodeEmit(dec, f, cur, map, NVDEC_APPLICATION_ID_VP8,
+        if (!HIDDNVGfxDecodeEmit(dec, f, cur, map, NVDEC_APPLICATION_ID_VP8,
                                    NVDEC_CONTROL_CODEC_VP8 | 0x52050,
                                    &v->prob, 1, mt, 1))
             return FALSE;
@@ -330,7 +330,7 @@ static BOOL vp8_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFr
     return TRUE;
 }
 
-const struct HIDDNouveauDecodeOps HIDDNouveauDecodeVP8Ops =
+const struct HIDDNVGfxDecodeOps HIDDNVGfxDecodeVP8Ops =
 {
     vp8_open, vp8_close, vp8_begin, vp8_params, vp8_bitstream, vp8_submit, vp8_status
 };

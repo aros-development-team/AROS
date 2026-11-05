@@ -15,19 +15,23 @@
 #ifndef UTILITY_HOOKS_H
 #   include <utility/hooks.h>
 #endif
+#ifndef DOS_DOS_H
+#   include <dos/dos.h>
+#endif
 
 /* Structure (as used in ExAll()), containing information about a file. This
    structure is only as long as it need to be. If is for example ED_SIZE was
    specified, when calling ExAll(), this structure only consists of the fields
    ed_Name through ed_Size. Therefore you can use the ED_ definitions below
    as longword offsets into this structure. */
-struct ExAllData64
+struct ExAllData
 {
-    struct ExAllData64 * ed_Next;
+    struct ExAllData * ed_Next;
 
     UBYTE * ed_Name;     /* Name of the file. */
     LONG    ed_Type;     /* Type of file. See <dos/dosextens.h>. */
-    UQUAD   ed_Size;     /* Size of file. */
+    ULONG   ed_Size;     /* Size of file. With ED_SIZE64, 0 when the size
+                            does not fit in 31 bits (see ed_Size64). */
     ULONG   ed_Prot;     /* Protection bits. */
 
     /* The following three fields are de facto an embedded datestamp
@@ -41,35 +45,13 @@ struct ExAllData64
 
     UWORD ed_OwnerUID; /* The owner ID. */
     UWORD ed_OwnerGID; /* The group-owner ID. */
+
+    /* MorphOS (tm) V51 compatible extension, filled for ED_SIZE64 */
+    UQUAD ed_Size64 AROS_DOS64_ALIGN; /* 64-bit size of file. */
 };
 
-struct ExAllData32
-{
-    struct ExAllData32 * ed_Next;
-
-    UBYTE * ed_Name;     /* Name of the file. */
-    LONG    ed_Type;     /* Type of file. See <dos/dosextens.h>. */
-    ULONG   ed_Size;     /* Size of file. */
-    ULONG   ed_Prot;     /* Protection bits. */
-
-    /* The following three fields are de facto an embedded datestamp
-       structure (see <dos/dos.h>), which describes the last modification
-       date. */
-    ULONG ed_Days;
-    ULONG ed_Mins;
-    ULONG ed_Ticks;
-
-    UBYTE * ed_Comment;  /* The file comment. */
-
-    UWORD ed_OwnerUID; /* The owner ID. */
-    UWORD ed_OwnerGID; /* The group-owner ID. */
-};
-
-#if (__DOS64)
-#define ExAllData ExAllData64
-#else
-#define ExAllData ExAllData32
-#endif
+/* Former name */
+#define ExAllData32 ExAllData
 
 /* Type argument for ExAll(). Each number includes the information of all
    lower numbers, too. If you specify for example ED_SIZE, you will get
@@ -85,6 +67,9 @@ struct ExAllData32
 #define ED_DATE       5 /* Last modification date. */
 #define ED_COMMENT    6 /* Addtional file comment. */
 #define ED_OWNER      7 /* Owner information. */
+#define ED_SIZE64     8 /* 64-bit size of file (ed_Size64). MorphOS (tm)
+                           compatible; handlers that do not support it
+                           fail with ERROR_BAD_NUMBER. */
 
 
 /* Structure as used for controlling ExAll(). Allocate this structure by using

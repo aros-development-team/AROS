@@ -15,6 +15,7 @@
 #include <linux/err.h>
 
 #include <drm-compat/drm_compat_funcs.h>
+#include <nvgfx_i2c.h>          /* the nvgfx i2c class: one definition, shared with the driver */
 
 
 OOP_AttrBase HiddI2CDeviceAttrBase = 0; /* TODO: Implement  freeing */
@@ -211,21 +212,12 @@ void i2c_del_adapter(struct i2c_adapter *adap)
     }
 }
 
-/* FIXME: Duplicate defines here. Don't include nvgfx_intern.h */
-/* Ugly hack actually */
-#define CLID_Hidd_I2C_Nouveau       "hidd.i2c.nouveau"
-#define IID_Hidd_I2C_Nouveau        "hidd.i2c.nouveau"
-
-#define HiddI2CNouveauAttrBase      __IHidd_I2C_Nouveau
-#define aoHidd_I2C_Nouveau_Adapter  0
-#define aHidd_I2C_Nouveau_Adapter   (HiddI2CNouveauAttrBase + aoHidd_I2C_Nouveau_Adapter)
-
-OOP_AttrBase HiddI2CNouveauAttrBase = 0;
+OOP_AttrBase HiddI2CNVGfxAttrBase = 0;
 
 int i2c_bit_add_bus(struct i2c_adapter *adap)
 {
-    if (HiddI2CNouveauAttrBase == 0)
-        HiddI2CNouveauAttrBase = OOP_ObtainAttrBase((STRPTR)IID_Hidd_I2C_Nouveau);
+    if (HiddI2CNVGfxAttrBase == 0)
+        HiddI2CNVGfxAttrBase = OOP_ObtainAttrBase((STRPTR)IID_Hidd_I2C_NVGfx);
 
     if (HiddI2CAttrBase == 0)
         HiddI2CAttrBase = OOP_ObtainAttrBase((STRPTR)IID_Hidd_I2C);
@@ -234,7 +226,7 @@ int i2c_bit_add_bus(struct i2c_adapter *adap)
     timeout /= 10; /* I2C expects values in 10 microsecond units */
     struct TagItem i2c_attrs[] =
     {
-        { aHidd_I2C_Nouveau_Adapter,    (IPTR)adap },
+        { aHidd_I2C_NVGfx_Adapter,    (IPTR)adap },
         { aHidd_I2C_BitTimeout,         timeout },
         { aHidd_I2C_ByteTimeout,        timeout },
         { aHidd_I2C_StartTimeout,       timeout },
@@ -242,10 +234,12 @@ int i2c_bit_add_bus(struct i2c_adapter *adap)
         { TAG_DONE, 0UL }
     };
 
-    adap->i2cdriver = (IPTR)OOP_NewObject(NULL, CLID_Hidd_I2C_Nouveau, i2c_attrs);
+    adap->i2cdriver = (IPTR)OOP_NewObject(NULL, CLID_Hidd_I2C_NVGfx, i2c_attrs);
     if (adap->i2cdriver == (IPTR)0)
     {
-        bug("Failed to create CLID_Hidd_I2C_Nouveau object\n");
+        bug("Failed to create CLID_Hidd_I2C_NVGfx object\n");
+        printk(KERN_ERR "[nouveau] %s: no i2c driver (class %s), DDC unavailable\n",
+               adap->name, CLID_Hidd_I2C_NVGfx);
         return -EINVAL;
     }
     adap->type = ADAP_TYPE_DEFAULT;

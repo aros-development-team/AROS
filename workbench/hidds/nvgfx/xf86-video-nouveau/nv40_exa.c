@@ -1030,16 +1030,16 @@ NVAccelInitNV40TCL(ScrnInfoPtr pScrn)
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes buffer is not mapped */
 /* NOTE: Allows different formats of source and destination */
-BOOL HIDDNouveauNV403DCopyBox(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+BOOL HIDDNVGfxNV403DCopyBox(struct CardData * carddata,
+    struct HIDDNVGfxBitMapData * srcdata, struct HIDDNVGfxBitMapData * destdata,
     LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG blendop)
 {
     struct Picture sPict, dPict;
     LONG maskX = 0; LONG maskY = 0;
 
-    HIDDNouveauFillPictureFromBitMapData(&sPict, srcdata);
-    HIDDNouveauFillPictureFromBitMapData(&dPict, destdata);
+    HIDDNVGfxFillPictureFromBitMapData(&sPict, srcdata);
+    HIDDNVGfxFillPictureFromBitMapData(&dPict, destdata);
 
     if (NV40EXAPrepareComposite(blendop,
         &sPict, NULL, &dPict, srcdata, NULL, destdata))

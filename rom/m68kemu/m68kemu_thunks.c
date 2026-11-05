@@ -2504,7 +2504,8 @@ static struct ExAllControl *exall_control(struct M68KEmuContext *ctx, ULONG m)
 
 static IPTR thunk_dos_ExAll(struct M68KEmuContext *ctx, void *cpu)
 {
-    static const UBYTE recsize[8] = { 8, 8, 12, 16, 20, 32, 36, 40 };
+    /* m68k ExAllData sizes per type; ED_SIZE64 adds ed_Size64 at 40 */
+    static const UBYTE recsize[9] = { 8, 8, 12, 16, 20, 32, 36, 40, 48 };
     BPTR lock = m68k_bptr_in(ctx, THUNK_D(1));
     ULONG mbuf = THUNK_D(2), size = THUNK_D(3), type = THUNK_D(4), mctl = THUNK_D(5);
     struct ExAllControl *eac = exall_control(ctx, mctl);
@@ -2518,7 +2519,8 @@ static IPTR thunk_dos_ExAll(struct M68KEmuContext *ctx, void *cpu)
         SetIoErr(ERROR_BAD_NUMBER);
         return DOSFALSE;
     }
-    if (type > 7) type = 7;
+    /* Unknown types get everything up to ED_OWNER, as before */
+    if (type > ED_SIZE64) type = ED_OWNER;
     if (!type) type = 1;
     if (!m68k_read32(ctx, mctl + 4))
         eac->eac_LastKey = 0;
@@ -2561,6 +2563,11 @@ static IPTR thunk_dos_ExAll(struct M68KEmuContext *ctx, void *cpu)
         {
             m68k_write16(ctx, p + 36, ed->ed_OwnerUID);
             m68k_write16(ctx, p + 38, ed->ed_OwnerGID);
+        }
+        if (type >= ED_SIZE64)
+        {
+            m68k_write32(ctx, p + 40, (ULONG)(ed->ed_Size64 >> 32));
+            m68k_write32(ctx, p + 44, (ULONG)ed->ed_Size64);
         }
         if (prev)
             m68k_write32(ctx, prev, p);

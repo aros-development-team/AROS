@@ -16,7 +16,7 @@
 
 /*  SYNOPSIS */
         AROS_LHA(BPTR,                     lock, D1),
-        AROS_LHA(struct FileInfoBlock64 *, fib,  D2),
+        AROS_LHA(struct FileInfoBlock *,   fib,  D2),
         AROS_LHA(struct TagItem *,         tags, D3),
 
 /*  LOCATION */
@@ -25,16 +25,15 @@
 /*  FUNCTION
         Examine the next entry of a directory, continuing an
         enumeration started with Examine64() on the same
-        FileInfoBlock64.
+        FileInfoBlock. The 64-bit fields are filled as by Examine64().
 
         If the filesystem does not support 64-bit examination the
-        request is delegated to the 32-bit ExNext() and the result is
-        widened; sizes are then limited to what the filesystem
-        reports in 32 bits.
+        request is delegated to the 32-bit ExNext(); the 64-bit fields
+        then hold what the filesystem reports in 32 bits.
 
     INPUTS
         lock - lock on the directory being enumerated
-        fib  - FileInfoBlock64 as filled by the previous Examine64()
+        fib  - FileInfoBlock as filled by the previous Examine64()
                or ExNext64() call
         tags - future extensions, pass NULL
 
@@ -63,6 +62,7 @@
     SIPTR err = 0;
     LONG ret;
 
+    dos64_PrepFIB64(fib);
     ret = dos64_SendPkt(DOS64Base, fl ? fl->fl_Task : GetFileSysTask(),
                         ACTION_EXAMINE_NEXT64, (SIPTR)lock,
                         (SIPTR)MKBADDR(fib), 0, 0, 0, &err);

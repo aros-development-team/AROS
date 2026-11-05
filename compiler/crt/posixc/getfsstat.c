@@ -121,11 +121,11 @@ short getnixfilesystemtype(LONG id_DiskType)
                 buf[fscount - 1].f_flags = 0;
                 buf[fscount - 1].f_fsize = data.id_BytesPerBlock;
                 buf[fscount - 1].f_bsize = data.id_BytesPerBlock;
-                buf[fscount - 1].f_blocks = data.id_NumBlocks;
-                buf[fscount - 1].f_bfree = data.id_NumBlocks -
-                    data.id_NumBlocksUsed;
-                buf[fscount - 1].f_bavail = data.id_NumBlocks -
-                    data.id_NumBlocksUsed;
+                buf[fscount - 1].f_blocks = data.id_NumBlocks64;
+                buf[fscount - 1].f_bfree = data.id_NumBlocks64 -
+                    data.id_NumBlocksUsed64;
+                buf[fscount - 1].f_bavail = data.id_NumBlocks64 -
+                    data.id_NumBlocksUsed64;
                 buf[fscount - 1].f_files = 0;
                 buf[fscount - 1].f_ffree = 0;
                 buf[fscount - 1].f_fsid.val[0] = 0;

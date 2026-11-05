@@ -71,7 +71,7 @@ static const UBYTE mpeg2_default_intra[64] =
     27, 29, 35, 38, 46, 56, 69, 83
 };
 
-static BOOL mpeg2_open(struct HIDDNouveauDecode *dec)
+static BOOL mpeg2_open(struct HIDDNVGfxDecode *dec)
 {
     struct mpeg2_state *m = AllocMem(sizeof(*m), MEMF_PUBLIC | MEMF_CLEAR);
 
@@ -91,7 +91,7 @@ static BOOL mpeg2_open(struct HIDDNouveauDecode *dec)
     return TRUE;
 }
 
-static VOID mpeg2_close(struct HIDDNouveauDecode *dec)
+static VOID mpeg2_close(struct HIDDNVGfxDecode *dec)
 {
     if (dec->cur.codecstate)
     {
@@ -100,7 +100,7 @@ static VOID mpeg2_close(struct HIDDNouveauDecode *dec)
     }
 }
 
-static BOOL mpeg2_begin(struct HIDDNouveauDecode *dec)
+static BOOL mpeg2_begin(struct HIDDNVGfxDecode *dec)
 {
     struct mpeg2_state *m = dec->cur.codecstate;
 
@@ -111,7 +111,7 @@ static BOOL mpeg2_begin(struct HIDDNouveauDecode *dec)
     return TRUE;
 }
 
-static BOOL mpeg2_params(struct HIDDNouveauDecode *dec, ULONG type, APTR data, ULONG size, ULONG count)
+static BOOL mpeg2_params(struct HIDDNVGfxDecode *dec, ULONG type, APTR data, ULONG size, ULONG count)
 {
     struct mpeg2_state *m = dec->cur.codecstate;
     ULONG i;
@@ -156,7 +156,7 @@ static BOOL mpeg2_params(struct HIDDNouveauDecode *dec, ULONG type, APTR data, U
 }
 
 /* each VA slice already starts with its slice start code: copied as it is */
-static BOOL mpeg2_bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size)
+static BOOL mpeg2_bitstream(struct HIDDNVGfxDecode *dec, APTR data, ULONG size)
 {
     struct mpeg2_state *m = dec->cur.codecstate;
     ULONG i;
@@ -181,7 +181,7 @@ static BOOL mpeg2_bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size
             continue;
         if ((sl->dataoff > size) || !sl->datasize || (sl->datasize > size - sl->dataoff))
             return FALSE;
-        p = HIDDNouveauDecodeBitstreamReserve(dec, sl->datasize);
+        p = HIDDNVGfxDecodeBitstreamReserve(dec, sl->datasize);
         if (!p)
             return FALSE;
         sl->offset = (ULONG)(p - (UBYTE *)dec->ring[dec->ringpos].bitstream->map);
@@ -193,7 +193,7 @@ static BOOL mpeg2_bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size
     return TRUE;
 }
 
-static ULONG mpeg2_status(struct HIDDNouveauDecode *dec, ULONG *status)
+static ULONG mpeg2_status(struct HIDDNVGfxDecode *dec, ULONG *status)
 {
     nvdec_status_s *st = (nvdec_status_s *)status;
     ULONG mbs = ((dec->width + 15) / 16) * ((dec->height + 15) / 16);
@@ -212,21 +212,21 @@ static ULONG mpeg2_status(struct HIDDNouveauDecode *dec, ULONG *status)
 }
 
 /* a VA reference surface -> the pool slot holding it, or -1 */
-static LONG mpeg2_refslot(struct HIDDNouveauDecode *dec, VASurfaceID surface)
+static LONG mpeg2_refslot(struct HIDDNVGfxDecode *dec, VASurfaceID surface)
 {
     OOP_Object *bm;
     ULONG buffer;
     LONG slot;
 
-    if (!HIDDNouveauDecodeResolve(dec, surface, &bm, &buffer))
+    if (!HIDDNVGfxDecodeResolve(dec, surface, &bm, &buffer))
         return -1;
-    slot = HIDDNouveauDecodeFindSlot(dec, bm, buffer);
+    slot = HIDDNVGfxDecodeFindSlot(dec, bm, buffer);
     if (slot >= 0)
         dec->slot[slot].lastuse = dec->frames;
     return slot;
 }
 
-static BOOL mpeg2_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFrame *f)
+static BOOL mpeg2_submit(struct HIDDNVGfxDecode *dec, struct HIDDNVGfxDecodeFrame *f)
 {
     struct mpeg2_state *m = dec->cur.codecstate;
     const VAPictureParameterBufferMPEG2 *pp;
@@ -257,7 +257,7 @@ static BOOL mpeg2_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecode
         avoid |= 1UL << fwd;
     if (bwd >= 0)
         avoid |= 1UL << bwd;
-    slot = HIDDNouveauDecodeAllocSlot(dec, dec->cur.bm, dec->cur.buffer, avoid);
+    slot = HIDDNVGfxDecodeAllocSlot(dec, dec->cur.bm, dec->cur.buffer, avoid);
     if (slot < 0)
         return FALSE;
     dec->cur.slot = slot;
@@ -278,7 +278,7 @@ static BOOL mpeg2_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecode
     for (i = 0; i < m->nslices; i++)
         sliceoffs[i] = m->slices[i].offset;
     sliceoffs[m->nslices] = dec->cur.bitstreamlen;
-    pad = HIDDNouveauDecodeBitstreamReserve(dec, 256);
+    pad = HIDDNVGfxDecodeBitstreamReserve(dec, 256);
     if (!pad)
         return FALSE;
     memset(pad, 0, 256);
@@ -339,7 +339,7 @@ static BOOL mpeg2_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecode
     nouveau_staging_to_gpu(f->picsetup->map, NOUVEAU_DECODE_PICSETUP_SIZE);
     nouveau_staging_to_gpu(f->bitstream->map, dec->cur.bitstreamlen);
 
-    if (!HIDDNouveauDecodeEmit(dec, f, MPEG2_PIC_CUR, map, NVDEC_APPLICATION_ID_MPEG12,
+    if (!HIDDNVGfxDecodeEmit(dec, f, MPEG2_PIC_CUR, map, NVDEC_APPLICATION_ID_MPEG12,
                                NVDEC_CONTROL_CODEC_MPEG2 |
                                ((pp->picture_coding_type == 1) ? NVDEC_CONTROL_ALL_INTRA_FRAME : 0),
                                NULL, 0, NULL, 0))
@@ -350,7 +350,7 @@ static BOOL mpeg2_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecode
     return TRUE;
 }
 
-const struct HIDDNouveauDecodeOps HIDDNouveauDecodeMPEG2Ops =
+const struct HIDDNVGfxDecodeOps HIDDNVGfxDecodeMPEG2Ops =
 {
     mpeg2_open, mpeg2_close, mpeg2_begin, mpeg2_params, mpeg2_bitstream, mpeg2_submit, mpeg2_status
 };

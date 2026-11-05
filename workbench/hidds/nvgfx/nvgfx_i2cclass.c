@@ -12,18 +12,18 @@
 #include <proto/utility.h>
 #include <proto/oop.h>
 
-#undef HiddI2CNouveauAttrBase
-#define HiddI2CNouveauAttrBase (SD(cl)->i2cNouveauAttrBase)
+#undef HiddI2CNVGfxAttrBase
+#define HiddI2CNVGfxAttrBase (SD(cl)->i2cNVGfxAttrBase)
 
-OOP_Object * METHOD(NouveauI2C, Root, New)
+OOP_Object * METHOD(NVGfxI2C, Root, New)
 {
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     
     if(o)
     {
-        struct HIDDNouveauI2CData * i2cdata = OOP_INST_DATA(cl, o);
+        struct HIDDNVGfxI2CData * i2cdata = OOP_INST_DATA(cl, o);
         
-        i2cdata->i2c_adapter = GetTagData(aHidd_I2C_Nouveau_Adapter, (IPTR)0, msg->attrList);
+        i2cdata->i2c_adapter = GetTagData(aHidd_I2C_NVGfx_Adapter, (IPTR)0, msg->attrList);
         
         if (i2cdata->i2c_adapter == (IPTR)0)
         {
@@ -37,9 +37,9 @@ OOP_Object * METHOD(NouveauI2C, Root, New)
     return o;
 }
 
-void METHOD(NouveauI2C, Hidd_I2C, PutBits)
+void METHOD(NVGfxI2C, Hidd_I2C, PutBits)
 {
-    struct HIDDNouveauI2CData * i2cdata = OOP_INST_DATA(cl, o);
+    struct HIDDNVGfxI2CData * i2cdata = OOP_INST_DATA(cl, o);
     struct i2c_adapter *adap = (struct i2c_adapter *)i2cdata->i2c_adapter;
     struct i2c_algo_bit_data *bit = adap->algo_data;
 
@@ -47,9 +47,9 @@ void METHOD(NouveauI2C, Hidd_I2C, PutBits)
     bit->setscl(bit->data, msg->scl);
 }
 
-void METHOD(NouveauI2C, Hidd_I2C, GetBits)
+void METHOD(NVGfxI2C, Hidd_I2C, GetBits)
 {
-    struct HIDDNouveauI2CData * i2cdata = OOP_INST_DATA(cl, o);
+    struct HIDDNVGfxI2CData * i2cdata = OOP_INST_DATA(cl, o);
     struct i2c_adapter *adap = (struct i2c_adapter *)i2cdata->i2c_adapter;
     struct i2c_algo_bit_data *bit = adap->algo_data;
 

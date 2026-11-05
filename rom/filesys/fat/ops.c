@@ -588,7 +588,7 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
     BOOL move_directory;
     struct GlobalLock *gl;
     LONG err;
-    ULONG len;
+    ULONG len, rawlen;
 
     /* Get the source dir handle */
     InitDirHandle(glob->sb,
@@ -622,34 +622,40 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
         return err;
     }
 
-    /* Check the source and dest dirs. If either is read-only, do nothing */
-    err = GetDirEntry(&sdh, 0, &dde, glob);
-    if (err != 0)
+    /* The root has no dot entry; slot zero belongs to an unrelated object. */
+    if (sdh.ioh.first_cluster != glob->sb->rootdir_cluster)
     {
-        ReleaseDirHandle(&ddh, glob);
-        ReleaseDirHandle(&sdh, glob);
-        return err;
+        err = GetDirEntry(&sdh, 0, &dde, glob);
+        if (err != 0)
+        {
+            ReleaseDirHandle(&ddh, glob);
+            ReleaseDirHandle(&sdh, glob);
+            return err;
+        }
+        if (dde.e.entry.attr & ATTR_READ_ONLY)
+        {
+            D(bug("[fat] source dir is read only, doing nothing\n"));
+            ReleaseDirHandle(&ddh, glob);
+            ReleaseDirHandle(&sdh, glob);
+            return ERROR_WRITE_PROTECTED;
+        }
     }
-    if (dde.e.entry.attr & ATTR_READ_ONLY)
+    if (ddh.ioh.first_cluster != glob->sb->rootdir_cluster)
     {
-        D(bug("[fat] source dir is read only, doing nothing\n"));
-        ReleaseDirHandle(&ddh, glob);
-        ReleaseDirHandle(&sdh, glob);
-        return ERROR_WRITE_PROTECTED;
-    }
-    err = GetDirEntry(&ddh, 0, &dde, glob);
-    if (err != 0)
-    {
-        ReleaseDirHandle(&ddh, glob);
-        ReleaseDirHandle(&sdh, glob);
-        return err;
-    }
-    if (dde.e.entry.attr & ATTR_READ_ONLY)
-    {
-        D(bug("[fat] dest dir is read only, doing nothing\n"));
-        ReleaseDirHandle(&ddh, glob);
-        ReleaseDirHandle(&sdh, glob);
-        return ERROR_WRITE_PROTECTED;
+        err = GetDirEntry(&ddh, 0, &dde, glob);
+        if (err != 0)
+        {
+            ReleaseDirHandle(&ddh, glob);
+            ReleaseDirHandle(&sdh, glob);
+            return err;
+        }
+        if (dde.e.entry.attr & ATTR_READ_ONLY)
+        {
+            D(bug("[fat] dest dir is read only, doing nothing\n"));
+            ReleaseDirHandle(&ddh, glob);
+            ReleaseDirHandle(&sdh, glob);
+            return ERROR_WRITE_PROTECTED;
+        }
     }
 
     /* Now see if the wanted name is in this dir. If it exists, and is not a capilazation change, do nothing */
@@ -664,6 +670,25 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
         }
     }
     else if (err != ERROR_OBJECT_NOT_FOUND)
+    {
+        ReleaseDirHandle(&ddh, glob);
+        ReleaseDirHandle(&sdh, glob);
+        return err;
+    }
+
+    /* The raw spelling was checked above. Check the spelling we will store
+     * as well, allowing a rename back onto this same entry. */
+    rawlen = dnamelen;
+    err = NormalizeDirEntryName(&dname, &dnamelen);
+    if (err == 0 && dnamelen != rawlen)
+    {
+        err = GetDirEntryByName(&ddh, dname, dnamelen, &dde, glob);
+        if (err == 0 && (sde.cluster != dde.cluster || sde.index != dde.index))
+            err = ERROR_OBJECT_EXISTS;
+        else if (err == ERROR_OBJECT_NOT_FOUND)
+            err = 0;
+    }
+    if (err != 0)
     {
         ReleaseDirHandle(&ddh, glob);
         ReleaseDirHandle(&sdh, glob);
@@ -736,6 +761,9 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
         if (err != 0)
             goto rename_failed;
     }
+
+    /* Resolve watchers of the old path while that entry still exists. */
+    SendNotifyByDirEntry(sdh.ioh.sb, &sde);
 
     /* Keep the original lock until its directory entry is gone. */
     err = DeleteDirEntry(&sde, glob);
@@ -1377,6 +1405,7 @@ LONG OpAddNotify(struct NotifyRequest *nr, struct Globals *glob)
         err =
             GetDirEntryByPath(&dh, nr->nr_FullName, strlen(nr->nr_FullName),
             &de, glob);
+        ReleaseDirHandle(&dh, glob);
         if (err != 0 && err != ERROR_OBJECT_NOT_FOUND)
             return err;
 

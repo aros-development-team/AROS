@@ -86,7 +86,7 @@ struct hevc_state
     BOOL                ltwarned;
 };
 
-static BOOL hevc_bo(struct HIDDNouveauDecode *dec, ULONG size, struct nouveau_bo **bo)
+static BOOL hevc_bo(struct HIDDNVGfxDecode *dec, ULONG size, struct nouveau_bo **bo)
 {
     if (nouveau_bo_new(dec->carddata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 4096, size, NULL, bo))
     {
@@ -100,7 +100,7 @@ static BOOL hevc_bo(struct HIDDNouveauDecode *dec, ULONG size, struct nouveau_bo
     return TRUE;
 }
 
-static BOOL hevc_open(struct HIDDNouveauDecode *dec)
+static BOOL hevc_open(struct HIDDNVGfxDecode *dec)
 {
     struct hevc_state *h = AllocMem(sizeof(*h), MEMF_PUBLIC | MEMF_CLEAR);
     ULONG w64 = (dec->width + 63) & ~63UL, h64 = (dec->height + 63) & ~63UL;
@@ -131,7 +131,7 @@ static BOOL hevc_open(struct HIDDNouveauDecode *dec)
     return TRUE;
 }
 
-static VOID hevc_close(struct HIDDNouveauDecode *dec)
+static VOID hevc_close(struct HIDDNVGfxDecode *dec)
 {
     struct hevc_state *h = dec->cur.codecstate;
 
@@ -152,7 +152,7 @@ static VOID hevc_close(struct HIDDNouveauDecode *dec)
     dec->cur.codecstate = NULL;
 }
 
-static BOOL hevc_begin(struct HIDDNouveauDecode *dec)
+static BOOL hevc_begin(struct HIDDNVGfxDecode *dec)
 {
     struct hevc_state *h = dec->cur.codecstate;
 
@@ -163,7 +163,7 @@ static BOOL hevc_begin(struct HIDDNouveauDecode *dec)
     return TRUE;
 }
 
-static BOOL hevc_params(struct HIDDNouveauDecode *dec, ULONG type, APTR data, ULONG size, ULONG count)
+static BOOL hevc_params(struct HIDDNVGfxDecode *dec, ULONG type, APTR data, ULONG size, ULONG count)
 {
     struct hevc_state *h = dec->cur.codecstate;
     ULONG i;
@@ -214,7 +214,7 @@ static BOOL hevc_params(struct HIDDNouveauDecode *dec, ULONG type, APTR data, UL
 }
 
 /* each slice: 00 00 01 + the NAL as VA delivers it (header included) */
-static BOOL hevc_bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size)
+static BOOL hevc_bitstream(struct HIDDNVGfxDecode *dec, APTR data, ULONG size)
 {
     struct hevc_state *h = dec->cur.codecstate;
     ULONG i;
@@ -240,7 +240,7 @@ static BOOL hevc_bitstream(struct HIDDNouveauDecode *dec, APTR data, ULONG size)
             continue;
         if ((sl->dataoff > size) || !sl->datasize || (sl->datasize > size - sl->dataoff))
             return FALSE;
-        p = HIDDNouveauDecodeBitstreamReserve(dec, 3 + sl->datasize);
+        p = HIDDNVGfxDecodeBitstreamReserve(dec, 3 + sl->datasize);
         if (!p)
             return FALSE;
         sl->offset = (ULONG)(p - (UBYTE *)dec->ring[dec->ringpos].bitstream->map);
@@ -328,7 +328,7 @@ static VOID hevc_tiles(struct hevc_state *h, UWORD *t)
         }
 }
 
-static ULONG hevc_status(struct HIDDNouveauDecode *dec, ULONG *status)
+static ULONG hevc_status(struct HIDDNVGfxDecode *dec, ULONG *status)
 {
     nvdec_status_s *st = (nvdec_status_s *)status;
     struct hevc_state *hs = dec->cur.codecstate;
@@ -346,7 +346,7 @@ static ULONG hevc_status(struct HIDDNouveauDecode *dec, ULONG *status)
     return st->error_status ? st->error_status : 1;
 }
 
-static BOOL hevc_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeFrame *f)
+static BOOL hevc_submit(struct HIDDNVGfxDecode *dec, struct HIDDNVGfxDecodeFrame *f)
 {
     struct hevc_state *h = dec->cur.codecstate;
     const VAPictureParameterBufferHEVC *pp;
@@ -390,16 +390,16 @@ static BOOL hevc_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
         refslot[i] = -1;
         if ((ref->flags & VA_PICTURE_HEVC_INVALID) || (ref->picture_id == VA_INVALID_SURFACE))
             continue;
-        if (!HIDDNouveauDecodeResolve(dec, ref->picture_id, &bm, &buffer))
+        if (!HIDDNVGfxDecodeResolve(dec, ref->picture_id, &bm, &buffer))
             continue;
-        slot = HIDDNouveauDecodeFindSlot(dec, bm, buffer);
+        slot = HIDDNVGfxDecodeFindSlot(dec, bm, buffer);
         if (slot < 0)
             continue;
         refslot[i] = slot;
         avoid |= 1UL << slot;
         dec->slot[slot].lastuse = dec->frames;
     }
-    slot = HIDDNouveauDecodeAllocSlot(dec, dec->cur.bm, dec->cur.buffer, avoid);
+    slot = HIDDNVGfxDecodeAllocSlot(dec, dec->cur.bm, dec->cur.buffer, avoid);
     if (slot < 0)
         return FALSE;
     dec->cur.slot = slot;
@@ -420,7 +420,7 @@ static BOOL hevc_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
         sliceoffs[i] = h->slices[i].offset;
     sliceoffs[h->nslices] = dec->cur.bitstreamlen;
     pic->stream_len = dec->cur.bitstreamlen;
-    eos = HIDDNouveauDecodeBitstreamReserve(dec, 256);
+    eos = HIDDNVGfxDecodeBitstreamReserve(dec, 256);
     if (!eos)
         return FALSE;
     memset(eos, 0, 256);
@@ -654,7 +654,7 @@ static BOOL hevc_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
         extra[1] = h->intratop;
         extra[2] = h->blkbuf;
         /* NVIDIA's control word: gptimer, error concealment, mbtimer, event trace, PROD_RUN; no all-intra */
-        if (!HIDDNouveauDecodeEmit(dec, f, slot, NULL, NVDEC_APPLICATION_ID_HEVC,
+        if (!HIDDNVGfxDecodeEmit(dec, f, slot, NULL, NVDEC_APPLICATION_ID_HEVC,
                                    NVDEC_CONTROL_CODEC_HEVC | 0x52050,
                                    extra, h->blkbuf ? 3 : 2, m, nm))
             return FALSE;
@@ -669,7 +669,7 @@ static BOOL hevc_submit(struct HIDDNouveauDecode *dec, struct HIDDNouveauDecodeF
     return TRUE;
 }
 
-const struct HIDDNouveauDecodeOps HIDDNouveauDecodeHEVCOps =
+const struct HIDDNVGfxDecodeOps HIDDNVGfxDecodeHEVCOps =
 {
     hevc_open, hevc_close, hevc_begin, hevc_params, hevc_bitstream, hevc_submit, hevc_status
 };

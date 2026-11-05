@@ -47,7 +47,7 @@ static inline int do_alpha(int a, int v)
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: dstmap/dstpitch describe the destination pixels (a mapped
    buffer or a staging copy of the rectangle) */
-VOID HIDDNouveauBitMapPutAlphaImage32(APTR dstmap, ULONG dstpitch,
+VOID HIDDNVGfxBitMapPutAlphaImage32(APTR dstmap, ULONG dstpitch,
     APTR srcbuff, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height)
 {
     LONG x,y;
@@ -128,7 +128,7 @@ VOID HIDDNouveauBitMapPutAlphaImage32(APTR dstmap, ULONG dstpitch,
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: dstmap/dstpitch describe the destination pixels (a mapped
    buffer or a staging copy of the rectangle) */
-VOID HIDDNouveauBitMapPutAlphaImage16(APTR dstmap, ULONG dstpitch,
+VOID HIDDNVGfxBitMapPutAlphaImage16(APTR dstmap, ULONG dstpitch,
     APTR srcbuff, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height)
 {
     LONG x,y;
@@ -209,7 +209,7 @@ VOID HIDDNouveauBitMapPutAlphaImage16(APTR dstmap, ULONG dstpitch,
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: dstmap/dstpitch describe the destination pixels (a mapped
    buffer or a staging copy of the rectangle) */
-VOID HIDDNouveauBitMapPutAlphaTemplate32(APTR dstmap, ULONG dstpitch,
+VOID HIDDNVGfxBitMapPutAlphaTemplate32(APTR dstmap, ULONG dstpitch,
     OOP_Object * gc, OOP_Object * bm, BOOL invertalpha,
     UBYTE * srcalpha, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height)
 {
@@ -428,7 +428,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(APTR dstmap, ULONG dstpitch,
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: dstmap/dstpitch describe the destination pixels (a mapped
    buffer or a staging copy of the rectangle) */
-VOID HIDDNouveauBitMapPutAlphaTemplate16(APTR dstmap, ULONG dstpitch,
+VOID HIDDNVGfxBitMapPutAlphaTemplate16(APTR dstmap, ULONG dstpitch,
     OOP_Object * gc, OOP_Object * bm, BOOL invertalpha,
     UBYTE * srcalpha, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height)
 {
@@ -647,13 +647,13 @@ VOID HIDDNouveauBitMapPutAlphaTemplate16(APTR dstmap, ULONG dstpitch,
 /* Assumes input and output buffers are lock-protected */
 /* Takes pixels from RAM buffer, converts them and puts them into destination
    buffer. The destination buffer can be in VRAM or GART or RAM */
-BOOL HiddNouveauWriteFromRAM(
+BOOL HiddNVGfxWriteFromRAM(
     APTR src, ULONG srcPitch, HIDDT_StdPixFmt srcPixFmt,
     APTR dst, ULONG dstPitch,
     ULONG width, ULONG height,
     OOP_Class *cl, OOP_Object *o)
 {
-    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    struct HIDDNVGfxBitMapData * bmdata = OOP_INST_DATA(cl, o);
     UBYTE dstBpp = bmdata->bytesperpixel;
 
     switch(srcPixFmt)
@@ -759,13 +759,13 @@ BOOL HiddNouveauWriteFromRAM(
 /* Assumes input and output buffers are lock-protected */
 /* Takes pixels from source buffer, converts them and puts them into RAM
    buffer. The source buffer can be in VRAM or GART or RAM */
-BOOL HiddNouveauReadIntoRAM(
+BOOL HiddNVGfxReadIntoRAM(
     APTR src, ULONG srcPitch, 
     APTR dst, ULONG dstPitch, HIDDT_StdPixFmt dstPixFmt,
     ULONG width, ULONG height,
     OOP_Class *cl, OOP_Object *o)
 {
-    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+    struct HIDDNVGfxBitMapData * bmdata = OOP_INST_DATA(cl, o);
     UBYTE srcBpp = bmdata->bytesperpixel;
 
     switch(dstPixFmt)
@@ -868,11 +868,11 @@ BOOL HiddNouveauReadIntoRAM(
     return TRUE;
 }
 
-static inline VOID HiddNouveau3DCopyBoxFromGART(struct CardData * carddata, 
-    struct HIDDNouveauBitMapData * dstdata, ULONG gartpitch,
+static inline VOID HiddNVGfx3DCopyBoxFromGART(struct CardData * carddata, 
+    struct HIDDNVGfxBitMapData * dstdata, ULONG gartpitch,
     LONG x, LONG y, LONG width, LONG height)
 {
-    struct HIDDNouveauBitMapData srcdata;
+    struct HIDDNVGfxBitMapData srcdata;
 
     /* Wrap GART */
     srcdata.bo = carddata->GART;
@@ -889,18 +889,18 @@ static inline VOID HiddNouveau3DCopyBoxFromGART(struct CardData * carddata,
     switch(carddata->Architecture)
     {
     case(NV_ARCH_40):
-        HIDDNouveauNV403DCopyBox(carddata,
+        HIDDNVGfxNV403DCopyBox(carddata,
             &srcdata, dstdata,
             0, 0, x, y, width, height, BLENDOP_ALPHA);
         break;
     case(NV_ARCH_30):
-        HIDDNouveauNV303DCopyBox(carddata,
+        HIDDNVGfxNV303DCopyBox(carddata,
             &srcdata, dstdata,
             0, 0, x, y, width, height, BLENDOP_ALPHA);
         break;
     case(NV_ARCH_20):
     case(NV_ARCH_10):
-        HIDDNouveauNV103DCopyBox(carddata,
+        HIDDNVGfxNV103DCopyBox(carddata,
             &srcdata, dstdata,
             0, 0, x, y, width, height, BLENDOP_ALPHA);
         break;
@@ -912,12 +912,12 @@ static inline VOID HiddNouveau3DCopyBoxFromGART(struct CardData * carddata,
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes lock on GART object is already made */
 /* NOTE: Assumes buffer is not mapped */
-BOOL HiddNouveauAccelARGBUpload3D(
+BOOL HiddNVGfxAccelARGBUpload3D(
     UBYTE * srcpixels, ULONG srcpitch,
     LONG x, LONG y, LONG width, LONG height, 
     OOP_Class *cl, OOP_Object *o)
 {
-    struct HIDDNouveauBitMapData * dstdata = OOP_INST_DATA(cl, o);
+    struct HIDDNVGfxBitMapData * dstdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
     unsigned cpp = 4; /* We are always getting ARGB buffer */
     unsigned line_len = width * cpp;
@@ -986,7 +986,7 @@ BOOL HiddNouveauAccelARGBUpload3D(
 
         src += srcpitch * line_count;
 
-        HiddNouveau3DCopyBoxFromGART(carddata, dstdata, line_len, x, y, width, line_count);
+        HiddNVGfx3DCopyBoxFromGART(carddata, dstdata, line_len, x, y, width, line_count);
 
         height -= line_count;
         y += line_count;
@@ -998,12 +998,12 @@ BOOL HiddNouveauAccelARGBUpload3D(
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes lock on GART object is already made */
 /* NOTE: Assumes buffer is not mapped */
-BOOL HiddNouveauAccelAPENUpload3D(
+BOOL HiddNVGfxAccelAPENUpload3D(
     UBYTE * srcalpha, BOOL srcinvertalpha, ULONG srcpitch, ULONG srcpenrgb,
     LONG x, LONG y, LONG width, LONG height, 
     OOP_Class *cl, OOP_Object *o)
 {
-    struct HIDDNouveauBitMapData * dstdata = OOP_INST_DATA(cl, o);
+    struct HIDDNVGfxBitMapData * dstdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
     unsigned cpp = 4; /* We are always getting ARGB buffer */
     unsigned line_len = width * cpp;
@@ -1055,7 +1055,7 @@ BOOL HiddNouveauAccelAPENUpload3D(
             }
         }
 
-        HiddNouveau3DCopyBoxFromGART(carddata, dstdata, line_len, x, y, width, line_count);
+        HiddNVGfx3DCopyBoxFromGART(carddata, dstdata, line_len, x, y, width, line_count);
 
         height -= line_count;
         y += line_count;
@@ -1072,7 +1072,7 @@ BOOL HiddNouveauAccelAPENUpload3D(
 
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes buffer is mapped */
-VOID HIDDNouveauBitMapDrawSolidLine(struct HIDDNouveauBitMapData * bmdata,
+VOID HIDDNVGfxBitMapDrawSolidLine(struct HIDDNVGfxBitMapData * bmdata,
     OOP_Object * gc, LONG destX1, LONG destY1, LONG destX2, LONG destY2)
 {
     WORD        i;

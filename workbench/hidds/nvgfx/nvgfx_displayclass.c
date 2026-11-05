@@ -23,26 +23,26 @@
 #undef HiddGfxAttrBase
 #undef HiddDisplayAttrBase
 #undef HiddDMEnumAttrBase
-#undef HiddGfxNouveauAttrBase
+#undef HiddGfxNVGfxAttrBase
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
-#undef HiddBitMapNouveauAttrBase
+#undef HiddBitMapNVGfxAttrBase
 
 #define HiddAttrBase          (SD(cl)->hiddAttrBase)
 #define HiddPixFmtAttrBase          (SD(cl)->pixFmtAttrBase)
 #define HiddGfxAttrBase             (SD(cl)->gfxAttrBase)
 #define HiddDisplayAttrBase         (SD(cl)->displayAttrBase)
 #define HiddDMEnumAttrBase          (SD(cl)->dmenumAttrBase)
-#define HiddGfxNouveauAttrBase      (SD(cl)->gfxNouveauAttrBase)
+#define HiddGfxNVGfxAttrBase      (SD(cl)->gfxNVGfxAttrBase)
 #define HiddSyncAttrBase            (SD(cl)->syncAttrBase)
 #define HiddBitMapAttrBase          (SD(cl)->bitMapAttrBase)
-#define HiddBitMapNouveauAttrBase   (SD(cl)->bitMapNouveauAttrBase)
+#define HiddBitMapNVGfxAttrBase   (SD(cl)->bitMapNVGfxAttrBase)
 
 /* HELPER FUNCTIONS */
-VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible)
+VOID HIDDNVGfxShowCursor(OOP_Object * gfx, BOOL visible)
 {
     OOP_Class * cl = OOP_OCLASS(gfx);
-    struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, gfx);
+    struct HIDDNVGfxData * gfxdata = OOP_INST_DATA(cl, gfx);
     struct CardData * carddata = &(SD(cl)->carddata);
     struct nouveau_device *nvdev = carddata->dev;
 
@@ -69,11 +69,11 @@ VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible)
 }
 
 /* This function assumes that the mode, crtc and output are already selected */
-static BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm)
+static BOOL HIDDNVGfxShowBitmapForSelectedMode(OOP_Object * bm)
 {
     OOP_Class * cl = OOP_OCLASS(bm);
-    struct HIDDNouveauData * gfxdata = NULL;
-    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, bm);
+    struct HIDDNVGfxData * gfxdata = NULL;
+    struct HIDDNVGfxBitMapData * bmdata = OOP_INST_DATA(cl, bm);
     struct CardData * carddata = &(SD(cl)->carddata);
     struct nouveau_device *nvdev = carddata->dev;
     uint32_t output_ids[] = {0};
@@ -162,7 +162,7 @@ static BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm)
  * RGB layouts (the pad byte is ignored, the plane blends opaque), RGB565 /
  * XRGB1555 for 16-bit, YUYV / UYVY for the packed video formats.
  */
-static ULONG HIDDNouveauBitMapFourCC(struct HIDDNouveauBitMapData *bmdata)
+static ULONG HIDDNVGfxBitMapFourCC(struct HIDDNVGfxBitMapData *bmdata)
 {
     switch (bmdata->videoformat)
     {
@@ -190,12 +190,12 @@ static ULONG HIDDNouveauBitMapFourCC(struct HIDDNouveauBitMapData *bmdata)
            (bmdata->bytesperpixel == 2) ? DRM_FORMAT_RGB565 : 0;
 }
 
-static BOOL HIDDNouveauAddFB(OOP_Class *cl, struct HIDDNouveauBitMapData *bmdata,
+static BOOL HIDDNVGfxAddFB(OOP_Class *cl, struct HIDDNVGfxBitMapData *bmdata,
     struct nouveau_bo *bo, ULONG *fbid)
 {
     struct CardData * carddata = &(SD(cl)->carddata);
     struct nouveau_device *nvdev = carddata->dev;
-    ULONG fourcc = HIDDNouveauBitMapFourCC(bmdata);
+    ULONG fourcc = HIDDNVGfxBitMapFourCC(bmdata);
     uint32_t handles[4] = { bo->handle, 0, 0, 0 };
     uint32_t pitches[4] = { bmdata->pitch, 0, 0, 0 };
     ULONG cwide;
@@ -240,16 +240,16 @@ static BOOL HIDDNouveauAddFB(OOP_Class *cl, struct HIDDNouveauBitMapData *bmdata
     return TRUE;
 }
 
-BOOL HIDDNouveauEnsureFB(OOP_Object * bm)
+BOOL HIDDNVGfxEnsureFB(OOP_Object * bm)
 {
     OOP_Class * cl = OOP_OCLASS(bm);
-    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, bm);
+    struct HIDDNVGfxBitMapData * bmdata = OOP_INST_DATA(cl, bm);
 
     if (bmdata->fbid != 0)
         return TRUE;
     if (!bmdata->bo)
         return FALSE;
-    if (!HIDDNouveauAddFB(cl, bmdata, bmdata->bo, &bmdata->fbid))
+    if (!HIDDNVGfxAddFB(cl, bmdata, bmdata->bo, &bmdata->fbid))
         return FALSE;
     if (bmdata->nbufs)
         bmdata->buf[bmdata->front].fbid = bmdata->fbid;
@@ -257,18 +257,18 @@ BOOL HIDDNouveauEnsureFB(OOP_Object * bm)
 }
 
 /* The framebuffer of one buffer of a scan-out bitmap (SwapBuffers) */
-BOOL HIDDNouveauEnsureBufferFB(OOP_Object * bm, ULONG buffer)
+BOOL HIDDNVGfxEnsureBufferFB(OOP_Object * bm, ULONG buffer)
 {
     OOP_Class * cl = OOP_OCLASS(bm);
-    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, bm);
+    struct HIDDNVGfxBitMapData * bmdata = OOP_INST_DATA(cl, bm);
 
     if (buffer >= bmdata->nbufs)
         return FALSE;
     if (buffer == bmdata->front)
-        return HIDDNouveauEnsureFB(bm);
+        return HIDDNVGfxEnsureFB(bm);
     if (bmdata->buf[buffer].fbid)
         return TRUE;
-    return HIDDNouveauAddFB(cl, bmdata, bmdata->buf[buffer].bo, &bmdata->buf[buffer].fbid);
+    return HIDDNVGfxAddFB(cl, bmdata, bmdata->buf[buffer].bo, &bmdata->buf[buffer].fbid);
 }
 
 /*
@@ -291,7 +291,7 @@ BOOL HIDDNouveauEnsureBufferFB(OOP_Object * bm, ULONG buffer)
  * SRC_*), "zpos" with its range and nouveau's "colorkey" are kept for the
  * atomic requests of CommitPlanes. Returns the type, -1 if unreadable.
  */
-static LONG HIDDNouveauPlaneProps(LONG fd, struct HIDDNouveauPlane *plane)
+static LONG HIDDNVGfxPlaneProps(LONG fd, struct HIDDNVGfxPlane *plane)
 {
     drmModeObjectPropertiesPtr props;
     LONG type = -1;
@@ -342,16 +342,16 @@ static LONG HIDDNouveauPlaneProps(LONG fd, struct HIDDNouveauPlane *plane)
     return type;
 }
 
-static ULONG HIDDNouveauPlaneVideoFmts(struct HIDDNouveauData *gfxdata, ULONG fmts);
+static ULONG HIDDNVGfxPlaneVideoFmts(struct HIDDNVGfxData *gfxdata, ULONG fmts);
 
-static BOOL HIDDNouveauPlaneAtomic(struct HIDDNouveauPlane *p)
+static BOOL HIDDNVGfxPlaneAtomic(struct HIDDNVGfxPlane *p)
 {
     return p->prop_fb_id && p->prop_crtc_id &&
            p->prop_crtc_x && p->prop_crtc_y && p->prop_crtc_w && p->prop_crtc_h &&
            p->prop_src_x && p->prop_src_y && p->prop_src_w && p->prop_src_h;
 }
 
-VOID HIDDNouveauEnumPlanes(LONG fd, struct HIDDNouveauData *gfxdata)
+VOID HIDDNVGfxEnumPlanes(LONG fd, struct HIDDNVGfxData *gfxdata)
 {
     extern int nouveau_plane_atomic;
     drmModeResPtr res;
@@ -381,7 +381,7 @@ VOID HIDDNouveauEnumPlanes(LONG fd, struct HIDDNouveauData *gfxdata)
         for (i = 0; (i < pres->count_planes) && (gfxdata->nplanes < NOUVEAU_MAX_PLANES); i++)
         {
             drmModePlanePtr p = drmModeGetPlane(fd, pres->planes[i]);
-            struct HIDDNouveauPlane *plane = &gfxdata->planes[gfxdata->nplanes];
+            struct HIDDNVGfxPlane *plane = &gfxdata->planes[gfxdata->nplanes];
             ULONG f, fmts = 0;
 
             if (!p)
@@ -389,7 +389,7 @@ VOID HIDDNouveauEnumPlanes(LONG fd, struct HIDDNouveauData *gfxdata)
             memset(plane, 0, sizeof(*plane));
             plane->id = p->plane_id;
             if ((p->possible_crtcs & (1UL << gfxdata->selectedcrtcindex)) &&
-                (HIDDNouveauPlaneProps(fd, plane) == 0 /* overlay */))
+                (HIDDNVGfxPlaneProps(fd, plane) == 0 /* overlay */))
             {
                 for (f = 0; f < p->count_formats; f++)
                 {
@@ -412,15 +412,15 @@ VOID HIDDNouveauEnumPlanes(LONG fd, struct HIDDNouveauData *gfxdata)
                 {
                     plane->formats = fmts;
                     plane->fbid    = 0;
-                    if (!HIDDNouveauPlaneAtomic(plane))
+                    if (!HIDDNVGfxPlaneAtomic(plane))
                         gfxdata->atomic = FALSE;
                     nvlog("[Nouveau] plane %lu: formats %03lx (video mask %02lx) zpos %lu..%lu%s%s%s\n",
                         (unsigned long)plane->id, (unsigned long)fmts,
-                        (unsigned long)HIDDNouveauPlaneVideoFmts(gfxdata, fmts),
+                        (unsigned long)HIDDNVGfxPlaneVideoFmts(gfxdata, fmts),
                         (unsigned long)plane->zmin, (unsigned long)plane->zmax,
                         plane->zpos_mutable ? "" : " (fixed)",
                         plane->prop_ckey ? ", colorkey" : "",
-                        HIDDNouveauPlaneAtomic(plane) ? ", atomic" : ", legacy");
+                        HIDDNVGfxPlaneAtomic(plane) ? ", atomic" : ", legacy");
                     gfxdata->nplanes++;
                 }
             }
@@ -448,7 +448,7 @@ VOID HIDDNouveauEnumPlanes(LONG fd, struct HIDDNouveauData *gfxdata)
         gfxdata->vblank_ok ? "checked on first use" : "off (NOUVEAU_VBLANK=0)");
 }
 
-static BOOL HIDDNouveauWaitVBlank(LONG fd, struct HIDDNouveauData *gfxdata)
+static BOOL HIDDNVGfxWaitVBlank(LONG fd, struct HIDDNVGfxData *gfxdata)
 {
     drmVBlank vbl;
     int ret;
@@ -487,7 +487,7 @@ static BOOL HIDDNouveauWaitVBlank(LONG fd, struct HIDDNouveauData *gfxdata)
     return TRUE;
 }
 
-static ULONG HIDDNouveauVBlankCount(LONG fd, struct HIDDNouveauData *gfxdata)
+static ULONG HIDDNVGfxVBlankCount(LONG fd, struct HIDDNVGfxData *gfxdata)
 {
     drmVBlank vbl;
 
@@ -502,7 +502,7 @@ static ULONG HIDDNouveauVBlankCount(LONG fd, struct HIDDNouveauData *gfxdata)
 }
 
 /* vHidd_StdPixFmt_* bits for the DRM formats a plane takes (memory byte order) */
-static ULONG HIDDNouveauPlanePixFmts(ULONG fmts)
+static ULONG HIDDNVGfxPlanePixFmts(ULONG fmts)
 {
     ULONG m = 0;
 
@@ -524,7 +524,7 @@ static ULONG HIDDNouveauPlanePixFmts(ULONG fmts)
  * offered only with NOUVEAU_WNDW_PACKED422=1; the nv50-style overlay planes
  * (pre-Volta) keep whatever they list, as upstream always used.
  */
-static ULONG HIDDNouveauPlaneVideoFmts(struct HIDDNouveauData *gfxdata, ULONG fmts)
+static ULONG HIDDNVGfxPlaneVideoFmts(struct HIDDNVGfxData *gfxdata, ULONG fmts)
 {
     extern unsigned int nouveau_wndw_yuv_mask(void);
     BOOL window = gfxdata->chipset >= 0x140;
@@ -551,27 +551,27 @@ static ULONG HIDDNouveauPlaneVideoFmts(struct HIDDNouveauData *gfxdata, ULONG fm
 }
 
 /* Whether an overlay plane scans out the bitmap's format */
-static BOOL HIDDNouveauPlaneTakes(struct HIDDNouveauData *gfxdata, struct HIDDNouveauPlane *p,
-    struct HIDDNouveauBitMapData *bmdata)
+static BOOL HIDDNVGfxPlaneTakes(struct HIDDNVGfxData *gfxdata, struct HIDDNVGfxPlane *p,
+    struct HIDDNVGfxBitMapData *bmdata)
 {
     if (p->dead)
         return FALSE;
     if (bmdata->videoformat)
-        return (HIDDNouveauPlaneVideoFmts(gfxdata, p->formats) & (1UL << bmdata->videoformat)) != 0;
+        return (HIDDNVGfxPlaneVideoFmts(gfxdata, p->formats) & (1UL << bmdata->videoformat)) != 0;
     if (bmdata->stdfmt < 32)
-        return (HIDDNouveauPlanePixFmts(p->formats) & (1UL << bmdata->stdfmt)) != 0;
+        return (HIDDNVGfxPlanePixFmts(p->formats) & (1UL << bmdata->stdfmt)) != 0;
     return FALSE;
 }
 
 /* The plane supports destination colour keying and it is not switched off */
-static BOOL HIDDNouveauPlaneKeys(struct HIDDNouveauPlane *p)
+static BOOL HIDDNVGfxPlaneKeys(struct HIDDNVGfxPlane *p)
 {
     extern int nouveau_colorkey_param;
 
     return p->prop_ckey && nouveau_colorkey_param;
 }
 
-static struct HIDDNouveauData *HIDDNouveauGfxData(OOP_Class *cl, OOP_Object *o)
+static struct HIDDNVGfxData *HIDDNVGfxGfxData(OOP_Class *cl, OOP_Object *o)
 {
     OOP_Object *gfx = NULL;
 
@@ -579,16 +579,16 @@ static struct HIDDNouveauData *HIDDNouveauGfxData(OOP_Class *cl, OOP_Object *o)
     return gfx ? OOP_INST_DATA(SD(cl)->gfxclass, gfx) : NULL;
 }
 
-BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
+BOOL HIDDNVGfxSwitchToVideoMode(OOP_Object * bm)
 {
     OOP_Class * cl = OOP_OCLASS(bm);
 
     /* Shutting down for a reboot: the mode that is up stays up. */
     if (nouveau_shutting_down)
         return TRUE;
-    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, bm);
+    struct HIDDNVGfxBitMapData * bmdata = OOP_INST_DATA(cl, bm);
     OOP_Object * gfx = NULL;
-    struct HIDDNouveauData * gfxdata = NULL; 
+    struct HIDDNVGfxData * gfxdata = NULL; 
     struct CardData * carddata = &(SD(cl)->carddata);
     struct nouveau_device *nvdev = carddata->dev;
     LONG i;
@@ -667,7 +667,7 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
        added as framebuffer so that it can unregister itself in Dispose */
 
     /* Add as frame buffer */
-    if (!HIDDNouveauEnsureFB(bm))
+    if (!HIDDNVGfxEnsureFB(bm))
     {
         UNLOCK_ENGINE
         return FALSE;
@@ -675,14 +675,14 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
 
 
     /* Switch mode */
-    if (!HIDDNouveauShowBitmapForSelectedMode(bm))
+    if (!HIDDNVGfxShowBitmapForSelectedMode(bm))
     {
         nvlog("[Nouveau] SwitchToVideoMode: setcrtc failed\n");
         UNLOCK_ENGINE
         return FALSE;        
     }
 
-    HIDDNouveauShowCursor(gfx, TRUE);
+    HIDDNVGfxShowCursor(gfx, TRUE);
 
     UNLOCK_ENGINE
     return TRUE;
@@ -693,9 +693,9 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
  * that leaves the name descriptor out of its EDID has none to give, and
  * then the base class answers instead of us inventing one.
  */
-static CONST_STRPTR HIDDNouveauDisplayName(OOP_Class * cl, OOP_Object * o)
+static CONST_STRPTR HIDDNVGfxDisplayName(OOP_Class * cl, OOP_Object * o)
 {
-    struct HIDDNouveauDisplayData * data = OOP_INST_DATA(cl, o);
+    struct HIDDNVGfxDisplayData * data = OOP_INST_DATA(cl, o);
 
     if (!data->nameasked)
     {
@@ -707,7 +707,7 @@ static CONST_STRPTR HIDDNouveauDisplayName(OOP_Class * cl, OOP_Object * o)
         OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfx);
         if (gfx && carddata->dev)
         {
-            struct HIDDNouveauData * gfxdata = OOP_INST_DATA(SD(cl)->gfxclass, gfx);
+            struct HIDDNVGfxData * gfxdata = OOP_INST_DATA(SD(cl)->gfxclass, gfx);
             drmModeConnectorPtr connector =
                 (drmModeConnectorPtr)gfxdata->selectedconnector;
 
@@ -727,7 +727,7 @@ static CONST_STRPTR HIDDNouveauDisplayName(OOP_Class * cl, OOP_Object * o)
 }
 
 /* PUBLIC METHODS */
-VOID METHOD(NouveauDisplay, Root, Get)
+VOID METHOD(NVGfxDisplay, Root, Get)
 {
     ULONG idx;
 
@@ -735,7 +735,7 @@ VOID METHOD(NouveauDisplay, Root, Get)
     {
     case aoHidd_Name:
         {
-            CONST_STRPTR name = HIDDNouveauDisplayName(cl, o);
+            CONST_STRPTR name = HIDDNVGfxDisplayName(cl, o);
 
             if (name)
             {
@@ -754,14 +754,14 @@ VOID METHOD(NouveauDisplay, Root, Get)
     case aoHidd_Display_PlaneCount:
         {
             /* primary + overlays + the hardware cursor */
-            struct HIDDNouveauData *gfxdata = HIDDNouveauGfxData(cl, o);
+            struct HIDDNVGfxData *gfxdata = HIDDNVGfxGfxData(cl, o);
             *msg->storage = 1 + (gfxdata ? gfxdata->nplanes : 0) + 1;
         }
         return;
     case aoHidd_Display_VBlankCount:
         {
-            struct HIDDNouveauData *gfxdata = HIDDNouveauGfxData(cl, o);
-            *msg->storage = gfxdata ? HIDDNouveauVBlankCount(NOUVEAU_DEV_FD(SD(cl)->carddata.dev), gfxdata) : 0;
+            struct HIDDNVGfxData *gfxdata = HIDDNVGfxGfxData(cl, o);
+            *msg->storage = gfxdata ? HIDDNVGfxVBlankCount(NOUVEAU_DEV_FD(SD(cl)->carddata.dev), gfxdata) : 0;
         }
         return;
     }
@@ -769,7 +769,7 @@ VOID METHOD(NouveauDisplay, Root, Get)
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-OOP_Object * METHOD(NouveauDisplay, Hidd_Display, CreateObject)
+OOP_Object * METHOD(NVGfxDisplay, Hidd_Display, CreateObject)
 {
     OOP_Object      *object = NULL;
 
@@ -824,14 +824,14 @@ OOP_Object * METHOD(NouveauDisplay, Hidd_Display, CreateObject)
          * caller loaded gallium.hidd; what to use when there is none (GL on
          * Vulkan, a software driver) is the caller's choice too.
          */
-        if (HIDDNouveauGalliumSupported(&SD(cl)->carddata))
-            object = HIDDNouveauNVDDGalliumObject(SD(cl), msg->cl, o, msg->attrList);
+        if (HIDDNVGfxGalliumSupported(&SD(cl)->carddata))
+            object = HIDDNVGfxNVDDGalliumObject(SD(cl), msg->cl, o, msg->attrList);
     }
     else if (msg->cl && (msg->cl == OOP_FindClass(CLID_Hidd_Vulkan)))
     {
         /* A Vulkan object, from nvk.nvdd (opened on first use with the
            caller's base class); NULL for a card NVK cannot drive */
-        object = HIDDNouveauNVDDVulkanObject(SD(cl), msg->cl, o, msg->attrList);
+        object = HIDDNVGfxNVDDVulkanObject(SD(cl), msg->cl, o, msg->attrList);
     }
     else if (SD(cl)->basei2c && (msg->cl == SD(cl)->basei2c))
     {
@@ -843,7 +843,7 @@ OOP_Object * METHOD(NouveauDisplay, Hidd_Display, CreateObject)
     return object;
 }
 
-ULONG METHOD(NouveauDisplay, Hidd_Display, ShowViewPorts)
+ULONG METHOD(NVGfxDisplay, Hidd_Display, ShowViewPorts)
 {
     /* Composition is the display's compositor's job; we only scan out */
     return FALSE;
@@ -855,13 +855,13 @@ ULONG METHOD(NouveauDisplay, Hidd_Display, ShowViewPorts)
  * covers the whole display. Nothing is mirrored: the bitmap's own buffer
  * object becomes the CRTC's framebuffer.
  */
-OOP_Object *METHOD(NouveauDisplay, Hidd_Display, Show)
+OOP_Object *METHOD(NVGfxDisplay, Hidd_Display, Show)
 {
     if (msg->bitMap)
     {
         nvlog("[Nouveau] Show bitmap %p\n", msg->bitMap);
 
-        if (!HIDDNouveauSwitchToVideoMode(msg->bitMap))
+        if (!HIDDNVGfxSwitchToVideoMode(msg->bitMap))
             return NULL;
     }
 
@@ -875,10 +875,10 @@ OOP_Object *METHOD(NouveauDisplay, Hidd_Display, Show)
 #define Machine_ARGB32 vHidd_StdPixFmt_BGRA32
 #endif
 
-BOOL METHOD(NouveauDisplay, Hidd_Display, SetCursorShape)
+BOOL METHOD(NVGfxDisplay, Hidd_Display, SetCursorShape)
 {
     OOP_Object *gfx = NULL;
-    struct HIDDNouveauData * gfxdata;
+    struct HIDDNVGfxData * gfxdata;
 
     OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfx);
     gfxdata = OOP_INST_DATA(SD(cl)->gfxclass, gfx);
@@ -886,7 +886,7 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, SetCursorShape)
     if (msg->shape == NULL)
     {
         /* Hide cursor */
-        HIDDNouveauShowCursor(gfx, FALSE);
+        HIDDNVGfxShowCursor(gfx, FALSE);
     }
     else
     {
@@ -947,7 +947,7 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, SetCursorShape)
             }
 
         /* Show updated cursor */
-        HIDDNouveauShowCursor(gfx, TRUE);
+        HIDDNVGfxShowCursor(gfx, TRUE);
 
         UNLOCK_ENGINE
     }
@@ -955,10 +955,10 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, SetCursorShape)
     return TRUE;
 }
 
-BOOL METHOD(NouveauDisplay, Hidd_Display, SetCursorPos)
+BOOL METHOD(NVGfxDisplay, Hidd_Display, SetCursorPos)
 {
     OOP_Object *gfx = NULL;
-    struct HIDDNouveauData * gfxdata;
+    struct HIDDNVGfxData * gfxdata;
     struct CardData * carddata = &(SD(cl)->carddata);
     struct nouveau_device *nvdev = carddata->dev;
 
@@ -983,12 +983,12 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, SetCursorPos)
     return TRUE;
 }
 
-VOID METHOD(NouveauDisplay, Hidd_Display, SetCursorVisible)
+VOID METHOD(NVGfxDisplay, Hidd_Display, SetCursorVisible)
 {
     OOP_Object *gfx = NULL;
 
     OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfx);
-    HIDDNouveauShowCursor(gfx, msg->visible);
+    HIDDNVGfxShowCursor(gfx, msg->visible);
 }
 
 /*
@@ -999,9 +999,9 @@ VOID METHOD(NouveauDisplay, Hidd_Display, SetCursorVisible)
  * usage bounds, 5-tap coefficients and the CSC0/CSC1 pipelines that nvkms
  * programs around it), so ScaleMin == ScaleMax == unity is the truth.
  */
-ULONG METHOD(NouveauDisplay, Hidd_Display, GetPlaneInfo)
+ULONG METHOD(NVGfxDisplay, Hidd_Display, GetPlaneInfo)
 {
-    struct HIDDNouveauData *gfxdata = HIDDNouveauGfxData(cl, o);
+    struct HIDDNVGfxData *gfxdata = HIDDNVGfxGfxData(cl, o);
     ULONG overlays = gfxdata ? gfxdata->nplanes : 0;
     struct HIDD_PlaneInfo info;
     ULONG len = msg->infoLen;
@@ -1015,11 +1015,11 @@ ULONG METHOD(NouveauDisplay, Hidd_Display, GetPlaneInfo)
     info.PosAlignX = info.PosAlignY = 1;
     if (msg->index <= overlays)
     {
-        struct HIDDNouveauPlane *p = &gfxdata->planes[msg->index - 1];
+        struct HIDDNVGfxPlane *p = &gfxdata->planes[msg->index - 1];
 
         info.Type         = vHidd_Plane_Overlay;
-        info.PixFmtMask   = p->dead ? 0 : HIDDNouveauPlanePixFmts(p->formats);
-        info.VideoFmtMask = p->dead ? 0 : HIDDNouveauPlaneVideoFmts(gfxdata, p->formats);
+        info.PixFmtMask   = p->dead ? 0 : HIDDNVGfxPlanePixFmts(p->formats);
+        info.VideoFmtMask = p->dead ? 0 : HIDDNVGfxPlaneVideoFmts(gfxdata, p->formats);
         info.AlphaModes   = (1 << vHidd_CompAlpha_None);
         info.Flags        = PIF_NEEDS_DISPLAYMEM;     /* displayable bitmaps: buffer objects in video RAM */
         if (p->zpos_mutable && (p->zmax > p->zmin))
@@ -1027,7 +1027,7 @@ ULONG METHOD(NouveauDisplay, Hidd_Display, GetPlaneInfo)
             info.ZMin = p->zmin;
             info.ZMax = p->zmax;
         }
-        if (HIDDNouveauPlaneKeys(p))
+        if (HIDDNVGfxPlaneKeys(p))
             info.Flags |= PIF_COLORKEY;
     }
     else if (msg->index == overlays + 1)
@@ -1052,8 +1052,8 @@ ULONG METHOD(NouveauDisplay, Hidd_Display, GetPlaneInfo)
  * bitmap is given, FB_ID/CRTC_ID 0 to turn it off. zpos and colorkey only
  * where the plane has the (mutable) property.
  */
-static int HIDDNouveauPlaneRequest(drmModeAtomicReqPtr req, struct HIDDNouveauData *gfxdata,
-    struct HIDDNouveauPlane *p, ULONG fbid, struct HIDD_PlaneState *st)
+static int HIDDNVGfxPlaneRequest(drmModeAtomicReqPtr req, struct HIDDNVGfxData *gfxdata,
+    struct HIDDNVGfxPlane *p, ULONG fbid, struct HIDD_PlaneState *st)
 {
     int ret = 0;
 
@@ -1091,7 +1091,7 @@ static int HIDDNouveauPlaneRequest(drmModeAtomicReqPtr req, struct HIDDNouveauDa
 }
 
 /* Remember what a successful commit put on the plane (SwapBuffers re-uses it) */
-static VOID HIDDNouveauPlaneRemember(struct HIDDNouveauPlane *p, ULONG fbid, struct HIDD_PlaneState *st)
+static VOID HIDDNVGfxPlaneRemember(struct HIDDNVGfxPlane *p, ULONG fbid, struct HIDD_PlaneState *st)
 {
     p->fbid = fbid;
     if (!fbid || !st)
@@ -1118,8 +1118,8 @@ static VOID HIDDNouveauPlaneRemember(struct HIDDNouveauPlane *p, ULONG fbid, str
  * call does not carry are set first (each is an atomic commit of its own
  * in the DRM core), then the framebuffer and geometry.
  */
-static int HIDDNouveauPlaneSetLegacy(LONG fd, struct HIDDNouveauData *gfxdata,
-    struct HIDDNouveauPlane *p, ULONG fbid, struct HIDD_PlaneState *st)
+static int HIDDNVGfxPlaneSetLegacy(LONG fd, struct HIDDNVGfxData *gfxdata,
+    struct HIDDNVGfxPlane *p, ULONG fbid, struct HIDD_PlaneState *st)
 {
     int ret;
 
@@ -1170,7 +1170,7 @@ static int HIDDNouveauPlaneSetLegacy(LONG fd, struct HIDDNouveauData *gfxdata,
 extern int nv50_disp_plane_timed_out(uint32_t plane_id);
 extern ULONG nv50_disp_core_timeouts;
 
-static BOOL HIDDNouveauPlanesCheckTimeouts(LONG fd, struct HIDDNouveauData *gfxdata, ULONG mask)
+static BOOL HIDDNVGfxPlanesCheckTimeouts(LONG fd, struct HIDDNVGfxData *gfxdata, ULONG mask)
 {
     static ULONG core_noted = 0;
     BOOL died = FALSE;
@@ -1184,7 +1184,7 @@ static BOOL HIDDNouveauPlanesCheckTimeouts(LONG fd, struct HIDDNouveauData *gfxd
     }
     for (i = 0; i < gfxdata->nplanes; i++)
     {
-        struct HIDDNouveauPlane *p = &gfxdata->planes[i];
+        struct HIDDNVGfxPlane *p = &gfxdata->planes[i];
         int ret;
 
         if (!(mask & (1UL << i)) || p->dead || !nv50_disp_plane_timed_out(p->id))
@@ -1212,9 +1212,9 @@ static BOOL HIDDNouveauPlanesCheckTimeouts(LONG fd, struct HIDDNouveauData *gfxd
  * all overlays) unless NOUVEAU_PLANE_ATOMIC=0, which keeps the per-plane
  * SETPLANE calls. Either way it then waits a vblank as before.
  */
-BOOL METHOD(NouveauDisplay, Hidd_Display, CommitPlanes)
+BOOL METHOD(NVGfxDisplay, Hidd_Display, CommitPlanes)
 {
-    struct HIDDNouveauData *gfxdata = HIDDNouveauGfxData(cl, o);
+    struct HIDDNVGfxData *gfxdata = HIDDNVGfxGfxData(cl, o);
     struct nouveau_device *nvdev = SD(cl)->carddata.dev;
     ULONG overlays = gfxdata ? gfxdata->nplanes : 0;
     ULONG cursorplane = overlays + 1;
@@ -1241,18 +1241,18 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, CommitPlanes)
             return FALSE;
         if (st->Plane <= overlays)
         {
-            struct HIDDNouveauPlane *p = &gfxdata->planes[st->Plane - 1];
+            struct HIDDNVGfxPlane *p = &gfxdata->planes[st->Plane - 1];
 
             if (st->BitMap)
             {
-                struct HIDDNouveauBitMapData *bmdata;
+                struct HIDDNVGfxBitMapData *bmdata;
 
                 if (OOP_OCLASS(st->BitMap) != SD(cl)->bmclass)
                     return FALSE;
                 bmdata = OOP_INST_DATA(SD(cl)->bmclass, st->BitMap);
                 if ((!bmdata->displayable && !bmdata->nbufs) || !bmdata->bo)
                     return FALSE;                       /* not in video RAM */
-                if (!HIDDNouveauPlaneTakes(gfxdata, p, bmdata))
+                if (!HIDDNVGfxPlaneTakes(gfxdata, p, bmdata))
                     return FALSE;                       /* format, or a dead plane */
                 if (((st->Dest.MaxX - st->Dest.MinX) != (st->Src.MaxX - st->Src.MinX)) ||
                     ((st->Dest.MaxY - st->Dest.MinY) != (st->Src.MaxY - st->Src.MinY)))
@@ -1263,7 +1263,7 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, CommitPlanes)
                     return FALSE;                       /* source outside the bitmap */
                 if (st->AlphaMode != vHidd_CompAlpha_None)
                     return FALSE;
-                if ((st->Flags & PSF_COLORKEY) && !HIDDNouveauPlaneKeys(p))
+                if ((st->Flags & PSF_COLORKEY) && !HIDDNVGfxPlaneKeys(p))
                     return FALSE;
                 overlaywork = TRUE;
             }
@@ -1294,25 +1294,25 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, CommitPlanes)
         for (i = 0; (i < msg->count) && !ret; i++)
         {
             struct HIDD_PlaneState *st = &msg->states[i];
-            struct HIDDNouveauPlane *p;
+            struct HIDDNVGfxPlane *p;
 
             if ((st->Plane == 0) || (st->Plane > overlays))
                 continue;
             p = &gfxdata->planes[st->Plane - 1];
             if (st->BitMap)
             {
-                struct HIDDNouveauBitMapData *bmdata = OOP_INST_DATA(SD(cl)->bmclass, st->BitMap);
+                struct HIDDNVGfxBitMapData *bmdata = OOP_INST_DATA(SD(cl)->bmclass, st->BitMap);
 
                 /* a decode target: its front buffer must hold a finished picture */
                 if (bmdata->decodetarget)
-                    HIDDNouveauDecodeSettle(&(SD(cl)->carddata), bmdata, bmdata->front, TRUE, 0xffffffffUL);
-                if (!HIDDNouveauEnsureFB(st->BitMap))
+                    HIDDNVGfxDecodeSettle(&(SD(cl)->carddata), bmdata, bmdata->front, TRUE, 0xffffffffUL);
+                if (!HIDDNVGfxEnsureFB(st->BitMap))
                     ret = -1;
                 else
-                    ret = HIDDNouveauPlaneRequest(req, gfxdata, p, bmdata->fbid, st);
+                    ret = HIDDNVGfxPlaneRequest(req, gfxdata, p, bmdata->fbid, st);
             }
             else if (p->fbid)
-                ret = HIDDNouveauPlaneRequest(req, gfxdata, p, 0, NULL);
+                ret = HIDDNVGfxPlaneRequest(req, gfxdata, p, 0, NULL);
         }
         if (!ret)
         {
@@ -1331,33 +1331,33 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, CommitPlanes)
         if (ret)
         {
             nvlog("[Nouveau] atomic commit of %lu plane state(s) failed: %d\n", (unsigned long)msg->count, ret);
-            HIDDNouveauPlanesCheckTimeouts(NOUVEAU_DEV_FD(nvdev), gfxdata, (1UL << overlays) - 1);
+            HIDDNVGfxPlanesCheckTimeouts(NOUVEAU_DEV_FD(nvdev), gfxdata, (1UL << overlays) - 1);
             return FALSE;
         }
         for (i = 0; i < msg->count; i++)
         {
             struct HIDD_PlaneState *st = &msg->states[i];
-            struct HIDDNouveauPlane *p;
+            struct HIDDNVGfxPlane *p;
 
             if ((st->Plane == 0) || (st->Plane > overlays))
                 continue;
             p = &gfxdata->planes[st->Plane - 1];
             if (st->BitMap)
             {
-                struct HIDDNouveauBitMapData *bmdata = OOP_INST_DATA(SD(cl)->bmclass, st->BitMap);
+                struct HIDDNVGfxBitMapData *bmdata = OOP_INST_DATA(SD(cl)->bmclass, st->BitMap);
 
                 D(bug("[Nouveau] plane %lu: fb %lu (%lux%lu bo %p) at %d,%d %dx%d%s on crtc %lu (atomic)\n", (unsigned long)p->id,
                     (unsigned long)bmdata->fbid, (unsigned long)bmdata->drawable.width, (unsigned long)bmdata->drawable.height,
                     bmdata->bo, st->Dest.MinX, st->Dest.MinY, st->Dest.MaxX - st->Dest.MinX + 1, st->Dest.MaxY - st->Dest.MinY + 1,
                     (st->Flags & PSF_COLORKEY) ? " keyed" : "", (unsigned long)gfxdata->selectedcrtcid));
-                HIDDNouveauPlaneRemember(p, bmdata->fbid, st);
+                HIDDNVGfxPlaneRemember(p, bmdata->fbid, st);
                 changed = TRUE;
                 touched |= 1UL << (st->Plane - 1);
             }
             else if (p->fbid)
             {
                 D(bug("[Nouveau] plane %lu: off (atomic)\n", (unsigned long)p->id));
-                HIDDNouveauPlaneRemember(p, 0, NULL);
+                HIDDNVGfxPlaneRemember(p, 0, NULL);
                 changed = TRUE;
                 touched |= 1UL << (st->Plane - 1);
             }
@@ -1369,7 +1369,7 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, CommitPlanes)
     for (i = 0; i < msg->count; i++)
     {
         struct HIDD_PlaneState *st = &msg->states[i];
-        struct HIDDNouveauPlane *p;
+        struct HIDDNVGfxPlane *p;
         int ret;
 
         if (st->Plane == 0)
@@ -1398,12 +1398,12 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, CommitPlanes)
         p = &gfxdata->planes[st->Plane - 1];
         if (st->BitMap)
         {
-            struct HIDDNouveauBitMapData *bmdata = OOP_INST_DATA(SD(cl)->bmclass, st->BitMap);
+            struct HIDDNVGfxBitMapData *bmdata = OOP_INST_DATA(SD(cl)->bmclass, st->BitMap);
 
-            if (!HIDDNouveauEnsureFB(st->BitMap))
+            if (!HIDDNVGfxEnsureFB(st->BitMap))
                 return FALSE;
             LOCK_ENGINE
-            ret = HIDDNouveauPlaneSetLegacy(NOUVEAU_DEV_FD(nvdev), gfxdata, p, bmdata->fbid, st);
+            ret = HIDDNVGfxPlaneSetLegacy(NOUVEAU_DEV_FD(nvdev), gfxdata, p, bmdata->fbid, st);
             UNLOCK_ENGINE
             D(bug("[Nouveau] plane %lu: fb %lu (%lux%lu bo %p) at %d,%d %dx%d%s on crtc %lu: %d\n", (unsigned long)p->id,
                 (unsigned long)bmdata->fbid, (unsigned long)bmdata->drawable.width, (unsigned long)bmdata->drawable.height,
@@ -1412,19 +1412,19 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, CommitPlanes)
             touched |= 1UL << (st->Plane - 1);
             if (ret)
             {
-                HIDDNouveauPlanesCheckTimeouts(NOUVEAU_DEV_FD(nvdev), gfxdata, touched);
+                HIDDNVGfxPlanesCheckTimeouts(NOUVEAU_DEV_FD(nvdev), gfxdata, touched);
                 return FALSE;
             }
-            HIDDNouveauPlaneRemember(p, bmdata->fbid, st);
+            HIDDNVGfxPlaneRemember(p, bmdata->fbid, st);
             changed = TRUE;
         }
         else if (p->fbid)
         {
             LOCK_ENGINE
-            ret = HIDDNouveauPlaneSetLegacy(NOUVEAU_DEV_FD(nvdev), gfxdata, p, 0, NULL);
+            ret = HIDDNVGfxPlaneSetLegacy(NOUVEAU_DEV_FD(nvdev), gfxdata, p, 0, NULL);
             UNLOCK_ENGINE
             nvlog("[Nouveau] plane %lu: off: %d\n", (unsigned long)p->id, ret);
-            HIDDNouveauPlaneRemember(p, 0, NULL);
+            HIDDNVGfxPlaneRemember(p, 0, NULL);
             changed = TRUE;
             touched |= 1UL << (st->Plane - 1);
         }
@@ -1433,7 +1433,7 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, CommitPlanes)
      * A window that did not arm (notifier timeout) is dead for this boot:
      * report the commit as failed so that the compositor composes.
      */
-    if (touched && HIDDNouveauPlanesCheckTimeouts(NOUVEAU_DEV_FD(nvdev), gfxdata, touched))
+    if (touched && HIDDNVGfxPlanesCheckTimeouts(NOUVEAU_DEV_FD(nvdev), gfxdata, touched))
         return FALSE;
     /*
      * Latch only when an overlay was reprogrammed: that is when a bitmap may
@@ -1444,7 +1444,7 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, CommitPlanes)
      * partly drawn on the GB207 (2026-10-23).
      */
     if (changed && !(msg->flags & fHidd_Commit_NoWait))
-        HIDDNouveauWaitVBlank(NOUVEAU_DEV_FD(nvdev), gfxdata);
+        HIDDNVGfxWaitVBlank(NOUVEAU_DEV_FD(nvdev), gfxdata);
     return TRUE;
 }
 
@@ -1457,12 +1457,12 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, CommitPlanes)
 /* set while a non-blocking flip is queued (drm/nouveau/dispnv50/disp.c) */
 extern volatile int nouveau_flip_pending;
 
-LONG HIDDNouveauPlaneSwap(OOP_Object *display, ULONG oldfbid, ULONG newfbid, BOOL wait)
+LONG HIDDNVGfxPlaneSwap(OOP_Object *display, ULONG oldfbid, ULONG newfbid, BOOL wait)
 {
     OOP_Class *cl = OOP_OCLASS(display);
-    struct HIDDNouveauData *gfxdata = HIDDNouveauGfxData(cl, display);
+    struct HIDDNVGfxData *gfxdata = HIDDNVGfxGfxData(cl, display);
     struct nouveau_device *nvdev = SD(cl)->carddata.dev;
-    struct HIDDNouveauPlane *p = NULL;
+    struct HIDDNVGfxPlane *p = NULL;
     ULONG i;
     int ret;
 
@@ -1511,11 +1511,11 @@ LONG HIDDNouveauPlaneSwap(OOP_Object *display, ULONG oldfbid, ULONG newfbid, BOO
     {
         nvlog("[Nouveau] plane %lu: swap fb %lu -> %lu failed: %d\n", (unsigned long)p->id,
             (unsigned long)oldfbid, (unsigned long)newfbid, ret);
-        HIDDNouveauPlanesCheckTimeouts(NOUVEAU_DEV_FD(nvdev), gfxdata, 1UL << (p - gfxdata->planes));
+        HIDDNVGfxPlanesCheckTimeouts(NOUVEAU_DEV_FD(nvdev), gfxdata, 1UL << (p - gfxdata->planes));
         return PLANESWAP_DONE;  /* it is on a plane; nothing to compose either way */
     }
     p->fbid = newfbid;
-    if (HIDDNouveauPlanesCheckTimeouts(NOUVEAU_DEV_FD(nvdev), gfxdata, 1UL << (p - gfxdata->planes)))
+    if (HIDDNVGfxPlanesCheckTimeouts(NOUVEAU_DEV_FD(nvdev), gfxdata, 1UL << (p - gfxdata->planes)))
         return PLANESWAP_COMPOSED;  /* the window died: the bitmap is composed from now on */
     /* A blocking commit returns once the new buffer has latched, so the
      * old one is already off scan-out - also the legacy SETPLANE, which
@@ -1525,12 +1525,12 @@ LONG HIDDNouveauPlaneSwap(OOP_Object *display, ULONG oldfbid, ULONG newfbid, BOO
     return PLANESWAP_DONE;
 }
 
-VOID METHOD(NouveauDisplay, Hidd_Display, WaitLatch)
+VOID METHOD(NVGfxDisplay, Hidd_Display, WaitLatch)
 {
-    struct HIDDNouveauData *gfxdata = HIDDNouveauGfxData(cl, o);
+    struct HIDDNVGfxData *gfxdata = HIDDNVGfxGfxData(cl, o);
 
     if (gfxdata)
-        HIDDNouveauWaitVBlank(NOUVEAU_DEV_FD(SD(cl)->carddata.dev), gfxdata);
+        HIDDNVGfxWaitVBlank(NOUVEAU_DEV_FD(SD(cl)->carddata.dev), gfxdata);
 }
 
 /*
@@ -1540,11 +1540,11 @@ VOID METHOD(NouveauDisplay, Hidd_Display, WaitLatch)
  * SCF_COLORKEY when that plane keys on the primary (dispnv50 windows),
  * never SCF_SCALE (see GetPlaneInfo). Up to NOUVEAU_MAX_SCANOUT_BUFFERS buffers.
  */
-ULONG METHOD(NouveauDisplay, Hidd_Display, QueryScanout)
+ULONG METHOD(NVGfxDisplay, Hidd_Display, QueryScanout)
 {
-    struct HIDDNouveauData *gfxdata = HIDDNouveauGfxData(cl, o);
-    struct HIDDNouveauBitMapData want;
-    struct HIDDNouveauPlane *p = NULL;
+    struct HIDDNVGfxData *gfxdata = HIDDNVGfxGfxData(cl, o);
+    struct HIDDNVGfxBitMapData want;
+    struct HIDDNVGfxPlane *p = NULL;
     ULONG i, flags = 0;
 
     if (msg->caps)
@@ -1559,11 +1559,11 @@ ULONG METHOD(NouveauDisplay, Hidd_Display, QueryScanout)
     want.stdfmt = msg->videoFmt ? vHidd_StdPixFmt_Unknown : msg->pixFmt;
     for (i = 0; i < gfxdata->nplanes; i++)
     {
-        if (HIDDNouveauPlaneTakes(gfxdata, &gfxdata->planes[i], &want))
+        if (HIDDNVGfxPlaneTakes(gfxdata, &gfxdata->planes[i], &want))
         {
             p = &gfxdata->planes[i];
             flags |= SCF_PLANE;
-            if (HIDDNouveauPlaneKeys(p))
+            if (HIDDNVGfxPlaneKeys(p))
             {
                 flags |= SCF_COLORKEY;
                 break;              /* the best there is */
@@ -1595,7 +1595,7 @@ static struct HIDD_ModeProperties modeprops =
     0   /* no composition in hardware: the display's compositor composes */
 };
 
-ULONG METHOD(NouveauDisplay, Hidd_Display, ModeProperties)
+ULONG METHOD(NVGfxDisplay, Hidd_Display, ModeProperties)
 {
     ULONG len = msg->propsLen;
 
@@ -1614,7 +1614,7 @@ ULONG METHOD(NouveauDisplay, Hidd_Display, ModeProperties)
  * at all. Take its dimensions from that mode rather than from a fixed
  * pair, so the default screen is the one the display actually wants.
  */
-VOID METHOD(NouveauDisplay, Hidd_Display, NominalDimensions)
+VOID METHOD(NVGfxDisplay, Hidd_Display, NominalDimensions)
 {
     OOP_Object *gfx = NULL;
     ULONG width = 1024, height = 768;
@@ -1622,7 +1622,7 @@ VOID METHOD(NouveauDisplay, Hidd_Display, NominalDimensions)
     OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfx);
     if (gfx)
     {
-        struct HIDDNouveauData *gfxdata = OOP_INST_DATA(SD(cl)->gfxclass, gfx);
+        struct HIDDNVGfxData *gfxdata = OOP_INST_DATA(SD(cl)->gfxclass, gfx);
         drmModeConnectorPtr connector = (drmModeConnectorPtr)gfxdata->selectedconnector;
 
         if (connector && connector->count_modes > 0)
@@ -1660,18 +1660,18 @@ VOID METHOD(NouveauDisplay, Hidd_Display, NominalDimensions)
  * Hardware video decoding (nvgfx_decode.c): the display answers for the
  * NVDEC class its channel accepts; sessions are decode interfaces.
  */
-ULONG METHOD(NouveauDisplay, Hidd_Display, QueryDecode)
+ULONG METHOD(NVGfxDisplay, Hidd_Display, QueryDecode)
 {
-    return HIDDNouveauDecodeQuery(cl, o, msg->profile, msg->width, msg->height, msg->caps);
+    return HIDDNVGfxDecodeQuery(cl, o, msg->profile, msg->width, msg->height, msg->caps);
 }
 
-APTR METHOD(NouveauDisplay, Hidd_Display, GetDecodeInterface)
+APTR METHOD(NVGfxDisplay, Hidd_Display, GetDecodeInterface)
 {
-    struct HIDDNouveauDecode *dec = (struct HIDDNouveauDecode *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    struct HIDDNVGfxDecode *dec = (struct HIDDNVGfxDecode *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     if (!dec)
         return NULL;
-    if (!HIDDNouveauDecodeOpen(cl, o, dec, msg->profile, msg->width, msg->height, msg->resolve))
+    if (!HIDDNVGfxDecodeOpen(cl, o, dec, msg->profile, msg->width, msg->height, msg->resolve))
     {
         struct pHidd_Display_FreeDecodeInterface fmsg;
 
@@ -1683,9 +1683,9 @@ APTR METHOD(NouveauDisplay, Hidd_Display, GetDecodeInterface)
     return dec;
 }
 
-VOID METHOD(NouveauDisplay, Hidd_Display, FreeDecodeInterface)
+VOID METHOD(NVGfxDisplay, Hidd_Display, FreeDecodeInterface)
 {
     if (msg->iface)
-        HIDDNouveauDecodeClose((struct HIDDNouveauDecode *)msg->iface);
+        HIDDNVGfxDecodeClose((struct HIDDNVGfxDecode *)msg->iface);
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }

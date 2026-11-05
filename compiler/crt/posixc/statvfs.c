@@ -94,8 +94,8 @@ int statvfs(const char *restrict path, struct statvfs *restrict buf)
 
     buf->f_bsize = info.id_BytesPerBlock;
     buf->f_frsize = info.id_BytesPerBlock;
-    buf->f_blocks = info.id_NumBlocks;
-    buf->f_bfree = info.id_NumBlocks - info.id_NumBlocksUsed;
+    buf->f_blocks = info.id_NumBlocks64;
+    buf->f_bfree = info.id_NumBlocks64 - info.id_NumBlocksUsed64;
     buf->f_bavail = buf->f_bfree;
     buf->f_files = 0;       // AmigaFS does not support inodes like Unix
     buf->f_ffree = 0;

@@ -4,7 +4,7 @@
     The DRM device as a table (include/libdrm/drm_entry.h): what the
     Vulkan driver library (NVK, nvk.nvdd: nvk/nvk_nvdd.c)
     reaches the kernel driver through, each open() a client of its own,
-    and what NouveauDrmEntry() exports to test programs outside it.
+    and what NVGfxDrmEntry() exports to test programs outside it.
     Everything here is the in-process libdrm of libdrm/arosdrm.c, wrapped
     so the table carries no libdrm types.
 */
@@ -142,7 +142,7 @@ static void *entry_map_notify(int fd, uint32_t handle, void (*unmapped)(void *),
 /* The display's DRM client: scan-out bitmaps' buffers are its GEM objects */
 static int entry_display_fd = -1;
 
-void HIDDNouveauDrmEntrySetDisplay(int display_fd)
+void HIDDNVGfxDrmEntrySetDisplay(int display_fd)
 {
     entry_display_fd = display_fd;
 }
@@ -187,13 +187,13 @@ static const struct nouveau_drm_entry drm_entry =
     .map_notify   = entry_map_notify,
 };
 
-const struct nouveau_drm_entry *HIDDNouveauDrmEntry(void)
+const struct nouveau_drm_entry *HIDDNVGfxDrmEntry(void)
 {
     return &drm_entry;
 }
 
-AROS_LH0(APTR, NouveauDrmEntry,
-         LIBBASETYPEPTR, LIBBASE, 5, Nouveau)
+AROS_LH0(APTR, NVGfxDrmEntry,
+         LIBBASETYPEPTR, LIBBASE, 5, NVGfx)
 {
     AROS_LIBFUNC_INIT
 
