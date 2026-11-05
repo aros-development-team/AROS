@@ -130,6 +130,7 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
     UWORD bltcon0;
     BOOL reverse = FALSE;
     BOOL intersect = FALSE;
+    BOOL opposite_rows = FALSE;
 
     if (!w || !h)
         return TRUE;
@@ -162,16 +163,21 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
     shift = (dstx & 15) - (srcx & 15);
 
     if (intersect) {
-        if (dstoffset < srcoffset && shift < 0)
-            return FALSE;
-        if (dstoffset > srcoffset && shift > 0)
-            return FALSE;
+        if ((dstoffset < srcoffset && shift < 0) ||
+            (dstoffset > srcoffset && shift > 0)) {
+            /* Keep overlapping scanlines on the software path. For distinct
+             * rows the blitter can reverse horizontally while its modulo
+             * advances vertically in the other direction. */
+            if (srcy == dsty)
+                return FALSE;
+            opposite_rows = TRUE;
+        }
     }
 
     if (shift < 0) {
         reverse = TRUE;
         shift = -shift;
-    } else if (intersect && dstoffset > srcoffset) {
+    } else if (intersect && dstoffset > srcoffset && !opposite_rows) {
         reverse = TRUE;
     }
 
@@ -206,7 +212,12 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
     if (!blitsize(data, width, h))
         return FALSE;
 
-    if (reverse) {
+    /* Opposite row traversal only occurs within the same bitmap. */
+    if (opposite_rows && srcbm->BytesPerRow + width * 2 > 0x8000)
+        return FALSE;
+
+    /* Select the first row independently of the horizontal direction. */
+    if (reverse != opposite_rows) {
         srcoffset += srcbm->BytesPerRow * (h - 1);
         dstoffset += dstbm->BytesPerRow * (h - 1);
     }
@@ -218,9 +229,9 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
 
     custom->bltafwm = afwm;
     custom->bltalwm = alwm;
-    custom->bltbmod = srcbm->BytesPerRow - width * 2;
-    custom->bltcmod = dstbm->BytesPerRow - width * 2;
-    custom->bltdmod = dstbm->BytesPerRow - width * 2;
+    custom->bltbmod = (opposite_rows ? -srcbm->BytesPerRow : srcbm->BytesPerRow) - width * 2;
+    custom->bltcmod = (opposite_rows ? -dstbm->BytesPerRow : dstbm->BytesPerRow) - width * 2;
+    custom->bltdmod = (opposite_rows ? -dstbm->BytesPerRow : dstbm->BytesPerRow) - width * 2;
     bltcon0 = USEB | USEC | USED | copy_minterm[mode] | shifta;
     custom->bltadat = 0xffff;
     
