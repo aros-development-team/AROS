@@ -84,7 +84,7 @@ public:
             case 0x01E: /* INTENA */
                 return 0;
             case 0x002: /* DMACONR */
-                return 0;
+                return m68k_paula_dmacon(ctx);
             default:
                 return 0;
         }
@@ -105,7 +105,9 @@ public:
                 const_cast<AROSMoira*>(this)->ctx->beam_h = val & 0xFF;
                 break;
             default:
-                break; /* ignore writes to unimplemented registers */
+                if ((reg >= 0x0A0 && reg < 0x0E0) || reg == 0x096)
+                    m68k_paula_write(ctx, reg, val);
+                break; /* other registers: ignored */
         }
     }
 
@@ -282,8 +284,8 @@ public:
             case 5:  c.ta_latch = (UWORD)((c.ta_latch & 0x00FF) | (val << 8)); break;
             case 6:  c.tb_latch = (UWORD)((c.tb_latch & 0xFF00) | val); break;
             case 7:  c.tb_latch = (UWORD)((c.tb_latch & 0x00FF) | (val << 8)); break;
-            case 14: c.cra = val; break;
-            case 15: c.crb = val; break;
+            case 14: c.cra = val; m68k_cia_timer_control(ctx, chip, 0, val); break;
+            case 15: c.crb = val; m68k_cia_timer_control(ctx, chip, 1, val); break;
             default: break;                                   /* TOD writes, SDR, ICR mask: ignored */
         }
     }
@@ -336,7 +338,7 @@ public:
         }
         if ((addr & CUSTOM_MASK) == CUSTOM_BASE) return;
         if (addr >= ctx->mem_size) return;
-        if (ctx->low_guard && (addr < 8 || (addr >= 0x100 && addr < 0x180)))
+        if (ctx->low_guard && (addr < 8 || (addr >= 0x100 && addr < 0x1C0)))
         {
             if (ctx->low_trap_count++ < 8 && ctx->trace_calls)
                 bug("[m68kemu] CPU wrote into the vector table at %08x from PC %08x (dropped)\n",
@@ -355,7 +357,7 @@ public:
             return;
         }
         if (addr >= ctx->mem_size || ctx->mem_size - addr < 2) return;
-        if (ctx->low_guard && (addr < 8 || (addr >= 0x100 && addr < 0x180)))
+        if (ctx->low_guard && (addr < 8 || (addr >= 0x100 && addr < 0x1C0)))
         {
             if (ctx->low_trap_count++ < 8 && ctx->trace_calls)
                 bug("[m68kemu] CPU wrote into the vector table at %08x from PC %08x (dropped)\n",
@@ -902,6 +904,14 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
             m68k_write16(ctx, M68KEMU_VBL_STUB + i * 2, stub[i]);
         m68k_write32(ctx, 0x6C, M68KEMU_VBL_STUB);          /* level 3 autovector */
 
+        /* CIA timer stub at M68KEMU_CIA_STUB, reached through autovector 6:
+           the same, with the firing vector's is_Data and is_Code */
+        static const u16 cstub[] = { 0x48E7, 0xC0C6, 0x41F9, 0x00DF, 0xF000, 0x2279, 0x0000, M68KEMU_CIA_DATA,
+                                     0x2A79, 0x0000, M68KEMU_CIA_CODE, 0x2C78, 0x0004, 0x4E95, 0x4CDF, 0x6303, 0x4E73 };
+        for (unsigned i = 0; i < sizeof(cstub) / sizeof(cstub[0]); i++)
+            m68k_write16(ctx, M68KEMU_CIA_STUB + i * 2, cstub[i]);
+        m68k_write32(ctx, 0x78, M68KEMU_CIA_STUB);          /* level 6 autovector */
+
         /* addq.l #4,2(sp); rte */
         m68k_write16(ctx, M68KEMU_SKIP4_STUB,     0x586F);
         m68k_write16(ctx, M68KEMU_SKIP4_STUB + 2, 0x0002);
@@ -909,7 +919,7 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
         /* A-line the dispatcher recognises as "unhandled exception" */
         m68k_write16(ctx, M68KEMU_FAULT_STUB, 0xA0FF);
         for (unsigned v = 2; v < 48; v++)
-            if (v != 10 && v != 27)                          /* LINEA, level 3 */
+            if (v != 10 && v != 27 && v != 30)               /* LINEA, levels 3 and 6 */
                 m68k_write32(ctx, v * 4, M68KEMU_FAULT_STUB);
         ctx->irq_stack_top = M68KEmu_HeapAlloc(ctx, 8192, 0);
         if (ctx->irq_stack_top)
@@ -952,6 +962,29 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
                         bug("[m68kemu] VBL %lu raised at PC %08x SR %04x\n", (unsigned long)ctx->vbl_count,
                             (unsigned)pc, (unsigned)cpu.getSR());
                     cpu.setIPL(3);
+                }
+            }
+            if (ctx->cia_irq)
+            {
+                if (pc == M68KEMU_CIA_STUB)
+                {
+                    cpu.setIPL(ctx->vbl_irq ? 3 : 0);
+                    ctx->cia_irq = FALSE;
+                }
+            }
+            else if ((icount & 0x3FF) == 0 && !ctx->disable && !ctx->vbl_irq)
+            {
+                ULONG code, data;
+                if (m68k_cia_due(ctx, &code, &data))
+                {
+                    m68k_write32_raw(ctx, M68KEMU_CIA_DATA, data);
+                    m68k_write32_raw(ctx, M68KEMU_CIA_CODE, code);
+                    if (!(cpu.getSR() & 0x2000) && ctx->irq_stack_top)
+                        cpu.setISP(ctx->irq_stack_top);
+                    ctx->cia_irq = TRUE;
+                    if (ctx->cia_count <= 3 && ctx->trace_calls)
+                        bug("[m68kemu] CIA timer %lu raised at PC %08x\n", (unsigned long)ctx->cia_count, (unsigned)pc);
+                    cpu.setIPL(6);
                 }
             }
             if (m68k_read32(ctx, 4) != ctx->m68k_sysbase && ctx->low_trap_count < 8)
