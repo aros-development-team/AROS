@@ -145,7 +145,9 @@
 #include <dos/exall.h>
 #include <dos/dosasl.h>
 #include <dos/datetime.h>
+#include <dos/dos64.h>
 #include <proto/dos.h>
+#include <proto/dos64.h>
 #include <proto/alib.h>
 #include <proto/utility.h>
 #include <proto/security.h>
@@ -629,6 +631,27 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 }
 
 
+/* dos64.library, NULL when it is not installed */
+struct Library *DOS64Base;
+
+/* The size of a file whose 32 bit size was clamped */
+static UQUAD fileSize64(CONST_STRPTR name, UQUAD size)
+{
+    if (DOS64Base != NULL)
+    {
+        struct FileInfoBlock *fib = AllocDosObject64(DOS64_FIB, NULL);
+
+        if (fib != NULL)
+        {
+            if (ExamineName64(name, fib, NULL))
+                size = fib->fib_Size64;
+            FreeDosObject64(DOS64_FIB, fib);
+        }
+    }
+
+    return size;
+}
+
 int printFileData(struct AnchorPath *ap,
                   BOOL showFiles, BOOL showDirs, STRPTR parsedPattern,
                   ULONG *files, ULONG *dirs, ULONG *nBlocks, STRPTR lFormat,
@@ -641,7 +664,7 @@ int printFileData(struct AnchorPath *ap,
     BOOL               isDir = (ap->ap_Info.fib_DirEntryType >= 0);
     struct DateStamp  *ds = &ap->ap_Info.fib_Date;
     ULONG              protection = ap->ap_Info.fib_Protection;
-    UQUAD              size = ap->ap_Info.fib_Size;
+    UQUAD              size = (ULONG)ap->ap_Info.fib_Size;
     STRPTR             filenote = ap->ap_Info.fib_Comment;
     ULONG              diskKey = ap->ap_Info.fib_DiskKey;
     
@@ -655,26 +678,8 @@ int printFileData(struct AnchorPath *ap,
 
     struct DateTime dt;
 
-#if defined(ACTION_GET_FILE_SIZE64)
-    if (ap->ap_Info.fib_Size >= 0x7FFFFFFF)
-    {
-        BPTR flock = BNULL;
-        flock = Lock(filename, ACCESS_READ);
-
-        if (flock)
-        {
-            /* AROS handlers answer with a pointer to the 64-bit size; a handler
-               using the OS4 convention (or not knowing the packet) replies
-               DOSTRUE/DOSFALSE instead, which must not be dereferenced. */
-            SIPTR res = DoPkt(((struct FileLock *)flock)->fl_Task, ACTION_GET_FILE_SIZE64, (IPTR)flock, 0, 0, 0, 0);
-            if (res != 0 && res != DOSTRUE && ((IPTR)res & (sizeof(UQUAD) - 1)) == 0)
-            {
-                size = *(UQUAD *)res;
-            }
-            UnLock(flock);
-        }
-    }
-#endif
+    if (!isDir && size >= 0x7FFFFFFF)
+        size = fileSize64(filename, size);
     /* Do the file match the time interval we are looking for?
        (ARG_SINCE and ARG_UPTO) -- any combination of these may be
        specified */
@@ -1205,7 +1210,7 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
 
 int __nocommandline;
 
-int main(void)
+static int listMain(void)
 {
     IPTR args[NOOFARGS] =
     {
@@ -1431,7 +1436,7 @@ int main(void)
         (stats.nFiles || stats.nDirs))
     {
         Printf("\nTOTAL: %ld files - %ld directories - %ld blocks used\n",
-               stats.nFiles, stats.nDirs, stats.nBlocks);
+               stats.nFiles, stats.nDirs, (ULONG)stats.nBlocks);
     }
 
 
@@ -1467,5 +1472,17 @@ int main(void)
         Close(SelectOutput(oldOutput));
     }
     
+    return result;
+}
+
+int main(void)
+{
+    int result;
+
+    DOS64Base = OpenLibrary("dos64.library", 51);
+    result = listMain();
+    if (DOS64Base != NULL)
+        CloseLibrary(DOS64Base);
+
     return result;
 }

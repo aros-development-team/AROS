@@ -126,6 +126,8 @@ QUAD dos64_SetFileSize(struct Dos64Base *DOS64Base, struct FileHandle *fh,
 QUAD dos64_GetFileSize(struct Dos64Base *DOS64Base, struct FileHandle *fh);
 void dos64_FixFIB64(struct FileInfoBlock *fib);
 void dos64_PrepFIB64(struct FileInfoBlock *fib);
+void dos64_FixSizeFH(struct Dos64Base *DOS64Base, struct FileHandle *fh,
+                     struct FileInfoBlock *fib);
 void dos64_SetFIBSize(struct FileInfoBlock *fib, UQUAD size);
 LONG dos64_Examine32(struct Dos64Base *DOS64Base, BPTR lock,
                      struct FileInfoBlock *fib, LONG action);
