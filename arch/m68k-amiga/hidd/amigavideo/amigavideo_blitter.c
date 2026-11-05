@@ -892,7 +892,7 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
 
     /* Check every phase before drawing any of them: falling back after a
      * partial invert would invert those pixels twice. */
-    maxheight = (height - 1) / pat->patternheight + 1;
+    maxheight = (UWORD)(height - 1) / (UWORD)pat->patternheight + 1;
     dststep = bm->BytesPerRow * (UWORD)pat->patternheight;
     dstmod = dststep - width * 2;
     if (!blitsize(csd, width, maxheight) || !blitmodulo(dstmod, maxheight))
@@ -949,7 +949,7 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
             /* Rows patcnt, patcnt + patternheight, ... that fall inside the
                fill: a round up, not the round to nearest that only came out
                right for a two-row pattern. */
-            UWORD blitheight = (height - patcnt + pat->patternheight - 1) / pat->patternheight;
+            UWORD blitheight = (UWORD)(height - patcnt + pat->patternheight - 1) / (UWORD)pat->patternheight;
             UWORD pattern = ((UWORD*)pat->pattern)[(pat->patternsrcy + patcnt) & patternymask];
             UWORD patternshift = (dstx - pat->patternsrcx) & 15;
 

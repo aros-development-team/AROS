@@ -83,6 +83,17 @@ struct amigabm_data
     BOOL                        palette_changed;    /* pending copper palette update */
 };
 
+/* Keep a 16x16 multiply on the 68000 instead of a 32-bit libgcc call.
+ * Treating bit 15 of the unsigned stride as a sign subtracts 65536 per
+ * row; add that back when set. This also preserves negative coordinates. */
+static inline ULONG bitmap_row_offset(WORD y, UWORD stride)
+{
+    ULONG offset = (LONG)y * (WORD)stride;
+    if (stride & 0x8000)
+        offset += (ULONG)y << 16;
+    return offset;
+}
+
 #define BMDATFROMCOPLD(x)    ((struct amigabm_data *)((IPTR)x - (offsetof(struct amigabm_data,copld))))
 #define BMDATFROMCOPSD(x)    ((struct amigabm_data *)((IPTR)x - (offsetof(struct amigabm_data,copsd))))
 
