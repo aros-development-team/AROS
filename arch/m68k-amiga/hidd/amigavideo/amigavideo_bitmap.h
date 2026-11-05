@@ -62,7 +62,7 @@ struct amigabm_data
     WORD                        width;
     WORD                        height;
     WORD                        viewportheight;
-    WORD                        bytesperrow;
+    UWORD                       bytesperrow;
     UBYTE                       depth;
     UBYTE                       planebuf_size;
     WORD                        topedge, leftedge;
