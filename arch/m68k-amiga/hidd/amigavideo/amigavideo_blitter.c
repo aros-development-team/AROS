@@ -40,11 +40,11 @@ static BOOL canblit(struct BitMap *bm)
         if (p == (UBYTE*)0x00000000 || p == (UBYTE*)0xffffffff)
                         continue;
                 // Lower 2M is guaranteed to be Chip RAM
-                if (p < (UBYTE)0x00200000)
-                        break;
+                if ((IPTR)p < 0x00200000)
+                        continue;
                 // Re-implementations and UAE may have more Chip RAM.
                 if (TypeOfMem(p) & MEMF_CHIP)
-                        break;
+                        continue;
                 return FALSE;
         }
         return USE_BLITTER != 0;
@@ -148,7 +148,7 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
         return FALSE;
 
     if (srcx < 0 || srcy < 0 ||
-        !canblit(srcbm) || !canblit(dstbm))
+        !canblit(srcbm) || (srcbm != dstbm && !canblit(dstbm)))
         return FALSE;
 
     D(bug("[AmigaVideo:Blitter] %s(%x %x %dx%d %dx%d %dx%d %d)\n", __func__, srcbm, dstbm, srcx, srcy, dstx, dsty, w, h, mode));
@@ -278,7 +278,7 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct BitMap *srcbm,
         return TRUE;
     if (srcx < 0 || srcy < 0 || dstx < 0 || dsty < 0)
         return FALSE;
-    if (!canblit(srcbm) || !canblit(dstbm))
+    if (!canblit(srcbm) || (srcbm != dstbm && !canblit(dstbm)))
         return FALSE;
 
     srcx2 = srcx + w - 1;
