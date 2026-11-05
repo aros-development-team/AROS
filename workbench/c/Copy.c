@@ -1504,7 +1504,7 @@ void PatCopy(STRPTR name, struct CopyData *cd)
 
         if (retval && retval != ERROR_NO_MORE_ENTRIES)
         {
-            LONG ioerr = IoErr();
+            LONG ioerr = retval;
 #if USE_ALWAYSVERBOSE
             cd->Flags |= COPYFLAG_VERBOSE;
 #endif
