@@ -546,13 +546,13 @@ LONG doPatternDir(CONST_STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles, BOOL
                 }
 
             }
-            MatchEnd(ap);
         }
         else
         {
             ioerr = match;
             error = RETURN_FAIL;
         }
+        MatchEnd(ap);
         FreeVec(ap);
     }
 
