@@ -37,10 +37,12 @@ It can also list the service types present on the link (RFC 6763 section
 - **Interfaces.** An IPv4 UDP 5353 socket for each usable IPv4 interface,
   bound with `SO_BINDTODEVICE`, and one IPv6 UDP 5353 socket joined to
   `ff02::fb` on every usable IPv6 link. `IPV6_PKTINFO` identifies the input
-  link and scoped destinations select the output link. Tentative, duplicate,
-  detached and deprecated IPv6 addresses are not used. AROSTCP signals mdnsd
-  when an address changes, and a three-second scan remains as a fallback; a
-  link that came, went or changed its usable address makes mdnsd probe again.
+  link and scoped destinations select the output link. Packets whose IPv4 TTL
+  or IPv6 hop limit is not 255 are silently discarded, as RFC 6762 requires.
+  Tentative, duplicate, detached and deprecated IPv6 addresses are not used.
+  AROSTCP signals mdnsd when an address changes, and a three-second scan
+  remains as a fallback; a link that came, went or changed its usable address
+  makes mdnsd probe again.
 - **Goodbye.** When it stops, or lets go of the stack, it withdraws the
   record with a time to live of zero.
 

@@ -225,6 +225,13 @@ open_socket4(struct Library *SocketBase, const char *name, ULONG addr)
         return -1;
     }
 
+    on = 1;
+    if (setsockopt(sock, IPPROTO_IP, IP_RECVTTL, (char *)&on,
+            sizeof(on)) < 0) {
+        CloseSocket(sock);
+        return -1;
+    }
+
     memset(&mreq, 0, sizeof(mreq));
     mreq.imr_multiaddr.s_addr = inet_addr(MDNS_MCAST_ADDR);
     mreq.imr_interface.s_addr = htonl(addr);
@@ -300,6 +307,8 @@ open_socket6(struct Library *SocketBase, const struct MDNSDaemon *md)
     if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&on,
             sizeof(on)) < 0 ||
         setsockopt(sock, IPPROTO_IPV6, IPV6_RECVPKTINFO, (char *)&on,
+            sizeof(on)) < 0 ||
+        setsockopt(sock, IPPROTO_IPV6, IPV6_RECVHOPLIMIT, (char *)&on,
             sizeof(on)) < 0) {
         CloseSocket(sock);
         return -1;

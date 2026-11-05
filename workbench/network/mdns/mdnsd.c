@@ -152,12 +152,46 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
         LONG sock = md->md_Ifs[i].mi_Socket;
 
         if (sock >= 0 && FD_ISSET(sock, &readfds)) {
+            union {
+                struct cmsghdr align;
+                UBYTE data[CMSG_SPACE(sizeof(unsigned char))];
+            } control;
             struct sockaddr_in from;
-            socklen_t fromlen = sizeof(from);
-            int got = recvfrom(sock, (char *)md->md_RxBuf, MDNS_MAX_PACKET,
-                0, (struct sockaddr *)&from, &fromlen);
+            struct msghdr message;
+            struct iovec vector;
+            unsigned char ttl = 0;
+            BOOL haveTTL = FALSE;
+            int got;
 
-            if (got > 0) {
+            memset(&message, 0, sizeof(message));
+            memset(&from, 0, sizeof(from));
+            vector.iov_base = md->md_RxBuf;
+            vector.iov_len = MDNS_MAX_PACKET;
+            message.msg_name = &from;
+            message.msg_namelen = sizeof(from);
+            message.msg_iov = &vector;
+            message.msg_iovlen = 1;
+            message.msg_control = &control;
+            message.msg_controllen = sizeof(control);
+            got = recvmsg((int)sock, &message, 0);
+
+            if (got > 0 && !(message.msg_flags & MSG_CTRUNC)) {
+                struct cmsghdr *header;
+
+                for (header = CMSG_FIRSTHDR(&message); header != NULL;
+                        header = CMSG_NXTHDR(&message, header)) {
+                    if (header->cmsg_level == IPPROTO_IP &&
+                        header->cmsg_type == IP_RECVTTL &&
+                        header->cmsg_len >=
+                            CMSG_LEN(sizeof(unsigned char))) {
+                        memcpy(&ttl, CMSG_DATA(header), sizeof(ttl));
+                        haveTTL = TRUE;
+                        break;
+                    }
+                }
+            }
+
+            if (got > 0 && haveTTL && ttl == 255) {
                 md->md_RxPackets++;
                 md->md_SendIf = i;
                 md->md_SendFamily = AF_INET;
@@ -172,13 +206,16 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
     if (md->md_Socket6 >= 0 && FD_ISSET(md->md_Socket6, &readfds)) {
         union {
             struct cmsghdr align;
-            UBYTE data[CMSG_SPACE(sizeof(struct in6_pktinfo))];
+            UBYTE data[CMSG_SPACE(sizeof(struct in6_pktinfo)) +
+                CMSG_SPACE(sizeof(int))];
         } control;
         struct sockaddr_in6 from6;
         struct in6_pktinfo packetInfo;
         struct msghdr message;
         struct iovec vector;
         BOOL havePacketInfo = FALSE;
+        BOOL haveHopLimit = FALSE;
+        int hopLimit = 0;
         int got;
 
         memset(&message, 0, sizeof(message));
@@ -193,7 +230,7 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
         message.msg_controllen = sizeof(control);
         got = recvmsg((int)md->md_Socket6, &message, 0);
 
-        if (got > 0) {
+        if (got > 0 && !(message.msg_flags & MSG_CTRUNC)) {
             struct cmsghdr *header;
 
             for (header = CMSG_FIRSTHDR(&message); header != NULL;
@@ -205,7 +242,11 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
                     memcpy(&packetInfo, CMSG_DATA(header),
                         sizeof(packetInfo));
                     havePacketInfo = TRUE;
-                    break;
+                } else if (header->cmsg_level == IPPROTO_IPV6 &&
+                    header->cmsg_type == IPV6_HOPLIMIT &&
+                    header->cmsg_len >= CMSG_LEN(sizeof(int))) {
+                    memcpy(&hopLimit, CMSG_DATA(header), sizeof(hopLimit));
+                    haveHopLimit = TRUE;
                 }
             }
         }
@@ -215,7 +256,8 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
                 break;
             }
         }
-        if (got > 0 && havePacketInfo && i < md->md_IfCount) {
+        if (got > 0 && havePacketInfo && haveHopLimit && hopLimit == 255 &&
+                i < md->md_IfCount) {
             md->md_RxPackets++;
             /* What this packet causes to be sent goes back to its link
              * and, for unicast, its address family. */
