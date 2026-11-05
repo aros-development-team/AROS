@@ -16,7 +16,7 @@
 #include <dos/dos.h>
 
 #define ARDA_PROTOCOL        "1"            /* protocol version, see PROTOCOL.md */
-#define ARDA_AGENT_VERSION   "0.3"
+#define ARDA_AGENT_VERSION   "0.4"
 #define ARDA_DEFAULT_PORT    7777
 #define ARDA_DEFAULT_ADDRESS "127.0.0.1"    /* loopback unless told otherwise */
 #define ARDA_DEFAULT_IDLE    60             /* seconds before an idle client is dropped */
@@ -159,5 +159,16 @@ void  arda_cmd_reboot(struct Arda *a, char *args);
 void  arda_cmd_symbol(struct Arda *a, char *args);
 void  arda_cmd_peek(struct Arda *a, char *args);
 void  arda_cmd_stack(struct Arda *a, char *args);
+
+/* arda_dbg.c */
+void  arda_cmd_break(struct Arda *a, char *args);
+void  arda_cmd_backtrace(struct Arda *a, char *args);
+void  arda_cmd_address(struct Arda *a, char *args);
+void  arda_cmd_modules(struct Arda *a, char *args);
+void  arda_cmd_libs(struct Arda *a, char *args);
+void  arda_cmd_devices(struct Arda *a, char *args);
+void  arda_cmd_resources(struct Arda *a, char *args);
+void  arda_cmd_ports(struct Arda *a, char *args);
+void  arda_cmd_semaphores(struct Arda *a, char *args);
 
 #endif /* ARDA_H */

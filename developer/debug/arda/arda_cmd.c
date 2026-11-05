@@ -185,6 +185,13 @@ static const struct ArdaCommand commands[] =
     { "LOG",     arda_cmd_log,     "STATUS | READ [n] [SINCE=seq] [SRC=x] | CLEAR" },
     { "NET",     arda_cmd_net,     "STATUS | INTERFACES | ROUTES | ARP | STATS [IP|TCP|UDP]" },
     { "SYMBOL",  arda_cmd_symbol,  "<addr>...: module, segment and symbol of each address" },
+    { "ADDRESS", arda_cmd_address, "<symbol|prefix*> [module]: where a symbol is" },
+    { "MODULES", arda_cmd_modules, "[filter]: modules debug.library knows, with their address range" },
+    { "LIBS",    arda_cmd_libs,    "libraries: version, open count, base" },
+    { "DEVICES", arda_cmd_devices, "devices: version, open count, base" },
+    { "RESOURCES", arda_cmd_resources, "resources" },
+    { "PORTS",   arda_cmd_ports,   "public message ports: owner task, queued messages" },
+    { "SEMAPHORES", arda_cmd_semaphores, "public semaphores: owner, nest count, waiters" },
     { "QUIT",    cmd_quit,    "close this connection"                        },
     /* control mode (CONTROL switch): these change state */
     { "PUT",     arda_cmd_put,    "(control) <path> <size>: write the raw body that follows to a file" },
@@ -200,6 +207,8 @@ static const struct ArdaCommand commands[] =
     { "WAIT",    arda_cmd_wait,   "(control) <n> [secs]: wait for a job, OK RC <rc>" },
     { "REBOOT",  arda_cmd_reboot, "(control) cold reboot after the reply"    },
     { "PEEK",    arda_cmd_peek,   "(control) <addr> [<len>] [Q]: hex dump, Q = 64-bit words with symbols" },
+    { "BREAK",   arda_cmd_break,  "(control) <task|0xaddr|JOB=n> [C|D|E|F]: send a break signal (default C)" },
+    { "BACKTRACE", arda_cmd_backtrace, "(control) <task|0xaddr> [MAX=<bytes>]: saved PC and LR, return addresses on the stack" },
     { "STACK",   arda_cmd_stack,  "(control) <task|0xaddr> [FROM=<addr>] [MAX=<bytes>] [ALL]: code pointers on a task's stack" },
     { NULL,      NULL,        NULL                                           }
 };

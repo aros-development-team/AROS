@@ -250,7 +250,7 @@ def main(argv=None):
         transfer = (verb, words[1], words[2])
         line = verb.upper() + " " + (words[2] if verb == "put" else words[1])
     elif verb in ("run", "setenv", "getenv", "dir", "delete", "mkdir", "job", "wait", "jobs", "reboot",
-                  "stack", "peek", "symbol"):
+                  "stack", "peek", "symbol", "break", "backtrace", "address", "modules"):
         # control commands keep their arguments' case (paths, command lines, values)
         line = verb.upper() + ((" " + " ".join(words[1:])) if len(words) > 1 else "")
     else:

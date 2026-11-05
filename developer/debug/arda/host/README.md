@@ -12,6 +12,8 @@ developer/debug/arda/
   arda_sys.c                       SYSINFO MEMORY TASKS
   arda_log.c                       LOG STATUS/READ/CLEAR, log.resource listener
   arda_netdiag.c                   NET STATUS/INTERFACES/ROUTES/ARP/STATS
+  arda_mem.c                       SYMBOL PEEK STACK
+  arda_dbg.c                       BREAK BACKTRACE ADDRESS MODULES LIBS DEVICES RESOURCES PORTS SEMAPHORES
   ardatrace.h ardatrace.c          instrumentation API + link library (Phase 6)
   tracetest.c                      emits trace events (test helper)
   host/aros_debug.py               the client
