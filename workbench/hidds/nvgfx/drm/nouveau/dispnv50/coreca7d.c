@@ -327,7 +327,12 @@ coreca7d_init(struct nv50_core *core)
 			return ret;
 		if (core->func->ntfy_wait_done(disp->sync, NV50_DISP_CORE_NTFY,
 					       core->chan.base.device))
+		{
+			extern void nvkm_gsp_rpc_report(const char *);
+
 			printk(KERN_ERR "[nouveau] window assignment: core notifier timeout\n");
+			nvkm_gsp_rpc_report("window assignment core notifier timeout");
+		}
 	}
 	core->assign_windows = false;
 	return 0;
