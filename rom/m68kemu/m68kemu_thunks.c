@@ -400,8 +400,9 @@ static IPTR thunk_exec_TypeOfMem(struct M68KEmuContext *ctx, void *cpu)
 
 
 /* Helper: translate m68k format args (big-endian packed 32-bit) to native IPTR array */
-static IPTR *translate_fmt_args(struct M68KEmuContext *ctx, const char *fmt, ULONG m68k_args, int *out_count)
+static IPTR *translate_fmt_args(struct M68KEmuContext *ctx, const char *fmt, ULONG m68k_args, int *out_count, ULONG *out_used)
 {
+    *out_used = 0;
     if (!fmt || !m68k_args) { *out_count = 0; return NULL; }
     int nargs = 0;
     for (const char *f = fmt; *f; f++)
@@ -411,11 +412,12 @@ static IPTR *translate_fmt_args(struct M68KEmuContext *ctx, const char *fmt, ULO
     IPTR *native = (IPTR *)AllocMem(nargs * sizeof(IPTR), MEMF_CLEAR);
     if (!native) { *out_count = 0; return NULL; }
 
-    UBYTE *src = (UBYTE *)m68k_to_host(ctx, m68k_args);
+    UBYTE *src = (UBYTE *)m68k_to_host(ctx, m68k_args), *start = src;
     int ai = 0;
     for (const char *f = fmt; *f && ai < nargs; f++) {
         if (*f != '%') continue;
         f++;
+        if (*f == '%') continue;
         while (*f == '-' || *f == '+' || *f == ' ' || *f == '0' || (*f >= '1' && *f <= '9') || *f == '.') f++;
         int is_long = 0;
         if (*f == 'l') { is_long = 1; f++; }
@@ -437,6 +439,7 @@ static IPTR *translate_fmt_args(struct M68KEmuContext *ctx, const char *fmt, ULO
         }
     }
     *out_count = nargs;
+    *out_used = src - start;
     return native;
 }
 
@@ -520,56 +523,122 @@ APTR m68k_to_native_fmt_stream(struct M68KEmuContext *ctx, const char *fmt, ULON
     return stream;
 }
 
-/* -522: RawDoFmt(A0=fmt, A1=dataStream, A2=putProc, A3=putData) -> D0=result */
-static IPTR thunk_exec_RawDoFmt(struct M68KEmuContext *ctx, void *cpu)
+/* The formatted text goes through the program's PutChProc, a 68k routine
+   called with D0=char and A3=putData, the terminating NUL included: a stub
+   in the program's memory loops over the text after the thunk.  The text
+   is in a block of the program's memory, its size first, that the stub
+   frees: A0 is the block, D0 the result the caller gets */
+static ULONG fmt_stub(struct M68KEmuContext *ctx)
 {
-    const char *fmt = (const char *)THUNK_PTR(0);
-    ULONG m68k_args = THUNK_A(1);
-    UBYTE *putData = (UBYTE *)THUNK_PTR(3);
-
-    if (!fmt) return 0;
-
-    int n = 0;
-    IPTR *args = m68k_args ? translate_fmt_args(ctx, fmt, m68k_args, &n) : NULL;
-
-    char buf[1024];
-    char *out = buf;
-    const char *f = fmt;
-    int ai = 0;
-    while (*f && (out - buf) < 1020)
+    static const UWORD code[] =
     {
-        if (*f == '%')
+        0x48E7, 0x303C,                 /* movem.l d2-d3/a2-a5,-(sp) */
+        0x2600,                         /* move.l d0,d3             */
+        0x2A48,                         /* movea.l a0,a5            */
+        0x49ED, 0x0004,                 /* lea 4(a5),a4             */
+        0x7000,                         /* loop: moveq #0,d0        */
+        0x101C,                         /* move.b (a4)+,d0          */
+        0x2400,                         /* move.l d0,d2             */
+        0x4E92,                         /* jsr (a2)                 */
+        0x4A82,                         /* tst.l d2                 */
+        0x66F4,                         /* bne.b loop               */
+        0x2015,                         /* move.l (a5),d0           */
+        0x224D,                         /* movea.l a5,a1            */
+        0x2C78, 0x0004,                 /* movea.l 4.w,a6           */
+        0x4EAE, 0xFF2E,                 /* jsr FreeMem(a6)          */
+        0x2003,                         /* move.l d3,d0             */
+        0x4CDF, 0x3C0C,                 /* movem.l (sp)+,d2-d3/a2-a5 */
+        0x4E75                          /* rts                      */
+    };
+    ULONG s = ctx->fmt_stub, i;
+
+    if (s)
+        return s;
+    if (!(s = M68KEmu_HeapAlloc(ctx, sizeof(code), MEMF_CLEAR)))
+        return 0;
+    for (i = 0; i < sizeof(code) / sizeof(code[0]); i++)
+        m68k_write16(ctx, s + i * 2, code[i]);
+    ctx->fmt_stub = s;
+    return s;
+}
+
+/* The text of fmt with its arguments, written to out when it fits in room;
+   returns its length */
+static ULONG fmt_text(const char *fmt, IPTR *args, int n, char *out, ULONG room)
+{
+    const char *f = fmt;
+    ULONG len = 0;
+    int ai = 0;
+
+    while (*f)
+    {
+        if (*f == '%' && f[1] != '%')
         {
-            /* Capture the full specifier into spec[] */
             const char *start = f++;
+            char spec[32], *dst;
+            int slen, r;
+
             while (*f == '-' || *f == '+' || *f == ' ' || *f == '0' ||
                    (*f >= '1' && *f <= '9') || *f == '.') f++;
             if (*f == 'l') f++;
             if (*f) f++;
-            char spec[32];
-            int slen = f - start;
+            slen = f - start;
             if (slen >= (int)sizeof(spec)) slen = (int)sizeof(spec) - 1;
             memcpy(spec, start, slen);
             spec[slen] = 0;
-
-            if (ai < n)
-                out += snprintf(out, 1020 - (out - buf), spec, args[ai++]);
-            else
-                out += snprintf(out, 1020 - (out - buf), "%s", spec);
+            dst = out && len < room ? out + len : NULL;
+            r = ai < n ? snprintf(dst, dst ? room - len : 0, spec, args[ai++])
+                       : snprintf(dst, dst ? room - len : 0, "%s", spec);
+            if (r > 0) len += r;
         }
         else
         {
-            *out++ = *f++;
+            if (out && len + 1 < room) out[len] = *f;
+            len++;
+            f += *f == '%' ? 2 : 1;
         }
     }
-    *out = 0;
+    if (out && room) out[len < room ? len : room - 1] = 0;
+    return len;
+}
 
+/* -522: RawDoFmt(A0=fmt, A1=dataStream, A2=putProc, A3=putData) -> D0=next data */
+static IPTR thunk_exec_RawDoFmt(struct M68KEmuContext *ctx, void *cpu)
+{
+    const char *fmt = (const char *)THUNK_PTR(0);
+    ULONG m68k_args = THUNK_A(1), putProc = THUNK_A(2), used = 0, len, blk, stub;
+    UBYTE *putData = (UBYTE *)THUNK_PTR(3);
+    IPTR *args;
+    char *buf;
+    int n = 0;
+
+    if (!fmt) return 0;
+    args = m68k_args ? translate_fmt_args(ctx, fmt, m68k_args, &n, &used) : NULL;
+    len = fmt_text(fmt, args, n, NULL, 0);
+    if ((buf = AllocMem(len + 1, MEMF_ANY)))
+        fmt_text(fmt, args, n, buf, len + 1);
     if (args) FreeMem(args, n * sizeof(IPTR));
+    if (!buf) return 0;
 
-    if (putData)
-        memcpy(putData, buf, out - buf + 1);
+    if (putProc)
+    {
+        if (m68k_in_mem(ctx, putProc, 2) && (stub = fmt_stub(ctx)) &&
+            (blk = M68KEmu_HeapAlloc(ctx, len + 5, 0)))
+        {
+            struct M68KTaskState *ts = m68k_ts(ctx);
 
-    return (IPTR)(out - buf);
+            m68k_write32(ctx, blk, len + 5);
+            memcpy(ctx->mem + blk + 4, buf, len + 1);
+            ts->tail_pc = stub;
+            ts->tail_d0 = m68k_args + used;
+            ts->tail_a0 = blk;
+            ts->tail_a6 = THUNK_A(6);
+        }
+    }
+    else if (putData)
+        memcpy(putData, buf, len + 1);
+    FreeMem(buf, len + 1);
+    return m68k_args + used;
 }
 
 /* The program's semaphores live in its memory and work between its tasks
@@ -3598,6 +3667,19 @@ static void translate_intuitext(struct M68KEmuContext *ctx, ULONG m68k_it,
     native->LeftEdge  = (WORD)m68k_read16(ctx, m68k_it + M68K_IT_LEFTEDGE);
     native->TopEdge   = (WORD)m68k_read16(ctx, m68k_it + M68K_IT_TOPEDGE);
     native->ITextFont = NULL;
+    ULONG m68k_ta = m68k_read32(ctx, m68k_it + M68K_IT_ITEXTFONT);
+    if (m68k_ta && m68k_in_mem(ctx, m68k_ta, M68K_SIZEOF_TEXTATTR) && m68k_read32(ctx, m68k_ta + M68K_TA_NAME))
+    {
+        struct TextAttr *ta = (struct TextAttr *)AllocMem(sizeof(struct TextAttr), MEMF_CLEAR);
+        if (ta)
+        {
+            ta->ta_Name  = (STRPTR)m68k_to_host(ctx, m68k_read32(ctx, m68k_ta + M68K_TA_NAME));
+            ta->ta_YSize = m68k_read16(ctx, m68k_ta + M68K_TA_YSIZE);
+            ta->ta_Style = ctx->mem[m68k_ta + M68K_TA_STYLE];
+            ta->ta_Flags = ctx->mem[m68k_ta + M68K_TA_FLAGS];
+            native->ITextFont = ta;
+        }
+    }
     ULONG m68k_text = m68k_read32(ctx, m68k_it + M68K_IT_ITEXT);
     native->IText     = m68k_text ? (STRPTR)m68k_to_host(ctx, m68k_text) : NULL;
     ULONG m68k_next = m68k_read32(ctx, m68k_it + M68K_IT_NEXTTEXT);
@@ -3611,7 +3693,14 @@ static void translate_intuitext(struct M68KEmuContext *ctx, ULONG m68k_it,
 static void free_intuitext_chain(struct IntuiText *it)
 {
     struct IntuiText *n;
-    for (n = it->NextText; n; ) { struct IntuiText *tmp = n->NextText; FreeMem(n, sizeof(struct IntuiText)); n = tmp; }
+    if (it->ITextFont) FreeMem(it->ITextFont, sizeof(struct TextAttr));
+    for (n = it->NextText; n; )
+    {
+        struct IntuiText *tmp = n->NextText;
+        if (n->ITextFont) FreeMem(n->ITextFont, sizeof(struct TextAttr));
+        FreeMem(n, sizeof(struct IntuiText));
+        n = tmp;
+    }
 }
 
 /* intuition -348: AutoRequest(A0=win, A1=body, A2=posText, A3=negText, D0-D3) */
@@ -3627,6 +3716,8 @@ static IPTR thunk_intuition_AutoRequest(struct M68KEmuContext *ctx, void *cpu)
     BOOL result = AutoRequest(win, m_body ? &body : NULL, m_pos ? &pos : NULL, m_neg ? &neg : NULL,
                               THUNK_D(0), THUNK_D(1), THUNK_D(2), THUNK_D(3));
     if (m_body) free_intuitext_chain(&body);
+    if (m_pos) free_intuitext_chain(&pos);
+    if (m_neg) free_intuitext_chain(&neg);
     return (IPTR)result;
 }
 
@@ -3933,6 +4024,20 @@ static IPTR thunk_gfx_ScrollRaster(struct M68KEmuContext *ctx, void *cpu)
 }
 
 /* ── Intuition manual thunks (shadow struct) ── */
+
+/* -330: IntuiTextLength(A0=itext) -> D0=width */
+static IPTR thunk_intuition_IntuiTextLength(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG m68k_it = THUNK_A(0);
+    struct IntuiText it;
+    LONG w;
+    if (!m68k_it) return 0;
+    memset(&it, 0, sizeof(it));
+    translate_intuitext(ctx, m68k_it, &it, 1);
+    w = IntuiTextLength(&it);
+    free_intuitext_chain(&it);
+    return (IPTR)(ULONG)w;
+}
 
 /* -216: PrintIText(A0=rp, A1=itext, D0=left, D1=top) */
 static IPTR thunk_intuition_PrintIText(struct M68KEmuContext *ctx, void *cpu)
@@ -5459,6 +5564,7 @@ const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
     { 186, thunk_intuition_OnGadget_t },
     { 174, thunk_intuition_OffGadget_t },
     { 216, thunk_intuition_PrintIText },
+    { 330, thunk_intuition_IntuiTextLength },
     { 114, thunk_intuition_DrawImage },
     { 108, thunk_intuition_DrawBorder },
     { 204, thunk_intuition_OpenWindow },
