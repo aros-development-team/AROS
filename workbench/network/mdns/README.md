@@ -117,6 +117,11 @@ Version 41.7 adds RFC 6763 subtype registration and browsing. The repeatable
 `MDNS_ServiceSubtype` tag accepts one underscored DNS label; subtype
 membership is announced, reflected locally and withdrawn with the base
 service. No public structure or vector changed.
+Version 41.8 adds `MDNS_EVENT_QUEUE_V2` and the appended
+`ReadMDNSEvent2()` vector. Its fixed event carries the SRV priority, weight,
+port and target, interface index and a bounded, explicitly typed list of
+IPv4/IPv6 addresses. The old
+event and read vector retain their IPv4-only ABI and behavior.
 `UnpublishNIPCEntitiesA` does nothing. The remaining compatibility stubs
 invoke no callbacks, change no output buffers and take ownership of no memory.
 Public headers include the upstream handles,
@@ -133,8 +138,8 @@ invents either value from the instance name.
 ### Task lifetime and compatibility
 
 The first fifteen slots, their order/registers and existing tag/error values
-follow upstream Bonami. The AROS implementation is version 41.7. Its daemon
-and library must be installed together: their private IPC is now version 6.
+follow upstream Bonami. The AROS implementation is version 41.8. Its daemon
+and library must be installed together: their private IPC is now version 7.
 
 Registration lifetime deliberately differs from upstream Bonami:
 

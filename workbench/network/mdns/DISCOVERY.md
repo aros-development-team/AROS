@@ -32,6 +32,12 @@ per subtype label. A subtype PTR selects the same base instance and shared
 SRV/TXT/address cache; the legacy event continues to return `_ipp._tcp` in
 `de_Type`. Private IPC version is 6; no public structure or vector changed.
 
+Library revision 41.8 appends `ReadMDNSEvent2()` at LVO 26 and adds
+`MDNS_EVENT_QUEUE_V2`. The V2 event reports the SRV priority, weight, port
+and target, a 32-bit interface index and up to eight deterministically
+ordered IPv4/IPv6 addresses. Private IPC version is 7. Existing queue mode,
+event layout, vector offsets and IPv4 completion rules are unchanged.
+
 ## Calls and ownership
 
 ```c
@@ -51,6 +57,29 @@ rc = ReadMDNSEvent(ref, &event);
 /* MDNS_OK: a complete snapshot. MDNSERR_NOTREADY: none waiting. */
 StopBrowse(ref);
 ```
+
+For dual-stack discovery, select the V2 queue and drain it with the matching
+read vector:
+
+```c
+MDNSBrowseRef ref = NULL;
+struct MDNSDiscoveryEvent2 event;
+struct TagItem tags[] = {
+    { MDNS_EventMode, MDNS_EVENT_QUEUE_V2 },
+    { MDNS_BrowseRef, (IPTR)&ref },
+    { TAG_DONE, 0 }
+};
+
+rc = BrowseServiceTypeA("_apple-midi._udp", NULL, tags);
+while (rc == MDNS_OK && ReadMDNSEvent2(ref, &event) == MDNS_OK) {
+    /* Every address uses event.de_InterfaceIndex as its link/scope. */
+}
+StopBrowse(ref);
+```
+
+A V1 handle is read only with `ReadMDNSEvent()` and a V2 handle only with
+`ReadMDNSEvent2()`; using the other read vector returns `MDNSERR_BADPARAM`
+without consuming an event. `RequestMDNSEvent()` is shared by both modes.
 
 Reading needs nothing else: a task that already wakes for its own timers can
 read in that loop. A task that should sleep until there is something to read
@@ -92,12 +121,22 @@ require a prior browse/PTR. Stop the operation with `StopResolve()` after
 either result. Browse automatically resolves its instances and only emits
 complete snapshots, using `MEVENT_ADD` and `MEVENT_REMOVE`.
 
-The discovery-event ABI remains IPv4: an A record is required for its
-`de_Address`. AAAA-only hosts can be followed with the generic SRV and AAAA
-record-query API, which reports the link index without changing existing
-event structures. Once either A or AAAA is known, the daemon asks once for
-the other family but does not keep querying an address family the host does
-not publish.
+The original discovery-event ABI remains IPv4: an A record is required for
+its `de_Address`. A V2 snapshot is complete when SRV, TXT and at least one A
+or AAAA record are present. `de_Priority`, `de_Weight` and `de_Port` preserve
+the corresponding SRV fields. `de_Target` is the uncompressed DNS wire name
+from SRV and `de_TargetLength` includes its final root byte. Each address has
+an explicit `MDNS_DISCOVERY_ADDR_IPV4` or `MDNS_DISCOVERY_ADDR_IPV6` family
+and network-order bytes; link-local IPv6 uses `de_InterfaceIndex` as scope.
+If more than `MDNS_DISCOVERY_ADDRESS_MAX` addresses exist, the event contains
+the first eight in family/byte order and sets
+`MDNS_DISCOVERY_ADDRESSES_TRUNCATED`.
+
+V1 and V2 subscriptions share the same per-link cache. An AAAA-only service
+is invisible to V1 and complete in V2. If the last A disappears while AAAA
+remains, V1 receives a removal while V2 receives the changed snapshot. Once
+either A or AAAA is known, the daemon asks once for the other family but does
+not keep querying an address family the host does not publish.
 
 The queue-mode tag and an output reference are required. Non-NULL hooks and
 calls without the mode return `MDNSERR_NOTREADY`; no hook is dereferenced.
@@ -119,8 +158,9 @@ slowly, exit or fail without executing anything in mdnsd.
 A browse of `_services._dns-sd._udp` (`MDNS_TYPE_SERVICES_DNS_SD`) is told
 the service types present on the link instead of instances (RFC 6763
 section 9). Each type is one snapshot: `de_Type` is the type, as
-`"_http._tcp"`, `de_Interface` the link it was seen on, and `de_Name`,
-`de_Address`, `de_Port` and the TXT are empty; nothing is resolved for it.
+`"_http._tcp"`; V1 reports the link in `de_Interface`, and V2 in
+`de_InterfaceIndex`. The name, addresses, target, port and TXT are empty;
+nothing is resolved for it.
 `MEVENT_ADD` comes when a type is first seen and `MEVENT_REMOVE` when its
 last PTR expires or is withdrawn. A PTR there whose target is not a type
 (an instance, a name without `_tcp` or `_udp`) is left out. A resolve of
