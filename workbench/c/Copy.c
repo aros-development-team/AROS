@@ -1578,7 +1578,7 @@ LONG IsMatchPattern(STRPTR name, struct CopyData *cd)
     LONG ret = -1, error;
 
     ap.ap_BreakBits = 0;
-    ap.ap_Flags     = APF_DOWILD;
+    ap.ap_Flags     = 0;
     ap.ap_Strlen    = 0;
 
     if ((error = MatchFirst(name, &ap)) == 0)

@@ -167,7 +167,7 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
         pathName = ((UBYTE *) (ap + 1)) + MAX_PATH_LEN;
 
         ap->ap_BreakBits = SIGBREAKF_CTRL_C;
-        ap->ap_Flags     = APF_DOWILD;
+        ap->ap_Flags     = 0;
         ap->ap_Strlen    = MAX_PATH_LEN;
         if (MatchFirst(from[0], ap) != 0)
         {
