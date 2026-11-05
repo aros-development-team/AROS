@@ -47,18 +47,22 @@ All config lives in `ENVARC:SSH/`:
 
 Username is always `root` — AROS is a single-user system.
 
-To create a password hash, compute the SHA-256 of the password (with no
-trailing newline) on any machine that has `sha256sum`, for example Linux:
+To set the password, on AROS:
+```
+1> Sha256Sum TEXT "mypassword" QUIET >ENVARC:SSH/password
+```
+`Sha256Sum` (in `C:`) hashes the text as it is, with no newline added, and
+`QUIET` leaves out the name, so the file holds just the 64 hex characters
+(only the first 64 characters of the file are read). The password is then
+on the command line, where the shell may keep it in its history.
+
+The hash can also be made on another system, for example Linux:
 ```
 $ printf '%s' 'mypassword' | sha256sum | cut -c1-64
 ```
-and put the 64 hex characters in `ENVARC:SSH/password` on AROS, e.g.
-```
-1> Echo NOLINE "<the 64 hex characters>" >ENVARC:SSH/password
-```
-Only the first 64 characters of the file are read. AROS's `Echo` has no
-`-n` option (it would print `-n` too); its `NOLINE` switch leaves out the
-newline.
+and the 64 hex characters put in `ENVARC:SSH/password`. Note that AROS's
+`Echo` has no `-n` option (it would print `-n` too): `Echo NOLINE` leaves
+out the newline.
 
 ### Client (ssh)
 
