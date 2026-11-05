@@ -21,6 +21,8 @@
 void
 mdnsClientMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
 {
+    LONG i;
+
     if (msg->mi_Version != MDNS_IPC_VERSION ||
         msg->mi_Msg.mn_Length != sizeof(*msg) || msg->mi_TaskID == 0) {
         msg->mi_Result = MDNSERR_BADPARAM;
@@ -28,7 +30,14 @@ mdnsClientMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
     }
     /* texts end where the library ended them, whoever sent this */
     msg->mi_Name[MDNS_MAX_NAME] = '\0';
-    msg->mi_ServiceType[MDNS_MAX_TYPE] = '\0';
+    msg->mi_ServiceType[MDNS_MAX_BROWSE_TYPE] = '\0';
+    if (msg->mi_SubtypeCount > MDNS_MAX_SUBTYPES) {
+        msg->mi_Result = MDNSERR_BADPARAM;
+        return;
+    }
+    for (i = 0; i < msg->mi_SubtypeCount; i++) {
+        msg->mi_Subtypes[i][MDNS_MAX_SUBTYPE] = '\0';
+    }
     msg->mi_Domain[MDNS_MAX_DOMAIN] = '\0';
     msg->mi_HostName[MDNS_MAX_HOST] = '\0';
     msg->mi_TXT[MDNS_MAX_TXT] = '\0';
