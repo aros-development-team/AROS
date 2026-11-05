@@ -47,10 +47,18 @@ All config lives in `ENVARC:SSH/`:
 
 Username is always `root` — AROS is a single-user system.
 
-To create a password hash:
+To create a password hash, compute the SHA-256 of the password (with no
+trailing newline) on any machine that has `sha256sum`, for example Linux:
 ```
-1> echo -n "mypassword" | sha256sum > ENVARC:SSH/password
+$ printf '%s' 'mypassword' | sha256sum | cut -c1-64
 ```
+and put the 64 hex characters in `ENVARC:SSH/password` on AROS, e.g.
+```
+1> Echo NOLINE "<the 64 hex characters>" >ENVARC:SSH/password
+```
+Only the first 64 characters of the file are read. AROS's `Echo` has no
+`-n` option (it would print `-n` too); its `NOLINE` switch leaves out the
+newline.
 
 ### Client (ssh)
 
@@ -119,12 +127,22 @@ ssh-keygen -t rsa -f SYS:mykey       ; Custom output path
 
 sshd shell session:
 
-+----------+    PIPE:ssh_in_N     +----------+
-| SSH      | ------------------->  | C:Shell  |
-| Channel  |    PIPE:ssh_out_N    |          |
-|          | <-------------------  |          |
++----------+   console packets    +----------+
+| SSH      |  ACTION_READ/WRITE   | new CLI  |
+| Channel  | <------------------> | (Shell)  |
+| (session |  the session task    |          |
+|  task)   |  is its console      |          |
 +----------+                      +----------+
 ```
+
+The interactive shell's input and output are handles whose handler is the
+session task itself: a read is answered with what the client has typed
+(a pipe would hold every read until it had filled its buffer), the handles
+are interactive so the shell prompts, and with a pty the session echoes and
+edits the line and turns `^C` into a break for the shell's command. A
+command given to `ssh` (`ssh aros List`) runs to its end with its output in
+a `T:` file that is then sent, with the command's return code as the exit
+status.
 
 ## Security Notes
 
