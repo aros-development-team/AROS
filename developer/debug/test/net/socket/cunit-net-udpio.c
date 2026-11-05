@@ -164,6 +164,34 @@ static void burst(int family)
 void testUDPIO_BURST4(void) { burst(AF_INET); }
 void testUDPIO_BURST6(void) { burst(AF_INET6); }
 
+/* Consecutive small IPv6 datagrams exercise a separately prepended IPv6
+ * header without allowing a bad first packet to hide a corrupt second send. */
+void testUDPIO_CONSECUTIVE6(void)
+{
+    struct sockaddr_storage dst;
+    socklen_t dlen;
+    int r, s, i, n, rb = 65536;
+
+    CU_ASSERT_EQUAL_FATAL(pair(AF_INET6, &r, &s, &dst, &dlen), 0);
+    CU_ASSERT_EQUAL(setsockopt(r, SOL_SOCKET, SO_RCVBUF, &rb, sizeof(rb)), 0);
+    for (i = 0; i < 16; i++) {
+        fill(168, i);
+        sbuf[0] = (unsigned char)i;
+        CU_ASSERT_EQUAL(sendto(s, sbuf, 168, 0,
+                              (struct sockaddr *)&dst, dlen), 168);
+    }
+    for (i = 0; i < 16; i++) {
+        n = sock_wait(r, 0, 2);
+        CU_ASSERT(n > 0);
+        if (n <= 0)
+            break;
+        CU_ASSERT_EQUAL(recv(r, rbuf, sizeof(rbuf), 0), 168);
+        CU_ASSERT_EQUAL(rbuf[0], (unsigned char)i);
+    }
+    CloseSocket(s);
+    CloseSocket(r);
+}
+
 /* An empty non-blocking socket: EWOULDBLOCK, at once. */
 void testUDPIO_NONBLOCK(void)
 {
@@ -254,6 +282,7 @@ int main(void)
         !CU_add_test(p, "a burst that fits SO_RCVBUF arrives whole (IPv4)", testUDPIO_BURST4) ||
         !CU_add_test(p, "a burst that fits SO_RCVBUF arrives whole (IPv6)", testUDPIO_BURST6) ||
         !CU_add_test(p, "an empty non-blocking socket says EWOULDBLOCK", testUDPIO_NONBLOCK) ||
+        !CU_add_test(p, "consecutive small datagrams arrive whole (IPv6)", testUDPIO_CONSECUTIVE6) ||
         !CU_add_test(p, "every datagram has its ancillary data (IPv4)", testUDPIO_ANCILLARY4) ||
         !CU_add_test(p, "every datagram has its ancillary data (IPv6)", testUDPIO_ANCILLARY6))
     {

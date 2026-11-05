@@ -320,6 +320,16 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     M_PREPEND(m, sizeof(struct ip6_hdr), M_DONTWAIT);
     if(m == NULL)
         return ENOBUFS;
+    /*
+     * M_PREPEND may have allocated a separate mbuf for the IPv6 header,
+     * leaving the UDP header in the following mbuf.  Pull both headers into
+     * one contiguous mbuf before accessing the UDP checksum field below.
+     */
+    if(m->m_len < sizeof(struct ip6_hdr) + sizeof(struct udphdr)) {
+        m = m_pullup(m, sizeof(struct ip6_hdr) + sizeof(struct udphdr));
+        if(m == NULL)
+            return ENOBUFS;
+    }
     ip6 = mtod(m, struct ip6_hdr *);
     /* version 6 and the traffic class; no flow label */
     ip6->ip6_flow = htonl(0x60000000 | ((u_int32_t)tclass << 20));
