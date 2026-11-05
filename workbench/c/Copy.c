@@ -1508,8 +1508,11 @@ void PatCopy(STRPTR name, struct CopyData *cd)
 #if USE_ALWAYSVERBOSE
             cd->Flags |= COPYFLAG_VERBOSE;
 #endif
-            Printf("%s - ", APath->ap_Info.fib_FileName);
-            PrintFault(ioerr, NULL);
+            if (!(cd->Flags & COPYFLAG_QUIET))
+            {
+                Printf("%s - ", APath->ap_Info.fib_FileName);
+                PrintFault(ioerr, NULL);
+            }
             cd->IoErr = ioerr;
 
             cd->RetVal2 = RETURN_FAIL;
