@@ -61,7 +61,7 @@ LAVAPIPE_HIDD_FILES := \
 #MM- workbench-hidds : hidd-lavapipe-$(AROS_TOOLCHAIN)-$(AROS_TARGET_TOOLCHAIN)
 #MM- hidd-lavapipe-llvm-yes : hidd-lavapipe
 
-#MM hidd-lavapipe : includes hidd-vulkan mesa3dgl-linklibs linklibs-libatomic \
+#MM hidd-lavapipe : includes hidd-vulkan mesa3dgl-linklibs linklibs-libatomic workbench-libs-z-linklib \
 #MM     mesa3d-linklib-lavapipe mesa3d-linklib-vulkan-runtime mesa3d-linklib-vulkan-wsi \
 #MM     mesa3d-linklib-llvmpipe mesa3d-linklib-galliumdrawllvm mesa3d-linklib-galliumtess
 

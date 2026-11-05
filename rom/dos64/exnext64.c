@@ -57,7 +57,6 @@
 {
     AROS_LIBFUNC_INIT
 
-#if (__WORDSIZE == 64)
     struct FileLock *fl = BADDR(lock);
     SIPTR err = 0;
     LONG ret;
@@ -73,7 +72,6 @@
     }
     if (!dos64_UnsupportedAction(err))
         return DOSFALSE;
-#endif
 
     return dos64_Examine32(DOS64Base, lock, fib, ACTION_EXAMINE_NEXT);
 

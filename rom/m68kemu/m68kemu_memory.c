@@ -105,6 +105,7 @@ struct M68KEmuContext *M68KEmu_CreateContext(struct M68KEmuLibBase *base)
 void M68KEmu_DestroyContext(struct M68KEmuContext *ctx)
 {
     if (!ctx) return;
+    m68k_paula_free(ctx);
     m68k_vbl_close(ctx);
     for (int i = 0; i < M68KEMU_MAX_TASKS; i++)
         M68KEmu_FreeNestCpus(ctx, &ctx->tasks[i]);

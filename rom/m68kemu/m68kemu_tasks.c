@@ -24,6 +24,7 @@
 #include <exec/memory.h>
 #include <exec/ports.h>
 #include <exec/semaphores.h>
+#include <devices/timer.h>
 #include <dos/dos.h>
 #include <dos/dostags.h>
 #include <dos/dosextens.h>
@@ -101,6 +102,139 @@ void m68k_ts_main(struct M68KEmuContext *ctx)
     ctx->tasks[0].running = TRUE;
 }
 
+/* ── waiting: CIA timers due meanwhile run their vector's code here, as
+   the interrupt would have ── */
+static BOOL cia_wait_req(struct M68KTaskState *ts)
+{
+    if (ts->cia_req)
+        return TRUE;
+    if (!(ts->cia_port = CreateMsgPort()))
+        return FALSE;
+    ts->cia_req = (struct timerequest *)CreateIORequest(ts->cia_port, sizeof(struct timerequest));
+    ts->delay_req = (struct timerequest *)CreateIORequest(ts->cia_port, sizeof(struct timerequest));
+    if (!ts->cia_req || !ts->delay_req ||
+        OpenDevice((CONST_STRPTR)"timer.device", UNIT_MICROHZ, (struct IORequest *)ts->cia_req, 0))
+    {
+        if (ts->cia_req) DeleteIORequest((struct IORequest *)ts->cia_req);
+        if (ts->delay_req) DeleteIORequest((struct IORequest *)ts->delay_req);
+        DeleteMsgPort(ts->cia_port);
+        ts->cia_req = ts->delay_req = NULL;
+        ts->cia_port = NULL;
+        return FALSE;
+    }
+    ts->delay_req->tr_node.io_Device = ts->cia_req->tr_node.io_Device;
+    ts->delay_req->tr_node.io_Unit = ts->cia_req->tr_node.io_Unit;
+    return TRUE;
+}
+
+void m68k_ts_timers_free(struct M68KTaskState *ts)
+{
+    if (!ts->cia_req)
+        return;
+    if (!CheckIO((struct IORequest *)ts->cia_req)) AbortIO((struct IORequest *)ts->cia_req);
+    WaitIO((struct IORequest *)ts->cia_req);
+    if (!CheckIO((struct IORequest *)ts->delay_req)) AbortIO((struct IORequest *)ts->delay_req);
+    WaitIO((struct IORequest *)ts->delay_req);
+    CloseDevice((struct IORequest *)ts->cia_req);
+    DeleteIORequest((struct IORequest *)ts->cia_req);
+    DeleteIORequest((struct IORequest *)ts->delay_req);
+    DeleteMsgPort(ts->cia_port);
+    ts->cia_req = ts->delay_req = NULL;
+    ts->cia_port = NULL;
+}
+
+static void cia_fire_due(struct M68KEmuContext *ctx, struct M68KTaskState *ts)
+{
+    ULONG code, data, regs[15];
+    int n = 0;
+
+    while (n++ < 4 && m68k_cia_due(ctx, &code, &data))
+    {
+        memset(regs, 0, sizeof(regs));
+        regs[9] = data;                  /* A1 */
+        regs[13] = code;                 /* A5 */
+        regs[14] = ctx->m68k_sysbase;    /* A6 */
+        M68KEmu_Call68k(ctx, ts->cur_cpu, code, regs);
+    }
+}
+
+/* Wait() for sigs, or until the request completes, serving the timers */
+static ULONG wait_core(struct M68KEmuContext *ctx, ULONG sigs, struct IORequest *until)
+{
+    struct M68KTaskState *ts = m68k_ts(ctx);
+    ULONG r, portsig;
+
+    if (!m68k_cia_armed(ctx) || !cia_wait_req(ts))
+    {
+        m68k_gil_release(ctx);
+        if (until)
+        {
+            WaitIO(until);
+            r = 0;
+        }
+        else
+            r = Wait(sigs);
+        m68k_gil_obtain(ctx);
+        return r;
+    }
+    portsig = 1UL << ts->cia_port->mp_SigBit;
+    for (;;)
+    {
+        ULONG us = m68k_cia_next_us(ctx);
+
+        if (us == 0)
+        {
+            cia_fire_due(ctx, ts);
+            if (until && CheckIO(until)) { WaitIO(until); return 0; }
+            continue;
+        }
+        if (us > 2000000) us = 2000000;
+        ts->cia_req->tr_node.io_Command = TR_ADDREQUEST;
+        ts->cia_req->tr_time.tv_secs = us / 1000000;
+        ts->cia_req->tr_time.tv_micro = us % 1000000;
+        SendIO((struct IORequest *)ts->cia_req);
+        m68k_gil_release(ctx);
+        r = Wait(sigs | portsig);
+        m68k_gil_obtain(ctx);
+        if (!CheckIO((struct IORequest *)ts->cia_req)) AbortIO((struct IORequest *)ts->cia_req);
+        WaitIO((struct IORequest *)ts->cia_req);
+        cia_fire_due(ctx, ts);
+        if (until && CheckIO(until)) { WaitIO(until); SetSignal(0, portsig); return 0; }
+        if (r & sigs) return r & sigs;
+        if (!m68k_cia_armed(ctx))
+        {
+            m68k_gil_release(ctx);
+            if (until) { WaitIO(until); r = 0; }
+            else r = Wait(sigs);
+            m68k_gil_obtain(ctx);
+            return r;
+        }
+    }
+}
+
+ULONG m68k_wait_sigs(struct M68KEmuContext *ctx, ULONG sigs)
+{
+    return wait_core(ctx, sigs, NULL);
+}
+
+void m68k_delay_ticks(struct M68KEmuContext *ctx, ULONG ticks)
+{
+    struct M68KTaskState *ts = m68k_ts(ctx);
+
+    if (!m68k_cia_armed(ctx) || !cia_wait_req(ts))
+    {
+        m68k_gil_release(ctx);
+        Delay(ticks);
+        m68k_gil_obtain(ctx);
+        return;
+    }
+    ts->delay_req->tr_node.io_Command = TR_ADDREQUEST;
+    ts->delay_req->tr_time.tv_secs = ticks / 50;
+    ts->delay_req->tr_time.tv_micro = (ticks % 50) * 20000;
+    SendIO((struct IORequest *)ts->delay_req);
+    wait_core(ctx, 0, (struct IORequest *)ts->delay_req);
+}
+
 /* this task is done with the program: its CPUs and signal go */
 void m68k_ts_drop(struct M68KEmuContext *ctx)
 {
@@ -108,6 +242,7 @@ void m68k_ts_drop(struct M68KEmuContext *ctx)
 
     if (!ts)
         return;
+    m68k_ts_timers_free(ts);
     M68KEmu_FreeNestCpus(ctx, ts);
     if (ts->semsig >= 0)
         FreeSignal(ts->semsig);
@@ -479,9 +614,7 @@ ULONG m68k_port_wait(struct M68KEmuContext *ctx, ULONG mport)
     while (!(head = m68k_read32(ctx, mport + MP_LIST)) || !m68k_read32(ctx, head))
     {
         UBYTE bit = ctx->mem[mport + MP_SIGBIT];
-        m68k_gil_release(ctx);
-        Wait(1UL << (bit & 31));
-        m68k_gil_obtain(ctx);
+        m68k_wait_sigs(ctx, 1UL << (bit & 31));
     }
     return head;
 }

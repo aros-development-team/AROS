@@ -93,11 +93,12 @@ struct inpcbinfo {
 #define	INP_RECVOPTS		0x01	/* receive incoming IP options */
 #define	INP_RECVRETOPTS		0x02	/* receive IP options for reply */
 #define	INP_RECVDSTADDR		0x04	/* receive IP dst address */
-#define	INP_CONTROLOPTS		(INP_RECVOPTS|INP_RECVRETOPTS|INP_RECVDSTADDR|INP_RECVTOS)
+#define	INP_CONTROLOPTS		(INP_RECVOPTS|INP_RECVRETOPTS|INP_RECVDSTADDR|INP_RECVTOS|INP_RECVTTL)
 #define	INP_HDRINCL		0x08	/* user supplies entire IP header */
 #define	INP_DONTFRAG		0x10	/* IP_DONTFRAG: DF on datagrams */
 #define	INP_RECVTOS		0x20	/* receive the TOS byte */
 #define	INP_BOUNDGONE		0x40	/* the interface it was bound to went away */
+#define	INP_RECVTTL		0x80	/* receive the TTL */
 
 #ifdef sotorawcb		/* defined in net/raw_cb.h */
 /*

@@ -129,7 +129,7 @@ FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary *DOS
         if (fh->fh_Pos < fh->fh_End)
         {
             /* Read mode. Try to seek back to the current position. */
-            if (Seek(file, fh->fh_Pos - fh->fh_End, OFFSET_CURRENT) < 0)
+            if (Seek(file, fh->fh_Pos - fh->fh_End, OFFSET_CURRENT) == -1)
             {
                 fh->fh_Pos = fh->fh_End = 0;
         

@@ -243,6 +243,64 @@ void dos64_SetFIBSize(struct FileInfoBlock *fib, UQUAD size)
     fib->fib_Size   = (size > 0x7FFFFFFFULL) ? 0 : (LONG)size;
 }
 
+/* Replace a clamped 32-bit size by the 64-bit size of the open file */
+void dos64_FixSizeFH(struct Dos64Base *DOS64Base, struct FileHandle *fh,
+                     struct FileInfoBlock *fib)
+{
+    SIPTR err = 0;
+#if (__WORDSIZE == 64)
+    QUAD size = dos64_SendPkt(DOS64Base, fh->fh_Type, ACTION_GET_FILE_SIZE64,
+                              fh->fh_Arg1, 0, 0, 0, 0, &err);
+#else
+    QUAD size = dos64_SendPkt64OS4(DOS64Base, fh->fh_Type, ACTION_GET_FILE_SIZE64,
+                                   fh->fh_Arg1, 0, 0, &err);
+#endif
+
+    /* a handler without ACTION_GET_FILE_SIZE64 fails the query: keep the 32-bit size */
+    if (size != -1 && err == 0)
+        dos64_SetFIBSize(fib, (UQUAD)size);
+    SetIoErr(0);
+}
+
+/* The size of a file entry that may be clamped; a file that cannot be opened keeps it */
+static void dos64_FixSizeEntry(struct Dos64Base *DOS64Base, BPTR obj,
+                               struct FileInfoBlock *fib, LONG action)
+{
+    struct Process *me = (struct Process *)FindTask(NULL);
+    BPTR fh;
+
+    if (fib->fib_DirEntryType >= 0 || fib->fib_Size64 < 0x7FFFFFFF ||
+        me->pr_Task.tc_Node.ln_Type != NT_PROCESS)
+        return;
+
+    if (action == ACTION_EXAMINE_OBJECT)
+    {
+        BPTR dup = DupLock(obj);
+
+        if (dup == BNULL)
+            return;
+        fh = OpenFromLock(dup);
+        if (fh == BNULL)
+        {
+            UnLock(dup);
+            return;
+        }
+    }
+    else
+    {
+        BPTR old = CurrentDir(obj);
+
+        fh = Open(fib->fib_FileName, MODE_OLDFILE);
+        CurrentDir(old);
+        if (fh == BNULL)
+            return;
+    }
+
+    dos64_FixSizeFH(DOS64Base, BADDR(fh), fib);
+    Close(fh);
+    SetIoErr(0);
+}
+
 /*
  * 32-bit delegation for the Examine64 family. The 64-bit fields share
  * the FileInfoBlock with the standard ones, so the dos.library call
@@ -274,6 +332,8 @@ LONG dos64_Examine32(struct Dos64Base *DOS64Base, BPTR obj,
         fib->fib_NumBlocks64 = (UQUAD)(ULONG)fib->fib_NumBlocks;
         fib->fib_ActExtFlags = 0;
         dos64_SetFIBSize(fib, (UQUAD)(ULONG)fib->fib_Size);
+        if (action != ACTION_EXAMINE_FH)
+            dos64_FixSizeEntry(DOS64Base, obj, fib, action);
     }
 
     return ret;

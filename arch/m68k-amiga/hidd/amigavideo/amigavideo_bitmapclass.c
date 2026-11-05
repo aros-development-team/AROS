@@ -444,7 +444,7 @@ VOID AmigaVideoBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
     
     data = OOP_INST_DATA(cl, o);
 
-    offset = msg->x / 8 + msg->y * data->bytesperrow;
+    offset = msg->x / 8 + bitmap_row_offset(msg->y, data->bytesperrow);
     if ((offset & ~3) != data->pixelcacheoffset) {
         CLEARCACHE;
         data->pixelcacheoffset = offset & ~3;
@@ -466,7 +466,7 @@ ULONG AmigaVideoBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
     UBYTE                   i, c, bit;
 
     data = OOP_INST_DATA(cl, o);
-    offset = msg->x / 8 + msg->y * data->bytesperrow;
+    offset = msg->x / 8 + bitmap_row_offset(msg->y, data->bytesperrow);
 
     if ((offset & ~3) != data->pixelcacheoffset) {
         ULONG tmpplanes[8], mask;
@@ -728,7 +728,7 @@ VOID AmigaVideoBM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
     data = OOP_INST_DATA(cl, o);
     CLEARCACHE;
 
-    rowoffset = msg->y * data->bytesperrow + msg->x / 8;
+    rowoffset = bitmap_row_offset(msg->y, data->bytesperrow) + msg->x / 8;
     bitoffset = msg->x % 8;
     alignedstart = bitoffset > 0 ? (8 - bitoffset > msg->width ? msg->width : 8 - bitoffset) : 0;
     endoffset = (bitoffset + msg->width % 8) % 8;
@@ -785,7 +785,7 @@ VOID AmigaVideoBM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
     D(bug("[AmigaVideo:Bitmap] %s: Get %dx%d to %dx%d from %d planes to buffer at %p\n",
                         __func__, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1, data->depth, msg->pixels));
 
-    planeoffset = msg->y * data->bytesperrow + msg->x / 8;
+    planeoffset = bitmap_row_offset(msg->y, data->bytesperrow) + msg->x / 8;
 
     prefill = 0;
     for (d = 0; d < data->depth; d++)
@@ -874,7 +874,7 @@ VOID AmigaVideoBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
     }
     CMDDEBUGUNIMP(bug("[AmigaVideo:Bitmap] %s()\n", __func__);)
     
-    planeoffset = msg->y * data->bytesperrow + msg->x / 8;
+    planeoffset = bitmap_row_offset(msg->y, data->bytesperrow) + msg->x / 8;
     
     for(y = 0; y < msg->height; y++)
     {

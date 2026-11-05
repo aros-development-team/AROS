@@ -68,7 +68,6 @@
         return DOSFALSE;
     }
 
-#if (__WORDSIZE == 64)
     dos64_PrepFIB64(fib);
     ret = dos64_SendPkt(DOS64Base, handle->fh_Type, ACTION_EXAMINE_FH64,
                         handle->fh_Arg1, (SIPTR)MKBADDR(fib), 0, 0, 0, &err);
@@ -79,37 +78,10 @@
     }
     if (!dos64_UnsupportedAction(err))
         return DOSFALSE;
-#endif
 
     ret = dos64_Examine32(DOS64Base, fh, fib, ACTION_EXAMINE_FH);
     if (ret)
-    {
-        /*
-         * The 32-bit examine cannot represent sizes >= 4GB; if the
-         * filesystem offers a 64-bit size query, use it to fix up the
-         * 64-bit size.
-         */
-#if (__WORDSIZE == 64)
-        QUAD size = dos64_SendPkt(DOS64Base, handle->fh_Type,
-                                  ACTION_GET_FILE_SIZE64,
-                                  handle->fh_Arg1, 0, 0, 0, 0, &err);
-#else
-        QUAD size = dos64_SendPkt64OS4(DOS64Base, handle->fh_Type,
-                                       ACTION_GET_FILE_SIZE64,
-                                       handle->fh_Arg1, 0, 0, &err);
-#endif
-        /*
-         * Only trust the 64-bit size query when it actually succeeded.
-         * A filesystem that does not implement ACTION_GET_FILE_SIZE64
-         * returns failure (size 0/garbage with err set); overwriting the
-         * correct size already produced by the 32-bit ExamineFH() with
-         * that would corrupt fib_Size64 (e.g. yielding a bogus multi-GB
-         * value that breaks fstat()/mmap-by-size callers such as git).
-         */
-        if (size != -1 && err == 0)
-            dos64_SetFIBSize(fib, (UQUAD)size);
-        SetIoErr(0);
-    }
+        dos64_FixSizeFH(DOS64Base, handle, fib);
 
     return ret;
 

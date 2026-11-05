@@ -1,0 +1,13 @@
+include $(SRCDIR)/config/aros.cfg
+
+# devicememory - making and destroying a VkDevice gives back all its memory
+%build_prog mmake=test-vulkan-devicememory \
+    progname=devicememory \
+    files=devicememory \
+    targetdir=$(AROS_TESTS)/vulkan \
+    uselibs="vulkan"
+
+#MM- test : test-vulkan-devicememory
+#MM test-vulkan-devicememory : includes hidd-vulkan-loader
+
+%common

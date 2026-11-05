@@ -86,6 +86,7 @@ ULONG m68k_ioreq_of(struct M68KEmuContext *ctx, APTR native)
 }
 
 static BOOL input_request(struct M68KEmuContext *ctx, struct M68KIoMap *m);
+static BOOL paula_holder(struct M68KEmuContext *ctx, struct IORequest *io);
 
 static void io_in(struct M68KEmuContext *ctx, struct M68KIoMap *m)
 {
@@ -144,6 +145,10 @@ void m68k_ioreq_out(struct M68KEmuContext *ctx, APTR native)
         m68k_write32(ctx, a + IO_UNIT, (ULONG)(IPTR)io->io_Unit);
         m68k_write16(ctx, a + IOA_ALLOCKEY, (UWORD)ia->ioa_AllocKey);
         m68k_write32(ctx, a + IOA_LENGTH, ia->ioa_Length);
+        if (io->io_Command == ADCMD_ALLOCATE && !io->io_Error && io->io_Unit)
+            m68k_paula_attach(ctx, io);
+        else if (io->io_Command == ADCMD_FREE && paula_holder(ctx, io))
+            m68k_paula_free(ctx);
     }
     else
         m68k_write32(ctx, a + IO_ACTUAL, ((struct IOStdReq *)io)->io_Actual);
@@ -377,8 +382,241 @@ IPTR m68k_OpenDevice(struct M68KEmuContext *ctx, void *cpu)
                                        kind == DEV_TIMER ? 7 : kind == DEV_CONSOLE ? 3 : 2, NULL, 0);
     m68k_write32(ctx, mio + IO_DEVICE, devbase);
     m68k_write32(ctx, mio + IO_UNIT, kind == DEV_AUDIO ? (ULONG)(IPTR)io->io_Unit : m68k_bptr_out(ctx, (BPTR)io->io_Unit));
+    if (kind == DEV_AUDIO && io->io_Unit)
+        m68k_paula_attach(ctx, io);
     ctx->mem[mio + IO_ERROR] = 0;
     return 0;
+}
+
+/* ── The audio registers: a program that allocated its channels through
+   audio.device and then writes AUD0-3 and DMACON itself plays through
+   audio.device with its own allocation, a CMD_WRITE of the sample when
+   DMA starts and one of the repeat part the program sets after that ── */
+#define PAULA_DMACON 0x096
+#define PAULA_AUD0   0x0A0
+
+struct M68KPaulaChan
+{
+    ULONG lc;
+    UWORD len, per, vol;
+    BOOL dma;
+    struct IOAudio *one, *rep, *ctl;
+};
+
+struct M68KPaula
+{
+    BOOL trace;
+    UBYTE *ctx_mem;
+    struct MsgPort *port;
+    struct Device *device;
+    struct IORequest *holder;     /* the request that allocated the channels */
+    UWORD key;
+    ULONG mask;
+    struct M68KPaulaChan ch[4];
+};
+
+static BOOL paula_holder(struct M68KEmuContext *ctx, struct IORequest *io)
+{
+    return ctx->paula && ctx->paula->holder == io;
+}
+
+static void paula_reclaim(struct M68KPaula *p, struct IOAudio *io)
+{
+    if (!io->ioa_Request.io_Message.mn_Node.ln_Type)
+        return;                                   /* never sent */
+    if (!CheckIO((struct IORequest *)io))
+        AbortIO((struct IORequest *)io);
+    WaitIO((struct IORequest *)io);
+    if (p->trace)
+        bug("[m68kemu] paula: unit %lu cmd %u done, error %d\n", (unsigned long)(IPTR)io->ioa_Request.io_Unit,
+            io->ioa_Request.io_Command, io->ioa_Request.io_Error);
+    io->ioa_Request.io_Message.mn_Node.ln_Type = 0;
+}
+
+static struct IOAudio *paula_request(struct M68KPaula *p, int ch)
+{
+    struct IOAudio *io = AllocMem(sizeof(*io), MEMF_PUBLIC | MEMF_CLEAR);
+    if (!io) return NULL;
+    io->ioa_Request.io_Message.mn_ReplyPort = p->port;
+    io->ioa_Request.io_Message.mn_Length = sizeof(*io);
+    io->ioa_Request.io_Device = p->device;
+    io->ioa_Request.io_Unit = (struct Unit *)(IPTR)(1 << ch);
+    io->ioa_AllocKey = p->key;
+    return io;
+}
+
+void m68k_paula_attach(struct M68KEmuContext *ctx, struct IORequest *io)
+{
+    struct IOAudio *ia = (struct IOAudio *)io;
+    struct M68KPaula *p = ctx->paula;
+
+    if (!p)
+    {
+        if (!(p = AllocMem(sizeof(*p), MEMF_PUBLIC | MEMF_CLEAR)))
+            return;
+        if (!(p->port = AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC | MEMF_CLEAR)))
+        {
+            FreeMem(p, sizeof(*p));
+            return;
+        }
+        p->port->mp_Node.ln_Type = NT_MSGPORT;
+        p->port->mp_Flags = PA_IGNORE;
+        NEWLIST(&p->port->mp_MsgList);
+        ctx->paula = p;
+    }
+    p->ctx_mem = ctx->mem;
+    p->trace = ctx->trace_calls;
+    p->device = io->io_Device;
+    p->holder = io;
+    if (p->trace)
+        bug("[m68kemu] paula: audio.device channels %lu key %u\n", (unsigned long)(IPTR)io->io_Unit, ia->ioa_AllocKey);
+    p->key = ia->ioa_AllocKey;
+    p->mask = (ULONG)(IPTR)io->io_Unit & 15;
+    for (int ch = 0; ch < 4; ch++)
+    {
+        struct M68KPaulaChan *c = &p->ch[ch];
+        if (!c->one) c->one = paula_request(p, ch);
+        if (!c->rep) c->rep = paula_request(p, ch);
+        if (!c->ctl) c->ctl = paula_request(p, ch);
+        if (c->one) { c->one->ioa_Request.io_Device = p->device; c->one->ioa_AllocKey = p->key; }
+        if (c->rep) { c->rep->ioa_Request.io_Device = p->device; c->rep->ioa_AllocKey = p->key; }
+        if (c->ctl) { c->ctl->ioa_Request.io_Device = p->device; c->ctl->ioa_AllocKey = p->key; }
+    }
+}
+
+static void paula_send(struct M68KPaula *p, struct M68KPaulaChan *c, struct IOAudio *io, UWORD cycles)
+{
+    paula_reclaim(p, io);
+    io->ioa_Request.io_Command = CMD_WRITE;
+    io->ioa_Request.io_Flags = ADIOF_PERVOL;
+    io->ioa_Data = (UBYTE *)(p->ctx_mem + c->lc);
+    io->ioa_Length = (c->len ? c->len : 0x10000) * 2;
+    io->ioa_Period = c->per;
+    io->ioa_Volume = c->vol;
+    io->ioa_Cycles = cycles;
+    io->ioa_Request.io_Message.mn_Node.ln_Type = NT_MESSAGE;
+    if (p->trace)
+        bug("[m68kemu] paula: unit %lu write %08lx len %lu per %u vol %u cycles %u\n",
+            (unsigned long)(IPTR)io->ioa_Request.io_Unit, (unsigned long)c->lc, (unsigned long)io->ioa_Length,
+            io->ioa_Period, io->ioa_Volume, cycles);
+    SendIO((struct IORequest *)io);
+}
+
+static void paula_control(struct M68KPaula *p, struct M68KPaulaChan *c, UWORD cmd)
+{
+    struct IOAudio *io = c->ctl;
+    if (!io) return;
+    paula_reclaim(p, io);
+    io->ioa_Request.io_Command = cmd;
+    io->ioa_Request.io_Flags = ADIOF_PERVOL;
+    io->ioa_Period = c->per;
+    io->ioa_Volume = c->vol;
+    io->ioa_Request.io_Message.mn_Node.ln_Type = NT_MESSAGE;
+    DoIO((struct IORequest *)io);
+    if (p->trace)
+        bug("[m68kemu] paula: unit %lu cmd %u per %u vol %u -> error %d\n", (unsigned long)(IPTR)io->ioa_Request.io_Unit,
+            cmd, io->ioa_Period, io->ioa_Volume, io->ioa_Request.io_Error);
+    io->ioa_Request.io_Message.mn_Node.ln_Type = 0;
+}
+
+static void paula_stop(struct M68KPaula *p, struct M68KPaulaChan *c)
+{
+    if (c->one) paula_reclaim(p, c->one);
+    if (c->rep) paula_reclaim(p, c->rep);
+    paula_control(p, c, CMD_FLUSH);
+}
+
+UWORD m68k_paula_dmacon(struct M68KEmuContext *ctx)
+{
+    UWORD v = 0;
+    if (!ctx->paula) return 0;
+    for (int ch = 0; ch < 4; ch++)
+        if (ctx->paula->ch[ch].dma) v |= 1 << ch;
+    return v;
+}
+
+void m68k_paula_write(struct M68KEmuContext *ctx, UWORD reg, UWORD val)
+{
+    struct M68KPaula *p = ctx->paula;
+    int ch;
+
+    if (!p || !p->device)
+        return;
+    p->trace = ctx->trace_calls;
+    if (reg == PAULA_DMACON)
+    {
+        for (ch = 0; ch < 4; ch++)
+        {
+            struct M68KPaulaChan *c = &p->ch[ch];
+            if (!(val & (1 << ch)) || !(p->mask & (1 << ch)) || !c->one || !c->rep)
+                continue;
+            if (val & 0x8000)
+            {
+                if (c->dma) continue;
+                c->dma = TRUE;
+                if (!m68k_in_mem(ctx, c->lc, 2)) continue;
+                paula_reclaim(p, c->rep);
+                paula_send(p, c, c->one, 1);
+            }
+            else if (c->dma)
+            {
+                c->dma = FALSE;
+                paula_stop(p, c);
+            }
+        }
+        return;
+    }
+    if (reg < PAULA_AUD0 || reg >= PAULA_AUD0 + 4 * 16)
+        return;
+    ch = (reg - PAULA_AUD0) >> 4;
+    {
+        struct M68KPaulaChan *c = &p->ch[ch];
+        switch (reg & 15)
+        {
+        case 0:  c->lc = (c->lc & 0xFFFF) | ((ULONG)(val & 0x1F) << 16); break;
+        case 2:  c->lc = (c->lc & 0xFFFF0000) | (val & 0xFFFE); break;
+        case 4:
+            c->len = val;
+            /* the repeat part, set once the sample started: plays after it */
+            if (c->dma && c->rep && m68k_in_mem(ctx, c->lc, 2))
+                paula_send(p, c, c->rep, 0);
+            break;
+        case 6:
+            if (c->per == val) break;
+            c->per = val;
+            if (c->dma) paula_control(p, c, ADCMD_PERVOL);
+            break;
+        case 8:
+            val &= 0x7F;
+            if (val > 64) val = 64;
+            if (c->vol == val) break;
+            c->vol = val;
+            if (c->dma) paula_control(p, c, ADCMD_PERVOL);
+            break;
+        default: break;
+        }
+    }
+}
+
+void m68k_paula_free(struct M68KEmuContext *ctx)
+{
+    struct M68KPaula *p = ctx->paula;
+    struct Message *msg;
+
+    if (!p) return;
+    for (int ch = 0; ch < 4; ch++)
+    {
+        struct M68KPaulaChan *c = &p->ch[ch];
+        if (c->dma && p->device) { c->dma = FALSE; paula_stop(p, c); }
+        if (c->one) FreeMem(c->one, sizeof(struct IOAudio));
+        if (c->rep) FreeMem(c->rep, sizeof(struct IOAudio));
+        if (c->ctl) FreeMem(c->ctl, sizeof(struct IOAudio));
+    }
+    while ((msg = GetMsg(p->port)))
+        ;
+    FreeMem(p->port, sizeof(struct MsgPort));
+    FreeMem(p, sizeof(*p));
+    ctx->paula = NULL;
 }
 
 /* exec -450: CloseDevice(A1=ioRequest) */
@@ -386,6 +624,8 @@ IPTR m68k_CloseDevice(struct M68KEmuContext *ctx, void *cpu)
 {
     struct M68KIoMap *m = io_find(ctx, M68KEmu_GetA(cpu, 1));
     if (!m) return 0;
+    if (m->kind == DEV_AUDIO && paula_holder(ctx, m->native))
+        m68k_paula_free(ctx);
     CloseDevice(m->native);
     FreeVec(m->native);
     if (m->ownport) DeleteMsgPort(m->ownport);

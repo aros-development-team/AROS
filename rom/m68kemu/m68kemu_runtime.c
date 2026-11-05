@@ -181,6 +181,92 @@ ULONG m68k_eclock_now(struct M68KEmuContext *ctx, ULONG *freq)
     return ev.ev_lo;
 }
 
+/* ── CIA timers: the code of an AddICRVector() vector runs when a running
+   timer reaches zero, at the E clock rate of its latch ── */
+void m68k_cia_timer_control(struct M68KEmuContext *ctx, int chip, int timer, UBYTE cr)
+{
+    struct M68KCiaTimer *t = &ctx->cia_timer[chip][timer];
+
+    if (cr & 1)
+    {
+        ULONG latch = timer ? ctx->cia[chip].tb_latch : ctx->cia[chip].ta_latch;
+        ULONG freq = 709379, now = m68k_eclock_now(ctx, &freq);
+
+        /* the latch counts the Amiga's E clock; the timer runs on the native one */
+        t->period = (ULONG)(((unsigned long long)((latch ? latch : 0x10000) + 1) * freq) / 709379);
+        if (!t->period) t->period = 1;
+        t->next_e = now + t->period;
+        t->armed = TRUE;
+    }
+    else
+        t->armed = FALSE;
+}
+
+static struct M68KCiaTimer *cia_live(struct M68KEmuContext *ctx, int chip, int timer)
+{
+    struct M68KCiaTimer *t = &ctx->cia_timer[chip][timer];
+    return t->armed && t->code && (ctx->cia_icr_enable[chip] & (1 << timer)) ? t : NULL;
+}
+
+BOOL m68k_cia_armed(struct M68KEmuContext *ctx)
+{
+    for (int c = 0; c < 2; c++)
+        for (int k = 0; k < 2; k++)
+            if (cia_live(ctx, c, k))
+                return TRUE;
+    return FALSE;
+}
+
+/* microseconds until the earliest timer is due, 0 when one is */
+ULONG m68k_cia_next_us(struct M68KEmuContext *ctx)
+{
+    ULONG freq = 709379, now = m68k_eclock_now(ctx, &freq);
+    LONG best = -1;
+
+    for (int c = 0; c < 2; c++)
+        for (int k = 0; k < 2; k++)
+        {
+            struct M68KCiaTimer *t = cia_live(ctx, c, k);
+            LONG left;
+            if (!t) continue;
+            left = (LONG)(t->next_e - now);
+            if (left <= 0) return 0;
+            if (best < 0 || left < best) best = left;
+        }
+    if (best < 0) return 0xFFFFFFFF;
+    return (ULONG)(((unsigned long long)best * 1000000ULL) / (freq ? freq : 709379)) + 1;
+}
+
+/* a timer that is due: its vector, and the timer runs on or stops */
+BOOL m68k_cia_due(struct M68KEmuContext *ctx, ULONG *code, ULONG *data)
+{
+    ULONG now = m68k_eclock_now(ctx, NULL);
+
+    for (int c = 0; c < 2; c++)
+        for (int k = 0; k < 2; k++)
+        {
+            struct M68KCiaTimer *t = cia_live(ctx, c, k);
+            UBYTE *cr = k ? &ctx->cia[c].crb : &ctx->cia[c].cra;
+            if (!t || (LONG)(now - t->next_e) < 0) continue;
+            *code = t->code;
+            *data = t->data;
+            if (*cr & 8)                        /* one-shot */
+            {
+                t->armed = FALSE;
+                *cr &= ~1;
+            }
+            else
+            {
+                t->next_e += t->period;
+                if ((LONG)(now - t->next_e) > (LONG)(t->period * 4))
+                    t->next_e = now + t->period;    /* far behind: from now */
+            }
+            ctx->cia_count++;
+            return TRUE;
+        }
+    return FALSE;
+}
+
 /* the last library calls (M68KEMU_TRACE=end), string compares only counted:
    a loop that walks a list hides the calls that drive it */
 void m68k_dump_callring(struct M68KEmuContext *ctx)
