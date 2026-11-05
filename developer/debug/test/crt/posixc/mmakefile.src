@@ -33,6 +33,7 @@ POSIXCTESTFILES := \
         usergroup_release usergroup_release_child \
         usleep \
         vfork \
+        vfork_context \
         vfork_execl \
         wait \
         waitpid \
