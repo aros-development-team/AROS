@@ -1470,12 +1470,24 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
         return FALSE;
     }
 
-    /* Mask width in pixels corresponds to full bitmap width (including alignment) */
-    OOP_GetAttr(msg->src, aHidd_BitMap_Width, &mask_bpr);
-    OOP_GetAttr(msg->src, aHidd_BitMap_Align, &mask_align);
+    /* A planar row stride can exceed the UWORD pixel-width attribute.
+     * Obtain it before converting to pixels, so a padded mask does not
+     * wrap to a much shorter row in the software fallback. */
+    {
+        struct BitMap *maskbm = NULL;
 
-    mask_align--;
-    mask_bpr = ((mask_bpr + mask_align) & ~mask_align) >> 3;
+        OOP_GetAttr(msg->src, aHidd_PlanarBM_BitMap, (IPTR *)&maskbm);
+        if (maskbm) {
+            mask_bpr = maskbm->BytesPerRow;
+            if ((maskbm->Flags & BMF_INTERLEAVED) && maskbm->Depth)
+                mask_bpr /= maskbm->Depth;
+        } else {
+            OOP_GetAttr(msg->src, aHidd_BitMap_Width, &mask_bpr);
+            OOP_GetAttr(msg->src, aHidd_BitMap_Align, &mask_align);
+            mask_align--;
+            mask_bpr = ((mask_bpr + mask_align) & ~mask_align) >> 3;
+        }
+    }
 
     /* How wide a source value is, for the ANBC minterm to complement within */
     if (src_colmod == vHidd_ColorModel_Palette)
