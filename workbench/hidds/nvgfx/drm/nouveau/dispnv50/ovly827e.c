@@ -72,7 +72,12 @@ ovly827e_ntfy_wait_begun(struct nouveau_bo *bo, u32 offset,
 	s64 time = nvif_msec(device, 2000ULL,
 		if (NVBO_TD32(bo, offset, NV_DISP_NOTIFICATION_1, _3, STATUS, ==, BEGUN))
 			break;
+#if defined(__AROS__)
+		/* up to a frame: sleep instead of spinning (see base507c.c) */
+		usleep_range(100, 200);
+#else
 		usleep_range(1, 2);
+#endif
 	);
 	return time < 0 ? time : 0;
 }
