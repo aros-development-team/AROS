@@ -221,6 +221,14 @@ idr_destroy(struct idr *idr)
 		iln = il->ary[0];
 		idr_free(il, M_IDR);
 	}
+#if defined(__AROS__)
+	/*
+	 * As in Linux, a destroyed idr is empty: drm_mode_config_cleanup can run
+	 * twice on a failed init (the driver's error path and the managed
+	 * release), and the second call must not free the cached layers again.
+	 */
+	idr->free = NULL;
+#endif
 	mtx_unlock(&idr->lock);
 	mtx_destroy(&idr->lock);
 }
