@@ -472,7 +472,8 @@ VOID PBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o,
     volatile struct Custom *custom = (struct Custom *)0xdff000;
     ULONG src_offset, dst_offset, bitmap_width;
     ULONG fg, bg, colmask;
-    WORD src_x2, dst_x2, src_width, dst_width, width;
+    LONG src_x2, dst_x2;
+    WORD src_width, dst_width, width;
     WORD src_x, dst_x, shift;
     UWORD first_mask, last_mask, shift_a, shift_b;
     BOOL transparent, invert;
@@ -515,8 +516,9 @@ VOID PBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o,
         shift = -shift;
 
     width = src_width > dst_width ? src_width : dst_width;
-    if (!(GfxBase->ChipRevBits0 & GFXF_BIG_BLITS) &&
-        (width > 64 || msg->height > 1024))
+    if (width > 2048 ||
+        (!(GfxBase->ChipRevBits0 & GFXF_BIG_BLITS) &&
+         (width > 64 || msg->height > 1024)))
         goto software;
 
     src_offset = (src_x / 16) * 2;

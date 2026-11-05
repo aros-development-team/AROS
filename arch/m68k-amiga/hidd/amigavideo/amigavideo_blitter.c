@@ -50,6 +50,15 @@ static BOOL canblit(struct BitMap *bm)
         return USE_BLITTER != 0;
 }
 
+/* Validate before allocating masks or owning the blitter. Zero in a size
+ * register encodes the hardware maximum, not an empty rectangle. */
+static BOOL blitsize(struct amigavideo_staticdata *data, UWORD w, UWORD h)
+{
+    if (data->ecs_agnus)
+        return (UWORD)(w - 1) < 2048 && (UWORD)(h - 1) < 32768;
+    return (UWORD)(w - 1) < 64 && (UWORD)(h - 1) < 1024;
+}
+
 static void startblitter(struct amigavideo_staticdata *data, UWORD w, UWORD h)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
@@ -58,8 +67,7 @@ static void startblitter(struct amigavideo_staticdata *data, UWORD w, UWORD h)
         custom->bltsizv = h;
         custom->bltsizh = w;
     } else {
-        if (h > 1024 || w > 64)
-            return;
+        /* Every caller admits the complete operation before OwnBlitter. */
         custom->bltsize = (h << 6) | (w & 63);
     }
 }
@@ -109,29 +117,38 @@ static const UBYTE copy_minterm[] = { 0xff, 0x8a, 0x00, 0xca, 0x00, 0x00, 0x00, 
 // 15: one (->fillrect)
 
 BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, struct BitMap *dstbm,
-    WORD srcx, WORD srcy, WORD w, WORD h, WORD dstx, WORD dsty, HIDDT_DrawMode mode, UBYTE mask)
+    WORD srcx, WORD srcy, UWORD w, UWORD h, WORD dstx, WORD dsty, HIDDT_DrawMode mode, UBYTE mask)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
     ULONG srcoffset, dstoffset;
     BYTE shift, i;
     WORD srcwidth, dstwidth, width;
-    WORD srcx2, dstx2;
+    LONG srcx2, dstx2;
     UWORD shifta, shiftb;
     UWORD afwm, alwm;
     UWORD bltcon0;
     BOOL reverse = FALSE;
     BOOL intersect = FALSE;
 
-    if (!canblit(srcbm) || !canblit(dstbm))
+    if (!w || !h)
+        return TRUE;
+    if (dstx < 0 || dsty < 0)
         return FALSE;
-
     srcx2 = srcx + w - 1;
     dstx2 = dstx + w - 1;
-    if (copy_minterm[mode] == 0xff)
+    if (copy_minterm[mode] == 0xff) {
+        /* FillRect takes signed endpoint coordinates. */
+        if (dstx2 > 32767 || dsty + h - 1 > 32767)
+            return FALSE;
         return blit_fillrect(data, dstbm, dstx, dsty, dstx2, dsty + h - 1, 0, mode, mask);
+    }
 
     if (copy_minterm[mode] == 0)
+        return FALSE;
+
+    if (srcx < 0 || srcy < 0 ||
+        !canblit(srcbm) || !canblit(dstbm))
         return FALSE;
 
     D(bug("[AmigaVideo:Blitter] %s(%x %x %dx%d %dx%d %dx%d %d)\n", __func__, srcbm, dstbm, srcx, srcy, dstx, dsty, w, h, mode));
@@ -145,10 +162,9 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
     shift = (dstx & 15) - (srcx & 15);
 
     if (intersect) {
-        // do we need >16 bit edge mask? (not handled yet)
-        if (dstoffset < srcoffset && shift < 0) // asc + desc
+        if (dstoffset < srcoffset && shift < 0)
             return FALSE;
-        if (dstoffset > srcoffset && shift > 0) // desc + asc
+        if (dstoffset > srcoffset && shift > 0)
             return FALSE;
     }
 
@@ -183,8 +199,16 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
         UWORD tmp = afwm;
         afwm = alwm;
         alwm = tmp;
-        srcoffset += srcbm->BytesPerRow * (h - 1) + (width - 1) * 2;
-        dstoffset += dstbm->BytesPerRow * (h - 1) + (width - 1) * 2;
+        srcoffset += (width - 1) * 2;
+        dstoffset += (width - 1) * 2;
+    }
+
+    if (!blitsize(data, width, h))
+        return FALSE;
+
+    if (reverse) {
+        srcoffset += srcbm->BytesPerRow * (h - 1);
+        dstoffset += dstbm->BytesPerRow * (h - 1);
     }
 
     D(bug("[AmigaVideo:Blitter] %s: shift=%d rev=%d sw=%d dw=%d %04x %04x\n", __func__, shift, reverse, srcwidth, dstwidth, afwm, alwm));
@@ -234,14 +258,14 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
 }
 
 BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct BitMap *srcbm, struct BitMap *dstbm,
-    WORD srcx, WORD srcy, WORD w, WORD h, WORD dstx, WORD dsty, HIDDT_DrawMode mode, APTR maskplane)
+    WORD srcx, WORD srcy, UWORD w, UWORD h, WORD dstx, WORD dsty, HIDDT_DrawMode mode, APTR maskplane)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
     ULONG srcoffset, dstoffset;
     BYTE shift, i;
     WORD srcwidth, dstwidth, width;
-    WORD srcx2, dstx2;
+    LONG srcx2, dstx2;
     UWORD bltshift;
     UWORD afwm, alwm;
     UWORD bltcon0, maskmod;
@@ -250,6 +274,10 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct BitMap *srcbm,
     UWORD *tempmask = NULL;
     BOOL needtempmask = FALSE;
 
+    if (!w || !h)
+        return TRUE;
+    if (srcx < 0 || srcy < 0 || dstx < 0 || dsty < 0)
+        return FALSE;
     if (!canblit(srcbm) || !canblit(dstbm))
         return FALSE;
 
@@ -312,8 +340,6 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct BitMap *srcbm,
             alwm = leftmask[srcx];
             afwm = rightmask[srcx2];
         }
-        srcoffset += srcbm->BytesPerRow * (h - 1) + (width - 1) * 2;
-        dstoffset += dstbm->BytesPerRow * (h - 1) + (width - 1) * 2;
     } else {
         if (dstwidth > srcwidth) {
             width = dstwidth;
@@ -330,6 +356,15 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct BitMap *srcbm,
             afwm = leftmask[srcx];
             alwm = rightmask[srcx2];
         }
+    }
+
+    /* The temporary mask, when needed, has this same width and height. */
+    if (!blitsize(data, width, h))
+        return FALSE;
+
+    if (reverse) {
+        srcoffset += srcbm->BytesPerRow * (h - 1) + (width - 1) * 2;
+        dstoffset += dstbm->BytesPerRow * (h - 1) + (width - 1) * 2;
     }
 
         if (needtempmask) {
@@ -436,10 +471,12 @@ BOOL blit_fillrect(struct amigavideo_staticdata *data, struct BitMap *bm, WORD x
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
     ULONG offset;
-    WORD width, height;
+    UWORD width, height;
     UBYTE i;
     
-    if (!canblit(bm))
+    if (x2 < x1 || y2 < y1)
+        return TRUE;
+    if (x1 < 0 || y1 < 0 || !canblit(bm))
         return FALSE;
     
     D(
@@ -453,6 +490,9 @@ BOOL blit_fillrect(struct amigavideo_staticdata *data, struct BitMap *bm, WORD x
     offset = bm->BytesPerRow * y1 + (x1 / 16) * 2;
     width = x2 / 16 - x1 / 16 + 1;
     height = y2 - y1 + 1;
+
+    if (!blitsize(data, width, height))
+        return FALSE;
 
     OwnBlitter();
     WaitBlit();
@@ -528,12 +568,12 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct BitMap *bm, str
     WORD height = tmpl->height;
     WORD dstx = tmpl->x;
     WORD dsty = tmpl->y;
-    WORD dstx2 = tmpl->x + tmpl->width - 1;
+    LONG dstx2 = tmpl->x + tmpl->width - 1;
     WORD srcx = tmpl->srcx;
-    WORD srcx2 = srcx + tmpl->width - 1;
+    LONG srcx2 = srcx + tmpl->width - 1;
 
-    if (!canblit(bm))
-                return FALSE;
+    if (tmpl->width <= 0 || height <= 0 || srcx < 0 || dstx < 0 || dsty < 0 || !canblit(bm))
+        return FALSE;
 
     if (GC_COLEXP(gc) == vHidd_GC_ColExp_Transparent)
         type = 0;
@@ -596,6 +636,9 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct BitMap *bm, str
            alwm = rightmask[srcx2];
         }
     }
+
+    if (!blitsize(data, width, height))
+        return FALSE;
 
     OwnBlitter();
     WaitBlit();
@@ -741,14 +784,15 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
     WORD height = pat->height;
     WORD dstx = pat->x;
     WORD dsty = pat->y;
-    WORD dstx2 = pat->x + pat->width - 1;
+    LONG dstx2 = pat->x + pat->width - 1;
     
     WORD patternymask =  pat->patternheight - 1;
+    UWORD maxheight;
 
-    if (!canblit(bm))
-        return FALSE;
-
-    if (pat->patterndepth != 1)
+    if (pat->patternheight <= 0)
+        return TRUE;
+    if (pat->width <= 0 || height <= 0 || pat->patterndepth != 1 ||
+        dstx < 0 || dsty < 0 || (pat->mask && pat->masksrcx < 0) || !canblit(bm))
         return FALSE;
 
     if (GC_COLEXP(pat->gc) == vHidd_GC_ColExp_Transparent)
@@ -779,7 +823,7 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
 
     if (pat->mask) {
         WORD maskx = pat->masksrcx;
-        WORD maskx2 = maskx + pat->width - 1;
+        LONG maskx2 = maskx + pat->width - 1;
         BYTE shift;
 
         maskoffset = (maskx / 16) * 2;
@@ -813,6 +857,12 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
             alwm = width > maskwidth ? 0 : rightmask[maskx2];
         }
     }
+
+    /* Check every phase before drawing any of them: falling back after a
+     * partial invert would invert those pixels twice. */
+    maxheight = (height - 1) / pat->patternheight + 1;
+    if (!blitsize(csd, width, maxheight))
+        return FALSE;
 
     OwnBlitter();
     WaitBlit();
