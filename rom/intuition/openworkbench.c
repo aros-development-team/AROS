@@ -260,7 +260,15 @@ static ULONG FindMode(ULONG width, ULONG height, ULONG depth, struct IntuitionBa
             wbscreen = OpenScreenTagList(NULL, screenTags);
            
             if (wbscreen)
-                GetPrivIBase(IntuitionBase)->ActivePreferences.wb_Depth = GetBitMapAttr(wbscreen->RastPort.BitMap, BMA_DEPTH);
+            {
+                ULONG actualDepth = GetBitMapAttr(wbscreen->RastPort.BitMap, BMA_DEPTH);
+
+                /* An RTG mode may provide a deeper bitmap than requested.
+                 * Keep both preference representations in sync with the
+                 * screen so applying its saved depth does not reset it. */
+                GetPrivIBase(IntuitionBase)->ActivePreferences.wb_Depth = actualDepth;
+                GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Depth = actualDepth;
+            }
         }
 
         if( !wbscreen )
