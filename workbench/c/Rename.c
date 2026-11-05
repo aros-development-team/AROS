@@ -362,6 +362,10 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
         }
 
 cleanup:
+        /* MatchFirst() can fail with matcher resources still allocated. */
+        if (ap)
+                MatchEnd(ap);
+
         if (tolock)
         {
                 UnLock(tolock);
@@ -369,7 +373,6 @@ cleanup:
 
         if (ioerr)
         {
-                //MatchEnd(ap);
                 PrintFault(ioerr, NULL);
                 //retval = ERROR_FAIL;
         }
