@@ -29,7 +29,7 @@
 /* Library identity (subsystem name, not API prefix) */
 
 #define BONAMI_LIB_VERSION   41
-#define BONAMI_LIB_REVISION  7
+#define BONAMI_LIB_REVISION  8
 
 /*------------------------------------------------------------------------*/
 /* DNS-SD well-known values */
@@ -85,6 +85,7 @@
  * on the caller's behalf; there are no daemon callbacks. */
 #define MDNS_EventMode         (MDNS_Dummy + 18)
 #define MDNS_EVENT_QUEUE       1
+#define MDNS_EVENT_QUEUE_V2    2
 #define MDNS_DISCOVERY_TXT_MAX 512
 
 /* Counted wire TXT strings; names are individual labels, without escaping.
@@ -98,6 +99,41 @@ struct MDNSDiscoveryEvent
     UWORD de_TXTLength;
     char de_Name[64];
     char de_Type[MDNS_MAX_TYPE + 1];
+    UBYTE de_TXT[MDNS_DISCOVERY_TXT_MAX];
+};
+
+/* Dual-stack discovery result. The SRV target is an uncompressed DNS wire
+ * name whose length includes the final root byte. Addresses are in network
+ * byte order and all belong to de_InterfaceIndex; that index is the scope
+ * for link-local IPv6 addresses. No embedded pointers. */
+#define MDNS_DISCOVERY_ADDRESS_MAX 8
+#define MDNS_DISCOVERY_TARGET_MAX  256
+#define MDNS_DISCOVERY_ADDR_IPV4   1
+#define MDNS_DISCOVERY_ADDR_IPV6   2
+#define MDNS_DISCOVERY_ADDRESSES_TRUNCATED 0x00000001UL
+
+struct MDNSDiscoveryAddress
+{
+    UWORD da_Family;
+    UWORD da_Reserved;
+    UBYTE da_Address[16];
+};
+
+struct MDNSDiscoveryEvent2
+{
+    ULONG de_Code;
+    ULONG de_InterfaceIndex;
+    ULONG de_Flags;
+    UWORD de_Priority;
+    UWORD de_Weight;
+    UWORD de_Port;
+    UWORD de_AddressCount;
+    UWORD de_TargetLength;
+    UWORD de_TXTLength;
+    struct MDNSDiscoveryAddress de_Addresses[MDNS_DISCOVERY_ADDRESS_MAX];
+    char  de_Name[64];
+    char  de_Type[MDNS_MAX_TYPE + 1];
+    UBYTE de_Target[MDNS_DISCOVERY_TARGET_MAX];
     UBYTE de_TXT[MDNS_DISCOVERY_TXT_MAX];
 };
 

@@ -43,6 +43,12 @@ struct PendingAddress
     UWORD type, length, rclass;
     ULONG link, ttl, received;
 };
+struct DiscoveryEvent
+{
+    struct MDNSDiscoveryEvent2 rich;
+    ULONG legacyAddress;
+    BOOL legacyVisible;
+};
 struct DiscoveryView
 {
     UBYTE key[256];
@@ -53,7 +59,7 @@ struct DiscoveryView
     UWORD activeBrowsers;
     APTR browserHandles[DISC_SESSIONS];
     APTR activeHandles[DISC_SESSIONS];
-    struct MDNSDiscoveryEvent event;
+    struct DiscoveryEvent event;
 };
 struct DiscoverySession
 {
@@ -62,8 +68,8 @@ struct DiscoverySession
     UBYTE key[256];
     BOOL resolve, failed, resolved;
     ULONG nextQuery, interval, deadline;
-    UWORD head, count;
-    struct MDNSDiscoveryEvent queue[DISC_QUEUE];
+    UWORD head, count, eventMode;
+    struct DiscoveryEvent queue[DISC_QUEUE];
     struct MDNSEventRequest *request;   /* lent by the owner, or NULL */
 };
 struct MDNSDiscovery
@@ -273,7 +279,7 @@ static BOOL live(const struct DiscoverySession *s)
 }
 
 static void enqueue(struct MDNSDaemon *md, struct DiscoverySession *s,
-    const struct MDNSDiscoveryEvent *event)
+    const struct DiscoveryEvent *event)
 {
     UWORD i;
 
@@ -284,11 +290,12 @@ static void enqueue(struct MDNSDaemon *md, struct DiscoverySession *s,
     /* A pending snapshot for the same instance/link is replaced atomically.
      * Overflow is explicit: the caller must stop and resubscribe. */
     for (i = 0; i < s->count; i++) {
-        struct MDNSDiscoveryEvent *old = &s->queue[(s->head + i) % DISC_QUEUE];
+        struct DiscoveryEvent *old =
+            &s->queue[(s->head + i) % DISC_QUEUE];
 
-        if (old->de_Interface == event->de_Interface &&
-            Stricmp(old->de_Name, event->de_Name) == 0 &&
-            Stricmp(old->de_Type, event->de_Type) == 0) {
+        if (old->rich.de_InterfaceIndex == event->rich.de_InterfaceIndex &&
+            Stricmp(old->rich.de_Name, event->rich.de_Name) == 0 &&
+            Stricmp(old->rich.de_Type, event->rich.de_Type) == 0) {
             *old = *event;
             wake(s, MDNS_OK);
             return;
@@ -304,21 +311,37 @@ static void enqueue(struct MDNSDaemon *md, struct DiscoverySession *s,
     wake(s, MDNS_OK);
 }
 
+/* Type enumeration and resolve-failure events have no SRV target. Service
+ * snapshots keep the original queue's A-record requirement. */
+static BOOL visible(const struct DiscoverySession *s,
+    const struct DiscoveryEvent *event)
+{
+    return s->eventMode == MDNS_EVENT_QUEUE_V2 ||
+        event->legacyVisible;
+}
+
+#define DISC_NOTIFY_V1 1
+#define DISC_NOTIFY_V2 2
+#define DISC_NOTIFY_ALL (DISC_NOTIFY_V1 | DISC_NOTIFY_V2)
+
 static void notify(struct MDNSDaemon *md, const struct DiscoveryView *view,
-    ULONG code, UWORD browsers)
+    ULONG code, UWORD browsers, UWORD modes)
 {
     struct MDNSDiscovery *d = md->md_Discovery;
     LONG i;
     APTR const *handles = code == MEVENT_ADD ?
         view->activeHandles : view->browserHandles;
-    struct MDNSDiscoveryEvent event = view->event;
+    struct DiscoveryEvent event = view->event;
 
-    event.de_Code = code;
+    event.rich.de_Code = code;
     for (i = 0; i < DISC_SESSIONS; i++) {
         struct DiscoverySession *s = &d->sessions[i];
+        UWORD mode = s->eventMode == MDNS_EVENT_QUEUE_V2 ?
+            DISC_NOTIFY_V2 : DISC_NOTIFY_V1;
 
         if ((browsers & (1U << i)) != 0 && s->handle != NULL &&
-            s->handle == handles[i] && !s->resolve) {
+            s->handle == handles[i] && !s->resolve && (modes & mode) != 0 &&
+            visible(s, &event)) {
             enqueue(md, s, &event);
         }
     }
@@ -532,37 +555,139 @@ static ULONG interface_address4(const struct MDNSDaemon *md, ULONG link)
     return 0;
 }
 
+static LONG compare_address(const struct MDNSDiscoveryAddress *a,
+    const struct MDNSDiscoveryAddress *b)
+{
+    LONG length;
+
+    if (a->da_Family != b->da_Family) {
+        return a->da_Family < b->da_Family ? -1 : 1;
+    }
+    length = a->da_Family == MDNS_DISCOVERY_ADDR_IPV4 ? 4 : 16;
+    return memcmp(a->da_Address, b->da_Address, length);
+}
+
+static void add_address(struct MDNSDiscoveryEvent2 *out, UWORD family,
+    const UBYTE *address, UWORD length)
+{
+    struct MDNSDiscoveryAddress item;
+    UWORD at, count = out->de_AddressCount;
+
+    memset(&item, 0, sizeof(item));
+    item.da_Family = family;
+    memcpy(item.da_Address, address, length);
+    for (at = 0; at < count; at++) {
+        if (compare_address(&item, &out->de_Addresses[at]) < 0) {
+            break;
+        }
+    }
+    if (count == MDNS_DISCOVERY_ADDRESS_MAX) {
+        out->de_Flags |= MDNS_DISCOVERY_ADDRESSES_TRUNCATED;
+        if (at == count) {
+            return;
+        }
+        count--;
+    } else {
+        out->de_AddressCount++;
+    }
+    if (at < count) {
+        memmove(&out->de_Addresses[at + 1], &out->de_Addresses[at],
+            (count - at) * sizeof(item));
+    }
+    out->de_Addresses[at] = item;
+}
+
 static BOOL snapshot(const struct MDNSDaemon *md, struct MDNSDiscovery *d,
-    const UBYTE *key, ULONG link, struct MDNSDiscoveryEvent *out, ULONG now)
+    const UBYTE *key, ULONG link, struct DiscoveryEvent *out, ULONG now)
 {
     const struct DiscoveryRecord *srv = find_record(d, key, link, DNS_TYPE_SRV, now);
     const struct DiscoveryRecord *txt = find_record(d, key, link, DNS_TYPE_TXT, now);
-    const struct DiscoveryRecord *addr;
+    const struct DiscoveryRecord *legacy;
+    struct MDNSDiscoveryEvent2 *event = &out->rich;
     const UBYTE *type = key + key[0] + 1;
-    LONG n;
+    LONG i, n, targetLength;
 
     if (srv == NULL || txt == NULL || key[0] == 0) {
         return FALSE;
     }
-    addr = find_record(d, srv->data + 6, link, DNS_TYPE_A, now);
-    if (addr == NULL || (srv->data[4] == 0 && srv->data[5] == 0)) {
+    if (srv->data[4] == 0 && srv->data[5] == 0) {
         return FALSE;
     }
     memset(out, 0, sizeof(*out));
-    memcpy(out->de_Name, key + 1, key[0]);
+    memcpy(event->de_Name, key + 1, key[0]);
     n = type[0];
     if (n + 5 > MDNS_MAX_TYPE || type[n + 1] != 4) {
         return FALSE;
     }
-    memcpy(out->de_Type, type + 1, n);
-    out->de_Type[n] = '.';
-    memcpy(out->de_Type + n + 1, type + n + 2, 4);
-    out->de_Port = ((UWORD)srv->data[4] << 8) | srv->data[5];
-    memcpy(&out->de_Address, addr->data, 4);
-    out->de_Interface = htonl(interface_address4(md, link));
-    out->de_TXTLength = txt->length;
-    memcpy(out->de_TXT, txt->data, txt->length);
-    return TRUE;
+    memcpy(event->de_Type, type + 1, n);
+    event->de_Type[n] = '.';
+    memcpy(event->de_Type + n + 1, type + n + 2, 4);
+    event->de_Priority = ((UWORD)srv->data[0] << 8) | srv->data[1];
+    event->de_Weight = ((UWORD)srv->data[2] << 8) | srv->data[3];
+    event->de_Port = ((UWORD)srv->data[4] << 8) | srv->data[5];
+    event->de_InterfaceIndex = link;
+    targetLength = key_length(srv->data + 6);
+    if (targetLength == 0) {
+        return FALSE;
+    }
+    event->de_TargetLength = (UWORD)targetLength;
+    memcpy(event->de_Target, srv->data + 6, targetLength);
+    event->de_TXTLength = txt->length;
+    memcpy(event->de_TXT, txt->data, txt->length);
+    for (i = 0; i < DISC_RECORDS; i++) {
+        const struct DiscoveryRecord *addr = &d->records[i];
+
+        if (addr->link != link || due(now, addr->expires) ||
+            !same_key(addr->key, srv->data + 6)) {
+            continue;
+        }
+        if (addr->type == DNS_TYPE_A && addr->length == 4) {
+            add_address(event, MDNS_DISCOVERY_ADDR_IPV4, addr->data, 4);
+        } else if (addr->type == DNS_TYPE_AAAA && addr->length == 16) {
+            add_address(event, MDNS_DISCOVERY_ADDR_IPV6, addr->data, 16);
+        }
+    }
+    legacy = find_record(d, srv->data + 6, link, DNS_TYPE_A, now);
+    if (legacy != NULL) {
+        memcpy(&out->legacyAddress, legacy->data, 4);
+        out->legacyVisible = TRUE;
+    }
+    (void)md;
+    return event->de_AddressCount != 0;
+}
+
+static BOOL legacy_event(const struct MDNSDaemon *md,
+    const struct DiscoveryEvent *from, struct MDNSDiscoveryEvent *to)
+{
+    const struct MDNSDiscoveryEvent2 *event = &from->rich;
+
+    memset(to, 0, sizeof(*to));
+    to->de_Code = event->de_Code;
+    to->de_Interface = htonl(interface_address4(md,
+        event->de_InterfaceIndex));
+    to->de_Port = event->de_Port;
+    to->de_TXTLength = event->de_TXTLength;
+    memcpy(to->de_Name, event->de_Name, sizeof(to->de_Name));
+    memcpy(to->de_Type, event->de_Type, sizeof(to->de_Type));
+    memcpy(to->de_TXT, event->de_TXT, event->de_TXTLength);
+    memcpy(&to->de_Address, &from->legacyAddress, 4);
+    return from->legacyVisible;
+}
+
+static BOOL legacy_changed(const struct MDNSDaemon *md,
+    const struct DiscoveryEvent *a, const struct DiscoveryEvent *b)
+{
+    struct MDNSDiscoveryEvent eventA, eventB;
+
+    if (a->legacyVisible != b->legacyVisible) {
+        return TRUE;
+    }
+    if (!a->legacyVisible) {
+        return FALSE;
+    }
+    (void)legacy_event(md, a, &eventA);
+    (void)legacy_event(md, b, &eventB);
+    return memcmp(&eventA, &eventB, sizeof(eventA)) != 0;
 }
 
 static BOOL is_services(const UBYTE *key)
@@ -625,15 +750,18 @@ static BOOL ptr_owner_matches(const UBYTE *owner, const UBYTE *instance)
 
 /* What a type found by enumeration is told as: its type, no instance. */
 static void type_event(const struct MDNSDaemon *md, const UBYTE *key,
-    ULONG link, struct MDNSDiscoveryEvent *out)
+    ULONG link, struct DiscoveryEvent *out)
 {
+    struct MDNSDiscoveryEvent2 *event = &out->rich;
     LONG n = key[0];
 
     memset(out, 0, sizeof(*out));
-    memcpy(out->de_Type, key + 1, n);
-    out->de_Type[n] = '.';
-    memcpy(out->de_Type + n + 1, key + n + 2, 4);
-    out->de_Interface = htonl(interface_address4(md, link));
+    memcpy(event->de_Type, key + 1, n);
+    event->de_Type[n] = '.';
+    memcpy(event->de_Type + n + 1, key + n + 2, 4);
+    event->de_InterfaceIndex = link;
+    out->legacyVisible = TRUE;
+    (void)md;
 }
 
 static BOOL valid_instance(const UBYTE *key)
@@ -660,20 +788,31 @@ static void hold_address(struct MDNSDiscovery *d, UWORD type, UWORD rclass,
     ULONG ttl, const UBYTE *key, const UBYTE *data, UWORD length,
     ULONG link, ULONG now)
 {
-    struct PendingAddress *slot = &d->pending[0];
+    struct PendingAddress *slot = NULL, *oldest = NULL;
     LONG i;
 
     for (i = 0; i < DISC_PENDING; i++) {
         struct PendingAddress *a = &d->pending[i];
 
-        if (a->type == type && a->link == link && same_key(a->key, key)) {
+        if (a->type == type && a->link == link && a->length == length &&
+            same_key(a->key, key) && memcmp(a->data, data, length) == 0) {
             slot = a;
             break;
         }
-        if (a->link == 0 || due(now, a->received + DISC_PENDING_TICKS) ||
-            (LONG)(a->received - slot->received) < 0) {
-            slot = a;
+        if (a->link == 0 || due(now, a->received + DISC_PENDING_TICKS)) {
+            if (slot == NULL) {
+                slot = a;
+            }
+        } else if (oldest == NULL ||
+            (LONG)(a->received - oldest->received) < 0) {
+            oldest = a;
         }
+    }
+    if (slot == NULL) {
+        slot = oldest;
+    }
+    if (slot == NULL) {
+        return;
     }
     memcpy(slot->key, key, 256);
     memcpy(slot->data, data, length);
@@ -990,7 +1129,8 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
 
         if (v->key[0] != 0 && !v->active) {
             if (v->present) {
-                notify(md, v, MEVENT_REMOVE, v->browsers);
+                notify(md, v, MEVENT_REMOVE, v->browsers,
+                    DISC_NOTIFY_ALL);
             }
             memset(v, 0, sizeof(*v));
         }
@@ -1043,8 +1183,8 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
     }
     for (i = 0; i < DISC_VIEWS; i++) {
         struct DiscoveryView *v = &d->views[i];
-        struct MDNSDiscoveryEvent event;
-        BOOL present, changed;
+        struct DiscoveryEvent event;
+        BOOL present, richChanged = FALSE, legacyChanged = FALSE;
         UWORD added = 0, removed = 0;
 
         if (v->key[0] == 0) {
@@ -1056,10 +1196,12 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
         } else {
             present = snapshot(md, d, v->key, v->link, &event, now);
         }
-        changed = present && v->present &&
-            memcmp(&event, &v->event, sizeof(event)) != 0;
-        for (j = 0; present && v->present && !changed &&
-                j < DISC_SESSIONS; j++) {
+        if (present && v->present) {
+            richChanged = memcmp(&event.rich, &v->event.rich,
+                sizeof(event.rich)) != 0;
+            legacyChanged = legacy_changed(md, &event, &v->event);
+        }
+        for (j = 0; present && v->present && j < DISC_SESSIONS; j++) {
             BOOL was = (v->browsers & (1U << j)) != 0;
             BOOL is = (v->activeBrowsers & (1U << j)) != 0;
 
@@ -1072,16 +1214,24 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
                 added |= (UWORD)(1U << j);
             }
         }
-        if (v->present && (!present || changed)) {
-            notify(md, v, MEVENT_REMOVE, v->browsers);
-        } else if (removed != 0) {
-            notify(md, v, MEVENT_REMOVE, removed);
+        if (v->present) {
+            notify(md, v, MEVENT_REMOVE,
+                !present || legacyChanged ? v->browsers : removed,
+                DISC_NOTIFY_V1);
+            notify(md, v, MEVENT_REMOVE,
+                !present || richChanged ? v->browsers : removed,
+                DISC_NOTIFY_V2);
         }
-        if (present && (!v->present || changed)) {
+        if (present) {
+            BOOL wasPresent = v->present;
+
             v->event = event;
-            notify(md, v, MEVENT_ADD, v->activeBrowsers);
-        } else if (added != 0) {
-            notify(md, v, MEVENT_ADD, added);
+            notify(md, v, MEVENT_ADD,
+                !wasPresent || legacyChanged ? v->activeBrowsers : added,
+                DISC_NOTIFY_V1);
+            notify(md, v, MEVENT_ADD,
+                !wasPresent || richChanged ? v->activeBrowsers : added,
+                DISC_NOTIFY_V2);
         }
         v->present = present;
         v->browsers = v->activeBrowsers;
@@ -1125,12 +1275,12 @@ void mdnsDiscoveryTick(struct MDNSDaemon *md)
             continue;
         }
         if (s->resolve && !s->resolved && !s->failed) {
-            struct MDNSDiscoveryEvent event;
+            struct DiscoveryEvent event;
 
             for (j = 0; rebuild && j < md->md_IfCount; j++) {
                 if (snapshot(md, d, s->key, md->md_Ifs[j].mi_Index,
-                        &event, now)) {
-                    event.de_Code = MEVENT_RESOLVED;
+                        &event, now) && visible(s, &event)) {
+                    event.rich.de_Code = MEVENT_RESOLVED;
                     enqueue(md, s, &event);
                     s->resolved = TRUE;
                     d->changed = TRUE;
@@ -1139,7 +1289,8 @@ void mdnsDiscoveryTick(struct MDNSDaemon *md)
             }
             if (!s->resolved && due(now, s->deadline)) {
                 memset(&event, 0, sizeof(event));
-                event.de_Code = MEVENT_RESOLVE_FAILED;
+                event.rich.de_Code = MEVENT_RESOLVE_FAILED;
+                event.legacyVisible = TRUE;
                 enqueue(md, s, &event);
                 s->resolved = TRUE;
                 d->changed = TRUE;
@@ -1262,6 +1413,11 @@ LONG mdnsDiscoveryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
     if (create) {
         LONG owned = 0;
 
+        if (msg->mi_EventMode != MDNS_EVENT_QUEUE &&
+            msg->mi_EventMode != MDNS_EVENT_QUEUE_V2) {
+            return MDNSERR_BADPARAM;
+        }
+
         for (i = 0; i < DISC_SESSIONS; i++) {
             if (d->sessions[i].handle != NULL && d->sessions[i].owner == msg->mi_TaskID) {
                 owned++;
@@ -1302,6 +1458,7 @@ LONG mdnsDiscoveryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
             memcpy(s->key + 1, msg->mi_Name, length);
         }
         s->owner = msg->mi_TaskID;
+        s->eventMode = msg->mi_EventMode;
         s->handle = (APTR)d->nextHandle++;
         s->interval = 50;
         s->nextQuery = mdnsTicks() + 1 + (mdnsTicks() + s->owner) % 6;
@@ -1317,10 +1474,12 @@ LONG mdnsDiscoveryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
                 (v->type ? same_key(s->key, services_key) :
                     ptr_targets(d, s->key, v->key, v->link,
                         mdnsTicks()))) {
-                struct MDNSDiscoveryEvent event = v->event;
+                struct DiscoveryEvent event = v->event;
 
-                event.de_Code = MEVENT_ADD;
-                enqueue(md, s, &event);
+                event.rich.de_Code = MEVENT_ADD;
+                if (visible(s, &event)) {
+                    enqueue(md, s, &event);
+                }
             }
         }
         return MDNS_OK;
@@ -1335,14 +1494,27 @@ LONG mdnsDiscoveryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
     if (s == NULL) {
         return MDNSERR_BADPARAM;
     }
-    if (msg->mi_Command == MDNS_IPC_READ) {
+    if (msg->mi_Command == MDNS_IPC_READ ||
+        msg->mi_Command == MDNS_IPC_READ2) {
+        if ((msg->mi_Command == MDNS_IPC_READ &&
+                s->eventMode != MDNS_EVENT_QUEUE) ||
+            (msg->mi_Command == MDNS_IPC_READ2 &&
+                s->eventMode != MDNS_EVENT_QUEUE_V2)) {
+            return MDNSERR_BADPARAM;
+        }
         if (s->failed) {
             return MDNSERR_BUSY;
         }
         if (s->count == 0) {
             return MDNSERR_NOTREADY;
         }
-        msg->mi_Event = s->queue[s->head];
+        if (msg->mi_Command == MDNS_IPC_READ) {
+            if (!legacy_event(md, &s->queue[s->head], &msg->mi_Event)) {
+                return MDNSERR_NOTREADY;
+            }
+        } else {
+            msg->mi_Event2 = s->queue[s->head].rich;
+        }
         s->head = (s->head + 1) % DISC_QUEUE;
         s->count--;
         return MDNS_OK;
@@ -1433,7 +1605,7 @@ void mdnsDiscoveryReset(struct MDNSDaemon *md)
     for (i = 0; i < DISC_VIEWS; i++) {
         if (d->views[i].present) {
             notify(md, &d->views[i], MEVENT_REMOVE,
-                d->views[i].browsers);
+                d->views[i].browsers, DISC_NOTIFY_ALL);
         }
     }
     memset(d->records, 0, sizeof(d->records));

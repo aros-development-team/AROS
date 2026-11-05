@@ -47,6 +47,7 @@ mdnsClientMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         msg->mi_Command == MDNS_IPC_RESOLVE ||
         msg->mi_Command == MDNS_IPC_STOPRESOLVE ||
         msg->mi_Command == MDNS_IPC_READ ||
+        msg->mi_Command == MDNS_IPC_READ2 ||
         msg->mi_Command == MDNS_IPC_NOTIFY) {
         msg->mi_Result = mdnsDiscoveryMessage(md, msg);
         return;
