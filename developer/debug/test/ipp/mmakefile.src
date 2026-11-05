@@ -1,0 +1,12 @@
+#
+#   Makefile for AROS Test
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- test : test-ipp
+#MM test-ipp : includes includes-copy linklibs network-includes-copy
+
+%build_progs mmake=test-ipp \
+    files=test_ipp targetdir=$(AROS_TESTS)/ipp
+
+%common
