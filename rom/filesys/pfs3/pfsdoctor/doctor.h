@@ -134,6 +134,8 @@ struct cache
 	struct MinList LRUqueue;
 	struct MinList LRUpool;
 	uint32 linesize;			// linesize in blocks
+	uint32 failedline;		/* most recent failed aligned read */
+	bool readfailed;
 	uint32 nolines;				
 	struct cacheline *cachelines;
 };

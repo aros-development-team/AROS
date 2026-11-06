@@ -104,6 +104,9 @@ error_t AllocBuildBlocks(void)
 				if ((error = WritePFS3Metadata((uint8 *)rbl,
 					ROOTBLOCK + volume.firstblock, volume.blocksize, PFS3_METADATA_ROOT)))
 					goto failed;
+				/* Build-mode data belongs to the build list, not rext. */
+				if (rext.mode == check)
+					free(rext.data);
 				rext.mode = check;
 				rext.data = newrext;
 				newrext = NULL;
