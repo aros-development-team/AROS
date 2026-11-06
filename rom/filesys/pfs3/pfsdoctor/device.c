@@ -77,6 +77,7 @@ error_t InitCache(uint32 linesize, uint32 nolines)
 		return e_out_of_memory;
 	
 	cache.linesize = linesize;
+	cache.readfailed = false;
 	cache.nolines = nolines;
 	NewList((struct List *)&cache.LRUqueue);
 	NewList((struct List *)&cache.LRUpool);
@@ -175,7 +176,7 @@ error_t WritePFS3Metadata(uint8 *data, uint32 bloknr, uint32 bytes,
  */
 static struct cacheline *c_GetCacheLine(uint32 bloknr, error_t *error, bool writing)
 {
-	uint32 i;
+	uint32 i, blocks, line;
 	struct cacheline *cl = NULL;
 	*error = e_none;
 
@@ -191,6 +192,24 @@ static struct cacheline *c_GetCacheLine(uint32 bloknr, error_t *error, bool writ
 
 	if (!cl)
 	{
+		blocks = cache.linesize;
+		line = (bloknr / blocks) * blocks;
+		if (cache.readfailed) {
+			if (line == cache.failedline)
+				blocks = 1;
+			else {
+				/* Never overlap a surviving sector entry with a new full
+				 * line, even if a transient read error has cleared. */
+				for (i = 0; i < cache.nolines; i++) {
+					struct cacheline *sector = &cache.cachelines[i];
+					if (sector->blocks == 1 && sector->blocknr >= line &&
+					    sector->blocknr - line < cache.linesize) {
+						blocks = 1;
+						break;
+					}
+				}
+			}
+		}
 		if (IsMinListEmpty(&cache.LRUpool))
 		{
 			cl = (struct cacheline *)cache.LRUqueue.mlh_TailPred;
@@ -210,21 +229,22 @@ static struct cacheline *c_GetCacheLine(uint32 bloknr, error_t *error, bool writ
 		cl->blocknr = CL_UNUSED;
 		cl->blocks = 0;
 		cl->dirty = false;
-		/* Preserve readable neighbours of a bad sector. Existing larger
-		 * lines retain their own valid length until they are evicted. */
-		if (!writing || cache.linesize != 1)
-			*error = volume.getrawblocks(cl->data, cache.linesize,
-				(bloknr / cache.linesize) * cache.linesize);
-		if (*error == e_read_error && cache.linesize > 1)
+		/* Keep sector fallback local to the damaged line. */
+		if (!writing || blocks != 1)
+			*error = volume.getrawblocks(cl->data, blocks,
+				blocks == 1 ? bloknr : line);
+		if (*error == e_read_error && blocks > 1)
 		{
-			cache.linesize = 1;
+			cache.failedline = line;
+			cache.readfailed = true;
+			blocks = 1;
 			*error = writing ? e_none : volume.getrawblocks(cl->data, 1, bloknr);
 		}
 		if (*error)
 			return NULL;
 		/* A single-sector write replaces the entire buffer. */
-		cl->blocknr = (bloknr / cache.linesize) * cache.linesize;
-		cl->blocks = cache.linesize;
+		cl->blocknr = blocks == 1 ? bloknr : line;
+		cl->blocks = blocks;
 		cl->dirty = false;
 	}
 
