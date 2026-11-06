@@ -1956,6 +1956,11 @@ static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool
 			else
 			{
 				addfileerror("corrupt directory entry");
+				if (entry->next & 1) {
+					if (!ss.incomplete)
+						ss.incomplete = e_syntax_error;
+					break;
+				}
 				entry = NEXTENTRY(entry);
 			}
 		}
@@ -2477,6 +2482,7 @@ static error_t CheckAnode(canode_t *anode, uint32 nr, bool fix)
 error_t SearchInDir(uint32 diranodenr, uint32 target, int *result)
 {
 	uint32 checkpoint = diranodenr, distance = 0, power = 1;
+	uint32 entryanode;
 	canode_t anode;
 	c_dirblock_t dirblk;
 	struct direntry *de;
@@ -2503,12 +2509,21 @@ error_t SearchInDir(uint32 diranodenr, uint32 target, int *result)
 		else if (IsOperationalError(error))
 			goto failed;
 		else if (!error && dirblk.data->id == DBLKID) {
-			for (de = FIRSTENTRY(&dirblk); de->next; de = NEXTENTRY(de))
-				if (de->anode == target) {
+			for (de = FIRSTENTRY(&dirblk); de->next; de = NEXTENTRY(de)) {
+				/* Repair removes odd-sized entries; later entries can still
+				 * be found before compaction, including on 68000/010. */
+				if (de->next & 1)
+					continue;
+				if ((IPTR)de & 1)
+					CopyMem((uint8 *)de + offsetof(struct direntry, anode), &entryanode, sizeof(entryanode));
+				else
+					entryanode = de->anode;
+				if (entryanode == target) {
 					*result = de->type;
 					free(dirblk.data);
 					return e_none;
 				}
+			}
 		}
 		if (anode.next == checkpoint)
 			break;
