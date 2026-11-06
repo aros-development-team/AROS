@@ -177,7 +177,8 @@ static bool SkipCheckReadError(error_t error)
 static void ReportCheckReadError(error_t error, uint32 blocknr)
 {
 	if (SkipCheckReadError(error)) {
-		sprintf(bericht, "unreadable metadata block %lu (check incomplete)", blocknr);
+		sprintf(bericht, "unreadable metadata block %lu (check incomplete)",
+			(unsigned long)blocknr);
 		adderror(bericht);
 	}
 }
