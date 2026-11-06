@@ -41,6 +41,9 @@ enum pcidt_access
 
 #define PCIDT_MAX_BRIDGES 8
 
+/* Regions out of a bridge's 64-bit window that are remembered */
+#define PCIDT_MAX_REGIONS 32
+
 /*
  * How a device's legacy interrupt pin becomes a controller source.
  *
@@ -116,6 +119,21 @@ struct pcidt_bridge
     IPTR                ioPciBase;
     IPTR                ioCpuBase;
     IPTR                ioSize;
+
+    /*
+     * The regions assigned out of the 64-bit window, as found when the
+     * bridge came up and as moved since. A region is resized and placed
+     * by checking against these, which are sized already - sizing a base
+     * register again would disturb a device that is in use.
+     */
+    struct pcidt_region
+    {
+        UQUAD           addr;           /* on the bus */
+        UQUAD           size;
+        UBYTE           bus, dev, sub;
+        UBYTE           reg;            /* config offset of the register */
+    }                   mem64Regions[PCIDT_MAX_REGIONS];
+    ULONG               mem64RegionCount;
 
     /*
      * The controller's own message interrupt. Everything signalled by
@@ -237,6 +255,16 @@ void  PCIDT_WriteConfig(struct pcidt_bridge *b, UBYTE bus, UBYTE dev,
 void  PCIDT_DropBootCfgWindows(struct pcidt_bridge *b);
 void  PCIDT_SetupOutboundWindows(struct pcidt_bridge *b);
 void  PCIDT_EnableDMA(struct pcidt_bridge *b, IPTR base, IPTR size);
+/*
+ * Make sure the controller forwards a span of the 64-bit window, adding
+ * outbound windows where none covers it. Returns the regions it enabled,
+ * as a mask for PCIDT_DropOutbound(), or ~0 if the span cannot be
+ * forwarded (nothing is left enabled then). Bridges that need no address
+ * translation forward everything and return 0.
+ */
+ULONG PCIDT_ForwardOutbound(struct pcidt_bridge *b, IPTR cpu, IPTR pci,
+                            IPTR size);
+void  PCIDT_DropOutbound(struct pcidt_bridge *b, ULONG regions);
 void  PCIDT_DumpLinkState(struct pcidt_bridge *b);
 void  PCIDT_DisableMSI(struct pcidt_bridge *b, UBYTE bus, UBYTE dev,
                        UBYTE sub);
