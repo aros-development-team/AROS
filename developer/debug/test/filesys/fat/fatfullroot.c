@@ -7,10 +7,12 @@
           without an end-of-directory entry; other systems create such
           directories, AROS itself always leaves one. The test writes a
           small FAT32 image whose root directory is one cluster holding
-          exactly 16 short-name entries, mounts it through fdsk.device as
-          FATFULLROOT:, creates a drawer and files in the root and checks
-          that they and the old entries are there. It then dismounts the
-          volume and deletes its files, so it can be run again.
+          exactly 16 short-name entries and an unused data area that is not
+          zero, mounts it through fdsk.device as FATFULLROOT:, creates a
+          drawer, files with long names (one across a cluster boundary) and
+          short names in the root, and checks every name and that the root
+          holds no extra entry. It then dismounts the volume and
+          deletes its files, so it can be run again.
 
           Needs fdsk.device and about 41 MB of free memory (the image is
           kept in RAM:).
@@ -78,13 +80,48 @@ static void fsinfo_sector(UBYTE *s)
     le32(s + 508, 0xaa550000);
 }
 
-/* Writes the whole image: boot, FSInfo, backup boot, the FATs (cluster 2 is
-   the root, one cluster long) and the root with ENTRIES empty files. */
+#define CHUNK        128                /* sectors per Write() */
+#define FILL         0xa5               /* unused data area: not zero, so that
+                                           stale data in a new directory cluster
+                                           would show up as entries */
+
+/* One sector of the image: boot, FSInfo, backup boot, the FATs (cluster 2 is
+   the root, one cluster long), the root with ENTRIES empty files, and the
+   data area after it filled with FILL. */
+static void image_sector(ULONG i, UBYTE *s)
+{
+    memset(s, i > ROOTSECTOR ? FILL : 0, SECTOR);
+    if (i == 0 || i == 6)
+        boot_sector(s);
+    else if (i == 1 || i == 7)
+        fsinfo_sector(s);
+    else if (i == RESERVED || i == RESERVED + FATSECTORS)
+    {
+        le32(s, 0x0ffffff8);
+        le32(s + 4, 0x0fffffff);
+        le32(s + 8, 0x0fffffff);    /* root: end of chain */
+    }
+    else if (i == ROOTSECTOR)
+    {
+        ULONG e;
+
+        for (e = 0; e < ENTRIES; e++)
+        {
+            UBYTE *d = s + e * 32;
+
+            memcpy(d, "F00     TXT", 11);
+            d[1] = '0' + (e + 1) / 10;
+            d[2] = '0' + (e + 1) % 10;
+            d[11] = 0x20;           /* archive; size and cluster 0 */
+        }
+    }
+}
+
 static BOOL write_image(void)
 {
-    UBYTE *s = AllocMem(SECTOR, MEMF_ANY);
+    UBYTE *s = AllocMem(SECTOR * CHUNK, MEMF_ANY);
     BPTR fh;
-    ULONG i;
+    ULONG i, j;
     BOOL ok = TRUE;
 
     if (!s)
@@ -92,41 +129,18 @@ static BOOL write_image(void)
     fh = Open(IMAGE, MODE_NEWFILE);
     if (!fh)
     {
-        FreeMem(s, SECTOR);
+        FreeMem(s, SECTOR * CHUNK);
         return FALSE;
     }
-    for (i = 0; ok && i < SECTORS; i++)
+    for (i = 0; ok && i < SECTORS; i += CHUNK)
     {
-        memset(s, 0, SECTOR);
-        if (i == 0 || i == 6)
-            boot_sector(s);
-        else if (i == 1 || i == 7)
-            fsinfo_sector(s);
-        else if (i == RESERVED || i == RESERVED + FATSECTORS)
-        {
-            le32(s, 0x0ffffff8);
-            le32(s + 4, 0x0fffffff);
-            le32(s + 8, 0x0fffffff);    /* root: end of chain */
-        }
-        else if (i == ROOTSECTOR)
-        {
-            ULONG e;
-
-            for (e = 0; e < ENTRIES; e++)
-            {
-                UBYTE *d = s + e * 32;
-
-                memcpy(d, "F00     TXT", 11);
-                d[1] = '0' + (e + 1) / 10;
-                d[2] = '0' + (e + 1) % 10;
-                d[11] = 0x20;           /* archive; size and cluster 0 */
-            }
-        }
-        ok = Write(fh, s, SECTOR) == SECTOR;
+        for (j = 0; j < CHUNK; j++)
+            image_sector(i + j, s + j * SECTOR);
+        ok = Write(fh, s, SECTOR * CHUNK) == SECTOR * CHUNK;
     }
     if (!Close(fh))
         ok = FALSE;
-    FreeMem(s, SECTOR);
+    FreeMem(s, SECTOR * CHUNK);
     return ok;
 }
 
@@ -196,6 +210,30 @@ static void unmount(void)
     printf("NOTE: the handler did not stop: error %ld\n", (long)err);
 }
 
+/* Entries in the root, counted with ExNext: anything a stale cluster left
+   would show up as an extra entry */
+static LONG count_root(void)
+{
+    BPTR lock = Lock(VOLUME, SHARED_LOCK);
+    struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+    LONG n = -1;
+
+    if (lock && fib && Examine(lock, fib))
+        for (n = 0; ExNext(lock, fib); n++)
+            ;
+    if (fib)
+        FreeDosObject(DOS_FIB, fib);
+    if (lock)
+        UnLock(lock);
+    return n;
+}
+
+#define LONGNAMES 4
+/* 33 characters: three long-name entries and the short one, 4 in all; after
+   NEWDIR (entry 16) the fourth name takes entries 29 to 32 and so crosses
+   from the first added cluster (16-31) into the next */
+#define LONGNAME VOLUME "Long name crossing clusters %ld.txt"
+
 static int test(void);
 
 int main(void)
@@ -213,7 +251,7 @@ int main(void)
 
 static int test(void)
 {
-    char name[64];
+    char name[80];
     LONG fails = 0, i;
     BPTR lock;
 
@@ -248,6 +286,22 @@ static int test(void)
         printf("FAIL: creating a drawer in the full root: error %ld\n", (long)IoErr());
         fails++;
     }
+    /* Long names, the last one across a cluster boundary */
+    for (i = 1; i <= LONGNAMES; i++)
+    {
+        BPTR fh;
+
+        snprintf(name, sizeof(name), LONGNAME, (long)i);
+        fh = Open(name, MODE_NEWFILE);
+        if (fh)
+            Close(fh);
+        else
+        {
+            printf("FAIL: creating %s: error %ld\n", name, (long)IoErr());
+            fails++;
+            break;
+        }
+    }
     /* More entries than fit in the new cluster */
     for (i = 1; i <= ENTRIES + 4; i++)
     {
@@ -263,6 +317,21 @@ static int test(void)
             fails++;
             break;
         }
+    }
+    for (i = 1; i <= LONGNAMES; i++)
+    {
+        snprintf(name, sizeof(name), LONGNAME, (long)i);
+        if (!exists(name))
+        {
+            printf("FAIL: %s not found\n", name);
+            fails++;
+        }
+    }
+    i = count_root();
+    if (i != ENTRIES + 1 + LONGNAMES + ENTRIES + 4)
+    {
+        printf("FAIL: %ld entries in the root, wanted %ld\n", (long)i, (long)(ENTRIES + 1 + LONGNAMES + ENTRIES + 4));
+        fails++;
     }
     for (i = 1; i <= ENTRIES; i++)
     {
