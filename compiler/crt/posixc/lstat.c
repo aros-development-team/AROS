@@ -1,8 +1,6 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
-
-#include <aros/debug.h>
 
 #include <proto/dos.h>
 
@@ -11,11 +9,6 @@
 #include "__posixc_intbase.h"
 #include "__stat.h"
 #include "__upath.h"
-
-/* like Dos_Lock() but no automatic soft link resolution */
-static BPTR __lock(
-    const char* name,
-    LONG        accessMode);
 
 /*****************************************************************************
 
@@ -44,22 +37,27 @@ static BPTR __lock(
         variable errno is set.
 
     NOTES
+        Only the final component of path is exempt from soft link
+        resolution. A path that names a root or ends in a separator has
+        no such component and is resolved like stat().
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-        __posixc_stat(), __posixc_fstat()
+        stat(), fstat(), readlink()
 
     INTERNALS
-        Consult stat() documentation for details.
+        dos.library's Lock() resolves soft links, so the final component is
+        looked up as an entry of its parent directory by __stat_from_path()
+        instead. Consult stat() documentation for details.
 
 ******************************************************************************/
 {
     struct PosixCIntBase *PosixCBase =
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
-    int res = 0;
+    int res;
     BPTR lock;
 
     /* check for empty path before potential conversion from "." to "" */
@@ -73,36 +71,24 @@ static BPTR __lock(
     if (path == NULL)
         return -1;
 
-    lock = __lock(path, SHARED_LOCK);
+    if (*FilePart((CONST_STRPTR)path) != '\0')
+    {
+        /* Lock() would follow a soft link to its target: examine the
+           entry in its parent directory instead. */
+        return __stat_from_path(path, sb);
+    }
+
+    /* A root, or a trailing separator: no final component to preserve */
+    lock = Lock(path, SHARED_LOCK);
     if (!lock)
     {
-        if (   IoErr() == ERROR_IS_SOFT_LINK
-            || IoErr() == ERROR_OBJECT_IN_USE)
-        {
-            /* either the file is already locked exclusively
-               or it is a soft link, in both cases only way
-               to get info about it is to find it in the
-               parent directory with the ExNext() function
-            */
-
-            SetIoErr(0);
-            return __stat_from_path(path, sb);
-        }
-
         errno = __stdc_ioerr2errno(IoErr());
         return -1;
     }
-    else
-        res = __stat(lock, sb, FALSE);
+
+    res = __stat(lock, sb, FALSE);
 
     UnLock(lock);
 
     return res;
-}
-
-static BPTR __lock(
-    const char* name,
-    LONG        accessMode)
-{
-    return Lock(name, accessMode);
 }
