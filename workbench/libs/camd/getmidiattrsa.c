@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 
@@ -91,6 +91,9 @@
 				break;
 			case MIDI_ErrFilter:
 				*where=(IPTR)midinode->mi_ErrFilter;
+				break;
+			case MIDI_SystemClock:
+				*where=(IPTR)((struct MyMidiNode *)midinode)->systemclock;
 				break;
 			case MIDI_ClientType:
 				*where=(IPTR)midinode->mi_ClientType;

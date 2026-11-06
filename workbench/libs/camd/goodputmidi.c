@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: 
 */
@@ -79,7 +79,7 @@
 				midilink2=(struct MidiLink *)node;
 				mymidinode=(struct MyMidiNode *)midilink2->ml_MidiNode;
 				ObtainSemaphore(&mymidinode->receiversemaphore);
-					PutMidi2Link(midilink2,&msg2,*mymidinode->midinode.mi_TimeStamp);
+					PutMidi2Link(midilink2,&msg2,NodeTimeStamp(mymidinode));
 				ReleaseSemaphore(&mymidinode->receiversemaphore);
 				if(driverdata!=NULL){
 					driverdata=Midi2Driver_internal(driverdata,msg,maxbuff)?NULL:driverdata;

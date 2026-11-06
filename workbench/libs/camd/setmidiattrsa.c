@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 
@@ -194,6 +194,9 @@
 				break;
 			case MIDI_ErrFilter:
 				midinode->mi_ErrFilter=(UBYTE)tag->ti_Data;
+				break;
+			case MIDI_SystemClock:
+				mymidinode->systemclock=tag->ti_Data ? TRUE : FALSE;
 				break;
 			case MIDI_ClientType:
 				midinode->mi_ClientType=(UWORD)tag->ti_Data;

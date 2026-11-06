@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: 
 */
@@ -23,6 +23,8 @@ void Receiver_SetError(
 ){
 	struct MidiLink *midilink;
 	struct MyMidiNode *mymidinode;
+
+	AROS_ATOMIC_INC(driverdata->incluster->recverrors);
 
 	ObtainSemaphoreShared(&driverdata->incluster->semaphore);
 
@@ -102,7 +104,7 @@ void Receiver_SuperTreat2(
 						PutMidi2Link(
 							midilink,
 							msg2,
-							*mymidinode->midinode.mi_TimeStamp
+							NodeTimeStamp(mymidinode)
 						);
 					ReleaseSemaphore(&mymidinode->receiversemaphore);
 				}

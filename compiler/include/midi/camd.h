@@ -2,7 +2,7 @@
 #define MIDI_CAMD_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -178,7 +178,8 @@ enum{
 	MIDI_ErrFilter,
 	MIDI_ClientType,
 	MIDI_Image,
-	MIDI_ErrorCode
+	MIDI_ErrorCode,
+	MIDI_SystemClock	/* V42: stamp messages with CamdTime() */
 };
 
 enum{
@@ -252,6 +253,43 @@ struct ClusterNotifyNode{
   struct MinNode cnn_Node;
   struct Task *cnn_Task;
   BYTE cnn_SigBit;
+};
+
+/* camd.library 42 */
+
+/* GetClusterAttrsA() */
+#define MCLA_Base (TAG_USER+0x200)
+enum{
+	MCLA_Name=MCLA_Base,	/* STRPTR */
+	MCLA_Comment,		/* STRPTR, NULL if none */
+	MCLA_Participants,	/* ULONG: links in the cluster */
+	MCLA_PublicParticipants,	/* ULONG: those not MLINK_Private */
+	MCLA_HasDriver,		/* BOOL: a DEVS:Midi driver port is in it */
+	MCLA_Overflows,		/* ULONG: messages dropped, receive queue full */
+	MCLA_SysExDropped,	/* ULONG: SysEx dropped, buffer full */
+	MCLA_RecvErrors		/* ULONG: driver receive errors and overruns */
+};
+
+/* StartClusterWatchA() */
+#define CWA_Base (TAG_USER+0x280)
+enum{
+	CWA_Task=CWA_Base,	/* struct Task *, default the caller */
+	CWA_SigBit		/* BYTE, required */
+};
+
+/* GetClusterWatchEvent() */
+#define CWE_NAMESIZE 64
+
+struct ClusterWatchEvent{
+	ULONG cwe_Type;
+	char cwe_Name[CWE_NAMESIZE];	/* the cluster, cut if longer */
+};
+
+enum{
+	CWE_Added=1,		/* a cluster was created */
+	CWE_Removed,		/* a cluster was removed */
+	CWE_Participants,	/* a link or a driver port joined or left */
+	CWE_Lost		/* events were lost: look at every cluster again */
 };
 
 

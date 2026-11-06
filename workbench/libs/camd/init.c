@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: 
 */
@@ -33,15 +33,21 @@ BOOL InitCamd(struct CamdBase *CamdBase){
 	NEWLIST(&CB(CamdBase)->mymidinodes);
 	NEWLIST(&CB(CamdBase)->midiclusters);
 	NEWLIST(&CB(CamdBase)->clusnotifynodes);
+	NEWLIST((struct List *)&CB(CamdBase)->clusterwatches);
 #else // ???
 	NEWLIST(CB(CamdBase)->mymidinodes);
 	NEWLIST(CB(CamdBase)->midiclusters);
 	NEWLIST(CB(CamdBase)->clusnotifynodes);
+	NEWLIST(CB(CamdBase)->clusterwatches);
 #endif
 #ifndef __amigaos4__
 	InitDriverWatch(CamdBase);
 #endif
-	if(InitCamdTimer()==FALSE) return FALSE;
+	if(InitCamdTimer()==FALSE) goto fail;
+	if(InitCamdClock()==FALSE){
+		UninitCamdTimer();
+		goto fail;
+	}
 	lock=Lock("devs:Midi",ACCESS_READ);
 	if(lock==0){
 		return TRUE;
@@ -60,6 +66,14 @@ BOOL InitCamd(struct CamdBase *CamdBase){
 	}
 	UnLock(lock);
 	return TRUE;
+
+fail:
+#ifndef __amigaos4__
+	StopDriverWatch();
+#endif
+	FreeMem(CB(CamdBase)->CLSemaphore,sizeof(struct SignalSemaphore));
+	CB(CamdBase)->CLSemaphore=NULL;
+	return FALSE;
 }
 
 #ifdef __amigaos4__
@@ -110,6 +124,12 @@ void UninitCamd(struct CamdBase *CamdBase){
 	if(CB(CamdBase)->CLSemaphore!=NULL)
 	  FreeMem(CB(CamdBase)->CLSemaphore,sizeof(struct SignalSemaphore));
 
+	/* Watches a client did not end. */
+	while((node=RemHead((struct List *)&CB(CamdBase)->clusterwatches))){
+		FreeMem(node,sizeof(struct ClusterWatch));
+	}
+
+	UninitCamdClock();
 	UninitCamdTimer();
 }
 

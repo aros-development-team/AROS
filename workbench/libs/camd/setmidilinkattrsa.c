@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/utility.h>
@@ -47,7 +47,7 @@
 
 		- Warning! If another task have locked Camd and is waiting
 		  for you to finish, there will be a deadlock if you try
-		  to change priority or change/set cluster.
+		  to change priority or comment, or change/set cluster.
 
     EXAMPLE
 
@@ -90,14 +90,24 @@
 				midilink->ml_UserData=(void *)tag->ti_Data;
 				break;
 			case MLINK_Comment:
-                          // Not implemented because it's not used.
-                          // if(midilink
-                          break;
+				mycluster=(struct MyMidiCluster *)midilink->ml_Location;
+				if(mycluster!=NULL){
+					ObtainSemaphore(CB(CamdBase)->CLSemaphore);
+					midilink->ml_ClusterComment=(char *)tag->ti_Data;
+					UpdateClusterComment(&mycluster->cluster);
+					ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
+				}else{
+					midilink->ml_ClusterComment=(char *)tag->ti_Data;
+				}
+				break;
 			case MLINK_PortID:
 				midilink->ml_PortID=tag->ti_Data;
 				break;
 			case MLINK_Private:
-				midilink->ml_Flags|=MLF_PrivateLink*tag->ti_Data;
+				if(tag->ti_Data)
+					midilink->ml_Flags|=MLF_PrivateLink;
+				else
+					midilink->ml_Flags&=~MLF_PrivateLink;
 				break;
 			case MLINK_Priority:
 				mycluster=(struct MyMidiCluster *)midilink->ml_Location;
@@ -114,6 +124,7 @@
 						}else{
 							Enqueue(&midilink->ml_Location->mcl_Senders,&midilink->ml_Node);
 						}
+						UpdateClusterComment(midilink->ml_Location);
 					if(type==NT_USER-MLTYPE_Receiver){
 						ReleaseSemaphore(&mycluster->semaphore);
 					}
