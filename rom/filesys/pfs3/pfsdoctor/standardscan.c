@@ -2397,6 +2397,7 @@ static error_t CheckAnode(canode_t *anode, uint32 nr, bool fix)
  */
 error_t SearchInDir(uint32 diranodenr, uint32 target, int *result)
 {
+	uint32 checkpoint = diranodenr, distance = 0, power = 1;
 	canode_t anode;
 	c_dirblock_t dirblk;
 	struct direntry *de;
@@ -2429,6 +2430,13 @@ error_t SearchInDir(uint32 diranodenr, uint32 target, int *result)
 					free(dirblk.data);
 					return e_none;
 				}
+		}
+		if (anode.next == checkpoint)
+			break;
+		if (++distance == power) {
+			checkpoint = anode.next;
+			distance = 0;
+			power = power < 0x80000000UL ? power * 2 : ~(uint32)0;
 		}
 		diranodenr = anode.next;
 	}
