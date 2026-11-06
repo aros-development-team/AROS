@@ -490,7 +490,7 @@ static void xhciInsertTRB(struct PCIController *hc,
         xhciSetPointer(hc, dst->dbp, dma_payload);
     }
 
-    dst->tparams = AROS_LONG2LE(plen & TRB_TPARAMS_DS_TRBLEN_SMASK);
+    dst->tparams = AROS_LONG2LE(plen & (TRB_TPARAMS_DS_TRBLEN_SMASK | TRB_TPARAMS_DS_TDSIZE_MASK));
     dst->flags   = AROS_LONG2LE(trbflags);
 
     /* Ensure the controller observes the freshly written TRB */
@@ -1102,6 +1102,8 @@ WORD xhciQueueData_IO(struct PCIController *hc,
 
         if(trblen > segmax)
             trblen = segmax;
+        if(trblen > 0x10000 - ((payload + offset) & 0xFFFF))
+            trblen = 0x10000 - ((payload + offset) & 0xFFFF);
 
         if(is_ctl_data_stage && offset != 0) {
             txflags = (base_flags & ~TRBF_FLAG_DS_DIR) | TRBF_FLAG_TRTYPE_NORMAL;
@@ -1117,7 +1119,21 @@ WORD xhciQueueData_IO(struct PCIController *hc,
         if(ioconlast && (remaining == trblen))
             txflags |= TRBF_FLAG_IOC;
 
-        queued = xhciQueueTRB_IO(hc, ring, payload + offset, trblen, txflags, ioreq);
+        {
+            ULONG tdsize = 0;
+
+            if(remaining > trblen) {
+                ULONG maxpkt = ((struct IOUsbHWReq *)ioreq)->iouh_MaxPktSize & 0x7ff;
+
+                if(!maxpkt)
+                    maxpkt = 512;
+                tdsize = ((plen + maxpkt - 1) / maxpkt) - ((offset + trblen) / maxpkt);
+                if(tdsize > TRB_TPARAMS_DS_TDSIZE_SMASK)
+                    tdsize = TRB_TPARAMS_DS_TDSIZE_SMASK;
+            }
+            queued = xhciQueueTRB_IO(hc, ring, payload + offset,
+                                     trblen | (tdsize << TRBS_TPARAMS_DS_TDSIZE), txflags, ioreq);
+        }
         if(queued == -1)
             return queued;
 
