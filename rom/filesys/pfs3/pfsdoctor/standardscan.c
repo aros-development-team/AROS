@@ -1943,7 +1943,10 @@ static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool
 			{
 				redosyntax = true;
 				fixedfileerror("removing corrupt directory entry");
-				RemoveDirEntry(entry, &dirblk);
+				if ((error = RemoveDirEntry(entry, &dirblk))) {
+					free(dirblk.data);
+					return error;
+				}
 			}
 			else
 			{
@@ -2250,16 +2253,15 @@ static error_t RemoveDirEntry(struct direntry *de, c_dirblock_t *dirblk)
 
 	dest = (uint8 *)de;
 	source = dest + de->next;
-	movelen = ((uint8 *)(dirblk->data) + SIZEOF_RESBLOCK) - dest;
+	movelen = ((uint8 *)(dirblk->data) + SIZEOF_RESBLOCK) - source;
 	if (movelen > 0 && movelen < SIZEOF_RESBLOCK)
 	{
 		memmove(dest, source, movelen);
-		volume.writeblock((cachedblock_t *)dirblk);
+		return volume.writeblock((cachedblock_t *)dirblk);
 	}
 	else
 		return e_fatal_error;
 
-	return e_none;
 }
 
 
