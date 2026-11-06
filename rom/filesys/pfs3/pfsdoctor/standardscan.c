@@ -875,7 +875,7 @@ static error_t GetRootBlock(void)
 			return error;
 
 		default:
-			return BuildRootBlock_hub();
+			return error;
 	}
 
 	exitblock();
