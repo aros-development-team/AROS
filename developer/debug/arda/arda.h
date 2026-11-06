@@ -3,9 +3,12 @@
 
     ARDA - AROS Remote Debug Agent: shared definitions.
 
-    The agent is a single-threaded, read-only diagnostic server that speaks
-    a line-oriented protocol over one TCP connection at a time.  See
-    host/PROTOCOL.md for the wire format.
+    The agent is a read-only diagnostic server that speaks a line-oriented
+    protocol over TCP.  Where the stack lets the tasks of a program share a
+    library base (SBTC_CAN_SHARE_LIBRARY_BASES), every connection is served
+    by a process of its own, so a command that blocks holds up only its own
+    client; otherwise one connection at a time.  See host/PROTOCOL.md for the
+    wire format.
 */
 
 #ifndef ARDA_H
@@ -13,10 +16,11 @@
 
 #include <exec/types.h>
 #include <exec/libraries.h>
+#include <exec/semaphores.h>
 #include <dos/dos.h>
 
 #define ARDA_PROTOCOL        "1"            /* protocol version, see PROTOCOL.md */
-#define ARDA_AGENT_VERSION   "0.4"
+#define ARDA_AGENT_VERSION   "0.5"
 #define ARDA_DEFAULT_PORT    7777
 #define ARDA_DEFAULT_ADDRESS "127.0.0.1"    /* loopback unless told otherwise */
 #define ARDA_DEFAULT_IDLE    60             /* seconds before an idle client is dropped */
@@ -26,6 +30,8 @@
 #define ARDA_RESP_RESERVE    32             /* kept free for "END TRUNCATED\n" */
 #define ARDA_RECV_CHUNK      512
 #define ARDA_MAX_JOBS        8              /* control mode: RUN job slots */
+#define ARDA_MAX_CLIENTS     4              /* connections served at the same time */
+#define ARDA_CTL_CHUNK       65536          /* control mode: file transfer buffer */
 
 /* A response under construction.  Multi-line responses start with a bare
    "OK" line and finish with "END" (or "END TRUNCATED" when the buffer
@@ -74,21 +80,18 @@ struct ArdaJob
     char            command[256];
 };
 
-struct Arda
+/* State shared by the main process and the connection processes. Commands
+   run one at a time under lock (they share scratch buffers); a command that
+   waits (WAIT, a GET body) lets go of it meanwhile. */
+struct ArdaShared
 {
-    int                 ls;                 /* listening socket, -1 if none */
-    ULONG               port;
-    ULONG               idle_limit;         /* 0 disables the idle timeout */
-    BOOL                quiet;
-    BOOL                running;
-    BOOL                control;            /* CONTROL switch: files, env, jobs, reboot */
-    BOOL                replied;            /* a handler sent its own reply (raw body) */
-    BOOL                reboot;             /* ColdReboot() once the reply is out */
+    struct SignalSemaphore lock;
+    BOOL                shared_base;        /* the stack shares SocketBase between processes */
     struct ArdaJob      jobs[ARDA_MAX_JOBS];
     ULONG               jobseq;
-    struct ArdaClient   client;
-    struct ArdaResp     resp;
-    char                respbuf[ARDA_MAX_RESP];
+    BOOL                reboot;             /* ColdReboot() once the reply is out */
+    ULONG               clients;            /* connection processes running */
+    struct Task        *owner;              /* the main process */
     ULONG               conns;              /* accepted connections */
     ULONG               rejected;           /* connections refused as busy */
     ULONG               cmds;               /* commands dispatched */
@@ -96,8 +99,30 @@ struct Arda
     ULONG               uptime;             /* seconds since start (tick based) */
 };
 
+/* One connection's context (the main process has one too). */
+struct Arda
+{
+    struct ArdaShared  *sh;
+    int                 ls;                 /* listening socket, -1 if none */
+    ULONG               port;
+    ULONG               idle_limit;         /* 0 disables the idle timeout */
+    BOOL                quiet;
+    BOOL                running;
+    BOOL                control;            /* CONTROL switch: files, env, jobs, reboot */
+    BOOL                replied;            /* a handler sent its own reply (raw body) */
+    LONG                sockerr;            /* this process's socket errno (error hook) */
+    char               *ctlbuf;             /* control mode: file transfer buffer */
+    struct ArdaClient   client;
+    struct ArdaResp     resp;
+    char                respbuf[ARDA_MAX_RESP];
+};
+
 /* arda.c */
 void arda_log(struct Arda *a, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+LONG arda_errno(void);                      /* the calling process's socket errno */
+void arda_lock(struct Arda *a);
+void arda_unlock(struct Arda *a);
+BOOL arda_client_start(struct Arda *a, int fd, const char *peer);
 
 /* arda_net.c */
 BOOL arda_net_listen(struct Arda *a, const char *addr, ULONG port);

@@ -383,8 +383,8 @@ void arda_cmd_break(struct Arda *a, char *args)
 
         for (i = 0; i < ARDA_MAX_JOBS; i++)
         {
-            if (a->jobs[i].state != ARDA_JOB_FREE && a->jobs[i].id == b.job)
-                j = &a->jobs[i];
+            if (a->sh->jobs[i].state != ARDA_JOB_FREE && a->sh->jobs[i].id == b.job)
+                j = &a->sh->jobs[i];
         }
         if (!j)
         {

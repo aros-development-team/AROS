@@ -24,7 +24,7 @@ INCLUDE_FILES := ardatrace.h
 
 %build_prog mmake=debug-tools-arda \
     progname=ARDA targetdir=$(AROS_DEBUG) \
-    files="$(FILES)" uselibs="ardatrace"
+    files="$(FILES)" uselibs="ardatrace pthread"
 
 %build_prog mmake=debug-tools-arda-tracetest \
     progname=tracetest targetdir=$(AROS_TESTS)/arda \

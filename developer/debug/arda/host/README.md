@@ -50,7 +50,9 @@ ARDA [PORT=<n>] [ADDRESS=<dotted quad>] [IDLE=<secs>] [QUIET] [CONTROL]
   `ADDRESS=` (the interface address or `0.0.0.0`) and should only be used on
   a trusted development network: the protocol has no authentication.
 * `IDLE` (default 60, 0 = never) drops a client that sends nothing.
-* One client at a time; a second connection gets `ERR 503` and is closed.
+* Up to four clients at once (a thread each) where the stack can share a
+  library base between tasks; otherwise one at a time. A connection over
+  the limit gets `ERR 503` and is closed.
 * Stop it with Ctrl-C / `Break <n> C`; it closes the client, the listening
   socket and every library it opened.
 * Typical: `Run >T:arda.log SYS:Developer/Debug/ARDA ADDRESS=10.0.0.2`

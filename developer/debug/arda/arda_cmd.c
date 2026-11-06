@@ -153,14 +153,14 @@ static void cmd_status(struct Arda *a, char *args)
     arda_resp_begin(&a->resp);
     arda_resp_line(&a->resp, "PROTOCOL=%s", ARDA_PROTOCOL);
     arda_resp_line(&a->resp, "AGENT=%s", ARDA_AGENT_VERSION);
-    arda_resp_line(&a->resp, "UPTIME=%lu", (unsigned long)a->uptime);
+    arda_resp_line(&a->resp, "UPTIME=%lu", (unsigned long)a->sh->uptime);
     arda_resp_line(&a->resp, "PORT=%lu", (unsigned long)a->port);
     arda_resp_line(&a->resp, "IDLE_LIMIT=%lu", (unsigned long)a->idle_limit);
     arda_resp_line(&a->resp, "PEER=%s", a->client.peer);
-    arda_resp_line(&a->resp, "CONNECTIONS=%lu", (unsigned long)a->conns);
-    arda_resp_line(&a->resp, "REJECTED=%lu", (unsigned long)a->rejected);
-    arda_resp_line(&a->resp, "COMMANDS=%lu", (unsigned long)a->cmds);
-    arda_resp_line(&a->resp, "ERRORS=%lu", (unsigned long)a->errors);
+    arda_resp_line(&a->resp, "CONNECTIONS=%lu", (unsigned long)a->sh->conns);
+    arda_resp_line(&a->resp, "REJECTED=%lu", (unsigned long)a->sh->rejected);
+    arda_resp_line(&a->resp, "COMMANDS=%lu", (unsigned long)a->sh->cmds);
+    arda_resp_line(&a->resp, "ERRORS=%lu", (unsigned long)a->sh->errors);
     arda_resp_line(&a->resp, "MAX_LINE=%d", ARDA_MAX_LINE);
     arda_resp_line(&a->resp, "MAX_RESPONSE=%d", ARDA_MAX_RESP);
     arda_resp_line(&a->resp, "CONTROL=%d", a->control ? 1 : 0);
@@ -241,7 +241,7 @@ void arda_dispatch(struct Arda *a, char *line)
     while (p > args && (p[-1] == ' ' || p[-1] == '\t'))
         *--p = '\0';
 
-    a->cmds++;
+    a->sh->cmds++;
     for (c = commands; c->name; c++)
     {
         if (strcmp(c->name, word) == 0)
@@ -270,7 +270,7 @@ void arda_dispatch(struct Arda *a, char *line)
     }
 
     if (strncmp(a->resp.buf, "ERR ", 4) == 0)
-        a->errors++;
+        a->sh->errors++;
 
     arda_net_reply(a);
 }

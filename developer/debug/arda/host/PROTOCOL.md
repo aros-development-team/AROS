@@ -1,16 +1,22 @@
 # ARDA wire protocol, version 1
 
 ARDA (AROS Remote Debug Agent) speaks a line-oriented, text-only protocol
-over a single TCP connection.  The agent serves one client at a time and is
-strictly read-only: no command changes system state, runs programs, writes
+over TCP connections.  The agent serves up to four clients at the same time
+where the TCP/IP stack allows it (see Transport), and is strictly read-only: no command changes system state, runs programs, writes
 memory or files, or stops tasks.
 
 ## Transport
 
 * TCP, default port 7777, default bind address 127.0.0.1.  Remote access
   needs an explicit `ADDRESS=` on the agent command line.
-* One client at a time.  A second connection is answered with
-  `ERR 503 busy, one client at a time` and closed immediately.
+* Up to four clients at the same time, each served by a thread of its own,
+  where the stack lets the tasks of a program share a library base
+  (`SBTC_CAN_SHARE_LIBRARY_BASES`): a command that blocks (`WAIT`, a `GET`
+  body) holds up only its own client. Commands themselves run one at a
+  time. A further connection is answered with `ERR 503 busy, too many
+  clients` and closed immediately.
+* On a stack that cannot share a base: one client at a time, and a second
+  connection is answered with `ERR 503 busy, one client at a time`.
 * The agent drops a client that sends nothing for `IDLE` seconds (default
   60, `IDLE=0` disables) after sending `ERR 408 idle timeout, closing`.
 * Lines end with `\n`; a trailing `\r` is stripped.  Empty lines are ignored.
@@ -60,7 +66,7 @@ Error codes (HTTP-flavoured for familiarity):
 | 408  | idle timeout, connection is being closed   |
 | 500  | internal error in the agent                |
 | 501  | command known but not available on this system (e.g. resource missing) |
-| 503  | agent busy with another client             |
+| 503  | agent busy: too many clients               |
 
 ## Commands (protocol 1)
 
