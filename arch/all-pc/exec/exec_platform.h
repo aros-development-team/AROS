@@ -286,10 +286,15 @@ extern void Kernel_53_KrnSpinUnLock(spinlock_t *, void *);
     })
 #define GET_THIS_TASK \
     ({ \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
+        struct X86SchedulerPrivate  *__schd; \
         struct Task *__ret = NULL; \
+        unsigned long __gtt_flags; \
+        __asm__ __volatile__("pushf\n\tpop %0\n\tcli" : "=r"(__gtt_flags) : : "memory"); \
+        __schd = TLS_GET(ScheduleData); \
         if (__schd) \
             __ret = __schd->RunningTask; \
+        if (__gtt_flags & 0x200) \
+            __asm__ __volatile__("sti" : : : "memory"); \
         __ret;  \
     })
 #define SET_THIS_TASK(x)         \
