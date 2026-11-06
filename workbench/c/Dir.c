@@ -681,7 +681,9 @@ LONG doDir(CONST_STRPTR dir, struct DirLock *path, BOOL all, BOOL doDirs,
                 error = RETURN_FAIL;
             }
 
-            if (error == 0 && doDirs)
+            /* ALL walks the subdirectories even when only files are
+               listed; their names are shown only when directories are */
+            if (error == 0 && (doDirs || all))
             {
                 if (dirs.num != 0)
                 {
