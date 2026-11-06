@@ -354,7 +354,7 @@ BOOL    vcgfx_scanout_alloc(struct VideoCoreGfx_staticdata *xsd,
                             struct vcgfx_scanbuf *sb, ULONG size);
 void    vcgfx_scanout_free(struct VideoCoreGfx_staticdata *xsd,
                            struct vcgfx_scanbuf *sb);
-void    vcgfx_show(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
+BOOL    vcgfx_show(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
                    IPTR scalemode, ULONG scalew, ULONG scaleh);
 void    vcgfx_mirror_rect(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
                           LONG x, LONG y, LONG w, LONG h);

@@ -559,9 +559,11 @@ static void planes_try(struct VideoCoreGfx_staticdata *xsd)
  * from its own pages and panned by its LeftEdge/TopEdge, its mode the
  * display's pixels. One the HVS can't show - not ours, not in scanout
  * memory, or over the budget - is copied into the fb behind instead, and
- * kept up to date by vcgfx_mirror_rect(). The overlay planes stay.
+ * kept up to date by vcgfx_mirror_rect(). The overlay planes stay. Only
+ * a plane scales: one asked to scale that gets none is not shown, and
+ * FALSE tells the compositor to compose it instead.
  */
-void vcgfx_show(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
+BOOL vcgfx_show(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
                 IPTR scalemode, ULONG scalew, ULONG scaleh)
 {
     OOP_Class *offcl = xsd->vcsd_VideoCoreGfxOffBMClass;
@@ -630,6 +632,11 @@ void vcgfx_show(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
     }
     VC4_MBOX_UNLOCK(xsd);
 
+    if (bm && !shown && (scalemode != vHidd_ModeID_Invalid))
+    {
+        ReleaseSemaphore(&xsd->vcsd_ShowLock);
+        return FALSE;
+    }
     if (bm && !shown)
     {
         struct BitmapData *fb;
@@ -644,6 +651,7 @@ void vcgfx_show(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
         mirror_copy(xsd, bm, 0, 0, 0x7fff, 0x7fff);
     }
     ReleaseSemaphore(&xsd->vcsd_ShowLock);
+    return TRUE;
 }
 
 /* A bitmap was drawn to: the mirrored one passes the change to the fb. */

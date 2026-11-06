@@ -2992,7 +2992,8 @@ static BOOL HIDDCompositorPrimaryScales(struct HIDDCompositorData *compdata, str
     struct HIDD_PlaneInfo *pi = compdata->planes;
     ULONG sx, sy;
 
-    if (!pi || !compdata->planecount || (pi->Type != vHidd_Plane_Primary) || !n->scrw || !n->scrh)
+    if (!pi || !compdata->planecount || (pi->Type != vHidd_Plane_Primary) || !n->scrw || !n->scrh
+        || n->scaledenied)
         return FALSE;
     sx = (ULONG)(((UQUAD)n->dstw << 16) / n->scrw);
     sy = (ULONG)(((UQUAD)n->dsth << 16) / n->scrh);
@@ -3063,7 +3064,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
     OOP_Object *newsdispbitmap = NULL;
     OOP_Object *fb = NULL;
 
-    BOOL ok = TRUE, composit = FALSE;
+    BOOL ok = TRUE, composit = FALSE, retry = FALSE;
 
     fb = comp_FrameBuffer(compdata);
 
@@ -3238,6 +3239,13 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
         compdata->screenbitmap = HIDD_Display_Show(compdata->display, newsdispbitmap, showflags);
         DTOGGLE(bug("[Compositor] %s: Displayed HiddBitMap 0x%p, Show returned 0x%p\n", __func__, newsdispbitmap, compdata->screenbitmap));
 
+        /* The driver could not scale it after all (no plane for it): compose it instead */
+        if (!compdata->screenbitmap && (showflags & fHidd_Display_Show_Scale))
+        {
+            topnode->scaledenied = TRUE;
+            retry = TRUE;
+        }
+
         /* After Show we need Update for mirroring drivers */
         if (compdata->screenbitmap)
         {
@@ -3278,6 +3286,10 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
             HIDDCompositorFreeSurfaceBitMap(compdata);
         ReleaseSemaphore(&compdata->surfacesem);
     }
+
+    /* Once more, composing this time; the mode change is still to be made */
+    if (retry)
+        return HIDDCompositorToggleCompositing(compdata, TRUE);
 
     /* Handled */
     compdata->modeschanged = FALSE;

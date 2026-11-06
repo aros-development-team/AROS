@@ -199,7 +199,9 @@ struct HIDD_ViewPortData
 
 /* Show the bitmap scaled to fill the display, driven in the compositor's
    aHidd_Compositor_DisplayMode rather than in the bitmap's own mode. Only
-   used where the primary plane's HIDD_PlaneInfo scale range allows it */
+   used where the primary plane's HIDD_PlaneInfo scale range allows it. A
+   driver that cannot scale this bitmap after all (no plane for it) shows
+   nothing new and returns NULL; the compositor then composes it */
 #define fHidd_Display_Show_Scale    0x02
 
 enum

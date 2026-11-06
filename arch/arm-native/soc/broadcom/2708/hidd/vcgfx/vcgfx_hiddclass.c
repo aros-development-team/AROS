@@ -462,9 +462,11 @@ OOP_Object *MNAME_DISPLAY(Show)(OOP_Class *cl, OOP_Object *o, struct pHidd_Displ
             vc4_fb_new(cl, o, msg->bitMap);
         if (!xsd->vcsd_FBObj)
             return NULL;
-        if (msg->flags & fHidd_Display_Show_Scale)
-            vc4_scale_mode(cl, o, &smode, &sw, &sh);
-        vcgfx_show(xsd, msg->bitMap, smode, sw, sh);
+        /* Asked to scale and cannot: NULL, the compositor composes instead */
+        if ((msg->flags & fHidd_Display_Show_Scale) && !vc4_scale_mode(cl, o, &smode, &sw, &sh))
+            return NULL;
+        if (!vcgfx_show(xsd, msg->bitMap, smode, sw, sh))
+            return NULL;
     }
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }

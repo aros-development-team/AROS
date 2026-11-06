@@ -89,6 +89,7 @@ struct StackBitMapNode
     BOOL            promoted;           /* plane assignment in progress: gets a plane */
     BOOL            planedenied;        /* lost its plane in this pass's test loop */
     BOOL            underlaid;          /* its plane blends over planes below it, its underlays */
+    BOOL            scaledenied;        /* Show() could not scale it: composed instead */
     /*
      * Geometry: the screen bitmap is scrw x scrh pixels and takes dstw x dsth
      * pixels on the display. They differ (scaled) only with ModePolicy_Native,
