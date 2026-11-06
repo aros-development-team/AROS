@@ -332,6 +332,8 @@ int main(int argc, char *argv[])
 
 	if (OpenVolume()) {
 		result = StandardScan(opties) == e_none ? RETURN_OK : RETURN_FAIL;
+		if (result == RETURN_OK && (mode == check || mode == search) && stats.numerrors)
+			result = RETURN_WARN;
 	}
 	CloseVolume();
 
