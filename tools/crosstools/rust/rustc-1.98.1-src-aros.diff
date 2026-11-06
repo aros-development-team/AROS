@@ -1061,6 +1061,27 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
              _ => PathBuf::from("/tmp"),
          }
      })
+@@ -418,8 +429,20 @@
+     return crate::env::var_os("HOME")
+         .filter(|s| !s.is_empty())
+         .or_else(|| unsafe { fallback() })
++        .or_else(progdir)
+         .map(PathBuf::from);
+ 
++    // AROS: with no home directory, a program keeps its files in its own
++    // directory
++    #[cfg(target_os = "aros")]
++    fn progdir() -> Option<OsString> {
++        Some(OsString::from("PROGDIR:"))
++    }
++    #[cfg(not(target_os = "aros"))]
++    fn progdir() -> Option<OsString> {
++        None
++    }
++
+     #[cfg(any(
+         target_os = "android",
+         target_os = "emscripten",
 diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/library/std/src/sys/personality/mod.rs rustc-1.98.1-src/library/std/src/sys/personality/mod.rs
 --- rustc-1.98.1-src.orig/library/std/src/sys/personality/mod.rs	2026-09-01 06:56:03.000000000 +0000
 +++ rustc-1.98.1-src/library/std/src/sys/personality/mod.rs	2026-09-14 11:39:18.538133465 +0000
@@ -2532,17 +2553,20 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +}
 diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/aros/net.rs rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/net.rs
 --- rustc-1.98.1-src.orig/vendor/libc-0.2.185/src/unix/aros/net.rs	1970-01-01 00:00:00.000000000 +0000
-+++ rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/net.rs	2026-10-17 19:43:03.347364047 +0000
-@@ -0,0 +1,533 @@
++++ rustc-1.98.1-src/vendor/libc-0.2.185/src/unix/aros/net.rs	2026-11-06 03:00:00.000000000 +0000
+@@ -0,0 +1,722 @@
 +//! Sockets, `poll()` and name resolution through bsdsocket.library.
 +//!
-+//! bsdsocket accepts calls on a library base only from the task that opened
-+//! it, and a socket is reachable only through the base whose descriptor table
-+//! holds it. So every thread opens a base of its own on first use (closed
-+//! again when the thread ends), and a socket works on the thread that created
-+//! or accepted it; another thread gets EBADF from the socket calls. The
-+//! descriptors are fd.library numbers shared with posixc, so close(), read(),
-+//! write(), fcntl() and ioctl() on a socket are posixc's as for any file.
++//! A program uses one bsdsocket base from all of its threads: the first
++//! thread to use sockets opens it and makes it the program's with
++//! `SBTC_CAN_SHARE_LIBRARY_BASES`, so a socket works on any thread, whichever
++//! created it. The stack hands errno to the calling thread through
++//! `SBTC_ERROR_HOOK`. A stack that cannot share a base gets a base per
++//! thread, opened on first use and closed when the thread ends; a socket
++//! then works only on the thread that created or accepted it. The
++//! descriptors are fd.library numbers shared with posixc, so close(),
++//! read(), write(), fcntl() and ioctl() on a socket are posixc's as for any
++//! file.
 +//!
 +//! The calls go through the base's jump table with the base as the last
 +//! argument, which is the AROS library ABI of x86_64 and riscv64; the other
@@ -2552,7 +2576,7 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +use core::ops::Drop;
 +use core::option::Option::{self, None, Some};
 +use core::ptr;
-+use core::sync::atomic::{AtomicU32, Ordering};
++use core::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
 +
 +use crate::*;
 +
@@ -2581,14 +2605,177 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +const BSDSOCKET_NAME: &[u8] = b"bsdsocket.library\0";
 +const BSDSOCKET_VERSION: u32 = 4;
 +
-+/// The thread-specific-data key holding each thread's base; 0 while unset,
-+/// key + 1 once created, `u32::MAX` while being created.
-+static BASE_KEY: AtomicU32 = AtomicU32::new(0);
++unsafe fn open_base() -> *mut c_void {
++    // exec OpenLibrary(), LVO 92
++    libcall!(
++        SysBase,
++        92,
++        fn(*const c_char, u32) -> *mut c_void,
++        BSDSOCKET_NAME.as_ptr() as *const c_char,
++        BSDSOCKET_VERSION
++    )
++}
 +
 +unsafe fn close_base(base: *mut c_void) {
 +    // exec CloseLibrary(), LVO 69
 +    libcall!(SysBase, 69, fn(*mut c_void) -> (), base);
 +}
++
++/// utility.library's `struct TagItem`.
++#[repr(C)]
++struct TagItem {
++    ti_tag: usize,
++    ti_data: usize,
++}
++
++const TAG_USER: usize = 1 << 31;
++const SBTC_BREAKMASK: usize = 1;
++const SBTC_CAN_SHARE_LIBRARY_BASES: usize = 51;
++const SBTC_ERROR_HOOK: usize = 68;
++
++/// SocketBaseTagList() with one SBTM_SETVAL(`code`) item; whether the stack
++/// took it.
++unsafe fn set_base_tag(base: *mut c_void, code: usize, value: usize) -> bool {
++    let mut tags = [
++        TagItem { ti_tag: TAG_USER | (code << 1) | 1, ti_data: value },
++        TagItem { ti_tag: 0, ti_data: 0 },
++    ];
++    // SocketBaseTagList(), LVO 49
++    libcall!(base, 49, fn(*mut TagItem) -> u32, tags.as_mut_ptr()) == 0
++}
++
++/// exec's `struct Hook`.
++#[repr(C)]
++struct Hook {
++    h_min_node: [*mut c_void; 2],
++    h_entry: unsafe extern "C" fn(*mut Hook, *mut c_void, *const ErrorHookMsg) -> usize,
++    h_sub_entry: *mut c_void,
++    h_data: *mut c_void,
++}
++
++/// The message of the `SBTC_ERROR_HOOK` hook (libraries/bsdsocket.h).
++#[repr(C)]
++struct ErrorHookMsg {
++    ehm_size: u32,
++    ehm_action: u32,
++    ehm_code: i32,
++}
++
++const EHMA_SET_ERRNO: u32 = 1;
++
++/// The stack calls the hook on the thread that made the failing call, so
++/// the errno to set is that thread's.
++unsafe extern "C" fn set_thread_errno(
++    _hook: *mut Hook,
++    _reserved: *mut c_void,
++    msg: *const ErrorHookMsg,
++) -> usize {
++    if !msg.is_null() && (*msg).ehm_size >= 12 && (*msg).ehm_action == EHMA_SET_ERRNO {
++        *__stdc_geterrnoptr() = (*msg).ehm_code as c_int;
++    }
++    0
++}
++
++struct ErrorHook(Hook);
++// The stack only reads the hook.
++unsafe impl core::marker::Sync for ErrorHook {}
++
++static ERROR_HOOK: ErrorHook = ErrorHook(Hook {
++    h_min_node: [ptr::null_mut(); 2],
++    h_entry: set_thread_errno,
++    h_sub_entry: ptr::null_mut(),
++    h_data: ptr::null_mut(),
++});
++
++/// The program's base: one of these states, or the base itself.
++static TASK_BASE: AtomicUsize = AtomicUsize::new(TASK_BASE_UNOPENED);
++const TASK_BASE_UNOPENED: usize = 0;
++const TASK_BASE_OPENING: usize = 1;
++/// The stack cannot share a base: every thread opens its own.
++const TASK_BASE_PER_THREAD: usize = 2;
++/// Closed at exit.
++const TASK_BASE_CLOSED: usize = 3;
++
++/// No key destructor runs for the main task, which is the one calling exit().
++extern "C" fn close_task_base() {
++    let base = TASK_BASE.swap(TASK_BASE_CLOSED, Ordering::AcqRel);
++    if base > TASK_BASE_CLOSED {
++        unsafe { close_base(base as *mut c_void) };
++    }
++}
++
++/// Opens the program's base, or leaves the base opened for the attempt as
++/// this thread's when the stack cannot share it. Called while the state is
++/// `TASK_BASE_OPENING`.
++unsafe fn open_task_base() -> *mut c_void {
++    let base = open_base();
++    if base.is_null() {
++        // no TCP/IP stack running: try again on the next call
++        TASK_BASE.store(TASK_BASE_UNOPENED, Ordering::Release);
++        *__stdc_geterrnoptr() = ENETDOWN;
++        return ptr::null_mut();
++    }
++    // The hook first: a base that ends up this thread's may keep it.
++    if set_base_tag(base, SBTC_ERROR_HOOK, &ERROR_HOOK.0 as *const Hook as usize)
++        && set_base_tag(base, SBTC_CAN_SHARE_LIBRARY_BASES, 1)
++    {
++        // No signal breaks a call with EINTR, as a POSIX signal without a
++        // handler would not: std retries EINTR, and a CTRL-C the program does
++        // not take would stay set and break every retry.
++        set_base_tag(base, SBTC_BREAKMASK, 0);
++        atexit(close_task_base);
++        TASK_BASE.store(base as usize, Ordering::Release);
++        return base;
++    }
++    let thread = adopt_thread_base(base);
++    TASK_BASE.store(TASK_BASE_PER_THREAD, Ordering::Release);
++    thread
++}
++
++/// The base for a socket call on this thread, opened on first use. Errors
++/// set errno and give null.
++unsafe fn base() -> *mut c_void {
++    loop {
++        match TASK_BASE.load(Ordering::Acquire) {
++            TASK_BASE_UNOPENED => {
++                if TASK_BASE
++                    .compare_exchange(
++                        TASK_BASE_UNOPENED,
++                        TASK_BASE_OPENING,
++                        Ordering::AcqRel,
++                        Ordering::Acquire,
++                    )
++                    .is_ok()
++                {
++                    return open_task_base();
++                }
++            }
++            TASK_BASE_OPENING => {
++                sched_yield();
++            }
++            TASK_BASE_PER_THREAD => return thread_base(),
++            TASK_BASE_CLOSED => {
++                *__stdc_geterrnoptr() = ENETDOWN;
++                return ptr::null_mut();
++            }
++            base => return base as *mut c_void,
++        }
++    }
++}
++
++/// The base a socket of this thread would be in, if one is open.
++unsafe fn current_base() -> *mut c_void {
++    match TASK_BASE.load(Ordering::Acquire) {
++        TASK_BASE_UNOPENED | TASK_BASE_OPENING | TASK_BASE_CLOSED => ptr::null_mut(),
++        TASK_BASE_PER_THREAD => current_thread_base(),
++        base => base as *mut c_void,
++    }
++}
++
++/// The thread-specific-data key holding each thread's base when the stack
++/// cannot share one; 0 while unset, key + 1 once created, `u32::MAX` while
++/// being created.
++static BASE_KEY: AtomicU32 = AtomicU32::new(0);
 +
 +unsafe extern "C" fn thread_base_dtor(base: *mut c_void) {
 +    if !base.is_null() {
@@ -2599,7 +2786,7 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +/// No key destructor runs for the main task, which is the one calling exit().
 +extern "C" fn close_exiting_base() {
 +    unsafe {
-+        let base = current_base();
++        let base = current_thread_base();
 +        if !base.is_null() {
 +            pthread_setspecific((BASE_KEY.load(Ordering::Acquire) - 1) as pthread_key_t, ptr::null());
 +            close_base(base);
@@ -2634,36 +2821,21 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +}
 +
 +/// This thread's base, if it has opened one.
-+unsafe fn current_base() -> *mut c_void {
++unsafe fn current_thread_base() -> *mut c_void {
 +    match BASE_KEY.load(Ordering::Acquire) {
 +        0 | u32::MAX => ptr::null_mut(),
 +        k => pthread_getspecific((k - 1) as pthread_key_t),
 +    }
 +}
 +
-+/// This thread's base, opened on first use. Errors set errno and give null.
-+unsafe fn thread_base() -> *mut c_void {
-+    let base = current_base();
-+    if !base.is_null() {
-+        return base;
-+    }
++/// Makes `base`, opened by this thread, the thread's base. Errors close it,
++/// set errno and give null.
++unsafe fn adopt_thread_base(base: *mut c_void) -> *mut c_void {
 +    let Some(key) = base_key() else {
++        close_base(base);
 +        *__stdc_geterrnoptr() = ENOMEM;
 +        return ptr::null_mut();
 +    };
-+    // exec OpenLibrary(), LVO 92
-+    let base = libcall!(
-+        SysBase,
-+        92,
-+        fn(*const c_char, u32) -> *mut c_void,
-+        BSDSOCKET_NAME.as_ptr() as *const c_char,
-+        BSDSOCKET_VERSION
-+    );
-+    if base.is_null() {
-+        // no TCP/IP stack running
-+        *__stdc_geterrnoptr() = ENETDOWN;
-+        return ptr::null_mut();
-+    }
 +    // SetErrnoPtr(), LVO 28: the stack's errno numbers are posixc's
 +    libcall!(
 +        base,
@@ -2681,13 +2853,28 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +    base
 +}
 +
-+/// Defines socket functions as calls of bsdsocket function `$lvo` on this
-+/// thread's base, returning -1 when there is none.
++/// This thread's base, opened on first use, when the stack cannot share one.
++unsafe fn thread_base() -> *mut c_void {
++    let base = current_thread_base();
++    if !base.is_null() {
++        return base;
++    }
++    let base = open_base();
++    if base.is_null() {
++        // no TCP/IP stack running
++        *__stdc_geterrnoptr() = ENETDOWN;
++        return ptr::null_mut();
++    }
++    adopt_thread_base(base)
++}
++
++/// Defines socket functions as calls of bsdsocket function `$lvo` on the
++/// base, returning -1 when there is none.
 +macro_rules! bsdsocket_fns {
 +    ($(pub fn $name:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty = $lvo:literal;)*) => {$(
 +        #[no_mangle]
 +        pub unsafe extern "C" fn $name($($arg: $ty),*) -> $ret {
-+            let base = thread_base();
++            let base = base();
 +            if base.is_null() {
 +                return -1;
 +            }
@@ -2725,7 +2912,7 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +
 +#[no_mangle]
 +pub unsafe extern "C" fn send(socket: c_int, buf: *const c_void, len: size_t, flags: c_int) -> isize {
-+    let base = thread_base();
++    let base = base();
 +    if base.is_null() {
 +        return -1;
 +    }
@@ -2735,7 +2922,7 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +
 +#[no_mangle]
 +pub unsafe extern "C" fn recv(socket: c_int, buf: *mut c_void, len: size_t, flags: c_int) -> isize {
-+    let base = thread_base();
++    let base = base();
 +    if base.is_null() {
 +        return -1;
 +    }
@@ -2752,7 +2939,7 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +    addr: *const sockaddr,
 +    addrlen: socklen_t,
 +) -> isize {
-+    let base = thread_base();
++    let base = base();
 +    if base.is_null() {
 +        return -1;
 +    }
@@ -2769,7 +2956,7 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +    addr: *mut sockaddr,
 +    addrlen: *mut socklen_t,
 +) -> isize {
-+    let base = thread_base();
++    let base = base();
 +    if base.is_null() {
 +        return -1;
 +    }
@@ -2843,7 +3030,7 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +    res: *mut *mut addrinfo,
 +) -> c_int {
 +    *res = ptr::null_mut();
-+    let base = thread_base();
++    let base = base();
 +    if base.is_null() {
 +        return EAI_SYSTEM;
 +    }
@@ -2897,7 +3084,7 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +
 +#[no_mangle]
 +pub unsafe extern "C" fn gai_strerror(errcode: c_int) -> *const c_char {
-+    let base = thread_base();
++    let base = base();
 +    if base.is_null() {
 +        return c"name resolution is not available".as_ptr();
 +    }
@@ -2915,8 +3102,8 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +    c"host name lookup failure".as_ptr()
 +}
 +
-+/// Whether `fd` is a socket in this thread's descriptor table.
-+unsafe fn is_thread_socket(base: *mut c_void, fd: c_int) -> bool {
++/// Whether `fd` is a socket in the descriptor table of `base`.
++unsafe fn is_socket(base: *mut c_void, fd: c_int) -> bool {
 +    let mut ty: c_int = 0;
 +    let mut len = core::mem::size_of::<c_int>() as socklen_t;
 +    let errno = *__stdc_geterrnoptr();
@@ -2975,12 +3162,27 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +    }
 +}
 +
-+/// poll() over WaitSelect(). Descriptors that are not sockets of this thread
++/// poll() over WaitSelect(). Descriptors that are not sockets of the base
 +/// (posixc files, consoles, pipes) are reported ready for what was asked, as
 +/// select() would for a regular file; with any of them ready the sockets are
 +/// only checked, not waited for.
 +#[no_mangle]
 +pub unsafe extern "C" fn poll(fds: *mut pollfd, nfds: nfds_t, timeout: c_int) -> c_int {
++    poll_signals(fds, nfds, timeout, ptr::null_mut())
++}
++
++/// poll() that also returns when the calling thread gets one of the exec
++/// signals in `*sigmask`, which then holds the signals that came (0 for
++/// none). Waiting needs the TCP/IP stack: with no socket among `fds` a wait
++/// is refused with ENOSYS unless the stack is in use already. A null
++/// `sigmask` makes it poll().
++#[no_mangle]
++pub unsafe extern "C" fn poll_signals(
++    fds: *mut pollfd,
++    nfds: nfds_t,
++    timeout: c_int,
++    sigmask: *mut u32,
++) -> c_int {
 +    let fds = core::slice::from_raw_parts_mut(fds, nfds as usize);
 +    let base = current_base();
 +    let mut ready = 0;
@@ -2990,7 +3192,7 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +        if p.fd < 0 {
 +            continue;
 +        }
-+        if !base.is_null() && is_thread_socket(base, p.fd) {
++        if !base.is_null() && is_socket(base, p.fd) {
 +            maxfd = maxfd.max(p.fd);
 +        } else {
 +            p.revents = p.events & (POLLIN | POLLOUT);
@@ -2999,7 +3201,15 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +            }
 +        }
 +    }
-+    if maxfd < 0 {
++    let signals = if sigmask.is_null() { 0 } else { *sigmask };
++    if maxfd < 0 && (signals == 0 || base.is_null()) {
++        if signals != 0 {
++            if ready == 0 && timeout != 0 {
++                *__stdc_geterrnoptr() = ENOSYS;
++                return -1;
++            }
++            *sigmask = 0;
++        }
 +        // nothing to wait for but the timeout
 +        if ready == 0 && timeout != 0 {
 +            loop {
@@ -3012,7 +3222,7 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +        return ready;
 +    }
 +
-+    let Some(mut sets) = FdSets::new(maxfd) else {
++    let Some(mut sets) = FdSets::new(maxfd.max(0)) else {
 +        *__stdc_geterrnoptr() = ENOMEM;
 +        return -1;
 +    };
@@ -3041,10 +3251,10 @@ diff -ruN -x build -x bootstrap.toml -x '*.orig' -x '*.rej' rustc-1.98.1-src.ori
 +        &mut tv as *mut timeval
 +    };
 +    let (r, w, e) = (sets.set(0), sets.set(1), sets.set(2));
-+    // WaitSelect(), LVO 21
++    // WaitSelect(), LVO 21; it leaves in the mask the signals that came
 +    let n = libcall!(base, 21,
 +        fn(c_int, *mut u32, *mut u32, *mut u32, *mut timeval, *mut u32) -> c_int,
-+        maxfd + 1, r, w, e, tvp, ptr::null_mut());
++        maxfd + 1, r, w, e, tvp, sigmask);
 +    if n < 0 {
 +        return -1;
 +    }

@@ -4,8 +4,9 @@
 #   The first group are crates that need AROS changes (the libc crate's AROS
 #   module, getrandom's getentropy() backend for its 0.2/0.3/0.4 lines,
 #   parking_lot_core's realtime-clock
-#   condition variable); any Rust program with randomness or parking_lot pulls
-#   them in. They are fetched and patched here once, and rust-crates.toml,
+#   condition variable, dirs-sys's and dirs-sys-next's home directory, PROGDIR:
+#   when there is no other); any Rust program with randomness, parking_lot or
+#   dirs pulls them in. They are fetched and patched here once, and rust-crates.toml,
 #   the generated cargo config, replaces the crates.io versions with them: a
 #   program's mmakefile depends on rust-crates-config (which fetches all of
 #   them: cargo refuses a [patch] entry whose path does not exist) and runs
@@ -21,7 +22,7 @@ include $(SRCDIR)/config/aros.cfg
 -include $(SRCDIR)/tools/crosstools/rust.cfg
 
 #MM rust-crates : rust-crates-libc rust-crates-getrandom02 rust-crates-getrandom03 rust-crates-getrandom04 \
-#MM     rust-crates-parking-lot-core rust-crates-config \
+#MM     rust-crates-parking-lot-core rust-crates-dirs-sys rust-crates-dirs-sys-next rust-crates-config \
 #MM     rust-crates-paste rust-crates-rustc-hash rust-crates-syn rust-crates-quote \
 #MM     rust-crates-proc-macro2 rust-crates-unicode-ident
 rust-crates :
@@ -39,18 +40,25 @@ rust-crates :
     patch=$(RUST_CRATE_GETRANDOM04)-aros.diff
 %rust_crate mmake=rust-crates-parking-lot-core crate=parking_lot_core version=$(RUST_PARKING_LOT_CORE_VERSION) \
     patch=$(RUST_CRATE_PARKING_LOT_CORE)-aros.diff
+%rust_crate mmake=rust-crates-dirs-sys crate=dirs-sys version=$(RUST_DIRS_SYS_VERSION) \
+    patch=$(RUST_CRATE_DIRS_SYS)-aros.diff
+%rust_crate mmake=rust-crates-dirs-sys-next crate=dirs-sys-next version=$(RUST_DIRS_SYS_NEXT_VERSION) \
+    patch=$(RUST_CRATE_DIRS_SYS_NEXT)-aros.diff
 
 # The cargo config that puts them in place of the crates.io ones. Every entry
 # must exist (cargo refuses a [patch] path that does not), so the config target
 # fetches all of them; a program that does not use one only gets a warning.
 #MM rust-crates-config : rust-crates-libc rust-crates-getrandom02 rust-crates-getrandom03 rust-crates-getrandom04 \
-#MM     rust-crates-parking-lot-core tools-crosstools-rust-abicheck
+#MM     rust-crates-parking-lot-core rust-crates-dirs-sys rust-crates-dirs-sys-next \
+#MM     tools-crosstools-rust-abicheck
 %rust_patches_config mmake=rust-crates-config file=$(RUST_CRATES_CONFIG) \
     patches="libc=$(RUST_CRATESDIR)/$(RUST_CRATE_LIBC) \
         getrandom=$(RUST_CRATESDIR)/$(RUST_CRATE_GETRANDOM04) \
         getrandom03:getrandom=$(RUST_CRATESDIR)/$(RUST_CRATE_GETRANDOM03) \
         getrandom02:getrandom=$(RUST_CRATESDIR)/$(RUST_CRATE_GETRANDOM02) \
         parking_lot_core=$(RUST_CRATESDIR)/$(RUST_CRATE_PARKING_LOT_CORE) \
+        dirs-sys=$(RUST_CRATESDIR)/$(RUST_CRATE_DIRS_SYS) \
+        dirs-sys-next=$(RUST_CRATESDIR)/$(RUST_CRATE_DIRS_SYS_NEXT) \
         aros-gui-sys=$(RUST_SYS_CRATESDIR)/aros-gui-sys \
         aros-pty-sys=$(RUST_SYS_CRATESDIR)/aros-pty-sys \
         aros-ahi-sys=$(RUST_SYS_CRATESDIR)/aros-ahi-sys \
