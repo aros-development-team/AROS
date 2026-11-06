@@ -7,6 +7,9 @@
           the composited window kept its content where the two overlap,
           and that the screen's display composes while it is open (the
           window's surface reaches the display only through composition).
+          Without ALPHA it also prints a display pixel and the colour it
+          must have during the first DELAY, to be checked with a capture
+          from outside the system (QEMU screendump).
 
     Usage: compwindow [DELAY=seconds] [OPACITY=n] [ALPHA]
 */
@@ -217,6 +220,21 @@ int main(void)
     {
         printf("FAIL: plain window content under overlap %06lx, wanted ff0000\n", (unsigned long)got);
         fails++;
+    }
+
+    /*
+     * What the display must show cannot be read back from inside the system:
+     * check it with a capture from outside (QEMU screendump) during the first
+     * DELAY. Where the green content of a constant-opacity window lies over the
+     * red plain window, the display shows their mix, not red alone.
+     */
+    if (!alpha && (b->WLayer->Flags & LAYERCOMPOSITED))
+    {
+        LONG x = b->LeftEdge + b->BorderLeft + 40, y = b->TopEdge + b->BorderTop + 40;
+        ULONG g = (255 * (ULONG)opacity + 127) / 255;
+
+        printf("display check: screen pixel %ld,%ld should be about %02lx%02lx00, not ff0000\n",
+            (long)x, (long)y, (unsigned long)(255 - g), (unsigned long)g);
     }
 
     Delay(delay * 50);

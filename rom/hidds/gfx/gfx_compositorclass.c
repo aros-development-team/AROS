@@ -521,7 +521,7 @@ static BOOL HIDDCompositorScaleBuffers(struct HIDDCompositorData *compdata, ULON
 static void HIDDCompositorPaletteBlit(struct HIDDCompositorData *compdata, OOP_Object *target, OOP_Object *src,
                                      LONG srcx0, LONG srcy0, LONG srcw, LONG srch,
                                      LONG orgx, LONG orgy, LONG dstw, LONG dsth,
-                                     struct Rectangle *rect, UBYTE opacity, BOOL alpha)
+                                     struct Rectangle *rect, UBYTE opacity, BOOL alpha, BOOL fixed)
 {
     HIDDT_Color *colors;
     HIDDT_Pixel *indices;
@@ -568,7 +568,7 @@ static void HIDDCompositorPaletteBlit(struct HIDDCompositorData *compdata, OOP_O
                 ULONG pen = indices[disp2scr(rect->MinX + x - orgx, srcw, dstw) - sxfirst];
                 HIDDT_Color *color = &colors[pen < 256 ? pen : 256];
 
-                row[4 * x] = alpha ? (((ULONG)(color->alpha >> 8) * opacity + 127) / 255) : 0xFF;
+                row[4 * x] = !alpha ? 0xFF : fixed ? opacity : (((ULONG)(color->alpha >> 8) * opacity + 127) / 255);
                 row[4 * x + 1] = color->red >> 8;
                 row[4 * x + 2] = color->green >> 8;
                 row[4 * x + 3] = color->blue >> 8;
@@ -593,7 +593,7 @@ static BOOL HIDDCompositorPaletteBitMap(struct HIDDCompositorData *compdata, OOP
 static void HIDDCompositorScaledBlit(struct HIDDCompositorData *compdata, OOP_Object *target, OOP_Object *src,
                                      LONG srcx0, LONG srcy0, LONG srcw, LONG srch,
                                      LONG orgx, LONG orgy, LONG dstw, LONG dsth,
-                                     struct Rectangle *rect, UBYTE opacity, BOOL alpha)
+                                     struct Rectangle *rect, UBYTE opacity, BOOL alpha, BOOL fixed)
 {
     LONG w = rect->MaxX - rect->MinX + 1;
     LONG sxfirst = disp2scr(rect->MinX - orgx, srcw, dstw);
@@ -607,7 +607,7 @@ static void HIDDCompositorScaledBlit(struct HIDDCompositorData *compdata, OOP_Ob
     if (HIDDCompositorPaletteBitMap(compdata, src))
     {
         HIDDCompositorPaletteBlit(compdata, target, src, srcx0, srcy0, srcw, srch,
-                                 orgx, orgy, dstw, dsth, rect, opacity, alpha);
+                                 orgx, orgy, dstw, dsth, rect, opacity, alpha, fixed);
         return;
     }
 
@@ -635,12 +635,12 @@ static void HIDDCompositorScaledBlit(struct HIDDCompositorData *compdata, OOP_Ob
             HIDD_BM_GetImage(src, (UBYTE *)srcbuf, sw * sizeof(ULONG), srcx0 + sxfirst, srcy0 + sy, sw, 1, vHidd_StdPixFmt_ARGB32);
             for (x = 0; x < w; x++)
                 dstbuf[x] = srcbuf[map[x]];
-            if (alpha && (opacity != 0xFF))
+            if (alpha && (fixed || (opacity != 0xFF)))
             {
                 /* ARGB32 is byte order: the alpha byte comes first */
                 UBYTE *a = (UBYTE *)dstbuf;
                 for (x = 0; x < w; x++, a += 4)
-                    *a = (UBYTE)(((ULONG)*a * opacity + 127) / 255);
+                    *a = fixed ? opacity : (UBYTE)(((ULONG)*a * opacity + 127) / 255);
             }
             lastsy = sy;
         }
@@ -2318,6 +2318,50 @@ static void HIDDCompositorTargetDone(struct HIDDCompositorData *compdata, OOP_Ob
     ReleaseSemaphore(&compdata->surfacesem);
 }
 
+#define BLENDFIXED_BUFSIZE 65536
+
+/*
+ * Blend a rectangle of a constant-opacity surface over the target: every
+ * pixel is covered by 'opacity', whatever its own alpha byte holds.
+ * Same row-chunked GetImage/PutAlphaImage scheme as moHidd_Gfx_CopyBoxAlpha.
+ */
+static void HIDDCompositorBlendFixed(struct HIDDCompositorData *compdata, OOP_Object *src, WORD sx, WORD sy,
+                                     OOP_Object *target, WORD dx, WORD dy, ULONG w, ULONG h, UBYTE opacity)
+{
+    ULONG modulo = w * 4, rows, bufsize, y;
+    UBYTE *buf;
+
+    if (!w || !h || !opacity)
+        return;
+    rows = BLENDFIXED_BUFSIZE / modulo;
+    if (rows == 0)
+        rows = 1;
+    if (rows > h)
+        rows = h;
+    bufsize = rows * modulo;
+    buf = AllocMem(bufsize, MEMF_ANY);
+    if (!buf)
+    {
+        rows = 1;
+        bufsize = modulo;
+        buf = AllocMem(bufsize, MEMF_ANY);
+        if (!buf)
+            return;
+    }
+    for (y = 0; y < h; y += rows)
+    {
+        ULONG n = (h - y < rows) ? h - y : rows, i;
+        UBYTE *a = buf;
+
+        /* ARGB32 is byte order: the alpha byte comes first */
+        HIDD_BM_GetImage(src, buf, modulo, sx, sy + y, w, n, vHidd_StdPixFmt_ARGB32);
+        for (i = w * n; i; i--, a += 4)
+            *a = opacity;
+        HIDD_BM_PutAlphaImage(target, compdata->gc, buf, modulo, dx, dy + y, w, n);
+    }
+    FreeMem(buf, bufsize);
+}
+
 /* Blit the part of a surface inside 'rect' (display relative) onto the render target */
 static void HIDDCompositorRedrawSurfaceRect(struct HIDDCompositorData *compdata, OOP_Object *renderTarget,
                                             struct StackBitMapNode *n, struct SurfaceNode *sn, struct Rectangle *rect)
@@ -2329,6 +2373,12 @@ static void HIDDCompositorRedrawSurfaceRect(struct HIDDCompositorData *compdata,
     ULONG w = rect->MaxX - rect->MinX + 1;
     ULONG h = rect->MaxY - rect->MinY + 1;
     BOOL copy = sn->opaque || (req->AlphaMode == vHidd_CompAlpha_None && req->Opacity == 0xFF);
+    /*
+     * Constant opacity: the surface has the screen's format and its pixels carry
+     * no coverage. In a format with an alpha byte, pens and alpha-less blits leave
+     * that byte undefined (usually 0), so it must not be read as alpha.
+     */
+    BOOL fixed = (req->AlphaMode == vHidd_CompAlpha_Fixed);
 
     if (sn->plane >= 0)
     {
@@ -2350,12 +2400,14 @@ static void HIDDCompositorRedrawSurfaceRect(struct HIDDCompositorData *compdata,
                                  req->Src.MinX, req->Src.MinY,
                                  req->Dest.MaxX - req->Dest.MinX + 1, req->Dest.MaxY - req->Dest.MinY + 1,
                                  d.MinX, d.MinY, d.MaxX - d.MinX + 1, d.MaxY - d.MinY + 1,
-                                 rect, req->Opacity, !copy);
+                                 rect, req->Opacity, !copy, fixed);
         return;
     }
 
     if (copy)
         HIDD_Gfx_CopyBox(compdata->gfx, req->BitMap, sx, sy, renderTarget, rect->MinX, rect->MinY, w, h, compdata->gc);
+    else if (fixed)
+        HIDDCompositorBlendFixed(compdata, req->BitMap, sx, sy, renderTarget, rect->MinX, rect->MinY, w, h, req->Opacity);
     else
         HIDD_Gfx_CopyBoxAlpha(compdata->gfx, req->BitMap, sx, sy, renderTarget, rect->MinX, rect->MinY, w, h,
                               req->Opacity, compdata->gc);
@@ -2433,7 +2485,7 @@ static inline void HIDDCompositorRedrawBitmap(struct HIDDCompositorData *compdat
         HIDDCompositorNodeRect(n, &nr);
         HIDDCompositorScaledBlit(compdata, renderTarget, n->bm, 0, 0, n->scrw, n->scrh,
                                  nr.MinX, nr.MinY, n->dstw, n->dsth, rect, 0xFF,
-                                 (n->sbmflags & COMPF_ALPHA) ? TRUE : FALSE);
+                                 (n->sbmflags & COMPF_ALPHA) ? TRUE : FALSE, FALSE);
     }
     else if (renderTarget)
     {
