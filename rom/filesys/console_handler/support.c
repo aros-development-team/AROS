@@ -32,6 +32,7 @@
 #include <intuition/intuition.h>
 #include <intuition/sghooks.h>
 #include <devices/conunit.h>
+#include <devices/console.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -492,7 +493,7 @@ static void copy_from_pastebuf(struct filehandle * fh)
         fh->pastebufferpos += len;
         if (fh->pastebufferpos >= fh->pastebuffersize)
         {
-            FreeMem(fh->pastebuffer, PASTEBUFSIZE);
+            FreeMem(fh->pastebuffer, fh->pastebuffercapacity);
             fh->pastebuffer = 0;
         }
     }
@@ -593,6 +594,17 @@ WORD scan_input(struct filehandle *fh, UBYTE *buffer)
             result = INP_EOF;
             break;
 
+        case 0x1B: /* ESC [ is CSI on a device that sends it that way */
+            if (!(fh->devcaps & CONCAPF_CSI7) ||
+                fh->conbufferpos >= fh->conbuffersize ||
+                fh->consolebuffer[fh->conbufferpos] != '[')
+            {
+                *buffer = c;
+                result = INP_STRING;
+                break;
+            }
+            fh->conbufferpos++;
+            /* Fallthrough */
         case 0x9B: /* CSI */
             result = INP_UNKNOWN;
 
@@ -777,12 +789,83 @@ struct MyEditHookMsg
     WORD            code;
 };
 
+static void set_pastebuffer(struct filehandle *fh, APTR data, ULONG size,
+                            ULONG capacity)
+{
+    if (fh->pastebuffer)
+        FreeMem(fh->pastebuffer, fh->pastebuffercapacity);
+    fh->pastebuffer = data;
+    fh->pastebuffersize = size;
+    fh->pastebuffercapacity = capacity;
+    fh->pastebufferpos = 0;
+}
+
+#define PASTE_FRAME_SIZE 12
+
+static BOOL bracketed_paste(struct filehandle *fh)
+{
+    struct IOStdReq query;
+    ULONG enabled = 0;
+
+    if (!(fh->flags & FHFLG_RAW) ||
+        !(fh->devcaps & CONCAPF_BRACKETEDPASTE))
+        return FALSE;
+
+    query = fh->conwriteio;
+    query.io_Command = CD_GETPASTEMODE;
+    query.io_Data = &enabled;
+    query.io_Length = sizeof(enabled);
+    query.io_Actual = 0;
+
+    return !DoIO(ioReq(&query)) &&
+        query.io_Actual == sizeof(enabled) && enabled == 1;
+}
+
+/* Wrap the text in place, dropping ESC and Ctrl-C from it. The buffer
+   must have PASTE_FRAME_SIZE bytes to spare. */
+static ULONG frame_paste(UBYTE *buffer, ULONG length)
+{
+    ULONG in, out = 0;
+
+    for (in = 0; in < length; in++)
+        if (buffer[in] != 0x1B && buffer[in] != 0x03)
+            buffer[out++] = buffer[in];
+    memmove(buffer + 6, buffer, out);
+    CopyMem("\x1B[200~", buffer, 6);
+    CopyMem("\x1B[201~", buffer + 6 + out, 6);
+
+    return out + PASTE_FRAME_SIZE;
+}
+
+/* ConClip's buffer may have no room to spare for the frame. */
+static BOOL frame_text(struct ConClipTextMsg *text)
+{
+    if (text->length > 0x7fffffffUL - PASTE_FRAME_SIZE)
+        return FALSE;
+    if (text->capacity - text->length < PASTE_FRAME_SIZE)
+    {
+        ULONG capacity = text->length + PASTE_FRAME_SIZE;
+        UBYTE *data = AllocMem(capacity, MEMF_ANY);
+
+        if (!data)
+            return FALSE;
+        CopyMem(text->data, data, text->length);
+        FreeMem(text->data, text->capacity);
+        text->data = data;
+        text->capacity = capacity;
+    }
+    text->length = frame_paste(text->data, text->length);
+
+    return TRUE;
+}
+
 void do_paste(struct filehandle * fh)
 {
     struct MsgPort replyport, *port;
     struct SGWork sgw;
     struct MyEditHookMsg msg;
     struct StringInfo sinfo;
+    BOOL bracketed;
 
     if (!(port = FindPort(CONCLIP_PORTNAME)))
     {
@@ -799,11 +882,48 @@ void do_paste(struct filehandle * fh)
     replyport.mp_SigTask = FindTask(NULL);
     NEWLIST(&replyport.mp_MsgList);
 
+    if (fh->flags & FHFLG_RAW)
+    {
+        struct ConClipTextMsg text;
+
+        memset(&text, 0, sizeof(text));
+        text.msg.mn_Node.ln_Type = NT_MESSAGE;
+        text.msg.mn_ReplyPort = &replyport;
+        text.msg.mn_Length = sizeof(text);
+        text.code = CODE_READ_TEXT;
+        text.version = TEXT_VERSION;
+
+        SetSignal(0, SIGF_SINGLE);
+        PutMsg(port, &text.msg);
+        WaitPort(&replyport);
+        GetMsg(&replyport);
+
+        /* Older ConClip leaves the status alone. Fall back to the string
+           gadget request only then, never after an error. */
+        if (text.status != TEXT_UNSUPPORTED)
+        {
+            if (text.status == TEXT_OK && text.data)
+            {
+                D(bug("Pasting %lu bytes\n", (unsigned long)text.length));
+
+                if (text.length && text.length <= text.capacity &&
+                    (!bracketed_paste(fh) || frame_text(&text)))
+                    set_pastebuffer(fh, text.data, text.length, text.capacity);
+                else
+                    FreeMem(text.data, text.capacity);
+            }
+            return;
+        }
+    }
+
     /* ConClip only ever looks at MaxChars in StringInfo */
-    sinfo.MaxChars = PASTEBUFSIZE;
+    bracketed = bracketed_paste(fh);
+    sinfo.MaxChars = bracketed ? PASTEBUFSIZE - PASTE_FRAME_SIZE : PASTEBUFSIZE;
 
     memset( &sgw, 0, sizeof( struct SGWork ) );
     sgw.WorkBuffer = AllocMem(PASTEBUFSIZE, MEMF_CLEAR | MEMF_ANY);
+    if (!sgw.WorkBuffer)
+        return;
     sgw.Code = CODE_PASTE;
     sgw.EditOp = EO_BIGCHANGE;
     sgw.StringInfo = &sinfo;
@@ -818,14 +938,18 @@ void do_paste(struct filehandle * fh)
     SetSignal(0, SIGF_SINGLE);
     PutMsg(port, &msg.msg);
     WaitPort(&replyport);
+    GetMsg(&replyport);
 
     D(bug("Pasting %d bytes\n", sgw.BufferPos));
 
-    if (fh->pastebuffer)
-        FreeMem(fh->pastebuffer, PASTEBUFSIZE);
-    fh->pastebuffer = sgw.WorkBuffer;
-    fh->pastebuffersize = sgw.BufferPos;
-    fh->pastebufferpos = 0;
+    if (sgw.BufferPos <= 0 || sgw.BufferPos > sinfo.MaxChars)
+    {
+        FreeMem(sgw.WorkBuffer, PASTEBUFSIZE);
+        return;
+    }
+    if (bracketed)
+        sgw.BufferPos = frame_paste((UBYTE *)sgw.WorkBuffer, sgw.BufferPos);
+    set_pastebuffer(fh, sgw.WorkBuffer, sgw.BufferPos, PASTEBUFSIZE);
 }
 
 /****************************************************************************************/
@@ -1213,6 +1337,19 @@ BOOL process_input(struct filehandle *fh)
     return FALSE;
 }
 
+/* The console window, or one borrowed from a device that has its own. */
+struct Window *con_window(struct filehandle *fh)
+{
+    if (fh->window)
+        return fh->window;
+    if ((fh->flags & FHFLG_DEVICEMODE) &&
+        (fh->flags & FHFLG_CONSOLEDEVICEOPEN) &&
+        (fh->devcaps & CONCAPF_OWNWINDOW) &&
+        fh->conreadio && fh->conreadio->io_Unit)
+        return ((struct ConUnit *)fh->conreadio->io_Unit)->cu_Window;
+    return NULL;
+}
+
 BOOL answer_write_request(struct filehandle *fh, struct DosPacket *dp)
 {
     UBYTE *buffer = (UBYTE*) dp->dp_Arg2;
@@ -1255,11 +1392,19 @@ BOOL answer_write_request(struct filehandle *fh, struct DosPacket *dp)
     return TRUE;
 }
 
-void answer_read_request(struct filehandle *fh, struct DosPacket *dp, ULONG dp_Arg3)
+ULONG answer_read_request(struct filehandle *fh, struct DosPacket *dp, ULONG dp_Arg3)
 {
     ULONG readlen;
 
     readlen = (fh->inputsize < dp_Arg3) ? fh->inputsize : dp_Arg3;
+
+    if (!(fh->flags & FHFLG_RAW) && (fh->devcaps & CONCAPF_LINEREADS))
+    {
+        UBYTE *newline = memchr(fh->inputbuffer, '\n', readlen);
+
+        if (newline)
+            readlen = newline - fh->inputbuffer + 1;
+    }
 
     CopyMem(fh->inputbuffer, (UBYTE*) dp->dp_Arg2, readlen);
     CopyMem(fh->inputbuffer + readlen, fh->inputbuffer, fh->inputsize - readlen);
@@ -1269,6 +1414,8 @@ void answer_read_request(struct filehandle *fh, struct DosPacket *dp, ULONG dp_A
     fh->inputstart -= readlen;
 
     replypkt2(dp, readlen, 0);
+
+    return readlen;
 }
 
 void HandlePendingReads(struct filehandle *fh)
@@ -1305,7 +1452,7 @@ void con_read(struct filehandle *fh, struct DosPacket *dp)
     {
         ULONG readlen = (fh->canreadsize < dp->dp_Arg3) ? fh->canreadsize : dp->dp_Arg3;
 
-        answer_read_request(fh, dp, readlen);
+        readlen = answer_read_request(fh, dp, readlen);
 
         fh->canreadsize -= readlen;
         if (fh->canreadsize == 0)

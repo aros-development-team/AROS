@@ -45,6 +45,7 @@ struct matchnode
 struct completioninfo
 {
     struct filehandle   *fh;
+    struct Window       *window;
     struct List         matchlist;
     APTR                pool;
     WORD                nummatchnodes;
@@ -83,6 +84,7 @@ static struct completioninfo *InitCompletion(struct filehandle *fh, BOOL withinf
                 {
                     ci->pool = pool;
                     ci->fh = fh;
+                    ci->window = con_window(fh);
                     ci->withinfo = withinfo;
                     NewList(&ci->matchlist);
 
@@ -235,7 +237,7 @@ static void DoFileReq(struct filehandle *fh, struct completioninfo *ci)
             struct FileRequester *fr;
             struct TagItem tags[] =
             {
-            { ASLFR_Window, (IPTR) ci->fh->window },
+            { ASLFR_Window, (IPTR) ci->window },
             { ASLFR_DoPatterns, (IPTR) TRUE },
             { ASLFR_InitialPattern, 0 },
             { TAG_DONE } };
@@ -459,9 +461,9 @@ static BOOL DoChooseReq(struct filehandle *fh, struct completioninfo *ci)
     LONG sec, micro, secold, microold;
     BOOL retval = FALSE;
 
-    if ((dri = GetScreenDrawInfo(ci->fh->window->WScreen)))
+    if ((dri = GetScreenDrawInfo(ci->window->WScreen)))
     {
-        if ((vi = GetVisualInfoA(ci->fh->window->WScreen, NULL)))
+        if ((vi = GetVisualInfoA(ci->window->WScreen, NULL)))
         {
             InitRastPort(&temprp);
             SetFont(&temprp, dri->dri_Font);
@@ -481,20 +483,20 @@ static BOOL DoChooseReq(struct filehandle *fh, struct completioninfo *ci)
                     + BORDER_Y * 2;
 
             winwidth = buttonwidth * 2 + BUTTON_SPACING_X + BORDER_X * 2;
-            i = ci->fh->window->WScreen->Width * 1 / 3;
+            i = ci->window->WScreen->Width * 1 / 3;
             if (i > winwidth)
                 winwidth = i;
 
-            winleft = ci->fh->window->WScreen->MouseX
-                    - (winwidth + ci->fh->window->WScreen->WBorLeft + ci->fh->window->WScreen->WBorRight) / 2;
-            wintop = ci->fh->window->WScreen->MouseY
-                    - (winheight + ci->fh->window->WScreen->WBorTop + dri->dri_Font->tf_YSize + 1
-                            + ci->fh->window->WScreen->WBorBottom) / 2;
+            winleft = ci->window->WScreen->MouseX
+                    - (winwidth + ci->window->WScreen->WBorLeft + ci->window->WScreen->WBorRight) / 2;
+            wintop = ci->window->WScreen->MouseY
+                    - (winheight + ci->window->WScreen->WBorTop + dri->dri_Font->tf_YSize + 1
+                            + ci->window->WScreen->WBorBottom) / 2;
 
             gad = CreateContext(&gadlist);
 
-            ng.ng_LeftEdge = ci->fh->window->WScreen->WBorLeft + BORDER_X;
-            ng.ng_TopEdge = ci->fh->window->WScreen->WBorTop + dri->dri_Font->tf_YSize + 1 + BORDER_Y;
+            ng.ng_LeftEdge = ci->window->WScreen->WBorLeft + BORDER_X;
+            ng.ng_TopEdge = ci->window->WScreen->WBorTop + dri->dri_Font->tf_YSize + 1 + BORDER_Y;
             ng.ng_Width = winwidth - BORDER_X * 2;
             ng.ng_Height = winheight - BORDER_Y * 2 - buttonheight - LV_BUTTON_SPACING_Y;
             ng.ng_GadgetText = NULL;
@@ -535,7 +537,7 @@ static BOOL DoChooseReq(struct filehandle *fh, struct completioninfo *ci)
             {
                 struct TagItem wintags[] =
                 {
-                    { WA_CustomScreen, (IPTR) ci->fh->window->WScreen   },
+                    { WA_CustomScreen, (IPTR) ci->window->WScreen   },
                     { WA_Title, (IPTR) titletext                        },
                     { WA_CloseGadget, TRUE                              },
                     { WA_DragBar, TRUE                                  },
@@ -744,11 +746,11 @@ static BOOL DoChooseReq(struct filehandle *fh, struct completioninfo *ci)
             FreeGadgets(gadlist);
             FreeVisualInfo(vi);
 
-        } /* if ((vi = GetVisualInfoA(ci->fh->window->WScreen, NULL))) */
+        } /* if ((vi = GetVisualInfoA(ci->window->WScreen, NULL))) */
 
-        FreeScreenDrawInfo(ci->fh->window->WScreen, dri);
+        FreeScreenDrawInfo(ci->window->WScreen, dri);
 
-    } /* if ((dri = GetScreenDrawInfo(fh->window->WScreen))) */
+    } /* if ((dri = GetScreenDrawInfo(ci->window->WScreen))) */
 
     return retval;
 }
@@ -771,9 +773,10 @@ void Completion(struct filehandle *fh, BOOL withinfo)
         {
             /* With nothing typed yet there is nothing to expand, and all that
                is left to offer is a file requester. A console running over a
-               device has no window to put one over, so leave the line alone
-               rather than opening a requester somewhere the user is not. */
-            if (fh->window)
+               device without a window has nowhere to put one, so leave the
+               line alone rather than opening a requester somewhere the user
+               is not. */
+            if (ci->window)
                 DoFileReq(fh, ci);
         }
         else
@@ -792,10 +795,10 @@ void Completion(struct filehandle *fh, BOOL withinfo)
 
                     doprint = TRUE;
                 }
-                else if (ci->nummatchnodes > 1 && fh->window)
+                else if (ci->nummatchnodes > 1 && ci->window)
                 {
                     /* Choosing between matches is a windowed requester, and it
-                       reads the screen out of fh->window. */
+                       reads the screen out of the console window. */
                     doprint = DoChooseReq(fh, ci);
                 }
 

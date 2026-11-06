@@ -11,6 +11,24 @@
 
 #define CODE_PASTE 'V'
 
+/* ConClip whole-text request */
+#define CODE_READ_TEXT  0x100
+#define TEXT_VERSION     1
+#define TEXT_UNSUPPORTED 0
+#define TEXT_OK          1
+
+struct ConClipTextMsg
+{
+    struct Message  msg;
+    struct SGWork   *sgw;
+    WORD            code;
+    ULONG           version;
+    ULONG           status;
+    UBYTE           *data;
+    ULONG           length;
+    ULONG           capacity;
+};
+
 #define INP_DONE                0
 #define INP_CURSORLEFT          1
 #define INP_CURSORRIGHT         2
@@ -95,7 +113,7 @@ void do_paste(struct filehandle * fh);
 WORD scan_input(struct filehandle *fh, UBYTE *);
 
 void con_read(struct filehandle *fh, struct DosPacket *dp);
-void answer_read_request(struct filehandle *fh, struct DosPacket *dp, ULONG dp_Arg3);
+ULONG answer_read_request(struct filehandle *fh, struct DosPacket *dp, ULONG dp_Arg3);
 BOOL answer_write_request(struct filehandle *fh, struct DosPacket *dp);
 void HandlePendingReads(struct filehandle *fh);
 
@@ -106,3 +124,5 @@ BOOL process_input(struct filehandle *fh);
 
 void replypkt(struct DosPacket *dp, SIPTR res1);
 void replypkt2(struct DosPacket *dp, SIPTR res1, SIPTR res2);
+
+struct Window *con_window(struct filehandle *fh);
