@@ -221,8 +221,12 @@ error_t GetResBlock(cachedblock_t *blok, uint16 bloktype, uint32 seqnr, bool fix
 	blknr = *bp;
 
 	free (blk.data);
-	if (!blknr)
+	if (!blknr) {
+		/* Repair may have rebuilt this block without allocating it yet. */
+		if (fix && GetBuildBlock(bloktype, seqnr))
+			return GetResBlock(blok, bloktype, seqnr, false);
 		return e_not_found;
+	}
 
 	error = volume.getblock(blok, blknr);
 	if (error)
