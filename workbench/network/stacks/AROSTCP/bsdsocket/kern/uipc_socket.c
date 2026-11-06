@@ -1396,8 +1396,9 @@ sohasoutofband(so)
 register struct socket *so;
 {
 #ifdef AMITCP
-    if(so->so_pgid)
-        Signal(so->so_pgid->thisTask, so->so_pgid->sigUrgMask);
+    /* a shared base has no task to signal until one sets the mask */
+    if(so->so_pgid && so->so_pgid->sigUrgMask)
+        Signal(so->so_pgid->sigUrgTask, so->so_pgid->sigUrgMask);
     soevent(so, FD_OOB);
 #else
     struct proc *p;

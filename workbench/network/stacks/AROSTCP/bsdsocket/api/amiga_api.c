@@ -30,6 +30,9 @@
 #include <version.h>
 
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
+#include <utility/hooks.h>
+#include <libraries/bsdsocket.h>	/* struct ErrorHookMsg */
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -165,52 +168,210 @@ BOOL AROSTCP_FLAG_CANEXPUNGE = FALSE;
 
 BOOL SB_Expunged = FALSE; /* boolean value set by ELL_Expunge */
 
-/* The timer tsleep() uses for timeouts */
-static BOOL openSleepTimer(struct SocketBase *p)
+/*
+ * The timer tsleep() uses for timeouts. UNIT_MICROHZ: a WaitSelect() or
+ * socket timeout is a wait of its own length, not rounded up to whole
+ * vertical blanks.
+ */
+#define SLEEP_TIMER_UNIT UNIT_MICROHZ
+
+static BOOL openSleepTimer(struct SocketWaiter *w)
 {
     /*
      * allocate and initialize the timer message reply port
      */
-    p->timerPort = CreateMsgPort();
-    if(p->timerPort == NULL)
+    w->timerPort = CreateMsgPort();
+    if(w->timerPort == NULL)
         return FALSE;
     /*
      * Disable signalling for now
      */
-    p->timerPort->mp_Flags = PA_IGNORE;
+    w->timerPort->mp_Flags = PA_IGNORE;
     /*
      * allocate and initialize the timerequest
      */
-    p->tsleep_timer = (struct timerequest *)
-                      CreateIORequest(p->timerPort, sizeof(struct timerequest));
-    if(p->tsleep_timer == NULL)
+    w->timer = (struct timerequest *)
+               CreateIORequest(w->timerPort, sizeof(struct timerequest));
+    if(w->timer == NULL)
         return FALSE;
-    if(OpenDevice(TIMERNAME, UNIT_VBLANK,
-                  (struct IORequest *)p->tsleep_timer, 0) != 0)
+    if(OpenDevice(TIMERNAME, SLEEP_TIMER_UNIT,
+                  (struct IORequest *)w->timer, 0) != 0)
         return FALSE;
     /*
      * Initialize some fields of the IO request to common values
      */
-    p->tsleep_timer->tr_node.io_Command = TR_ADDREQUEST;
-    p->tsleep_timer->tr_node.io_Message.mn_Node.ln_Type = NT_UNKNOWN;
+    w->timer->tr_node.io_Command = TR_ADDREQUEST;
+    w->timer->tr_node.io_Message.mn_Node.ln_Type = NT_UNKNOWN;
     return TRUE;
 }
 
-static void closeSleepTimer(struct SocketBase *p)
+/* Wait for a timeout request still out at the timer device */
+static void finishSleepTimer(struct SocketWaiter *w)
 {
-    if(p->tsleep_timer) {
-        if(p->tsleep_timer->tr_node.io_Device != NULL) {
-            if(p->tsleep_timer->tr_node.io_Message.mn_Node.ln_Type != NT_UNKNOWN) {
-                /* NC: must check if request has been used */
-                AbortIO((struct IORequest *)(p->tsleep_timer));
-                WaitIO((struct IORequest *)(p->tsleep_timer));
-            }
-            CloseDevice((struct IORequest *)p->tsleep_timer);
-        }
-        DeleteIORequest((struct IORequest *)p->tsleep_timer);
+    if(w->timer->tr_node.io_Message.mn_Node.ln_Type != NT_UNKNOWN) {
+        /* NC: must check if request has been used */
+        /* tsleep_abort_timeout() may have left the port silent */
+        w->timerPort->mp_Flags = PA_SIGNAL;
+        AbortIO((struct IORequest *)(w->timer));
+        WaitIO((struct IORequest *)(w->timer));
+        w->timer->tr_node.io_Message.mn_Node.ln_Type = NT_UNKNOWN;
     }
-    if(p->timerPort)
-        DeleteMsgPort(p->timerPort);
+    w->timerPort->mp_Flags = PA_IGNORE;
+}
+
+static void closeSleepTimer(struct SocketWaiter *w)
+{
+    if(w->timer) {
+        if(w->timer->tr_node.io_Device != NULL) {
+            finishSleepTimer(w);
+            CloseDevice((struct IORequest *)w->timer);
+        }
+        DeleteIORequest((struct IORequest *)w->timer);
+    }
+    if(w->timerPort)
+        DeleteMsgPort(w->timerPort);
+    freeDataBuffer(&w->selitems);
+}
+
+/*
+ * A lent waiter's port belongs to no task while it is free: it gets the
+ * borrowing thread and a signal of that thread for the time of the loan.
+ */
+static struct SocketWaiter *newLentWaiter(void)
+{
+    struct SocketWaiter *w;
+
+    if((w = AllocMem(sizeof(*w), MEMF_CLEAR | MEMF_PUBLIC)) == NULL)
+        return NULL;
+    if((w->timerPort = AllocMem(sizeof(struct MsgPort),
+                                MEMF_CLEAR | MEMF_PUBLIC)) == NULL) {
+        FreeMem(w, sizeof(*w));
+        return NULL;
+    }
+    w->timerPort->mp_Node.ln_Type = NT_MSGPORT;
+    w->timerPort->mp_Flags = PA_IGNORE;
+    NEWLIST(&w->timerPort->mp_MsgList);
+    w->timer = (struct timerequest *)
+               CreateIORequest(w->timerPort, sizeof(struct timerequest));
+    if(w->timer == NULL ||
+            OpenDevice(TIMERNAME, SLEEP_TIMER_UNIT, (struct IORequest *)w->timer, 0) != 0) {
+        if(w->timer)
+            DeleteIORequest((struct IORequest *)w->timer);
+        FreeMem(w->timerPort, sizeof(struct MsgPort));
+        FreeMem(w, sizeof(*w));
+        return NULL;
+    }
+    w->timer->tr_node.io_Command = TR_ADDREQUEST;
+    w->timer->tr_node.io_Message.mn_Node.ln_Type = NT_UNKNOWN;
+    return w;
+}
+
+static void deleteLentWaiter(struct SocketWaiter *w)
+{
+    CloseDevice((struct IORequest *)w->timer);
+    DeleteIORequest((struct IORequest *)w->timer);
+    FreeMem(w->timerPort, sizeof(struct MsgPort));
+    freeDataBuffer(&w->selitems);
+    FreeMem(w, sizeof(*w));
+}
+
+/*
+ * The waiter for the calling task: the base's own for its opener, a lent
+ * one for any other thread of a shared base. NULL when no lent waiter or
+ * signal can be had.
+ */
+struct SocketWaiter *waiter_obtain(struct SocketBase *libPtr)
+{
+    struct Task *me = FindTask(NULL);
+    struct SocketWaiter *w;
+    BYTE sig;
+
+    if(me == libPtr->thisTask)
+        return &libPtr->waiter;
+
+    if((sig = AllocSignal(-1)) == -1)
+        return NULL;
+    ObtainSemaphore(&libPtr->WaiterLock);
+    w = (struct SocketWaiter *)RemHead((struct List *)&libPtr->freeWaiters);
+    ReleaseSemaphore(&libPtr->WaiterLock);
+    if(w == NULL && (w = newLentWaiter()) == NULL) {
+        FreeSignal(sig);
+        return NULL;
+    }
+    w->task = me;
+    w->timerPort->mp_SigTask = me;
+    w->timerPort->mp_SigBit = sig;
+    ObtainSemaphore(&libPtr->WaiterLock);
+    AddTail((struct List *)&libPtr->busyWaiters, (struct Node *)w);
+    ReleaseSemaphore(&libPtr->WaiterLock);
+    return w;
+}
+
+void waiter_release(struct SocketBase *libPtr, struct SocketWaiter *w)
+{
+    BYTE sig;
+
+    if(w == NULL || w == &libPtr->waiter)
+        return;
+
+    finishSleepTimer(w);
+    /* A wakeup() that lost the race with a timeout leaves the signal set */
+    sig = w->timerPort->mp_SigBit;
+    SetSignal(0, 1UL << sig);
+    FreeSignal(sig);
+    ObtainSemaphore(&libPtr->WaiterLock);
+    Remove((struct Node *)w);
+    w->task = NULL;
+    w->timerPort->mp_SigTask = NULL;
+    AddHead((struct List *)&libPtr->freeWaiters, (struct Node *)w);
+    ReleaseSemaphore(&libPtr->WaiterLock);
+}
+
+/*
+ * Called by the opener: from now on no task is special, as the opener may
+ * end before the program closes the base. Its waiter goes now, on the task
+ * whose signal it holds.
+ */
+VOID api_sharebase(struct SocketBase *p)
+{
+    ObtainSemaphore(&baselist_semaphore);
+    p->shared = TRUE;
+    p->thisTask = NULL;		/* FindSocketBase() no longer gives it out */
+    ReleaseSemaphore(&baselist_semaphore);
+    closeSleepTimer(&p->waiter);
+    p->waiter.timer = NULL;
+    p->waiter.timerPort = NULL;
+    p->waiter.task = NULL;
+    /* masks set so far keep their task; unset ones get the next setter */
+    if(p->sigIOMask == 0)
+        p->sigIOTask = NULL;
+    if(p->sigUrgMask == 0)
+        p->sigUrgTask = NULL;
+    if(p->sigEventMask == 0)
+        p->sigEventTask = NULL;
+}
+
+/* Set up what every base, a hook base too, needs for sharing */
+static void initSharing(struct SocketBase *p)
+{
+    p->sigIOTask = p->sigUrgTask = p->sigEventTask = p->thisTask;
+    p->waiter.task = p->thisTask;
+    InitSemaphore(&p->WaiterLock);
+    NewList((struct List *)&p->freeWaiters);
+    NewList((struct List *)&p->busyWaiters);
+    InitSemaphore(&p->ResolverLock);
+}
+
+/* The base is closing: no thread calls through it any more */
+static void freeLentWaiters(struct SocketBase *p)
+{
+    struct SocketWaiter *w;
+
+    /* lists not set up: Open() failed early */
+    if(p->freeWaiters.mlh_Head == NULL)
+        return;
+    while((w = (struct SocketWaiter *)RemHead((struct List *)&p->freeWaiters)))
+        deleteLentWaiter(w);
 }
 
 
@@ -302,6 +463,7 @@ AROS_LH1(struct Library *, Open,
     newBase->errnoSize = sizeof newBase->defErrno;
     newBase->thisTask = FindTask(NULL);
     newBase->sigIntrMask = SIGBREAKF_CTRL_C;
+    initSharing(newBase);
 
     /* initialize syslog variables */
 #if 0 /* initialization to zero is implicit */
@@ -328,7 +490,7 @@ AROS_LH1(struct Library *, Open,
                 AllocMem(newBase->dTableSize * sizeof(struct socket *) +
                          ((newBase->dTableSize - 1) / NFDBITS + 1) * sizeof(fd_mask),
                          MEMF_CLEAR | MEMF_PUBLIC)) != NULL &&
-            openSleepTimer(newBase)) {
+            openSleepTimer(&newBase->waiter)) {
         ObtainSemaphore(&baselist_semaphore);
         AddTail(&socketBaseList, (struct Node *)newBase);
         ReleaseSemaphore(&baselist_semaphore);
@@ -514,9 +676,9 @@ ULONG *__UL_Close(struct SocketBase *libPtr)
     }
     ReleaseSemaphore(&baselist_semaphore);
 
-    closeSleepTimer(libPtr);
+    closeSleepTimer(&libPtr->waiter);
+    freeLentWaiters(libPtr);
 
-    freeDataBuffer(&libPtr->selitems);
     freeDataBuffer(&libPtr->hostents);
     freeDataBuffer(&libPtr->netents);
     freeDataBuffer(&libPtr->protoents);
@@ -580,8 +742,9 @@ struct SocketBase *api_hookbase_open(VOID)
     p->hookBase = TRUE;
     InitSemaphore(&p->EventLock);
     NewList((struct List *)&p->EventList);
+    initSharing(p);
 
-    ok = openSleepTimer(p);
+    ok = openSleepTimer(&p->waiter);
     if(ok) {
         ObtainSemaphore(&baselist_semaphore);
         ok = MasterSocketBase != NULL &&
@@ -593,7 +756,7 @@ struct SocketBase *api_hookbase_open(VOID)
         ReleaseSemaphore(&baselist_semaphore);
     }
     if(!ok) {
-        closeSleepTimer(p);
+        closeSleepTimer(&p->waiter);
         FreeMem(p, sizeof(*p));
         return NULL;
     }
@@ -611,7 +774,7 @@ VOID api_hookbase_close(struct SocketBase *p)
         __ELL_Expunge(MasterSocketBase);
     ReleaseSemaphore(&baselist_semaphore);
 
-    closeSleepTimer(p);
+    closeSleepTimer(&p->waiter);
     FreeMem(p, sizeof(*p));
 }
 
@@ -866,9 +1029,20 @@ VOID api_sendbreaktotasks()
 
     ObtainSemaphoreShared(&baselist_semaphore);
     for(libNode = socketBaseList.lh_Head; libNode->ln_Succ;
-            libNode = libNode->ln_Succ)
-        if(((struct SocketBase *)libNode)->thisTask != Nettrace_Task)
-            Signal(((struct SocketBase *)libNode)->thisTask, SIGBREAKF_CTRL_C);
+            libNode = libNode->ln_Succ) {
+        struct SocketBase *sb = (struct SocketBase *)libNode;
+        struct SocketWaiter *w;
+
+        if(sb->thisTask && sb->thisTask != Nettrace_Task)
+            Signal(sb->thisTask, SIGBREAKF_CTRL_C);
+        /* the tasks of a shared base asleep in the stack */
+        ObtainSemaphore(&sb->WaiterLock);
+        for(w = (struct SocketWaiter *)sb->busyWaiters.mlh_Head;
+                w->node.mln_Succ;
+                w = (struct SocketWaiter *)w->node.mln_Succ)
+            Signal(w->task, SIGBREAKF_CTRL_C);
+        ReleaseSemaphore(&sb->WaiterLock);
+    }
 
     ReleaseSemaphore(&baselist_semaphore);
 }
@@ -909,7 +1083,7 @@ VOID api_sendreconfig(BOOL begin)
     for(libNode = socketBaseList.lh_Head; libNode->ln_Succ;
             libNode = libNode->ln_Succ) {
         struct SocketBase *sb = (struct SocketBase *)libNode;
-        if(sb->thisTask != Nettrace_Task && sb->sigReconfigMask) {
+        if(sb->thisTask && sb->thisTask != Nettrace_Task && sb->sigReconfigMask) {
             Signal(sb->thisTask, sb->sigReconfigMask);
             count++;
         }
@@ -953,7 +1127,7 @@ VOID api_sendaddrchange(VOID)
     for(libNode = socketBaseList.lh_Head; libNode->ln_Succ;
             libNode = libNode->ln_Succ) {
         struct SocketBase *sb = (struct SocketBase *)libNode;
-        if(sb->thisTask != Nettrace_Task && sb->sigAddrChangeMask)
+        if(sb->thisTask && sb->thisTask != Nettrace_Task && sb->sigAddrChangeMask)
             Signal(sb->thisTask, sb->sigAddrChangeMask);
     }
     ReleaseSemaphore(&baselist_semaphore);
@@ -991,7 +1165,8 @@ VOID api_logopeners(VOID)
         if(sb == (struct SocketBase *)MasterSocketBase || t == Nettrace_Task)
             continue;
 
-        nm = (t && t->tc_Node.ln_Name) ? t->tc_Node.ln_Name : "(unnamed)";
+        nm = sb->shared ? "(shared by a program)" :
+             (t && t->tc_Node.ln_Name) ? t->tc_Node.ln_Name : "(unnamed)";
         held[n].task = t;
         for(j = 0; j < (int)sizeof(held[n].name) - 1 && nm[j]; j++)
             held[n].name[j] = nm[j];
@@ -1058,6 +1233,27 @@ VOID api_deinit()
     api_state = API_SCRATCH;
 }
 
+/* SBTC_ERROR_HOOK: the hook runs on the caller, which is the task to set */
+static void callErrorHook(struct SocketBase *libPtr, ULONG action, LONG code)
+{
+    struct Hook *hook = libPtr->errorHook;
+    struct ErrorHookMsg ehm;
+
+    ehm.ehm_Size = sizeof(ehm);
+    ehm.ehm_Action = action;
+    ehm.ehm_Code = code;
+    AROS_UFC3NR(void, hook->h_Entry,
+                AROS_UFCA(struct Hook *, hook, A0),
+                AROS_UFCA(APTR, NULL, A2),
+                AROS_UFCA(struct ErrorHookMsg *, &ehm, A1));
+}
+
+VOID writeHErrnoValue(struct SocketBase *libPtr)
+{
+    if(libPtr->errorHook)
+        callErrorHook(libPtr, EHMA_Set_h_errno, *libPtr->hErrnoPtr);
+}
+
 VOID writeErrnoValue(struct SocketBase *libPtr, int error)
 {
 #if defined(__AROS__)
@@ -1067,6 +1263,16 @@ VOID writeErrnoValue(struct SocketBase *libPtr, int error)
      * errnoSize is now restricted to 1, 2 or 4
      */
     BYTE erri = libPtr->errnoSize;
+
+    /*
+     * With a hook the caller gets its errno through it. The errno pointer
+     * is the opener's, which another task of a shared base must not write.
+     */
+    if(libPtr->errorHook) {
+        callErrorHook(libPtr, EHMA_Set_errno, error);
+        if(FindTask(NULL) != libPtr->thisTask)
+            return;
+    }
 
     if(erri == 4) {
         *(ULONG *)libPtr->errnoPtr = (ULONG)error;

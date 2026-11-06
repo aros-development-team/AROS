@@ -22,8 +22,9 @@ void socantsendmore(struct socket * so);
 
 void socantrcvmore(struct socket * so);
 
+struct SocketWaiter;
 void sbselqueue(struct sockbuf * sb,
-               struct SocketBase * cp);
+               struct SocketWaiter * w);
 
 int sbwait(struct sockbuf * sb,
            struct SocketBase * cp);
