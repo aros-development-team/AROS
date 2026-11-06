@@ -458,18 +458,33 @@ LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de,
     de->index = -1;
     while (nfound < nwant)
     {
-        err = GetDirEntry(dh, de->index + 1, de, glob);
+        ULONG next = de->index + 1;
 
-        /* If we can't get the entry, then we ran off the end, so there's no
-         * space left */
+        err = GetDirEntry(dh, next, de, glob);
+
         if (err == ERROR_OBJECT_NOT_FOUND)
         {
-            D(bug("[fat] ran off the end of the directory, no space left\n"));
-            return ERROR_NO_FREE_STORE;
+            /* We ran off the end. A FAT12/16 root cannot grow, and no
+             * directory goes past 2^16 entries (GetDirEntry() does not set
+             * de->index for those). Any other directory was exactly full
+             * without an end marker, which is valid: write the marker at
+             * the first missing entry, which adds a cluster, and carry on
+             * as if it had been there. */
+            if (dh->ioh.first_cluster == 0 || next >= 0x10000)
+            {
+                D(bug("[fat] ran off the end of the directory, no space left\n"));
+                return ERROR_NO_FREE_STORE;
+            }
+            D(bug("[fat] directory full without an end marker,"
+                " adding one at entry %ld\n", next));
+            SetMem(&de->e.entry, 0, sizeof(struct FATDirEntry));
+            if ((err = UpdateDirEntry(de, glob)) != 0)
+                return err;
+            clusteradded = TRUE;
         }
 
         /* Return any other error direct */
-        if (err != 0)
+        else if (err != 0)
             return err;
 
         /* If it's unused, make a note */
