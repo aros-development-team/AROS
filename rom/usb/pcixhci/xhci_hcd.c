@@ -3349,9 +3349,16 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                     req = (struct IOUsbHWReq *)ring->ringio[last];
 
                     /* Only advance ring on SUCCESS or recoverable short packets */
-                    if(trbe_ccode == TRB_CC_SUCCESS ||
-                            trbe_ccode == TRB_CC_SHORT_PACKET) {
+                    if(req && (trbe_ccode == TRB_CC_SUCCESS ||
+                               trbe_ccode == TRB_CC_SHORT_PACKET)) {
+                        struct pciusbXHCIIODevPrivate *dp =
+                            (struct pciusbXHCIIODevPrivate *)req->iouh_DriverPrivate1;
                         ULONG new_end = ring_advance_idx(last);
+
+                        /* a short packet ends the whole TD: the controller moves on to the next one */
+                        if((trbe_ccode == TRB_CC_SHORT_PACKET) && dp &&
+                           (dp->dpSttTRB == (UWORD)-1) && (dp->dpTxETRB != (UWORD)-1))
+                            new_end = ring_advance_idx(dp->dpTxETRB);
                         ring->end = (ring->end & RINGENDCFLAG) | (new_end & ~RINGENDCFLAG);
                     }
                     /* On error, DO NOT advance - let reset/recovery handle it */
@@ -3463,6 +3470,41 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                                    ring);
                         xhciDiagDumpRingWindow(hc, ring, last, XHCI_DIAG_DUMP_RADIUS, "cc-error");
                         xhciDiagDumpOutputCtx(hc, devCtx, trbe_epid, "cc-error");
+                    }
+                }
+
+                /*
+                 * The event's TRB Transfer Length is the residual of the TRB
+                 * it points at, not of the TD (xHCI 4.11.5.2). A TD that ends
+                 * with a short packet in an earlier TRB leaves the later TRBs
+                 * untouched, so sum the TRBs up to the event's one and hand
+                 * the completion a residual for the whole TD.
+                 */
+                if(req && have_idx &&
+                   ((trbe_ccode == TRB_CC_SUCCESS) || (trbe_ccode == TRB_CC_SHORT_PACKET))) {
+                    struct pciusbXHCIIODevPrivate *dp =
+                        (struct pciusbXHCIIODevPrivate *)req->iouh_DriverPrivate1;
+
+                    if(dp && (dp->dpTxSTRB != (UWORD)-1) && (dp->dpTxETRB != (UWORD)-1) &&
+                       ((ULONG)dp->dpTxETRB != last)) {
+                        ULONG trbidx = dp->dpTxSTRB, done = 0, n = 0;
+                        BOOL inrange = FALSE;
+
+                        while(n++ < XHCI_EVENT_RING_TRBS) {
+                            ULONG tflags = AROS_LE2LONG(ring->ring[trbidx].flags);
+
+                            if((tflags & TRB_FLAG_TYPE_MASK) != TRBF_FLAG_TRTYPE_LINK)
+                                done += AROS_LE2LONG(ring->ring[trbidx].tparams) & TRB_TPARAMS_DS_TRBLEN_SMASK;
+                            if(trbidx == last) {
+                                inrange = TRUE;
+                                break;
+                            }
+                            if(trbidx == (ULONG)dp->dpTxETRB)
+                                break;
+                            trbidx = ring_advance_idx(trbidx);
+                        }
+                        if(inrange && (done >= event_rem) && (done <= req->iouh_Length))
+                            event_rem = req->iouh_Length - (done - event_rem);
                     }
                 }
 
