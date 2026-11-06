@@ -10,8 +10,9 @@
           exactly 16 short-name entries and an unused data area that is not
           zero, mounts it through fdsk.device as FATFULLROOT:, creates a
           drawer, files with long names (one across a cluster boundary) and
-          short names in the root, and checks every name and that the root
-          holds no extra entry. It then dismounts the volume and
+          short names in the root, inhibits and stops the handler and mounts
+          the volume again, so that the checks see what was written, and
+          checks every name and that the root holds no extra entry. It then dismounts the volume and
           deletes its files, so it can be run again.
 
           Needs fdsk.device and about 41 MB of free memory (the image is
@@ -234,6 +235,11 @@ static LONG count_root(void)
    from the first added cluster (16-31) into the next */
 #define LONGNAME VOLUME "Long name crossing clusters %ld.txt"
 
+static BOOL mount(void)
+{
+    return run("Mount " VOLUME " FROM " MOUNTLIST) == 0 && exists(VOLUME);
+}
+
 static int test(void);
 
 int main(void)
@@ -317,6 +323,17 @@ static int test(void)
             fails++;
             break;
         }
+    }
+    /* Check what was written, not the handler's cache: inhibit and stop
+       the handler, which must write its cache first, and mount again */
+    unmount();
+    run("Assign " VOLUME " DISMOUNT");
+    if (!mount())
+    {
+        printf("FAIL: cannot mount " VOLUME " again\n");
+        run("Assign FDSK: REMOVE");
+        run("Delete " DIR " ALL QUIET");
+        return RETURN_FAIL;
     }
     for (i = 1; i <= LONGNAMES; i++)
     {
