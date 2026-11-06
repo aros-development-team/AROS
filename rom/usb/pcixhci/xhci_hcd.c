@@ -2623,6 +2623,9 @@ static void xhciHandleClearFeatureEndpointHalt(struct PCIController *hc,
      * because the transfer ring is empty after xhciResetEndpointRing. */
 }
 
+static void xhciRetireAbandonedRequests(struct PCIController *hc, struct PCIUnit *unit,
+                                        struct timerequest *timerreq);
+
 void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerreq)
 {
     struct PCIUnit *unit = hc->hc_Unit;
@@ -2632,6 +2635,8 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
     BOOL transactiondone;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
+
+    xhciRetireAbandonedRequests(hc, unit, timerreq);
 
     /* PERIODIC (INT/ISO) COMPLETIONS */
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Checking for Periodic work done..." DEBUGCOLOR_RESET"\n");
@@ -2657,6 +2662,11 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
         transactiondone = FALSE;
         devadrep = xhciDevEPKey(ioreq);
 
+        if(driprivate->dpAbort && (driprivate->dpCC == TRB_CC_INVALID)) {
+            ioreq = nextioreq;
+            continue;
+        }
+
         /*
          * First, look at completion code from the event TRB
          * (set in xhciIntWorkProcess).
@@ -2675,13 +2685,24 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
              */
             if(unit->hu_NakTimeoutFrame[devadrep] &&
                     (hc->hc_FrameCounter > unit->hu_NakTimeoutFrame[devadrep])) {
+                struct PTDNode *nakptd = (struct PTDNode *)ioreq->iouh_DriverPrivate2;
+                BOOL realtime = nakptd && nakptd->ptd_RTIsoNode && nakptd->ptd_RTIsoNode->rtn_RTIso;
+
                 pciusbWarn("xHCI",
                            DEBUGWARNCOLOR_SET "xHCI: Periodic NAK timeout for DevEP %02x (frame %u > %u)" DEBUGCOLOR_RESET"\n",
                            devadrep,
                            hc->hc_FrameCounter,
                            unit->hu_NakTimeoutFrame[devadrep]);
                 ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
-                transactiondone = TRUE;
+                if(realtime) {
+                    transactiondone = TRUE;
+                } else {
+                    /* its TD is still the controller's: retired at the end of this pass */
+                    driprivate->dpAbort = TRUE;
+                    unit->hu_NakTimeoutFrame[devadrep] = 0;
+                    ioreq = nextioreq;
+                    continue;
+                }
             }
         }
 
@@ -2779,6 +2800,10 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
         pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "Examining IOReq=0x%p" DEBUGCOLOR_RESET" \n", ioreq);
 
         driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
+        if(driprivate && driprivate->dpAbort && (driprivate->dpCC == TRB_CC_INVALID)) {
+            ioreq = nextioreq;
+            continue;
+        }
         if(driprivate) {
             transactiondone = FALSE;
             devadrep = xhciDevEPKey(ioreq);
@@ -2801,8 +2826,11 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
                            DEBUGCOLOR_RESET" \n",
                            unit->hu_NakTimeoutFrame[devadrep]);
                 ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
-                transactiondone = TRUE;
                 unit->hu_NakTimeoutFrame[devadrep] = 0;
+                /* its TD is still the controller's: retired at the end of this pass */
+                driprivate->dpAbort = TRUE;
+                ioreq = nextioreq;
+                continue;
             }
 
             /*
@@ -2866,6 +2894,9 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
         }
         ioreq = nextioreq;
     }
+
+    /* requests that timed out in this pass */
+    xhciRetireAbandonedRequests(hc, unit, timerreq);
 }
 
 static AROS_INTH1(xhciCompleteInt, struct PCIController *, hc)
@@ -3110,6 +3141,277 @@ static inline BOOL xhciRingAndIndexFromDMA(struct PCIController *hc,
     *outRing = ring;
     *outIdx  = idx;
     return TRUE;
+}
+
+/* First and last ring index of a request's TRBs, setup through status stage. */
+static BOOL xhciRequestTRBRange(struct pciusbXHCIIODevPrivate *dp, ULONG *first, ULONG *last)
+{
+    UWORD f = (dp->dpSTRB != (UWORD)-1) ? dp->dpSTRB : dp->dpTxSTRB;
+    UWORD l = (dp->dpSttTRB != (UWORD)-1) ? dp->dpSttTRB :
+              (dp->dpTxETRB != (UWORD)-1) ? dp->dpTxETRB : dp->dpSTRB;
+
+    if((f == (UWORD)-1) || (l == (UWORD)-1))
+        return FALSE;
+    *first = f;
+    *last = l;
+    return TRUE;
+}
+
+static BOOL xhciRingIdxInRange(ULONG idx, ULONG first, ULONG last)
+{
+    if(first <= last)
+        return (idx >= first) && (idx <= last);
+    return (idx >= first) || (idx <= last);
+}
+
+/* Turn a TD the controller has not reached into No-Op TRBs (Linux td_to_noop()). */
+static void xhciRequestToNoOp(volatile struct pcisusbXHCIRing *ring, ULONG first, ULONG last)
+{
+    ULONG idx = first, n;
+
+    for(n = 0; n < XHCI_EVENT_RING_TRBS; n++) {
+        volatile struct xhci_trb *trb = &ring->ring[idx];
+        ULONG flags = AROS_LE2LONG(trb->flags);
+
+        if((flags & TRB_FLAG_TYPE_MASK) == TRBF_FLAG_TRTYPE_LINK) {
+            trb->flags = AROS_LONG2LE(flags & ~TRBF_FLAG_CH);
+        } else {
+            trb->dbp.addr_lo = 0;
+            trb->dbp.addr_hi = 0;
+            trb->tparams = 0;
+            trb->flags = AROS_LONG2LE((flags & TRBF_FLAG_C) | TRBF_FLAG_TRTYPE_NOOP);
+        }
+        CacheClearE((APTR)trb, sizeof(*trb), CACRF_ClearD);
+        if(idx == last)
+            break;
+        idx = ring_advance_idx(idx);
+    }
+}
+
+#define XHCI_RETIRE_BATCH   32
+
+static struct IOUsbHWReq *xhciNextAbandoned(struct PCIController *hc)
+{
+    struct IOUsbHWReq *ioreq;
+    struct List *queues[2] = { &hc->hc_PeriodicTDQueue, &hc->hc_TDQueue };
+    ULONG q;
+
+    for(q = 0; q < 2; q++) {
+        ForeachNode(queues[q], ioreq) {
+            struct pciusbXHCIIODevPrivate *dp = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
+
+            if(dp && (dp->dpAbort == 1) && (dp->dpCC == TRB_CC_INVALID))
+                return ioreq;
+        }
+    }
+    return NULL;
+}
+
+/*
+ * Take abandoned requests (aborted, or timed out on NAKs) back from the
+ * controller one endpoint at a time and reply them. Of an endpoint's
+ * abandoned TDs only the one the controller is working on is skipped
+ * with Set TR Dequeue Pointer; the others become No-Ops in place, so live
+ * TDs queued around them (isochronous) carry on. A request is replied
+ * only once a completed command shows the controller can no longer touch
+ * it; when a command fails the requests stay marked and are tried again
+ * on a later pass. xhc_DevLock is held throughout, so a disconnect cannot
+ * reply or free the same requests in the meantime. Event task context.
+ */
+static void xhciRetireAbandonedRequests(struct PCIController *hc, struct PCIUnit *unit,
+                                        struct timerequest *timerreq)
+{
+    struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
+    struct IOUsbHWReq *ioreq;
+    struct List *queues[2] = { &hc->hc_PeriodicTDQueue, &hc->hc_TDQueue };
+    ULONG q;
+
+    /* the common case, nothing abandoned: no lock taken */
+    Disable();
+    ioreq = xhciNextAbandoned(hc);
+    Enable();
+    if(!ioreq)
+        return;
+
+    ObtainSemaphore(&xhcic->xhc_DevLock);
+
+    for(;;) {
+        struct pciusbXHCIIODevPrivate *dp;
+        struct pciusbXHCIDevice *devCtx;
+        volatile struct pcisusbXHCIRing *ring = NULL;
+        struct IOUsbHWReq *batch[XHCI_RETIRE_BATCH];
+        BOOL batchperiodic[XHCI_RETIRE_BATCH];
+        ULONG nbatch = 0, epid, b;
+        BOOL released = TRUE;
+
+        Disable();
+        ioreq = xhciNextAbandoned(hc);
+        if(!ioreq) {
+            Enable();
+            break;
+        }
+        dp = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
+        devCtx = dp->dpDevice;
+        epid = dp->dpEPID;
+
+        if(devCtx && (devCtx != XHCI_ROOT_HUB_HANDLE) && devCtx->dc_SlotID &&
+           (devCtx->dc_SlotID < USB_DEV_MAX) && (xhcic->xhc_Devices[devCtx->dc_SlotID] == devCtx) &&
+           (epid < MAX_DEVENDPOINTS))
+            ring = (volatile struct pcisusbXHCIRing *)devCtx->dc_EPAllocs[epid].dmaa_Ptr;
+
+        for(q = 0; q < 2; q++) {
+            struct IOUsbHWReq *scan;
+
+            ForeachNode(queues[q], scan) {
+                struct pciusbXHCIIODevPrivate *sp = (struct pciusbXHCIIODevPrivate *)scan->iouh_DriverPrivate1;
+
+                if(sp && (sp->dpAbort == 1) && (sp->dpCC == TRB_CC_INVALID) &&
+                   (sp->dpDevice == devCtx) && (sp->dpEPID == epid) &&
+                   (nbatch < XHCI_RETIRE_BATCH)) {
+                    batchperiodic[nbatch] = (q == 0);
+                    batch[nbatch++] = scan;
+                }
+            }
+        }
+
+        /* events still to come for these TDs must not find the requests */
+        if(ring && ring->ringio) {
+            ULONG cnt;
+
+            for(cnt = 0; cnt < XHCI_EVENT_RING_TRBS; cnt++) {
+                for(b = 0; b < nbatch; b++) {
+                    if(ring->ringio[cnt] == (struct IORequest *)batch[b])
+                        ring->ringio[cnt] = NULL;
+                }
+            }
+        }
+        Enable();
+
+        if(ring) {
+            UBYTE state = xhciEndpointStateOf(hc, devCtx, epid);
+            BOOL commanded = FALSE, stopped = FALSE;
+            LONG rc;
+
+            if(state == XHCI_EP_STATE_RUNNING) {
+                rc = xhciCmdEndpointStop(hc, devCtx->dc_SlotID, epid, 0, timerreq);
+                commanded = (rc != -1);
+                state = xhciEndpointStateOf(hc, devCtx, epid);
+                stopped = (rc == TRB_CC_SUCCESS) ||
+                          (commanded && (state != XHCI_EP_STATE_RUNNING) && (state != XHCI_EP_STATE_HALTED));
+            }
+            if(state == XHCI_EP_STATE_HALTED) {
+                rc = xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0, timerreq);
+                commanded = commanded || (rc != -1);
+                stopped = (rc == TRB_CC_SUCCESS);
+            } else if((state == XHCI_EP_STATE_STOPPED) || (state == XHCI_EP_STATE_ERROR) ||
+                      (state == XHCI_EP_STATE_DISABLED)) {
+                stopped = TRUE;
+            }
+            released = stopped;
+
+            if(stopped && (state != XHCI_EP_STATE_DISABLED)) {
+                const UWORD ctxsize = (hc->hc_Flags & HCF_CTX64) ? 64 : 32;
+                volatile struct xhci_ep *epctx =
+                    (volatile struct xhci_ep *)((volatile UBYTE *)devCtx->dc_SlotCtx.dmaa_Ptr +
+                                                ((UWORD)epid * ctxsize));
+                volatile struct pcisusbXHCIRing *hwring = NULL;
+                ULONG hwidx = 0, first, last;
+                BOOL hwknown;
+                UQUAD deq;
+
+                CacheClearE((APTR)epctx, ctxsize, CACRF_InvalidateD);
+                deq = ((UQUAD)AROS_LE2LONG(epctx->deq.addr_hi) << 32) |
+                      (UQUAD)(AROS_LE2LONG(epctx->deq.addr_lo) & ~0xFUL);
+                hwknown = xhciRingAndIndexFromDMA(hc, devCtx, (UBYTE)epid, deq, &hwring, &hwidx) &&
+                          (hwring == ring);
+
+                for(b = 0; b < nbatch; b++) {
+                    struct pciusbXHCIIODevPrivate *bp =
+                        (struct pciusbXHCIIODevPrivate *)batch[b]->iouh_DriverPrivate1;
+
+                    if(!xhciRequestTRBRange(bp, &first, &last))
+                        continue;
+
+                    if(hwknown && xhciRingIdxInRange(hwidx, first, last)) {
+                        ULONG target = ring_advance_idx(last);
+                        BOOL dcs;
+
+                        Disable();
+                        if(ring->next == target)
+                            dcs = (ring->end & RINGENDCFLAG) != 0;
+                        else
+                            dcs = (AROS_LE2LONG(ring->ring[target].flags) & TRBF_FLAG_C) != 0;
+                        Enable();
+
+                        rc = xhciCmdSetTRDequeuePtr(hc, devCtx->dc_SlotID, epid,
+                                                    (APTR)&ring->ring[target], dcs, timerreq);
+                        commanded = commanded || (rc != -1);
+                        if(rc != TRB_CC_SUCCESS) {
+                            released = FALSE;
+                            break;
+                        }
+                        Disable();
+                        ring->end = (ring->end & RINGENDCFLAG) | (target & ~RINGENDCFLAG);
+                        Enable();
+                    } else {
+                        xhciRequestToNoOp(ring, first, last);
+                    }
+                }
+            }
+
+            /* a completed command comes after every event the controller posted before it */
+            if(released && !commanded)
+                released = (xhciCmdNoOp(hc, 0, NULL, timerreq) == TRB_CC_SUCCESS);
+        }
+
+        if(!released) {
+            for(b = 0; b < nbatch; b++) {
+                struct pciusbXHCIIODevPrivate *bp =
+                    (struct pciusbXHCIIODevPrivate *)batch[b]->iouh_DriverPrivate1;
+
+                bp->dpAbort = 2;                    /* not again in this pass */
+                if(++bp->dpRetireTries == 50)
+                    pciusbWarn("xHCI",
+                               DEBUGWARNCOLOR_SET "abandoned request %p still not released by the controller (slot %u epid %lu)"
+                               DEBUGCOLOR_RESET" \n", batch[b], (unsigned)devCtx->dc_SlotID, epid);
+            }
+            continue;
+        }
+
+        for(b = 0; b < nbatch; b++) {
+            Disable();
+            if(batchperiodic[b])
+                xhciFreePeriodicContext(hc, unit, batch[b]);
+            else
+                xhciFreeAsyncContext(hc, unit, batch[b]);
+            Enable();
+            ReplyMsg(&batch[b]->iouh_Req.io_Message);
+        }
+
+        if(ring) {
+            BOOL more;
+
+            Disable();
+            more = (ring->next != (ring->end & ~RINGENDCFLAG));
+            Enable();
+            if(more)
+                xhciRingDoorbell(hc, devCtx->dc_SlotID, epid);
+        }
+    }
+
+    /* the ones that could not be released are tried again on the next pass */
+    Disable();
+    for(q = 0; q < 2; q++) {
+        ForeachNode(queues[q], ioreq) {
+            struct pciusbXHCIIODevPrivate *dp = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
+
+            if(dp && (dp->dpAbort == 2))
+                dp->dpAbort = 1;
+        }
+    }
+    Enable();
+
+    ReleaseSemaphore(&xhcic->xhc_DevLock);
 }
 
 static inline struct IOUsbHWReq *xhciBusyReqFromSlotEpid(struct PCIController *hc,
