@@ -136,6 +136,10 @@ error_t GetResBlock(cachedblock_t *blok, uint16 bloktype, uint32 seqnr, bool fix
 			}
 			else
 			{
+				if (seqnr > MAXSMALLINDEXNR) {
+					free(blk.data);
+					return e_number_error;
+				}
 				bp = &rbl->idx.small.indexblocks[seqnr];
 			}
 			if (!*bp)
@@ -245,6 +249,9 @@ error_t ReadAnode(canode_t *anode, uint32 anodenr, bool fix)
 	uint16 seqnr = anodenr >> 16;
 	uint16 offset = anodenr;
 
+	if (offset >= ANODES_PER_BLOCK)
+		return e_number_error;
+
 	if (!(tablk.data && tanodeblk->seqnr == seqnr))
 	{
 		tablk.data = tanodeblk;
@@ -254,9 +261,6 @@ error_t ReadAnode(canode_t *anode, uint32 anodenr, bool fix)
 			return error;
 		}
 	}
-
-	if (offset >= ANODES_PER_BLOCK)
-		return e_number_error;
 
 	anode->nr = anodenr;
 	anode->clustersize = tablk.data->nodes[offset].clustersize;
@@ -278,13 +282,13 @@ error_t WriteAnode(canode_t *anode, uint32 nr)
 	c_anodeblock_t ablk;
 	uint32 buffer[MAXRESBLOCKSIZE/4];
 
+	if (offset >= ANODES_PER_BLOCK)
+		return e_number_error;
+
 	tablk.data = NULL;			/* kill anode read cache */
 	ablk.data = (anodeblock_t *)buffer;
 	if ((error = GetResBlock((cachedblock_t *)&ablk, ABLKID, seqnr, false)))
 		return error;
-
-	if (offset >= ANODES_PER_BLOCK)
-		return e_number_error;
 
 	ablk.data->nodes[offset].clustersize = anode->clustersize;
 	ablk.data->nodes[offset].blocknr     = anode->blocknr;
