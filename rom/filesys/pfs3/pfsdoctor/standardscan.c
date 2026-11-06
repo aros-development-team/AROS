@@ -225,6 +225,9 @@ static BOOL FileSizeCheck(ULONG low, ULONG high, ULONG numblocks)
 error_t StandardScan(uint32 opties)
 {
 	uint32 flags;
+	enum mode savedmode = mode;
+	error_t (*writer)(uint8 *, int32, uint32) = volume.writerawblocks;
+	error_t error;
 
 	aborting = 0;
 	// onbreak(&brk);
@@ -237,7 +240,17 @@ error_t StandardScan(uint32 opties)
 
 	/* init stats */
 	memset(&stats, 0, sizeof(stats));
-	return mainStandardScan(flags);
+	/* SEARCH uses the CHECK scan, including its non-destructive handling of
+	 * damaged entries. Keep simulated cache updates off the device through
+	 * exitStandardScan's final flush, also for callers outside the console. */
+	if (mode == search)
+		mode = check;
+	if (mode == check)
+		volume.writerawblocks = dev_WriteBlocksDummy;
+	error = mainStandardScan(flags);
+	volume.writerawblocks = writer;
+	mode = savedmode;
+	return error;
 }
 
 // core standardscan 
@@ -303,8 +316,6 @@ static error_t mainStandardScan(uint32 flags)
 		sprintf(bericht, "Starting pass %d\n", ss.pass);
 		volume.showmsg(bericht);
 		volume.updatestats();
-		if (mode == check && stats.numerrors > 0)
-			break;
 		error = ss_CheckDirTree();
 		if ((error != e_none) || aborting)
 			return exitStandardScan(error);
@@ -313,8 +324,11 @@ static error_t mainStandardScan(uint32 flags)
 		ss.pass++; 
 	}
 
-	if (ss.stage != finished)
+	if (ss.stage != finished) {
+		if (mode == check && !ss.incomplete)
+			ss.incomplete = e_max_pass_exceeded;
 		return exitStandardScan(e_max_pass_exceeded);
+	}
 
 	volume.status(0, "finishing up", 2);
 	volume.progress(0, 1);
@@ -344,7 +358,7 @@ static error_t exitStandardScan(error_t error)
 	KillMainBitmap();
 	ExitFullScan();
 
-	if ((mode == check || mode == search) && ss.setupdone &&
+	if (mode == check && ss.setupdone &&
 	    ss.incomplete && error == ss.incomplete && !aborting)
 		volume.showmsg("INCOMPLETE\n");
 	else if ((error != e_none) || aborting)
@@ -808,6 +822,8 @@ static error_t GetRootBlock(void)
 		}
 		else
 		{
+			if (mode == check)
+				return e_rbl_not_found;
 			okuser = volume.askuser("Rootblock not found.\n"
 			"Select ok to build a new one.\n"
 			"WARNING: Make sure this is a PFS partition.\n"
