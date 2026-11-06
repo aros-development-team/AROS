@@ -73,6 +73,8 @@ struct
 	BOOL unformat;
 	BOOL incomplete;		/* CHECK could not read all referenced metadata */
 	BOOL setupdone;		/* root and layout metadata are available */
+	BOOL readfailed;
+	uint32 badblock;		/* last unreadable metadata block in CHECK */
 
 	enum {syntax, resbitmap, mainbitmap, anodebitmap, finished} stage;
 
@@ -178,6 +180,8 @@ static bool SkipCheckReadError(error_t error)
 static void ReportCheckReadError(error_t error, uint32 blocknr)
 {
 	if (SkipCheckReadError(error)) {
+		ss.readfailed = true;
+		ss.badblock = blocknr;
 		sprintf(bericht, "unreadable metadata block %lu (check incomplete)",
 			(unsigned long)blocknr);
 		adderror(bericht);
@@ -564,6 +568,8 @@ error_t vol_GetBlock(cachedblock_t *blok, ULONG bloknr)
 	realbloknr = bloknr;
 	if ((error = vol_CheckBlockNr(&realbloknr)))
 		return error;
+	if (mode == check && ss.readfailed && ss.badblock == bloknr)
+		return e_read_error;
 
 	if ((error = ReadPFS3Metadata((uint8 *)blok->data, realbloknr,
 		SIZEOF_RESBLOCK, PFS3_METADATA_RESERVED)))
@@ -586,6 +592,8 @@ error_t vol_GetRawBlock(cachedblock_t *blok, ULONG bloknr)
 
 	if ((error = vol_CheckBlockNr(&realbloknr)))
 		return error;
+	if (mode == check && ss.readfailed && ss.badblock == bloknr)
+		return e_read_error;
 	if ((error = c_GetBlock((uint8 *)blok->data, realbloknr,
 		SIZEOF_RESBLOCK))) {
 		ReportCheckReadError(error, bloknr);
@@ -632,8 +640,11 @@ error_t vol_WriteBlock(cachedblock_t *blok)
 		if ((status = vol_CheckBlockNr(&bloknr)))
 			return status;
 
-		return WritePFS3Metadata((uint8 *)blok->data, bloknr,
+		status = WritePFS3Metadata((uint8 *)blok->data, bloknr,
 			SIZEOF_RESBLOCK, PFS3_METADATA_RESERVED);
+		if (!status && ss.readfailed && ss.badblock == blok->blocknr)
+			ss.readfailed = false;
+		return status;
 	}
 
 	return e_none;
