@@ -235,6 +235,22 @@
 #define PCIMSIX_ENTRY_CTRL_MASKBIT      1
 
 /*
+ * PCI Express Resizable BAR extended capability. One capability/control
+ * pair per resizable BAR follows the header. A size is encoded as n for
+ * 2^n MiB: the capability word has bit (n + 4) set for every size the BAR
+ * supports, and the control word's size field holds the current n.
+ */
+#define PCIEECAP_REBAR                  0x0015
+#define PCIREBAR_CAP(i)                 (0x04 + (i) * 8)
+#define PCIREBAR_CTRL(i)                (0x08 + (i) * 8)
+#define PCIREBAR_CAP_SIZES_SHIFT        4
+#define PCIREBAR_CTRL_BAR_MASK          0x00000007      /* which BAR the pair is for */
+#define PCIREBAR_CTRL_NBAR_SHIFT        5               /* entry 0 only: pairs present */
+#define PCIREBAR_CTRL_NBAR_MASK         0x000000e0
+#define PCIREBAR_CTRL_SIZE_SHIFT        8
+#define PCIREBAR_CTRL_SIZE_MASK         0x00003f00
+
+/*
  * Device 0:0.0 PCI configuration space (Host Bridge)
  */
 #define EPBAR		                0x40
