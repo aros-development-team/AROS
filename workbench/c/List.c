@@ -1196,6 +1196,10 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
         }
     } while (dirnode);
         
+    /* A break or an error leaves directories queued but not listed */
+    while ((dirnode = (struct DirNode *)RemHead(&DirList)))
+        AddTail(&FreeDirNodeList, (struct Node *)dirnode);
+
     while ((dirnode = (struct DirNode *)RemHead(&FreeDirNodeList)))
     {
         FreeVec(dirnode->dirname);
