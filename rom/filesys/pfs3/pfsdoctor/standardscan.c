@@ -1680,8 +1680,23 @@ static error_t CheckDirChain(canode_t *first, uint32 *length, uint32 *stop)
 			distance = 0;
 			power = power < 0x80000000UL ? power * 2 : ~(uint32)0;
 		}
-		if ((error = ReadAnode(&node, *stop = node.next, true)))
+		if ((error = ReadAnode(&node, *stop = node.next, true))) {
+			if (mode == repair && (error == e_number_error || error == e_not_found)) {
+				/* Keep the readable directory prefix when its successor is
+				 * structurally absent. Propagate failed reads instead of cutting. */
+				node.next = 0;
+				if ((error = WriteAnode(&node, node.nr))) {
+					addfileerror("cannot cut invalid directory tail; directory retained");
+					return IsOperationalError(error) ? error : e_fatal_error;
+				}
+				if (node.nr == first->nr)
+					*first = node;
+				fixedfileerror("removed invalid directory chain tail");
+				*stop = 0;
+				return e_none;
+			}
 			goto read_failed;
+		}
 	}
 
 	/* Locate the entry to the cycle, then its closing edge.  Cutting the
@@ -1721,8 +1736,8 @@ static error_t CheckDirChain(canode_t *first, uint32 *length, uint32 *stop)
 	return e_none;
 
 read_failed:
-	if (cyclelength && mode == repair && !IsOperationalError(error)) {
-		addfileerror("cannot inspect directory chain cycle; directory retained");
+	if (mode == repair && !IsOperationalError(error)) {
+		addfileerror("cannot inspect directory chain; directory retained");
 		return e_fatal_error;
 	}
 	/* A transient failure may occur on a later lap. Stop at its first
@@ -1759,8 +1774,14 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 	mainanodenr = de ? de->anode : ANODE_ROOTDIR;
 	if (!mainanodenr)
 		return e_none;
-	if ((error = ReadAnode(&dirnode, mainanodenr, true)))
-		return IsOperationalError(error) ? error : e_remove;
+	if ((error = ReadAnode(&dirnode, mainanodenr, true))) {
+		if (IsOperationalError(error))
+			return error;
+		if (mode != repair && !ss.incomplete)
+			ss.incomplete = error;
+		return (mode != repair || error == e_number_error || error == e_not_found)
+			? e_remove : e_fatal_error;
+	}
 	chainerror = CheckDirChain(&dirnode, &remaining, &stop);
 	if (chainerror && mode != repair && !IsOperationalError(chainerror)) {
 		addfileerror("invalid directory anode chain; checking readable prefix");
@@ -1769,13 +1790,13 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 		chainerror = e_none;
 	}
 	if (chainerror && !SkipCheckReadError(chainerror))
-		return IsOperationalError(chainerror) ? chainerror : e_remove;
+		return chainerror;
 	for (anodenr = mainanodenr; anodenr && remaining && anodenr != stop;
 	     anodenr = dirnode.next, remaining--)
 	{
 		/* get anode */
 		if (!firstnode && (error = ReadAnode(&dirnode, anodenr, true)))
-			return IsOperationalError(error) ? error : e_remove;
+			return IsOperationalError(error) ? error : e_fatal_error;
 
 		firstnode = FALSE;
 		/* check anode */
@@ -1821,7 +1842,7 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 				error = DeleteAnode(mainanodenr, anodenr);
 				if (error && error != e_empty) {
 					/* Keep the directory if its chain cannot be shortened. */
-					if (mode == repair && error == e_anode_error) {
+					if (mode == repair && !IsOperationalError(error)) {
 						addfileerror("cannot shorten directory anode chain; directory retained");
 						return e_fatal_error;
 					}
