@@ -1978,6 +1978,36 @@ static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool
 	return error;
 }
 
+/* The handler requires valid name/comment/extra-field packing, not merely
+ * a traversable entry chain. Preserve names and comments when only the packed
+ * fields are unusable; otherwise let normal entry removal handle the damage. */
+#ifdef __GNUC__
+static error_t CheckDirEntryLayout(struct direntry *, c_dirblock_t *) __attribute__((noinline));
+#endif
+static error_t CheckDirEntryLayout(struct direntry *de, c_dirblock_t *dirblk)
+{
+	struct extrafields extra;
+	uint8 *data = (uint8 *)de;
+	uint32 offset;
+
+	if (PFS3GetExtraFields(de, &extra) != (UWORD)~0)
+		return e_none;
+	if (mode != repair) {
+		if (!ss.incomplete)
+			ss.incomplete = e_direntry_error;
+		return e_direntry_error;
+	}
+	offset = offsetof(struct direntry, startofname) + de->nlength;
+	if (offset >= de->next)
+		return e_direntry_error;
+	offset = (sizeof(*de) + de->nlength + data[offset]) & ~1U;
+	if (offset > de->next - sizeof(UWORD))
+		return e_direntry_error;
+	memset(data + de->next - sizeof(UWORD), 0, sizeof(UWORD));
+	fixedfileerror("removed malformed directory extra fields");
+	return volume.writeblock((cachedblock_t *)dirblk);
+}
+
 static error_t RepairDirEntry(struct direntry *de, c_dirblock_t *dirblk)
 {
 	struct dirstack dirstack;
@@ -1994,6 +2024,9 @@ static error_t RepairDirEntry(struct direntry *de, c_dirblock_t *dirblk)
 			addfileerror("odd directory entry length");
 			return e_direntry_error;
 		}
+
+		if ((error = CheckDirEntryLayout(de, dirblk)))
+			return error;
 
 		if (de->nlength + offsetof(struct direntry, nlength) > de->next)
 		{
