@@ -884,7 +884,8 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
             ring->ringio[ring->next] = NULL;
             xhciInsertTRB(hc, ring,
                           link_dma,
-                          TRBF_FLAG_TRTYPE_LINK | TRBF_FLAG_TC,
+                          TRBF_FLAG_TRTYPE_LINK | TRBF_FLAG_TC |
+                          (AROS_LE2LONG(ring->ring[ring->next - 1].flags) & TRBF_FLAG_CH),
                           0);
             ring->next = 0;
             if(ring->end & RINGENDCFLAG)
@@ -940,7 +941,8 @@ WORD xhciQueueTRB_IO(struct PCIController *hc, volatile struct pcisusbXHCIRing *
             ring->ringio[ring->next] = NULL;
             xhciInsertTRB(hc, ring,
                           link_dma,
-                          TRBF_FLAG_TRTYPE_LINK | TRBF_FLAG_TC,
+                          TRBF_FLAG_TRTYPE_LINK | TRBF_FLAG_TC |
+                          (AROS_LE2LONG(ring->ring[ring->next - 1].flags) & TRBF_FLAG_CH),
                           0);
             ring->next = 0;
             if(ring->end & RINGENDCFLAG)
