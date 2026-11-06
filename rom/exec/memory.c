@@ -1335,9 +1335,7 @@ void InternalFreePooled(APTR poolHeader, APTR memory, IPTR memSize, struct Trace
     mh = *((struct MemHeader **)freeStart);
 
     /* Check walls first */
-    freeStart = MungWall_Check(freeStart, freeSize, loc, SysBase);
-    if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
-        freeSize += MUNGWALL_TOTAL_SIZE;
+    freeStart = MungWall_Check(freeStart, &freeSize, loc, SysBase);
 
     /* Verify that MemHeader pointer is correct */
     if ((mh->mh_Node.ln_Type != NT_MEMORY) ||
