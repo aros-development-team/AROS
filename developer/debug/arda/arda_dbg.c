@@ -40,8 +40,10 @@
 #include <libraries/debug.h>
 #include <utility/hooks.h>
 #include <aros/asmcall.h>
-#if defined(__riscv)
+#if defined(__riscv) && (__riscv_xlen == 64)
 #include <aros/riscv64/cpucontext.h>
+#elif defined(__riscv)
+#include <aros/riscv/cpucontext.h>
 #elif defined(__aarch64__)
 #include <aros/aarch64/cpucontext.h>
 #elif defined(__x86_64__)
