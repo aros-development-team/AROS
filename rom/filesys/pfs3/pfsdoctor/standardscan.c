@@ -1131,7 +1131,9 @@ static error_t GetRext(void)
 	if (!(rbl->options & MODE_EXTENSION))
 	{
 		rbl->options |= MODE_EXTENSION;
-		volume.writeblock((cachedblock_t *)&rext);
+		if (mode == repair && (error = WritePFS3Metadata((uint8 *)rbl,
+			ROOTBLOCK + volume.firstblock, volume.blocksize, PFS3_METADATA_ROOT)))
+			return error;
 		if (mode == check)
 			adderror("MODE_EXTENSION is disabled");
 		else
