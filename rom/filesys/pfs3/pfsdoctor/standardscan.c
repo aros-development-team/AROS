@@ -1105,6 +1105,9 @@ static error_t GetRext(void)
 				sprintf(bericht, "replaced block %lu with backup %lu", oldbloknr, bloknr);
 				fixederror(bericht);
 				rbl->extension = bloknr;
+				if ((error = WritePFS3Metadata((uint8 *)rbl,
+					ROOTBLOCK + volume.firstblock, volume.blocksize, PFS3_METADATA_ROOT)))
+					return error;
 				return GetRext();
 			}
 			else
