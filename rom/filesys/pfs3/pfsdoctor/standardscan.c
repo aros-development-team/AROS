@@ -1093,11 +1093,12 @@ static error_t GetRext(void)
 			{
 				volume.showmsg("No replacement block found\n");
 				free (rext.data);
-				if ((error = BuildRext(&rext)))
+				if ((error = BuildRext(&rext))) {
 					adderror("building new rootblockextension failed");
-				else
-					fixederror("new rootblockextension created");
-				return error;
+					return error;
+				}
+				fixederror("new rootblockextension created");
+				/* Apply the same volume setup as for a recovered extension. */
 			}
 		}
 		else
@@ -1125,22 +1126,12 @@ static error_t GetRext(void)
 		if (rext.data->fnsize < 30 || rext.data->fnsize > 108)
 		{
 			sprintf(bericht, "illegal filename size of %d", rext.data->fnsize);
-			if (mode == check)
-				adderror(bericht);
-			else
-			{
-				if (rext.data->fnsize < 30)
-				{
-					fixederror("reset filename size to 30");
-					rext.data->fnsize = 30;
-				}
-				else
-				{
-					fixederror("reset filename size to 100");
-					rext.data->fnsize = 100;
-				}
-				volume.writeblock((cachedblock_t *)&rext);
-			}
+			/* Bound the diagnostic scan too, without rejecting recoverable
+			 * names just because the stored limit has been lost. */
+			fixederror(bericht);
+			rext.data->fnsize = 108;
+			if (mode != check && (error = volume.writeblock((cachedblock_t *)&rext)))
+				return error;
 		}
 		volume.fnsize = rext.data->fnsize - 1;
 	}
