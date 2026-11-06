@@ -2966,7 +2966,7 @@ static error_t InitAnodeBitmap(void)
 			return error;
 		}
 
-		for (i=INDEX_PER_BLOCK - 1; !iblk.data->index[i]; i--);
+		for (i=INDEX_PER_BLOCK - 1; i && !iblk.data->index[i]; i--);
 	}
 	else
 	{
