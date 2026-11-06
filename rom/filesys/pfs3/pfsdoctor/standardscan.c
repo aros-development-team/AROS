@@ -438,6 +438,8 @@ static error_t ss_CheckDirTree(void)
 	error = RepairDirTree();
 	if ((error && !SkipCheckReadError(error)) || aborting)
 		return error;
+	if (cache.writeerror)
+		return cache.writeerror;
 	if (ss.incomplete) {
 		volume.showmsg("Scan incomplete: metadata not fully checked; allocation-map comparisons skipped.\n");
 		return ss.incomplete;

@@ -137,6 +137,7 @@ struct cache
 	uint32 linesize;			// linesize in blocks
 	uint32 failedline;		/* most recent failed aligned read */
 	bool readfailed;
+	int writeerror;		/* first failed cache write, retained until reinit */
 	uint32 nolines;				
 	struct cacheline *cachelines;
 };

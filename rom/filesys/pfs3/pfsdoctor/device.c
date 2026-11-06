@@ -78,6 +78,7 @@ error_t InitCache(uint32 linesize, uint32 nolines)
 	
 	cache.linesize = linesize;
 	cache.readfailed = false;
+	cache.writeerror = e_none;
 	cache.nolines = nolines;
 	NewList((struct List *)&cache.LRUqueue);
 	NewList((struct List *)&cache.LRUpool);
@@ -129,11 +130,16 @@ error_t c_WriteBlock(uint8 *data, uint32 bloknr, uint32 bytes)
 	error_t error = e_none;
 
 	__chkabort();
+	if (cache.writeerror)
+		return cache.writeerror;
 	for (total=0; total<bytes; total+=volume.blocksize, bloknr++, data+=volume.blocksize)
 	{
 		cl = c_GetCacheLine(bloknr, &error, true);
-		if (!cl)
+		if (!cl) {
+			if (!cache.writeerror)
+				cache.writeerror = error;
 			return error;
+		}
 
 		offset = bloknr - cl->blocknr;
 		memcpy(cl->data + offset*volume.blocksize, data, volume.blocksize);
@@ -216,8 +222,11 @@ static struct cacheline *c_GetCacheLine(uint32 bloknr, error_t *error, bool writ
 			if (cl->dirty) {
 				*error = volume.writerawblocks(cl->data + cl->dirtyfirst * volume.blocksize,
 				cl->dirtylast - cl->dirtyfirst + 1, cl->blocknr + cl->dirtyfirst);
-				if (*error)
+				if (*error) {
+					if (!cache.writeerror)
+						cache.writeerror = *error;
 					return NULL;
+				}
 			}
 		}
 		else
@@ -258,7 +267,7 @@ static struct cacheline *c_GetCacheLine(uint32 bloknr, error_t *error, bool writ
 error_t UpdateCache(void)
 {
 	struct cacheline *cl;
-	error_t error, first_error = e_none;
+	error_t error, first_error = cache.writeerror;
 
 	for (cl = HeadOf(&cache.LRUqueue); cl->next; cl=cl->next)
 	{
@@ -275,6 +284,7 @@ error_t UpdateCache(void)
 			cl->dirty = false;
 		}
 	}
+	cache.writeerror = first_error;
 	return first_error;
 }
 
