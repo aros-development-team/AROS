@@ -41,7 +41,7 @@ cachedblock_t *GetBuildBlock(uint16 bloktype, uint32 seqnr)
 	for (bbl = HeadOf(&volume.buildblocks); bbl->next; bbl = bbl->next)
 	{
 		if (bbl->b.data->id == bloktype &&
-			bbl->b.data->indexblock.seqnr == seqnr)
+			(bloktype == EXTENSIONID || bbl->b.data->indexblock.seqnr == seqnr))
 		{
 			return &bbl->b;
 		}
@@ -65,7 +65,7 @@ error_t GetResBlock(cachedblock_t *blok, uint16 bloktype, uint32 seqnr, bool fix
 	{
 		blok->blocknr = t->blocknr;
 		blok->mode = t->mode;
-		*blok->data = *t->data;
+		memcpy(blok->data, t->data, SIZEOF_RESBLOCK);
 		return e_none;
 	}
 
@@ -136,6 +136,10 @@ error_t GetResBlock(cachedblock_t *blok, uint16 bloktype, uint32 seqnr, bool fix
 			}
 			else
 			{
+				if (seqnr > MAXSMALLINDEXNR) {
+					free(blk.data);
+					return e_number_error;
+				}
 				bp = &rbl->idx.small.indexblocks[seqnr];
 			}
 			if (!*bp)
@@ -221,8 +225,12 @@ error_t GetResBlock(cachedblock_t *blok, uint16 bloktype, uint32 seqnr, bool fix
 	blknr = *bp;
 
 	free (blk.data);
-	if (!blknr)
+	if (!blknr) {
+		/* Repair may have rebuilt this block without allocating it yet. */
+		if (fix && GetBuildBlock(bloktype, seqnr))
+			return GetResBlock(blok, bloktype, seqnr, false);
 		return e_not_found;
+	}
 
 	error = volume.getblock(blok, blknr);
 	if (error)
@@ -241,6 +249,9 @@ error_t ReadAnode(canode_t *anode, uint32 anodenr, bool fix)
 	uint16 seqnr = anodenr >> 16;
 	uint16 offset = anodenr;
 
+	if (offset >= ANODES_PER_BLOCK)
+		return e_number_error;
+
 	if (!(tablk.data && tanodeblk->seqnr == seqnr))
 	{
 		tablk.data = tanodeblk;
@@ -250,9 +261,6 @@ error_t ReadAnode(canode_t *anode, uint32 anodenr, bool fix)
 			return error;
 		}
 	}
-
-	if (offset >= ANODES_PER_BLOCK)
-		return e_number_error;
 
 	anode->nr = anodenr;
 	anode->clustersize = tablk.data->nodes[offset].clustersize;
@@ -274,13 +282,13 @@ error_t WriteAnode(canode_t *anode, uint32 nr)
 	c_anodeblock_t ablk;
 	uint32 buffer[MAXRESBLOCKSIZE/4];
 
+	if (offset >= ANODES_PER_BLOCK)
+		return e_number_error;
+
 	tablk.data = NULL;			/* kill anode read cache */
 	ablk.data = (anodeblock_t *)buffer;
 	if ((error = GetResBlock((cachedblock_t *)&ablk, ABLKID, seqnr, false)))
 		return error;
-
-	if (offset >= ANODES_PER_BLOCK)
-		return e_number_error;
 
 	ablk.data->nodes[offset].clustersize = anode->clustersize;
 	ablk.data->nodes[offset].blocknr     = anode->blocknr;

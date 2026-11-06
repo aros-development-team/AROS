@@ -225,6 +225,9 @@ static BOOL FileSizeCheck(ULONG low, ULONG high, ULONG numblocks)
 error_t StandardScan(uint32 opties)
 {
 	uint32 flags;
+	enum mode savedmode = mode;
+	error_t (*writer)(uint8 *, int32, uint32) = volume.writerawblocks;
+	error_t error;
 
 	aborting = 0;
 	// onbreak(&brk);
@@ -237,7 +240,17 @@ error_t StandardScan(uint32 opties)
 
 	/* init stats */
 	memset(&stats, 0, sizeof(stats));
-	return mainStandardScan(flags);
+	/* SEARCH uses the CHECK scan, including its non-destructive handling of
+	 * damaged entries. Keep simulated cache updates off the device through
+	 * exitStandardScan's final flush, also for callers outside the console. */
+	if (mode == search)
+		mode = check;
+	if (mode == check)
+		volume.writerawblocks = dev_WriteBlocksDummy;
+	error = mainStandardScan(flags);
+	volume.writerawblocks = writer;
+	mode = savedmode;
+	return error;
 }
 
 // core standardscan 
@@ -303,8 +316,6 @@ static error_t mainStandardScan(uint32 flags)
 		sprintf(bericht, "Starting pass %d\n", ss.pass);
 		volume.showmsg(bericht);
 		volume.updatestats();
-		if (mode == check && stats.numerrors > 0)
-			break;
 		error = ss_CheckDirTree();
 		if ((error != e_none) || aborting)
 			return exitStandardScan(error);
@@ -313,8 +324,11 @@ static error_t mainStandardScan(uint32 flags)
 		ss.pass++; 
 	}
 
-	if (ss.stage != finished)
+	if (ss.stage != finished) {
+		if (mode == check && !ss.incomplete)
+			ss.incomplete = e_max_pass_exceeded;
 		return exitStandardScan(e_max_pass_exceeded);
+	}
 
 	volume.status(0, "finishing up", 2);
 	volume.progress(0, 1);
@@ -344,7 +358,7 @@ static error_t exitStandardScan(error_t error)
 	KillMainBitmap();
 	ExitFullScan();
 
-	if ((mode == check || mode == search) && ss.setupdone &&
+	if (mode == check && ss.setupdone &&
 	    ss.incomplete && error == ss.incomplete && !aborting)
 		volume.showmsg("INCOMPLETE\n");
 	else if ((error != e_none) || aborting)
@@ -424,6 +438,8 @@ static error_t ss_CheckDirTree(void)
 	error = RepairDirTree();
 	if ((error && !SkipCheckReadError(error)) || aborting)
 		return error;
+	if (cache.writeerror)
+		return cache.writeerror;
 	if (ss.incomplete) {
 		volume.showmsg("Scan incomplete: metadata not fully checked; allocation-map comparisons skipped.\n");
 		return ss.incomplete;
@@ -635,6 +651,7 @@ error_t vol_WriteBlock(cachedblock_t *blok)
 {
 	int status;
 	uint32 bloknr;
+	cachedblock_t *owner;
 
 	if (blok->mode != build)
 	{
@@ -649,6 +666,13 @@ error_t vol_WriteBlock(cachedblock_t *blok)
 		return status;
 	}
 
+	/* GetResBlock returns caller-owned storage even for pending rebuilds.
+	 * Keep the build-list copy authoritative until it is published. */
+	owner = GetBuildBlock(blok->data->id, blok->data->indexblock.seqnr);
+	if (!owner)
+		return e_fatal_error;
+	if (owner->data != blok->data)
+		memcpy(owner->data, blok->data, SIZEOF_RESBLOCK);
 	return e_none;
 }
 
@@ -800,6 +824,8 @@ static error_t GetRootBlock(void)
 		}
 		else
 		{
+			if (mode == check)
+				return e_rbl_not_found;
 			okuser = volume.askuser("Rootblock not found.\n"
 			"Select ok to build a new one.\n"
 			"WARNING: Make sure this is a PFS partition.\n"
@@ -849,7 +875,7 @@ static error_t GetRootBlock(void)
 			return error;
 
 		default:
-			return BuildRootBlock_hub();
+			return error;
 	}
 
 	exitblock();
@@ -1085,11 +1111,12 @@ static error_t GetRext(void)
 			{
 				volume.showmsg("No replacement block found\n");
 				free (rext.data);
-				if ((error = BuildRext(&rext)))
+				if ((error = BuildRext(&rext))) {
 					adderror("building new rootblockextension failed");
-				else
-					fixederror("new rootblockextension created");
-				return error;
+					return error;
+				}
+				fixederror("new rootblockextension created");
+				/* Apply the same volume setup as for a recovered extension. */
 			}
 		}
 		else
@@ -1117,22 +1144,12 @@ static error_t GetRext(void)
 		if (rext.data->fnsize < 30 || rext.data->fnsize > 108)
 		{
 			sprintf(bericht, "illegal filename size of %d", rext.data->fnsize);
-			if (mode == check)
-				adderror(bericht);
-			else
-			{
-				if (rext.data->fnsize < 30)
-				{
-					fixederror("reset filename size to 30");
-					rext.data->fnsize = 30;
-				}
-				else
-				{
-					fixederror("reset filename size to 100");
-					rext.data->fnsize = 100;
-				}
-				volume.writeblock((cachedblock_t *)&rext);
-			}
+			/* Bound the diagnostic scan too, without rejecting recoverable
+			 * names just because the stored limit has been lost. */
+			fixederror(bericht);
+			rext.data->fnsize = 108;
+			if (mode != check && (error = volume.writeblock((cachedblock_t *)&rext)))
+				return error;
 		}
 		volume.fnsize = rext.data->fnsize - 1;
 	}
@@ -1681,8 +1698,23 @@ static error_t CheckDirChain(canode_t *first, uint32 *length, uint32 *stop)
 			distance = 0;
 			power = power < 0x80000000UL ? power * 2 : ~(uint32)0;
 		}
-		if ((error = ReadAnode(&node, *stop = node.next, true)))
+		if ((error = ReadAnode(&node, *stop = node.next, true))) {
+			if (mode == repair && (error == e_number_error || error == e_not_found)) {
+				/* Keep the readable directory prefix when its successor is
+				 * structurally absent. Propagate failed reads instead of cutting. */
+				node.next = 0;
+				if ((error = WriteAnode(&node, node.nr))) {
+					addfileerror("cannot cut invalid directory tail; directory retained");
+					return IsOperationalError(error) ? error : e_fatal_error;
+				}
+				if (node.nr == first->nr)
+					*first = node;
+				fixedfileerror("removed invalid directory chain tail");
+				*stop = 0;
+				return e_none;
+			}
 			goto read_failed;
+		}
 	}
 
 	/* Locate the entry to the cycle, then its closing edge.  Cutting the
@@ -1722,8 +1754,8 @@ static error_t CheckDirChain(canode_t *first, uint32 *length, uint32 *stop)
 	return e_none;
 
 read_failed:
-	if (cyclelength && mode == repair && !IsOperationalError(error)) {
-		addfileerror("cannot inspect directory chain cycle; directory retained");
+	if (mode == repair && !IsOperationalError(error)) {
+		addfileerror("cannot inspect directory chain; directory retained");
 		return e_fatal_error;
 	}
 	/* A transient failure may occur on a later lap. Stop at its first
@@ -1760,8 +1792,14 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 	mainanodenr = de ? de->anode : ANODE_ROOTDIR;
 	if (!mainanodenr)
 		return e_none;
-	if ((error = ReadAnode(&dirnode, mainanodenr, true)))
-		return IsOperationalError(error) ? error : e_remove;
+	if ((error = ReadAnode(&dirnode, mainanodenr, true))) {
+		if (IsOperationalError(error))
+			return error;
+		if (mode != repair && !ss.incomplete)
+			ss.incomplete = error;
+		return (mode != repair || error == e_number_error || error == e_not_found)
+			? e_remove : e_fatal_error;
+	}
 	chainerror = CheckDirChain(&dirnode, &remaining, &stop);
 	if (chainerror && mode != repair && !IsOperationalError(chainerror)) {
 		addfileerror("invalid directory anode chain; checking readable prefix");
@@ -1770,13 +1808,13 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 		chainerror = e_none;
 	}
 	if (chainerror && !SkipCheckReadError(chainerror))
-		return IsOperationalError(chainerror) ? chainerror : e_remove;
+		return chainerror;
 	for (anodenr = mainanodenr; anodenr && remaining && anodenr != stop;
 	     anodenr = dirnode.next, remaining--)
 	{
 		/* get anode */
 		if (!firstnode && (error = ReadAnode(&dirnode, anodenr, true)))
-			return IsOperationalError(error) ? error : e_remove;
+			return IsOperationalError(error) ? error : e_fatal_error;
 
 		firstnode = FALSE;
 		/* check anode */
@@ -1822,7 +1860,7 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 				error = DeleteAnode(mainanodenr, anodenr);
 				if (error && error != e_empty) {
 					/* Keep the directory if its chain cannot be shortened. */
-					if (mode == repair && error == e_anode_error) {
+					if (mode == repair && !IsOperationalError(error)) {
 						addfileerror("cannot shorten directory anode chain; directory retained");
 						return e_fatal_error;
 					}
@@ -1905,7 +1943,10 @@ static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool
 			{
 				redosyntax = true;
 				fixedfileerror("removing corrupt directory entry");
-				RemoveDirEntry(entry, &dirblk);
+				if ((error = RemoveDirEntry(entry, &dirblk))) {
+					free(dirblk.data);
+					return error;
+				}
 			}
 			else
 			{
@@ -2212,16 +2253,15 @@ static error_t RemoveDirEntry(struct direntry *de, c_dirblock_t *dirblk)
 
 	dest = (uint8 *)de;
 	source = dest + de->next;
-	movelen = ((uint8 *)(dirblk->data) + SIZEOF_RESBLOCK) - dest;
+	movelen = ((uint8 *)(dirblk->data) + SIZEOF_RESBLOCK) - source;
 	if (movelen > 0 && movelen < SIZEOF_RESBLOCK)
 	{
 		memmove(dest, source, movelen);
-		volume.writeblock((cachedblock_t *)dirblk);
+		return volume.writeblock((cachedblock_t *)dirblk);
 	}
 	else
 		return e_fatal_error;
 
-	return e_none;
 }
 
 
@@ -2926,7 +2966,7 @@ static error_t InitAnodeBitmap(void)
 			return error;
 		}
 
-		for (i=INDEX_PER_BLOCK - 1; !iblk.data->index[i]; i--);
+		for (i=INDEX_PER_BLOCK - 1; i && !iblk.data->index[i]; i--);
 	}
 	else
 	{

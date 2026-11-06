@@ -269,7 +269,7 @@ error_t BuildRootBlock(rootblock_t *rbl)
 
 	rbl->disktype = ID_PFS_DISK;
 	rbl->options = MODE_HARDDISK | MODE_SPLITTED_ANODES | MODE_DIR_EXTENSION |
-			MODE_SIZEFIELD | MODE_DATESTAMP | MODE_EXTROVING;
+			MODE_SIZEFIELD | MODE_DATESTAMP | MODE_EXTROVING | MODE_LONGFN;
 #if LARGE_FILE_SIZE
 	rbl->options |= MODE_LARGEFILE;
 	rbl->disktype = ID_PFS2_DISK;
@@ -683,13 +683,16 @@ error_t BuildRext(c_extensionblock_t *rext)
 		return e_out_of_memory;
 	}
 
-	memset (r, 0, volume.blocksize);
+	memset (r, 0, SIZEOF_RESBLOCK);
 	memset (bbl, 0, sizeof(*bbl));
 	DateStamp (&time);
 
 	r->id = EXTENSIONID;
 	r->datestamp = rbl->datestamp;
 	r->pfs2version = (17<<16) + 99;
+	/* The lost extension's filename limit is unknown. Accept every length
+	 * supported by the format rather than discard existing long names. */
+	r->fnsize = (rbl->options & MODE_LONGFN) ? 108 : 32;
 	r->root_date[0] = time.ds_Days;
 	r->root_date[1] = time.ds_Minute;
 	r->root_date[2] = time.ds_Tick;
