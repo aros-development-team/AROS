@@ -829,6 +829,7 @@ static BOOL xhciResetEndpointRing(struct PCIController *hc,
      */
     ring->next = 0;
     ring->end = RINGENDCFLAG;
+    ring->lastshort = 0;
 
     xhciRingUnlock();
 
@@ -3378,12 +3379,34 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                 }
 
                 /*
+                 * xHCI controllers after 0.96 post an extra Success event for
+                 * a TD's IOC TRB after a short packet on an earlier TRB with
+                 * ISP set (Linux XHCI_SPURIOUS_SUCCESS). The request was
+                 * completed by the short packet, so the slot is empty.
+                 */
+                if(ring && have_idx) {
+                    if(req) {
+                        if(trbe_ccode == TRB_CC_SHORT_PACKET)
+                            ring->lastshort = 1;
+                        else if(trbe_ccode == TRB_CC_SUCCESS)
+                            ring->lastshort = 0;
+                    } else if((trbe_ccode == TRB_CC_SUCCESS) && ring->lastshort) {
+                        ring->lastshort = 0;
+                        break;
+                    }
+                }
+
+                /*
                  * Stopped completions describe TRBs left on the ring when
                  * the endpoint was halted; the request they belonged to has
                  * already been finished, so never pin them on whatever is
-                 * busy on the endpoint now.
+                 * busy on the endpoint now. Nor a success that matches no
+                 * request: pinning it completed the next request with the
+                 * previous transfer's length.
                  */
                 if(!req && devCtx && (trbe_epid < MAX_DEVENDPOINTS) &&
+                   (trbe_ccode != TRB_CC_SUCCESS) &&
+                   (trbe_ccode != TRB_CC_SHORT_PACKET) &&
                    (trbe_ccode != TRB_CC_STOPPED) &&
                    (trbe_ccode != TRB_CC_STOPPED_LENGTH_INVALID) &&
                    (trbe_ccode != TRB_CC_STOPPED_SHORT_PACKET)) {

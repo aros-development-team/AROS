@@ -225,6 +225,7 @@ struct pcisusbXHCIRing {
     struct pciusbXHCIDMAAlloc           rnext;                                      // Next ring in this sequence
     struct xhci_trb                     current;                                    // cached copy of the current trb
     volatile UWORD                      next, end;                                  // current queue locations
+    UBYTE                               lastshort;                                  // last TD ended with a short packet
     // NB: the cycle bit is cached in the highest bit of end
 };
 #define RINGENDCFLAG                            (1 << 15)
