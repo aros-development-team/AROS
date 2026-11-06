@@ -72,6 +72,7 @@ struct
 	BOOL verbose;
 	BOOL unformat;
 	BOOL incomplete;		/* CHECK could not read all referenced metadata */
+	BOOL setupdone;		/* root and layout metadata are available */
 
 	enum {syntax, resbitmap, mainbitmap, anodebitmap, finished} stage;
 
@@ -283,6 +284,7 @@ static error_t mainStandardScan(uint32 flags)
 	if ((error = GetRext()) || aborting)
 		return exitStandardScan(error);
 
+	ss.setupdone = true;
 	GetPFS2Revision(bericht);
 	volume.showmsg("Disk formatted with ");
 	volume.showmsg(bericht);
@@ -337,7 +339,7 @@ static error_t exitStandardScan(error_t error)
 	KillMainBitmap();
 	ExitFullScan();
 
-	if (mode == check && ss.incomplete && error == e_read_error && !aborting)
+	if (mode == check && ss.setupdone && ss.incomplete && error == e_read_error && !aborting)
 		volume.showmsg("INCOMPLETE\n");
 	else if ((error != e_none) || aborting)
 		volume.showmsg("ABORTED\n");
