@@ -635,6 +635,7 @@ error_t vol_WriteBlock(cachedblock_t *blok)
 {
 	int status;
 	uint32 bloknr;
+	cachedblock_t *owner;
 
 	if (blok->mode != build)
 	{
@@ -649,6 +650,13 @@ error_t vol_WriteBlock(cachedblock_t *blok)
 		return status;
 	}
 
+	/* GetResBlock returns caller-owned storage even for pending rebuilds.
+	 * Keep the build-list copy authoritative until it is published. */
+	owner = GetBuildBlock(blok->data->id, blok->data->indexblock.seqnr);
+	if (!owner)
+		return e_fatal_error;
+	if (owner->data != blok->data)
+		memcpy(owner->data, blok->data, SIZEOF_RESBLOCK);
 	return e_none;
 }
 

@@ -151,7 +151,7 @@ extern enum mode mode;
 
 /* mode for cached block can be:
  * 'check' -- loaded in cache voor check etc --> indirect (by value) edit
- * 'build' -- loaded in buildblock cache. --> direct edit (by reference)
+ * 'build' -- pending rebuild; writeblock updates the build-list owner
  */
 typedef struct {
 	uint32 blocknr;

@@ -41,7 +41,7 @@ cachedblock_t *GetBuildBlock(uint16 bloktype, uint32 seqnr)
 	for (bbl = HeadOf(&volume.buildblocks); bbl->next; bbl = bbl->next)
 	{
 		if (bbl->b.data->id == bloktype &&
-			bbl->b.data->indexblock.seqnr == seqnr)
+			(bloktype == EXTENSIONID || bbl->b.data->indexblock.seqnr == seqnr))
 		{
 			return &bbl->b;
 		}
