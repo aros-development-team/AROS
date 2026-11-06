@@ -1652,19 +1652,19 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 				
 			case e_remove:
 
-				if (error != e_empty)
-				{
-					if (mode == repair)
-						fixedfileerror("removing corrupt directory block");
-					else
-						addfileerror("corrupt directory block");
-				}
-				
+				if (mode != repair)
+					addfileerror("corrupt directory block");
 				error = DeleteAnode(mainanodenr, anodenr);
+				if (error && error != e_empty) {
+					/* Keep the directory if its chain cannot be shortened. */
+					if (mode == repair && error == e_anode_error)
+						return e_fatal_error;
+					return error;
+				}
+				if (mode == repair)
+					fixedfileerror("removed corrupt directory block");
 				if (error == e_empty)
 					return e_remove;
-				if (error)
-					return error;
 				/* Deleting the head copied its successor into the head. */
 				if (anodenr == mainanodenr)
 					dirnode.next = mainanodenr;
@@ -2051,19 +2051,21 @@ static error_t RemoveDirEntry(struct direntry *de, c_dirblock_t *dirblk)
 static error_t DeleteAnode(uint32 anodechain, uint32 node)
 {
 	canode_t prev_node, next_node;
-	uint32 previous;
+	uint32 previous, checkpoint = anodechain, distance = 0, power = 1;
 	error_t error;
 
 	if ((error = ReadAnode(&next_node, node, false)))
 		return error;
 	if (next_node.next == node)
-		return e_anode_error;
+		goto cycle;
 	if (anodechain == node)
 	{
 		if (!next_node.next)
 			return e_empty;
 		if ((error = ReadAnode(&next_node, next_node.next, false)))
 			return error;
+		if (next_node.next == node)
+			goto cycle;
 		return WriteAnode(&next_node, node);
 	}
 
@@ -2073,10 +2075,24 @@ static error_t DeleteAnode(uint32 anodechain, uint32 node)
 			return error;
 		if (prev_node.next == node)
 		{
+			if (next_node.next == previous)
+				goto cycle;
 			prev_node.next = next_node.next;
 			return WriteAnode(&prev_node, previous);
 		}
+		/* Brent's cycle check needs no extra reads or chain-sized storage. */
+		if (prev_node.next == checkpoint)
+			goto cycle;
+		if (++distance == power) {
+			checkpoint = prev_node.next;
+			distance = 0;
+			power = power < 0x80000000UL ? power * 2 : ~(uint32)0;
+		}
 	}
+	return e_anode_error;
+
+cycle:
+	adderror("cyclic anode chain");
 	return e_anode_error;
 }
 
