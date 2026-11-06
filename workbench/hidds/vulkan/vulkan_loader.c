@@ -380,17 +380,19 @@ int32_t vkCreateInstance(const void *pCreateInfo, const void *pAllocator,
 {
     void *instance;
 
-    (void)pCreateInfo;
     (void)pAllocator;
 
     vk_loader_init();
     if (!vk_obj)
         return -3; /* VK_ERROR_INITIALIZATION_FAILED */
 
+    /* The driver gets the application's API version and extensions: it hides
+       the functions of any version the instance did not ask for */
     struct pHidd_Vulkan_CreateInstance msg = {
         .mID                = vk_mbase + moHidd_Vulkan_CreateInstance,
         .applicationName    = "AROS Vulkan Loader",
         .applicationVersion = 1,
+        .createInfo         = pCreateInfo,
     };
     instance = (void *)OOP_DoMethod(vk_obj, (OOP_Msg)&msg);
     if (pInstance)

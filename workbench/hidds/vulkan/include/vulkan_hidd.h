@@ -68,7 +68,7 @@ extern OOP_AttrBase HiddVulkanAttrBase;
  * Vulkan HIDD interface version.
  * Bump when the method table or struct layouts change.
  */
-#define VULKAN_INTERFACE_VERSION    3
+#define VULKAN_INTERFACE_VERSION    4
 
 /* ---- Methods ---- */
 enum
@@ -220,6 +220,8 @@ struct pHidd_Vulkan_CreateInstance
     STACKED OOP_MethodID    mID;
     STACKED const char     *applicationName;
     STACKED ULONG           applicationVersion;
+    STACKED const void     *createInfo;     /* VkInstanceCreateInfo, or NULL for
+                                               Vulkan 1.2 and the name above */
 };
 
 struct pHidd_Vulkan_DestroyInstance
