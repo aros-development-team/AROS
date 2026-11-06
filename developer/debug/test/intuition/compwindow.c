@@ -7,8 +7,17 @@
           the composited window kept its content where the two overlap,
           and that the screen's display composes while it is open (the
           window's surface reaches the display only through composition).
+          It also reads the composed display where the composited window's
+          content lies over the plain window's red, and checks that the two
+          are blended there by the window's opacity (scaled by the content's
+          alpha for ALPHA).
+          ALPHASCREEN: the same on a screen whose bitmap has an alpha channel
+          (ARGB32, SA_CompositingFlags COMPF_ALPHA, as Tests/graphics/
+          alphascreen) instead of the Workbench screen. The composited window's
+          content is drawn with a pen there, which leaves alpha 0 in the
+          surface: a constant opacity window must still show at its opacity.
 
-    Usage: compwindow [DELAY=seconds] [OPACITY=n] [ALPHA]
+    Usage: compwindow [DELAY=seconds] [OPACITY=n] [ALPHA] [ALPHASCREEN]
 */
 
 #include <proto/exec.h>
@@ -45,6 +54,79 @@ static int display_composing(struct Screen *scr)
         return -1;
     OOP_GetAttr(compositor, aHidd_Compositor_Active, &active);
     return active ? 1 : 0;
+}
+
+/* The compositor of the screen's display, NULL when there is none */
+static OOP_Object *screen_compositor(struct Screen *scr)
+{
+    OOP_Object *display = NULL, *compositor = NULL;
+
+    if (!IS_HIDD_BM(scr->RastPort.BitMap) || !HiddBitMapAttrBase || !HiddDisplayAttrBase || !HiddCompositorAttrBase)
+        return NULL;
+    OOP_GetAttr(HIDD_BM_OBJ(scr->RastPort.BitMap), aHidd_BitMap_Display, (IPTR *)&display);
+    if (display)
+        OOP_GetAttr(display, aHidd_Display_Compositor, (IPTR *)&compositor);
+    return compositor;
+}
+
+/* A pixel of what the display shows (display coordinates); FALSE when it cannot be read */
+static BOOL composed_rgb(OOP_Object *compositor, LONG x, LONG y, ULONG *rgb)
+{
+    OOP_Object *target = NULL;
+    IPTR width = 0, height = 0;
+    UBYTE argb[4];
+
+    OOP_GetAttr(compositor, aHidd_Compositor_ComposedBitMap, (IPTR *)&target);
+    if (!target)
+        return FALSE;
+    OOP_GetAttr(target, aHidd_BitMap_Width, &width);
+    OOP_GetAttr(target, aHidd_BitMap_Height, &height);
+    if (x < 0 || y < 0 || x >= (LONG)width || y >= (LONG)height)
+        return FALSE;
+    HIDD_BM_GetImage(target, argb, sizeof(argb), x, y, 1, 1, vHidd_StdPixFmt_ARGB32);
+    *rgb = ((ULONG)argb[1] << 16) | ((ULONG)argb[2] << 8) | argb[3];
+    return TRUE;
+}
+
+static BOOL near(ULONG a, ULONG b)
+{
+    return (a > b ? a - b : b - a) <= 3;
+}
+
+/*
+ * Green (the composited window's content) with coverage 'cov' over red (the
+ * plain window's content) must be on the display at x,y. Composition follows
+ * rendering asynchronously, so the display is polled for a second.
+ */
+static int check_display_blend(struct Screen *scr, LONG x, LONG y, ULONG cov)
+{
+    OOP_Object *compositor = screen_compositor(scr);
+    ULONG want = ((255 - cov) << 16) | (cov << 8), got = 0;
+    int i;
+
+    if (!compositor)
+    {
+        printf("display blend: cannot tell (no compositor)\n");
+        return 0;
+    }
+    for (i = 0; i < 50; i++)
+    {
+        if (!composed_rgb(compositor, scr->LeftEdge + x, scr->TopEdge + y, &got))
+        {
+            printf("display blend: cannot tell (composed display not readable)\n");
+            return 0;
+        }
+        if (near(got >> 16, want >> 16) && near((got >> 8) & 0xFF, cov) && near(got & 0xFF, 0))
+        {
+            printf("display blend at %ld,%ld: %06lx (wanted about %06lx)\n",
+                   (long)x, (long)y, (unsigned long)got, (unsigned long)want);
+            return 0;
+        }
+        WaitTOF();
+    }
+    printf("FAIL: display at %ld,%ld shows %06lx, wanted about %06lx (green at coverage %lu over red)\n",
+           (long)x, (long)y, (unsigned long)got, (unsigned long)want, (unsigned long)cov);
+    return 1;
 }
 
 static void fill(struct Window *w, ULONG rgb, ULONG border)
@@ -88,40 +170,88 @@ static void fill_alpha(struct Window *w)
     FreeVec(row);
 }
 
+/* A screen like the Workbench one, on a custom ARGB32 bitmap the display blends by its alpha */
+static struct Screen *open_alpha_screen(struct BitMap **bmp)
+{
+    struct Screen *wb = LockPubScreen(NULL), *scr = NULL;
+    struct BitMap *bm = NULL;
+    ULONG modeid;
+
+    *bmp = NULL;
+    if (!wb)
+        return NULL;
+    modeid = GetVPModeID(&wb->ViewPort);
+    bm = AllocBitMap(wb->Width, wb->Height, 32, BMF_SPECIALFMT | SHIFT_PIXFMT(PIXFMT_ARGB32) | BMF_CLEAR,
+                     wb->RastPort.BitMap);
+    if (bm && GetCyberMapAttr(bm, CYBRMATTR_PIXFMT) == PIXFMT_ARGB32)
+        scr = OpenScreenTags(NULL,
+            SA_DisplayID, modeid, SA_Width, wb->Width, SA_Height, wb->Height, SA_Depth, 32,
+            SA_BitMap, (IPTR)bm, SA_CompositingFlags, COMPF_ALPHA,
+            SA_Title, (IPTR)"compwindow ALPHASCREEN", SA_ShowTitle, FALSE, SA_Quiet, TRUE,
+            SA_SharePens, TRUE, TAG_DONE);
+    UnlockPubScreen(NULL, wb);
+    if (!scr)
+    {
+        if (bm)
+            FreeBitMap(bm);
+        return NULL;
+    }
+    *bmp = bm;
+    return scr;
+}
+
 int main(void)
 {
-    IPTR args[3] = { 0, 0, 0 };
+    IPTR args[4] = { 0, 0, 0, 0 };
     struct RDArgs *rda;
     LONG delay = 8, opacity = 160;
-    BOOL alpha = FALSE;
+    BOOL alpha = FALSE, alphascreen = FALSE;
+    struct Screen *scr = NULL;
+    struct BitMap *scrbm = NULL;
+    LONG greenpen = -1;
     struct Window *a, *b;
     int fails = 0;
     UBYTE pix[4];
     ULONG got;
 
-    rda = ReadArgs("DELAY/N,OPACITY/N,ALPHA/S", args, NULL);
+    rda = ReadArgs("DELAY/N,OPACITY/N,ALPHA/S,ALPHASCREEN/S", args, NULL);
     if (rda)
     {
         if (args[0]) delay   = *(LONG *)args[0];
         if (args[1]) opacity = *(LONG *)args[1];
         alpha = args[2] ? TRUE : FALSE;
+        alphascreen = args[3] ? TRUE : FALSE;
         FreeArgs(rda);
+    }
+
+    if (alphascreen)
+    {
+        scr = open_alpha_screen(&scrbm);
+        if (!scr)
+        {
+            printf("NOTE: no ARGB32 screen on this display, ALPHASCREEN not checked\n");
+            return RETURN_OK;
+        }
+        greenpen = ObtainBestPen(scr->ViewPort.ColorMap, 0, 0xFFFFFFFF, 0, OBP_Precision, PRECISION_EXACT, TAG_END);
     }
 
     a = OpenWindowTags(NULL,
         WA_Left, 120, WA_Top, 120, WA_Width, 360, WA_Height, 240,
         WA_Title, (IPTR)"plain window", WA_DragBar, TRUE, WA_DepthGadget, TRUE,
+        scr ? WA_CustomScreen : TAG_IGNORE, (IPTR)scr,
         WA_Activate, FALSE, TAG_END);
-    if (!a) { printf("FAIL: plain window\n"); return RETURN_FAIL; }
-    fill(a, 0xFF0000, 0xFFFF00);
+    if (!a) { printf("FAIL: plain window\n"); if (scr) { CloseScreen(scr); FreeBitMap(scrbm); } return RETURN_FAIL; }
+    /* explicit colours with full alpha: on an alpha screen they are what the display shows */
+    fill(a, 0xFFFF0000, 0xFFFFFF00);
 
     b = OpenWindowTags(NULL,
         WA_Left, 300, WA_Top, 220, WA_Width, 320, WA_Height, 220,
         WA_Title, (IPTR)"composited window", WA_DragBar, TRUE, WA_DepthGadget, TRUE,
         WA_Opaqueness, opacity,
         alpha ? WA_AlphaSurface : TAG_IGNORE, TRUE,
+        scr ? WA_CustomScreen : TAG_IGNORE, (IPTR)scr,
         WA_Activate, TRUE, TAG_END);
-    if (!b) { printf("FAIL: composited window\n"); CloseWindow(a); return RETURN_FAIL; }
+    if (!b) { printf("FAIL: composited window\n"); CloseWindow(a); if (scr) { CloseScreen(scr); FreeBitMap(scrbm); } return RETURN_FAIL; }
     if (alpha && (b->WLayer->Flags & LAYERCOMPOSITED))
     {
         /* an alpha surface starts fully transparent (BMF_CLEAR clears to alpha 0) */
@@ -137,6 +267,13 @@ int main(void)
         fill_alpha(b);
     else
         fill(b, 0x00FF00, 0xFF00FF);
+    if (alphascreen && !alpha && greenpen >= 0)
+    {
+        /* The content again, drawn with a pen: alpha 0 in the surface */
+        SetAPen(b->RPort, greenpen);
+        RectFill(b->RPort, b->BorderLeft + 12, b->BorderTop + 12,
+                 b->Width - b->BorderRight - 13, b->Height - b->BorderBottom - 13);
+    }
 
     printf("plain layer flags 0x%x, composited layer flags 0x%x (LAYERCOMPOSITED %s)\n",
            a->WLayer->Flags, b->WLayer->Flags,
@@ -219,6 +356,21 @@ int main(void)
         fails++;
     }
 
+    /*
+     * What the display shows where the composited window's content lies over
+     * the plain window's red: green blended by the opacity, for ALPHA also by
+     * the content's alpha (0x40 in the left half). A constant opacity surface
+     * has no coverage of its own, whatever its pixels' alpha byte holds.
+     */
+    if (b->WLayer->Flags & LAYERCOMPOSITED)
+    {
+        ULONG op = (opacity < 0) ? 0 : (opacity > 255) ? 255 : opacity;
+        ULONG cov = alpha ? (0x40 * op + 127) / 255 : op;
+
+        fails += check_display_blend(b->WScreen, b->LeftEdge + b->BorderLeft + 40,
+                                     b->TopEdge + b->BorderTop + 40, cov);
+    }
+
     Delay(delay * 50);
 
     MoveWindow(b, -100, -60);
@@ -230,6 +382,13 @@ int main(void)
 
     CloseWindow(b);
     CloseWindow(a);
+    if (scr)
+    {
+        if (greenpen >= 0)
+            ReleasePen(scr->ViewPort.ColorMap, greenpen);
+        CloseScreen(scr);
+        FreeBitMap(scrbm);
+    }
     if (HiddCompositorAttrBase) OOP_ReleaseAttrBase(IID_Hidd_Compositor);
     if (HiddDisplayAttrBase)    OOP_ReleaseAttrBase(IID_Hidd_Display);
     if (HiddBitMapAttrBase)     OOP_ReleaseAttrBase(IID_Hidd_BitMap);

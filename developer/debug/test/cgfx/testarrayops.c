@@ -10,7 +10,9 @@
     shown in a window until it is closed.
 
     CHECK: exact checks of FillPixelArray(), ProcessPixelArray() and
-    graphics' RPTAG_FgColor/RPTAG_BgColor on every kind of destination:
+    graphics' RPTAG_FgColor/RPTAG_BgColor on every kind of destination,
+    and of ExtractColor() on a screen format bitmap larger than the
+    library's pixel buffer (so that it takes several blocks of rows):
     off-screen bitmaps with and without alpha (ARGB32, BGRA32, RGBA32,
     0RGB32, RGB24, RGB16), a composited window with an alpha surface
     (LA_AlphaSurface on a screen without alpha) and an ordinary window partly
@@ -629,6 +631,78 @@ static void run(struct Dest *d)
     test_ops(d);
 }
 
+/*
+ * ExtractColor(): every pixel of the colour, and no other, sets its bit in
+ * the planar result. 400x300 is more than cybergraphics' pixel buffer holds,
+ * so the source is read in blocks of several rows and in more than one block.
+ */
+#define EXW 400
+#define EXH 300
+#define EXCOLOUR 0x2266AA
+
+static BOOL ex_hit(LONG x, LONG y)
+{
+    return ((x * 7 + y * 3) % 5) == 0 || (x == EXW - 1) || (y == EXH - 1);
+}
+
+static void test_extract(struct BitMap *friend)
+{
+    struct BitMap *src = AllocBitMap(EXW, EXH, GetBitMapAttr(friend, BMA_DEPTH), BMF_CLEAR, friend);
+    struct BitMap *mask = AllocBitMap(EXW, EXH, 1, BMF_CLEAR, NULL);
+    UBYTE *rgb = AllocVec(EXW * EXH * 3, MEMF_ANY);
+    ULONG before_checks = checks, before_fails = fails, bad = 0;
+    struct RastPort rp;
+    LONG x, y;
+
+    if (!src || !mask || !rgb)
+    {
+        printf("  %-28s SKIP: cannot allocate\n", "ExtractColor");
+        goto out;
+    }
+    for (y = 0; y < EXH; y++)
+    {
+        for (x = 0; x < EXW; x++)
+        {
+            UBYTE *p = &rgb[(y * EXW + x) * 3];
+            ULONG c = ex_hit(x, y) ? EXCOLOUR : (((x + y) & 1) ? 0x000000 : 0xFFFFFF);
+
+            p[0] = c >> 16;
+            p[1] = c >> 8;
+            p[2] = c;
+        }
+    }
+    InitRastPort(&rp);
+    rp.BitMap = src;
+    WritePixelArray(rgb, 0, 0, EXW * 3, &rp, 0, 0, EXW, EXH, RECTFMT_RGB);
+    /* ARGB: RECTFMT_RGB stores opaque pixels; the alpha byte only counts where the bitmap has alpha */
+    ExtractColor(&rp, mask, 0xFF000000 | EXCOLOUR, 0, 0, EXW, EXH);
+
+    for (y = 0; y < EXH; y++)
+    {
+        for (x = 0; x < EXW; x++)
+        {
+            BOOL set = (mask->Planes[0][y * mask->BytesPerRow + (x >> 3)] & (0x80 >> (x & 7))) != 0;
+
+            checks++;
+            if (set != ex_hit(x, y))
+            {
+                fails++;
+                if (bad++ < 3)
+                    printf("  FAIL: ExtractColor pixel %ld,%ld: bit %s, wanted %s\n",
+                           (long)x, (long)y, set ? "set" : "clear", ex_hit(x, y) ? "set" : "clear");
+            }
+        }
+    }
+    printf("  %-28s ExtractColor %dx%d: %lu checks, %lu failed\n", "screen format bitmap", EXW, EXH,
+           (unsigned long)(checks - before_checks), (unsigned long)(fails - before_fails));
+out:
+    FreeVec(rgb);
+    if (mask)
+        FreeBitMap(mask);
+    if (src)
+        FreeBitMap(src);
+}
+
 /* A truecolour screen of our own, the deepest there is */
 static struct Screen *open_truecolour_screen(void)
 {
@@ -707,6 +781,8 @@ static int run_checks(BOOL ownscreen)
     if (offscreen(&d, "0RGB32 bitmap", PIXFMT_0RGB32, 32, FALSE, 0, friend)) { run(&d); FreeBitMap(d.bm); }
     if (offscreen(&d, "RGB24 bitmap", PIXFMT_RGB24, 24, FALSE, 0, friend))   { run(&d); FreeBitMap(d.bm); }
     if (offscreen(&d, "RGB16 bitmap", PIXFMT_RGB16, 16, FALSE, 8, friend))   { run(&d); FreeBitMap(d.bm); }
+
+    test_extract(friend);
 
     /* A composited window with an alpha surface */
     aw = OpenWindowTags(NULL,
