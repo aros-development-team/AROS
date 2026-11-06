@@ -214,12 +214,12 @@
 +/* NOTE: Assumes lock on bitmap is already made */
 +/* NOTE: Assumes lock on GART object is already made */
 +/* NOTE: Assumes buffer is not mapped */
-+BOOL HiddNouveauNVAccelUploadM2MF(
++BOOL HiddNVGfxNVAccelUploadM2MF(
 +    UBYTE * srcpixels, ULONG srcpitch, HIDDT_StdPixFmt srcPixFmt,
 +    LONG x, LONG y, LONG width, LONG height,
 +    OOP_Class *cl, OOP_Object *o)
 +{
-+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
++    struct HIDDNVGfxBitMapData * bmdata = OOP_INST_DATA(cl, o);
 +    struct CardData * carddata = &(SD(cl)->carddata);
 +
 +    PixmapPtr pdpix = bmdata;
@@ -289,7 +289,7 @@
 +        }
 +        dst = (char *)pNv->GART->map + pNv->gart_pos;
 +
-+        HiddNouveauWriteFromRAM( (APTR)srcpixels, srcpitch, srcPixFmt, dst, tmp_pitch,
++        HiddNVGfxWriteFromRAM( (APTR)srcpixels, srcpitch, srcPixFmt, dst, tmp_pitch,
 +            width, lines, cl, o);
 +        nouveau_staging_to_gpu(dst, tmp_pitch * lines);
 +        srcpixels += srcpitch * lines;
@@ -313,12 +313,12 @@
 +/* NOTE: Assumes lock on bitmap is already made */
 +/* NOTE: Assumes lock on GART object is already made */
 +/* NOTE: Assumes buffer is not mapped */
-+BOOL HiddNouveauNVAccelDownloadM2MF(
++BOOL HiddNVGfxNVAccelDownloadM2MF(
 +    UBYTE * dstpixels, ULONG dstpitch, HIDDT_StdPixFmt dstPixFmt,
 +    LONG x, LONG y, LONG width, LONG height,
 +    OOP_Class *cl, OOP_Object *o)
 +{
-+    struct HIDDNouveauBitMapData *bmdata = OOP_INST_DATA(cl, o);
++    struct HIDDNVGfxBitMapData *bmdata = OOP_INST_DATA(cl, o);
 +    struct CardData *carddata = &(SD(cl)->carddata);
 +
 +    PixmapPtr pspix = bmdata;
@@ -361,7 +361,7 @@
 +        src = pNv->GART->map;
 +
 +        nouveau_staging_from_gpu(src, tmp_pitch * lines);
-+        HiddNouveauReadIntoRAM(src, tmp_pitch, dstpixels, dstpitch,
++        HiddNVGfxReadIntoRAM(src, tmp_pitch, dstpixels, dstpitch,
 +            dstPixFmt, width, lines, cl, o);
 +        dstpixels += dstpitch * lines;
 +
@@ -559,7 +559,7 @@
 +
 +/* AROS CODE */
 +
-+VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
++VOID HIDDNVGfxNV04SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
 +		  LONG pat0, LONG pat1)
 +{
 +    NV04EXASetPattern(carddata, clr0, clr1, pat0, pat1);
@@ -567,8 +567,8 @@
 +
 +/* NOTE: Assumes lock on bitmap is already made */
 +/* NOTE: Assumes buffer is not mapped */
-+BOOL HIDDNouveauNV04FillSolidRect(struct CardData * carddata,
-+    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
++BOOL HIDDNVGfxNV04FillSolidRect(struct CardData * carddata,
++    struct HIDDNVGfxBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
 +    LONG maxY, ULONG drawmode, ULONG color)
 +{
 +    if (!carddata->channel)
@@ -579,7 +579,7 @@
 +        NV04EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1, color);
 +        NV04EXADoneSolid(bmdata);
 +        bmdata->gpu_dirty = TRUE;
-+		HIDDNouveauFlushDisplayable(carddata, bmdata);
++		HIDDNVGfxFlushDisplayable(carddata, bmdata);
 +        return TRUE;
 +    }
 +
@@ -588,8 +588,8 @@
 +
 +/* NOTE: Assumes lock on bitmap is already made */
 +/* NOTE: Assumes buffer is not mapped */
-+BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
-+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
++BOOL HIDDNVGfxNV04CopySameFormat(struct CardData * carddata,
++    struct HIDDNVGfxBitMapData * srcdata, struct HIDDNVGfxBitMapData * destdata,
 +    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
 +    ULONG drawmode)
 +{
@@ -607,7 +607,7 @@
 +        NV04EXADoneCopy(destdata);
 +        srcdata->gpu_dirty = TRUE;
 +        destdata->gpu_dirty = TRUE;
-+		HIDDNouveauFlushDisplayable(carddata, destdata);
++		HIDDNVGfxFlushDisplayable(carddata, destdata);
 +        return TRUE;
 +    }
 +
@@ -683,16 +683,16 @@
 +/* NOTE: Assumes lock on bitmap is already made */
 +/* NOTE: Assumes buffer is not mapped */
 +/* NOTE: Allows different formats of source and destination */
-+BOOL HIDDNouveauNV103DCopyBox(struct CardData * carddata,
-+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
++BOOL HIDDNVGfxNV103DCopyBox(struct CardData * carddata,
++    struct HIDDNVGfxBitMapData * srcdata, struct HIDDNVGfxBitMapData * destdata,
 +    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
 +    ULONG blendop)
 +{
 +    struct Picture sPict, dPict;
 +    LONG maskX = 0; LONG maskY = 0;
 +
-+    HIDDNouveauFillPictureFromBitMapData(&sPict, srcdata);
-+    HIDDNouveauFillPictureFromBitMapData(&dPict, destdata);
++    HIDDNVGfxFillPictureFromBitMapData(&sPict, srcdata);
++    HIDDNVGfxFillPictureFromBitMapData(&dPict, destdata);
 +
 +    if (NV10EXAPrepareComposite(blendop,
 +        &sPict, NULL, &dPict, srcdata, NULL, destdata))
@@ -765,16 +765,16 @@
 +/* NOTE: Assumes lock on bitmap is already made */
 +/* NOTE: Assumes buffer is not mapped */
 +/* NOTE: Allows different formats of source and destination */
-+BOOL HIDDNouveauNV303DCopyBox(struct CardData * carddata,
-+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
++BOOL HIDDNVGfxNV303DCopyBox(struct CardData * carddata,
++    struct HIDDNVGfxBitMapData * srcdata, struct HIDDNVGfxBitMapData * destdata,
 +    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
 +    ULONG blendop)
 +{
 +    struct Picture sPict, dPict;
 +    LONG maskX = 0; LONG maskY = 0;
 +
-+    HIDDNouveauFillPictureFromBitMapData(&sPict, srcdata);
-+    HIDDNouveauFillPictureFromBitMapData(&dPict, destdata);
++    HIDDNVGfxFillPictureFromBitMapData(&sPict, srcdata);
++    HIDDNVGfxFillPictureFromBitMapData(&dPict, destdata);
 +
 +    if (NV30EXAPrepareComposite(blendop,
 +        &sPict, NULL, &dPict, srcdata, NULL, destdata))
@@ -868,16 +868,16 @@
 +/* NOTE: Assumes lock on bitmap is already made */
 +/* NOTE: Assumes buffer is not mapped */
 +/* NOTE: Allows different formats of source and destination */
-+BOOL HIDDNouveauNV403DCopyBox(struct CardData * carddata,
-+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
++BOOL HIDDNVGfxNV403DCopyBox(struct CardData * carddata,
++    struct HIDDNVGfxBitMapData * srcdata, struct HIDDNVGfxBitMapData * destdata,
 +    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
 +    ULONG blendop)
 +{
 +    struct Picture sPict, dPict;
 +    LONG maskX = 0; LONG maskY = 0;
 +
-+    HIDDNouveauFillPictureFromBitMapData(&sPict, srcdata);
-+    HIDDNouveauFillPictureFromBitMapData(&dPict, destdata);
++    HIDDNVGfxFillPictureFromBitMapData(&sPict, srcdata);
++    HIDDNVGfxFillPictureFromBitMapData(&dPict, destdata);
 +
 +    if (NV40EXAPrepareComposite(blendop,
 +        &sPict, NULL, &dPict, srcdata, NULL, destdata))
@@ -1040,17 +1040,17 @@
 +
 +/* AROS CODE */
 +
-+VOID HIDDNouveauNV50SetPattern(struct CardData *carddata, LONG col0, LONG col1, LONG pat0, LONG pat1)
++VOID HIDDNVGfxNV50SetPattern(struct CardData *carddata, LONG col0, LONG col1, LONG pat0, LONG pat1)
 +{
-+    struct HIDDNouveauBitMapData fake;
++    struct HIDDNVGfxBitMapData fake;
 +    fake.drawable.pScreen = carddata;
 +    NV50EXASetPattern(&fake, col0, col1, pat0, pat1);
 +}
 +
 +/* NOTE: Assumes lock on bitmap is already made */
 +/* NOTE: Assumes buffer is not mapped */
-+BOOL HIDDNouveauNV50FillSolidRect(struct CardData * carddata,
-+    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
++BOOL HIDDNVGfxNV50FillSolidRect(struct CardData * carddata,
++    struct HIDDNVGfxBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
 +    LONG maxY, ULONG drawmode, ULONG color)
 +{
 +    if (!carddata->channel)
@@ -1061,7 +1061,7 @@
 +        NV50EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1);
 +        NV50EXADoneSolid(bmdata);
 +        bmdata->gpu_dirty = TRUE;
-+		HIDDNouveauFlushDisplayable(carddata, bmdata);
++		HIDDNVGfxFlushDisplayable(carddata, bmdata);
 +        return TRUE;
 +    }
 +
@@ -1070,8 +1070,8 @@
 +
 +/* NOTE: Assumes lock on bitmap is already made */
 +/* NOTE: Assumes buffer is not mapped */
-+BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
-+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
++BOOL HIDDNVGfxNV50CopySameFormat(struct CardData * carddata,
++    struct HIDDNVGfxBitMapData * srcdata, struct HIDDNVGfxBitMapData * destdata,
 +    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
 +    ULONG drawmode)
 +{
@@ -1089,7 +1089,7 @@
 +        NV50EXADoneCopy(destdata);
 +        srcdata->gpu_dirty = TRUE;
 +        destdata->gpu_dirty = TRUE;
-+		HIDDNouveauFlushDisplayable(carddata, destdata);
++		HIDDNVGfxFlushDisplayable(carddata, destdata);
 +        return TRUE;
 +    }
 +
@@ -1099,16 +1099,16 @@
 +/* NOTE: Assumes lock on bitmap is already made */
 +/* NOTE: Assumes buffer is not mapped */
 +/* NOTE: Allows different formats of source and destination */
-+BOOL HIDDNouveauNV503DCopyBox(struct CardData * carddata,
-+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
++BOOL HIDDNVGfxNV503DCopyBox(struct CardData * carddata,
++    struct HIDDNVGfxBitMapData * srcdata, struct HIDDNVGfxBitMapData * destdata,
 +    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
 +    ULONG blendop)
 +{
 +    struct Picture sPict, dPict;
 +    ULONG maskX = 0; ULONG maskY = 0;
 +
-+    HIDDNouveauFillPictureFromBitMapData(&sPict, srcdata);
-+    HIDDNouveauFillPictureFromBitMapData(&dPict, destdata);
++    HIDDNVGfxFillPictureFromBitMapData(&sPict, srcdata);
++    HIDDNVGfxFillPictureFromBitMapData(&dPict, destdata);
 +
 +    if (NV50EXAPrepareComposite(blendop,
 +        &sPict, NULL, &dPict, srcdata, NULL, destdata))
@@ -1344,7 +1344,7 @@
 + * drained and freed (the kernel idles each one as it is freed) before
 + * GSP-RM is told the driver is leaving. The engine lock is taken and
 + * never released - nothing may submit again. */
-+VOID HIDDNouveauAccelShutdown(struct CardData *carddata)
++VOID HIDDNVGfxAccelShutdown(struct CardData *carddata)
 +{
 +    ObtainSemaphore(&globalLock);
 +
@@ -1361,7 +1361,7 @@
 +    }
 +}
 +
-+BOOL HIDDNouveauAccelCommonInit(struct CardData *carddata)
++BOOL HIDDNVGfxAccelCommonInit(struct CardData *carddata)
 +{
 +    if (NVAccelCommonInit(carddata))
 +    {
@@ -1373,7 +1373,7 @@
 +    return FALSE;
 +}
 +
-+BOOL HIDDNouveauAccelAllocSurface(struct CardData *carddata, ULONG width, ULONG height, UBYTE bpp, ULONG *pitch, struct nouveau_bo **bo)
++BOOL HIDDNVGfxAccelAllocSurface(struct CardData *carddata, ULONG width, ULONG height, UBYTE bpp, ULONG *pitch, struct nouveau_bo **bo)
 +{
 +    return nouveau_allocate_surface(carddata, width, height, bpp, NOUVEAU_CREATE_PIXMAP_SCANOUT, pitch, bo);
 +}
@@ -1580,12 +1580,12 @@
 +
 +/* AROS CODE */
 +
-+VOID HIDDNouveauNVC0SetPattern(struct CardData *carddata, LONG clr0, LONG clr1, LONG pat0, LONG pat1)
++VOID HIDDNVGfxNVC0SetPattern(struct CardData *carddata, LONG clr0, LONG clr1, LONG pat0, LONG pat1)
 +{
 +	if (carddata->Architecture >= NV_BLACKWELL)
 +		return;
 +
-+    struct HIDDNouveauBitMapData fake;
++    struct HIDDNVGfxBitMapData fake;
 +    fake.drawable.pScreen = carddata;
 +    NVC0EXASetPattern(&fake, clr0, clr1, pat0, pat1);
 +}
@@ -1621,9 +1621,9 @@
 + * sees the rows tightly packed (pitch = w * cpp), starting at line
 + * `line0` of the rectangle. The rectangle has to lie inside the bitmap:
 + * the copy engine has no clip. Takes and releases the GART semaphore. */
-+BOOL HIDDNouveauNVC0StagingRect(struct CardData *carddata,
-+    struct HIDDNouveauBitMapData *bmdata, LONG x, LONG y, LONG w, LONG h,
-+    HIDDNouveauStagingFn fn, APTR ctx)
++BOOL HIDDNVGfxNVC0StagingRect(struct CardData *carddata,
++    struct HIDDNVGfxBitMapData *bmdata, LONG x, LONG y, LONG w, LONG h,
++    HIDDNVGfxStagingFn fn, APTR ctx)
 +{
 +	NVPtr pNv = carddata;
 +	const int cpp = bmdata->bytesperpixel;
@@ -1689,7 +1689,7 @@
 +	}
 +	ReleaseSemaphore(&carddata->gartsemaphore);
 +	bmdata->gpu_dirty = TRUE;
-+	HIDDNouveauFlushDisplayable(carddata, bmdata);
++	HIDDNVGfxFlushDisplayable(carddata, bmdata);
 +	return TRUE;
 +fail:
 +	ReleaseSemaphore(&carddata->gartsemaphore);
@@ -1722,19 +1722,19 @@
 +}
 +
 +static BOOL
-+nvc0_ce_rop_fill(struct CardData *carddata, struct HIDDNouveauBitMapData *bmdata,
++nvc0_ce_rop_fill(struct CardData *carddata, struct HIDDNVGfxBitMapData *bmdata,
 +		 LONG x, LONG y, LONG w, LONG h, ULONG drawmode, ULONG color)
 +{
 +	struct nvc0_rop_ctx r = { drawmode, color, bmdata->bytesperpixel };
 +
-+	return HIDDNouveauNVC0StagingRect(carddata, bmdata, x, y, w, h,
++	return HIDDNVGfxNVC0StagingRect(carddata, bmdata, x, y, w, h,
 +					  nvc0_rop_rows, &r);
 +}
 +
 +/* NOTE: Assumes lock on bitmap is already made */
 +/* NOTE: Assumes buffer is not mapped */
-+BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
-+    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
++BOOL HIDDNVGfxNVC0FillSolidRect(struct CardData * carddata,
++    struct HIDDNVGfxBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
 +    LONG maxY, ULONG drawmode, ULONG color)
 +{
 +	if (carddata->Architecture >= NV_BLACKWELL) {
@@ -1778,7 +1778,7 @@
 +					 fill))
 +			return FALSE;
 +		bmdata->gpu_dirty = TRUE;
-+		HIDDNouveauFlushDisplayable(carddata, bmdata);
++		HIDDNVGfxFlushDisplayable(carddata, bmdata);
 +		return TRUE;
 +	}
 +    if (!carddata->channel)
@@ -1789,7 +1789,7 @@
 +        NVC0EXASolid(bmdata, minX, minY, maxX + 1, maxY + 1);
 +        NVC0EXADoneSolid(bmdata);
 +        bmdata->gpu_dirty = TRUE;
-+		HIDDNouveauFlushDisplayable(carddata, bmdata);
++		HIDDNVGfxFlushDisplayable(carddata, bmdata);
 +        return TRUE;
 +    }
 +
@@ -1798,8 +1798,8 @@
 +
 +/* NOTE: Assumes lock on both bitmaps is already made */
 +/* NOTE: Assumes both buffers are not mapped */
-+BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
-+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
++BOOL HIDDNVGfxNVC0CopySameFormat(struct CardData * carddata,
++    struct HIDDNVGfxBitMapData * srcdata, struct HIDDNVGfxBitMapData * destdata,
 +    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
 +    ULONG drawmode)
 +{
@@ -1898,7 +1898,7 @@
 +			return FALSE;
 +		srcdata->gpu_dirty = TRUE;
 +		destdata->gpu_dirty = TRUE;
-+		HIDDNouveauFlushDisplayable(carddata, destdata);
++		HIDDNVGfxFlushDisplayable(carddata, destdata);
 +		return TRUE;
 +	}
 +
@@ -1911,7 +1911,7 @@
 +        NVC0EXADoneCopy(destdata);
 +        srcdata->gpu_dirty = TRUE;
 +        destdata->gpu_dirty = TRUE;
-+		HIDDNouveauFlushDisplayable(carddata, destdata);
++		HIDDNVGfxFlushDisplayable(carddata, destdata);
 +        return TRUE;
 +    }
 +
@@ -1975,7 +1975,7 @@
 +#define NVPTR(x)                    (x)
 +#define xf86ScreenToScrn(x)         (x)
 +#define NVPtr                       struct CardData *
-+#define PixmapPtr                   struct HIDDNouveauBitMapData *
++#define PixmapPtr                   struct HIDDNVGfxBitMapData *
 +/* into the driver log: an acceleration setup failure must say which step failed */
 +#define xf86DrvMsg(a, b, fmt, ...)  nvlog("[Nouveau] " fmt, ##__VA_ARGS__)
 +#define ErrorF(msg, ...)            nvlog("[Nouveau] " msg, ##__VA_ARGS__)
@@ -2163,8 +2163,8 @@
 +}
 +
 +
-+static inline VOID HIDDNouveauFillPictureFromBitMapData(struct Picture * pPict, 
-+    struct HIDDNouveauBitMapData * bmdata)
++static inline VOID HIDDNVGfxFillPictureFromBitMapData(struct Picture * pPict, 
++    struct HIDDNVGfxBitMapData * bmdata)
 +{
 +    /* pPict->format */
 +    if (bmdata->drawable.depth == 32)

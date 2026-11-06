@@ -114,7 +114,7 @@ struct pci_driver {
 #define pci_is_thunderbolt_attached(pdev) (0)
 #define pci_is_vga(pdev)            (((pdev)->class >> 8) == PCI_CLASS_DISPLAY_VGA)
 u8 pci_find_capability(struct pci_dev *pdev, int cap);
-#define pci_find_ext_capability(pdev, c) (0)
+u16 pci_find_ext_capability(struct pci_dev *pdev, int cap);
 #define pci_pcie_cap(pdev)          ((pdev)->pcie_cap)
 #define pci_msi_enabled()           (1)
 #define pci_dev_msi_enabled(pdev)   ((pdev)->msi_enabled)
@@ -242,6 +242,17 @@ typedef int pci_power_t;
 #define PCI_CAP_ID_MSI                  0x05
 #define PCI_CAP_ID_EXP                  0x10
 #define PCI_CAP_ID_MSIX                 0x11
+#define PCI_CFG_SPACE_SIZE              256
+#define PCI_CFG_SPACE_EXP_SIZE          4096
+#define PCI_EXT_CAP_ID(h)               ((h) & 0x0000ffff)
+#define PCI_EXT_CAP_NEXT(h)             (((h) >> 20) & 0xffc)
+#define PCI_EXT_CAP_ID_REBAR            0x15
+#define PCI_REBAR_CAP                   4
+#define PCI_REBAR_CTRL                  8
+#define PCI_REBAR_CTRL_BAR_IDX          0x00000007
+#define PCI_REBAR_CTRL_NBAR_MASK        0x000000e0
+#define PCI_REBAR_CTRL_NBAR_SHIFT       5
+#define PCI_REBAR_CTRL_BAR_SIZE         0x00003f00
 #define PCI_EXP_FLAGS                   0x02
 #define PCI_EXP_FLAGS_TYPE              0x00f0
 #define PCI_EXP_TYPE_ENDPOINT           0x0

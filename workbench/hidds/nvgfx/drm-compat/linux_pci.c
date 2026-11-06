@@ -256,6 +256,25 @@ u8 pci_find_capability(struct pci_dev *pdev, int cap)
     return 0;
 }
 
+/* extended capabilities only exist on express devices, from 0x100 on */
+u16 pci_find_ext_capability(struct pci_dev *pdev, int cap)
+{
+    int pos = PCI_CFG_SPACE_SIZE, ttl = (PCI_CFG_SPACE_EXP_SIZE - PCI_CFG_SPACE_SIZE) / 8;
+    u32 header;
+
+    if (!pdev || !pdev->oopdev || !pci_find_capability(pdev, PCI_CAP_ID_EXP))
+        return 0;
+    while (ttl-- > 0 && pos >= PCI_CFG_SPACE_SIZE) {
+        pci_read_config_dword(pdev, pos, &header);
+        if (header == 0 || header == 0xffffffff)
+            break;
+        if (PCI_EXT_CAP_ID(header) == cap)
+            return pos;
+        pos = PCI_EXT_CAP_NEXT(header);
+    }
+    return 0;
+}
+
 int pcie_capability_read_word(struct pci_dev *pdev, int pos, u16 *val)
 {
     if (!pdev->pcie_cap) {
