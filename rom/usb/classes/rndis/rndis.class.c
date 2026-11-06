@@ -126,6 +126,49 @@ struct AutoBindData ClassBinds[] =
     { 0, 0 }
 };
 
+/* /// "rndisHasCDCEthernet()" */
+/* Returns TRUE if a configuration of the device other than rndiscfg has a
+ * CDC Ethernet control interface (class 2, subclass 6 ECM, 12 EEM or 13 NCM).
+ * cdceth.class binds such devices at device level. */
+static BOOL rndisHasCDCEthernet(struct Library *ps, struct PsdDevice *pd, struct PsdConfig *rndiscfg)
+{
+    struct List *cfgs = NULL;
+    struct List *ifs;
+    struct Node *pc;
+    struct Node *pif;
+    IPTR ifclass;
+    IPTR subclass;
+
+    psdGetAttrs(PGA_DEVICE, pd, DA_ConfigList, &cfgs, TAG_END);
+    if(!cfgs)
+        return(FALSE);
+
+    for(pc = cfgs->lh_Head; pc->ln_Succ; pc = pc->ln_Succ)
+    {
+        if(pc == (struct Node *) rndiscfg)
+            continue;
+
+        ifs = NULL;
+        psdGetAttrs(PGA_CONFIG, pc, CA_InterfaceList, &ifs, TAG_END);
+        if(!ifs)
+            continue;
+
+        for(pif = ifs->lh_Head; pif->ln_Succ; pif = pif->ln_Succ)
+        {
+            ifclass = 0;
+            subclass = 0;
+            psdGetAttrs(PGA_INTERFACE, pif,
+                        IFA_Class, &ifclass,
+                        IFA_SubClass, &subclass,
+                        TAG_DONE);
+            if((ifclass == 2) && ((subclass == 6) || (subclass == 12) || (subclass == 13)))
+                return(TRUE);
+        }
+    }
+    return(FALSE);
+}
+/* \\\ */
+
 /* /// "usbAttemptInterfaceBinding()" */
 struct NepClassEth * usbAttemptInterfaceBinding(struct NepEthBase *nh, struct PsdInterface *pif)
 {
@@ -167,6 +210,18 @@ struct NepClassEth * usbAttemptInterfaceBinding(struct NepEthBase *nh, struct Ps
         if(((ifclass == 2)   && (subclass == 2) && (proto == 255)) ||
            ((ifclass == 224) && (subclass == 1) && (proto == 3)))
         {
+            /* A device that also offers a CDC Ethernet configuration (for
+             * example QEMU usb-net) is left to cdceth.class. Poseidon
+             * offers interfaces to all classes before it tries device
+             * bindings, so without this check the class that won depended
+             * on whether rndis.class was already loaded when the device was
+             * scanned. A forced binding still selects RNDIS. */
+            if(pd && rndisHasCDCEthernet(ps, pd, pc))
+            {
+                KPRINTF(1, ("CDC Ethernet configuration present, leaving device to cdceth.class\n"));
+                CloseLibrary(ps);
+                return(NULL);
+            }
             CloseLibrary(ps);
             return(usbForceInterfaceBinding(nh, pif));
         }
@@ -180,7 +235,7 @@ struct NepClassEth * usbAttemptInterfaceBinding(struct NepEthBase *nh, struct Ps
             }
             abd++;
         }
-
+        CloseLibrary(ps);
     }
     return(NULL);
 }
