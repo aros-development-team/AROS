@@ -182,8 +182,8 @@ static int hw_Init(struct TimerBase *LIBBASE)
     AddResetCallback(&LIBBASE->tb_ResetHandler);
 
     D(bug("[Timer] CH0 setup ..\n", chstatus);)
-    /* Set software strobe mode, 16-bit access  */
-    outb(CH0 | ACCESS_FULL | MODE_SW_STROBE, PIT_CONTROL);
+    /* Set terminal count mode, 16-bit access  */
+    outb(CH0 | ACCESS_FULL | MODE_TERMINAL, PIT_CONTROL);
     D(
         /* Read channel 0 status            */
         outb(READBACK | LATCH_COUNT | RB_CH0, PIT_CONTROL);
