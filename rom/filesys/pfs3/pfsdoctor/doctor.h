@@ -68,7 +68,8 @@ typedef enum {false, true} bool;
 #define FILENAMESIZE 32
 #define DNSIZE 32
 #define CMSIZE 80
-#define MAX_ENTRYSIZE (sizeof(struct direntry) + FILENAMESIZE + CMSIZE + 32)
+/* next is an unsigned byte: allow any complete on-disk directory entry. */
+#define MAX_ENTRYSIZE 256
 #define LONGS_PER_BMB ((rbl->reserved_blksize/4)-3)
 #define INDEX_PER_BLOCK ((rbl->reserved_blksize - 3*4) / sizeof(LONG))
 #define ANODES_PER_BLOCK ((rbl->reserved_blksize - 4*4) / sizeof(anode_t))
