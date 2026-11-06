@@ -291,7 +291,7 @@ struct pciusbXHCIIODevPrivate {
     APTR                                dpBounceData;
     ULONG                               dpBounceLen;
     UWORD                               dpBounceDir;
-    BYTE                                dpCC;
+    UBYTE                               dpCC;
 };
 
 /* Misc Stuff */
