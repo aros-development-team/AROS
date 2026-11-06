@@ -89,9 +89,14 @@ static AROS_INTH1(ResetHandler, struct TimerBase *, LIBBASE)
     LIBBASE->tb_TimerIRQHandle = KrnAddIRQHandler(0, TimerShutdownInt, LIBBASE, SysBase);
     DINT(bug("[Timer] %s: Shutdown IRQ handle = 0x%p\n", __func__, LIBBASE->tb_TimerIRQHandle));
 
-    outb(CH0 | ACCESS_FULL | MODE_TERMINAL, PIT_CONTROL);
-    outb(CH0 | ACCESS_FULL | LATCH_COUNT, PIT_CONTROL);
-    outb(0, PIT_CH0);
+    {
+        ULONG flags = PITLock(LIBBASE);
+
+        outb(CH0 | ACCESS_FULL | MODE_TERMINAL, PIT_CONTROL);
+        outb(CH0 | ACCESS_FULL | LATCH_COUNT, PIT_CONTROL);
+        outb(0, PIT_CH0);
+        PITUnlock(flags, LIBBASE);
+    }
 
     KrnSti();
     KrnCli();
