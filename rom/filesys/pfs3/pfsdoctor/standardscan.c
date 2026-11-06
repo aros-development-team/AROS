@@ -2254,14 +2254,15 @@ static error_t RepairRollover(struct direntry *de, c_dirblock_t *dirblok)
 static error_t RemoveDirEntry(struct direntry *de, c_dirblock_t *dirblk)
 {
 	uint8 *dest, *source;
-	uint32 movelen;
+	uint32 movelen, removed = de->next;
 
 	dest = (uint8 *)de;
-	source = dest + de->next;
+	source = dest + removed;
 	movelen = ((uint8 *)(dirblk->data) + SIZEOF_RESBLOCK) - source;
 	if (movelen > 0 && movelen < SIZEOF_RESBLOCK)
 	{
 		memmove(dest, source, movelen);
+		memset(dest + movelen, 0, removed);
 		return volume.writeblock((cachedblock_t *)dirblk);
 	}
 	else
