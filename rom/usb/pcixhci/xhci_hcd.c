@@ -3183,7 +3183,6 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
             (volatile struct pcisusbXHCIRing *)((IPTR)xhcic->xhc_ERSp);
         volatile struct xhci_trb *etrb;
         ULONG idx   = ering->next;
-        ULONG startidx = idx;
         ULONG cycle = (ering->end & RINGENDCFLAG) ? 1 : 0;
         ULONG maxwork = XHCI_EVENT_RING_TRBS;
 
@@ -3654,8 +3653,8 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
             etrb = &ering->ring[idx];
         }
 
-        /* Update the hardware dequeue pointer to the next TRB. */
-        if (idx != startidx) { /* Don't write same value as per xHCI 2.0 spec */
+        /* Always rewrite ERDP with EHB: only that clears Event Handler Busy */
+        {
             volatile struct xhci_ir *ir = (volatile struct xhci_ir *)xhcic->xhc_XHCIIntR;
             UQUAD next_dma;
 
