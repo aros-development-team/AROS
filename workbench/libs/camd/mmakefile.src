@@ -5,7 +5,15 @@ USER_LDFLAGS := -static
 
 FILES :=    drivers clusters init camdwait mididistr midifromdriver \
 	    midimsgtype2 miditodriver receiverproc strings sysexdistr \
-	    unlinkmidilink getmidilinkfromownernode
+	    unlinkmidilink getmidilinkfromownernode camdclock endpoint_registry \
+	    provider_contract legacy_driver_adapter native_event_queue \
+	    native_event_pump native_event_worker legacy_port_refs \
+	    native_worker_fanout legacy_output_backend \
+	    legacy_driver_output_backend identity_map identity_file \
+	    identity_store_recovery identity_store_aros legacy_identity_key \
+	    legacy_identity_set driver_endpoints endpoint_client \
+	    app_endpoint endpoint_publish endpoint_projection \
+	    endpoint_owner endpoint_identity
 
 FUNCS := \
     lockcamd \
@@ -43,7 +51,45 @@ FUNCS := \
     startclusternotify \
     endclusternotify \
     goodputmidi \
-    midi2driver
+    midi2driver \
+    getclusterattrsa \
+    camdtime \
+    startclusterwatcha \
+    endclusterwatch \
+    getclusterwatchevent \
+    obtainendpointsnapshot \
+    releaseendpointsnapshot \
+    getendpointinfo \
+    openendpointsession \
+    closeendpointsession \
+    putendpointmidi \
+    putendpointsysex \
+    drainendpointsession \
+    getendpointmidi \
+    startendpointwatch \
+    getendpointwatchevent \
+    endendpointwatch \
+    publishendpoint \
+    withdrawendpoint \
+    setpublishedendpointstate \
+    putpublishedmidi \
+    putpublishedsysex \
+    getpublishedmidi \
+    cancelendpointsession \
+    getendpointsessionstats \
+    putendpointump \
+    getendpointump \
+    putpublishedump \
+    getpublishedump \
+    setpublishedendpointtopology \
+    getendpointgroup \
+    getendpointfunctionblock \
+    getpublishedendpointstats \
+    getendpointidentitystore \
+    getstoredendpointidentity \
+    forgetendpointidentity \
+    addmididevice \
+    removemididevice
 
 #MM workbench-libs-camd-includes : \
 #MM     kernel-exec-includes \
@@ -51,10 +97,20 @@ FUNCS := \
 #MM     kernel-utility-includes \
 #MM     includes-copy
 
-#MM- workbench-libs-camd : linklibs
+#MM- workbench-libs-camd : linklibs workbench-libs-uuid-includes
+
+# CAMD_TEST_HOOKS=yes in the environment of make builds in what the test
+# runners need to make things fail; see identity_store_aros.c.
+ifeq ($(CAMD_TEST_HOOKS),yes)
+USER_CPPFLAGS += -DCAMD_TEST_HOOKS
+endif
 
 %build_module mmake=workbench-libs-camd \
     modname=camd modtype=library \
     files="$(FUNCS) $(FILES) camd_init"
+
+INCLUDE_FILES := camdendpoint.h
+
+%copy_includes path=midi
 
 %common

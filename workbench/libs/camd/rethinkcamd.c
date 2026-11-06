@@ -11,16 +11,10 @@
 #include "camd_intern.h"
 
 static BOOL DriverIsLoaded(struct CamdBase *CamdBase, CONST_STRPTR name){
-	struct Drivers *driver;
 	BOOL loaded=FALSE;
 
 	ObtainSemaphoreShared(CB(CamdBase)->CLSemaphore);
-	for(driver=CB(CamdBase)->drivers;driver;driver=driver->next){
-		if(mystrcmp((char *)name,driver->mididevicedata->Name)){
-			loaded=TRUE;
-			break;
-		}
-	}
+	loaded=MidiDeviceNameIsLoaded(name,CamdBase);
 	ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
 	return loaded;
 }

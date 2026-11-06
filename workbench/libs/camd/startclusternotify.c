@@ -1,7 +1,7 @@
 /*
     Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 #include <proto/exec.h>
@@ -35,13 +35,13 @@
 
     EXAMPLE
         struct ClusterNotifyNode cnn;
-        
+
         cnn.cnn_Task=IExec->FindTask(NULL);
         cnn.cnn_SigBit=IExec->AllocSignal(-1);
         StartClusterNotify(&cnn);
-        
+
                     somewhere down the line...
-        
+
         Wait(1L<<cnn.cnn_SigBit)
             printf("Cluster Changes have happened\n");
 

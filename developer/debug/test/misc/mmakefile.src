@@ -9,6 +9,7 @@ FILES := \
     aslhook \
     busyloop \
     camdtree \
+    camdmemorydriver \
     cctest \
     frequencies \
     fsresource \

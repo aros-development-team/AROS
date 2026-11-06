@@ -23,12 +23,19 @@ SAVEDS void ReceiverFunc(void){
 		driverdata->isReceiverProcessAlive=2;
 		return;
 	}
+	driverdata->EndpointOutputSig=AllocSignal(-1);
+	if(driverdata->EndpointOutputSig==-1){
+		FreeSignal(driverdata->ReceiverSig);
+		driverdata->isReceiverProcessAlive=2;
+		return;
+	}
 
 	driverdata->isReceiverProcessAlive=1;
 
 	for(;;){
 		sig=Wait(
 			1L<<driverdata->ReceiverSig |
+			1L<<driverdata->EndpointOutputSig |
 			SIGBREAKF_CTRL_C
 		);
 
@@ -52,9 +59,15 @@ SAVEDS void ReceiverFunc(void){
 				AROS_ATOMIC_AND(driverdata->re_overflow,0);
 			}
 		}
+		if(sig&1L<<driverdata->EndpointOutputSig){
+			camd_native_worker_fanout_wake_all(
+				driverdata->EndpointOutputFanout,NULL);
+		}
 		if(sig&SIGBREAKF_CTRL_C) break;
 	}
 
+	FreeSignal(driverdata->EndpointOutputSig);
+	driverdata->EndpointOutputSig=-1;
 	FreeSignal(driverdata->ReceiverSig);
 
 	driverdata->isReceiverProcessAlive=0;
