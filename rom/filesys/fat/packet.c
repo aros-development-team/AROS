@@ -475,7 +475,14 @@ void ProcessPackets(struct Globals *glob)
                 {
                     glob->disk_inhibited++;
                     if (glob->disk_inhibited == 1)
+                    {
+                        /* The disk is still there: write what the cache
+                         * holds before the volume goes away, or it is lost
+                         * when the volume is kept for its locks */
+                        if (glob->sb != NULL)
+                            UpdateDisk(glob);
                         DoDiskRemove(glob);
+                    }
                 }
                 else if (glob->disk_inhibited != 0)
                 {
@@ -518,6 +525,10 @@ void ProcessPackets(struct Globals *glob)
                 }
 
                 D(bug("\tNothing pending. Shutting down the handler\n"));
+
+                /* Write what the cache holds before the volume goes */
+                if (glob->sb != NULL)
+                    UpdateDisk(glob);
 
                 /* Risky, because of async. volume remove, but works */
                 DoDiskRemove(glob);
