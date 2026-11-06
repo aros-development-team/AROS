@@ -359,6 +359,13 @@ tsleep(struct SocketBase *p,  /* Library base through which this call came */
     }
 #endif
 
+    /*
+     * A shared base being closed: its threads leave rather than sleep, and
+     * only the closing task sleeps in it (a lingering close).
+     */
+    if(p->closing && p->shared && FindTask(NULL) != p->closer)
+        return (EBADF);
+
     /* the opener's waiter, or one lent to this thread of a shared base */
     if((w = waiter_obtain(p)) == NULL)
         return (ENOMEM);
@@ -432,6 +439,23 @@ wakeup(caddr_t chan)
             Signal(p->task, 1 << p->timerPort->mp_SigBit);
         }
         p = next;
+    }
+    ReleaseSemaphore(&sleep_semaphore);
+}
+
+/*
+ * Wakes one waiter, whatever it sleeps on: a shared base being closed gets
+ * its threads out of their sleeps.
+ */
+void
+wakeup_waiter(struct SocketWaiter *p)
+{
+    ObtainSemaphore(&sleep_semaphore);
+    if(p->wchan != NULL) {
+        queue_remove(&sleep_queue[SLEEP_HASH(p->wchan)], p,
+                     struct SocketWaiter *, sleep_link);
+        p->wchan = NULL;
+        Signal(p->task, 1 << p->timerPort->mp_SigBit);
     }
     ReleaseSemaphore(&sleep_semaphore);
 }

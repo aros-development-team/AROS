@@ -409,6 +409,11 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
 
     CHECK_TASK();
 
+    if(libPtr->closing) {
+        writeErrnoValue(libPtr, EBADF);
+        return -1;
+    }
+
     /* the opener's waiter, or one lent to this thread of a shared base */
     if((w = waiter_obtain(libPtr)) == NULL) {
         writeErrnoValue(libPtr, ENOMEM);
@@ -535,6 +540,12 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
                     unselect(newselbuf);
                     ReleaseSemaphore(&select_semaphore);
 
+                    /* woken because the shared base is being closed */
+                    if(libPtr->closing) {
+                        error = EBADF;
+                        break;
+                    }
+
                     if(error != 0) {
                         /*
                          * The break at the end of this block means that selscan will NOT
@@ -593,9 +604,12 @@ Return:
     }
 #undef putbits
 
+    /* errno first: once its waiter is back, a closing base may go */
+    if(error != 0)
+        writeErrnoValue(libPtr, error);
     waiter_release(libPtr, w);
 
-    API_STD_RETURN(error, retval);
+    return error == 0 ? retval : -1;
 }
 
 AROS_LH6(LONG, WaitSelect,
@@ -672,6 +686,15 @@ selscan(struct SocketBase *p,
     int n = 0;
     int error = 0;
     u_int obitsize = howmany(nfd, NFDBITS); /* in longwords */
+
+    /* a closed base has no table any more */
+    if(p->dTable == NULL) {
+        *retval = 0;
+        *selitemcount_p = 0;
+        return (EBADF);
+    }
+    if(nfd > p->dTableSize)
+        nfd = p->dTableSize;
 
     for(which = 0; which < 3; which++) {
         switch(which) {

@@ -178,6 +178,7 @@ struct SocketBase {
   struct ServentNode *ServentNode;
 /* -- set under syscall_semaphore -- */
   UBYTE			closing;      /* UL_Close is closing the table */
+  struct Task *		closer;       /* the task closing a shared base */
   UBYTE			hookBase;     /* api_hookbase_open(), sleeping only */
 /*
  * -- sharing among the tasks of a program (SBTC_CAN_SHARE_LIBRARY_BASES) --

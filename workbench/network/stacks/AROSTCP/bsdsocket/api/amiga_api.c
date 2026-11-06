@@ -325,6 +325,9 @@ void waiter_release(struct SocketBase *libPtr, struct SocketWaiter *w)
     w->timerPort->mp_SigTask = NULL;
     AddHead((struct List *)&libPtr->freeWaiters, (struct Node *)w);
     ReleaseSemaphore(&libPtr->WaiterLock);
+    /* a closing base waits for its sleepers to leave (drainSharedBase()) */
+    if(libPtr->closing)
+        wakeup((caddr_t)libPtr);
 }
 
 /*
@@ -507,6 +510,8 @@ AROS_LH1(struct Library *, Open,
     AROS_LIBFUNC_EXIT
 }
 
+static void freeClosedSharedBases(void);
+
 ULONG *__ELL_Expunge(struct Library *libPtr)
 {
 #if defined(__AROS__)
@@ -520,6 +525,9 @@ ULONG *__ELL_Expunge(struct Library *libPtr)
     if(libPtr->lib_OpenCnt == 0 && AROSTCP_FLAG_CANEXPUNGE) {
         VOID *freestart;
         ULONG  size;
+
+        if(libPtr == MasterSocketBase)
+            freeClosedSharedBases();
 
 #if 0	/* Currently done already  */
         /*
@@ -612,16 +620,89 @@ static void forgetSocketOwner(struct SocketBase *libPtr)
     splx(s);
 }
 
+/*
+ * Closing a base other tasks of the program may still be inside: as with
+ * Roadshow, a program must not do that, but a thread asleep in the base
+ * (WaitSelect(), a blocking call) would wake on freed memory. Wake every
+ * sleeper but the closer and wait until they have left: from now on they
+ * fail with EBADF. Bounded, so a sleeper that never leaves cannot hold the
+ * close up. Caller holds the syscall semaphore and has set closing.
+ */
+#define DRAIN_ROUNDS 100	/* of 50 ms */
+static void drainSharedBase(struct SocketBase *p)
+{
+    static const struct timeval round = { 0, 50000 };
+    struct Task *me = FindTask(NULL);
+    struct SocketWaiter *w;
+    int busy, n;
+
+    p->closer = me;
+    for(n = 0; n < DRAIN_ROUNDS; n++) {
+        busy = 0;
+        ObtainSemaphore(&p->WaiterLock);
+        for(w = (struct SocketWaiter *)p->busyWaiters.mlh_Head;
+                w->node.mln_Succ; w = (struct SocketWaiter *)w->node.mln_Succ)
+            if(w->task != me) {
+                busy++;
+                wakeup_waiter(w);
+            }
+        ReleaseSemaphore(&p->WaiterLock);
+        if(busy == 0)
+            return;
+        /* drops the syscall semaphore while it waits */
+        tsleep(p, (caddr_t)p, "close", &round);
+    }
+    __log(LOG_ERR, "Closing a shared base with %ld task(s) still asleep in it", (long)busy);
+}
+
+/*
+ * A closed shared base is freed on a later close, or at expunge, not at once: a
+ * sharer woken by the close may still be on its way out of a call (writing
+ * errno through the base). Linked through its library node. Callers hold
+ * baselist_semaphore.
+ */
+static struct MinList closedSharedBases = {
+    (struct MinNode *)&closedSharedBases.mlh_Tail, NULL,
+    (struct MinNode *)&closedSharedBases.mlh_Head
+};
+
+static void freeSocketBase(struct SocketBase *libPtr)
+{
+    VOID *freestart = (void *)((IPTR)libPtr - (IPTR)libPtr->libNode.lib_NegSize);
+    ULONG size = libPtr->libNode.lib_NegSize + libPtr->libNode.lib_PosSize;
+
+    bzero(freestart, size);
+    FreeMem(freestart, size);
+}
+
+static void freeClosedSharedBases(void)
+{
+    struct SocketBase *p, *next;
+
+    for(p = (struct SocketBase *)closedSharedBases.mlh_Head;
+            (next = (struct SocketBase *)p->libNode.lib_Node.ln_Succ) != NULL; p = next) {
+        ObtainSemaphore(&p->WaiterLock);
+        if(IsListEmpty((struct List *)&p->busyWaiters)) {
+            ReleaseSemaphore(&p->WaiterLock);
+            Remove((struct Node *)p);
+            freeLentWaiters(p);	/* those handed back after the close */
+            freeSocketBase(p);
+        } else
+            ReleaseSemaphore(&p->WaiterLock);	/* a sleeper never left: keep it */
+    }
+}
+
 ULONG *__UL_Close(struct SocketBase *libPtr)
 {
-    VOID *freestart;
-    ULONG  size;
+    struct socket **table;
+    LONG tableSize;
     int	 i;
 
     /*
      * one task may have SocketLibrary opened more than once.
      */
     ObtainSemaphore(&baselist_semaphore);
+    freeClosedSharedBases();
     if(--libPtr->libNode.lib_OpenCnt > 0) {
         ReleaseSemaphore(&baselist_semaphore);
         return NULL;
@@ -655,6 +736,8 @@ ULONG *__UL_Close(struct SocketBase *libPtr)
      * its table. It stays listed: a lingering close finds it for tsleep().
      */
     libPtr->closing = TRUE;
+    if(libPtr->shared)
+        drainSharedBase(libPtr);
     /*
      * dTable may be NULL if Open() failed before allocating it and called
      * us to clean up (dTableSize is set before dTable is allocated).
@@ -665,6 +748,11 @@ ULONG *__UL_Close(struct SocketBase *libPtr)
             if(FD_ISSET(i, (fd_set *)(libPtr->dTable + libPtr->dTableSize)))
                 closeSocketLocked(i, libPtr);
     forgetSocketOwner(libPtr);
+    /* a late caller of a shared base finds no table rather than a freed one */
+    table = libPtr->dTable;
+    tableSize = libPtr->dTableSize;
+    libPtr->dTable = NULL;
+    libPtr->dTableSize = 0;
     ReleaseSyscallSemaphore(libPtr);
 
     ObtainSemaphore(&baselist_semaphore);
@@ -684,18 +772,17 @@ ULONG *__UL_Close(struct SocketBase *libPtr)
     freeDataBuffer(&libPtr->protoents);
     freeDataBuffer(&libPtr->servents);
 
-    if(libPtr->dTable)
-        FreeMem(libPtr->dTable, libPtr->dTableSize * sizeof(struct socket *) +
-                ((libPtr->dTableSize - 1) / NFDBITS + 1) * sizeof(fd_mask));
+    if(table)
+        FreeMem(table, tableSize * sizeof(struct socket *) +
+                ((tableSize - 1) / NFDBITS + 1) * sizeof(fd_mask));
 
     res_cleanup_db(&libPtr->res_state);
 
-    freestart = (void *)((IPTR)libPtr - (IPTR)libPtr->libNode.lib_NegSize);
-    size = libPtr->libNode.lib_NegSize + libPtr->libNode.lib_PosSize;
-    bzero(freestart, size);
-    FreeMem(freestart, size);
-
     ObtainSemaphore(&baselist_semaphore);
+    if(libPtr->shared)
+        AddTail((struct List *)&closedSharedBases, (struct Node *)libPtr);
+    else
+        freeSocketBase(libPtr);
     MasterSocketBase->lib_OpenCnt--;
     /*
      * If no more libraries are open and delayed expunge is asked,
