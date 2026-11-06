@@ -65,7 +65,7 @@ error_t GetResBlock(cachedblock_t *blok, uint16 bloktype, uint32 seqnr, bool fix
 	{
 		blok->blocknr = t->blocknr;
 		blok->mode = t->mode;
-		*blok->data = *t->data;
+		memcpy(blok->data, t->data, SIZEOF_RESBLOCK);
 		return e_none;
 	}
 
