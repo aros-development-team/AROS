@@ -1902,17 +1902,84 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 	return chainerror;
 }
 
+/* A bad directory reference must not erase a live target. Invalidate only
+ * a discarded singleton directory with no entry in its recorded parent, so
+ * later hardlink searches cannot find its abandoned contents. */
+#ifdef __GNUC__
+static error_t InvalidateAbandonedDir(c_dirblock_t *, uint32) __attribute__((noinline));
+#endif
+static error_t InvalidateAbandonedDir(c_dirblock_t *dirblk, uint32 anodenr)
+{
+	canode_t node;
+	int type = 0;
+	error_t error;
+
+	if (mode != repair || anodenr == ANODE_ROOTDIR ||
+	    dirblk->data->id != DBLKID || dirblk->data->anodenr != anodenr)
+		return e_none;
+	if ((error = ReadAnode(&node, anodenr, false)))
+		return IsOperationalError(error) ? error : e_fatal_error;
+	if (node.next || node.blocknr != dirblk->blocknr)
+		return e_none;
+	if ((error = SearchInDir(dirblk->data->parent, anodenr, &type)))
+		return IsOperationalError(error) ? error : e_fatal_error;
+	if (type)
+		return e_none;
+	node.clustersize = node.blocknr = node.next = 0;
+	error = WriteAnode(&node, anodenr);
+	return !error || IsOperationalError(error) ? error : e_fatal_error;
+}
+
+/* The normal metadata reader rejects an invalid entry chain before converting
+ * anything. Recover only its bounded prefix in a private buffer; the caller
+ * must still check the directory identity before writing it back. */
+/* Keep this exceptional path's locals out of recursive directory frames. */
+#ifdef __GNUC__
+static error_t RecoverDirPrefix(c_dirblock_t *, uint32) __attribute__((noinline));
+#endif
+static error_t RecoverDirPrefix(c_dirblock_t *dirblk, uint32 bloknr)
+{
+	uint8 *data = (uint8 *)dirblk->data;
+	uint32 offset, next;
+	error_t error;
+
+	if ((error = vol_GetRawBlock((cachedblock_t *)dirblk, bloknr)))
+		return error;
+	if (PFS3DiskBlockId(data) != DBLKID)
+		return e_syntax_error;
+
+	for (offset = sizeof(struct dirblock); offset < SIZEOF_RESBLOCK; offset += next) {
+		next = data[offset];
+		if (!next)
+			return e_syntax_error;
+		/* Leave room for the terminating zero, including at the block end. */
+		if (next < sizeof(struct direntry) || next >= SIZEOF_RESBLOCK - offset) {
+			memset(data + offset, 0, SIZEOF_RESBLOCK - offset);
+			return PFS3MetadataToHostForRecovery(data, SIZEOF_RESBLOCK,
+				PFS3_METADATA_RESERVED) ? e_none : e_syntax_error;
+		}
+	}
+	return e_syntax_error;
+}
+
 static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool discardable)
 {
 	c_dirblock_t dirblk;
 	struct direntry *entry;
+	uint8 *end;
+	bool truncated = false;
 	error_t error;
 
 	/* get block */
 	dirblk.data = calloc(1, SIZEOF_RESBLOCK);
 	if (!dirblk.data)
 		return e_out_of_memory;
-	if ((error = volume.getblock((cachedblock_t *)&dirblk, bloknr)))
+	error = volume.getblock((cachedblock_t *)&dirblk, bloknr);
+	if (error == e_syntax_error) {
+		error = RecoverDirPrefix(&dirblk, bloknr);
+		truncated = error == e_none;
+	}
+	if (error)
 	{
 		free (dirblk.data);
 		if (SkipCheckReadError(error))
@@ -1926,14 +1993,33 @@ static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool
 	if (dirblk.data->id != DBLKID || dirblk.data->anodenr != anodenr ||
 		dirblk.data->parent != parent)
 	{
+		error = InvalidateAbandonedDir(&dirblk, anodenr);
 		free (dirblk.data);
-		return e_remove;
+		return error ? error : e_remove;
 	}
 	
+	if (truncated) {
+		if (mode == repair) {
+			if ((error = volume.writeblock((cachedblock_t *)&dirblk))) {
+				free(dirblk.data);
+				return error;
+			}
+			fixedfileerror("removed invalid directory entry tail; readable prefix retained");
+		} else {
+			addfileerror("invalid directory entry tail; checking readable prefix");
+			if (!ss.incomplete)
+				ss.incomplete = e_syntax_error;
+		}
+	}
 	entry = (struct direntry *)dirblk.data->entries;
+	end = (uint8 *)dirblk.data + SIZEOF_RESBLOCK;
 
-	while (entry->next)
+	while ((uint8 *)entry < end && entry->next)
 	{
+		if (entry->next < sizeof(*entry) || entry->next >= end - (uint8 *)entry) {
+			free(dirblk.data);
+			return e_fatal_error;
+		}
 		if ((error = RepairDirEntry(entry, &dirblk)))
 		{
 			if (SkipCheckReadError(error)) {
@@ -1966,6 +2052,11 @@ static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool
 		}
 		else
 			entry = NEXTENTRY(entry);
+	}
+
+	if ((uint8 *)entry >= end) {
+		free(dirblk.data);
+		return e_fatal_error;
 	}
 
 	/* has to be done after main check, because an empty block can
@@ -2481,7 +2572,7 @@ static error_t CheckAnode(canode_t *anode, uint32 nr, bool fix)
  */
 error_t SearchInDir(uint32 diranodenr, uint32 target, int *result)
 {
-	uint32 checkpoint = diranodenr, distance = 0, power = 1;
+	uint32 mainanode = diranodenr, checkpoint = diranodenr, distance = 0, power = 1;
 	uint32 entryanode;
 	canode_t anode;
 	c_dirblock_t dirblk;
@@ -2500,6 +2591,8 @@ error_t SearchInDir(uint32 diranodenr, uint32 target, int *result)
 			break;
 		}
 		error = volume.getblock((cachedblock_t *)&dirblk, anode.blocknr);
+		if (error == e_syntax_error)
+			error = RecoverDirPrefix(&dirblk, anode.blocknr);
 		if (aborting) {
 			error = e_aborted;
 			goto failed;
@@ -2508,7 +2601,7 @@ error_t SearchInDir(uint32 diranodenr, uint32 target, int *result)
 			read_error = error;
 		else if (IsOperationalError(error))
 			goto failed;
-		else if (!error && dirblk.data->id == DBLKID) {
+		else if (!error && dirblk.data->id == DBLKID && dirblk.data->anodenr == mainanode) {
 			for (de = FIRSTENTRY(&dirblk); de->next; de = NEXTENTRY(de)) {
 				/* Repair removes odd-sized entries; later entries can still
 				 * be found before compaction, including on 68000/010. */
