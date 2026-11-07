@@ -183,6 +183,17 @@ static bool SkipCheckReadError(error_t error)
 	return true;
 }
 
+/* A damaged object need not stop a read-only scan of unrelated objects.
+ * Never use this for device failures, allocation failures or user aborts. */
+static error_t UnresolvedObject(void)
+{
+	if (mode != check)
+		return e_fatal_error;
+	if (!ss.incomplete)
+		ss.incomplete = e_anode_error;
+	return e_anode_error;
+}
+
 static void ReportCheckReadError(error_t error, uint32 blocknr)
 {
 	if (SkipCheckReadError(error)) {
@@ -2559,7 +2570,7 @@ static error_t SetLinkHead(struct extrafields *extra, uint32 head,
 		if (de->next + growth > 254 ||
 			(uint8 *)end + growth >= (uint8 *)dirblk->data + SIZEOF_RESBLOCK) {
 			addfileerror("cannot redirect hardlink chain: directory entry has no room");
-			return e_fatal_error;
+			return UnresolvedObject();
 		}
 	}
 	extra->link = head;
@@ -2594,8 +2605,8 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 		if (aborting)
 			return e_aborted;
 		if (linknode.next && linknode.next == checkpoint) {
-			addfileerror("cyclic hardlink chain; repair stopped");
-			return e_fatal_error;
+			addfileerror("cyclic hardlink chain");
+			return UnresolvedObject();
 		}
 		// check objectdir (clustersize) against actual objectdir
 		if (linknode.clustersize != parent)
