@@ -138,7 +138,7 @@ static bitmap_t *bg_InitBitmap(int32 start, int32 stop, int32 step);
 static void bg_KillBitmap(bitmap_t **bm);
 static BOOL bg_IsItemUsed(bitmap_t *bm, uint32 nr);
 error_t SearchInDir(uint32 diranodenr, uint32 target, int *result);
-static error_t FindInDir(uint32 diranodenr, uint32 target, int *result, uint32 *linkhead);
+static error_t FindInDir(uint32 diranodenr, uint32 target, int *result, uint32 *linkhead, bool *complete);
 static void AddExtraFields(struct direntry *direntry, struct extrafields *extra);
 static bool MakeMountFile(char *fname);
 static error_t BuildRootBlock_hub(void);
@@ -181,6 +181,17 @@ static bool SkipCheckReadError(error_t error)
 	if (!ss.incomplete)
 		ss.incomplete = error;
 	return true;
+}
+
+/* A damaged object need not stop a read-only scan of unrelated objects.
+ * Never use this for device failures, allocation failures or user aborts. */
+static error_t UnresolvedObject(void)
+{
+	if (mode != check)
+		return e_fatal_error;
+	if (!ss.incomplete)
+		ss.incomplete = e_anode_error;
+	return e_anode_error;
 }
 
 static void ReportCheckReadError(error_t error, uint32 blocknr)
@@ -1907,32 +1918,50 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 	return chainerror;
 }
 
-/* A bad directory reference must not erase a live target. Invalidate only
- * a discarded singleton directory with no entry in its recorded parent, so
- * later hardlink searches cannot find entries directly in that block. */
+/* The entry used to reach this block is evidence of its parent. Preserve
+ * the contents when the old parent is stale, but do not choose between live
+ * owners or guess which entries an uncertain directory lookup would retain. */
 #ifdef __GNUC__
-static error_t InvalidateAbandonedDir(c_dirblock_t *, uint32) __attribute__((noinline));
+static error_t CheckDirParent(c_dirblock_t *, uint32) __attribute__((noinline));
 #endif
-static error_t InvalidateAbandonedDir(c_dirblock_t *dirblk, uint32 anodenr)
+static error_t CheckDirParent(c_dirblock_t *dirblk, uint32 parent)
 {
-	canode_t node;
+	struct dirstack *ancestor;
 	int type = 0;
+	bool complete;
 	error_t error;
 
-	if (mode != repair || anodenr == ANODE_ROOTDIR ||
-	    dirblk->data->id != DBLKID || dirblk->data->anodenr != anodenr)
+	if (dirblk->data->parent == parent)
 		return e_none;
-	if ((error = ReadAnode(&node, anodenr, false)))
-		return IsOperationalError(error) ? error : e_fatal_error;
-	if (node.next || node.blocknr != dirblk->blocknr)
+	addfileerror("invalid directory parent");
+	for (ancestor = currentobject ? currentobject->parent : NULL;
+	     ancestor; ancestor = ancestor->parent)
+		if (ancestor->anodenr == dirblk->data->anodenr) {
+			addfileerror("directory reference points to an ancestor");
+			return UnresolvedObject();
+		}
+	if (dirblk->data->anodenr != ANODE_ROOTDIR) {
+		error = FindInDir(dirblk->data->parent, dirblk->data->anodenr,
+			&type, NULL, &complete);
+		if (error)
+			return error;
+		if (type || !complete) {
+			addfileerror("directory owner is ambiguous; contents retained");
+			return UnresolvedObject();
+		}
+	} else if (parent)
+		return UnresolvedObject();
+
+	dirblk->data->parent = parent;
+	if (mode == check) {
+		if (!ss.incomplete)
+			ss.incomplete = e_syntax_error;
 		return e_none;
-	if ((error = SearchInDir(dirblk->data->parent, anodenr, &type)))
-		return IsOperationalError(error) ? error : e_fatal_error;
-	if (type)
-		return e_none;
-	node.clustersize = node.blocknr = node.next = 0;
-	error = WriteAnode(&node, anodenr);
-	return !error || IsOperationalError(error) ? error : e_fatal_error;
+	}
+	if ((error = volume.writeblock((cachedblock_t *)dirblk)))
+		return error;
+	fixedfileerror("corrected directory parent");
+	return e_none;
 }
 
 /* The normal metadata reader rejects an invalid entry chain before converting
@@ -1995,12 +2024,14 @@ static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool
 	}
 
 	/* check dirblock */
-	if (dirblk.data->id != DBLKID || dirblk.data->anodenr != anodenr ||
-		dirblk.data->parent != parent)
+	if (dirblk.data->id != DBLKID || dirblk.data->anodenr != anodenr)
 	{
-		error = InvalidateAbandonedDir(&dirblk, anodenr);
 		free (dirblk.data);
-		return error ? error : e_remove;
+		return e_remove;
+	}
+	if ((error = CheckDirParent(&dirblk, parent))) {
+		free(dirblk.data);
+		return error;
 	}
 	
 	if (truncated) {
@@ -2079,6 +2110,57 @@ static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool
 	return error;
 }
 
+/* Keep the low size word and infer only the missing high word, from a
+ * complete, bounded allocation chain. No rounding up to allocated bytes. */
+#ifdef __GNUC__
+static error_t RecoverSizeHigh(struct direntry *, uint32 *) __attribute__((noinline));
+#endif
+static error_t RecoverSizeHigh(struct direntry *de, uint32 *high)
+{
+	canode_t node;
+	uint32 nr = de->anode, checkpoint = nr, distance = 0, power = 1;
+	uint32 blocks = 0, lowblocks, difference;
+	error_t error;
+
+	while (nr) {
+		if (aborting)
+			return e_aborted;
+		if ((error = ReadAnode(&node, nr, false))) {
+			if (IsOperationalError(error))
+				return error;
+			goto uncertain;
+		}
+		if (node.clustersize) {
+			if (node.blocknr <= rbl->lastreserved || node.blocknr >= volume.disksize ||
+			    node.clustersize > volume.disksize - node.blocknr ||
+			    node.clustersize > volume.disksize - blocks)
+				goto uncertain;
+			blocks += node.clustersize;
+		}
+		if (node.next && node.next == checkpoint)
+			goto uncertain;
+		if (++distance == power) {
+			checkpoint = node.next;
+			distance = 0;
+			power = power < 0x80000000UL ? power * 2 : ~(uint32)0;
+		}
+		nr = node.next;
+	}
+	lowblocks = (de->fsize >> volume.blockshift) +
+		((de->fsize & (volume.blocksize - 1)) != 0);
+	if (blocks < lowblocks)
+		goto uncertain;
+	difference = blocks - lowblocks;
+	if (difference & (((uint32)1 << (32 - volume.blockshift)) - 1))
+		goto uncertain;
+	*high = difference >> (32 - volume.blockshift);
+	return e_none;
+
+uncertain:
+	addfileerror("cannot reconstruct file size; file retained");
+	return UnresolvedObject();
+}
+
 /* The handler requires valid name/comment/extra-field packing, not merely
  * a traversable entry chain. Preserve names and comments when only the packed
  * fields are unusable; otherwise let normal entry removal handle the damage. */
@@ -2089,22 +2171,42 @@ static error_t CheckDirEntryLayout(struct direntry *de, c_dirblock_t *dirblk)
 {
 	struct extrafields extra;
 	uint8 *data = (uint8 *)de;
-	uint32 offset;
+	uint32 offset, high = 0;
+	error_t error;
 
 	if (PFS3GetExtraFields(de, &extra) != (UWORD)~0)
 		return e_none;
 	if (mode != repair) {
 		if (!ss.incomplete)
 			ss.incomplete = e_direntry_error;
-		return e_direntry_error;
 	}
 	offset = offsetof(struct direntry, startofname) + de->nlength;
-	if (offset >= de->next)
+	if (offset >= de->next) {
+		addfileerror("invalid filename");
 		return e_direntry_error;
+	}
 	offset = (sizeof(*de) + de->nlength + data[offset]) & ~1U;
-	if (offset > de->next - sizeof(UWORD))
+	if (offset > de->next - sizeof(UWORD)) {
+		addfileerror("invalid filenote");
 		return e_direntry_error;
+	}
+	if (mode != repair)
+		return e_direntry_error;
+	if ((rbl->options & MODE_LARGEFILE) && de->type == ST_FILE) {
+		if ((error = RecoverSizeHigh(de, &high)))
+			return error;
+		if (high && offset > de->next - 2 * sizeof(UWORD)) {
+			addfileerror("no room for recovered file size; file retained");
+			return UnresolvedObject();
+		}
+	}
 	memset(data + de->next - sizeof(UWORD), 0, sizeof(UWORD));
+	if (high) {
+		data[de->next - 4] = high >> 8;
+		data[de->next - 3] = high;
+		data[de->next - 2] = 4; /* packed fsizex flag, stored big endian */
+		fixedfileerror("recovered high file size from allocation chain");
+	}
 	fixedfileerror("removed malformed directory extra fields");
 	return volume.writeblock((cachedblock_t *)dirblk);
 }
@@ -2275,6 +2377,23 @@ static error_t RepairFile(struct direntry *de, c_dirblock_t *parent)
 	return e_none;	
 }
 
+/* A skipped target directory is unknown, not evidence of a dangling link. */
+#ifdef __GNUC__
+static error_t FindLinkTarget(uint32, uint32, int *, uint32 *) __attribute__((noinline));
+#endif
+static error_t FindLinkTarget(uint32 directory, uint32 object, int *type, uint32 *head)
+{
+	bool complete;
+	error_t error = FindInDir(directory, object, type, head, &complete);
+	if (error)
+		return error;
+	if (!*type && !complete) {
+		addfileerror("cannot inspect hardlink target; link retained");
+		return UnresolvedObject();
+	}
+	return e_none;
+}
+
 /* A surviving link must belong to its object's backlink chain.  Otherwise
  * the handler cannot safely delete it or preserve it when moving the object.
  * Keep the exceptional lookup's storage out of the recursive directory frame.
@@ -2291,7 +2410,7 @@ static error_t CheckLinkMembership(uint32 directory, uint32 object, uint32 link)
 	error_t error;
 	int type;
 
-	if ((error = FindInDir(directory, object, &type, &head)))
+	if ((error = FindLinkTarget(directory, object, &type, &head)))
 		return error;
 	checkpoint = head;
 	while (head) {
@@ -2302,10 +2421,10 @@ static error_t CheckLinkMembership(uint32 directory, uint32 object, uint32 link)
 		if ((error = ReadAnode(&node, head, false))) {
 			if (IsOperationalError(error))
 				return error;
-			break;
+			goto uncertain;
 		}
-		if (node.next == checkpoint)
-			break;
+		if (node.next && node.next == checkpoint)
+			goto uncertain;
 		if (++distance == power) {
 			checkpoint = node.next;
 			distance = 0;
@@ -2315,6 +2434,10 @@ static error_t CheckLinkMembership(uint32 directory, uint32 object, uint32 link)
 	}
 	addfileerror("hardlink missing from object link chain");
 	return e_remove;
+
+uncertain:
+	addfileerror("cannot verify hardlink membership; link retained");
+	return UnresolvedObject();
 }
 
 /* Repair a hardlink and verify both directions of its object reference. */
@@ -2353,7 +2476,7 @@ static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok)
 	 * It is not checked if the link itself is infact a link, 
      * just that it exists.
 	 */
-	if ((error = SearchInDir(linknode.clustersize, extra.link, &type)))
+	if ((error = FindLinkTarget(linknode.clustersize, extra.link, &type, NULL)))
 		return error;
 	switch (type)
 	{
@@ -2559,11 +2682,19 @@ static error_t SetLinkHead(struct extrafields *extra, uint32 head,
 		if (de->next + growth > 254 ||
 			(uint8 *)end + growth >= (uint8 *)dirblk->data + SIZEOF_RESBLOCK) {
 			addfileerror("cannot redirect hardlink chain: directory entry has no room");
-			return e_fatal_error;
+			return UnresolvedObject();
 		}
 	}
 	extra->link = head;
 	return SetExtraFields(extra, de, dirblk);
+}
+
+static error_t LinkChainError(error_t error)
+{
+	if (IsOperationalError(error))
+		return error;
+	addfileerror("invalid hardlink chain; object retained");
+	return UnresolvedObject();
 }
 
 /* Repair the hardlinks chain referring to a file
@@ -2585,7 +2716,7 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 		return e_none;
 
 	if ((error = ReadAnode(&linknode, extra.link, false)))
-		return IsOperationalError(error) ? error : e_anode_error;
+		return LinkChainError(error);
 
 	parent = dirblk->data->anodenr;
 	checkpoint = extra.link;
@@ -2594,8 +2725,8 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 		if (aborting)
 			return e_aborted;
 		if (linknode.next && linknode.next == checkpoint) {
-			addfileerror("cyclic hardlink chain; repair stopped");
-			return e_fatal_error;
+			addfileerror("cyclic hardlink chain");
+			return UnresolvedObject();
 		}
 		// check objectdir (clustersize) against actual objectdir
 		if (linknode.clustersize != parent)
@@ -2618,7 +2749,7 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 			} else
 				error = DeleteAnode(extra.link, linknode.nr);
 			if (error)
-				return error;
+				return LinkChainError(error);
 			fixedfileerror("dangling hardlink");
 		}
 
@@ -2631,7 +2762,7 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 			power = power < 0x80000000UL ? power * 2 : ~(uint32)0;
 		}
 		if ((error = ReadAnode(&linknode, linknode.next, false)))
-			return IsOperationalError(error) ? error : e_anode_error;
+			return LinkChainError(error);
 	}
 }
 
@@ -2655,10 +2786,10 @@ static error_t CheckAnode(canode_t *anode, uint32 nr, bool fix)
  */
 error_t SearchInDir(uint32 diranodenr, uint32 target, int *result)
 {
-	return FindInDir(diranodenr, target, result, NULL);
+	return FindInDir(diranodenr, target, result, NULL, NULL);
 }
 
-static error_t FindInDir(uint32 diranodenr, uint32 target, int *result, uint32 *linkhead)
+static error_t FindInDir(uint32 diranodenr, uint32 target, int *result, uint32 *linkhead, bool *complete)
 {
 	uint32 mainanode = diranodenr, checkpoint = diranodenr, distance = 0, power = 1;
 	uint32 entryanode;
@@ -2667,6 +2798,8 @@ static error_t FindInDir(uint32 diranodenr, uint32 target, int *result, uint32 *
 	struct direntry *de;
 	error_t error, read_error = e_none;
 
+	if (complete)
+		*complete = true;
 	dirblk.data = calloc(1, SIZEOF_RESBLOCK);
 	if (!dirblk.data)
 		return e_out_of_memory;
@@ -2674,16 +2807,39 @@ static error_t FindInDir(uint32 diranodenr, uint32 target, int *result, uint32 *
 	{
 		error = ReadAnode(&anode, diranodenr, false);
 		if (error) {
+			if (complete && error != e_number_error && error != e_not_found)
+				*complete = false;
 			if (IsOperationalError(error))
 				goto failed;
 			break;
 		}
+		if (complete && !anode.clustersize && !anode.blocknr && !anode.next)
+			break; /* a free anode cannot own directory entries */
+		if (complete && (anode.blocknr < rbl->firstreserved ||
+		    anode.blocknr > rbl->lastreserved))
+			goto next_anode; /* file data cannot be a reserved dirblock */
 		error = volume.getblock((cachedblock_t *)&dirblk, anode.blocknr);
-		if (error == e_syntax_error)
+		if (error == e_syntax_error) {
+			if (complete && mode != repair)
+				*complete = false;
 			error = RecoverDirPrefix(&dirblk, anode.blocknr);
+		}
 		if (aborting) {
 			error = e_aborted;
 			goto failed;
+		}
+		/* In REPAIR only the readable prefix can survive. A bad ID or
+		 * discarded tail cannot own a surviving entry; a block belonging
+		 * to another directory still leaves ownership uncertain. */
+		if (complete) {
+			if (error) {
+				if (mode != repair || IsOperationalError(error))
+					*complete = false;
+			} else if (dirblk.data->id == DBLKID) {
+				if (dirblk.data->anodenr != mainanode)
+					*complete = false;
+			} else if (mode != repair)
+				*complete = false;
 		}
 		if (error == e_read_error)
 			read_error = error;
@@ -2711,8 +2867,9 @@ static error_t FindInDir(uint32 diranodenr, uint32 target, int *result, uint32 *
 				}
 			}
 		}
-		if (anode.next == checkpoint)
-			break;
+	next_anode:
+		if (anode.next && anode.next == checkpoint)
+			break; /* every distinct block in this cycle was searched */
 		if (++distance == power) {
 			checkpoint = anode.next;
 			distance = 0;
