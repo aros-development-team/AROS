@@ -30,3 +30,10 @@ USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
 %build_prog mmake=test-fat-fullroot \
 	files="fatfullroot" \
 	progname=fatfullroot targetdir=$(AROS_TESTS)/filesys/fat
+
+# Requires an explicitly selected expendable FAT volume at runtime.
+#MM test-fat-parent-rename : includes linklibs
+
+%build_prog mmake=test-fat-parent-rename \
+    files="parent_rename" \
+    progname=fat_parent targetdir=$(AROS_TESTS)/filesys/fat
