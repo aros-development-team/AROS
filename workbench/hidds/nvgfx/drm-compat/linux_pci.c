@@ -433,6 +433,15 @@ void __iomem *pci_platform_rom(struct pci_dev *pdev, size_t *size)
 }
 
 /* only the one device is ever known; other lookups find nothing */
+struct pci_dev *compat_pci_card;
+
+struct pci_dev *pci_get_base_class(unsigned int class, struct pci_dev *from)
+{
+    if (!from && compat_pci_card && (compat_pci_card->class >> 16) == class)
+        return compat_pci_card;
+    return NULL;
+}
+
 struct pci_dev *pci_get_domain_bus_and_slot(int domain, unsigned int bus, unsigned int devfn)
 {
     return NULL;
