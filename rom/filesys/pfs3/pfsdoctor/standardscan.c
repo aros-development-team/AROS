@@ -138,7 +138,7 @@ static bitmap_t *bg_InitBitmap(int32 start, int32 stop, int32 step);
 static void bg_KillBitmap(bitmap_t **bm);
 static BOOL bg_IsItemUsed(bitmap_t *bm, uint32 nr);
 error_t SearchInDir(uint32 diranodenr, uint32 target, int *result);
-static error_t FindInDir(uint32 diranodenr, uint32 target, int *result, uint32 *linkhead);
+static error_t FindInDir(uint32 diranodenr, uint32 target, int *result, uint32 *linkhead, bool *complete);
 static void AddExtraFields(struct direntry *direntry, struct extrafields *extra);
 static bool MakeMountFile(char *fname);
 static error_t BuildRootBlock_hub(void);
@@ -1918,32 +1918,50 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 	return chainerror;
 }
 
-/* A bad directory reference must not erase a live target. Invalidate only
- * a discarded singleton directory with no entry in its recorded parent, so
- * later hardlink searches cannot find entries directly in that block. */
+/* The entry used to reach this block is evidence of its parent. Preserve
+ * the contents when the old parent is stale, but do not choose between live
+ * owners or guess which entries an uncertain directory lookup would retain. */
 #ifdef __GNUC__
-static error_t InvalidateAbandonedDir(c_dirblock_t *, uint32) __attribute__((noinline));
+static error_t CheckDirParent(c_dirblock_t *, uint32) __attribute__((noinline));
 #endif
-static error_t InvalidateAbandonedDir(c_dirblock_t *dirblk, uint32 anodenr)
+static error_t CheckDirParent(c_dirblock_t *dirblk, uint32 parent)
 {
-	canode_t node;
+	struct dirstack *ancestor;
 	int type = 0;
+	bool complete;
 	error_t error;
 
-	if (mode != repair || anodenr == ANODE_ROOTDIR ||
-	    dirblk->data->id != DBLKID || dirblk->data->anodenr != anodenr)
+	if (dirblk->data->parent == parent)
 		return e_none;
-	if ((error = ReadAnode(&node, anodenr, false)))
-		return IsOperationalError(error) ? error : e_fatal_error;
-	if (node.next || node.blocknr != dirblk->blocknr)
+	addfileerror("invalid directory parent");
+	for (ancestor = currentobject ? currentobject->parent : NULL;
+	     ancestor; ancestor = ancestor->parent)
+		if (ancestor->anodenr == dirblk->data->anodenr) {
+			addfileerror("directory reference points to an ancestor");
+			return UnresolvedObject();
+		}
+	if (dirblk->data->anodenr != ANODE_ROOTDIR) {
+		error = FindInDir(dirblk->data->parent, dirblk->data->anodenr,
+			&type, NULL, &complete);
+		if (error)
+			return error;
+		if (type || !complete) {
+			addfileerror("directory owner is ambiguous; contents retained");
+			return UnresolvedObject();
+		}
+	} else if (parent)
+		return UnresolvedObject();
+
+	dirblk->data->parent = parent;
+	if (mode == check) {
+		if (!ss.incomplete)
+			ss.incomplete = e_syntax_error;
 		return e_none;
-	if ((error = SearchInDir(dirblk->data->parent, anodenr, &type)))
-		return IsOperationalError(error) ? error : e_fatal_error;
-	if (type)
-		return e_none;
-	node.clustersize = node.blocknr = node.next = 0;
-	error = WriteAnode(&node, anodenr);
-	return !error || IsOperationalError(error) ? error : e_fatal_error;
+	}
+	if ((error = volume.writeblock((cachedblock_t *)dirblk)))
+		return error;
+	fixedfileerror("corrected directory parent");
+	return e_none;
 }
 
 /* The normal metadata reader rejects an invalid entry chain before converting
@@ -2006,12 +2024,14 @@ static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool
 	}
 
 	/* check dirblock */
-	if (dirblk.data->id != DBLKID || dirblk.data->anodenr != anodenr ||
-		dirblk.data->parent != parent)
+	if (dirblk.data->id != DBLKID || dirblk.data->anodenr != anodenr)
 	{
-		error = InvalidateAbandonedDir(&dirblk, anodenr);
 		free (dirblk.data);
-		return error ? error : e_remove;
+		return e_remove;
+	}
+	if ((error = CheckDirParent(&dirblk, parent))) {
+		free(dirblk.data);
+		return error;
 	}
 	
 	if (truncated) {
@@ -2302,7 +2322,7 @@ static error_t CheckLinkMembership(uint32 directory, uint32 object, uint32 link)
 	error_t error;
 	int type;
 
-	if ((error = FindInDir(directory, object, &type, &head)))
+	if ((error = FindInDir(directory, object, &type, &head, NULL)))
 		return error;
 	checkpoint = head;
 	while (head) {
@@ -2666,10 +2686,10 @@ static error_t CheckAnode(canode_t *anode, uint32 nr, bool fix)
  */
 error_t SearchInDir(uint32 diranodenr, uint32 target, int *result)
 {
-	return FindInDir(diranodenr, target, result, NULL);
+	return FindInDir(diranodenr, target, result, NULL, NULL);
 }
 
-static error_t FindInDir(uint32 diranodenr, uint32 target, int *result, uint32 *linkhead)
+static error_t FindInDir(uint32 diranodenr, uint32 target, int *result, uint32 *linkhead, bool *complete)
 {
 	uint32 mainanode = diranodenr, checkpoint = diranodenr, distance = 0, power = 1;
 	uint32 entryanode;
@@ -2678,6 +2698,8 @@ static error_t FindInDir(uint32 diranodenr, uint32 target, int *result, uint32 *
 	struct direntry *de;
 	error_t error, read_error = e_none;
 
+	if (complete)
+		*complete = true;
 	dirblk.data = calloc(1, SIZEOF_RESBLOCK);
 	if (!dirblk.data)
 		return e_out_of_memory;
@@ -2685,16 +2707,39 @@ static error_t FindInDir(uint32 diranodenr, uint32 target, int *result, uint32 *
 	{
 		error = ReadAnode(&anode, diranodenr, false);
 		if (error) {
+			if (complete && error != e_number_error && error != e_not_found)
+				*complete = false;
 			if (IsOperationalError(error))
 				goto failed;
 			break;
 		}
+		if (complete && !anode.clustersize && !anode.blocknr && !anode.next)
+			break; /* a free anode cannot own directory entries */
+		if (complete && (anode.blocknr < rbl->firstreserved ||
+		    anode.blocknr > rbl->lastreserved))
+			goto next_anode; /* file data cannot be a reserved dirblock */
 		error = volume.getblock((cachedblock_t *)&dirblk, anode.blocknr);
-		if (error == e_syntax_error)
+		if (error == e_syntax_error) {
+			if (complete && mode != repair)
+				*complete = false;
 			error = RecoverDirPrefix(&dirblk, anode.blocknr);
+		}
 		if (aborting) {
 			error = e_aborted;
 			goto failed;
+		}
+		/* In REPAIR only the readable prefix can survive. A bad ID or
+		 * discarded tail cannot own a surviving entry; a block belonging
+		 * to another directory still leaves ownership uncertain. */
+		if (complete) {
+			if (error) {
+				if (mode != repair || IsOperationalError(error))
+					*complete = false;
+			} else if (dirblk.data->id == DBLKID) {
+				if (dirblk.data->anodenr != mainanode)
+					*complete = false;
+			} else if (mode != repair)
+				*complete = false;
 		}
 		if (error == e_read_error)
 			read_error = error;
@@ -2722,8 +2767,9 @@ static error_t FindInDir(uint32 diranodenr, uint32 target, int *result, uint32 *
 				}
 			}
 		}
-		if (anode.next == checkpoint)
-			break;
+	next_anode:
+		if (anode.next && anode.next == checkpoint)
+			break; /* every distinct block in this cycle was searched */
 		if (++distance == power) {
 			checkpoint = anode.next;
 			distance = 0;
