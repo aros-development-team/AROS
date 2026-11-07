@@ -152,8 +152,20 @@ LONG launcher()
         return -1;
     }
 
+    /* GetParentTaskStorageSlot can name a worker's different CRT base. Tell
+       OpenLib which base actually issued this vfork before it copies fds. */
+    if (!__posixc_set_vfork_parent(udata->parent_posixcbase))
+    {
+        FreeSignal(child_signal);
+        udata->child_errno = ENOMEM;
+        SETCHILDSTATE(CHILD_STATE_SETUP_FAILED);
+        Signal(udata->parent, 1 << udata->parent_signal);
+        return -1;
+    }
+
     /* TODO: Can we avoid opening posixc.library for child process? */
     PosixCBase = (struct PosixCIntBase *)OpenLibrary((STRPTR) "posixc.library", 0);
+    __posixc_set_vfork_parent(NULL);
     if (PosixCBase)
     {
         PosixCBase->PosixCBase.StdCBase = (struct StdCBase *)OpenLibrary((STRPTR) "stdc.library", 0);
