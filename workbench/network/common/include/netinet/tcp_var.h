@@ -444,7 +444,8 @@ struct	tcpstat {
 #define	TCPCTL_ECN		12	/* ECN: 0 off, 1 ask and accept, 2 accept */
 #define	TCPCTL_PRR		13	/* proportional rate reduction (RFC 6937) */
 #define	TCPCTL_REXMIT_MIN	14	/* minimum retransmission timeout (ms) */
-#define TCPCTL_MAXID		15
+#define	TCPCTL_ABC_L		15	/* slow start: at most L * SMSS per ACK (RFC 3465) */
+#define TCPCTL_MAXID		16
 
 #define TCPCTL_NAMES { \
 	{ 0, 0 }, \
@@ -462,6 +463,7 @@ struct	tcpstat {
 	{ "ecn", CTLTYPE_INT }, \
 	{ "prr", CTLTYPE_INT }, \
 	{ "rexmit_min", CTLTYPE_INT }, \
+	{ "abc_l", CTLTYPE_INT }, \
 }
 
 #ifdef KERNEL
@@ -498,6 +500,7 @@ extern	int tcp_mssdflt;	/* XXX */
 extern	u_long tcp_now;		/* for RFC 1323 timestamps */
 extern	int tcp_rttdflt;	/* initial retransmission timeout (s) */
 extern	int tcp_rexmit_min;	/* minimum retransmission timeout (ms) */
+extern	int tcp_abc_l;		/* slow start byte counting limit (RFC 3465) */
 extern  u_short tcp_lastport;	/* last assigned port */
 extern	int tcp_do_sack;	/* enable SACK (RFC 2018) */
 extern	int tcp_do_newreno;	/* enable NewReno (RFC 3782) */
@@ -554,6 +557,7 @@ int	 tcp_usrreq __P((struct socket *,
 void	 tcp_xmit_timer __P((struct tcpcb *, int));
 void	 tcp_rto_after_syn __P((struct tcpcb *));
 u_int32_t tcp_ms __P((void));
+u_long	 tcp_ss_incr __P((struct tcpcb *, u_int));
 #endif /* KERNEL */
 
 #endif /* _NETINET_TCP_VAR_H_ */

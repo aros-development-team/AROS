@@ -11,16 +11,32 @@
     an interface, the others the loopback)
 */
 
-#define __CONFIG_ROADSHOW__     /* inet_pton() */
 #include "socktest.h"
 
 #include <net/if.h>
 
 #include <proto/dos.h>
+#include <proto/miami.h>
+#include <sys/sysctl.h>
+#include <netinet/in_systm.h>
+#include <netinet/ip.h>
 #include <netinet/tcp_fsm.h>
+#include <netinet/tcp_timer.h>
+#include <netinet/tcp_var.h>
 
 struct Library *SocketBase = NULL;
 static const char *ifname = "eth0";
+struct Library *MiamiBase = NULL;
+
+/* Read net.inet.tcp.<leaf> into *val, setting it to *nval first if nval. */
+static int tcpctl(int leaf, LONG *val, LONG *nval)
+{
+    LONG name[4] = { CTL_NET, PF_INET, IPPROTO_TCP, 0 };
+    LONG len = sizeof(*val);
+
+    name[3] = leaf;
+    return MiamiSysCtl(name, 4, val, &len, nval, nval ? sizeof(*nval) : 0, 0);
+}
 
 static int info(int s, struct tcp_info *ti, socklen_t *len)
 {
@@ -86,6 +102,56 @@ static void initial_window(int family)
 
 void testTCPINFO_INITIAL_WINDOW4(void) { initial_window(AF_INET); }
 void testTCPINFO_INITIAL_WINDOW6(void) { initial_window(AF_INET6); }
+
+/* How much slow start grows cwnd while 12 segments are sent and
+ * acknowledged, with net.inet.tcp.abc_l at abc; the bytes acknowledged in
+ * *acked. */
+static long ss_growth(LONG abc, long *acked)
+{
+    struct tcp_info a, b;
+    static char buf[12 * 1448];
+    LONG old = 0;
+    int c, s, got, k;
+
+    *acked = -1;
+    if (tcpctl(TCPCTL_ABC_L, &old, &abc) != 0 || st_tcp_pair(AF_INET, &c, &s) != 0)
+        return -1;
+    info(c, &a, NULL);
+    send(c, buf, 12 * a.tcpi_snd_mss, 0);
+    for (got = 0; got < (int)(12 * a.tcpi_snd_mss); got += k)
+        if ((k = recv(s, buf, sizeof(buf), 0)) <= 0)
+            break;
+    Delay(25);                          /* the last ACKs, delayed */
+    info(c, &b, NULL);
+    *acked = b.tcpi_snd_una - a.tcpi_snd_una;
+    CloseSocket(c);
+    CloseSocket(s);
+    tcpctl(TCPCTL_ABC_L, &abc, &old);
+    return (long)b.tcpi_snd_cwnd - (long)a.tcpi_snd_cwnd;
+}
+
+/* Slow start grows cwnd by the bytes acknowledged, at most abc_l segments
+ * an ACK (RFC 3465): never by more than was acknowledged, and with 2 by up
+ * to twice what 1 (the default, RFC 5681's min(N, SMSS)) gives. Over the
+ * loopback each ACK covers several segments, so the limit is what counts. */
+void testTCPINFO_SLOW_START_BYTES(void)
+{
+    long a1, a2, g1, g2;
+    LONG v = -1;
+
+    if (MiamiBase == NULL) {
+        CU_PASS("miami.library not available - skipping");
+        return;
+    }
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_ABC_L, &v, NULL), 0);
+    CU_ASSERT_EQUAL(v, 1);
+    g2 = ss_growth(2, &a2);
+    g1 = ss_growth(1, &a1);
+    printf("\n    acked %ld: abc_l 2 grows cwnd %ld, abc_l 1 %ld\n", a2, g2, g1);
+    CU_ASSERT(a2 > 0 && a1 == a2);
+    CU_ASSERT(g1 > 0 && g1 < g2);
+    CU_ASSERT(g2 <= 2 * g1 && g2 <= a2);
+}
 
 /* Data sent and read moves the sequence numbers by its length on both
  * sides, and all of it is acknowledged. */
@@ -229,6 +295,7 @@ int main(int argc, char **argv)
         printf("bsdsocket.library not available - skipping TCPINFO tests\n");
         return 0;
     }
+    MiamiBase = OpenLibrary("miami.library", 0);
     if (CU_initialize_registry() != CUE_SUCCESS) {
         CloseLibrary(SocketBase);
         return CU_get_error();
@@ -239,6 +306,7 @@ int main(int argc, char **argv)
         !CU_add_test(p, "an established connection (IPv6)", testTCPINFO_ESTABLISHED6) ||
         !CU_add_test(p, "the initial window, to a local destination (IPv4)", testTCPINFO_INITIAL_WINDOW4) ||
         !CU_add_test(p, "the initial window, to a local destination (IPv6)", testTCPINFO_INITIAL_WINDOW6) ||
+        !CU_add_test(p, "slow start counts the bytes acknowledged", testTCPINFO_SLOW_START_BYTES) ||
         !CU_add_test(p, "data moves the sequence numbers", testTCPINFO_SEQUENCE) ||
         !CU_add_test(p, "over the loopback the RTO is the floor", testTCPINFO_RTO_FLOOR) ||
         !CU_add_test(p, "an unanswered SYN backs off from 1 s", testTCPINFO_SYN_BACKOFF) ||
@@ -257,6 +325,8 @@ int main(int argc, char **argv)
     CU_automated_enable_junit_xml(CU_TRUE);
     CU_automated_run_tests();
     CU_cleanup_registry();
+    if (MiamiBase)
+        CloseLibrary(MiamiBase);
     CloseLibrary(SocketBase);
     return CU_get_error();
 }

@@ -234,7 +234,12 @@ selector `tcp_cc_default`. Two algorithms are built in:
 
 Each `tcpcb` selects an algorithm via `t_cc_algo`; `CC_ALGO(tp)` resolves it and falls back to
 NewReno if unset. The initial congestion window follows **RFC 6928 IW10**
-(`snd_cwnd = MIN(10 · mss, MAX(2 · mss, 14600))`).
+(`snd_cwnd = MIN(10 · mss, MAX(2 · mss, 14600))`), for every destination (4.4BSD left one on a
+local network without slow start, at 1 GB). In slow start an ACK grows cwnd by the bytes it
+acknowledges, at most `net.inet.tcp.abc_l` segments (`tcp_ss_incr()`, RFC 3465): 1 by default,
+RFC 5681's `min(N, SMSS)` (4.4BSD added a segment whatever the ACK acknowledged). A larger L grows
+faster behind delayed ACKs; on the bottleneck bench L = 2 overshot more (30-50% more drops at the
+end of slow start) for the same throughput.
 
 Loss recovery on a connection with SACK follows RFC 6675, as in FreeBSD and Linux. An ACK that
 SACKs data not SACKed before is a duplicate whatever window it offers (a receiver that grows its

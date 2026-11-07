@@ -115,6 +115,25 @@ void testSYSCTL_REXMIT_MIN(void)
     CU_ASSERT_EQUAL(v, 200);
 }
 
+/* Slow start counts the bytes an ACK acknowledges, at most L segments
+ * (RFC 3465): 1 by default (RFC 5681's min(N, SMSS)); 1 to 16. */
+void testSYSCTL_ABC_L(void)
+{
+    LONG v = -1, n = 0;
+
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_ABC_L, &v, NULL), 0);
+    CU_ASSERT_EQUAL(v, 1);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_ABC_L, &v, &n), EINVAL);
+    n = 17;
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_ABC_L, &v, &n), EINVAL);
+    n = 2;
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_ABC_L, &v, &n), 0);
+    n = 1;
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_ABC_L, &v, &n), 0);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_ABC_L, &v, NULL), 0);
+    CU_ASSERT_EQUAL(v, 1);
+}
+
 /* The initial retransmission timeout, s: 1 (RFC 6298 section 2.1). */
 void testSYSCTL_RTTDFLT(void)
 {
@@ -161,6 +180,7 @@ int main(void)
         !CU_add_test(p, "net.inet.tcp.prr", testSYSCTL_PRR) ||
         !CU_add_test(p, "net.inet.tcp.rexmit_min", testSYSCTL_REXMIT_MIN) ||
         !CU_add_test(p, "net.inet.tcp.rttdflt", testSYSCTL_RTTDFLT) ||
+        !CU_add_test(p, "net.inet.tcp.abc_l", testSYSCTL_ABC_L) ||
         !CU_add_test(p, "an unknown leaf is refused", testSYSCTL_UNKNOWN))
     {
         CU_cleanup_registry();

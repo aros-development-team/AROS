@@ -180,9 +180,9 @@ cubic_on_ack(struct tcpcb *tp, u_int acked)
     if(mss == 0)
         return;
 
-    /* Slow start: standard exponential growth (RFC 8312 §5.1) */
+    /* Slow start, by the bytes acknowledged (tcp_ss.c) */
     if(cwnd <= tp->snd_ssthresh) {
-        tp->snd_cwnd = MIN(cwnd + mss, max_cwnd);
+        tp->snd_cwnd = MIN(cwnd + tcp_ss_incr(tp, acked), max_cwnd);
         return;
     }
 
