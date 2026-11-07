@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -260,7 +260,15 @@ static ULONG FindMode(ULONG width, ULONG height, ULONG depth, struct IntuitionBa
             wbscreen = OpenScreenTagList(NULL, screenTags);
            
             if (wbscreen)
-                GetPrivIBase(IntuitionBase)->ActivePreferences.wb_Depth = GetBitMapAttr(wbscreen->RastPort.BitMap, BMA_DEPTH);
+            {
+                ULONG actualDepth = GetBitMapAttr(wbscreen->RastPort.BitMap, BMA_DEPTH);
+
+                /* An RTG mode may provide a deeper bitmap than requested.
+                 * Keep both preference representations in sync with the
+                 * screen so applying its saved depth does not reset it. */
+                GetPrivIBase(IntuitionBase)->ActivePreferences.wb_Depth = actualDepth;
+                GetPrivIBase(IntuitionBase)->ScreenModePrefs->smp_Depth = actualDepth;
+            }
         }
 
         if( !wbscreen )
