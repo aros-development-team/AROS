@@ -67,8 +67,8 @@ CUNITEXEDIR := $(AROS_TESTS)/cunit/crt/posixc
 #MM- test-cunit : test-crt-posixc-cunit
 #MM- test-cunit-quick : test-crt-posixc-cunit-quick
 
-#MM- test-crt-posixc : test-crt-posixc-general test-crt-posixc-gnu test-crt-posixc-mempool test-crt-posixc-pipe-no-reader test-crt-posixc-2k8 test-crt-posixc-nix test-crt-posixc-posix1 test-crt-posixc-$(TARGET_UNITTESTS)-cunit
-#MM- test-crt-posixc-quick : test-crt-posixc-general-quick test-crt-posixc-gnu-quick test-crt-posixc-mempool-quick test-crt-posixc-pipe-no-reader-quick test-crt-posixc-2k8-quick test-crt-posixc-nix-quick test-crt-posixc-posix1-quick test-crt-posixc-$(TARGET_UNITTESTS)-cunit-quick
+#MM- test-crt-posixc : test-crt-posixc-general test-crt-posixc-gnu test-crt-posixc-mempool test-crt-posixc-remove-errno test-crt-posixc-pipe-no-reader test-crt-posixc-2k8 test-crt-posixc-nix test-crt-posixc-posix1 test-crt-posixc-$(TARGET_UNITTESTS)-cunit
+#MM- test-crt-posixc-quick : test-crt-posixc-general-quick test-crt-posixc-gnu-quick test-crt-posixc-mempool-quick test-crt-posixc-remove-errno-quick test-crt-posixc-pipe-no-reader-quick test-crt-posixc-2k8-quick test-crt-posixc-nix-quick test-crt-posixc-posix1-quick test-crt-posixc-$(TARGET_UNITTESTS)-cunit-quick
 
 #MM test-crt-posixc-general : includes includes-copy linklibs kernel
 #MM test-crt-posixc-2k8 : includes includes-copy linklibs kernel
@@ -160,3 +160,8 @@ USER_CPPFLAGS = -D_XOPEN_SOURCE=700
 
 %build_progs mmake=test-crt-posixc-2k8 \
     files="$(POSIXC2K8TESTFILES)" targetdir=$(EXEDIR)
+
+#MM test-crt-posixc-remove-errno : includes includes-copy linklibs kernel
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/..
+%build_prog mmake=test-crt-posixc-remove-errno \
+    progname=remove_errno files=remove_errno targetdir=$(EXEDIR) uselibs="pthread"
