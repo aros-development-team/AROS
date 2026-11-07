@@ -426,9 +426,14 @@ WORD ehciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
         if(rtn->rtn_NextFrame) {
             LONG delta = (LONG)(rtn->rtn_NextFrame - (UWORD)frameidx);
-            /* rtn_NextFrame is valid if it is far enough in the future */
-            if(delta >= (LONG)lead && delta < (LONG)(EHCI_FRAME_NUMBER_MASK / 2))
+            /* Keep an already-running RT stream on its cadence.  Requiring
+               the full initial lead here made every completion requeue four
+               frames late, so a single in-flight request could never sustain
+               the selected frame rate. */
+            if(delta > 0 && delta < (LONG)(EHCI_FRAME_NUMBER_MASK / 2))
                 next = rtn->rtn_NextFrame;
+            else if(delta <= 0 && delta > -(LONG)(EHCI_FRAME_NUMBER_MASK / 2))
+                next = (frameidx + interval) & EHCI_FRAME_NUMBER_MASK;
         }
         if(!next)
             next = (frameidx + lead) & EHCI_FRAME_NUMBER_MASK;
@@ -634,12 +639,19 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
             pktoffset = phys & EITM_BUFFER_OFFSET;
             len = ptdlen;
             for(pktidx = 0; pktidx < pktcnt; pktidx++) {
+                ULONG trans;
                 pktlen = ptdpriv->ptd_PktLength[pktidx];
-                WRITEMEM32_LE(&itd->itd_Transaction[pktidx],
-                              EITF_STATUS_ACTIVE |
-                              ((pktoffset >> 12) << EITF_PAGESELECT_SHIFT) |
-                              (pktoffset & EITM_BUFFER_OFFSET) |
-                              ((pktlen & EITF_LENGTH_MASK) << EITF_LENGTH_SHIFT));
+                trans = EITF_STATUS_ACTIVE |
+                        ((pktoffset >> 12) << EITF_PAGESELECT_SHIFT) |
+                        (pktoffset & EITM_BUFFER_OFFSET) |
+                        ((pktlen & EITF_LENGTH_MASK) << EITF_LENGTH_SHIFT);
+                /* RT-ISO clients rely on the completion interrupt to run
+                   ehciHandleIsochTDs().  Without IOC on the last transaction
+                   the controller never raises USBINT and no request hook /
+                   done hook is ever called. */
+                if(pktidx == pktcnt - 1)
+                    trans |= EITF_IOC;
+                WRITEMEM32_LE(&itd->itd_Transaction[pktidx], trans);
                 len -= pktlen;
                 pktoffset += pktlen;
             }
