@@ -23,6 +23,7 @@
 #include <netinet/tcp_fsm.h>
 #include <netinet/tcp_timer.h>
 #include <netinet/tcp_var.h>
+#include <net/route.h>
 
 struct Library *SocketBase = NULL;
 static const char *ifname = "eth0";
@@ -186,6 +187,57 @@ void testTCPINFO_HYSTART_NO_EXIT(void)
     CloseSocket(s);
 }
 
+#define RT_ROUNDUP(a) ((a) > 0 ? (1 + (((a) - 1) | (sizeof(long) - 1))) : sizeof(long))
+
+/* Set the ssthresh metric of the loopback host route (127.0.0.1 or ::1):
+ * RTM_CHANGE with RTV_SSTHRESH; 0 or errno. */
+static int loopback_ssthresh(int family, u_long bytes)
+{
+    long buf[512 / sizeof(long)];
+    struct rt_msghdr *h = (struct rt_msghdr *)buf;
+    struct sockaddr_storage ss;
+    socklen_t len = st_loopback(family, &ss, 0);
+    int s = socket(PF_ROUTE, SOCK_RAW, 0), r = 0;
+
+    if (s < 0)
+        return Errno();
+    bzero(buf, sizeof(buf));
+    h->rtm_version = RTM_VERSION;
+    h->rtm_type = RTM_CHANGE;
+    h->rtm_flags = RTF_HOST;
+    h->rtm_addrs = RTA_DST;
+    h->rtm_seq = 1;
+    h->rtm_inits = RTV_SSTHRESH;
+    h->rtm_rmx.rmx_ssthresh = bytes;
+    memcpy(h + 1, &ss, len);
+    ((struct sockaddr *)(h + 1))->sa_len = len;
+    h->rtm_msglen = sizeof(*h) + RT_ROUNDUP(len);
+    if (send(s, (char *)buf, h->rtm_msglen, 0) < 0)
+        r = Errno();
+    CloseSocket(s);
+    return r;
+}
+
+/* A route's ssthresh (RTV_SSTHRESH) is where a new connection over it
+ * starts slow start from (tcp_mss()). */
+static void route_ssthresh(int family)
+{
+    struct tcp_info ti;
+    int c, s;
+
+    CU_ASSERT_EQUAL_FATAL(loopback_ssthresh(family, 50000), 0);
+    CU_ASSERT_EQUAL(st_tcp_pair(family, &c, &s), 0);
+    CU_ASSERT_EQUAL(info(c, &ti, NULL), 0);
+    printf("\n    route ssthresh 50000: connection's ssthresh %lu\n", (unsigned long)ti.tcpi_snd_ssthresh);
+    CU_ASSERT_EQUAL(ti.tcpi_snd_ssthresh, 50000);
+    CloseSocket(c);
+    CloseSocket(s);
+    loopback_ssthresh(family, 0);
+}
+
+void testTCPINFO_ROUTE_SSTHRESH4(void) { route_ssthresh(AF_INET); }
+void testTCPINFO_ROUTE_SSTHRESH6(void) { route_ssthresh(AF_INET6); }
+
 /* Data sent and read moves the sequence numbers by its length on both
  * sides, and all of it is acknowledged. */
 void testTCPINFO_SEQUENCE(void)
@@ -341,6 +393,8 @@ int main(int argc, char **argv)
         !CU_add_test(p, "the initial window, to a local destination (IPv6)", testTCPINFO_INITIAL_WINDOW6) ||
         !CU_add_test(p, "slow start counts the bytes acknowledged", testTCPINFO_SLOW_START_BYTES) ||
         !CU_add_test(p, "HyStart++ does not end slow start without a delay", testTCPINFO_HYSTART_NO_EXIT) ||
+        !CU_add_test(p, "a route's ssthresh reaches a new connection (IPv4)", testTCPINFO_ROUTE_SSTHRESH4) ||
+        !CU_add_test(p, "a route's ssthresh reaches a new connection (IPv6)", testTCPINFO_ROUTE_SSTHRESH6) ||
         !CU_add_test(p, "data moves the sequence numbers", testTCPINFO_SEQUENCE) ||
         !CU_add_test(p, "over the loopback the RTO is the floor", testTCPINFO_RTO_FLOOR) ||
         !CU_add_test(p, "an unanswered SYN backs off from 1 s", testTCPINFO_SYN_BACKOFF) ||
