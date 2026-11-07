@@ -127,6 +127,7 @@
         goto err4;
     }
     InitSemaphore(&cblock->io_lock);
+    InitSemaphore(&cblock->ref_lock);
     desc = __alloc_fdesc();
     if(!desc)
     {

@@ -49,7 +49,7 @@ static int __umask_init(struct PosixCIntBase *PosixCBase)
 {
     struct PosixCIntBase *pPosixCBase;
 
-    pPosixCBase = __GM_GetBaseParent(PosixCBase);
+    pPosixCBase = __posixc_parent_base(PosixCBase);
 
     /* TODO: Implement umask() properly
        Currently information is not used in any of the related functions
