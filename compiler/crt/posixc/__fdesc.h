@@ -124,4 +124,8 @@ void __flock_release(fcb *f);
 struct fd_hooks;
 const struct fd_hooks *__getfdhooks(int fd, APTR *datap);
 
+/* Atomic duplicate into a free slot, with descriptor flags set before publication. */
+int __dupfd(int fd, int minimum, int flags);
+int __publish_newfd(fdesc *desc, int minimum);
+
 #endif /* ___FDESC_H */

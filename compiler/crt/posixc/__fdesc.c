@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include <limits.h>
 
 #include "__fdesc.h"
 #include "__dos64.h"
@@ -264,6 +265,98 @@ int __getfirstfd(register int startfd)
             return startfd;
         startfd++;
     }
+}
+
+/* Reserve a free slot only: never replace an occupied descriptor or retain
+   another table's reservation. Caller holds the table guard through publish. */
+static int __reserve_freefd(struct PosixCIntBase *PosixCBase, int minimum, int *error)
+{
+    struct Library *FDBase = NULL;
+    int target, reserved = 0;
+    if (minimum < 0 || minimum == INT_MAX) { *error = EINVAL; goto fail; }
+    if (__fdlib_available(PosixCBase)) FDBase = PosixCBase->PosixCFDBase;
+    target = minimum;
+    for (;;) {
+        if (target == INT_MAX) { *error = EMFILE; goto fail; }
+        if (target < FD_SLOTS(PosixCBase) && FD_ARRAY(PosixCBase)[target]) {
+            ++target;
+            continue;
+        }
+        /* 0..2 are local DOS streams, not global fd.library numbers. */
+        if (target > STDERR_FILENO && FDBase) {
+            *error = FD_Reserve(target, FD_OWNER_POSIXC, NULL);
+            if (*error == EBUSY) { ++target; continue; }
+            if (*error) goto fail;
+            reserved = 1;
+        }
+        break;
+    }
+    if (target >= FD_SLOTS(PosixCBase)) {
+        size_t size = ((size_t)target + 1) * sizeof(fdesc *);
+        void *array = AllocPooled(FD_POOL(PosixCBase), size);
+        if (!array) { *error = ENOMEM; goto fail; }
+        if (FD_ARRAY(PosixCBase)) {
+            size_t oldsize = FD_SLOTS(PosixCBase) * sizeof(fdesc *);
+            CopyMem(FD_ARRAY(PosixCBase), array, oldsize);
+            FreePooled(FD_POOL(PosixCBase), FD_ARRAY(PosixCBase), oldsize);
+        }
+        FD_ARRAY(PosixCBase) = array;
+        FD_SLOTS(PosixCBase) = target + 1;
+    }
+    return target;
+fail:
+    if (reserved) FD_Free(target, FD_OWNER_POSIXC);
+    return -1;
+}
+
+/* Publish an already initialized descriptor before releasing the guard. This
+   also reserves local 0..2 through the table pointer, not fd.library. */
+int __publish_newfd(fdesc *desc, int minimum)
+{
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+    int target, error = 0;
+    FD_LOCK(PosixCBase);
+    target = __reserve_freefd(PosixCBase, minimum, &error);
+    if (target >= 0) __setfdesc(target, desc);
+    FD_UNLOCK(PosixCBase);
+    if (target < 0) __set_errno(PosixCBase, error);
+    return target;
+}
+
+/* Atomic guarantees apply to native descriptors. Registered foreign owners
+   retain their existing ordinary duplication protocol. */
+int __dupfd(int fd, int minimum, int flags)
+{
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+    fdesc *source, *copy;
+    int target, error = 0;
+    FD_LOCK(PosixCBase);
+    source = __getfdesc(fd);
+    if (!source) {
+        const struct fd_hooks *hooks = __getfdhooks(fd, NULL);
+        if (hooks && flags == 0 && minimum >= 0) {
+            FD_UNLOCK(PosixCBase);
+            return dup2(fd, __getfirstfd(minimum));
+        }
+        error = hooks ? (minimum < 0 ? EINVAL : ENOTSUP) : EBADF;
+        goto fail;
+    }
+    copy = __alloc_fdesc();
+    if (!copy) { error = ENOMEM; goto fail; }
+    target = __reserve_freefd(PosixCBase, minimum, &error);
+    if (target < 0) { __free_fdesc(copy); goto fail; }
+    copy->fdflags = flags;
+    copy->fcb = source->fcb;
+    __fcb_addref(copy->fcb);
+    __setfdesc(target, copy);
+    FD_UNLOCK(PosixCBase);
+    return target;
+fail:
+    FD_UNLOCK(PosixCBase);
+    __set_errno(PosixCBase, error);
+    return -1;
 }
 
 int __getfdslot(int wanted_fd)

@@ -106,25 +106,23 @@
     InitSemaphore(&wfcb->io_lock);
     InitSemaphore(&wfcb->ref_lock);
 
-    rfd = __getfdslot(__getfirstfd(0));
-    if (rfd < 0)
-        goto err;
     rdesc->fdflags = 0;
     rdesc->fcb = rfcb;
     rdesc->fcb->handle    = reader;
     rdesc->fcb->flags     = O_RDONLY;
     rdesc->fcb->opencount = 1;
-    __setfdesc(rfd, rdesc);
-
-    wfd = __getfdslot(__getfirstfd(rfd));
-    if (wfd < 0)
+    rfd = __publish_newfd(rdesc, 0);
+    if (rfd < 0)
         goto err;
+
     wdesc->fdflags = 0;
     wdesc->fcb = wfcb;
     wdesc->fcb->handle    = writer;
     wdesc->fcb->flags     = O_WRONLY;
     wdesc->fcb->opencount = 1;
-    __setfdesc(wfd, wdesc);
+    wfd = __publish_newfd(wdesc, 0);
+    if (wfd < 0)
+        goto err;
 
     pipedes[0] = rfd;
     pipedes[1] = wfd;
