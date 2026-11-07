@@ -23,12 +23,18 @@
         int fd)
 
 /*  FUNCTION
+        Writes the buffered data of the file open on fd to its device.
 
     INPUTS
+        fd - an open file descriptor.
 
     RESULT
+        0 on success, -1 on error with errno set: EBADF when fd is not an
+        open descriptor, or the error of the flush.
 
     NOTES
+        A descriptor open only for reading, or one open on a directory, has
+        nothing to write; fsync() returns 0 for it, as POSIX allows.
 
     EXAMPLE
 
@@ -42,11 +48,15 @@
 {
     fdesc *fdesc = __getfdesc(fd);
 
-    if (!fdesc || !(fdesc->fcb->flags & O_WRITE))
+    if (!fdesc)
     {
         errno = EBADF;
         return -1;
     }
+
+    /* A directory or a file not open for writing has no data to flush. */
+    if ((fdesc->fcb->privflags & _FCB_ISDIR) || !(fdesc->fcb->flags & O_WRITE))
+        return 0;
 
     __fcb_lock(fdesc->fcb);
     if (!Flush(fdesc->fcb->handle))
