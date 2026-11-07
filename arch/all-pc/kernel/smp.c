@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #define __KERNEL_NOLIBBASE__
@@ -250,9 +250,9 @@ static int smp_Wake(struct KernelBase *KernelBase)
         apicData->cores[cpuNo].cpu_TLS = PlatformAllocTLS(KernelBase, apicData->cores[cpuNo].cpu_LocalID);
 #if defined(__AROSEXEC_SMP__)
         apicTLS = apicData->cores[cpuNo].cpu_TLS;
-        apicTLS->ScheduleData = AllocMem(sizeof(struct X86SchedulerPrivate), MEMF_PUBLIC);
-        core_InitScheduleData(apicTLS->ScheduleData);
-        D(bug("[Kernel:SMP] %s: Scheduling Data @ 0x%p\n", __func__, apicTLS->ScheduleData));
+        /* PlatformAllocTLS() cleared the block, scheduling data and all */
+        core_InitScheduleData(&apicTLS->Sched);
+        D(bug("[Kernel:SMP] %s: Scheduling Data @ 0x%p\n", __func__, &apicTLS->Sched));
 #endif
         apicData->cores[cpuNo].cpu_IDT = PlatformAllocIDT(KernelBase, apicData->cores[cpuNo].cpu_LocalID);
 
