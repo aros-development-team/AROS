@@ -1,0 +1,12 @@
+Run pipe_nonblock and pipe_lock_read without arguments against posixc0.43 and
+the matching pipe-handler. Both use test.h and return zero on success.
+
+pipe_nonblock checks empty EAGAIN, partial reads while the writer remains open,
+full-buffer EAGAIN, small-write atomicity, progress after a read, shared mode
+across dup, EOF, toggling mode off and directory F_SETFL. pipe_lock_read checks
+that OpenFromLock initializes a recycled PIPEKEY in blocking mode.
+
+Existing blocking DOS behavior and tap output are retained; nonblocking tap
+writers are rejected. Protocol action/error identifiers match John KNIPPER's
+APL-1.1 implementation in pomaros/aros-core89db046157d415e98c05ca18316ca7ae63b07023.
+This does not implement forced process termination or editor timeout cleanup.
