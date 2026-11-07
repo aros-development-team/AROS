@@ -2311,6 +2311,23 @@ static error_t RepairFile(struct direntry *de, c_dirblock_t *parent)
 	return e_none;	
 }
 
+/* A skipped target directory is unknown, not evidence of a dangling link. */
+#ifdef __GNUC__
+static error_t FindLinkTarget(uint32, uint32, int *, uint32 *) __attribute__((noinline));
+#endif
+static error_t FindLinkTarget(uint32 directory, uint32 object, int *type, uint32 *head)
+{
+	bool complete;
+	error_t error = FindInDir(directory, object, type, head, &complete);
+	if (error)
+		return error;
+	if (!*type && !complete) {
+		addfileerror("cannot inspect hardlink target; link retained");
+		return UnresolvedObject();
+	}
+	return e_none;
+}
+
 /* A surviving link must belong to its object's backlink chain.  Otherwise
  * the handler cannot safely delete it or preserve it when moving the object.
  * Keep the exceptional lookup's storage out of the recursive directory frame.
@@ -2327,7 +2344,7 @@ static error_t CheckLinkMembership(uint32 directory, uint32 object, uint32 link)
 	error_t error;
 	int type;
 
-	if ((error = FindInDir(directory, object, &type, &head, NULL)))
+	if ((error = FindLinkTarget(directory, object, &type, &head)))
 		return error;
 	checkpoint = head;
 	while (head) {
@@ -2338,10 +2355,10 @@ static error_t CheckLinkMembership(uint32 directory, uint32 object, uint32 link)
 		if ((error = ReadAnode(&node, head, false))) {
 			if (IsOperationalError(error))
 				return error;
-			break;
+			goto uncertain;
 		}
-		if (node.next == checkpoint)
-			break;
+		if (node.next && node.next == checkpoint)
+			goto uncertain;
 		if (++distance == power) {
 			checkpoint = node.next;
 			distance = 0;
@@ -2351,6 +2368,10 @@ static error_t CheckLinkMembership(uint32 directory, uint32 object, uint32 link)
 	}
 	addfileerror("hardlink missing from object link chain");
 	return e_remove;
+
+uncertain:
+	addfileerror("cannot verify hardlink membership; link retained");
+	return UnresolvedObject();
 }
 
 /* Repair a hardlink and verify both directions of its object reference. */
@@ -2389,7 +2410,7 @@ static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok)
 	 * It is not checked if the link itself is infact a link, 
      * just that it exists.
 	 */
-	if ((error = SearchInDir(linknode.clustersize, extra.link, &type)))
+	if ((error = FindLinkTarget(linknode.clustersize, extra.link, &type, NULL)))
 		return error;
 	switch (type)
 	{
@@ -2602,6 +2623,14 @@ static error_t SetLinkHead(struct extrafields *extra, uint32 head,
 	return SetExtraFields(extra, de, dirblk);
 }
 
+static error_t LinkChainError(error_t error)
+{
+	if (IsOperationalError(error))
+		return error;
+	addfileerror("invalid hardlink chain; object retained");
+	return UnresolvedObject();
+}
+
 /* Repair the hardlinks chain referring to a file
  */
 static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
@@ -2621,7 +2650,7 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 		return e_none;
 
 	if ((error = ReadAnode(&linknode, extra.link, false)))
-		return IsOperationalError(error) ? error : e_anode_error;
+		return LinkChainError(error);
 
 	parent = dirblk->data->anodenr;
 	checkpoint = extra.link;
@@ -2654,7 +2683,7 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 			} else
 				error = DeleteAnode(extra.link, linknode.nr);
 			if (error)
-				return error;
+				return LinkChainError(error);
 			fixedfileerror("dangling hardlink");
 		}
 
@@ -2667,7 +2696,7 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 			power = power < 0x80000000UL ? power * 2 : ~(uint32)0;
 		}
 		if ((error = ReadAnode(&linknode, linknode.next, false)))
-			return IsOperationalError(error) ? error : e_anode_error;
+			return LinkChainError(error);
 	}
 }
 
