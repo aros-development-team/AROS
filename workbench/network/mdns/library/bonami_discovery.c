@@ -25,6 +25,7 @@ struct BonamiDiscovery
     ULONG owner;
     ULONG daemon;
     UWORD kind;
+    UWORD eventMode;
 };
 
 #define BONAMI_OP_BROWSE  1
@@ -89,9 +90,11 @@ static LONG start(struct BonamiIntern *base, STRPTR name, STRPTR type,
     struct TagItem *output = FindTagItem(resolve ? MDNS_ResolveRef : MDNS_BrowseRef, tags);
     ULONG count = 0;
     CONST_STRPTR domain = (CONST_STRPTR)GetTagData(MDNS_Domain, (IPTR)"local", tags);
+    ULONG eventMode = GetTagData(MDNS_EventMode, 0, tags);
     LONG rc;
 
-    if (hook != NULL || GetTagData(MDNS_EventMode, 0, tags) != MDNS_EVENT_QUEUE) {
+    if (hook != NULL || (eventMode != MDNS_EVENT_QUEUE &&
+        eventMode != MDNS_EVENT_QUEUE_V2)) {
         return MDNSERR_NOTREADY;   /* callback delivery is not implemented */
     }
     if (domain == NULL || Stricmp(domain, "local") != 0 ||
@@ -116,6 +119,7 @@ static LONG start(struct BonamiIntern *base, STRPTR name, STRPTR type,
     }
     op->owner = GetETaskID(FindTask(NULL));
     op->kind = resolve ? BONAMI_OP_RESOLVE : BONAMI_OP_BROWSE;
+    op->eventMode = (UWORD)eventMode;
     ObtainSemaphore(&base->bi_Lock);
     /* Reclaim records left by vanished tasks without reading their memory. */
     for (next = (struct BonamiDiscovery *)base->bi_Discovery.lh_Head;
@@ -139,6 +143,7 @@ static LONG start(struct BonamiIntern *base, STRPTR name, STRPTR type,
     AddTail(&base->bi_Discovery, &op->node);
     ReleaseSemaphore(&base->bi_Lock);
     msg.mi_Command = resolve ? MDNS_IPC_RESOLVE : MDNS_IPC_BROWSE;
+    msg.mi_EventMode = (UWORD)eventMode;
     rc = bonamiSend(&msg);
     ObtainSemaphore(&base->bi_Lock);
     if (rc == MDNS_OK) {
@@ -239,7 +244,8 @@ AROS_LH2(LONG, ReadMDNSEvent,
 
         ObtainSemaphore(&BonamiBase->bi_Lock);
         op = find_ref(BonamiBase, ref);
-        if (op == NULL || op->kind == BONAMI_OP_QUERY) {
+        if (op == NULL || op->kind == BONAMI_OP_QUERY ||
+            op->eventMode != MDNS_EVENT_QUEUE) {
             rc = MDNSERR_BADPARAM;
         }
         ReleaseSemaphore(&BonamiBase->bi_Lock);
@@ -248,6 +254,81 @@ AROS_LH2(LONG, ReadMDNSEvent,
         rc = bonamiSend(&msg);
         if (rc == MDNS_OK) {
             *event = msg.mi_Event;
+        }
+    }
+    return rc;
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+
+    NAME */
+        AROS_LH2(LONG, ReadMDNSEvent2,
+
+/*  SYNOPSIS */
+        AROS_LHA(APTR, ref, A0),
+        AROS_LHA(struct MDNSDiscoveryEvent2 *, event, A1),
+
+/*  LOCATION */
+        struct BonamiIntern *, BonamiBase, 26, Bonami)
+
+/*  FUNCTION
+        Removes the next dual-stack snapshot from a queued DNS-SD browse or
+        resolve operation. The operation must have been created with
+        MDNS_EventMode set to MDNS_EVENT_QUEUE_V2.
+
+    INPUTS
+        ref   - The MDNSBrowseRef or MDNSResolveRef returned to this task.
+        event - Storage for one complete snapshot.
+
+    RESULT
+        MDNS_OK when event was filled; MDNSERR_NOTREADY when the queue is
+        empty; MDNSERR_BUSY after queue/cache overflow; MDNSERR_NOENGINE
+        after daemon replacement; or MDNSERR_BADPARAM for a NULL event,
+        foreign/stopped reference, query reference or V1 operation.
+
+    NOTES
+        The output is not changed on failure. Addresses are in network byte
+        order and use de_InterfaceIndex as their link/scope. de_Priority,
+        de_Weight, de_Port and de_Target are the SRV record fields;
+        de_Target is an uncompressed DNS wire name. When
+        MDNS_DISCOVERY_ADDRESSES_TRUNCATED is set, resubscribe or use record
+        queries if every address is required.
+
+        The reference and read belong to the task that started the operation.
+        StopBrowse() or StopResolve() releases it. RequestMDNSEvent() may be
+        used for wakeup exactly as with the original queue mode.
+
+    SEE ALSO
+        BrowseServiceTypeA(), ResolveServiceA(), ReadMDNSEvent(),
+        RequestMDNSEvent(), StopBrowse(), StopResolve()
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct MDNSIPCMsg msg;
+    LONG rc;
+
+    if (event == NULL) {
+        return MDNSERR_BADPARAM;
+    }
+    memset(&msg, 0, sizeof(msg));
+    msg.mi_Command = MDNS_IPC_READ2;
+    ObtainSemaphore(&BonamiBase->bi_Lock);
+    rc = prepare(BonamiBase, ref, &msg, FALSE, 0);
+    if (rc == MDNS_OK) {
+        struct BonamiDiscovery *op = find_ref(BonamiBase, ref);
+
+        if (op == NULL || op->kind == BONAMI_OP_QUERY ||
+            op->eventMode != MDNS_EVENT_QUEUE_V2) {
+            rc = MDNSERR_BADPARAM;
+        }
+    }
+    ReleaseSemaphore(&BonamiBase->bi_Lock);
+    if (rc == MDNS_OK) {
+        rc = bonamiSend(&msg);
+        if (rc == MDNS_OK) {
+            *event = msg.mi_Event2;
         }
     }
     return rc;

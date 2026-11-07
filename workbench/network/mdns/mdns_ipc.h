@@ -19,7 +19,7 @@
 #include <bonami/mdns.h>
 
 #define MDNS_IPC_PORT       "BonAmi"
-#define MDNS_IPC_VERSION    6
+#define MDNS_IPC_VERSION    7
 #define MDNS_MAX_BROWSE_TYPE 127
 
 #define MDNS_IPC_BROWSE     4
@@ -33,6 +33,7 @@
 #define MDNS_IPC_READQUERY  21
 #define MDNS_IPC_NOTIFYQUERY 22
 #define MDNS_IPC_STATUS     23
+#define MDNS_IPC_READ2      24
 
 #define MDNS_IPC_REGISTER   1
 #define MDNS_IPC_UNREGISTER 2
@@ -63,12 +64,15 @@ struct MDNSIPCMsg
     char            mi_HostName[MDNS_MAX_HOST + 1];
     char            mi_TXT[MDNS_MAX_TXT + 1];
     UWORD           mi_Port;
-    UWORD           mi_Pad;
+    UWORD           mi_EventMode;   /* MDNS_EVENT_QUEUE or _V2 */
     ULONG           mi_HostAddr;    /* 0xAABBCCDD == A.B.C.D */
     ULONG           mi_TTL;         /* seconds, 0 for the defaults */
     ULONG           mi_DaemonID;    /* expected incarnation, zero on create */
-    struct MDNSDiscoveryEvent mi_Event;
-    struct MDNSRecordEvent mi_RecordEvent;
+    union {
+        struct MDNSDiscoveryEvent mio_Event;
+        struct MDNSDiscoveryEvent2 mio_Event2;
+        struct MDNSRecordEvent mio_RecordEvent;
+    } mi_Output;
     ULONG           mi_TaskID;      /* GetETaskID() of the calling task */
     struct MDNSEventRequest *mi_Request; /* MDNS_IPC_*NOTIFY only */
     UWORD           mi_QueryType;
@@ -81,5 +85,9 @@ struct MDNSIPCMsg
     ULONG           mi_StatusDbgPtr;
     ULONG           mi_StatusDbgNotify;
 };
+
+#define mi_Event       mi_Output.mio_Event
+#define mi_Event2      mi_Output.mio_Event2
+#define mi_RecordEvent mi_Output.mio_RecordEvent
 
 #endif /* MDNSD_MDNS_IPC_H */

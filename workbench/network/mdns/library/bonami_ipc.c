@@ -198,8 +198,7 @@ bonamiSend(struct MDNSIPCMsg *msg)
     msg->mi_Result = copy->mi_Result;
     msg->mi_Handle = copy->mi_Handle;
     msg->mi_DaemonID = copy->mi_DaemonID;
-    msg->mi_Event = copy->mi_Event;
-    msg->mi_RecordEvent = copy->mi_RecordEvent;
+    msg->mi_Output = copy->mi_Output;
     msg->mi_StatusRxPackets = copy->mi_StatusRxPackets;
     msg->mi_StatusTxPackets = copy->mi_StatusTxPackets;
     msg->mi_StatusRxAnswers = copy->mi_StatusRxAnswers;
