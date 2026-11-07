@@ -63,6 +63,30 @@ static void established(int family)
 void testTCPINFO_ESTABLISHED4(void) { established(AF_INET); }
 void testTCPINFO_ESTABLISHED6(void) { established(AF_INET6); }
 
+/* A new connection starts with RFC 6928's initial window, min(10 * MSS,
+ * max(2 * MSS, 14600)), even to a destination on a local network (here
+ * the loopback): slow start for every connection (RFC 5681 section 3.1). */
+static void initial_window(int family)
+{
+    struct tcp_info ti;
+    unsigned long iw;
+    int c, s;
+
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(family, &c, &s), 0);
+    CU_ASSERT_EQUAL(info(c, &ti, NULL), 0);
+    iw = ti.tcpi_snd_mss * 2 > 14600 ? ti.tcpi_snd_mss * 2 : 14600;
+    if (iw > ti.tcpi_snd_mss * 10)
+        iw = ti.tcpi_snd_mss * 10;
+    printf("\n    snd_cwnd %lu, mss %lu, initial window %lu\n",
+           (unsigned long)ti.tcpi_snd_cwnd, (unsigned long)ti.tcpi_snd_mss, iw);
+    CU_ASSERT_EQUAL(ti.tcpi_snd_cwnd, iw);
+    CloseSocket(c);
+    CloseSocket(s);
+}
+
+void testTCPINFO_INITIAL_WINDOW4(void) { initial_window(AF_INET); }
+void testTCPINFO_INITIAL_WINDOW6(void) { initial_window(AF_INET6); }
+
 /* Data sent and read moves the sequence numbers by its length on both
  * sides, and all of it is acknowledged. */
 void testTCPINFO_SEQUENCE(void)
@@ -213,6 +237,8 @@ int main(int argc, char **argv)
     if (p == NULL ||
         !CU_add_test(p, "an established connection (IPv4)", testTCPINFO_ESTABLISHED4) ||
         !CU_add_test(p, "an established connection (IPv6)", testTCPINFO_ESTABLISHED6) ||
+        !CU_add_test(p, "the initial window, to a local destination (IPv4)", testTCPINFO_INITIAL_WINDOW4) ||
+        !CU_add_test(p, "the initial window, to a local destination (IPv6)", testTCPINFO_INITIAL_WINDOW6) ||
         !CU_add_test(p, "data moves the sequence numbers", testTCPINFO_SEQUENCE) ||
         !CU_add_test(p, "over the loopback the RTO is the floor", testTCPINFO_RTO_FLOOR) ||
         !CU_add_test(p, "an unanswered SYN backs off from 1 s", testTCPINFO_SYN_BACKOFF) ||

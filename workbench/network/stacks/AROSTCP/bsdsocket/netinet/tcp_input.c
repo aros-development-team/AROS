@@ -2721,7 +2721,7 @@ tcp_xmit_timer(struct tcpcb *tp, int rtt)
  * size (usually 512 or the default IP max size, but no more than the mtu
  * of the interface), as we can't discover anything about intervening
  * gateways or networks.  We also initialize the congestion/slow start
- * window to be a single segment if the destination isn't local.
+ * window (RFC 6928's initial window, whatever the destination).
  * While looking at the routing entry, we also initialize other path-dependent
  * parameters from pre-set or cached values in the routing entry.
  *
@@ -2911,12 +2911,13 @@ int offer;
         (void)sbreserve(&so->so_rcv, bufsize);
     }
     /*
-     * Set initial congestion window.  Use RFC 6928 IW10
-     * (10 segments) for non-local destinations instead of
-     * the original 1-segment slow start.
+     * Set initial congestion window: RFC 6928's IW10, for every
+     * destination. 4.4BSD left a destination on a local network with
+     * no slow start at all (snd_cwnd stayed at its maximum, 1 GB);
+     * RFC 5681 section 3.1 has every connection start with it, as
+     * FreeBSD and Linux do.
      */
-    if(!local)
-        tp->snd_cwnd = MIN(10 * mss, MAX(2 * mss, 14600));
+    tp->snd_cwnd = MIN(10 * mss, MAX(2 * mss, 14600));
 
 #ifdef RTV_SSTHRESH
     if(rt->rt_rmx.rmx_ssthresh) {
