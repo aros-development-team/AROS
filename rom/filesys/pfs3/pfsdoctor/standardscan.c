@@ -2110,6 +2110,57 @@ static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool
 	return error;
 }
 
+/* Keep the low size word and infer only the missing high word, from a
+ * complete, bounded allocation chain. No rounding up to allocated bytes. */
+#ifdef __GNUC__
+static error_t RecoverSizeHigh(struct direntry *, uint32 *) __attribute__((noinline));
+#endif
+static error_t RecoverSizeHigh(struct direntry *de, uint32 *high)
+{
+	canode_t node;
+	uint32 nr = de->anode, checkpoint = nr, distance = 0, power = 1;
+	uint32 blocks = 0, lowblocks, difference;
+	error_t error;
+
+	while (nr) {
+		if (aborting)
+			return e_aborted;
+		if ((error = ReadAnode(&node, nr, false))) {
+			if (IsOperationalError(error))
+				return error;
+			goto uncertain;
+		}
+		if (node.clustersize) {
+			if (node.blocknr <= rbl->lastreserved || node.blocknr >= volume.disksize ||
+			    node.clustersize > volume.disksize - node.blocknr ||
+			    node.clustersize > volume.disksize - blocks)
+				goto uncertain;
+			blocks += node.clustersize;
+		}
+		if (node.next && node.next == checkpoint)
+			goto uncertain;
+		if (++distance == power) {
+			checkpoint = node.next;
+			distance = 0;
+			power = power < 0x80000000UL ? power * 2 : ~(uint32)0;
+		}
+		nr = node.next;
+	}
+	lowblocks = (de->fsize >> volume.blockshift) +
+		((de->fsize & (volume.blocksize - 1)) != 0);
+	if (blocks < lowblocks)
+		goto uncertain;
+	difference = blocks - lowblocks;
+	if (difference & (((uint32)1 << (32 - volume.blockshift)) - 1))
+		goto uncertain;
+	*high = difference >> (32 - volume.blockshift);
+	return e_none;
+
+uncertain:
+	addfileerror("cannot reconstruct file size; file retained");
+	return UnresolvedObject();
+}
+
 /* The handler requires valid name/comment/extra-field packing, not merely
  * a traversable entry chain. Preserve names and comments when only the packed
  * fields are unusable; otherwise let normal entry removal handle the damage. */
@@ -2120,7 +2171,8 @@ static error_t CheckDirEntryLayout(struct direntry *de, c_dirblock_t *dirblk)
 {
 	struct extrafields extra;
 	uint8 *data = (uint8 *)de;
-	uint32 offset;
+	uint32 offset, high = 0;
+	error_t error;
 
 	if (PFS3GetExtraFields(de, &extra) != (UWORD)~0)
 		return e_none;
@@ -2140,7 +2192,21 @@ static error_t CheckDirEntryLayout(struct direntry *de, c_dirblock_t *dirblk)
 	}
 	if (mode != repair)
 		return e_direntry_error;
+	if ((rbl->options & MODE_LARGEFILE) && de->type == ST_FILE) {
+		if ((error = RecoverSizeHigh(de, &high)))
+			return error;
+		if (high && offset > de->next - 2 * sizeof(UWORD)) {
+			addfileerror("no room for recovered file size; file retained");
+			return UnresolvedObject();
+		}
+	}
 	memset(data + de->next - sizeof(UWORD), 0, sizeof(UWORD));
+	if (high) {
+		data[de->next - 4] = high >> 8;
+		data[de->next - 3] = high;
+		data[de->next - 2] = 4; /* packed fsizex flag, stored big endian */
+		fixedfileerror("recovered high file size from allocation chain");
+	}
 	fixedfileerror("removed malformed directory extra fields");
 	return volume.writeblock((cachedblock_t *)dirblk);
 }
