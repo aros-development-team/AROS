@@ -29,7 +29,8 @@ FILES  := test             \
           mui4test         \
           flextest         \
           rexxunknown      \
-          gaugeclip
+          gaugeclip        \
+          listdrag
 
 USER_CFLAGS := -I $(SRCDIR)/workbench/system/Wanderer/Classes
 

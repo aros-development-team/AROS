@@ -1274,6 +1274,10 @@ struct MUI_ListData
     LONG mouse_click;            /* see below if mouse is held down */
     LONG mouse_x;
     LONG mouse_y;
+    LONG drag_x;                 /* press on an entry, -1 if none */
+    LONG drag_y;
+    BOOL click_pending;          /* press on a selected entry, applied on release */
+    BOOL click_clear;
 
     /* double click */
     ULONG last_secs;
@@ -2073,6 +2077,8 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->mouse_click = 0;
     data->mouse_x = MUI_MAXMAX;
     data->mouse_y = MUI_MAXMAX;
+    data->drag_x = -1;
+    data->drag_y = -1;
 
     /* HACK:
      * List is a group where part of area is rendered and part is filled
@@ -4628,10 +4634,9 @@ static IPTR List__MUIM_CreateDragImage(struct IClass *cl, Object *obj,
             muiRenderInfo(obj)->mri_RastPort = rp_save;
         }
 
-        /* Ensure drag point matches where user clicked */
-        img->touchx = msg->touchx - zframe->ileft + _addleft(obj);
-        img->touchy = -(pos.yoffset + data->entry_maxheight / 2)
-            - zframe->itop;
+        /* Pointer position inside the image, so it stays where clicked */
+        img->touchx = _left(data->area) + msg->touchx - left + zframe->ileft;
+        img->touchy = pos.yoffset + data->entry_maxheight / 2 + zframe->itop;
         img->flags = 0;
     }
 
@@ -4812,10 +4817,13 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                     msg->imsg->MouseY))
                 {
                     data->mouse_click = MOUSE_CLICK_ENTRY;
+                    data->drag_x = -1;
 
                     if (!data->read_only && pos.entry != -1)
                     {
                         new_active = pos.entry;
+                        data->drag_x = msg->imsg->MouseX;
+                        data->drag_y = msg->imsg->MouseY;
 
                         clear = (data->multiselect
                             == MUIV_Listview_MultiSelect_Shifted
@@ -4825,6 +4833,18 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                             : MUIV_List_Select_Toggle;
                         select = data->multiselect
                             != MUIV_Listview_MultiSelect_None;
+
+                        /* A selected entry may be dragged: keep the
+                           selection and apply the click on release */
+                        data->click_pending = select
+                            && data->drag_type != MUIV_Listview_DragType_None
+                            && (data->entries[pos.entry]->flags
+                            & ENTRY_SELECTED);
+                        if (data->click_pending)
+                        {
+                            data->click_clear = clear;
+                            clear = select = FALSE;
+                        }
 
                         /* Handle MUIA_Listview_ClickColumn */
                         data->click_column = pos.column;
@@ -4868,7 +4888,16 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                     /* ... and activate the object */
                     set(_win(obj), MUIA_Window_ActiveObject, (IPTR)obj);
                     data->mouse_click = 0;
+
+                    if (data->click_pending)
+                    {
+                        clear = data->click_clear;
+                        seltype = clear ? MUIV_List_Select_On
+                            : MUIV_List_Select_Toggle;
+                        select = TRUE;
+                    }
                 }
+                data->click_pending = FALSE;
 
                 /* Restore normal event mask */
                 DoMethod(_win(obj), MUIM_Window_RemEventHandler,
@@ -4882,6 +4911,27 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 
         case IDCMP_MOUSEMOVE:
         case IDCMP_INTUITICKS:
+            /* Draggable entries: moving past the threshold starts a drag
+               instead of drag-selecting (the click never reaches Area) */
+            if (msg->imsg->Class == IDCMP_MOUSEMOVE
+                && data->drag_type != MUIV_Listview_DragType_None
+                && data->mouse_click == MOUSE_CLICK_ENTRY && data->drag_x >= 0
+                && (abs(msg->imsg->MouseX - data->drag_x) >= MUI_DRAG_THRESHOLD
+                    || abs(msg->imsg->MouseY - data->drag_y) >= MUI_DRAG_THRESHOLD))
+            {
+                data->mouse_click = 0;
+                data->click_pending = FALSE;
+                DoMethod(_win(obj), MUIM_Window_RemEventHandler,
+                    (IPTR) &data->ehn);
+                data->ehn.ehn_Events &= ~(IDCMP_MOUSEMOVE | IDCMP_INTUITICKS
+                    | IDCMP_INACTIVEWINDOW);
+                DoMethod(_win(obj), MUIM_Window_AddEventHandler,
+                    (IPTR) &data->ehn);
+                DoMethod(obj, MUIM_DoDrag, data->drag_x - _left(data->area),
+                    data->drag_y - _top(data->area), 0);
+                return MUI_EventHandlerRC_Eat;
+            }
+
             if (pos.flags & MUI_LPR_ABOVE)
                 new_active = MUIV_List_Active_Up;
             else if (pos.flags & MUI_LPR_BELOW)
@@ -4902,6 +4952,7 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj,
         case IDCMP_INACTIVEWINDOW:
             /* Stop listening for events we only listen to when mouse button is
                down: we will not be informed of the button being released */
+            data->click_pending = FALSE;
             DoMethod(_win(obj), MUIM_Window_RemEventHandler,
                 (IPTR) &data->ehn);
             data->ehn.ehn_Events &=
