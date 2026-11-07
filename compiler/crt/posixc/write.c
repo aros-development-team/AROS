@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
+#include <dos/pipe.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <libraries/fd.h>
@@ -73,7 +74,8 @@
     cnt = __dos64_write (fdesc->fcb, (void *)buf, count);
 
     if (cnt == -1)
-        errno = __stdc_ioerr2errno (IoErr ());
+        errno = IoErr() == ERROR_PIPE_WOULD_BLOCK
+            ? EAGAIN : __stdc_ioerr2errno (IoErr ());
 
     return cnt;
 } /* write */

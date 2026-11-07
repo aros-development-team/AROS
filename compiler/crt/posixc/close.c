@@ -50,12 +50,16 @@
 {
     fdesc *fdesc;
 
+    /* A concurrent vfork copy pins entries through this same guard. Keep
+       removal and destruction atomic with respect to that snapshot. */
+    __lock_fdtable();
     if (!(fdesc = __getfdesc(fd)))
     {
         /* Not a local posixc file descriptor: dispatch to the owning
            subsystem's close hook (e.g. a bsdsocket socket).  The owner
            releases its own fd.library reservation. */
         APTR data;
+        __unlock_fdtable();
         const struct fd_hooks *hooks = __getfdhooks(fd, &data);
         if (hooks && hooks->fdh_close)
         {
@@ -72,51 +76,13 @@
         return -1;
     }
 
-    /* Serialise the reference-count decrement and the final teardown
-       against other Tasks sharing this fcb. When the count reaches zero
-       no other Task holds a reference, so releasing the lock immediately
-       before FreeVec() is safe. */
-    __fcb_lock(fdesc->fcb);
-    if (--fdesc->fcb->opencount == 0)
-    {
-        /* Due to a *stupid* behaviour of the dos.library we cannot handle closing failures cleanly :-(
-        if (
-            !(fdesc->fcb->privflags & _FCB_DONTCLOSE_FH) &&
-            !Close(fdesc->fh)
-        )
-        {
-            fdesc->opencount++;
-            errno = __stdc_ioerr2errno(IoErr());
-
-            return -1;
-        }
-        */
-        /* FIXME: Damn dos.library! We cannot report the error code correctly! This oughta change someday... */
-        /* Since the dos.library destroys the file handle anyway, even if the closing fails, we cannot
-           report the error code correctly, so just close the file and get out of here */
-
-        if (!(fdesc->fcb->privflags & _FCB_DONTCLOSE_FH))
-        {
-            // don't close directories because we don't Open() them.
-            if (fdesc->fcb->privflags & _FCB_ISDIR)
-            {
-                UnLock(fdesc->fcb->handle);
-            }
-            else
-            {
-                Close(fdesc->fcb->handle);
-            }
-        }
-
-        __fcb_unlock(fdesc->fcb);
-        __flock_release(fdesc->fcb);
-        FreeVec(fdesc->fcb);
-    }
-    else
-        __fcb_unlock(fdesc->fcb);
-
-    __free_fdesc(fdesc);
+    /* Unpublish under the snapshot guard, but do not hold the table across
+       a potentially blocking final DOS close or shared-handle IO lock. */
+    fcb *file = fdesc->fcb;
     __setfdesc(fd, NULL);
+    __unlock_fdtable();
+    __fcb_release(file);
+    __free_fdesc(fdesc);
 
     return 0;
 } /* close */

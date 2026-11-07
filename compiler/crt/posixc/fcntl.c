@@ -3,6 +3,8 @@
 */
 
 #include <proto/dos.h>
+#include <dos/dosextens.h>
+#include <dos/pipe.h>
 
 #include <errno.h>
 #include <stdarg.h>
@@ -197,7 +199,20 @@
             arg &= (O_NONBLOCK|O_APPEND|O_ASYNC);
 
             __fcb_lock(desc->fcb);
-            if (ChangeMode(CHANGE_FH, desc->fcb->handle, oldmode | __oflags2amode(arg)) == DOSTRUE)
+            /* Directory handles are FileLocks, not FileHandles. They have no
+               stream IO mode; retain status flags without sending a packet. */
+            if (desc->fcb->privflags & _FCB_ISDIR)
+            {
+                desc->fcb->flags &= ~(O_NONBLOCK|O_APPEND|O_ASYNC);
+                desc->fcb->flags |= arg;
+                __fcb_unlock(desc->fcb);
+                return 0;
+            }
+            struct FileHandle *fh = BADDR(desc->fcb->handle);
+            BOOL pipe_mode = fh && fh->fh_Type &&
+                DoPkt(fh->fh_Type, ACTION_PIPE_SET_NONBLOCK, fh->fh_Arg1,
+                      (arg & O_NONBLOCK) != 0, 0, 0, 0) == 1;
+            if (pipe_mode || ChangeMode(CHANGE_FH, desc->fcb->handle, oldmode | __oflags2amode(arg)) == DOSTRUE)
             {
                 desc->fcb->flags &= ~(O_NONBLOCK|O_APPEND|O_ASYNC);
                 desc->fcb->flags |= arg;

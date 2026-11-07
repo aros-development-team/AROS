@@ -182,6 +182,7 @@ OPENMEMERR1:
 
       pipekey->pipe=     pipe;
       pipekey->openmode= openmode;
+      pipekey->nonblock= 0;
 
       if (openmode == MODE_READONLY)
         { pipekey->iotype= PIPEREAD;
@@ -221,6 +222,7 @@ OPENMEMERR1:
 
       pipekey->pipe=     pipe;
       pipekey->openmode= openmode;
+      pipekey->nonblock= 0;
 
       pkt->dp_Res2= ERROR_OBJECT_IN_USE;     /* in case of openmode error */
 

@@ -128,7 +128,7 @@ int __posixc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[]
        we avoid it.
        The cloning does not need to be performed if flags of parent have VFORK_PARENT
        or EXEC_PARENT flags */
-    pPosixCBase = __GM_GetBaseParent(PosixCBase);
+    pPosixCBase = __posixc_parent_base(PosixCBase);
     D(bug("__posixc_nixmain: pPosixCBase = %x, Task=%x\n", pPosixCBase, FindTask(NULL)));
     if (!pPosixCBase || !(pPosixCBase->flags & (VFORK_PARENT | EXEC_PARENT)))
     {
