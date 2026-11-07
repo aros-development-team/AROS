@@ -19,6 +19,21 @@
 static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
                          ULONG xdest, ULONG minterm);
 
+/* The selected writable planes of a classic bitmap, up to the common
+   source/destination depth. NULL and -1 destination planes are constants. */
+static LONG count_planar_planes(const struct BitMap *bitmap, ULONG depth, UBYTE mask)
+{
+    LONG count = 0;
+    ULONG plane;
+
+    for (plane = 0; plane < depth && plane < 8; plane++) {
+        if ((mask & (1U << plane)) && bitmap->Planes[plane] != NULL &&
+                bitmap->Planes[plane] != (PLANEPTR)-1)
+            count++;
+    }
+    return count;
+}
+
 /*****************************************************************************
 
     NAME */
@@ -222,17 +237,14 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
          * selected, writable planes as the software path below, including
          * when the driver consumes them without temporary HIDD wrappers. */
         if (planar) {
-            planar_planes = 0;
-            for (x = 0; x < depth && x < 8; x++) {
-                if ((mask & (1U << x)) && destBitMap->Planes[x] != NULL &&
-                    destBitMap->Planes[x] != (PLANEPTR)-1)
-                    planar_planes++;
-            }
+            planar_planes = count_planar_planes(destBitMap, depth, mask);
             if (!planar_planes)
                 return 0;
         }
 
-        /* Keep the historical HIDD result; planar setup failures copy no planes. */
+        /* FIXME: the fixed 8 for HIDD blits, including mixed planar/HIDD
+           blits, is a historical placeholder, not an actual plane count.
+           Planar setup failures copy no planes. */
         planecnt = planar ? 0 : 8;
 
         /*
@@ -358,7 +370,7 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
         if(ySize <= 0 || xSize <= 0 || !mask)
             return 0;
 
-        planecnt = 0;
+        planecnt = count_planar_planes(destBitMap, depth, mask);
 
         /* For all planes */
         for(plane = 0; plane < depth; plane ++) {
@@ -368,8 +380,6 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
             if((destBitMap->Planes[plane] != NULL) && (destBitMap->Planes[plane] != (PLANEPTR) - 1)) {
                 /* Copy this plane ? */
                 if((1L << plane) & mask) {
-
-                    planecnt ++; /* count it */
 
                     for(y = 0; y < (ULONG)ySize; y++) {
                         src  =  srcBitMap->Planes[plane] + (y + ySrc) * srcBitMap->BytesPerRow;

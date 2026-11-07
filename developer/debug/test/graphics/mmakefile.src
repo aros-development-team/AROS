@@ -7,6 +7,7 @@ FILES := screenppm \
     alphascreen \
     areatest2 \
     bltbitmapalpha \
+    bltbitmap_count \
     copper \
     gfx \
     gfxinfo \
@@ -35,8 +36,3 @@ EXEDIR := $(AROS_TESTS)/graphics
     files=$(FILES) targetdir=$(EXEDIR)
 
 %common
-
-#MM test-graphics-bltbitmap-count : includes linklibs
-
-%build_prog mmake=test-graphics-bltbitmap-count \
-    files=bltbitmap_count progname=bltbitmap_count targetdir=$(EXEDIR)
