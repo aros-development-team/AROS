@@ -1953,11 +1953,9 @@ static error_t CheckDirParent(c_dirblock_t *dirblk, uint32 parent)
 		return UnresolvedObject();
 
 	dirblk->data->parent = parent;
-	if (mode == check) {
-		if (!ss.incomplete)
-			ss.incomplete = e_syntax_error;
+	/* The corrected copy is fully traversed in CHECK too. */
+	if (mode == check)
 		return e_none;
-	}
 	if ((error = volume.writeblock((cachedblock_t *)dirblk)))
 		return error;
 	fixedfileerror("corrected directory parent");
