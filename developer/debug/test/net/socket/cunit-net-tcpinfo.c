@@ -274,6 +274,53 @@ void testTCPINFO_MSS_FLOOR(void)
 }
 void testTCPINFO_ROUTE_SSTHRESH6(void) { route_ssthresh(AF_INET6); }
 
+/* The pure ACKs the stack has sent (net.inet.tcp.stats), or -1. */
+static long sent_acks(void)
+{
+    LONG name[4] = { CTL_NET, PF_INET, IPPROTO_TCP, TCPCTL_STATS };
+    struct tcpstat st;
+    LONG len = sizeof(st);
+
+    if (MiamiSysCtl(name, 4, &st, &len, NULL, 0, 0) != 0)
+        return -1;
+    return (long)st.tcps_sndacks;
+}
+
+/* A receiver acknowledges at least every second full-sized segment (RFC
+ * 1122 section 4.2.3.2, RFC 5681 section 4.2): 20 segments over the
+ * loopback, read as they come, get at least 9 pure ACKs. */
+void testTCPINFO_ACK_EVERY_SECOND(void)
+{
+    struct tcp_info ti;
+    static char buf[20 * 1448];
+    long a0, a1;
+    int c, s, got, mss;
+
+    if (MiamiBase == NULL) {
+        CU_PASS("miami.library not available - skipping");
+        return;
+    }
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL(info(c, &ti, NULL), 0);
+    mss = ti.tcpi_snd_mss;
+    a0 = sent_acks();
+    CU_ASSERT_EQUAL(send(c, buf, 20 * mss, 0), 20 * mss);
+    for (got = 0; got < 20 * mss; ) {
+        int k = recv(s, buf, sizeof(buf), 0);
+
+        if (k <= 0)
+            break;
+        got += k;
+    }
+    Delay(10);
+    a1 = sent_acks();
+    printf("\n    20 segments: %ld pure ACKs\n", a1 - a0);
+    CU_ASSERT(a0 >= 0 && got == 20 * mss);
+    CU_ASSERT(a1 - a0 >= 9);
+    CloseSocket(c);
+    CloseSocket(s);
+}
+
 /* Data sent and read moves the sequence numbers by its length on both
  * sides, and all of it is acknowledged. */
 void testTCPINFO_SEQUENCE(void)
@@ -580,6 +627,7 @@ int main(int argc, char **argv)
         !CU_add_test(p, "a route's ssthresh reaches a new connection (IPv4)", testTCPINFO_ROUTE_SSTHRESH4) ||
         !CU_add_test(p, "a route's ssthresh reaches a new connection (IPv6)", testTCPINFO_ROUTE_SSTHRESH6) ||
         !CU_add_test(p, "the MSS never goes below net.inet.tcp.minmss", testTCPINFO_MSS_FLOOR) ||
+        !CU_add_test(p, "a receiver ACKs at least every second segment", testTCPINFO_ACK_EVERY_SECOND) ||
         !CU_add_test(p, "data moves the sequence numbers", testTCPINFO_SEQUENCE) ||
         !CU_add_test(p, "over the loopback the RTO is the floor", testTCPINFO_RTO_FLOOR) ||
         !CU_add_test(p, "an unanswered SYN backs off from 1 s", testTCPINFO_SYN_BACKOFF) ||

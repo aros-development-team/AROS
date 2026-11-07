@@ -111,6 +111,21 @@ struct inpcbinfo tcbinfo;
  * Set DELACK for segments received in order, but ack immediately
  * when segments are out of order (so fast retransmit can work).
  */
+/*
+ * An ACK may wait for a second in-order segment, never a third (RFC 1122
+ * section 4.2.3.2, RFC 5681 section 4.2): with one already waiting, ACK
+ * now - as FreeBSD's DELAY_ACK(). 4.4BSD delayed every segment, and the
+ * ACK went out only when the application read or the timer fired: on the
+ * tap, one ACK every 14 segments.
+ */
+#define TCP_DELAY_ACK(tp) do { \
+    if ((tp)->t_flags & TF_DELACK) { \
+        (tp)->t_flags &= ~TF_DELACK; \
+        (tp)->t_flags |= TF_ACKNOW; \
+    } else \
+        (tp)->t_flags |= TF_DELACK; \
+} while (0)
+
 #define TCP_REASS(tp, ti, m, so, flags) { \
     if ((ti)->ti_seq == (tp)->rcv_nxt && \
         (tp)->t_segq == NULL && \
@@ -118,7 +133,7 @@ struct inpcbinfo tcbinfo;
         if (ti->ti_flags & TH_PUSH) \
 			tp->t_flags |= TF_ACKNOW; \
 		else \
-			tp->t_flags |= TF_DELACK; \
+			TCP_DELAY_ACK(tp); \
         (tp)->rcv_nxt += (ti)->ti_len; \
         flags = (ti)->ti_flags & TH_FIN; \
         tcpstat.tcps_rcvpack++;\
@@ -1247,15 +1262,15 @@ findpcb:
              *	congestion avoidance sender won't send more until
              *	he gets an ACK.
              */
-            if(tiflags & TH_PUSH) {
+            if(tiflags & TH_PUSH)
                 tp->t_flags |= TF_ACKNOW;
-                tcp_output(tp);
-            } else {
-                tp->t_flags |= TF_DELACK;
-            }
+            else
+                TCP_DELAY_ACK(tp);
 #else
-            tp->t_flags |= TF_DELACK;
+            TCP_DELAY_ACK(tp);
 #endif
+            if(tp->t_flags & TF_ACKNOW)
+                (void) tcp_output(tp);  /* the second segment: ACK now */
             return;
         }
     }

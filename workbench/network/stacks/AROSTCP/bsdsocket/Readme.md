@@ -309,7 +309,10 @@ computed without the key; Linux uses SipHash for the same values.
 
 `tcp_timer.c` runs the fast (`PR_FASTHZ`, nominally 50 ms; timer.device's `UNIT_VBLANK` makes it
 about 60) and slow (500 ms) timers driven from the daemon: retransmit (with exponential backoff),
-persist, keepalive, 2MSL/TIME-WAIT, and delayed-ACK. `tcp_slowtimo` also expires SYN-cache
+persist, keepalive, 2MSL/TIME-WAIT, and delayed-ACK. An ACK waits for a second in-order full-sized segment, never a
+third (`TCP_DELAY_ACK()`, RFC 1122 section 4.2.3.2, RFC 5681 section 4.2, as FreeBSD's
+`DELAY_ACK()`); 4.4BSD delayed every segment, and on the tap a bulk transfer got one ACK every
+11-15 segments. `tcp_slowtimo` also expires SYN-cache
 entries, and advances the ISS clock (`tcp_iss`, RFC 6528) and `tcp_now` every tick, whether or not
 there are connections: `tcp_now` paces the IPv4 ICMP error rate limit (§7), PAWS's idle age and the
 SYN cache. Each connection's slow timers are counted down every slow tick, and its idle and
