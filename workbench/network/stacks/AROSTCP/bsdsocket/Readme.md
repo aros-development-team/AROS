@@ -319,6 +319,12 @@ it the retransmission count no longer ends the connection (it goes on at the lon
 With keepalive it replaces the probe count, as in Linux: a connection that has sent a probe and
 heard nothing for that long is dropped. Accepted connections inherit it.
 
+`TCP_INFO` (Linux's option, FreeBSD's `struct tcp_info` and `tcp_fill_info()`) gives a connection's
+state, the options it negotiated (`TCPI_OPT_*`), its segment size, windows and sequence numbers,
+`snd_cwnd` and `snd_ssthresh`, and its round-trip estimate, variance and retransmission timeout
+in microseconds; what the stack does not keep stays 0. The structure is larger than an mbuf, so
+the answer goes in a cluster; a shorter buffer gets its start.
+
 ### 5.4 Options in the SYN
 
 A connection asks for the MSS (§6, segment size, for IPv6), window scale and timestamps

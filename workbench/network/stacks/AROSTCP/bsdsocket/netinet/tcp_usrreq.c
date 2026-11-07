@@ -535,6 +535,49 @@ struct mbuf *nam;
     return 0;
 }
 
+/*
+ * TCP_INFO: what FreeBSD's tcp_fill_info() gives of the connection, in
+ * its struct tcp_info (Linux's names and order). Times are in
+ * microseconds; the fields this stack does not keep stay 0.
+ */
+#define TCP_TICK_USEC   (1000000 / PR_SLOWHZ)
+
+static void
+tcp_fill_info(const struct tcpcb *tp, struct tcp_info *ti)
+{
+    bzero(ti, sizeof(*ti));
+    ti->tcpi_state = tp->t_state;
+    if((tp->t_flags & TF_REQ_TSTMP) && (tp->t_flags & TF_RCVD_TSTMP))
+        ti->tcpi_options |= TCPI_OPT_TIMESTAMPS;
+    if(tp->t_flags & TF_SACK_PERMIT)
+        ti->tcpi_options |= TCPI_OPT_SACK;
+    if((tp->t_flags & TF_REQ_SCALE) && (tp->t_flags & TF_RCVD_SCALE)) {
+        ti->tcpi_options |= TCPI_OPT_WSCALE;
+        ti->tcpi_snd_wscale = tp->snd_scale;
+        ti->tcpi_rcv_wscale = tp->rcv_scale;
+    }
+    if(tp->t_flagsext & TF_ECN_PERMIT)
+        ti->tcpi_options |= TCPI_OPT_ECN;
+
+    ti->tcpi_rto = (u_int32_t)tp->t_rxtcur * TCP_TICK_USEC;
+    ti->tcpi_last_data_recv = (u_int32_t)tp->t_idle * TCP_TICK_USEC;
+    ti->tcpi_rtt = ((u_int32_t)tp->t_srtt * TCP_TICK_USEC) >> TCP_RTT_SHIFT;
+    ti->tcpi_rttvar = ((u_int32_t)tp->t_rttvar * TCP_TICK_USEC) >> TCP_RTTVAR_SHIFT;
+    ti->tcpi_snd_ssthresh = tp->snd_ssthresh;
+    ti->tcpi_snd_cwnd = tp->snd_cwnd;
+    ti->tcpi_snd_mss = tp->t_maxseg;
+    ti->tcpi_rcv_mss = tp->t_maxseg;
+
+    ti->tcpi_rcv_space = tp->rcv_wnd;
+    ti->tcpi_rcv_nxt = tp->rcv_nxt;
+    ti->tcpi_snd_wnd = tp->snd_wnd;
+    ti->tcpi_snd_nxt = tp->snd_nxt;
+    ti->tcpi_snd_una = tp->snd_una;
+    ti->tcpi_snd_max = tp->snd_max;
+    ti->tcpi_rcv_adv = tp->rcv_adv;
+    ti->tcpi_dupacks = tp->t_dupacks;
+}
+
 int
 tcp_ctloutput(op, so, level, optname, mp)
 int op;
@@ -704,6 +747,17 @@ struct mbuf **mp;
             break;
         case TCP_USER_TIMEOUT:
             *mtod(m, int *) = (int)tp->t_uto_ms;
+            break;
+        case TCP_INFO:
+            if(sizeof(struct tcp_info) > MLEN) {
+                MCLGET(m, M_WAIT);
+                if(!(m->m_flags & M_EXT)) {
+                    error = ENOBUFS;
+                    break;
+                }
+            }
+            m->m_len = sizeof(struct tcp_info);
+            tcp_fill_info(tp, mtod(m, struct tcp_info *));
             break;
         default:
             error = ENOPROTOOPT;
