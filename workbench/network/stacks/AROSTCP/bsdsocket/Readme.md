@@ -241,6 +241,17 @@ RFC 5681's `min(N, SMSS)` (4.4BSD added a segment whatever the ACK acknowledged)
 faster behind delayed ACKs; on the bottleneck bench L = 2 overshot more (30-50% more drops at the
 end of slow start) for the same throughput.
 
+The first slow start of a connection ends by **HyStart++** (RFC 9406, `tcp_ss.c`; sysctl
+`net.inet.tcp.hystart`, on by default): it keeps the minimum RTT of each round (rounds by sequence
+number) and, when it grows by max(4 ms, min(RTT/8, 16 ms)) over the last round's, goes on in
+Conservative Slow Start - a quarter of the growth - for 5 rounds, then into congestion avoidance
+with `ssthresh = cwnd`; an RTT back below the CSS baseline resumes slow start. It applies only while
+`ssthresh` has its initial value; any loss, ECN or the end of CSS sets it. Not paced, an ACK grows
+cwnd by at most 8 segments (the RFC's L). Behind a 20 Mbit bottleneck (`ss_probe.py` in aros-matter)
+it halves the drops at the end of slow start (100 KB queue: 78-82 against 164-165; 256 KB:
+62-64 against 144-163), with no early exit when there is no bottleneck, and with a 1 MB queue the
+first slow start ends without any loss.
+
 Loss recovery on a connection with SACK follows RFC 6675, as in FreeBSD and Linux. An ACK that
 SACKs data not SACKed before is a duplicate whatever window it offers (a receiver that grows its
 window as it reads changes it in every ACK). The scoreboard (`t_sack_blks`, `TCP_SACK_BOARD`

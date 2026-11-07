@@ -134,6 +134,15 @@ void testSYSCTL_ABC_L(void)
     CU_ASSERT_EQUAL(v, 1);
 }
 
+/* HyStart++ (RFC 9406) in the first slow start: on; 0 or 1. */
+void testSYSCTL_HYSTART(void)
+{
+    LONG v = -1, n = 2;
+
+    knob(TCPCTL_HYSTART, 1);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_HYSTART, &v, &n), EINVAL);
+}
+
 /* The initial retransmission timeout, s: 1 (RFC 6298 section 2.1). */
 void testSYSCTL_RTTDFLT(void)
 {
@@ -181,6 +190,7 @@ int main(void)
         !CU_add_test(p, "net.inet.tcp.rexmit_min", testSYSCTL_REXMIT_MIN) ||
         !CU_add_test(p, "net.inet.tcp.rttdflt", testSYSCTL_RTTDFLT) ||
         !CU_add_test(p, "net.inet.tcp.abc_l", testSYSCTL_ABC_L) ||
+        !CU_add_test(p, "net.inet.tcp.hystart", testSYSCTL_HYSTART) ||
         !CU_add_test(p, "an unknown leaf is refused", testSYSCTL_UNKNOWN))
     {
         CU_cleanup_registry();

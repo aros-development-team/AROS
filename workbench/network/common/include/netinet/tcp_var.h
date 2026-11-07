@@ -66,6 +66,28 @@ struct sackblk {
 #define TCP_CC_CUBIC    1
 
 /*
+ * HyStart++ (RFC 9406) state, for the first slow start of a connection:
+ * the minimum RTT of the last round and of this one (ms; HS_INFINITY until
+ * a sample), the round's end (windowEnd), the samples this round, and the
+ * phase. curr_rtt is the RTT sample of the ACK being processed (0: none).
+ */
+struct tcp_hystart {
+	u_int32_t last_min;	/* lastRoundMinRTT */
+	u_int32_t cur_min;	/* currentRoundMinRTT */
+	u_int32_t css_base;	/* cssBaselineMinRtt */
+	u_int32_t curr_rtt;	/* currRTT */
+	tcp_seq	window_end;	/* windowEnd */
+	u_short	samples;	/* rttSampleCount */
+	u_char	phase;		/* HS_SS, HS_CSS, HS_DONE */
+	u_char	css_rounds;	/* rounds in CSS so far */
+	u_char	started;	/* window_end is set */
+#define HS_INFINITY	0xffffffffU
+#define HS_SS		0	/* standard slow start, with delay detection */
+#define HS_CSS		1	/* conservative slow start */
+#define HS_DONE		2	/* standard slow start (or CA) from now on */
+};
+
+/*
  * CUBIC congestion control state (RFC 8312).
  * Embedded in struct tcpcb for each connection using CUBIC.
  */
@@ -203,6 +225,7 @@ struct tcpcb {
 /* Congestion control algorithm state */
 	u_char	t_cc_algo;		/* CC algorithm (TCP_CC_NEWRENO/CUBIC) */
 	struct	cubic_state t_cubic;	/* CUBIC algorithm state (RFC 8312) */
+	struct	tcp_hystart t_hystart;	/* HyStart++ (RFC 9406) */
 
 /*
  * ECN (RFC 3168): sequence marker used to limit the congestion-window
@@ -445,7 +468,8 @@ struct	tcpstat {
 #define	TCPCTL_PRR		13	/* proportional rate reduction (RFC 6937) */
 #define	TCPCTL_REXMIT_MIN	14	/* minimum retransmission timeout (ms) */
 #define	TCPCTL_ABC_L		15	/* slow start: at most L * SMSS per ACK (RFC 3465) */
-#define TCPCTL_MAXID		16
+#define	TCPCTL_HYSTART		16	/* HyStart++ in the first slow start (RFC 9406) */
+#define TCPCTL_MAXID		17
 
 #define TCPCTL_NAMES { \
 	{ 0, 0 }, \
@@ -464,6 +488,7 @@ struct	tcpstat {
 	{ "prr", CTLTYPE_INT }, \
 	{ "rexmit_min", CTLTYPE_INT }, \
 	{ "abc_l", CTLTYPE_INT }, \
+	{ "hystart", CTLTYPE_INT }, \
 }
 
 #ifdef KERNEL
@@ -501,6 +526,7 @@ extern	u_long tcp_now;		/* for RFC 1323 timestamps */
 extern	int tcp_rttdflt;	/* initial retransmission timeout (s) */
 extern	int tcp_rexmit_min;	/* minimum retransmission timeout (ms) */
 extern	int tcp_abc_l;		/* slow start byte counting limit (RFC 3465) */
+extern	int tcp_do_hystart;	/* HyStart++ (RFC 9406) */
 extern  u_short tcp_lastport;	/* last assigned port */
 extern	int tcp_do_sack;	/* enable SACK (RFC 2018) */
 extern	int tcp_do_newreno;	/* enable NewReno (RFC 3782) */
@@ -558,6 +584,7 @@ void	 tcp_xmit_timer __P((struct tcpcb *, int));
 void	 tcp_rto_after_syn __P((struct tcpcb *));
 u_int32_t tcp_ms __P((void));
 u_long	 tcp_ss_incr __P((struct tcpcb *, u_int));
+void	 tcp_hystart_init __P((struct tcpcb *));
 #endif /* KERNEL */
 
 #endif /* _NETINET_TCP_VAR_H_ */

@@ -940,6 +940,16 @@ size_t newlen;
             tcp_abc_l = v;
         return (error);
     }
+    case TCPCTL_HYSTART: {
+        int v = tcp_do_hystart, error;
+
+        error = sysctl_int(oldp, oldlenp, newp, newlen, &v);
+        if(error == 0 && (v < 0 || v > 1))
+            error = EINVAL;
+        if(error == 0)
+            tcp_do_hystart = v;
+        return (error);
+    }
     case TCPCTL_REXMIT_MIN: {       /* the least RTO, ms */
         int v = tcp_rexmit_min, error;
 

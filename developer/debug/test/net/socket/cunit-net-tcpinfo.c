@@ -110,11 +110,13 @@ static long ss_growth(LONG abc, long *acked)
 {
     struct tcp_info a, b;
     static char buf[12 * 1448];
-    LONG old = 0;
+    LONG old = 0, ohs = 1, off = 0;
     int c, s, got, k;
 
     *acked = -1;
-    if (tcpctl(TCPCTL_ABC_L, &old, &abc) != 0 || st_tcp_pair(AF_INET, &c, &s) != 0)
+    /* HyStart++ applies its own limit in the first slow start */
+    if (tcpctl(TCPCTL_HYSTART, &ohs, &off) != 0 ||
+            tcpctl(TCPCTL_ABC_L, &old, &abc) != 0 || st_tcp_pair(AF_INET, &c, &s) != 0)
         return -1;
     info(c, &a, NULL);
     send(c, buf, 12 * a.tcpi_snd_mss, 0);
@@ -127,6 +129,7 @@ static long ss_growth(LONG abc, long *acked)
     CloseSocket(c);
     CloseSocket(s);
     tcpctl(TCPCTL_ABC_L, &abc, &old);
+    tcpctl(TCPCTL_HYSTART, &off, &ohs);
     return (long)b.tcpi_snd_cwnd - (long)a.tcpi_snd_cwnd;
 }
 
@@ -151,6 +154,36 @@ void testTCPINFO_SLOW_START_BYTES(void)
     CU_ASSERT(a2 > 0 && a1 == a2);
     CU_ASSERT(g1 > 0 && g1 < g2);
     CU_ASSERT(g2 <= 2 * g1 && g2 <= a2);
+}
+
+/* HyStart++ ends slow start only when the RTT grows: over the loopback,
+ * where it does not, 200 KB leave ssthresh at its initial value. */
+void testTCPINFO_HYSTART_NO_EXIT(void)
+{
+    struct tcp_info a, b;
+    static char buf[16384];
+    int c, s, sent, got;
+
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL(info(c, &a, NULL), 0);
+    for (sent = got = 0; got < 200 * 1024; ) {
+        int k;
+
+        if (sent < 200 * 1024 && (k = send(c, buf, sizeof(buf), 0)) > 0)
+            sent += k;
+        if ((k = recv(s, buf, sizeof(buf), 0)) <= 0)
+            break;
+        got += k;
+    }
+    Delay(10);
+    CU_ASSERT_EQUAL(info(c, &b, NULL), 0);
+    printf("\n    ssthresh %lu -> %lu, cwnd %lu -> %lu\n", (unsigned long)a.tcpi_snd_ssthresh,
+           (unsigned long)b.tcpi_snd_ssthresh, (unsigned long)a.tcpi_snd_cwnd, (unsigned long)b.tcpi_snd_cwnd);
+    CU_ASSERT(got >= 200 * 1024);
+    CU_ASSERT_EQUAL(b.tcpi_snd_ssthresh, a.tcpi_snd_ssthresh);
+    CU_ASSERT(b.tcpi_snd_cwnd > a.tcpi_snd_cwnd);
+    CloseSocket(c);
+    CloseSocket(s);
 }
 
 /* Data sent and read moves the sequence numbers by its length on both
@@ -307,6 +340,7 @@ int main(int argc, char **argv)
         !CU_add_test(p, "the initial window, to a local destination (IPv4)", testTCPINFO_INITIAL_WINDOW4) ||
         !CU_add_test(p, "the initial window, to a local destination (IPv6)", testTCPINFO_INITIAL_WINDOW6) ||
         !CU_add_test(p, "slow start counts the bytes acknowledged", testTCPINFO_SLOW_START_BYTES) ||
+        !CU_add_test(p, "HyStart++ does not end slow start without a delay", testTCPINFO_HYSTART_NO_EXIT) ||
         !CU_add_test(p, "data moves the sequence numbers", testTCPINFO_SEQUENCE) ||
         !CU_add_test(p, "over the loopback the RTO is the floor", testTCPINFO_RTO_FLOOR) ||
         !CU_add_test(p, "an unanswered SYN backs off from 1 s", testTCPINFO_SYN_BACKOFF) ||
