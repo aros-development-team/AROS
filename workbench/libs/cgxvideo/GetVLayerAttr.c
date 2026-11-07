@@ -44,6 +44,11 @@
 
         VOA_ColorKey -  returns the 24 bit color value used for color keying.
                                 If color keying is not enabled, -1 is returned.
+        VOA_Underlay -          AROS extension: TRUE while the layer is shown
+                                below the screen (VOA_UseBackfill where the
+                                display can), so what is drawn in the window
+                                over it shows on top of the video. It can
+                                change while the layer is attached.
 
         VOA_Width, VOA_Height - source dimensions in pixels
 
@@ -95,6 +100,10 @@
 
     case VOA_ColorKey:
         result = (vh->flags & VHF_COLORKEY) ? (IPTR)vh->colorkey : (IPTR)-1;
+        break;
+
+    case VOA_Underlay:
+        result = vh->underlaid;
         break;
 
     case VOA_Width:
