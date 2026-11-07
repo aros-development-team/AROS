@@ -6,7 +6,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include "../test.h"
+#include "test.h"
 
 static mode_t saved_mask;
 static uid_t saved_uid, saved_euid;
