@@ -1199,7 +1199,7 @@ in6_tmpifadd(struct ifnet *ifp, struct nd_prefix *pr)
         return error;
 
     /* find the newly created address and set temporary flags + lifetimes */
-    GetSysTime(&_tv);
+    GetUpTime(&_tv);
     for(newia = in6_ifaddr; newia; newia = newia->ia_next) {
         if(IN6_ARE_ADDR_EQUAL(&newia->ia_addr.sin6_addr, &tmpaddr) &&
            newia->ia6_ifp == ifp)
@@ -1237,7 +1237,7 @@ in6_tmpaddrtimer(void)
     struct in6_ifaddr *ia, *nia;
     struct timeval _tv;
 
-    GetSysTime(&_tv);
+    GetUpTime(&_tv);
 
     /* temporary addresses (RFC 4941) and those stateless autoconfiguration
      * made (RFC 4862 section 5.5.4): deprecated at the end of the preferred

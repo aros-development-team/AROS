@@ -18,6 +18,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-arpqueue \
     cunit-net-bindtodev6 \
     cunit-net-canforward \
+    cunit-net-clockstep \
     cunit-net-cmsg \
     cunit-net-dontwait \
     cunit-net-frag6 \

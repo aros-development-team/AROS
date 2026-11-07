@@ -819,11 +819,12 @@ void ifnet_clear_dns(struct ifnet *ifp)
  */
 #define NDB_RA_MAX 3
 
+/* Seconds on the monotonic clock: setting the system time moves no ends. */
 static ULONG ndb_ra_now(void)
 {
     struct timeval tv;
 
-    GetSysTime(&tv);
+    GetUpTime(&tv);
     return tv.tv_sec;
 }
 

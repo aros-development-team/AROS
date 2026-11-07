@@ -549,6 +549,15 @@ for a reload - is queued and applied in order by the next holder before its own 
 entries name their interface by index (`nsn_OwnerIndex`, `dn_OwnerIndex`), which is never reused,
 so those of an interface already gone cannot dangle meanwhile.
 
+Every time Neighbour Discovery keeps in seconds - when a neighbour's state ends, a default router's
+and a prefix's lifetimes, a route from a Route Information Option, the lifetimes of SLAAC and
+temporary addresses, the DAD and Router Solicitation timers, the servers and domains of RA options -
+is on the monotonic clock, timer.device's `GetUpTime()` (posixc's `CLOCK_MONOTONIC`), as FreeBSD's
+are on `time_uptime`. Setting the system time, by hand or from the network, ends none of them early
+and stretches none: with `GetSysTime()` a clock set a day forward took every SLAAC address, RIO route
+and RDNSS server away at the next tick, and one set back kept them a day too long
+(`cunit-net-clockstep`).
+
 An in-place reload deletes every address of every interface, the link-local included, and forgets
 the routers and prefixes heard on it (`nd6_purge_routers()`, `nd6_purge_prefixes()`). For an
 interface that stays up and running, `addifent()` then makes the link-local again with `in6_if_up()`,
