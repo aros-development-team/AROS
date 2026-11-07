@@ -69,6 +69,8 @@ VOID HIDDNVGfxShowCursor(OOP_Object * gfx, BOOL visible)
 }
 
 /* This function assumes that the mode, crtc and output are already selected */
+static BOOL HIDDNVGfxWaitVBlank(LONG fd, struct HIDDNVGfxData *gfxdata);
+
 static BOOL HIDDNVGfxShowBitmapForSelectedMode(OOP_Object * bm)
 {
     OOP_Class * cl = OOP_OCLASS(bm);
@@ -113,9 +115,26 @@ static BOOL HIDDNVGfxShowBitmapForSelectedMode(OOP_Object * bm)
             ret = 0;                                    /* already on screen */
         else
         {
-            ret = drmModePageFlip(NOUVEAU_DEV_FD(nvdev), gfxdata->selectedcrtcid, bmdata->fbid, 0, NULL);
-            nvlog("[Nouveau] flip crtc %lu fb %lu -> %lu: %ld\n", (unsigned long)gfxdata->selectedcrtcid,
-                  (unsigned long)gfxdata->shownfb, (unsigned long)bmdata->fbid, (long)ret);
+            int tries = 0;
+
+            /*
+             * A page flip is a non-blocking commit: with an overlay plane
+             * flipping all the time (a GL window) one is often pending, and
+             * the kernel refuses with -EBUSY. Wait that one out and try
+             * again before the modeset below, which blanks the display and
+             * left the composed bitmap unshown (the window that lost the
+             * plane then looked frozen, 2026-11-07).
+             */
+            do
+            {
+                ret = drmModePageFlip(NOUVEAU_DEV_FD(nvdev), gfxdata->selectedcrtcid, bmdata->fbid, 0, NULL);
+                if (ret != -EBUSY || ++tries > 8)
+                    break;
+                HIDDNVGfxWaitVBlank(NOUVEAU_DEV_FD(nvdev), gfxdata);
+            } while (TRUE);
+            nvlog("[Nouveau] flip crtc %lu fb %lu -> %lu: %ld%s\n", (unsigned long)gfxdata->selectedcrtcid,
+                  (unsigned long)gfxdata->shownfb, (unsigned long)bmdata->fbid, (long)ret,
+                  tries ? " (after a pending flip)" : "");
         }
         if (ret == 0)
         {
