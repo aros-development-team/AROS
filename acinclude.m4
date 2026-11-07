@@ -42,6 +42,24 @@ dnl
 AC_DEFUN([AROS_PATH_PROG],
 [AC_PATH_PROG([$1],[$2],[$2 $3])])
 
+dnl AROS_HOST_CC_NAME
+dnl Sets HOST_CC_NAME to the program name of the host C compiler. CC_BASE
+dnl is a command, not a name: it may name the compiler with its directory
+dnl and carry options, such as the -std=gnu23 that AC_PROG_CC appends since
+dnl autoconf 2.72. The name is its first word that is not an option,
+dnl without the directory. A HOST_CC_NAME set in the environment wins.
+dnl
+AC_DEFUN([AROS_HOST_CC_NAME],
+[if test -z "$HOST_CC_NAME"; then
+    for aros_cc_word in $CC_BASE; do
+        case "$aros_cc_word" in
+            -*) continue ;;
+        esac
+        HOST_CC_NAME=`basename "$aros_cc_word"`
+        break
+    done
+fi])
+
 dnl AROS_BUILDCMD(var,prog,ext)
 dnl appends the cmd part of prog with ext
 dnl
