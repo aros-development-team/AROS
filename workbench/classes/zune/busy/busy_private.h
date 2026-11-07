@@ -10,7 +10,7 @@ struct Busy_DATA
 {
     struct MUI_InputHandlerNode ihn;
     UWORD   	    	    	flags;
-    UWORD   	    	    	speed;
+    LONG    	    	    	speed;  /* as set: ms, MUIV_Busy_Speed_Off or _User */
     UWORD   	    	    	pos;
 };
 
