@@ -17,6 +17,7 @@
 
 #define __CODESETS_NOLIBBASE__
 #define __CODESETS_LIBBASE zt_cs_base
+#define CODESETS_BASE_NAME zt_cs_base       /* the name older SDK headers use */
 static struct Library *zt_cs_base;
 #include <proto/codesets.h>
 
@@ -65,9 +66,14 @@ int zt_layer_open(void)
             char name[64];
             zt_cgx_base = OpenLibrary((CONST_STRPTR)"cybergraphics.library", 0);
             if ((zt_cs_base = OpenLibrary((CONST_STRPTR)"codesets.library", 6))) {
+                /* the TagItem forms only: a program that links codesets'
+                   stubs would turn the varargs forms into calls through
+                   its own CodesetsBase, which may not be open yet */
+                struct TagItem no[] = { { CSA_FallbackToDefault, FALSE }, { TAG_DONE, 0 } };
+                struct TagItem yes[] = { { CSA_FallbackToDefault, TRUE }, { TAG_DONE, 0 } };
                 if (GetVar((CONST_STRPTR)"CHARSET", (STRPTR)name, sizeof name, GVF_GLOBAL_ONLY) > 0)
-                    zt_cs = CodesetsFind((CONST_STRPTR)name, CSA_FallbackToDefault, FALSE, TAG_DONE);
-                if (!zt_cs) zt_cs = CodesetsFind(NULL, CSA_FallbackToDefault, TRUE, TAG_DONE);
+                    zt_cs = CodesetsFindA((CONST_STRPTR)name, no);
+                if (!zt_cs) zt_cs = CodesetsFindA(NULL, yes);
                 if (zt_cs && zt_cs->name) {
                     strncpy(zt_cs_name, (const char *)zt_cs->name, sizeof zt_cs_name - 1);
                     zt_cs_name[sizeof zt_cs_name - 1] = 0;
@@ -250,7 +256,9 @@ size_t zt_from_local(UBYTE ch, char *utf8)
         char src[2];
         UTF8 *u;
         src[0] = (char)ch; src[1] = 0;
-        u = CodesetsUTF8Create(CSA_SourceCodeset, (IPTR)zt_cs, CSA_Source, (IPTR)src, CSA_SourceLen, 1, TAG_DONE);
+        struct TagItem t[] = { { CSA_SourceCodeset, (IPTR)zt_cs }, { CSA_Source, (IPTR)src }, { CSA_SourceLen, 1 },
+                               { TAG_DONE, 0 } };
+        u = CodesetsUTF8CreateA(t);
         if (u) {
             n = strlen((const char *)u);
             if (n > 4) n = 0;
@@ -271,7 +279,9 @@ UBYTE zt_to_local(unsigned long cp)
     n = enc(cp, u);
     u[n] = 0;
     {
-        STRPTR s = CodesetsUTF8ToStr(CSA_DestCodeset, (IPTR)zt_cs, CSA_Source, (IPTR)u, CSA_SourceLen, n, TAG_DONE);
+        struct TagItem t[] = { { CSA_DestCodeset, (IPTR)zt_cs }, { CSA_Source, (IPTR)u }, { CSA_SourceLen, n },
+                               { TAG_DONE, 0 } };
+        STRPTR s = CodesetsUTF8ToStrA(t);
         UBYTE r = '?';
         if (s) {
             if (s[0] && !s[1]) r = (UBYTE)s[0];
