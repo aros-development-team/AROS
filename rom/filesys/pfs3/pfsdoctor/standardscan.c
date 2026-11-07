@@ -2127,13 +2127,18 @@ static error_t CheckDirEntryLayout(struct direntry *de, c_dirblock_t *dirblk)
 	if (mode != repair) {
 		if (!ss.incomplete)
 			ss.incomplete = e_direntry_error;
-		return e_direntry_error;
 	}
 	offset = offsetof(struct direntry, startofname) + de->nlength;
-	if (offset >= de->next)
+	if (offset >= de->next) {
+		addfileerror("invalid filename");
 		return e_direntry_error;
+	}
 	offset = (sizeof(*de) + de->nlength + data[offset]) & ~1U;
-	if (offset > de->next - sizeof(UWORD))
+	if (offset > de->next - sizeof(UWORD)) {
+		addfileerror("invalid filenote");
+		return e_direntry_error;
+	}
+	if (mode != repair)
 		return e_direntry_error;
 	memset(data + de->next - sizeof(UWORD), 0, sizeof(UWORD));
 	fixedfileerror("removed malformed directory extra fields");
