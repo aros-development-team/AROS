@@ -1,0 +1,26 @@
+Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+Build the native regression explicitly with:
+  make test-graphics-bltbitmap-count
+
+Run bltbitmap_count from a native Shell and separately through Run.
+No screen, window, display pixels or input state is changed. A graphical
+system exercises the driver-backed path; other systems can use the plain
+software path, which already returns the actual count.
+
+The program copies only its own classic planar bitmaps, exercising the
+native path selected by graphics.library. It checks the returned
+plane count, every destination byte, unchanged source bytes and allocation
+guards. Cases cover depth one, sparse/zero/out-of-depth masks, unequal
+depths, NULL/-1 destination planes, constant source planes and an empty
+rectangle. Allocation prerequisites fail explicitly.
+
+The expected result is the count of mask-selected writable destination
+planes below min(source depth, destination depth). Source planes represented
+by NULL or -1 remain valid constant inputs. Success prints:
+  bltbitmap_count: 56 checks, 0 failed
+and returns zero. A regression returns 10; the COUNT lines retain both the
+observed and expected values.
+
+This fixture does not qualify truecolour/HIDD-to-HIDD return conventions,
+allocation-failure injection or the m68k native direct-blitter fast path.

@@ -153,6 +153,8 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
         ULONG wSrc, wDest;
         ULONG x;
         ULONG depth;
+        LONG planar_planes = 8;
+        BOOL planar = !IS_HIDD_BM(srcBitMap) && !IS_HIDD_BM(destBitMap);
         struct gfxdisplay_data *driver, *dst_driver;
         OOP_Object *tmp_gc;
 
@@ -216,6 +218,23 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
         /* If the size is illegal or we need not copy anything, return */
         if(ySize <= 0 || xSize <= 0 || !mask) return 0;
 
+        /* A driver can also handle ordinary planar bitmaps. Count the same
+         * selected, writable planes as the software path below, including
+         * when the driver consumes them without temporary HIDD wrappers. */
+        if (planar) {
+            planar_planes = 0;
+            for (x = 0; x < depth && x < 8; x++) {
+                if ((mask & (1U << x)) && destBitMap->Planes[x] != NULL &&
+                    destBitMap->Planes[x] != (PLANEPTR)-1)
+                    planar_planes++;
+            }
+            if (!planar_planes)
+                return 0;
+        }
+
+        /* Keep the historical HIDD result; planar setup failures copy no planes. */
+        planecnt = planar ? 0 : 8;
+
         /*
          * Select a driver to call
          * Selection rule: if one of the drivers is our default software bitmap
@@ -241,7 +260,7 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
          * Try that path after clipping, before allocating temporary wrappers. */
         if (planar_driver && internal_TryRawBlit(driver, srcBitMap, destBitMap,
                 xSrc, ySrc, xDest, yDest, xSize, ySize, minterm, mask, GfxBase))
-            return 8; /* Match the existing driver-path return value below. */
+            return planar_planes;
 
         tmp_gc = obtain_cache_object(CDD(GfxBase)->gc_cache, GfxBase);
         if(NULL != tmp_gc) {
@@ -254,7 +273,7 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
                 dstbm_obj = OBTAIN_HIDD_BM(destBitMap);
                 if(NULL != dstbm_obj) {
 
-                    int_bltbitmap(srcBitMap, srcbm_obj
+                    BOOL copied = int_bltbitmap(srcBitMap, srcbm_obj
                                   , xSrc, ySrc
                                   , destBitMap, dstbm_obj
                                   , xDest, yDest
@@ -263,6 +282,8 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
                                   , driver->display_gfxhidd
                                   , tmp_gc
                                   , GfxBase);
+                    if (planar && copied)
+                        planecnt = planar_planes;
                     update_bitmap(destBitMap, dstbm_obj, xDest, yDest, xSize, ySize, GfxBase);
 
                     RELEASE_HIDD_BM(dstbm_obj, destBitMap);
@@ -272,9 +293,6 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
             }
             release_cache_object(CDD(GfxBase)->gc_cache, tmp_gc, GfxBase);
         }
-
-        /* FIXME: dummy return value of 8 planes */
-        planecnt = 8;
 
     } else {
         ULONG wSrc, wDest;
