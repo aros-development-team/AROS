@@ -1,10 +1,12 @@
 #ifndef _PC_TIMER_PLATFORM_H
 #define _PC_TIMER_PLATFORM_H
 /*
-    Copyright (C) 2020-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2026, The AROS Development Team. All rights reserved.
 
     Desc: PC timer device private structures and constants
 */
+
+#include <aros/config.h>
 
 struct PlatformTimer
 {
@@ -14,6 +16,9 @@ struct PlatformTimer
     UWORD               tb_InitValue;
     UWORD               tb_ReloadValue;
     UWORD               tb_ReloadMin;
+#if defined(__AROSEXEC_SMP__)
+    volatile ULONG      tb_PITLock;
+#endif
 };
 
 /* tb_Flags definitions */
