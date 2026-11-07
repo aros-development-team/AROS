@@ -8,6 +8,8 @@
 
 #include <linux/kernel.h>
 #include <linux/slab.h>
+#include <linux/wait.h>
+#include <linux/jiffies.h>
 
 #include <drm/drm_device.h>
 #include <drm/drm_drv.h>
@@ -238,6 +240,18 @@ int amdgpu_aros_wait_vblank(unsigned int crtc_id)
     crtc = drm_crtc_find(dev, NULL, crtc_id);
     if (!crtc || !crtc->state || !crtc->state->active)
         return -1;
+    if (drm_dev_has_vblank(dev) && drm_crtc_vblank_get(crtc) == 0)
+    {
+        struct drm_vblank_crtc *vblank = drm_crtc_vblank_crtc(crtc);
+        u64 last = drm_crtc_vblank_count(crtc);
+        long left;
+
+        left = wait_event_timeout(vblank->queue, last != drm_crtc_vblank_count(crtc),
+                                  msecs_to_jiffies(100));
+        drm_crtc_vblank_put(crtc);
+        return left ? 0 : -1;
+    }
+
     mode = &crtc->state->adjusted_mode;
     if (!mode->crtc_clock || !mode->crtc_htotal)
         return -1;

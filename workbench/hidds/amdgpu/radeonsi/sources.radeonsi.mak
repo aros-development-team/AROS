@@ -1,14 +1,3 @@
-AROS_AMDGPU_LIBDRM_AMDGPU_SOURCES := \
-                libdrm/amdgpu/amdgpu_asic_id \
-                libdrm/amdgpu/amdgpu_bo \
-                libdrm/amdgpu/amdgpu_cs \
-                libdrm/amdgpu/amdgpu_device \
-                libdrm/amdgpu/amdgpu_gpu_info \
-                libdrm/amdgpu/amdgpu_userq \
-                libdrm/amdgpu/amdgpu_vamgr \
-                libdrm/amdgpu/amdgpu_vm \
-                libdrm/amdgpu/handle_table
-
 AROS_AMDGPU_RADEONSI_C_SOURCES := \
                 gfx11_query \
                 si_barrier \
@@ -75,16 +64,16 @@ AROS_AMDGPU_RADEONSI_CXX_SOURCES := \
                 gfx/si_state_shaders
 
 AROS_AMDGPU_RADEONSI_DRAW_SOURCES := \
-                radeonsi/si_state_draw_gfx10 \
-                radeonsi/si_state_draw_gfx103 \
-                radeonsi/si_state_draw_gfx11 \
-                radeonsi/si_state_draw_gfx115 \
-                radeonsi/si_state_draw_gfx117 \
-                radeonsi/si_state_draw_gfx12 \
-                radeonsi/si_state_draw_gfx6 \
-                radeonsi/si_state_draw_gfx7 \
-                radeonsi/si_state_draw_gfx8 \
-                radeonsi/si_state_draw_gfx9
+                si_state_draw_gfx10 \
+                si_state_draw_gfx103 \
+                si_state_draw_gfx11 \
+                si_state_draw_gfx115 \
+                si_state_draw_gfx117 \
+                si_state_draw_gfx12 \
+                si_state_draw_gfx6 \
+                si_state_draw_gfx7 \
+                si_state_draw_gfx8 \
+                si_state_draw_gfx9
 
 AROS_AMDGPU_WINSYS_C_SOURCES := \
                 amdgpu_bo \

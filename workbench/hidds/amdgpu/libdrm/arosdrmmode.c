@@ -667,13 +667,5 @@ int drmModePageFlip(int fd, uint32_t crtc_id, uint32_t fb_id, uint32_t flags, vo
 
 int drmWaitVBlank(int fd, drmVBlankPtr vbl)
 {
-	/*
-	 * The DRM core's vblank handling (drm_vblank.c) is not built in this
-	 * port: drm-aros stubs drm_vblank_init() and the vblank on/off calls,
-	 * so there is no counter to wait on. Callers treat the error as "no
-	 * vblank available" and do not wait. (The request and reply layouts
-	 * match the kernel's union drm_wait_vblank should the core ever be
-	 * built: then this becomes drmIoctl(fd, DRM_IOCTL_WAIT_VBLANK, vbl).)
-	 */
-	return -ENOSYS;
+	return drmIoctl(fd, DRM_IOCTL_WAIT_VBLANK, vbl);
 }
