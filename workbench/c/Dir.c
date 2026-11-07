@@ -943,13 +943,15 @@ BOOL canEnter(LONG type, BPTR dirlock, CONST_STRPTR name,
 
 
 /* A directory found by ALL that cannot be listed doesn't end the walk:
-   report it and go on with the next one. Only a break stops it. */
+   report it and go on with the next one. Only a break or running out of
+   memory stops it. */
 static
 LONG skipFailed(LONG error, CONST_STRPTR dir)
 {
     LONG ioerr = IoErr();
 
-    if (error == RETURN_OK || ioerr == ERROR_BREAK)
+    if (error == RETURN_OK || ioerr == ERROR_BREAK ||
+        ioerr == ERROR_NO_FREE_STORE)
         return error;
 
     PrintFault(ioerr, dir);
