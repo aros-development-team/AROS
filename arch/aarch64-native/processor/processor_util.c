@@ -105,7 +105,7 @@ static ULONG cache_size_kb(unsigned int level, unsigned int instruction)
     __asm__ volatile("mrs %0, ccsidr_el1" : "=r"(ccsidr));
 
     /* FEAT_CCIDX widens CCSIDR; MMFR2 reads as zero on ARMv8.0. */
-    __asm__ volatile("mrs %0, id_aa64mmfr2_el1" : "=r"(mmfr2));
+    __asm__ volatile("mrs %0, S3_0_C0_C7_2" : "=r"(mmfr2));
 
     line_bytes = 1ULL << ((ccsidr & 7) + 4);
 
