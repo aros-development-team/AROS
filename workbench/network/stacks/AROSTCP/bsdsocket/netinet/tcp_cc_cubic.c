@@ -194,7 +194,11 @@ cubic_on_ack(struct tcpcb *tp, u_int acked)
             u_long delta_mss = (cs->origin_point - cwnd) / mss;
             cs->k = tcp_cubic_root(delta_mss * 1024 / 51);
         } else {
+            /* at or above W_max, or no W_max yet (slow start ended by
+             * HyStart++, without a loss): K = 0 and W_max = cwnd, so the
+             * curve starts where cwnd is (RFC 9438 section 4.10) */
             cs->k = 0;
+            cs->origin_point = cwnd;
         }
         cs->tcp_cwnd = cwnd;
         cs->w_est = cwnd;
