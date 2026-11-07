@@ -3909,22 +3909,95 @@ OOP_Object *Compositor__Hidd_Compositor__BitMapStackChanged(OOP_Class *cl, OOP_O
 
 *****************************************************************************************/
 
+/*
+ * Damage in a client surface while the display passes the frontmost screen
+ * through (no composed bitmap): the screen bitmap itself is the primary, so
+ * a surface without a plane is blitted into it over its visible region, the
+ * way a composed screen gets it from HIDDCompositorRedrawSurfaceRect. A GL
+ * window that loses the one overlay plane to a newer one froze here before.
+ * TRUE when the bitmap is a client surface (handled, or nothing to show).
+ */
+static BOOL HIDDCompositorPassthroughSurfaceDamage(struct HIDDCompositorData *compdata, OOP_Object *bm,
+                                                   WORD x, WORD y, UWORD width, UWORD height)
+{
+    struct StackBitMapNode *screen = NULL;
+    struct SurfaceNode *sn;
+    struct HIDD_CompositeRequest *req;
+    struct Rectangle srcrect, r;
+    struct RegionRectangle *rr;
+    BOOL copy;
+
+    /* displaybitmap and passthroughbm change under the write lock (ToggleCompositing frees
+       the old display bitmap): read them under the read lock only */
+    LOCK_COMPOSITOR_READ
+    if (compdata->displaybitmap || !compdata->passthroughbm ||
+        !(sn = HIDDCompositorFindSurface(compdata, bm, &screen)))
+    {
+        UNLOCK_COMPOSITOR
+        return FALSE;
+    }
+    if ((sn->plane >= 0) || !SURFACE_BLITTABLE(sn) || !sn->region || !screen ||
+        (screen->bm != compdata->passthroughbm) || !(screen->sbmflags & STACKNODEF_VISIBLE))
+    {
+        UNLOCK_COMPOSITOR
+        return TRUE;
+    }
+    req = SNREQ(sn);
+    copy = sn->opaque || (req->AlphaMode == vHidd_CompAlpha_None && req->Opacity == 0xFF);
+    /* Surface -> screen -> display coordinates */
+    {
+        LONG x0 = req->Dest.MinX + (x - req->Src.MinX);
+        LONG y0 = req->Dest.MinY + (y - req->Src.MinY);
+        HIDDCompositorNodeMapRect(screen, x0, y0, x0 + width - 1, y0 + height - 1, &srcrect);
+    }
+    for (rr = sn->region->RegionRectangle; rr; rr = rr->Next)
+    {
+        comp_RegionRect(sn->region, rr, &r);
+        if (AndRectRect(&srcrect, &r, &r))
+        {
+            /* Display -> surface bitmap, and display -> screen bitmap (a passthrough screen is unscaled) */
+            WORD sx = req->Src.MinX + (r.MinX - (req->Dest.MinX + screen->leftedge));
+            WORD sy = req->Src.MinY + (r.MinY - (req->Dest.MinY + screen->topedge));
+            WORD dx = r.MinX - screen->leftedge, dy = r.MinY - screen->topedge;
+            ULONG w = r.MaxX - r.MinX + 1, h = r.MaxY - r.MinY + 1;
+
+            if (copy)
+                HIDD_Gfx_CopyBox(compdata->gfx, req->BitMap, sx, sy, screen->bm, dx, dy, w, h, compdata->gc);
+            else
+                HIDD_Gfx_CopyBoxAlpha(compdata->gfx, req->BitMap, sx, sy, screen->bm, dx, dy, w, h,
+                                      req->Opacity, compdata->gc);
+            HIDD_BM_UpdateRect(screen->bm, dx, dy, w, h);
+        }
+    }
+    UNLOCK_COMPOSITOR
+    return TRUE;
+}
+
 VOID Compositor__Hidd_Compositor__BitMapRectChanged(OOP_Class *cl, OOP_Object *o, struct pHidd_Compositor_BitMapRectChanged *msg)
 {
     struct HIDDCompositorData *compdata = OOP_INST_DATA(cl, o);
-    OOP_Object                *renderTarget = compdata->displaybitmap;
+    OOP_Object                *renderTarget;
     struct HookFires           fires;
 
     HIDDCompositorInitFires(&fires);
 
-    if (compdata->displaybitmap)
+    if (HIDDCompositorPassthroughSurfaceDamage(compdata, msg->bm, msg->x, msg->y, msg->width, msg->height))
+        return;
+    /*
+     * The display bitmap is read under the lock: ToggleCompositing (under the
+     * write lock, from the task that attached or detached a surface) frees it
+     * when the display goes back to passthrough, and a redraw that had taken
+     * the pointer first then drew into a disposed bitmap (input.device
+     * crashed in the driver's copy, 2026-11-07).
+     */
+    LOCK_COMPOSITOR_READ
+    renderTarget = compdata->displaybitmap;
+    if (renderTarget)
     {
         /* Composition is active, handle redraw if the bitmap is on screen */
         struct StackBitMapNode *n;
 
         DUPDATE(bug("[Compositor] %s: Bitmap 0x%p\n", __func__, msg->bm));
-
-        LOCK_COMPOSITOR_READ
 
         if (compdata->intermedbitmap)
             renderTarget = compdata->intermedbitmap;
@@ -4045,22 +4118,15 @@ VOID Compositor__Hidd_Compositor__BitMapRectChanged(OOP_Class *cl, OOP_Object *o
     }
     else
     {
-        /*
-         * In order to speed things up, we handle passthrough ourselves here.
-         * Only a display with client surfaces attached pays for the lock
-         * (the counter is a hint: a surface attached a moment later sees
-         * the damage that follows).
-         */
+        /* Passthrough: the screen's client surfaces learn about damage inside their rectangles */
         if (compdata->nclientsurfaces)
         {
-            struct StackBitMapNode *n;
+            struct StackBitMapNode *n = HIDDCompositorFindBitMapStackNode(compdata, msg->bm);
 
-            LOCK_COMPOSITOR_READ
-            n = HIDDCompositorFindBitMapStackNode(compdata, msg->bm);
             if (n && n->hassurfaces)
                 HIDDCompositorQueueDamage(compdata, n, msg->x, msg->y, msg->width, msg->height, &fires);
-            UNLOCK_COMPOSITOR
         }
+        UNLOCK_COMPOSITOR
         HIDD_BM_UpdateRect(msg->bm, msg->x, msg->y, msg->width, msg->height);
         HIDDCompositorFireHooks(compdata, &fires);
     }
