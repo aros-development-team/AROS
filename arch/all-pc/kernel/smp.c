@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #define __KERNEL_NOLIBBASE__
@@ -369,7 +369,7 @@ int smp_Initialize(void)
             {
                 hooks[i].ih_CPUDone = KrnAllocCPUMask();
                 hooks[i].ih_CPURequested = KrnAllocCPUMask();
-                KrnSpinInit(&hooks[i].ih_Lock);
+                hooks[i].ih_CPUClaimed = KrnAllocCPUMask();
 
                 ADDHEAD(&pdata->kb_FreeIPIHooks, &hooks[i]);
             }
