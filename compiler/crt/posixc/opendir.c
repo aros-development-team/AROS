@@ -127,6 +127,7 @@
         goto err4;
     }
     InitSemaphore(&cblock->io_lock);
+    InitSemaphore(&cblock->ref_lock);
     desc = __alloc_fdesc();
     if(!desc)
     {
@@ -140,14 +141,13 @@
     desc->fcb->opencount = 1;
     desc->fcb->privflags |= _FCB_ISDIR;
 
-    fd = __getfdslot(__getfirstfd(3));
+    fd = __publish_newfd(desc, 3);
     /* Slot allocation may fail; never publish through a negative index. */
     if (fd < 0)
     {
         __free_fdesc(desc);
         goto err5;
     }
-    __setfdesc(fd, desc);
 
     dir->fd = fd;
     dir->pos = 0;

@@ -1,0 +1,17 @@
+Build test-crt-posixc-general, test-crt-posixc-vfork-fd-thread and
+test-crt-posixc-close-pipe-progress.
+
+Run fd_reservation, vfork_context, vfork_fd and vfork_fd_thread without arguments.
+Each program returns zero on success. The descriptor matrix runs nofork,
+vfork/_exit, inherited-byte, exec and CLOEXEC cases in one invocation. It locates
+itself through PROGDIR and argv[0]. waitpid uses bounded WNOHANG polling and logs
+errno immediately on failure. Byte and EOF checks run after child exit and after
+the parent closes its remaining writer.
+
+close_pipe_progress checks that closing a duplicate reader does not lock the
+table behind blocking pipe IO. A delayed direct-DOS writer releases the reader
+on the old lock implementation too.
+
+These tests do not qualify concurrent entry into the shared pretend-child CRT
+context, forced termination, process-tree cancellation or concurrent IO versus
+close of the same descriptor.
