@@ -376,7 +376,11 @@ int 	tcp_mssdflt = 1460;			  /* Ethernet MSS (1500 - 40) */
  * MSS to assume when a peer sends none (RFC 9293 section 3.7.1) and the most
  * to use towards a destination off the link with no path MTU known */
 int 	tcp_v6mssdflt = 1220;
-int 	tcp_rttdflt = TCPTV_SRTTDFLT / PR_SLOWHZ;
+int 	tcp_rttdflt = TCPTV_RTOBASE;	/* initial RTO, s (net.inet.tcp.rttdflt) */
+/* The retransmission timeout is never below this (ms; net.inet.tcp.rexmit_min).
+ * RFC 6298 section 2.4 says it SHOULD be at least 1 s; FreeBSD and Linux use
+ * about 200 ms, and so does this stack. */
+int	tcp_rexmit_min = TCPTV_REXMTMIN_MS;
 int	tcp_do_rfc1323 = 1;
 int	tcp_do_rfc1644 = 0;	/* T/TCP (RFC 1644) - off: Historic, RFC 6247 */
 int	tcp_do_sack = 1;	/* enable SACK (RFC 2018) */
@@ -646,16 +650,17 @@ struct inpcb *inp;
     tp->snd_ecn_recover = 0;
     tp->t_inpcb = inp;
     /*
-     * Init srtt to TCPTV_SRTTBASE (0), so we can tell that we have no
-     * rtt estimate.  Set rttvar so that srtt + 2 * rttvar gives
-     * reasonable initial retransmit time.
+     * No RTT estimate yet (srtt 0): the RTO is tcp_rttdflt, 1 s (RFC 6298
+     * section 2.1), until the first measurement. rttvar is seeded so that
+     * TCP_REXMTVAL() gives it, as in 4.4BSD and FreeBSD: a SYN that times
+     * out is then resent after 1, 2, 4 s... (section 5.5), not after the
+     * 200 ms floor.
      */
     tp->t_srtt = TCPTV_SRTTBASE;
-    tp->t_rttvar = tcp_rttdflt * PR_SLOWHZ << 2;
-    tp->t_rttmin = TCPTV_MIN;
-    TCPT_RANGESET(tp->t_rxtcur,
-                  ((TCPTV_SRTTBASE >> 2) + (TCPTV_SRTTDFLT << 2)) >> 1,
-                  TCPTV_MIN, TCPTV_REXMTMAX);
+    tp->t_rttvar = (tcp_rttdflt * 1000 << TCP_RTTVAR_SHIFT) / 4;
+    tp->t_rttmin = tcp_rexmit_min;
+    TCPT_RANGESET(tp->t_rxtcur, TCP_REXMTVAL(tp),
+                  tp->t_rttmin, TCPTV_REXMTMAX_MS);
     tp->snd_cwnd = TCP_MAXWIN << TCP_MAX_WINSHIFT;
     tp->snd_ssthresh = TCP_MAXWIN << TCP_MAX_WINSHIFT;
     /* Initialize congestion control algorithm */
@@ -748,8 +753,7 @@ register struct tcpcb *tp;
         register u_long i = 0;
 
         if((rt->rt_rmx.rmx_locks & RTV_RTT) == 0) {
-            i = tp->t_srtt *
-                (RTM_RTTUNIT / (PR_SLOWHZ * TCP_RTT_SCALE));
+            i = ((u_long)tp->t_srtt * (RTM_RTTUNIT / 1000)) >> TCP_RTT_SHIFT;
             if(rt->rt_rmx.rmx_rtt && i)
                 /*
                  * filter this update to half the old & half
@@ -763,8 +767,7 @@ register struct tcpcb *tp;
                 rt->rt_rmx.rmx_rtt = i;
         }
         if((rt->rt_rmx.rmx_locks & RTV_RTTVAR) == 0) {
-            i = tp->t_rttvar *
-                (RTM_RTTUNIT / (PR_SLOWHZ * TCP_RTTVAR_SCALE));
+            i = ((u_long)tp->t_rttvar * (RTM_RTTUNIT / 1000)) >> TCP_RTTVAR_SHIFT;
             if(rt->rt_rmx.rmx_rttvar && i)
                 rt->rt_rmx.rmx_rttvar =
                     (rt->rt_rmx.rmx_rttvar + i) / 2;
@@ -1001,7 +1004,7 @@ tcp_mtudisc(struct tcpcb *tp, u_int32_t mtu)
 {
     if(!tcp_setmtu(tp, mtu))
         return;
-    tp->t_rtt = 0;                  /* do not time the resent segment */
+    tp->t_rtttime = 0;              /* do not time the resent segment */
     tp->snd_nxt = tp->snd_una;
     (void)tcp_output(tp);
 }

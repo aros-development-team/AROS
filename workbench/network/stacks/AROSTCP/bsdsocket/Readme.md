@@ -282,16 +282,33 @@ computed without the key; Linux uses SipHash for the same values.
 
 ### 5.3 Timers
 
-`tcp_timer.c` runs the fast (200 ms) and slow (500 ms) timers driven from the daemon: retransmit
-(with exponential backoff), persist, keepalive, 2MSL/TIME-WAIT, and delayed-ACK. `tcp_slowtimo`
-also expires SYN-cache entries, and advances the ISS clock (`tcp_iss`, RFC 6528) and `tcp_now`
-every tick, whether or not there are connections: `tcp_now` is the timestamp clock (RFC 7323)
-and paces the IPv4 ICMP error rate limit (§7). A connection's TSval is `tcp_now` plus an offset of
-its own (`t_ts_offset`, RFC 7323 section 5.4), a keyed hash of its addresses and ports with a key
-that is not the ISN's, so that a TSval tells neither the time since the stack started nor how two
-connections relate; the SYN cache keeps it (`sc_tsoff`) for the connection it makes. Each connection's timers are counted down every tick, and its idle,
-duration and RTT clocks advanced; `tcp_timers()` hands the connection back, or NULL once a timer
-has closed it.
+`tcp_timer.c` runs the fast (`PR_FASTHZ`, nominally 50 ms; timer.device's `UNIT_VBLANK` makes it
+about 60) and slow (500 ms) timers driven from the daemon: retransmit (with exponential backoff),
+persist, keepalive, 2MSL/TIME-WAIT, and delayed-ACK. `tcp_slowtimo` also expires SYN-cache
+entries, and advances the ISS clock (`tcp_iss`, RFC 6528) and `tcp_now` every tick, whether or not
+there are connections: `tcp_now` paces the IPv4 ICMP error rate limit (§7), PAWS's idle age and the
+SYN cache. Each connection's slow timers are counted down every slow tick, and its idle and
+duration clocks advanced; `tcp_timers()` hands the connection back, or NULL once a timer has closed
+it.
+
+Round-trip times and the retransmission timeout are in milliseconds, on `tcp_ms()` (timer.device's
+`GetUpTime()`, monotonic). It is the timestamp clock (RFC 7323, 1 ms a tick, as FreeBSD's and
+Linux's): a connection's TSval is `tcp_ms()` plus an offset of its own (`t_ts_offset`, RFC 7323
+section 5.4), a keyed hash of its addresses and ports with a key that is not the ISN's, so that a
+TSval tells neither the time since the stack started nor how two connections relate; the SYN cache
+keeps it (`sc_tsoff`) for the connection it makes. An ACK that takes `snd_una` forward gives an RTT
+sample from the timestamp it echoes, or else from the segment being timed (`t_rtttime`, its send
+time; never a retransmitted one: Karn), the SYN's included. `tcp_xmit_timer()` keeps SRTT and RTTVAR
+as RFC 6298 section 2 and FreeBSD do (scaled by 32 and 16), and the RTO is `SRTT + max(G, 4 *
+RTTVAR)`, G the fast tick, between `net.inet.tcp.rexmit_min` (200 ms; RFC 6298 section 2.4 says it
+SHOULD be 1 s, FreeBSD and Linux use about 200 ms, and so does this stack) and 64 s, doubled on
+each timeout. Before the first sample it is `net.inet.tcp.rttdflt`, 1 s (section 2.1; 4.4BSD had
+6 s), and 3 s once a connection is established with no sample after its SYN or SYN-ACK was
+retransmitted (section 5.7); the SYN cache resends a SYN-ACK after 1, 2, 4 and 8 s. The
+retransmission timer is a deadline (`t_rexmt_at`) checked on every fast tick, so it fires within
+one after the RTO, never before. On the bench (`tests/tcp/rto_probe.py` in aros-matter) the RTO
+after a lost tail is 0.20-0.24 s at an RTT of 0.4 ms, 0.26 s at 200 ms and 0.56 s at 500 ms, where
+the 500 ms clock gave 1.2-2.4 s.
 
 The retransmission timer also detects a path MTU black hole (RFC 2923 section 2.1): a path that
 drops large packets without saying so, because the ICMP that would say so is filtered. After the 2nd

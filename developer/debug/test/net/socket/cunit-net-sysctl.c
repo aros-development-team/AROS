@@ -96,6 +96,35 @@ void testSYSCTL_PRR(void)
     CU_ASSERT_EQUAL(v, 0);
 }
 
+/* The least retransmission timeout, ms: 200 (as FreeBSD and Linux, below
+ * RFC 6298's 1 s); it takes 1000 and gives it back; not 0. */
+void testSYSCTL_REXMIT_MIN(void)
+{
+    LONG v = -1, n = 1000;
+
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_REXMIT_MIN, &v, NULL), 0);
+    CU_ASSERT_EQUAL(v, 200);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_REXMIT_MIN, &v, &n), 0);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_REXMIT_MIN, &v, NULL), 0);
+    CU_ASSERT_EQUAL(v, 1000);
+    n = 0;
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_REXMIT_MIN, &v, &n), EINVAL);
+    n = 200;
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_REXMIT_MIN, &v, &n), 0);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_REXMIT_MIN, &v, NULL), 0);
+    CU_ASSERT_EQUAL(v, 200);
+}
+
+/* The initial retransmission timeout, s: 1 (RFC 6298 section 2.1). */
+void testSYSCTL_RTTDFLT(void)
+{
+    LONG v = -1, n = 0;
+
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_RTTDFLT, &v, NULL), 0);
+    CU_ASSERT_EQUAL(v, 1);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_RTTDFLT, &v, &n), EINVAL);
+}
+
 /* A leaf that does not exist. */
 void testSYSCTL_UNKNOWN(void)
 {
@@ -130,6 +159,8 @@ int main(void)
         !CU_add_test(p, "net.inet.tcp.pmtud_blackhole", testSYSCTL_PMTUD_BLACKHOLE) ||
         !CU_add_test(p, "net.inet.tcp.ecn", testSYSCTL_ECN) ||
         !CU_add_test(p, "net.inet.tcp.prr", testSYSCTL_PRR) ||
+        !CU_add_test(p, "net.inet.tcp.rexmit_min", testSYSCTL_REXMIT_MIN) ||
+        !CU_add_test(p, "net.inet.tcp.rttdflt", testSYSCTL_RTTDFLT) ||
         !CU_add_test(p, "an unknown leaf is refused", testSYSCTL_UNKNOWN))
     {
         CU_cleanup_registry();

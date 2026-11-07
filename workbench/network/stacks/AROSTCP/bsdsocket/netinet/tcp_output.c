@@ -120,7 +120,7 @@ register struct tcpcb *tp;
      * to send, then transmit; otherwise, investigate further.
      */
     idle = (tp->snd_max == tp->snd_una);
-    if(idle && tp->t_idle >= tp->t_rxtcur) {
+    if(idle && tp->t_idle * TCP_SLOWHZ_MS >= tp->t_rxtcur) {
         /*
          * We have been idle for "a while" and no acks are
          * expected to clock out any data we send --
@@ -386,7 +386,7 @@ send:
 
         /* Form timestamp option as shown in appendix A of RFC 1323. */
         *lp++ = htonl(TCPOPT_TSTAMP_HDR);
-        *lp++ = htonl(tcp_now + tp->t_ts_offset);
+        *lp++ = htonl(tcp_ms() + tp->t_ts_offset);
         *lp   = htonl(tp->ts_recent);
         optlen += TCPOLEN_TSTAMP_APPA;
     }
@@ -779,8 +779,9 @@ skip_sack:
              * Time this transmission if not a retransmission and
              * not currently timing anything.
              */
-            if(tp->t_rtt == 0) {
-                tp->t_rtt = 1;
+            if(tp->t_rtttime == 0) {
+                if((tp->t_rtttime = tcp_ms()) == 0)
+                    tp->t_rtttime = 1;      /* 0 is "not timing" */
                 tp->t_rtseq = startseq;
                 tcpstat.tcps_segstimed++;
             }
@@ -789,14 +790,13 @@ skip_sack:
         /*
          * Set retransmit timer if not currently set,
          * and not doing an ack or a keep-alive probe.
-         * Initial value for retransmit timer is smoothed
-         * round-trip time + 2 * round-trip time variance.
+         * Its value is t_rxtcur (ms), on the fast timeout.
          * Initialize shift counter which is used for backoff
          * of retransmit time.
          */
         if(tp->t_timer[TCPT_REXMT] == 0 &&
                 tp->snd_nxt != tp->snd_una) {
-            tp->t_timer[TCPT_REXMT] = tp->t_rxtcur;
+            tp->t_timer[TCPT_REXMT] = TCPT_REXMT_ARM(tp);
             TCP_UTO_START(tp);      /* data waits for its ACK */
             if(tp->t_timer[TCPT_PERSIST]) {
                 tp->t_timer[TCPT_PERSIST] = 0;
@@ -941,7 +941,9 @@ void
 tcp_setpersist(tp)
 register struct tcpcb *tp;
 {
-    register int t = ((tp->t_srtt >> 2) + tp->t_rttvar) >> 1;
+    /* srtt + 2 * rttvar, in slow ticks: the persist timer runs on them */
+    register int t = TCP_MS_TO_STICKS((tp->t_srtt >> TCP_RTT_SHIFT) +
+                                      (tp->t_rttvar >> (TCP_RTTVAR_SHIFT - 1)));
 
     if(tp->t_timer[TCPT_REXMT])
         panic("tcp_output REXMT");

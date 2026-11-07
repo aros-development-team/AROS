@@ -159,6 +159,8 @@ tcp_sack_run(struct tcpcb *tp, tcp_seq seq, struct sackblk *b)
     return 0;
 }
 
+static void tcp_ack_rtt(struct tcpcb *, const struct tcpopt *, tcp_seq);
+
 /* Add b to the n blocks of nb, unless one starts where it does or nb is full. */
 static void
 tcp_sack_addblk(struct sackblk *nb, int *n, const struct sackblk *b)
@@ -1184,12 +1186,7 @@ findpcb:
                  * this is a pure ack for outstanding data.
                  */
                 ++tcpstat.tcps_predack;
-                if((to.to_flag & TOF_TS) != 0)
-                    tcp_xmit_timer(tp,
-                                   tcp_now + tp->t_ts_offset - to.to_tsecr + 1);
-                else if(tp->t_rtt &&
-                        SEQ_GT(ti->ti_ack, tp->t_rtseq))
-                    tcp_xmit_timer(tp, tp->t_rtt);
+                tcp_ack_rtt(tp, &to, ti->ti_ack);
                 acked = ti->ti_ack - tp->snd_una;
                 tcpstat.tcps_rcvackpack++;
                 tcpstat.tcps_rcvackbyte += acked;
@@ -1210,7 +1207,7 @@ findpcb:
                 if(tp->snd_una == tp->snd_max)
                     tp->t_timer[TCPT_REXMT] = 0;
                 else if(tp->t_timer[TCPT_PERSIST] == 0)
-                    tp->t_timer[TCPT_REXMT] = tp->t_rxtcur;
+                    tp->t_timer[TCPT_REXMT] = TCPT_REXMT_ARM(tp);
 
                 if(so->so_snd.sb_flags & SB_NOTIFY)
                     sowwakeup(so);
@@ -1372,6 +1369,8 @@ findpcb:
             tp->rcv_adv += tp->rcv_wnd;
             tp->snd_una++;		/* SYN is acked */
             TCP_UTO_PROGRESS(tp);   /* the SYN no longer waits */
+            tcp_ack_rtt(tp, &to, ti->ti_ack);   /* the SYN's RTT */
+            tcp_rto_after_syn(tp);
             /*
              * If there's data, delay ACK; if there's also a FIN
              * ACKNOW will be turned on later.
@@ -1762,6 +1761,7 @@ close:
                 taop->tao_cc == 0)
             taop->tao_cc = tp->cc_recv;
 
+        tcp_rto_after_syn(tp);
         /*
          * Make transitions:
          *      SYN-RECEIVED  -> ESTABLISHED
@@ -1864,7 +1864,7 @@ close:
                         !(tp->t_flagsext & TF_IN_FASTRECOV)) {
                     CC_ON_LOSS(tp);
                     tp->t_timer[TCPT_REXMT] = 0;
-                    tp->t_rtt = 0;
+                    tp->t_rtttime = 0;
                     /*
                      * NewReno (RFC 6582): record recovery point.
                      * We stay in fast recovery until all data
@@ -1966,7 +1966,7 @@ close:
 
                 tcpstat.tcps_newreno_partial++;
                 tp->t_timer[TCPT_REXMT] = 0;
-                tp->t_rtt = 0;
+                tp->t_rtttime = 0;
                 tp->snd_nxt = ti->ti_ack;
                 tp->snd_cwnd = tp->t_maxseg + acked_now;
                 tp->t_flags |= TF_ACKNOW;
@@ -2042,10 +2042,7 @@ process_ACK:
          * timer backoff (cf., Phil Karn's retransmit alg.).
          * Recompute the initial retransmit timer.
          */
-        if(to.to_flag & TOF_TS)
-            tcp_xmit_timer(tp, tcp_now + tp->t_ts_offset - to.to_tsecr + 1);
-        else if(tp->t_rtt && SEQ_GT(ti->ti_ack, tp->t_rtseq))
-            tcp_xmit_timer(tp, tp->t_rtt);
+        tcp_ack_rtt(tp, &to, ti->ti_ack);
 
         /*
          * If all outstanding data is acked, stop retransmit
@@ -2057,7 +2054,7 @@ process_ACK:
             tp->t_timer[TCPT_REXMT] = 0;
             needoutput = 1;
         } else if(tp->t_timer[TCPT_PERSIST] == 0)
-            tp->t_timer[TCPT_REXMT] = tp->t_rxtcur;
+            tp->t_timer[TCPT_REXMT] = TCPT_REXMT_ARM(tp);
 
         /*
          * If no data (only SYN) was ACK'd,
@@ -2143,7 +2140,7 @@ process_ACK:
                 if(tp->cc_recv != 0 &&
                         tp->t_duration < TCPTV_MSL)
                     tp->t_timer[TCPT_2MSL] =
-                        tp->t_rxtcur * TCPTV_TWTRUNC;
+                        TCP_MS_TO_STICKS(tp->t_rxtcur * TCPTV_TWTRUNC);
                 else
                     tp->t_timer[TCPT_2MSL] = 2 * TCPTV_MSL;
                 soisdisconnected(so);
@@ -2324,7 +2321,7 @@ dodata:							/* XXX */
             if(tp->cc_recv != 0 &&
                     tp->t_duration < TCPTV_MSL) {
                 tp->t_timer[TCPT_2MSL] =
-                    tp->t_rxtcur * TCPTV_TWTRUNC;
+                    TCP_MS_TO_STICKS(tp->t_rxtcur * TCPTV_TWTRUNC);
                 /* For transaction client, force ACK now. */
                 tp->t_flags |= TF_ACKNOW;
             } else
@@ -2630,67 +2627,76 @@ register struct mbuf *m;
 }
 
 /*
- * Collect new round-trip time estimate
- * and update averages and current timeout.
+ * The RTT sample an ACK that takes snd_una forward gives, in ms: from the
+ * timestamp it echoes (RFC 7323 section 4: any such ACK, retransmitted
+ * data included, as the echo names the segment), or else from the timed
+ * segment once it is acknowledged (never a retransmitted one: Karn).
+ */
+static void
+tcp_ack_rtt(struct tcpcb *tp, const struct tcpopt *to, tcp_seq ack)
+{
+    if((to->to_flag & TOF_TS) && to->to_tsecr != 0) {
+        int rtt = (int)(tcp_ms() + tp->t_ts_offset - to->to_tsecr);
+
+        if(rtt >= 0 && rtt <= TCPTV_REXMTMAX_MS) {
+            tcp_xmit_timer(tp, rtt);
+            return;
+        }
+    }
+    if(tp->t_rtttime && SEQ_GT(ack, tp->t_rtseq))
+        tcp_xmit_timer(tp, (int)(tcp_ms() - tp->t_rtttime));
+}
+
+/*
+ * A connection becomes established with no RTT measured after its SYN or
+ * SYN-ACK was retransmitted: its RTO is 3 s, not 1 s (RFC 6298 section
+ * 5.7), and no backoff carries over to its data.
  */
 void
-tcp_xmit_timer(tp, rtt)
-register struct tcpcb *tp;
-short rtt;
+tcp_rto_after_syn(struct tcpcb *tp)
 {
+    if(tp->t_srtt != 0 || tp->t_rxtshift == 0)
+        return;
+    tp->t_rttvar = (TCPTV_RTOSYN_MS << TCP_RTTVAR_SHIFT) / 4;
+    tp->t_rxtshift = 0;
+    TCPT_RANGESET(tp->t_rxtcur, TCP_REXMTVAL(tp),
+                  tp->t_rttmin, TCPTV_REXMTMAX_MS);
+}
+
+/*
+ * Collect new round-trip time estimate (rtt, ms) and update averages and
+ * current timeout, as RFC 6298 section 2 and FreeBSD's tcp_xmit_timer():
+ * srtt and rttvar are scaled (TCP_RTT_SHIFT, TCP_RTTVAR_SHIFT); the
+ * difference keeps TCP_DELTA_SHIFT bits of fraction.
+ */
+void
+tcp_xmit_timer(struct tcpcb *tp, int rtt)
+{
+    if(rtt < 1)
+        rtt = 1;
     tcpstat.tcps_rttupdated++;
     if(tp->t_srtt != 0) {
-        register short delta;
-        /*
-         * srtt is stored as fixed point with 3 bits after the
-         * binary point (i.e., scaled by 8).  The following magic
-         * is equivalent to the smoothing algorithm in rfc793 with
-         * an alpha of .875 (srtt = rtt/8 + srtt*7/8 in fixed
-         * point).  Adjust rtt to origin 0.
-         */
-        delta = rtt - 1 - (tp->t_srtt >> TCP_RTT_SHIFT);
+        /* srtt += (rtt - srtt) / 8 */
+        int delta = (rtt << TCP_DELTA_SHIFT)
+                - (tp->t_srtt >> (TCP_RTT_SHIFT - TCP_DELTA_SHIFT));
         if((tp->t_srtt += delta) <= 0)
             tp->t_srtt = 1;
-        /*
-         * We accumulate a smoothed rtt variance (actually, a
-         * smoothed mean difference), then set the retransmit
-         * timer to smoothed rtt + 4 times the smoothed variance.
-         * rttvar is stored as fixed point with 2 bits after the
-         * binary point (scaled by 4).  The following is
-         * equivalent to rfc793 smoothing with an alpha of .75
-         * (rttvar = rttvar*3/4 + |delta| / 4).  This replaces
-         * rfc793's wired-in beta.
-         */
+        /* rttvar += (|rtt - srtt| - rttvar) / 4 */
         if(delta < 0)
             delta = -delta;
-        delta -= (tp->t_rttvar >> TCP_RTTVAR_SHIFT);
+        delta -= tp->t_rttvar >> (TCP_RTTVAR_SHIFT - TCP_DELTA_SHIFT);
         if((tp->t_rttvar += delta) <= 0)
             tp->t_rttvar = 1;
     } else {
-        /*
-         * No rtt measurement yet - use the unsmoothed rtt.
-         * Set the variance to half the rtt (so our first
-         * retransmit happens at 3*rtt).
-         */
+        /* the first measurement: srtt = rtt, rttvar = rtt / 2 */
         tp->t_srtt = rtt << TCP_RTT_SHIFT;
         tp->t_rttvar = rtt << (TCP_RTTVAR_SHIFT - 1);
     }
-    tp->t_rtt = 0;
+    tp->t_rtttime = 0;
     tp->t_rxtshift = 0;
 
-    /*
-     * the retransmit should happen at rtt + 4 * rttvar.
-     * Because of the way we do the smoothing, srtt and rttvar
-     * will each average +1/2 tick of bias.  When we compute
-     * the retransmit timer, we want 1/2 tick of rounding and
-     * 1 extra tick because of +-1/2 tick uncertainty in the
-     * firing of the timer.  The bias will give us exactly the
-     * 1.5 tick we need.  But, because the bias is
-     * statistical, we have to test that we don't drop below
-     * the minimum feasible timer (which is 2 ticks).
-     */
     TCPT_RANGESET(tp->t_rxtcur, TCP_REXMTVAL(tp),
-                  tp->t_rttmin, TCPTV_REXMTMAX);
+                  tp->t_rttmin, TCPTV_REXMTMAX_MS);
 
     /*
      * We received an ack for a packet that wasn't retransmitted;
@@ -2818,7 +2824,7 @@ int offer;
     /*
      * While we're here, check if there's an initial rtt
      * or rttvar.  Convert from the route-table units
-     * to scaled multiples of the slow timeout timer.
+     * (microseconds) to scaled milliseconds.
      */
     if(tp->t_srtt == 0 && (rtt = rt->rt_rmx.rmx_rtt)) {
         /*
@@ -2826,18 +2832,17 @@ int offer;
          * is also a minimum value; this is subject to time.
          */
         if(rt->rt_rmx.rmx_locks & RTV_RTT)
-            tp->t_rttmin = rtt / (RTM_RTTUNIT / PR_SLOWHZ);
-        tp->t_srtt = rtt / (RTM_RTTUNIT / (PR_SLOWHZ * TCP_RTT_SCALE));
+            tp->t_rttmin = rtt / (RTM_RTTUNIT / 1000);
+        tp->t_srtt = rtt * TCP_RTT_SCALE / (RTM_RTTUNIT / 1000);
         if(rt->rt_rmx.rmx_rttvar)
-            tp->t_rttvar = rt->rt_rmx.rmx_rttvar /
-                           (RTM_RTTUNIT / (PR_SLOWHZ * TCP_RTTVAR_SCALE));
+            tp->t_rttvar = rt->rt_rmx.rmx_rttvar * TCP_RTTVAR_SCALE /
+                           (RTM_RTTUNIT / 1000);
         else
             /* default variation is +- 1 rtt */
             tp->t_rttvar =
                 tp->t_srtt * TCP_RTTVAR_SCALE / TCP_RTT_SCALE;
-        TCPT_RANGESET(tp->t_rxtcur,
-                      ((tp->t_srtt >> 2) + tp->t_rttvar) >> 1,
-                      tp->t_rttmin, TCPTV_REXMTMAX);
+        TCPT_RANGESET(tp->t_rxtcur, TCP_REXMTVAL(tp),
+                      tp->t_rttmin, TCPTV_REXMTMAX_MS);
     }
     /*
      * if there's an mtu associated with the route, use it

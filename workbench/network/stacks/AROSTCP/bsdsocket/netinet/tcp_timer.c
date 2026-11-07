@@ -77,20 +77,47 @@ int	tcp_maxidle;
 void tcp_pmtud_blackhole(struct tcpcb *);   /* tcp_subr.c */
 
 /*
- * Fast timeout routine for processing delayed acks
+ * Milliseconds on the monotonic clock (timer.device's GetUpTime()), modulo
+ * 2^32: compare two of them by their difference only. The clock of the
+ * timestamps (RFC 7323 section 5.4, as FreeBSD's tcp_ts_getticks()) and
+ * of the RTT samples.
+ */
+u_int32_t
+tcp_ms(void)
+{
+    struct timeval tv;
+
+    GetUpTime(&tv);
+    return (u_int32_t)tv.tv_sec * 1000 + (u_int32_t)tv.tv_usec / 1000;
+}
+
+/*
+ * Fast timeout routine, every fast tick: the retransmission timers whose
+ * deadline has come (so that the RTO is not rounded to the 500 ms of the
+ * slow one), then the delayed ACKs.
  */
 void
 tcp_fasttimo()
 {
-    register struct inpcb *inp;
+    register struct inpcb *inp, *inpnxt;
     register struct tcpcb *tp;
     int s;
 
-    s = splnet();
+    u_int32_t now;
 
-    for(inp = tcb.lh_first; inp != NULL; inp = inp->inp_list.le_next) {
-        if((tp = (struct tcpcb *)inp->inp_ppcb) &&
-                (tp->t_flags & TF_DELACK)) {
+    s = splnet();
+    now = tcp_ms();
+
+    for(inp = tcb.lh_first; inp != NULL; inp = inpnxt) {
+        inpnxt = inp->inp_list.le_next;
+        if((tp = (struct tcpcb *)inp->inp_ppcb) == NULL)
+            continue;
+        if(tp->t_timer[TCPT_REXMT] && (int)(now - tp->t_rexmt_at) >= 0) {
+            tp->t_timer[TCPT_REXMT] = 0;
+            if((tp = tcp_timers(tp, TCPT_REXMT)) == NULL)
+                continue;       /* dropped */
+        }
+        if(tp->t_flags & TF_DELACK) {
             tp->t_flags &= ~TF_DELACK;
             tp->t_flags |= TF_ACKNOW;
             tcpstat.tcps_delack++;
@@ -157,6 +184,8 @@ tcp_slowtimo()
          * speed.)
          */
         for(i = 0; i < TCPT_NTIMERS; i++) {
+            if(i == TCPT_REXMT)
+                continue;           /* on the fast timeout */
             if(tp->t_timer[i] && --tp->t_timer[i] == 0) {
                 if((tp = tcp_timers(tp, i)) == NULL)
                     goto tpgone;
@@ -165,8 +194,6 @@ tcp_slowtimo()
         if(tp->t_idle < 32767)      /* a short: saturate, never wrap */
             tp->t_idle++;
         tp->t_duration++;
-        if(tp->t_rtt)
-            tp->t_rtt++;
 tpgone:
         ;
     }
@@ -247,8 +274,8 @@ int timer;
         tcpstat.tcps_rexmttimeo++;
         rexmt = TCP_REXMTVAL(tp) * tcp_backoff[tp->t_rxtshift];
         TCPT_RANGESET(tp->t_rxtcur, rexmt,
-                      tp->t_rttmin, TCPTV_REXMTMAX);
-        tp->t_timer[TCPT_REXMT] = tp->t_rxtcur;
+                      tp->t_rttmin, TCPTV_REXMTMAX_MS);
+        tp->t_timer[TCPT_REXMT] = TCPT_REXMT_ARM(tp);
         tcp_pmtud_blackhole(tp);    /* before CC_ON_RTO() sizes cwnd */
         /*
          * If losing, let the lower level know and try for
@@ -260,7 +287,8 @@ int timer;
          */
         if(tp->t_rxtshift > TCP_MAXRXTSHIFT / 4) {
             in_losing(tp->t_inpcb);
-            tp->t_rttvar += (tp->t_srtt >> TCP_RTT_SHIFT);
+            /* rttvar takes srtt / 4, in its scale: the RTO stays */
+            tp->t_rttvar += tp->t_srtt >> (TCP_RTT_SHIFT - TCP_RTTVAR_SHIFT + 2);
             tp->t_srtt = 0;
         }
         tp->snd_nxt = tp->snd_una;
@@ -271,7 +299,7 @@ int timer;
         /*
          * If timing a segment in this window, stop the timer.
          */
-        tp->t_rtt = 0;
+        tp->t_rtttime = 0;
         /*
          * Close the congestion window down to one segment
          * (we'll open it by one segment for each ack we get).

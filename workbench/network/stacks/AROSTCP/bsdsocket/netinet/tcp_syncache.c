@@ -139,7 +139,9 @@ struct syncache_bucket {
 #define SYNCACHE_HASHSIZE	512	/* number of buckets (power of two) */
 #define SYNCACHE_BUCKETLIMIT	30	/* max entries per bucket */
 #define SYNCACHE_MAXREXMTS	3	/* SYN-ACK retransmits before giving up */
-#define SYNCACHE_RXTBASE	6	/* base retransmit interval (slow ticks) */
+/* base retransmit interval (slow ticks): the initial RTO, 1 s (RFC 6298
+ * section 2.1), doubled for each retransmission, as FreeBSD's */
+#define SYNCACHE_RXTBASE	(TCPTV_RTOBASE * PR_SLOWHZ)
 #define SYNCOOKIE_PAUSE		30	/* cookie-only window after overflow */
 
 static struct syncache_bucket	*tcp_syncache_tbl;
@@ -338,7 +340,7 @@ syncache_respond(struct syncache *sc)
     if (sc->sc_flags & SCF_TIMESTAMP) {
         u_int32_t *lp = (u_int32_t *)(opt + optlen);
         *lp++ = htonl(TCPOPT_TSTAMP_HDR);
-        *lp++ = htonl(tcp_now + sc->sc_tsoff);
+        *lp++ = htonl(tcp_ms() + sc->sc_tsoff);
         *lp = htonl(sc->sc_ts_recent);
         optlen += TCPOLEN_TSTAMP_APPA;
     }
@@ -560,7 +562,7 @@ syncache_add(struct socket *lso, struct tcpiphdr *ti,
     syncache_fill(sc, lso, &key, ti, peer_mss, scflags, s_scale, ts);
     sc->sc_iss = (tcp_seq)tcp_iss + tcp_conn_hash(tcp_secret_key, TCPH_ISN,
         SCK_HASHADDRS(&key), key.lport, key.fport, 0);
-    sc->sc_rxttick = tcp_now + SYNCACHE_RXTBASE;
+    sc->sc_rxttick = tcp_now + 1 + SYNCACHE_RXTBASE;   /* a tick more: never early */
 
     LIST_INSERT_HEAD(&sch->sch_bucket, sc, sc_hash);
     sch->sch_length++;
@@ -694,6 +696,12 @@ syncache_socket(struct syncache *sc, struct socket *lso, struct tcpiphdr *ti)
 
     /* Compute t_maxseg/t_maxopd (and the initial window) from the peer MSS. */
     tcp_mss(tp, sc->sc_peer_mss);
+
+    /* a SYN-ACK retransmitted: 3 s until an RTT is measured (RFC 6298 5.7) */
+    if (sc->sc_rxmits > 0) {
+        tp->t_rxtshift = 1;
+        tcp_rto_after_syn(tp);
+    }
 
     /* the listening socket's keepalive values (as FreeBSD's syncache) and
      * user timeout */
@@ -856,7 +864,7 @@ syncache_timer(void)
             }
             sc->sc_rxmits++;
             sc->sc_rxttick = tcp_now +
-                (SYNCACHE_RXTBASE << sc->sc_rxmits);
+                1 + (SYNCACHE_RXTBASE << sc->sc_rxmits);
             tcpstat.tcps_sc_retransmitted++;
             (void) syncache_respond(sc);
         }

@@ -540,7 +540,7 @@ struct mbuf *nam;
  * its struct tcp_info (Linux's names and order). Times are in
  * microseconds; the fields this stack does not keep stay 0.
  */
-#define TCP_TICK_USEC   (1000000 / PR_SLOWHZ)
+#define TCP_TICK_USEC   (1000000 / PR_SLOWHZ)      /* t_idle counts slow ticks */
 
 static void
 tcp_fill_info(const struct tcpcb *tp, struct tcp_info *ti)
@@ -559,10 +559,10 @@ tcp_fill_info(const struct tcpcb *tp, struct tcp_info *ti)
     if(tp->t_flagsext & TF_ECN_PERMIT)
         ti->tcpi_options |= TCPI_OPT_ECN;
 
-    ti->tcpi_rto = (u_int32_t)tp->t_rxtcur * TCP_TICK_USEC;
+    ti->tcpi_rto = (u_int32_t)tp->t_rxtcur * 1000;
     ti->tcpi_last_data_recv = (u_int32_t)tp->t_idle * TCP_TICK_USEC;
-    ti->tcpi_rtt = ((u_int32_t)tp->t_srtt * TCP_TICK_USEC) >> TCP_RTT_SHIFT;
-    ti->tcpi_rttvar = ((u_int32_t)tp->t_rttvar * TCP_TICK_USEC) >> TCP_RTTVAR_SHIFT;
+    ti->tcpi_rtt = ((u_int32_t)tp->t_srtt * 1000) >> TCP_RTT_SHIFT;
+    ti->tcpi_rttvar = ((u_int32_t)tp->t_rttvar * 1000) >> TCP_RTTVAR_SHIFT;
     ti->tcpi_snd_ssthresh = tp->snd_ssthresh;
     ti->tcpi_snd_cwnd = tp->snd_cwnd;
     ti->tcpi_snd_mss = tp->t_maxseg;
@@ -920,8 +920,26 @@ size_t newlen;
     case TCPCTL_STATS:
         return (sysctl_rdstruct(oldp, oldlenp, newp, &tcpstat,
                                 sizeof tcpstat));
-    case TCPCTL_RTTDFLT:
-        return (sysctl_int(oldp, oldlenp, newp, newlen, &tcp_rttdflt));
+    case TCPCTL_RTTDFLT: {          /* the initial RTO, s */
+        int v = tcp_rttdflt, error;
+
+        error = sysctl_int(oldp, oldlenp, newp, newlen, &v);
+        if(error == 0 && (v < 1 || v * 1000 > TCPTV_REXMTMAX_MS))
+            error = EINVAL;
+        if(error == 0)
+            tcp_rttdflt = v;
+        return (error);
+    }
+    case TCPCTL_REXMIT_MIN: {       /* the least RTO, ms */
+        int v = tcp_rexmit_min, error;
+
+        error = sysctl_int(oldp, oldlenp, newp, newlen, &v);
+        if(error == 0 && (v < 1 || v > TCPTV_REXMTMAX_MS))
+            error = EINVAL;
+        if(error == 0)
+            tcp_rexmit_min = v;
+        return (error);
+    }
     case TCPCTL_KEEPIDLE:
         return (sysctl_int(oldp, oldlenp, newp, newlen,
                            &tcp_keepidle));
