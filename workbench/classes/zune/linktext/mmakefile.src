@@ -1,0 +1,20 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS := $(PARANOIA_CFLAGS)
+USER_LDFLAGS := -static
+
+FILES         := linktext linktext_core
+INCLUDE_FILES := linktext.h
+
+#MM- workbench-classes-zune : workbench-classes-zune-linktext
+#MM workbench-classes-zune-linktext : includes
+
+%build_module \
+    mmake=workbench-classes-zune-linktext \
+    modname=Linktext modtype=mcc \
+    conffile=linktext.conf uselibs=stdc
+
+%copy_includes path=zune
+
+%common
+%include_deps
