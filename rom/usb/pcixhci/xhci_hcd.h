@@ -292,6 +292,8 @@ struct pciusbXHCIIODevPrivate {
     ULONG                               dpBounceLen;
     UWORD                               dpBounceDir;
     UBYTE                               dpCC;
+    UBYTE                               dpAbort;                                    // abandoned: the event task retires it
+    UWORD                               dpRetireTries;
 };
 
 /* Misc Stuff */
