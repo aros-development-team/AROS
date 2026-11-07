@@ -112,6 +112,8 @@
 #include <net/route_protos.h>
 #include <netinet/in_protos.h>
 
+#include <time.h>               /* timespec_get() */
+
 #define	SA(p) ((struct sockaddr *)(p))
 
 extern struct	rtstat	rtstat;
@@ -758,7 +760,7 @@ struct ifaddr *ifa;
 
 static struct {
     struct rtentry *rt;         /* NULL: free */
-    u_long expire;              /* seconds (GetSysTime()) */
+    u_long expire;              /* seconds (GetUpTime()) */
     u_long old_mtu;             /* the route's MTU before */
     int added;                  /* the host route was added for the MTU */
 } pmtu_routes[PMTU_ROUTES];
@@ -768,8 +770,45 @@ pmtu_now(void)
 {
     struct timeval tv;
 
-    GetSysTime(&tv);
+    GetUpTime(&tv);
     return tv.tv_sec;
+}
+
+/*
+ * A route's rmx_expire is kept on the monotonic clock, GetUpTime(), so
+ * that setting the system time does not end it early or keep it longer,
+ * as FreeBSD keeps it on time_uptime. Applications see and give it as in
+ * BSD, as a time of day: seconds since 1970 in UTC, what time() returns.
+ * rt_expire_out() and rt_expire_in() convert at the routing socket and
+ * GetRouteInfo(); 0, no expiry, stays 0.
+ */
+static long
+rt_clock_offset(void)           /* time of day minus uptime, in seconds */
+{
+    struct timespec ts;
+    struct timeval up;
+
+    GetUpTime(&up);
+    if(timespec_get(&ts, TIME_UTC) != TIME_UTC)
+        return 0;
+    return (long)ts.tv_sec - (long)up.tv_sec;
+}
+
+u_long
+rt_expire_out(u_long expire)
+{
+    return expire ? expire + rt_clock_offset() : 0;
+}
+
+u_long
+rt_expire_in(u_long expire)
+{
+    long up;
+
+    if(expire == 0)
+        return 0;
+    up = (long)expire - rt_clock_offset();
+    return up > 0 ? (u_long)up : 1;     /* already past: expired */
 }
 
 /* Give the route back its MTU, or delete it if it was added for it. */

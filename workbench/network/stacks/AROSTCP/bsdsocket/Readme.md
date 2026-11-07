@@ -659,6 +659,12 @@ says when), then the larger one is tried again (RFC 8201 section 4): `rt_pmtu_ti
 The routes are held, with a reference, in a table of 32 (`pmtu_routes[]`, `net/route.c`, shared with
 IPv4 - §7); when it is full the one closest to expiring gives way.
 
+A route's `rmx_expire` is kept on the monotonic clock (`GetUpTime()`), as FreeBSD keeps it on
+`time_uptime`, so setting the system time does not give a path MTU back early or keep it longer. The
+routing socket (`RTM_GET`, the `NET_RT_DUMP` sysctl, `RTV_EXPIRE` in `RTM_ADD`/`RTM_CHANGE`) and
+`GetRouteInfo()` give and take it as BSD does, as a time of day: seconds since 1970 in UTC, what
+`time()` returns (`rt_expire_out()`, `rt_expire_in()`); `ip route` shows what is left of it.
+
 The other ICMPv6 errors (Destination Unreachable, Time Exceeded, Parameter Problem) go to the
 upper-layer protocol of the packet they quote, as in KAME: `icmp6_notify_error()` copies out the
 quoted IPv6 header and ports and calls that protocol's `pr_ctlinput` (`udp6_ctlinput`,

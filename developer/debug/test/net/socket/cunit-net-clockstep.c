@@ -10,7 +10,10 @@
     - an address made by stateless autoconfiguration (RFC 4862), and its
       prefix;
     - a route from a Route Information Option (RFC 4191);
-    - a DNS server from an RDNSS option (RFC 8106).
+    - a DNS server from an RDNSS option (RFC 8106);
+    - a path MTU an ICMPv6 Packet Too Big lowered (RFC 8201).
+    Applications see and give a route's expiry as a time of day, as in
+    BSD; one given reads back as it was.
 
     The Router Advertisements go to the interface's own link-local address,
     router lifetime 0, as cunit-net-slaac6, cunit-net-rio6 and
@@ -31,7 +34,9 @@
 #include <net/if.h>
 #include <net/route.h>
 #include <netinet/in_var.h>
+#include <netinet/ip6.h>
 #include <netinet/icmp6.h>
+#include <time.h>
 
 struct Library *SocketBase = NULL;
 struct Device *TimerBase = NULL;
@@ -342,6 +347,79 @@ static int no_route(const char *dst)
     return route_get(dst, &gw, NULL) == 0;
 }
 
+/* A Packet Too Big reporting mtu, quoting a UDP datagram from ::1 to dst,
+ * sent to ::1, as cunit-net-pmtu6 sends it. */
+static int send_ptb(const char *dst, unsigned mtu)
+{
+    unsigned char pkt[8 + 40 + 8];
+    struct icmp6_hdr *h = (struct icmp6_hdr *)pkt;
+    struct ip6_hdr *ip6 = (struct ip6_hdr *)(pkt + 8);
+    struct in6_addr lo = IN6ADDR_LOOPBACK_INIT;
+    struct sockaddr_in6 d;
+    int s = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6), r;
+
+    if (s < 0)
+        return -1;
+    bzero(pkt, sizeof(pkt));
+    h->icmp6_type = ICMP6_PACKET_TOO_BIG;
+    h->icmp6_mtu = htonl(mtu);
+    ip6->ip6_vfc = IPV6_VERSION;
+    ip6->ip6_plen = htons(8);
+    ip6->ip6_nxt = IPPROTO_UDP;
+    ip6->ip6_hlim = 64;
+    ip6->ip6_src = lo;
+    inet_pton(AF_INET6, (char *)dst, &ip6->ip6_dst);
+    bzero(&d, sizeof(d));
+    d.sin6_len = sizeof(d);
+    d.sin6_family = AF_INET6;
+    d.sin6_addr = lo;
+    r = sendto(s, (char *)pkt, sizeof(pkt), 0, (struct sockaddr *)&d, sizeof(d));
+    CloseSocket(s);
+    Delay(10);
+    return r;
+}
+
+/* Add (RTM_ADD) or delete a host route to dst through our link-local
+ * address; with expire, that expiry (RTV_EXPIRE). */
+static int host_route(int type, const char *dst, u_long expire)
+{
+    long buf[512 / sizeof(long)];
+    struct rt_msghdr *h = (struct rt_msghdr *)buf;
+    struct sockaddr_in6 *sa;
+    char *p;
+    int s, r;
+
+    s = socket(PF_ROUTE, SOCK_RAW, 0);
+    if (s < 0)
+        return -1;
+    bzero(buf, sizeof(buf));
+    h->rtm_version = RTM_VERSION;
+    h->rtm_type = type;
+    h->rtm_flags = RTF_UP | RTF_GATEWAY | RTF_HOST | RTF_STATIC;
+    h->rtm_addrs = RTA_DST | RTA_GATEWAY;
+    h->rtm_seq = 1;
+    if (expire) {
+        h->rtm_inits = RTV_EXPIRE;
+        h->rtm_rmx.rmx_expire = expire;
+    }
+    p = (char *)(h + 1);
+    sa = (struct sockaddr_in6 *)p;
+    sa->sin6_len = sizeof(*sa);
+    sa->sin6_family = AF_INET6;
+    inet_pton(AF_INET6, (char *)dst, &sa->sin6_addr);
+    p += ROUNDUP(sizeof(*sa));
+    sa = (struct sockaddr_in6 *)p;
+    sa->sin6_len = sizeof(*sa);
+    sa->sin6_family = AF_INET6;
+    sa->sin6_addr = linklocal;
+    sa->sin6_scope_id = ifindex;
+    p += ROUNDUP(sizeof(*sa));
+    h->rtm_msglen = p - (char *)buf;
+    r = send(s, (char *)buf, h->rtm_msglen, 0);
+    CloseSocket(s);
+    return r < 0 ? -1 : 0;
+}
+
 /* Wait up to secs for dst to have no route. */
 static int wait_no_route(const char *dst, int secs)
 {
@@ -452,6 +530,38 @@ void testCLOCKSTEP_RDNSS_FORWARD(void)
     send_rdnss(0);
 }
 
+/* A path MTU lowered for 600 s is still lowered after the clock goes a day
+ * on (RFC 8201 section 4: kept at least 5 minutes). */
+void testCLOCKSTEP_PMTU_FORWARD(void)
+{
+    struct rt_msghdr rtm;
+    struct in6_addr gw;
+    NEED_IF();
+    CU_ASSERT_EQUAL(send_rio("2001:db8:4d54:54::", 600), 0);
+    CU_ASSERT_FATAL(via_us("2001:db8:4d54:54::1"));
+    CU_ASSERT(send_ptb("2001:db8:4d54:54::1", 1400) > 0);
+    CU_ASSERT_FATAL(route_get("2001:db8:4d54:54::1", &gw, &rtm) == 1);
+    CU_ASSERT_EQUAL_FATAL(rtm.rtm_rmx.rmx_mtu, 1400);
+    CU_ASSERT_EQUAL_FATAL(clock_step(DAY), 0);
+    Delay(2 * TICKS_PER_SECOND);
+    CU_ASSERT(route_get("2001:db8:4d54:54::1", &gw, &rtm) == 1 && rtm.rtm_rmx.rmx_mtu == 1400);
+    clock_restore();
+    send_rio("2001:db8:4d54:54::", 0);
+}
+
+/* An expiry given to a route, a time of day, reads back as it was. */
+void testCLOCKSTEP_EXPIRE_GIVEN(void)
+{
+    struct rt_msghdr rtm;
+    struct in6_addr gw;
+    u_long t = (u_long)time(NULL) + 1000;
+    NEED_IF();
+    CU_ASSERT_EQUAL_FATAL(host_route(RTM_ADD, "2001:db8:4d54:55::1", t), 0);
+    CU_ASSERT_FATAL(route_get("2001:db8:4d54:55::1", &gw, &rtm) == 1);
+    CU_ASSERT(rtm.rtm_rmx.rmx_expire + 1 >= t && rtm.rtm_rmx.rmx_expire <= t + 1);
+    host_route(RTM_DELETE, "2001:db8:4d54:55::1", 0);
+}
+
 /* -------------------------------------------------------------------- main */
 
 int main(int argc, char **argv)
@@ -495,7 +605,9 @@ int main(int argc, char **argv)
         !CU_add_test(p, "an address ends on time after a step back", testCLOCKSTEP_ADDR_BACK) ||
         !CU_add_test(p, "an RIO route outlives a step forward", testCLOCKSTEP_ROUTE_FORWARD) ||
         !CU_add_test(p, "an RIO route ends on time after a step back", testCLOCKSTEP_ROUTE_BACK) ||
-        !CU_add_test(p, "an RDNSS server outlives a step forward", testCLOCKSTEP_RDNSS_FORWARD))
+        !CU_add_test(p, "an RDNSS server outlives a step forward", testCLOCKSTEP_RDNSS_FORWARD) ||
+        !CU_add_test(p, "a path MTU outlives a step forward", testCLOCKSTEP_PMTU_FORWARD) ||
+        !CU_add_test(p, "a route's expiry reads back as given", testCLOCKSTEP_EXPIRE_GIVEN))
     {
         CU_cleanup_registry();
         goto out;
