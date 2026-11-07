@@ -13,7 +13,7 @@
 #include <linux/list.h>
 #include <linux/uuid.h>
 
-/* no ACPI on this platform: every query answers "absent" */
+/* ACPI tables are available; the namespace (methods, devices) is not yet */
 typedef void *acpi_handle;
 typedef u32 acpi_status;
 typedef u64 acpi_size;
@@ -54,7 +54,17 @@ union acpi_object {
 };
 struct acpi_device { struct device dev; acpi_handle handle; };
 struct acpi_bus_event { char device_class[20]; char bus_id[15]; u32 type; u32 data; };
-struct acpi_table_header;
+struct acpi_table_header {
+    char signature[4];
+    u32 length;
+    u8 revision;
+    u8 checksum;
+    char oem_id[6];
+    char oem_table_id[8];
+    u32 oem_revision;
+    char asl_compiler_id[4];
+    u32 asl_compiler_revision;
+} __attribute__((packed));
 struct notifier_block;
 typedef u32 (*acpi_osd_handler)(void *context);
 typedef void (*acpi_notify_handler)(acpi_handle handle, u32 event, void *data);
@@ -68,7 +78,12 @@ static inline bool acpi_check_dsm(acpi_handle h, const void *g, u64 rev, u64 fun
 static inline acpi_status acpi_get_handle(acpi_handle p, const char *pathname, acpi_handle *ret) { return AE_NOT_FOUND; }
 static inline acpi_status acpi_get_name(acpi_handle h, u32 t, struct acpi_buffer *b) { return AE_NOT_FOUND; }
 static inline acpi_status acpi_get_next_object(acpi_object_type t, acpi_handle p, acpi_handle c, acpi_handle *r) { return AE_NOT_FOUND; }
-static inline acpi_status acpi_get_table(char *sig, u32 inst, struct acpi_table_header **t) { return AE_NOT_FOUND; }
+/* firmware tables are real: the hidd fetches them from acpica.library */
+int amdgpu_aros_acpi_get_table(const char *sig, unsigned int instance, void **table);
+static inline acpi_status acpi_get_table(char *sig, u32 inst, struct acpi_table_header **t)
+{
+    return amdgpu_aros_acpi_get_table(sig, inst, (void **)t) ? AE_NOT_FOUND : AE_OK;
+}
 static inline void acpi_put_table(struct acpi_table_header *t) { }
 static inline int register_acpi_notifier(struct notifier_block *nb) { return 0; }
 static inline int unregister_acpi_notifier(struct notifier_block *nb) { return 0; }
