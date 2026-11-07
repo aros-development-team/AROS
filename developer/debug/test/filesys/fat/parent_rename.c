@@ -107,7 +107,7 @@ int main(void)
     args = ReadArgs((CONST_STRPTR)"ROOT/A,BASELINE/S", options, NULL);
     if (!args) { me->pr_WindowPtr = oldwindow; return RETURN_ERROR; }
     prefix = (const char *)options[0]; baseline = options[1] != 0;
-    for (n = 0; prefix[n] && n < 200; ++n)
+    for (n = 0; n < 200 && prefix[n]; ++n)
         if (prefix[n] == '/' || (prefix[n] == ':' && n == 0)) break;
     if (!prefix[n] && n > 2 && prefix[n-1] != ':')
     {
