@@ -45,6 +45,15 @@
 #define ND6_LLINFO_PROBE	4	/* sending unicast NS probes */
 
 /*
+ * The times kept below in seconds (expire, preferred, probed, the RS and
+ * DAD timers) are on the monotonic clock, timer.device's GetUpTime(), as
+ * FreeBSD's are on time_uptime: setting the system time does not end a
+ * lifetime early or make it last longer. The addresses' lifetimes
+ * (in6_ifaddr) and the servers and domains of RA options (amiga_netdb.c)
+ * are on the same clock.
+ */
+
+/*
  * Neighbor cache entry (llinfo_nd6).
  * One per neighbor, linked in a doubly-linked list with sentinel.
  */

@@ -401,7 +401,7 @@ nd6_lookup(struct in6_addr *dst, int create, struct ifnet *ifp)
                 sdl->sdl_alen  = 0;
             }
             nd6_hold_free(ln, 0);
-            GetSysTime(&_tv);
+            GetUpTime(&_tv);
             ln->ln_state  = ND6_LLINFO_NOSTATE;
             ln->ln_asked  = 0;
             ln->ln_router = 0;
@@ -574,7 +574,7 @@ nd6_cache_lladdr(struct ifnet *ifp, struct in6_addr *from,
     }
 
     /* state transitions based on RFC 4861 */
-    GetSysTime(&_tv);
+    GetUpTime(&_tv);
 
     if(ln->ln_state == ND6_LLINFO_INCOMPLETE) {
         if(do_update) {
@@ -670,7 +670,7 @@ nd6_resolve_neighbor(struct ifnet *ifp, struct rtentry *rt, struct mbuf *m,
                 /* trigger NUD: STALE → DELAY on data traffic */
                 if(ln->ln_state == ND6_LLINFO_STALE) {
                     struct timeval _tv;
-                    GetSysTime(&_tv);
+                    GetUpTime(&_tv);
                     ln->ln_state = ND6_LLINFO_DELAY;
                     ln->ln_expire = _tv.tv_sec +
                                     ND6_DELAY_FIRST_PROBE_TIME;
@@ -751,7 +751,7 @@ nd6_nud_hint(struct rtentry *rt)
     if(ln->ln_state != ND6_LLINFO_REACHABLE &&
             ln->ln_state != ND6_LLINFO_INCOMPLETE &&
             ln->ln_state != ND6_LLINFO_NOSTATE) {
-        GetSysTime(&_tv);
+        GetUpTime(&_tv);
         ln->ln_state  = ND6_LLINFO_REACHABLE;
         ln->ln_expire = _tv.tv_sec + ND6_REACHABLE_TIME / 1000;
     }
@@ -836,7 +836,7 @@ nd6_timer(void *arg)
     long now;
     static int nd6_timer_ticks = 0;
 
-    GetSysTime(&_tv);
+    GetUpTime(&_tv);
     now = _tv.tv_sec;
 
     nd6_timer_ticks++;
@@ -1062,7 +1062,7 @@ nd6_rtrequest(int req, struct rtentry *rt, struct sockaddr *sa)
             gate = rt->rt_gateway;
             if(ln) {
                 struct timeval _tv;
-                GetSysTime(&_tv);
+                GetUpTime(&_tv);
                 ln->ln_expire = _tv.tv_sec ? _tv.tv_sec : 1;
             }
             if(rt->rt_flags & RTF_CLONING)
@@ -1118,7 +1118,7 @@ nd6_rtrequest(int req, struct rtentry *rt, struct sockaddr *sa)
              */
             struct timeval _tv;
             ln->ln_state = ND6_LLINFO_NOSTATE;
-            GetSysTime(&_tv);
+            GetUpTime(&_tv);
             ln->ln_expire = _tv.tv_sec ? _tv.tv_sec : 1;
         }
         rt->rt_flags |= RTF_LLINFO;
