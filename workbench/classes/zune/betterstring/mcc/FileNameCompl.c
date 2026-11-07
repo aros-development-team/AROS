@@ -52,6 +52,9 @@ BOOL OverwriteA(STRPTR text, UWORD x, UWORD length, UWORD ptrn_length, struct In
     {
       ptrn_length -= expand;
       ptrn_length += (data->MaxLength-1)-strlen(data->Contents);
+      // UTF-8: what fits ends on a cluster boundary
+      if(isFlagSet(data->Flags, FLG_UTF8) && data->UniText != NULL)
+        ptrn_length = Utf8Cut(text, strlen(text), ptrn_length);
       result = FALSE;
     }
     if(ExpandContentString(&data->Contents, expand) == TRUE)
@@ -190,6 +193,14 @@ BOOL FileNameComplete(Object *obj, BOOL backwards, struct InstData *data)
   BOOL edited = FALSE;
 
   ENTER();
+
+  // UTF-8 mode: names would have to cross to DOS in the system's set and
+  // back; not done yet, so no completion rather than a wrong name
+  if(isFlagSet(data->Flags, FLG_UTF8))
+  {
+    RETURN(FALSE);
+    return FALSE;
+  }
 
   if(data->FNCBuffer != NULL)
   {

@@ -145,6 +145,13 @@ VOID PrintString(struct IClass *cl, Object *obj)
 
   ENTER();
 
+  if(isFlagSet(data->Flags, FLG_UTF8))
+  {
+    PrintStringUTF8(cl, obj);
+    LEAVE();
+    return;
+  }
+
   contents = data->Contents;
   StrLength = strlen(contents);
 

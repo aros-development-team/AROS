@@ -68,6 +68,25 @@ extern "C" {
 #define MUIA_BetterString_SelectOnActive        0xad00100dUL
 #define MUIA_BetterString_NoNotify              0xad00100eUL
 
+/* [I.G] BOOL: the contents are UTF-8 (default FALSE: the system's 8-bit
+   set, as always). In this mode MUIA_String_Contents, MUIM_BetterString_
+   Insert, MUIA_BetterString_InactiveContents, Accept and Reject take and
+   give UTF-8; MUIA_String_BufferPos, MUIA_String_DisplayPos,
+   MUIA_BetterString_SelectSize and MUIA_String_MaxLen count bytes, and
+   positions are always on a grapheme cluster boundary (a set position is
+   moved back to one). Contents that are not UTF-8 are refused (the old
+   contents stay); text longer than MaxLen is cut at a cluster boundary.
+   Keys are decoded from the system's set (ENV:CHARSET). The clipboard gets
+   a UTF8 chunk and a CHRS copy in the system's set; a paste takes the UTF8
+   chunk first. Text is drawn by unitext.library with the system's Unicode
+   fonts. Check MUIA_BetterString_UTF8Status. */
+#define MUIA_BetterString_UTF8                  0xad001080UL
+/* [..G] LONG: why the UTF-8 mode cannot draw: 0 it can, 1 no
+   unitext.library or freetype2.library, 2 no font for Unicode text opens,
+   3 not enough memory. Valid after creation (a check with the system's
+   fonts) and again after MUIM_Setup, which fails when it is not 0. */
+#define MUIA_BetterString_UTF8Status            0xad001081UL
+
 // methods
 #define MUIM_BetterString_Insert                0xad001002UL
 #define MUIM_BetterString_ClearSelected         0xad001004UL

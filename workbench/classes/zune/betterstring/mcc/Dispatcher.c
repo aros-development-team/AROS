@@ -84,6 +84,13 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
         data->OwnBackground = (STRPTR)tag->ti_Data;
       }
 
+      // the UTF-8 mode before the contents are taken
+      if(GetTagData(MUIA_BetterString_UTF8, FALSE, msg->ops_AttrList) != FALSE)
+      {
+        setFlag(data->Flags, FLG_UTF8);
+        Utf8New(data);
+      }
+
       mSet(cl, obj, (struct opSet *)msg);
 
       data->BufferPos = 0;
@@ -130,6 +137,8 @@ static IPTR mDispose(struct IClass *cl, Object *obj, Msg msg)
     CloseLocale(data->locale);
     data->locale = NULL;
   }
+
+  Utf8Dispose(data);
 
   LEAVE();
   return DoSuperMethodA(cl, obj, msg);
@@ -290,6 +299,16 @@ static IPTR mSetup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
 
   if(DoSuperMethodA(cl, obj, (Msg)rinfo))
   {
+    // UTF-8 text with nothing to draw it with: refuse, rather than a
+    // field that shows nothing right (MUIA_BetterString_UTF8Status)
+    if(isFlagSet(data->Flags, FLG_UTF8) && Utf8Setup(obj, data) == FALSE)
+    {
+      DoSuperMethod(cl, obj, MUIM_Cleanup);
+      FreeConfig(muiRenderInfo(obj), data);
+      RETURN(FALSE);
+      return FALSE;
+    }
+
     // tell MUI we know how to indicate the active state
     _flags(obj) |= MADF_KNOWSACTIVE;
 
@@ -339,6 +358,8 @@ static IPTR mCleanup(struct IClass *cl, Object *obj, Msg msg)
   DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehnode);
 
   FreeConfig(muiRenderInfo(obj), data);
+
+  Utf8Cleanup(data);
 
   // forget that we went through MUIM_Setup
   clearFlag(data->Flags, FLG_Setup);

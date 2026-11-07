@@ -40,6 +40,12 @@
 
 #define BlockEnabled(data)  (isFlagSet((data)->Flags, FLG_BlockEnabled) && (data)->BlockStart != (data)->BlockStop)
 
+/* UTF-8 mode (UTF8.c): the next and previous cluster boundary, else one
+   byte as always. */
+#define IsUTF8(data)        (isFlagSet((data)->Flags, FLG_UTF8) && (data)->UniText != NULL)
+#define NextPos(data, p)    (IsUTF8(data) ? Utf8Next((data), (p)) : (UWORD)((p)+1))
+#define PrevPos(data, p)    (IsUTF8(data) ? Utf8Prev((data), (p)) : (UWORD)((p)-1))
+
 #if defined(__MORPHOS__) || defined(__AROS__)
 #define MySPrintf(buf, fmt, ...) \
  ({ IPTR __args[] = { SDI_VACAST(__VA_ARGS__) }; \
@@ -210,7 +216,7 @@ static LONG FindDigit(struct InstData *data)
   return pos;
 }
 
-static UWORD NextWord(STRPTR text, UWORD x, struct Locale *locale)
+static UWORD NextWord8(STRPTR text, UWORD x, struct Locale *locale)
 {
   ENTER();
 
@@ -224,7 +230,7 @@ static UWORD NextWord(STRPTR text, UWORD x, struct Locale *locale)
   return x;
 }
 
-static UWORD PrevWord(STRPTR text, UWORD x, struct Locale *locale)
+static UWORD PrevWord8(STRPTR text, UWORD x, struct Locale *locale)
 {
   ENTER();
 
@@ -240,6 +246,11 @@ static UWORD PrevWord(STRPTR text, UWORD x, struct Locale *locale)
   RETURN(x);
   return x;
 }
+
+/* words: by Unicode word characters in the UTF-8 mode, by the locale's
+   8-bit classes otherwise */
+#define NextWord(text, x, locale) (IsUTF8(data) ? Utf8NextWord(data, (x)) : NextWord8((text), (x), (locale)))
+#define PrevWord(text, x, locale) (IsUTF8(data) ? Utf8PrevWord(data, (x)) : PrevWord8((text), (x), (locale)))
 
 void DeleteBlock(struct InstData *data)
 {
@@ -280,7 +291,10 @@ static void CopyBlock(struct InstData *data)
       Blk_Width = strlen(data->Contents);
     }
 
-    StringToClipboard(&data->Contents[Blk_Start], Blk_Width);
+    if(IsUTF8(data))
+      StringToClipboardUTF8(&data->Contents[Blk_Start], Blk_Width);
+    else
+      StringToClipboard(&data->Contents[Blk_Start], Blk_Width);
   }
 
   LEAVE();
@@ -314,7 +328,7 @@ static void Paste(struct InstData *data)
 
   ENTER();
 
-  if(ClipboardToString(&str, &length) == TRUE)
+  if((IsUTF8(data) ? ClipboardToStringUTF8(&str, &length) : ClipboardToString(&str, &length)) == TRUE)
   {
     // clear the selection
     DeleteBlock(data);
@@ -323,6 +337,9 @@ static void Paste(struct InstData *data)
     {
       DisplayBeep(NULL);
       length = data->MaxLength - 1 - strlen(data->Contents);
+      // UTF-8: what fits, to a cluster boundary
+      if(IsUTF8(data))
+        length = Utf8Cut(str, strlen(str), length);
     }
 
     if(ExpandContentString(&data->Contents, length) == TRUE)
@@ -396,8 +413,11 @@ static BOOL ToggleCaseChar(struct InstData *data)
 
   if(data->BufferPos < strlen(data->Contents))
   {
-    *(data->Contents+data->BufferPos) = IsLower(data->locale, key) ? ConvToUpper(data->locale, key) : ConvToLower(data->locale, key);
-    data->BufferPos++;
+    // UTF-8: an ASCII letter changes case; any other character is left as
+    // it is (its upper or lower case may have another length)
+    if(IsUTF8(data) == FALSE || key < 0x80)
+      *(data->Contents+data->BufferPos) = IsLower(data->locale, key) ? ConvToUpper(data->locale, key) : ConvToLower(data->locale, key);
+    data->BufferPos = NextPos(data, data->BufferPos);
     result = TRUE;
   }
 
@@ -416,8 +436,9 @@ static BOOL ToggleCaseWord(struct InstData *data)
   {
     UBYTE key = *(data->Contents+data->BufferPos);
 
-    *(data->Contents+data->BufferPos) = IsLower(data->locale, key) ? ConvToUpper(data->locale, key) : ConvToLower(data->locale, key);
-    data->BufferPos++;
+    if(IsUTF8(data) == FALSE || key < 0x80)
+      *(data->Contents+data->BufferPos) = IsLower(data->locale, key) ? ConvToUpper(data->locale, key) : ConvToLower(data->locale, key);
+    data->BufferPos = NextPos(data, data->BufferPos);
     result = TRUE;
   }
 
@@ -892,7 +913,7 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
                 }
                 else
                 {
-                  data->BufferPos++;
+                  data->BufferPos = NextPos(data, data->BufferPos);
                 }
               }
               movement = TRUE;
@@ -918,7 +939,7 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
                     data->BufferPos = MIN(data->BlockStart, data->BlockStop);
 
                   if(data->BufferPos)
-                    data->BufferPos--;
+                    data->BufferPos = PrevPos(data, data->BufferPos);
                 }
               }
               movement = TRUE;
@@ -952,8 +973,11 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
                   }
                   else
                   {
-                    memmove(data->Contents+data->BufferPos-1, data->Contents+data->BufferPos, strlen(data->Contents+data->BufferPos)+1);
-                    data->BufferPos--;
+                    // one cluster (one byte in the 8-bit mode)
+                    UWORD prev = PrevPos(data, data->BufferPos);
+
+                    memmove(data->Contents+prev, data->Contents+data->BufferPos, strlen(data->Contents+data->BufferPos)+1);
+                    data->BufferPos = prev;
                   }
                 }
               }
@@ -986,7 +1010,9 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
                   }
                   else
                   {
-                    memmove(data->Contents+data->BufferPos, data->Contents+data->BufferPos+1, strlen(data->Contents+data->BufferPos+1)+1);
+                    UWORD next = NextPos(data, data->BufferPos);
+
+                    memmove(data->Contents+data->BufferPos, data->Contents+next, strlen(data->Contents+next)+1);
                   }
                 }
               }
@@ -1019,6 +1045,41 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
               if(data->Popup && msg->muikey == MUIKEY_POPUP)
               {
                 DoMethod(data->Popup, MUIM_Popstring_Open);
+              }
+              else if(IsUTF8(data) && isFlagClear(msg->imsg->Qualifier, IEQUALIFIER_RCOMMAND|IEQUALIFIER_CONTROL))
+              {
+                // UTF-8: the key's bytes in the system's set, decoded, then
+                // sorted (controls out); inserted whole or not at all
+                char utf8[16];
+                ULONG k = Utf8Key(msg->imsg, utf8, sizeof(utf8));
+
+                if(k == 0 || isFlagSet(data->Flags, FLG_NoInput))
+                {
+                  RETURN(0);
+                  return 0;
+                }
+                DeleteBlock(data);
+                if((data->MaxLength == 0 || (ULONG)data->MaxLength-1 >= strlen(data->Contents)+k) &&
+                   Utf8Allowed(data, utf8, k))
+                {
+                  if(ExpandContentString(&data->Contents, k) == TRUE)
+                  {
+                    memmove(data->Contents+data->BufferPos+k, data->Contents+data->BufferPos, strlen(data->Contents + data->BufferPos)+1);
+                    memcpy(data->Contents+data->BufferPos, utf8, k);
+                    // a combining mark joins the character before it
+                    data->BufferPos = Utf8Snap(data, data->BufferPos+k) == data->BufferPos+k ? data->BufferPos+k : Utf8Next(data, data->BufferPos);
+                    edited = TRUE;
+                  }
+                  else
+                  {
+                    E(DBF_ALWAYS, "content expansion by %ld bytes failed", k);
+                    DisplayBeep(NULL);
+                  }
+                }
+                else
+                {
+                  DisplayBeep(NULL);
+                }
               }
               else
               {
@@ -1352,7 +1413,10 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
             offset -= AlignOffset(obj, data);
 
             SetFont(&data->rport, _font(obj));
-            data->BufferPos = data->DisplayPos + TextFit(&data->rport, data->Contents+data->DisplayPos, StringLength-data->DisplayPos, &tExtend, NULL, 1, offset+1, _font(obj)->tf_YSize);
+            if(IsUTF8(data))
+              data->BufferPos = Utf8Hit(obj, data, msg->imsg->MouseX - x);
+            else
+              data->BufferPos = data->DisplayPos + TextFit(&data->rport, data->Contents+data->DisplayPos, StringLength-data->DisplayPos, &tExtend, NULL, 1, offset+1, _font(obj)->tf_YSize);
 
             if(data->BufferPos == data->BufferLastPos &&
                DoubleClick(data->StartSecs, data->StartMicros, msg->imsg->Seconds, msg->imsg->Micros))
@@ -1394,7 +1458,16 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 
               case 1:
               {
-                if(data->Contents[data->BufferPos] != '\0')
+                if(data->Contents[data->BufferPos] != '\0' && IsUTF8(data))
+                {
+                  // UTF-8: the word around the click, by Unicode word rules
+                  UWORD stop = Utf8NextWord(data, data->BufferPos);
+                  UWORD start = Utf8PrevWord(data, Utf8Next(data, data->BufferPos));
+
+                  data->BlockStart = start;
+                  data->BufferPos = stop;
+                }
+                else if(data->Contents[data->BufferPos] != '\0')
                 {
                   UWORD start = data->BufferPos;
                   UWORD stop  = data->BufferPos;
@@ -1491,7 +1564,7 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
               if(mousex < x)
               {
                 if(data->DisplayPos)
-                  data->DisplayPos--;
+                  data->DisplayPos = PrevPos(data, data->DisplayPos);
                 data->BufferPos = data->DisplayPos;
               }
               else
@@ -1500,8 +1573,11 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
                 {
                   if(data->DisplayPos < StringLength)
                   {
-                    data->DisplayPos++;
-                    data->BufferPos = data->DisplayPos + TextFit(&data->rport, data->Contents+data->DisplayPos, StringLength-data->DisplayPos, &tExtend, NULL, 1, _mwidth(obj), _font(obj)->tf_YSize);
+                    data->DisplayPos = NextPos(data, data->DisplayPos);
+                    if(IsUTF8(data))
+                      data->BufferPos = Utf8Hit(obj, data, _mwidth(obj));
+                    else
+                      data->BufferPos = data->DisplayPos + TextFit(&data->rport, data->Contents+data->DisplayPos, StringLength-data->DisplayPos, &tExtend, NULL, 1, _mwidth(obj), _font(obj)->tf_YSize);
                   }
                   else
                   {
@@ -1517,7 +1593,8 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
                     data->BufferPos = 0;
                   else
                   */
-                    data->BufferPos = data->DisplayPos + TextFit(&data->rport, data->Contents+data->DisplayPos, StringLength-data->DisplayPos, &tExtend, NULL, 1, offset+1, _font(obj)->tf_YSize);
+                    data->BufferPos = IsUTF8(data) ? Utf8Hit(obj, data, offset) :
+                      data->DisplayPos + TextFit(&data->rport, data->Contents+data->DisplayPos, StringLength-data->DisplayPos, &tExtend, NULL, 1, offset+1, _font(obj)->tf_YSize);
                 }
               }
               data->BlockStop = data->BufferPos;
@@ -1532,17 +1609,26 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 
               if(mousex < x && data->DisplayPos)
               {
-                data->DisplayPos--;
+                data->DisplayPos = PrevPos(data, data->DisplayPos);
                 newpos = data->DisplayPos;
               }
               else
               {
 //                offset -= AlignOffset(obj, data);
                 if(offset > 0)
-                  newpos = data->DisplayPos + TextFit(&data->rport, data->Contents+data->DisplayPos, StringLength-data->DisplayPos, &tExtend, NULL, 1, offset+1, _font(obj)->tf_YSize);
+                  newpos = IsUTF8(data) ? Utf8Hit(obj, data, offset) :
+                    data->DisplayPos + TextFit(&data->rport, data->Contents+data->DisplayPos, StringLength-data->DisplayPos, &tExtend, NULL, 1, offset+1, _font(obj)->tf_YSize);
               }
 
-              if(newpos >= data->BlockStart)
+              if(IsUTF8(data))
+              {
+                // UTF-8: extend to the end or start of the word, Unicode rules
+                if(newpos >= data->BlockStart)
+                  newpos = data->Contents[newpos] != '\0' ? Utf8NextWord(data, newpos) : newpos;
+                else
+                  newpos = newpos > 0 ? Utf8PrevWord(data, newpos) : 0;
+              }
+              else if(newpos >= data->BlockStart)
               {
                 while(IsAlNum(data->locale, (UBYTE)*(data->Contents+newpos)) && *(data->Contents+newpos) != '\0')
                   newpos++;
@@ -1591,6 +1677,21 @@ IPTR mInsert(struct IClass *cl, Object *obj, struct MUIP_BetterString_Insert *ms
     case (LONG)MUIV_BetterString_Insert_BufferPos:
       pos = data->BufferPos;
     break;
+  }
+
+  // UTF-8: text that is not UTF-8 is refused; the place is a cluster
+  // boundary
+  if(IsUTF8(data))
+  {
+    if(msg->text == NULL || Utf8Valid(msg->text, strlen(msg->text)) == FALSE)
+    {
+      DisplayBeep(NULL);
+      RETURN(FALSE);
+      return FALSE;
+    }
+    if(pos > strlen(data->Contents))
+      pos = strlen(data->Contents);
+    pos = Utf8Snap(data, pos);
   }
 
   Overwrite(msg->text, pos, 0, data);
