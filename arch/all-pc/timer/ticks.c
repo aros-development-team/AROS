@@ -99,9 +99,11 @@ static void EClockAdd(UWORD time, struct TimerBase *TimerBase)
 void EClockUpdate(struct TimerBase *TimerBase)
 {
     UWORD time;
+    ULONG flags;
 
     D(bug("[Timer] %s(0x%p)\n", __func__, TimerBase));
 
+    flags = PITLock(TimerBase);
     outb(CH0|ACCESS_LATCH, PIT_CONTROL);        /* Latch the current time value */
     time = ch_read(PIT_CH0);                    /* Read out current 16-bit time */
 
@@ -109,19 +111,23 @@ void EClockUpdate(struct TimerBase *TimerBase)
 
     EClockAdd(time, TimerBase);                 /* Increment our time counters  */
     TimerBase->tb_prev_tick = time;             /* Remember last counter value as start of new interval */
-    D(bug("[Timer] %s:      new = %04x\n", __func__, TimerBase->tb_prev_tick));
+    PITUnlock(flags, TimerBase);
+    D(bug("[Timer] %s:      new = %04x\n", __func__, time));
 }
 
 void EClockSet(struct TimerBase *TimerBase)
 {
+    ULONG flags;
 
     D(bug("[Timer] %s(0x%p)\n", __func__, TimerBase));
 
+    flags = PITLock(TimerBase);
     TimerBase->tb_ticks_sec   = usec2tick(TimerBase->tb_CurrentTime.tv_micro);
     TimerBase->tb_ticks_total = TimerBase->tb_ticks_sec + (UQUAD)TimerBase->tb_CurrentTime.tv_secs * TimerBase->tb_eclock_rate;
 
     outb(CH0|ACCESS_LATCH, PIT_CONTROL);        /* Latch the current time value */
     TimerBase->tb_prev_tick = ch_read(PIT_CH0); /* Read out current 16-bit time */
+    PITUnlock(flags, TimerBase);
 }
 
 void Timer0Setup(struct TimerBase *TimerBase)
@@ -131,6 +137,7 @@ void Timer0Setup(struct TimerBase *TimerBase)
 #endif
     UWORD delay = TimerBase->tb_Platform.tb_ReloadValue;
     UWORD current_tick;
+    ULONG flags;
     struct timerequest *tr;
     struct timeval time;
 
@@ -175,6 +182,7 @@ void Timer0Setup(struct TimerBase *TimerBase)
      * We are going to reload the counter. By this moment, some time has passed after the last EClockUpdate()pdate.
      * In order to keep up with the precision, we pick up this time here.
      */
+    flags = PITLock(TimerBase);
     outb(CH0|ACCESS_LATCH, PIT_CONTROL);        /* Latch the current time value */
     current_tick = ch_read(PIT_CH0);	    	/* Read out current 16-bit time */
 
@@ -188,4 +196,5 @@ void Timer0Setup(struct TimerBase *TimerBase)
     EClockAdd(current_tick, TimerBase);
     /* tb_prev_tick is used by EClockAdd(), so restore it now */
     TimerBase->tb_prev_tick = delay;
+    PITUnlock(flags, TimerBase);
 }
