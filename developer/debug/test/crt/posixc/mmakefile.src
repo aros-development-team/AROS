@@ -15,6 +15,7 @@ POSIXCTESTFILES := \
         fd_reservation \
         flock \
         flock_description \
+        fsync \
         getfsstat \
         getpass \
         ioctl_tty \
