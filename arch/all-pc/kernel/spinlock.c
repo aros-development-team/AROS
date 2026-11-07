@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <asm/cpu.h>
@@ -59,11 +59,14 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
             }
             D(bug("[Kernel] %s: my name is %s\n", __func__, Kernel_13_KrnIsSuper() ? "--supervisor code--" : me->tc_Node.ln_Name));
             D(bug("[Kernel] %s: spinning on held lock (val=%08x, s_Owner=%p)...\n", __func__, tmp, t));
-            if (me && t && (me->tc_Node.ln_Pri > t->tc_Node.ln_Pri))
+            /* Lowering ourselves lets a lower-priority owner run only while
+               we can be preempted. Inside Disable() the caller usually holds
+               its own tc_SpinLock, which SetTaskPri(me) would re-take. Once
+               per acquisition, so old_pri is the caller's priority. */
+            if (me && t && !priority_changed && IDNESTCOUNT_GET < 0
+                && (me->tc_Node.ln_Pri > t->tc_Node.ln_Pri))
             {
                 D(bug("[Kernel] %s: spinlock owner (%s) has pri %d, lowering ours...\n", __func__, t ? (t->tc_Node.ln_Name) : "--supervisor--", t ? t->tc_Node.ln_Pri : 999));
-                // If lock is spinning and the owner of lock has lower priority than ours, we need to reduce
-                // tasks priority too, otherwise it might happen that waiting task spins forever
                 priority_changed = 1;
                 old_pri = SetTaskPri(me, t->tc_Node.ln_Pri);
             }

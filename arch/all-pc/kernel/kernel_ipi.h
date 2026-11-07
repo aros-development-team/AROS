@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef __KERNEL_IPI_H_
@@ -31,6 +31,19 @@ int core_IPIHandle(struct ExceptionContext *regs, void *data1, struct KernelBase
 void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBase);
 int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, int nargs, IPTR *args, APTR _KB);
 
+/* Claim/commit and cancellation of queued calls, so exec can check the
+   target's lifetime together with the enqueue (rom/exec/signal.c) and sweep
+   stale calls at task teardown (rom/exec/remtask.c). On pc a CallIPIEntry is
+   a struct IPIHook from the free list. */
+struct CallIPIEntry;
+
+struct CallIPIEntry *core_ClaimCallIPI(int cpu);
+void core_CommitCallIPI(struct CallIPIEntry *cie, int cpu, struct Hook *hook, int nargs, IPTR *args);
+void core_AbortCallIPI(struct CallIPIEntry *cie, int cpu);
+void core_CancelCallIPIs(APTR hookEntry, IPTR matchArg);
+
+#define KERNEL_IPI_CALL_CANCELABLE
+
 #define IPI_CALL_HOOK_MAX_ARGS  5
 
 /*
@@ -42,8 +55,8 @@ struct IPIHook
     IPTR            ih_Args[IPI_CALL_HOOK_MAX_ARGS];
     uint32_t *      ih_CPUDone;
     uint32_t *      ih_CPURequested;
+    uint32_t *      ih_CPUClaimed;
     int             ih_Async;
-    spinlock_t      ih_Lock;
     spinlock_t      ih_SyncLock;
 };
 
