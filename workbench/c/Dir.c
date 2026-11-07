@@ -101,7 +101,8 @@
 struct table
 {
     char **entries;
-    LONG  *types;       /* read for dirs only: showfiles() sorts entries alone */
+    LONG  *types;       /* typed tables only: ALL reads a directory's type */
+    BOOL   typed;
     int    num;
     int    max;
 };
@@ -296,9 +297,11 @@ int AddEntry(struct table *table, char *entry, LONG type)
         LONG  *new_types;
 
         new_entries = AllocVec(sizeof(char *) * new_max, MEMF_ANY);
-        new_types = AllocVec(sizeof(LONG) * new_max, MEMF_ANY);
+        new_types = NULL;
+        if (table->typed)
+            new_types = AllocVec(sizeof(LONG) * new_max, MEMF_ANY);
 
-        if (new_entries == NULL || new_types == NULL)
+        if (new_entries == NULL || (table->typed && new_types == NULL))
         {
             FreeVec(new_entries);
             FreeVec(new_types);
@@ -309,8 +312,9 @@ int AddEntry(struct table *table, char *entry, LONG type)
         {
             CopyMemQuick(table->entries, new_entries,
                          sizeof(char *) * table->num);
-            CopyMemQuick(table->types, new_types,
-                         sizeof(LONG) * table->num);
+            if (table->typed)
+                CopyMemQuick(table->types, new_types,
+                             sizeof(LONG) * table->num);
             FreeVec(table->entries);
             FreeVec(table->types);
         }
@@ -329,7 +333,8 @@ int AddEntry(struct table *table, char *entry, LONG type)
     {
         return 0;
     }
-    table->types[table->num] = type;
+    if (table->typed)
+        table->types[table->num] = type;
     table->entries[table->num++] = dup;
 
     return 1;
@@ -533,6 +538,7 @@ LONG doPatternDir(CONST_STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles, BOOL
 
     files.entries = NULL;
     files.types = NULL;
+    files.typed = FALSE;
     files.max = 0;
     files.num = 0;
 
@@ -646,6 +652,8 @@ LONG doDir(CONST_STRPTR dir, struct DirLock *path, BOOL all, BOOL doDirs,
 
     dirs.entries = files.entries = NULL;
     dirs.types = files.types = NULL;
+    dirs.typed = TRUE;
+    files.typed = FALSE;
     dirs.max = files.max = 0;
     dirs.num = files.num = 0;
 
@@ -673,7 +681,9 @@ LONG doDir(CONST_STRPTR dir, struct DirLock *path, BOOL all, BOOL doDirs,
                 error = RETURN_FAIL;
             }
 
-            if (error == 0 && doDirs)
+            /* ALL walks the subdirectories even when only files are
+               listed; their names are shown only when directories are */
+            if (error == 0 && (doDirs || all))
             {
                 if (dirs.num != 0)
                 {
