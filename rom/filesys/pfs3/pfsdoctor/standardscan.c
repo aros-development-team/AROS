@@ -134,6 +134,7 @@ static bitmap_t *bg_InitBitmap(int32 start, int32 stop, int32 step);
 static void bg_KillBitmap(bitmap_t **bm);
 static BOOL bg_IsItemUsed(bitmap_t *bm, uint32 nr);
 error_t SearchInDir(uint32 diranodenr, uint32 target, int *result);
+static error_t FindInDir(uint32 diranodenr, uint32 target, int *result, uint32 *linkhead);
 static void AddExtraFields(struct direntry *direntry, struct extrafields *extra);
 static bool MakeMountFile(char *fname);
 static error_t BuildRootBlock_hub(void);
@@ -1904,7 +1905,7 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 
 /* A bad directory reference must not erase a live target. Invalidate only
  * a discarded singleton directory with no entry in its recorded parent, so
- * later hardlink searches cannot find its abandoned contents. */
+ * later hardlink searches cannot find entries directly in that block. */
 #ifdef __GNUC__
 static error_t InvalidateAbandonedDir(c_dirblock_t *, uint32) __attribute__((noinline));
 #endif
@@ -2270,9 +2271,49 @@ static error_t RepairFile(struct direntry *de, c_dirblock_t *parent)
 	return e_none;	
 }
 
-/* Repair hardlink. If a hardlink is removed that has consequences for
- * the linkchain and the linked to file.
+/* A surviving link must belong to its object's backlink chain.  Otherwise
+ * the handler cannot safely delete it or preserve it when moving the object.
+ * Keep the exceptional lookup's storage out of the recursive directory frame.
  */
+#ifdef __GNUC__
+static error_t CheckLinkMembership(uint32 directory, uint32 object, uint32 link)
+    __attribute__((noinline));
+#endif
+
+static error_t CheckLinkMembership(uint32 directory, uint32 object, uint32 link)
+{
+	uint32 head = 0, checkpoint, distance = 0, power = 1;
+	canode_t node;
+	error_t error;
+	int type;
+
+	if ((error = FindInDir(directory, object, &type, &head)))
+		return error;
+	checkpoint = head;
+	while (head) {
+		if (aborting)
+			return e_aborted;
+		if (head == link)
+			return e_none;
+		if ((error = ReadAnode(&node, head, false))) {
+			if (IsOperationalError(error))
+				return error;
+			break;
+		}
+		if (node.next == checkpoint)
+			break;
+		if (++distance == power) {
+			checkpoint = node.next;
+			distance = 0;
+			power = power < 0x80000000UL ? power * 2 : ~(uint32)0;
+		}
+		head = node.next;
+	}
+	addfileerror("hardlink missing from object link chain");
+	return e_remove;
+}
+
+/* Repair a hardlink and verify both directions of its object reference. */
 static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok)
 {
 	struct extrafields extra;
@@ -2337,6 +2378,10 @@ static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok)
 			}
 			break;
 	}
+
+	if (ss.stage == syntax &&
+		(error = CheckLinkMembership(linknode.clustersize, extra.link, de->anode)))
+		return error;
 
 	if ((error = AnodeUsed(de->anode)))
 		return error;
@@ -2572,6 +2617,11 @@ static error_t CheckAnode(canode_t *anode, uint32 nr, bool fix)
  */
 error_t SearchInDir(uint32 diranodenr, uint32 target, int *result)
 {
+	return FindInDir(diranodenr, target, result, NULL);
+}
+
+static error_t FindInDir(uint32 diranodenr, uint32 target, int *result, uint32 *linkhead)
+{
 	uint32 mainanode = diranodenr, checkpoint = diranodenr, distance = 0, power = 1;
 	uint32 entryanode;
 	canode_t anode;
@@ -2613,6 +2663,11 @@ error_t SearchInDir(uint32 diranodenr, uint32 target, int *result)
 					entryanode = de->anode;
 				if (entryanode == target) {
 					*result = de->type;
+					if (linkhead) {
+						struct extrafields extra;
+						PFS3GetExtraFields(de, &extra);
+						*linkhead = extra.link;
+					}
 					free(dirblk.data);
 					return e_none;
 				}
