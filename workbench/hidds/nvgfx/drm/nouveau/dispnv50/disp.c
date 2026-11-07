@@ -2373,6 +2373,13 @@ nv50_disp_atomic_commit_core(struct drm_atomic_state *state, u32 *interlock)
 				       disp->core->chan.base.device)) {
 		NV_ERROR(drm, "core notifier timeout\n");
 		nv50_disp_core_timeouts++;
+#if defined(__AROS__)
+		if (drm->client.device.info.family >= NV_DEVICE_INFO_V0_TURING) {
+			extern void nvkm_gsp_rpc_report(const char *);
+
+			nvkm_gsp_rpc_report("core notifier timeout");
+		}
+#endif
 	}
 
 	for_each_new_mst_mgr_in_state(state, mgr, mst_state, i) {

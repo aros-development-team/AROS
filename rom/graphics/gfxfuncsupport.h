@@ -80,7 +80,7 @@ do                                                                             \
 
 #define HIDD_BMF_SHARED_PIXTAB         1
 #define HIDD_BMF_OWN_PIXTAB            2	/* own colormap and pixtab with the friend's colours mapped opaque (alphapixtab.c) */
-#define HIDD_BMF_CLEAR_ALPHA           4	/* has alpha, its friend none: Clear writes transparent 0 */
+#define HIDD_BMF_CLEAR_ALPHA           4	/* has alpha and a friend: Clear writes transparent 0 */
 #define HIDD_BMF_SCREEN_BITMAP         512
 #define HIDD_BMF_LAYERSURFACES         1024	/* has a LayerSurfaceNode (composited layers) */
 

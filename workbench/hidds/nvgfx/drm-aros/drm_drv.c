@@ -427,17 +427,22 @@ void drm_file_free(struct drm_file *file)
     list_del(&file->lhead);
     mutex_unlock(&dev->filelist_mutex);
 
-    if (dev->driver->postclose)
-        dev->driver->postclose(dev, file);
-
     if (drm_core_check_feature(dev, DRIVER_MODESET))
         drm_fb_release(file);
 
     if (drm_core_check_feature(dev, DRIVER_SYNCOBJ))
         drm_syncobj_release(file);
 
+    /*
+     * The handles go before the driver's per-file state, as in Linux: closing
+     * a handle unmaps the buffer from the client's address space, which
+     * postclose frees.
+     */
     if (drm_core_check_feature(dev, DRIVER_GEM))
         drm_gem_release(dev, file);
+
+    if (dev->driver->postclose)
+        dev->driver->postclose(dev, file);
 
     list_for_each_entry_safe(e, et, &file->pending_event_list, pending_link) {
         list_del(&e->pending_link);

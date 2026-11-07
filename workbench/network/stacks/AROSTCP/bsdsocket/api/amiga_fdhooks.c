@@ -62,8 +62,8 @@ struct Library *FDBase = NULL;
  *
  * A blocking socket operation sleeps (tsleep) on the base passed as its
  * process context, and the matching wakeup() signals that base's owner task.
- * Each base carries a single sleeper's worth of state (p_wchan, p_sleep_link,
- * timer), so two tasks must never sleep on one base at the same time.
+ * Each base carries a single sleeper's worth of state for its opener (its
+ * waiter); only a shared base lends other tasks waiters of their own.
  *
  * The task issuing the operation may have no base of its own - a posixc
  * worker thread reading an inherited socket descriptor reaches us through

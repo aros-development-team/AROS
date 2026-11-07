@@ -167,7 +167,7 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
         pathName = ((UBYTE *) (ap + 1)) + MAX_PATH_LEN;
 
         ap->ap_BreakBits = SIGBREAKF_CTRL_C;
-        ap->ap_Flags     = APF_DOWILD;
+        ap->ap_Flags     = 0;
         ap->ap_Strlen    = MAX_PATH_LEN;
         if (MatchFirst(from[0], ap) != 0)
         {
@@ -362,6 +362,10 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
         }
 
 cleanup:
+        /* MatchFirst() can fail with matcher resources still allocated. */
+        if (ap)
+                MatchEnd(ap);
+
         if (tolock)
         {
                 UnLock(tolock);
@@ -369,7 +373,6 @@ cleanup:
 
         if (ioerr)
         {
-                //MatchEnd(ap);
                 PrintFault(ioerr, NULL);
                 //retval = ERROR_FAIL;
         }

@@ -295,10 +295,10 @@ gh100_gsp_fmc_recover(struct nvkm_gsp *gsp)
 	struct nvkm_subdev *subdev = &gsp->subdev;
 	struct nvkm_device *device = subdev->device;
 	struct pci_dev *pdev = container_of(device, struct nvkm_device_pci, device)->pdev;
-	u32 cfg[64], devcap, id;
-	u16 devctl;
+	u32 cfg[64], devcap, id, rebar[6];
+	u16 devctl, rebarpos;
 	u8 pos = pdev->pcie_cap;
-	int i, t, ret;
+	int i, t, ret, nrebar = 0;
 
 	if (!pos) {
 		u8 next, cap;
@@ -322,6 +322,16 @@ gh100_gsp_fmc_recover(struct nvkm_gsp *gsp)
 	}
 	for (i = 0; i < 64; i++)
 		pci_read_config_dword(pdev, i * 4, &cfg[i]);
+	/* the reset also returns resized BARs to their default size */
+	rebarpos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_REBAR);
+	if (rebarpos) {
+		pci_read_config_dword(pdev, rebarpos + PCI_REBAR_CTRL, &rebar[0]);
+		nrebar = (rebar[0] & PCI_REBAR_CTRL_NBAR_MASK) >> PCI_REBAR_CTRL_NBAR_SHIFT;
+		if (nrebar > 6)
+			nrebar = 6;
+		for (i = 0; i < nrebar; i++)
+			pci_read_config_dword(pdev, rebarpos + PCI_REBAR_CTRL + i * 8, &rebar[i]);
+	}
 	pci_read_config_word(pdev, pos + 8, &devctl);
 	pci_write_config_word(pdev, pos + 8, devctl | 0x8000);
 	msleep(100);
@@ -337,6 +347,9 @@ gh100_gsp_fmc_recover(struct nvkm_gsp *gsp)
 		nvkm_error(subdev, "GSP-FMC recovery: device gone after FLR (id %08x)\n", id);
 		return -EIO;
 	}
+	/* sizes first: a BAR takes its address bits from its size */
+	for (i = 0; i < nrebar; i++)
+		pci_write_config_dword(pdev, rebarpos + PCI_REBAR_CTRL + i * 8, rebar[i]);
 	for (i = 1; i < 64; i++)
 		pci_write_config_dword(pdev, i * 4, cfg[i]);
 	pci_write_config_dword(pdev, 4, cfg[1]);

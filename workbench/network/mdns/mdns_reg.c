@@ -40,6 +40,32 @@ text_add(char *buf, LONG size, LONG at, const char *text)
     return at + mdnsTextLength(buf + at, size - at);
 }
 
+/* A DNS-SD subtype is one underscored DNS label. Keep the same conservative
+ * LDH alphabet used for service labels; comparison on the wire is
+ * case-insensitive. */
+static BOOL
+valid_subtype(const char *subtype)
+{
+    LONG i;
+    LONG length = mdnsTextLength(subtype, MDNS_MAX_SUBTYPE + 1);
+
+    if (length < 2 || length > MDNS_MAX_SUBTYPE || subtype[0] != '_') {
+        return FALSE;
+    }
+    for (i = 1; i < length; i++) {
+        UBYTE c = (UBYTE)subtype[i];
+
+        if (c >= 'A' && c <= 'Z') {
+            c += 'a' - 'A';
+        }
+        if (!(c >= 'a' && c <= 'z') && !(c >= '0' && c <= '9') &&
+            c != '-') {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
 /* "Printer._ipp._tcp.local" */
 static void
 instance_fqdn(const struct MDNSRegisteredService *rs, char *buf, LONG size)
@@ -60,6 +86,34 @@ type_fqdn(const struct MDNSRegisteredService *rs, char *buf, LONG size)
 
     at = text_add(buf, size, at, ".");
     text_add(buf, size, at, rs->rs_Domain);
+}
+
+/* "_printer._sub._ipp._tcp.local" */
+static void
+subtype_fqdn(const struct MDNSRegisteredService *rs, LONG subtype,
+    char *buf, LONG size)
+{
+    LONG at = text_add(buf, size, 0, rs->rs_Subtypes[subtype]);
+
+    at = text_add(buf, size, at, "._sub.");
+    at = text_add(buf, size, at, rs->rs_Type);
+    at = text_add(buf, size, at, ".");
+    text_add(buf, size, at, rs->rs_Domain);
+}
+
+static LONG
+subtype_index(const struct MDNSRegisteredService *rs, const char *name)
+{
+    LONG i;
+    char fqdn[256];
+
+    for (i = 0; i < rs->rs_SubtypeCount; i++) {
+        subtype_fqdn(rs, i, fqdn, (LONG)sizeof(fqdn));
+        if (Stricmp(name, fqdn) == 0) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 /* The host an instance is on: this one, under the name it has now, or the
@@ -251,6 +305,126 @@ service_append(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
     return TRUE;
 }
 
+static UWORD
+all_subtypes(const struct MDNSRegisteredService *rs)
+{
+    return rs->rs_SubtypeCount == 0 ? 0 :
+        (UWORD)((1UL << rs->rs_SubtypeCount) - 1);
+}
+
+/* Append one subtype's shared PTR. Its target is the ordinary instance
+ * name; SRV, TXT and address records remain owned by that base instance. */
+static BOOL
+subtype_append(const struct MDNSDaemon *md,
+    const struct MDNSRegisteredService *rs, LONG subtype, BOOL goodbye,
+    UBYTE *pkt, LONG *posp, UWORD *ancountp)
+{
+    char instance[256];
+    char owner[256];
+    UBYTE data[256];
+    LONG length, pos = *posp;
+    UWORD ancount = *ancountp;
+    ULONG ttl = reply_ttl(md, goodbye ? 0 :
+        (rs->rs_TTL != 0 ? rs->rs_TTL : MDNS_TTL_OTHER));
+
+    instance_fqdn(rs, instance, (LONG)sizeof(instance));
+    subtype_fqdn(rs, subtype, owner, (LONG)sizeof(owner));
+    if (mdnsNameToWire(instance, data, (LONG)sizeof(data), &length) != 0 ||
+        mdnsAppendRecord(pkt, MDNS_RESPONSE_MAX, &pos, &ancount, owner,
+            DNS_TYPE_PTR, DNS_CLASS_IN, ttl, data, (UWORD)length) != 0) {
+        return FALSE;
+    }
+    *posp = pos;
+    *ancountp = ancount;
+    return TRUE;
+}
+
+/* Send selected subtype PTRs as one or more bounded packets. Keeping them
+ * separate lets the registration retain the existing 1400-byte service
+ * response bound even when it has several maximum-length subtype labels. */
+static void
+subtypes_send(struct MDNSDaemon *md, struct MDNSRegisteredService *rs,
+    BOOL goodbye, UWORD mask)
+{
+    UBYTE *pkt = md->md_TxBuf;
+    struct MDNSHeader *hdr = (struct MDNSHeader *)pkt;
+    LONG i, subtype;
+
+    if (mask == 0) {
+        return;
+    }
+    for (i = 0; i < md->md_IfCount; i++) {
+        LONG pos = mdnsResponseBegin(md, pkt);
+        UWORD ancount = 0;
+
+        if (md->md_SendIf >= 0 && i != md->md_SendIf) {
+            continue;
+        }
+        for (subtype = 0; subtype < rs->rs_SubtypeCount; subtype++) {
+            if ((mask & (1U << subtype)) == 0) {
+                continue;
+            }
+            if (!subtype_append(md, rs, subtype, goodbye, pkt, &pos,
+                    &ancount)) {
+                if (ancount != 0) {
+                    hdr->ancount = htons(ancount);
+                    mdnsNetSendOn(md, i, pkt, pos);
+                    if (!mdnsReplyIsUnicast(md)) {
+                        mdnsReflectPacket(md, pkt, pos, i,
+                            MDNS_REFLECT_DISCOVERY | MDNS_REFLECT_QUERY,
+                            NULL);
+                    }
+                }
+                pos = mdnsResponseBegin(md, pkt);
+                ancount = 0;
+                if (!subtype_append(md, rs, subtype, goodbye, pkt, &pos,
+                        &ancount)) {
+                    continue;
+                }
+            }
+        }
+        if (ancount != 0) {
+            hdr->ancount = htons(ancount);
+            mdnsNetSendOn(md, i, pkt, pos);
+            if (!mdnsReplyIsUnicast(md)) {
+                mdnsReflectPacket(md, pkt, pos, i,
+                    MDNS_REFLECT_DISCOVERY | MDNS_REFLECT_QUERY, NULL);
+            }
+        }
+    }
+}
+
+static void
+subtypes_reflect(struct MDNSDaemon *md,
+    const struct MDNSRegisteredService *rs, BOOL goodbye, LONG ifindex,
+    UWORD consumers, APTR queryHandle)
+{
+    UBYTE *pkt = md->md_TxBuf;
+    struct MDNSHeader *hdr = (struct MDNSHeader *)pkt;
+    LONG subtype, pos = mdnsResponseBegin(md, pkt);
+    UWORD ancount = 0;
+
+    for (subtype = 0; subtype < rs->rs_SubtypeCount; subtype++) {
+        if (!subtype_append(md, rs, subtype, goodbye, pkt, &pos, &ancount)) {
+            if (ancount != 0) {
+                hdr->ancount = htons(ancount);
+                mdnsReflectPacket(md, pkt, pos, ifindex, consumers,
+                    queryHandle);
+            }
+            pos = mdnsResponseBegin(md, pkt);
+            ancount = 0;
+            if (!subtype_append(md, rs, subtype, goodbye, pkt, &pos,
+                    &ancount)) {
+                continue;
+            }
+        }
+    }
+    if (ancount != 0) {
+        hdr->ancount = htons(ancount);
+        mdnsReflectPacket(md, pkt, pos, ifindex, consumers, queryHandle);
+    }
+}
+
 /* One local type-enumeration record. A type is withdrawn only after its last
  * announced registration is gone. */
 static void
@@ -301,6 +475,8 @@ service_reflect(struct MDNSDaemon *md, struct MDNSRegisteredService *rs,
     LONG pos = mdnsResponseBegin(md, pkt);
     UWORD ancount = 0;
 
+    subtypes_reflect(md, rs, goodbye, ifindex, consumers, queryHandle);
+    pos = mdnsResponseBegin(md, pkt);
     if (service_append(md, rs, goodbye, ifindex, pkt, &pos, &ancount,
             TRUE)) {
         hdr->ancount = htons(ancount);
@@ -332,12 +508,13 @@ mdnsRegAnswerLocal(struct MDNSDaemon *md, UWORD consumers, APTR queryHandle)
  * question came in on or else to every one. */
 static void
 service_send(struct MDNSDaemon *md, struct MDNSRegisteredService *rs,
-    BOOL goodbye)
+    BOOL goodbye, UWORD subtypeMask)
 {
     UBYTE *pkt = md->md_TxBuf;
     struct MDNSHeader *hdr = (struct MDNSHeader *)pkt;
     LONG i;
 
+    subtypes_send(md, rs, goodbye, subtypeMask);
     for (i = 0; i < md->md_IfCount; i++) {
         LONG pos;
         UWORD ancount = 0;
@@ -497,6 +674,32 @@ answers_flush(struct MDNSDaemon *md, ULONG now)
             hdr->ancount = htons(ancount);
             send_delayed(md, i, pkt, pos, families);
         }
+        FOR_SERVICES(md, n) {
+            struct MDNSRegisteredService *rs =
+                (struct MDNSRegisteredService *)n;
+
+            if (rs->rs_State == MDNS_NAME_ANNOUNCED &&
+                rs->rs_AnswerTick != 0 &&
+                (LONG)(now - rs->rs_AnswerTick) >= 0 &&
+                (rs->rs_AnswerIf < 0 || rs->rs_AnswerIf == i) &&
+                rs->rs_AnswerSubtypes != 0) {
+                LONG savedIf = md->md_SendIf;
+                UWORD savedFamily = md->md_SendFamily;
+
+                md->md_SendIf = i;
+                if (rs->rs_AnswerFamilies ==
+                        (ANSWER_FAMILY4 | ANSWER_FAMILY6)) {
+                    md->md_SendFamily = 0;
+                } else if (rs->rs_AnswerFamilies & ANSWER_FAMILY6) {
+                    md->md_SendFamily = AF_INET6;
+                } else {
+                    md->md_SendFamily = AF_INET;
+                }
+                subtypes_send(md, rs, FALSE, rs->rs_AnswerSubtypes);
+                md->md_SendFamily = savedFamily;
+                md->md_SendIf = savedIf;
+            }
+        }
         if (types && (md->md_TypesAnswerIf < 0 ||
                 md->md_TypesAnswerIf == i)) {
             UWORD saved = md->md_SendFamily;
@@ -520,6 +723,7 @@ answers_flush(struct MDNSDaemon *md, ULONG now)
 
         rs->rs_AnswerTick = 0;
         rs->rs_AnswerFamilies = 0;
+        rs->rs_AnswerSubtypes = 0;
     }
     md->md_TypesAnswerTick = 0;
     md->md_TypesAnswerFamilies = 0;
@@ -539,7 +743,7 @@ mdnsRegGoodbyeAll(struct MDNSDaemon *md)
         struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
 
         if (rs->rs_State == MDNS_NAME_ANNOUNCED) {
-            service_send(md, rs, TRUE);
+            service_send(md, rs, TRUE, all_subtypes(rs));
         }
     }
 }
@@ -555,7 +759,7 @@ mdnsRegAnnounceAll(struct MDNSDaemon *md)
         struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
 
         if (rs->rs_State == MDNS_NAME_ANNOUNCED) {
-            service_send(md, rs, FALSE);
+            service_send(md, rs, FALSE, all_subtypes(rs));
         }
     }
 }
@@ -575,6 +779,7 @@ mdnsRegRestartAll(struct MDNSDaemon *md)
         rs->rs_NextTick = mdnsTicks();
         rs->rs_AnswerTick = 0;
         rs->rs_AnswerFamilies = 0;
+        rs->rs_AnswerSubtypes = 0;
         memset(rs->rs_MulticastTick, 0, sizeof(rs->rs_MulticastTick));
         memset(rs->rs_TypeTick, 0, sizeof(rs->rs_TypeTick));
     }
@@ -944,12 +1149,12 @@ mdnsRegTick(struct MDNSDaemon *md)
             rs->rs_State = MDNS_NAME_ANNOUNCED;
             rs->rs_Step = 1;
             rs->rs_NextTick = now + 50;
-            service_send(md, rs, FALSE);
+            service_send(md, rs, FALSE, all_subtypes(rs));
         } else if (rs->rs_Step < MDNS_ANNOUNCE_COUNT &&
                    (LONG)(now - rs->rs_NextTick) >= 0 &&
                    (hostReady || rs->rs_Proxy)) {
             rs->rs_Step++;
-            service_send(md, rs, FALSE);
+            service_send(md, rs, FALSE, all_subtypes(rs));
         }
     }
     return probing;
@@ -1094,6 +1299,7 @@ mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
         struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
         char fqdn[256];
         BOOL answer = FALSE, shared = FALSE;
+        UWORD subtypeMask = 0;
 
         if (rs->rs_State != MDNS_NAME_ANNOUNCED ||
             rs->rs_Answered == md->md_PacketSerial) {
@@ -1115,17 +1321,25 @@ mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
             answer = any || q->qtype == DNS_TYPE_A;
         } else if (any || q->qtype == DNS_TYPE_PTR) {
             char type[256];
+            LONG subtype;
 
             type_fqdn(rs, type, (LONG)sizeof(type));
-            if (Stricmp(q->qname, type) == 0) {
+            subtype = subtype_index(rs, q->qname);
+            if (Stricmp(q->qname, type) == 0 || subtype >= 0) {
                 LONG k;
+                const char *owner = type;
+
+                if (subtype >= 0) {
+                    subtypeMask = (UWORD)(1U << subtype);
+                    owner = q->qname;
+                }
 
                 answer = TRUE;
                 shared = TRUE;
                 for (k = 0; k < knownCount; k++) {
                     ULONG ttl = rs->rs_TTL != 0 ? rs->rs_TTL : MDNS_TTL_OTHER;
 
-                    if (Stricmp(known[k].owner, type) == 0 &&
+                    if (Stricmp(known[k].owner, owner) == 0 &&
                         Stricmp(known[k].target, fqdn) == 0 &&
                         known[k].ttl >= (ttl + 1) / 2) {
                         answer = FALSE;
@@ -1140,6 +1354,17 @@ mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
         rs->rs_Answered = md->md_PacketSerial;
         if (legacy) {
             LONG ifindex = md->md_SendIf >= 0 ? md->md_SendIf : 0;
+
+            if (subtypeMask != 0) {
+                if (legacyAnswers != 0) {
+                    hdr->ancount = htons(legacyAnswers);
+                    mdnsNetSendOn(md, ifindex, pkt, legacyPos);
+                }
+                subtypes_send(md, rs, FALSE, subtypeMask);
+                legacyPos = mdnsResponseBegin(md, pkt);
+                legacyAnswers = 0;
+                legacyAddrDone = FALSE;
+            }
 
             if (!service_append(md, rs, FALSE, ifindex, pkt, &legacyPos,
                     &legacyAnswers, rs->rs_Proxy || !legacyAddrDone)) {
@@ -1163,7 +1388,7 @@ mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
             /* to the asker alone, and at once: nobody else is waiting to
              * answer on a channel of two */
             reply_to_asker(md, q, FALSE);
-            service_send(md, rs, FALSE);
+            service_send(md, rs, FALSE, subtypeMask);
             reply_to_group(md);
         } else if (shared) {
             /* a browse question: answered a little later, with the others */
@@ -1177,10 +1402,11 @@ mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
                 rs->rs_AnswerIf = -1;
             }
             rs->rs_AnswerFamilies |= answer_family(md);
+            rs->rs_AnswerSubtypes |= subtypeMask;
             md->md_AnswerPending = TRUE;
         } else {
             /* a question for this one name: nobody else answers it */
-            service_send(md, rs, FALSE);
+            service_send(md, rs, FALSE, subtypeMask);
         }
     }
     if (legacy) {
@@ -1216,13 +1442,27 @@ mdnsRegAdd(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
 {
     struct MDNSRegisteredService *rs;
     struct Node *n;
+    LONG i, j;
 
     if (msg->mi_Name[0] == '\0' || msg->mi_ServiceType[0] == '\0' ||
         msg->mi_Port == 0 || msg->mi_TTL > MDNS_MAX_TTL ||
+        msg->mi_SubtypeCount > MDNS_MAX_SUBTYPES ||
+        mdnsTextLength(msg->mi_ServiceType, MDNS_MAX_BROWSE_TYPE + 1) >
+            MDNS_MAX_TYPE ||
         mdnsTextLength(msg->mi_Name, MDNS_MAX_NAME) > 63 ||
         strchr(msg->mi_Name, '.') != NULL ||
         ((msg->mi_HostName[0] != '\0') != (msg->mi_HostAddr != 0))) {
         return MDNSERR_BADPARAM;
+    }
+    for (i = 0; i < msg->mi_SubtypeCount; i++) {
+        if (!valid_subtype(msg->mi_Subtypes[i])) {
+            return MDNSERR_BADPARAM;
+        }
+        for (j = 0; j < i; j++) {
+            if (Stricmp(msg->mi_Subtypes[i], msg->mi_Subtypes[j]) == 0) {
+                return MDNSERR_BADPARAM;
+            }
+        }
     }
     /* One instance name per type on this host. */
     FOR_SERVICES(md, n) {
@@ -1241,6 +1481,11 @@ mdnsRegAdd(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         msg->mi_Name);
     mdnsTextCopy(rs->rs_Type, (LONG)sizeof(rs->rs_Type),
         msg->mi_ServiceType);
+    rs->rs_SubtypeCount = msg->mi_SubtypeCount;
+    for (i = 0; i < rs->rs_SubtypeCount; i++) {
+        mdnsTextCopy(rs->rs_Subtypes[i],
+            (LONG)sizeof(rs->rs_Subtypes[i]), msg->mi_Subtypes[i]);
+    }
     mdnsTextCopy(rs->rs_Domain, (LONG)sizeof(rs->rs_Domain),
         msg->mi_Domain[0] != '\0' ? msg->mi_Domain : MDNS_DOMAIN_LOCAL);
     mdnsTextCopy(rs->rs_TXT, (LONG)sizeof(rs->rs_TXT), msg->mi_TXT);
@@ -1325,7 +1570,7 @@ mdnsRegUpdate(struct MDNSDaemon *md, const struct MDNSIPCMsg *msg)
         changed = TRUE;
     }
     if (changed && rs->rs_State == MDNS_NAME_ANNOUNCED) {
-        service_send(md, rs, FALSE);
+        service_send(md, rs, FALSE, all_subtypes(rs));
         rs->rs_Step = 1;
         rs->rs_NextTick = mdnsTicks() + 50;
     }
@@ -1337,7 +1582,7 @@ service_remove(struct MDNSDaemon *md, struct MDNSRegisteredService *rs)
 {
     Remove(&rs->rs_Node);
     if (rs->rs_State == MDNS_NAME_ANNOUNCED) {
-        service_send(md, rs, TRUE);
+        service_send(md, rs, TRUE, all_subtypes(rs));
     }
     FreeMem(rs, sizeof(*rs));
 }

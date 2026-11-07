@@ -138,6 +138,10 @@ r535_rpc_status_to_errno(uint32_t rpc_status)
 	}
 }
 
+#if defined(__AROS__)
+static void r535_gsp_rpc_report(struct nvkm_gsp *, const char *);
+#endif
+
 static int
 r535_gsp_msgq_wait(struct nvkm_gsp *gsp, u32 gsp_rpc_len, int *ptime)
 {
@@ -184,8 +188,12 @@ r535_gsp_msgq_wait(struct nvkm_gsp *gsp, u32 gsp_rpc_len, int *ptime)
 		usleep_range(1, 2);
 	} while (--(*ptime));
 
-	if (WARN_ON(!*ptime))
+	if (WARN_ON(!*ptime)) {
+#if defined(__AROS__)
+		r535_gsp_rpc_report(gsp, "no message from RM in time");
+#endif
 		return -ETIMEDOUT;
+	}
 
 	return used;
 }
@@ -203,6 +211,60 @@ r535_gsp_msgq_get_entry(struct nvkm_gsp *gsp)
 	return (void *)((u8 *)gsp->shm.msgq.ptr + GSP_PAGE_SIZE +
 	       rptr * GSP_PAGE_SIZE);
 }
+
+#if defined(__AROS__)
+/*
+ * A request to GSP-RM that times out says why: the last request sent and the
+ * reply being waited for, where both queues stand, the next message RM has
+ * queued if there is one, and whether the GSP's RISC-V core still runs.
+ */
+static struct nvkm_gsp *rpc_report_gsp;
+static u32 rpc_last_fn = ~0U, rpc_last_seq, rpc_wait_fn = ~0U;
+
+static void
+r535_gsp_rpc_report(struct nvkm_gsp *gsp, const char *why)
+{
+	struct nvkm_falcon *falcon = &gsp->falcon;
+	u32 mq_r, mq_w, cq_r, cq_w, pending;
+
+	if (!gsp->msgq.rptr || !gsp->msgq.wptr || !gsp->cmdq.rptr || !gsp->cmdq.wptr) {
+		nvkm_error(&gsp->subdev, "%s: queues not set up\n", why);
+		return;
+	}
+	compat_dma_sync_for_cpu(gsp->msgq.wptr, sizeof(*gsp->msgq.wptr));
+	compat_dma_sync_for_cpu(gsp->cmdq.rptr, sizeof(*gsp->cmdq.rptr));
+	mq_r = *gsp->msgq.rptr;
+	mq_w = *gsp->msgq.wptr;
+	cq_r = *gsp->cmdq.rptr;
+	cq_w = *gsp->cmdq.wptr;
+	pending = gsp->cmdq.cnt ? (cq_w + gsp->cmdq.cnt - cq_r) % gsp->cmdq.cnt : 0;
+
+	nvkm_error(&gsp->subdev, "%s: last request fn %d seq %u, waiting for fn %d; "
+		   "msgq rptr %u wptr %u of %u; cmdq wptr %u rptr %u of %u (%u not taken by RM); "
+		   "RISC-V %s, mailbox %08x/%08x\n", why,
+		   (int)rpc_last_fn, rpc_last_seq, (int)rpc_wait_fn,
+		   mq_r, mq_w, gsp->msgq.cnt, cq_w, cq_r, gsp->cmdq.cnt, pending,
+		   nvkm_falcon_riscv_active(falcon) ? "running" : "halted",
+		   nvkm_falcon_rd32(falcon, 0x040), nvkm_falcon_rd32(falcon, 0x044));
+
+	if (mq_r != mq_w) {
+		struct r535_gsp_msg *mqe = r535_gsp_msgq_get_entry(gsp);
+		struct nvfw_gsp_rpc *rpc = (void *)mqe->data;
+
+		nvkm_error(&gsp->subdev, "%s: next message from RM: fn %u result 0x%x "
+			   "length %u, element seq %u count %u\n", why, rpc->function,
+			   rpc->rpc_result, rpc->length, mqe->sequence, mqe->elem_count);
+	}
+}
+
+/* For the display code: a core notifier that times out is serviced by RM. */
+void
+nvkm_gsp_rpc_report(const char *why)
+{
+	if (rpc_report_gsp)
+		r535_gsp_rpc_report(rpc_report_gsp, why);
+}
+#endif
 
 /**
  * DOC: Receive a GSP message queue element
@@ -420,6 +482,9 @@ r535_gsp_cmdq_push(struct nvkm_gsp *gsp, void *rpc)
 		} while(--time);
 
 		if (WARN_ON(!time)) {
+#if defined(__AROS__)
+			r535_gsp_rpc_report(gsp, "command queue stayed full");
+#endif
 			kvfree(msg);
 			return -ETIMEDOUT;
 		}
@@ -494,6 +559,10 @@ r535_gsp_msg_recv(struct nvkm_gsp *gsp, int fn, u32 gsp_rpc_len)
 	struct nvfw_gsp_rpc *rpc;
 	int retries = 4000000, i;
 
+#if defined(__AROS__)
+	rpc_report_gsp = gsp;
+	rpc_wait_fn = fn;
+#endif
 retry:
 	rpc = r535_gsp_msgq_peek(gsp, sizeof(*rpc), &retries);
 	if (IS_ERR_OR_NULL(rpc))
@@ -631,6 +700,11 @@ r535_gsp_rpc_send(struct nvkm_gsp *gsp, void *payload,
 	else
 		rpc->sequence = gsp->rpc_seq++;
 
+#if defined(__AROS__)
+	rpc_report_gsp = gsp;
+	rpc_last_fn = fn;
+	rpc_last_seq = rpc->sequence;
+#endif
 	ret = r535_gsp_cmdq_push(gsp, rpc);
 	if (ret)
 		return ERR_PTR(ret);

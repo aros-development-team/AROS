@@ -17,6 +17,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 #include <proto/oop.h>
+#include <hidd/pci.h>
 
 #include <libdrm/arosdrm.h>
 #include <libdrm/arosdrmmode.h>
@@ -461,6 +462,36 @@ static ULONG HIDDNVGfxConnectorType(uint32_t drmtype)
     }
 }
 
+/*
+ * Let the CPU reach all of video memory through BAR1.
+ *
+ * The aperture the firmware assigns is typically 256MB, and every buffer
+ * the CPU has mapped holds its piece of it for as long as the mapping
+ * lives, so a client with a few hundred megabytes mapped runs out of it.
+ * A card with the Resizable BAR capability can have it made as large as
+ * its memory; the PCI driver places it where the host bridge forwards it,
+ * or leaves it as it is.
+ *
+ * This moves the aperture, so it happens before anything has mapped it
+ * and only once boot displays using the card are gone.
+ */
+static void HIDDNVGfxGrowVRAMAperture(struct pci_dev *pdev)
+{
+    resource_size_t before = pci_resource_len(pdev, 1), after;
+
+    if (!pdev->oopdev || !before)
+        return;
+
+    after = HIDD_PCIDevice_ResizeBAR((OOP_Object *)pdev->oopdev, 1, ~(IPTR)0);
+
+    if (after > before)
+        nvlog("[Nouveau] BAR1 enlarged from %lu MB to %lu MB, at 0x%p\n",
+              (unsigned long)(before >> 20), (unsigned long)(after >> 20),
+              (APTR)(IPTR)pci_resource_start(pdev, 1));
+    else
+        nvlog("[Nouveau] BAR1 stays at %lu MB\n", (unsigned long)(before >> 20));
+}
+
 OOP_Object * METHOD(NVGfx, Root, New)
 {
     drmModeCrtcPtr selectedcrtc = NULL;
@@ -488,6 +519,8 @@ OOP_Object * METHOD(NVGfx, Root, New)
     {
         if (!HIDDNVGfxReleaseBootDisplays(pdev, handover))
             return NULL;
+
+        HIDDNVGfxGrowVRAMAperture(pdev);
     }
     else
         D(bug("[Nouveau] no handover offered, boot drivers left alone\n"));

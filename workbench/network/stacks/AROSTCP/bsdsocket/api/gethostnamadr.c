@@ -675,7 +675,13 @@ AROS_LH1(struct hostent *, gethostbyname,
          struct SocketBase *, libPtr, 35, UL)
 {
     AROS_LIBFUNC_INIT
-    return __gethostbyname(name, libPtr);
+    struct hostent *r;
+
+    ObtainResolver(libPtr);
+    r = __gethostbyname(name, libPtr);
+    writeHErrnoValue(libPtr);
+    ReleaseResolver(libPtr);
+    return r;
     AROS_LIBFUNC_EXIT
 }
 
@@ -815,7 +821,13 @@ AROS_LH3(struct hostent *, gethostbyaddr,
     D(bug("[AROSTCP](gethostnameadr.c) gethostbyaddr()\n"));
 #endif
 
-    return __gethostbyaddr(addr, len, type, libPtr);
+    struct hostent *r;
+
+    ObtainResolver(libPtr);
+    r = __gethostbyaddr(addr, len, type, libPtr);
+    writeHErrnoValue(libPtr);
+    ReleaseResolver(libPtr);
+    return r;
     AROS_LIBFUNC_EXIT
 }
 

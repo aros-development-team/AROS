@@ -68,7 +68,8 @@ typedef enum {false, true} bool;
 #define FILENAMESIZE 32
 #define DNSIZE 32
 #define CMSIZE 80
-#define MAX_ENTRYSIZE (sizeof(struct direntry) + FILENAMESIZE + CMSIZE + 32)
+/* next is an unsigned byte: allow any complete on-disk directory entry. */
+#define MAX_ENTRYSIZE 256
 #define LONGS_PER_BMB ((rbl->reserved_blksize/4)-3)
 #define INDEX_PER_BLOCK ((rbl->reserved_blksize - 3*4) / sizeof(LONG))
 #define ANODES_PER_BLOCK ((rbl->reserved_blksize - 4*4) / sizeof(anode_t))
@@ -134,6 +135,9 @@ struct cache
 	struct MinList LRUqueue;
 	struct MinList LRUpool;
 	uint32 linesize;			// linesize in blocks
+	uint32 failedline;		/* most recent failed aligned read */
+	bool readfailed;
+	int writeerror;		/* first failed cache write, retained until reinit */
 	uint32 nolines;				
 	struct cacheline *cachelines;
 };
@@ -149,7 +153,7 @@ extern enum mode mode;
 
 /* mode for cached block can be:
  * 'check' -- loaded in cache voor check etc --> indirect (by value) edit
- * 'build' -- loaded in buildblock cache. --> direct edit (by reference)
+ * 'build' -- pending rebuild; writeblock updates the build-list owner
  */
 typedef struct {
 	uint32 blocknr;

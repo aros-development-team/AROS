@@ -51,6 +51,11 @@ It can also list the service types present on the link (RFC 6763 section
   instance, the instance's `SRV` (this host's name and the port) and `TXT`,
   and the host's address. Its own records live 75 minutes and the `SRV` two,
   or what its client asked for.
+- **Subtypes.** A registration may repeat `MDNS_ServiceSubtype` for up to
+  eight subtype labels. Each publishes a shared PTR such as
+  `_printer._sub._ipp._tcp.local` to the ordinary instance; SRV, TXT and
+  addresses remain shared with the base registration. Browsing the subtype
+  uses that full `_sub` type and still reports the base type in legacy events.
 - **The name** is asked for and announced as the host's is, and waits for
   the host's name to be settled. When another host has it the service
   becomes `Printer (2)`, then `Printer (3)`; when two hosts ask at the same
@@ -108,6 +113,10 @@ with this same mdnsd. Their canonical PTR, SRV, TXT, address and service-type
 records are reflected internally per interface; the daemon does not depend on
 receiving its own multicast packets. Updates and withdrawals produce the same
 queued changes as records learned from the link.
+Version 41.7 adds RFC 6763 subtype registration and browsing. The repeatable
+`MDNS_ServiceSubtype` tag accepts one underscored DNS label; subtype
+membership is announced, reflected locally and withdrawn with the base
+service. No public structure or vector changed.
 `UnpublishNIPCEntitiesA` does nothing. The remaining compatibility stubs
 invoke no callbacks, change no output buffers and take ownership of no memory.
 Public headers include the upstream handles,
@@ -124,8 +133,8 @@ invents either value from the instance name.
 ### Task lifetime and compatibility
 
 The first fifteen slots, their order/registers and existing tag/error values
-follow upstream Bonami. The AROS implementation is version 41.6. Its daemon
-and library must be installed together: their private IPC is now version 5.
+follow upstream Bonami. The AROS implementation is version 41.7. Its daemon
+and library must be installed together: their private IPC is now version 6.
 
 Registration lifetime deliberately differs from upstream Bonami:
 

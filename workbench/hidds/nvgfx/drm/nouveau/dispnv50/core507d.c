@@ -65,7 +65,12 @@ core507d_ntfy_wait_done(struct nouveau_bo *bo, u32 offset,
 	s64 time = nvif_msec(device, 2000ULL,
 		if (NVBO_TD32(bo, offset, NV_DISP_CORE_NOTIFIER_1, COMPLETION_0, DONE, ==, TRUE))
 			break;
+#if defined(__AROS__)
+		/* up to a frame: sleep instead of spinning (see base507c.c) */
+		usleep_range(100, 200);
+#else
 		usleep_range(1, 2);
+#endif
 	);
 #if defined(__AROS__)
 	if (time < 0)

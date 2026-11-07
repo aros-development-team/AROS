@@ -1,11 +1,12 @@
 /*
     Copyright (C) 2012-2026, The AROS Development Team. All rights reserved.
 
-    Get pointer to errno variable in stdc.library libbase.
+    Get pointer to the calling thread's errno variable.
     This function is in both the static linklib and stdc.library.
 */
 #ifndef STDC_STATIC
 #include <libraries/stdc.h>
+#include <proto/stdc.h>
 #endif
 
 int *__stdc_geterrnoptr(void)
@@ -15,6 +16,8 @@ int *__stdc_geterrnoptr(void)
 
     return &static_errno;
 #else
-    return &(__aros_getbase_StdCBase()->_errno);
+    /* errno belongs to the calling thread, whichever base this is called
+       through: a pthread worker has one of its own (__stdc_threaderrno.c) */
+    return __stdc_threaderrnoptr();
 #endif
 }

@@ -1597,16 +1597,33 @@ diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvk_physical_device.c mesa-26.2.5.aros/
         * snoops the CPU caches when it accesses memory across the PCI bus.
         */
        pdev->mem_types[pdev->mem_type_count++] = (VkMemoryType) {
-+         /* On AROS not coherent: the bus may not snoop the CPU's caches,
-+          * so system memory maps get explicit cache maintenance (see
++         /* Not coherent where the bus does not snoop the CPU's caches:
++          * system memory maps then get explicit cache maintenance (see
 +          * nvkmd_nouveau_alloc_tiled_mem()). */
           .propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-+#ifndef __AROS__
++#ifndef NVKMD_NOUVEAU_SYSMEM_NONCOHERENT
                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
 +#endif
                            VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
           .heapIndex = sysmem_heap_idx,
        };
+diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau.h mesa-26.2.5.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau.h
+--- mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau.h
++++ mesa-26.2.5.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau.h
+@@ -14,6 +14,13 @@
+ 
+ #include <sys/types.h>
+ 
++#if defined(__AROS__) && !defined(__i386__) && !defined(__x86_64__)
++/* Only an x86 bus snoops the CPU's caches (as the kernel driver's DMA code
++ * assumes too): elsewhere a CPU map of system memory is cached and not
++ * coherent with the GPU, and gets explicit cache maintenance. */
++#define NVKMD_NOUVEAU_SYSMEM_NONCOHERENT 1
++#endif
++
+ struct nouveau_ws_bo;
+ struct nouveau_ws_context;
+ struct nouveau_ws_device;
 diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c mesa-26.2.5.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c
 --- mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c
 +++ mesa-26.2.5.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c
@@ -1644,7 +1661,7 @@ diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c mesa-
     if (force_mem_to_gart(dev->base.pdev, flags))
        domains = NOUVEAU_WS_BO_GART;
  
-+#ifdef __AROS__
++#ifdef NVKMD_NOUVEAU_SYSMEM_NONCOHERENT
 +   /* The bus does not snoop the CPU's caches: a CPU map of system memory
 +    * (GART) is cached and not coherent with the GPU, while a map of VRAM
 +    * goes through the BAR and is. A coherent mapping is put in VRAM; GART
@@ -1664,7 +1681,7 @@ diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c mesa-
        /* We assume that all discrete GPU maps are coherent.  They're either
         * CPU memory or WB VRAM maps.
         */
-+#ifdef __AROS__
++#ifdef NVKMD_NOUVEAU_SYSMEM_NONCOHERENT
 +      if (cached_map)
 +         flags &= ~NVKMD_MEM_COHERENT;
 +      else
@@ -1743,7 +1760,7 @@ diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c mesa-
     return nvkmd_nouveau_mem(_mem)->bo->handle;
  }
  
-+#ifdef __AROS__
++#ifdef NVKMD_NOUVEAU_SYSMEM_NONCOHERENT
 +/* Cache maintenance for a cached map of system memory: what the CPU wrote
 + * is written back before the GPU reads it; stale lines are dropped before
 + * the CPU reads what the GPU wrote. The map is the memory's address. */
@@ -1783,7 +1800,7 @@ diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c mesa-
     .map = nvkmd_nouveau_mem_map,
     .unmap = nvkmd_nouveau_mem_unmap,
     .overmap = nvkmd_nouveau_mem_overmap,
-+#ifdef __AROS__
++#ifdef NVKMD_NOUVEAU_SYSMEM_NONCOHERENT
 +   .sync_to_gpu = nvkmd_nouveau_mem_sync_to_gpu,
 +   .sync_from_gpu = nvkmd_nouveau_mem_sync_from_gpu,
 +#endif
@@ -2027,12 +2044,13 @@ diff -ruN mesa-26.2.5/src/util/log.c mesa-26.2.5.aros/src/util/log.c
     }
  
     mesa_max_log_level = MESA_DEFAULT_LOG_LEVEL;
-@@ -397,8 +404,32 @@
+@@ -397,8 +404,38 @@
  
  #endif /* DETECT_OS_ANDROID */
  
 +#ifdef __AROS__
-+extern int kprintf(const char *, ...);
++#include <exec/rawfmt.h>
++#include <proto/exec.h>
 +
 +static void
 +logger_serial(enum mesa_log_level level,
@@ -2047,7 +2065,12 @@ diff -ruN mesa-26.2.5/src/util/log.c mesa-26.2.5.aros/src/util/log.c
 +         LOGGER_VASNPRINTF_AFFIX_NEWLINE,
 +         level, tag, format, va);
 +
-+   kprintf("[mesa] %s", msg);
++   /* exec's debug output: arossupport's kprintf takes the kernel's
++    * debug lock on SMP pc targets, which a module cannot link */
++   {
++      IPTR args[1] = { (IPTR)msg };
++      RawDoFmt("[mesa] %s", (RAWARG)args, RAWFMTFUNC_SERIAL, NULL);
++   }
 +
 +   if (msg != local_msg)
 +      free(msg);

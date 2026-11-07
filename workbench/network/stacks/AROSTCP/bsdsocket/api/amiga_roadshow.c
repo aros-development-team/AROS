@@ -189,7 +189,7 @@ AROS_LH1(long, bpf_open,
 
     d = bpf_lookup(handle);
     if(d != NULL) {
-        d->bd_sigtask = libPtr->thisTask;
+        d->bd_sigtask = FindTask(NULL);	/* the caller: any task of a shared base */
     }
 
     return handle;
@@ -397,7 +397,7 @@ AROS_LH2(long, bpf_set_notify_mask,
     }
 
     d->bd_notifymask = mask;
-    d->bd_sigtask = libPtr->thisTask;
+    d->bd_sigtask = FindTask(NULL);	/* the caller: any task of a shared base */
     return 0;
 
     AROS_LIBFUNC_EXIT
@@ -419,7 +419,7 @@ AROS_LH2(long, bpf_set_interrupt_mask,
     }
 
     d->bd_intrmask = mask;
-    d->bd_sigtask = libPtr->thisTask;
+    d->bd_sigtask = FindTask(NULL);	/* the caller: any task of a shared base */
     return 0;
 
     AROS_LIBFUNC_EXIT
@@ -1610,7 +1610,12 @@ AROS_LH5(struct hostent *, RS_gethostbyname_r,
          struct SocketBase *, libPtr, 123, UL)
 {
     AROS_LIBFUNC_INIT
-    return __gethostbyname_r(name, result, buf, buflen, h_errnop, libPtr);
+    struct hostent *r;
+
+    ObtainResolver(libPtr);
+    r = __gethostbyname_r(name, result, buf, buflen, h_errnop, libPtr);
+    ReleaseResolver(libPtr);
+    return r;
     AROS_LIBFUNC_EXIT
 }
 
@@ -1628,8 +1633,13 @@ AROS_LH7(struct hostent *, RS_gethostbyaddr_r,
          struct SocketBase *, libPtr, 124, UL)
 {
     AROS_LIBFUNC_INIT
-    return __gethostbyaddr_r(addr, len, type, result, buf, buflen,
-                             h_errnop, libPtr);
+    struct hostent *r;
+
+    ObtainResolver(libPtr);
+    r = __gethostbyaddr_r(addr, len, type, result, buf, buflen,
+                          h_errnop, libPtr);
+    ReleaseResolver(libPtr);
+    return r;
     AROS_LIBFUNC_EXIT
 }
 
@@ -1793,14 +1803,12 @@ AROS_LH1(void, RS_freeaddrinfo,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH4(LONG, RS_getaddrinfo,
-         AROS_LHA(const char *, hostname, A0),
-         AROS_LHA(const char *, servname, A1),
-         AROS_LHA(const struct addrinfo *, hints, A2),
-         AROS_LHA(struct addrinfo **, result, A3),
-         struct SocketBase *, libPtr, 136, UL)
+/* RS_getaddrinfo() under the base's resolver lock */
+static LONG getaddrinfoLocked(const char *hostname, const char *servname,
+                              const struct addrinfo *hints,
+                              struct addrinfo **result,
+                              struct SocketBase *libPtr)
 {
-    AROS_LIBFUNC_INIT
 
     struct addrinfo sentinel;
     struct addrinfo *cur;
@@ -2028,6 +2036,22 @@ fail:
     }
     return error;
 
+}
+
+AROS_LH4(LONG, RS_getaddrinfo,
+         AROS_LHA(const char *, hostname, A0),
+         AROS_LHA(const char *, servname, A1),
+         AROS_LHA(const struct addrinfo *, hints, A2),
+         AROS_LHA(struct addrinfo **, result, A3),
+         struct SocketBase *, libPtr, 136, UL)
+{
+    AROS_LIBFUNC_INIT
+    LONG r;
+
+    ObtainResolver(libPtr);
+    r = getaddrinfoLocked(hostname, servname, hints, result, libPtr);
+    ReleaseResolver(libPtr);
+    return r;
     AROS_LIBFUNC_EXIT
 }
 
@@ -2042,17 +2066,12 @@ AROS_LH1(STRPTR, RS_gai_strerror,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH7(LONG, RS_getnameinfo,
-         AROS_LHA(struct sockaddr *, sa, A0),
-         AROS_LHA(LONG, salen, D0),
-         AROS_LHA(char *, hostname, A1),
-         AROS_LHA(LONG, hostlen, D1),
-         AROS_LHA(char *, servicename, A2),
-         AROS_LHA(LONG, servicelen, D2),
-         AROS_LHA(LONG, flags, D3),
-         struct SocketBase *, libPtr, 138, UL)
+/* RS_getnameinfo() under the base's resolver lock */
+static LONG getnameinfoLocked(struct sockaddr *sa, LONG salen,
+                              char *hostname, LONG hostlen,
+                              char *servicename, LONG servicelen,
+                              LONG flags, struct SocketBase *libPtr)
 {
-    AROS_LIBFUNC_INIT
 
     if (sa == NULL)
         return EAI_FAIL;
@@ -2151,6 +2170,25 @@ rs_serv_done:
 
     return 0;
 
+}
+
+AROS_LH7(LONG, RS_getnameinfo,
+         AROS_LHA(struct sockaddr *, sa, A0),
+         AROS_LHA(LONG, salen, D0),
+         AROS_LHA(char *, hostname, A1),
+         AROS_LHA(LONG, hostlen, D1),
+         AROS_LHA(char *, servicename, A2),
+         AROS_LHA(LONG, servicelen, D2),
+         AROS_LHA(LONG, flags, D3),
+         struct SocketBase *, libPtr, 138, UL)
+{
+    AROS_LIBFUNC_INIT
+    LONG r;
+
+    ObtainResolver(libPtr);
+    r = getnameinfoLocked(sa, salen, hostname, hostlen, servicename, servicelen, flags, libPtr);
+    ReleaseResolver(libPtr);
+    return r;
     AROS_LIBFUNC_EXIT
 }
 

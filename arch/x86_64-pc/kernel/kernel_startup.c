@@ -794,6 +794,25 @@ void core_CPUSetup(apicid_t cpuNo, APTR cpuGDT, IPTR SystemStack)
 
     // Reload GS segment (user)
     asm volatile ("mov %0,%%gs"::"a"(USER_GS));
+
+    /* IA32_PAT entry 4 becomes write-combining, for MAP_WriteCombine; on every CPU */
+    {
+        ULONG cpuid_edx = 0;
+
+        asm volatile ("cpuid" : "=d"(cpuid_edx) : "a"(1) : "ebx", "ecx");
+        if (cpuid_edx & (1 << 16))          /* CPUID.01H:EDX.PAT */
+        {
+            ULONG lo = 0x00070406UL;        /* PA3..PA0: UC, UC-, WT, WB   */
+            ULONG hi = 0x00070401UL;        /* PA7..PA4: UC, UC-, WT, WC   */
+
+            asm volatile ("wrmsr" :: "c"(0x277), "a"(lo), "d"(hi));
+        }
+        else
+        {
+            D(bug("[Kernel] %s[%03u]: no PAT support, MAP_WriteCombine will be WB\n",
+                  __func__, cpuNo));
+        }
+    }
 }
 
 /* Boot-Time Allocation routines ... */

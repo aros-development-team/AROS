@@ -31,6 +31,7 @@
 
 #include "vcgfx_hidd.h"
 #include "vcgfx_hardware.h"
+#include "vcgfx_decode.h"
 #include "vcgfx_hvs6.h"
 #include "vcgfx_neon.h"
 
@@ -186,6 +187,9 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             {
                 { aHidd_Display_GfxHidd,  (IPTR)self         },
                 { aHidd_Display_ModeTags, (IPTR)vc_modearray },
+                { aHidd_Display_DecodeVectors,
+                  XSD(cl)->vcsd_IsBCM2711 ? (IPTR)&vcgfx_decode_vectors : 0 },
+                { aHidd_Display_DecodeDataSize, vcgfx_decode_datasize },
                 { TAG_DONE,               0                  }
             };
 
@@ -423,17 +427,46 @@ static void vc4_fb_new(OOP_Class *cl, OOP_Object *o, OOP_Object *bm)
 
 /* Without a framebuffer the bitmap given is scanned out itself; the base
  * class then tracks it for the cursor. */
+/* The compositor's display mode and its size, for fHidd_Display_Show_Scale */
+static BOOL vc4_scale_mode(OOP_Class *cl, OOP_Object *o, IPTR *mode, ULONG *w, ULONG *h)
+{
+    OOP_Object *comp = NULL, *sync = NULL, *pf = NULL;
+    IPTR m = vHidd_ModeID_Invalid, mw = 0, mh = 0;
+
+    OOP_GetAttr(o, aHidd_Display_Compositor, (IPTR *)&comp);
+    if (comp)
+        OOP_GetAttr(comp, aHidd_Compositor_DisplayMode, &m);
+    if ((m == vHidd_ModeID_Invalid)
+        || !HIDD_DMEnum_GetMode(XSD(cl)->vcsd_DMEnum, m, &sync, &pf) || !sync)
+        return FALSE;
+    OOP_GetAttr(sync, aHidd_Sync_HDisp, &mw);
+    OOP_GetAttr(sync, aHidd_Sync_VDisp, &mh);
+    if (!mw || !mh)
+        return FALSE;
+    *mode = m;
+    *w    = mw;
+    *h    = mh;
+    return TRUE;
+}
+
 OOP_Object *MNAME_DISPLAY(Show)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_Show *msg)
 {
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
 
     if (xsd->vcsd_NoFB)
     {
+        IPTR smode = vHidd_ModeID_Invalid;
+        ULONG sw = 0, sh = 0;
+
         if (msg->bitMap && !xsd->vcsd_FBObj)
             vc4_fb_new(cl, o, msg->bitMap);
         if (!xsd->vcsd_FBObj)
             return NULL;
-        vcgfx_show(xsd, msg->bitMap);
+        /* Asked to scale and cannot: NULL, the compositor composes instead */
+        if ((msg->flags & fHidd_Display_Show_Scale) && !vc4_scale_mode(cl, o, &smode, &sw, &sh))
+            return NULL;
+        if (!vcgfx_show(xsd, msg->bitMap, smode, sw, sh))
+            return NULL;
     }
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
@@ -459,29 +492,56 @@ static void vc4_plane_scale(struct VideoCoreGfx_staticdata *xsd, ULONG *min, ULO
     }
 }
 
-/* Overlay planes above the primary, z by index: 32-bit screens and client
- * surfaces, 32 or 16 bit or video, in scanout memory. How many fit at once
- * is the budget's to say, in CommitPlanes(). With no colour key a video
- * partly covered goes off rather than show over what covers it. */
+/* Overlay planes above or below the primary, at any z but the primary's:
+ * 32-bit screens and client surfaces, 32 or 16 bit or video, in scanout
+ * memory; 32-bit ones may blend by their own alpha. Below, they show
+ * through the alpha of what is above. How many fit at once is the
+ * budget's to say, in CommitPlanes(). With no colour key a video partly
+ * covered goes off rather than show over what covers it. */
 ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_GetPlaneInfo *msg)
 {
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
     struct HIDD_PlaneInfo info = { 0 };
     ULONG len = msg->infoLen;
 
-    if (!xsd->vcsd_NoFB || (msg->index == 0) || (msg->index > VCGFX_OVL_PLANES))
+    if (!xsd->vcsd_NoFB || (msg->index > VCGFX_OVL_PLANES))
         return (ULONG)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
+    if (msg->index == 0)
+    {
+        /* The base primary, but scaling a screen to fill the display, and
+         * over the planes below it by its own alpha */
+        struct pHidd_Display_GetPlaneInfo supmsg = *msg;
+
+        supmsg.info    = &info;
+        supmsg.infoLen = sizeof(info);
+        if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)&supmsg))
+            return 0;
+        vc4_plane_scale(xsd, &info.ScaleMin, &info.ScaleMax);
+        info.ZMin        = VCGFX_PRIMARY_Z;
+        info.ZMax        = VCGFX_PRIMARY_Z;
+        info.AlphaModes |= 1 << vHidd_CompAlpha_PerPixel;
+        if (len > sizeof(info))
+            len = sizeof(info);
+        CopyMem(&info, msg->info, len);
+        return len;
+    }
+
     info.Type       = vHidd_Plane_Overlay;
-    info.ZMin       = msg->index;
-    info.ZMax       = msg->index;
+    info.ZMin       = 0;
+    info.ZMax       = 2 * VCGFX_PRIMARY_Z;
     info.PixFmtMask = (1 << vcgfx_native32(xsd)) | (1 << vHidd_StdPixFmt_BGRA32)
                     | (1 << vHidd_StdPixFmt_BGR032) | (1 << vHidd_StdPixFmt_RGB16_LE)
                     | (1 << vHidd_StdPixFmt_RGB15_LE);
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+        info.PixFmtMask |= 1 << vHidd_StdPixFmt_RGBA32;     /* the screens' own, with alpha */
     if (vcgfx_yuv_ok(xsd, vHidd_VideoFmt_NV12))
         info.VideoFmtMask = (1 << vHidd_VideoFmt_NV12) | (1 << vHidd_VideoFmt_I420);
+    /* 10-bit decode targets: SAND128 columns only HVS5 reads */
+    if (info.VideoFmtMask && (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5))
+        info.VideoFmtMask |= 1 << vHidd_VideoFmt_P010;
     vc4_plane_scale(xsd, &info.ScaleMin, &info.ScaleMax);
-    info.AlphaModes = 1 << vHidd_CompAlpha_None;
+    info.AlphaModes = (1 << vHidd_CompAlpha_None) | (1 << vHidd_CompAlpha_PerPixel);
     info.PosAlignX  = 1;
     info.PosAlignY  = 1;
     info.Flags      = PIF_NEEDS_DISPLAYMEM | PIF_HIDE_OBSCURED;
@@ -728,11 +788,15 @@ VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
             OOP_GetAttr(dst_pf, aHidd_PixFmt_BytesPerPixel, &dst_bpp);
             OOP_GetAttr(dst_pf, aHidd_PixFmt_StdPixFmt, &dst_std);
         }
-        /* Rows copy as they are only in one byte order; X and A are alike */
-        if (src_std == vHidd_StdPixFmt_BGRA32)
-            src_std = vHidd_StdPixFmt_BGR032;
-        if (dst_std == vHidd_StdPixFmt_BGRA32)
-            dst_std = vHidd_StdPixFmt_BGR032;
+        /* Rows copy as they are only in one byte order; X and A are alike
+         * but into alpha from none, which the superclass makes opaque */
+        if ((src_std == vHidd_StdPixFmt_BGRA32) || (dst_std != vHidd_StdPixFmt_BGRA32))
+        {
+            if (src_std == vHidd_StdPixFmt_BGRA32)
+                src_std = vHidd_StdPixFmt_BGR032;
+            if (dst_std == vHidd_StdPixFmt_BGRA32)
+                dst_std = vHidd_StdPixFmt_BGR032;
+        }
     }
 
     if (!src_buf || !dst_buf || src_bpp != 4 || dst_bpp != 4 || src_std != dst_std)

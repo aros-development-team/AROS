@@ -1,16 +1,22 @@
 # ARDA wire protocol, version 1
 
 ARDA (AROS Remote Debug Agent) speaks a line-oriented, text-only protocol
-over a single TCP connection.  The agent serves one client at a time and is
-strictly read-only: no command changes system state, runs programs, writes
+over TCP connections.  The agent serves up to four clients at the same time
+where the TCP/IP stack allows it (see Transport), and is strictly read-only: no command changes system state, runs programs, writes
 memory or files, or stops tasks.
 
 ## Transport
 
 * TCP, default port 7777, default bind address 127.0.0.1.  Remote access
   needs an explicit `ADDRESS=` on the agent command line.
-* One client at a time.  A second connection is answered with
-  `ERR 503 busy, one client at a time` and closed immediately.
+* Up to four clients at the same time, each served by a thread of its own,
+  where the stack lets the tasks of a program share a library base
+  (`SBTC_CAN_SHARE_LIBRARY_BASES`): a command that blocks (`WAIT`, a `GET`
+  body) holds up only its own client. Commands themselves run one at a
+  time. A further connection is answered with `ERR 503 busy, too many
+  clients` and closed immediately.
+* On a stack that cannot share a base: one client at a time, and a second
+  connection is answered with `ERR 503 busy, one client at a time`.
 * The agent drops a client that sends nothing for `IDLE` seconds (default
   60, `IDLE=0` disables) after sending `ERR 408 idle timeout, closing`.
 * Lines end with `\n`; a trailing `\r` is stripped.  Empty lines are ignored.
@@ -60,7 +66,7 @@ Error codes (HTTP-flavoured for familiarity):
 | 408  | idle timeout, connection is being closed   |
 | 500  | internal error in the agent                |
 | 501  | command known but not available on this system (e.g. resource missing) |
-| 503  | agent busy with another client             |
+| 503  | agent busy: too many clients               |
 
 ## Commands (protocol 1)
 
@@ -183,6 +189,26 @@ bad address cannot fault the agent. Numbers may be decimal or `0x` hex.
 | `SYMBOL <addr>...` | multi-line, one `ADDR=0x... SYM=<module>:<segment>:<symbol>+0x<off>` (or `SYM=none`) per address, up to 32. |
 | `PEEK <addr> [<len>] [Q]` | multi-line hex dump of `len` bytes (default 256, max 4096): `ADDR=0x... HEX="xx xx ..." ASCII="..."`, 16 bytes per line. With `Q`: 64-bit words, `ADDR=0x... VALUE=0x... [SYM=...]`, the address rounded down to 8. |
 | `STACK <task\|0xaddr> [FROM=<addr>] [MAX=<bytes>] [ALL]` | the task (exact name, or its address) and `SP= LOWER= UPPER= FROM= BYTES=`, then one `ADDR= OFF= VALUE= SYM=` line per stack word that points into a code (`text`) segment; `ALL` lists every word that resolves to any segment. The scan runs upwards from the saved SP, or from `FROM=` (e.g. the SP of a crash report), for `MAX` bytes (default 16 KiB, max 256 KiB), ending at the stack's upper bound. Then `SHOWN=`. |
+
+## Debugging (agent 0.4, protocol 1)
+
+`ADDRESS`, `MODULES`, `LIBS`, `DEVICES`, `RESOURCES`, `PORTS` and
+`SEMAPHORES` only read and are always available. `BREAK` sends a signal and
+`BACKTRACE` reads a task's stack, so they are control-mode commands. A task
+is named exactly as in `TASKS` (its node name, or a CLI process's command
+name) or given by address. Lists are copied under `Forbid()`; a pointer
+found in them is followed only when it lies in RAM.
+
+| Command | Response |
+|---------|----------|
+| `BREAK <task\|0xaddr\|JOB=n> [C\|D\|E\|F]` | `TASK=0x... NAME="..." SIGNAL=CTRL_<x> MASK=0x...`: the break signal (default Ctrl-C) sent to the task, or to a `RUN` job's process. `ERR 404` no such task or job, `409` the job is not running. |
+| `BACKTRACE <task\|0xaddr> [MAX=<bytes>]` | `TASK NAME= PC= LR= SP= FP= LOWER= UPPER= REGS=saved\|none` from the task's saved context, then `FRAME=<n> KIND=pc\|lr\|stack [AT=<stack addr> OFF=<from SP>] VALUE=0x... SYM=...` per frame, and `FRAMES= SCANNED=`. Stack frames are words, from the saved SP upwards (`MAX` bytes, default 64 KiB, max 256 KiB), that point into a code segment just after a call instruction (riscv `jal`/`jalr`/`c.jalr` to `ra`, aarch64 `bl`/`blr`, x86 `call`), so stale pointers to code are left out. `LR` is listed when it is such an address. A running task (or the agent itself) has no saved context: `ERR 409`. |
+| `ADDRESS <symbol\|prefix*> [module]` | `SYMBOL="..." MODULE="..." START=0x... END=0x...` per match (up to 64), then `MATCHES= SHOWN=`. A trailing `*` matches a prefix; `module` restricts the search (case-insensitive). |
+| `MODULES [filter]` | `MODULE NAME="..." SYMBOLS=<n> LOW=0x... HIGH=0x...` per module debug.library has symbols for (the range spanned by its symbols), optionally only names containing `filter`; then `COUNT=` (`MORE=1` past 512). |
+| `LIBS`, `DEVICES` | `LIB`/`DEVICE NAME="..." BASE=0x... VERSION=<v>.<r> OPENCNT=<n> FLAGS=0x.. [DELEXP=1]` per node, then `COUNT= TOTAL=`. A name is read only from RAM or a segment debug.library knows; one it cannot read is given as `NAME="" NAMEPTR=0x...`. |
+| `RESOURCES` | `RESOURCE NAME="..." BASE=0x...` per node (with the library fields when the node is a library), then `COUNT= TOTAL=`. |
+| `PORTS` | `PORT NAME="..." ADDR=0x... ACTION=SIGNAL\|SOFTINT\|IGNORE\|ACTION SIGBIT= TASK=0x... TASKNAME="..." MSGS=<queued>` per public port, then `COUNT= TOTAL=`. |
+| `SEMAPHORES` | `SEMAPHORE NAME="..." ADDR=0x... NEST= QUEUE= OWNER=0x... OWNERNAME="..." WAITERS=<n> WAIT0="<task>[(shared)]" ...` per public semaphore (first 8 waiters named), then `COUNT= TOTAL=`. |
 
 ## Versioning
 

@@ -49,6 +49,10 @@ struct DiscoveryView
     ULONG link;
     BOOL active, present;
     BOOL type;          /* key is a service type, from type enumeration */
+    UWORD browsers;     /* sessions that received the current ADD */
+    UWORD activeBrowsers;
+    APTR browserHandles[DISC_SESSIONS];
+    APTR activeHandles[DISC_SESSIONS];
     struct MDNSDiscoveryEvent event;
 };
 struct DiscoverySession
@@ -188,6 +192,45 @@ static BOOL type_key(const char *type, UBYTE *key)
     return TRUE;
 }
 
+/* Browse accepts either a base type or one RFC 6763 subtype owner such as
+ * "_printer._sub._ipp._tcp". The event still reports the base type. */
+static BOOL browse_key(const char *type, UBYTE *key)
+{
+    UBYTE base[256];
+    LONG length, split = 0, i, baseLength;
+
+    if (type_key(type, key)) {
+        return TRUE;
+    }
+    length = mdnsTextLength(type, MDNS_MAX_BROWSE_TYPE + 1);
+    while (split < length && type[split] != '.') {
+        split++;
+    }
+    if (length > MDNS_MAX_BROWSE_TYPE || split < 2 || split > 63 ||
+        type[0] != '_' || Strnicmp(type + split, "._sub.", 6) != 0 ||
+        !type_key(type + split + 6, base)) {
+        return FALSE;
+    }
+    for (i = 1; i < split; i++) {
+        UBYTE c = lower((UBYTE)type[i]);
+
+        if (!(c >= 'a' && c <= 'z') && !(c >= '0' && c <= '9') &&
+            c != '-') {
+            return FALSE;
+        }
+    }
+    baseLength = key_length(base);
+    if (baseLength == 0 || split + 6 + baseLength > 256) {
+        return FALSE;
+    }
+    key[0] = split;
+    memcpy(key + 1, type, split);
+    key[split + 1] = 4;
+    memcpy(key + split + 2, "_sub", 4);
+    memcpy(key + split + 6, base, baseLength);
+    return TRUE;
+}
+
 /*
  * Gives a lent request back, exactly once. A request whose owner has gone
  * is dropped unread instead: that owner broke the contract, and its port
@@ -262,19 +305,20 @@ static void enqueue(struct MDNSDaemon *md, struct DiscoverySession *s,
 }
 
 static void notify(struct MDNSDaemon *md, const struct DiscoveryView *view,
-    ULONG code)
+    ULONG code, UWORD browsers)
 {
     struct MDNSDiscovery *d = md->md_Discovery;
     LONG i;
+    APTR const *handles = code == MEVENT_ADD ?
+        view->activeHandles : view->browserHandles;
     struct MDNSDiscoveryEvent event = view->event;
 
     event.de_Code = code;
     for (i = 0; i < DISC_SESSIONS; i++) {
         struct DiscoverySession *s = &d->sessions[i];
 
-        if (s->handle != NULL && !s->resolve &&
-            same_key(s->key, view->type ? services_key :
-                view->key + view->key[0] + 1)) {
+        if ((browsers & (1U << i)) != 0 && s->handle != NULL &&
+            s->handle == handles[i] && !s->resolve) {
             enqueue(md, s, &event);
         }
     }
@@ -318,7 +362,41 @@ static BOOL browsed(const struct MDNSDiscovery *d, const UBYTE *type)
     }
     return FALSE;
 }
-static BOOL wanted_instance(const struct MDNSDiscovery *d, const UBYTE *instance)
+
+static UWORD browse_sessions(const struct MDNSDiscovery *d,
+    const UBYTE *type)
+{
+    LONG i;
+    UWORD result = 0;
+
+    for (i = 0; i < DISC_SESSIONS; i++) {
+        const struct DiscoverySession *s = &d->sessions[i];
+
+        if (live(s) && !s->resolve && same_key(s->key, type)) {
+            result |= (UWORD)(1U << i);
+        }
+    }
+    return result;
+}
+static BOOL ptr_targets(const struct MDNSDiscovery *d, const UBYTE *owner,
+    const UBYTE *instance, ULONG link, ULONG now)
+{
+    LONG i;
+
+    for (i = 0; i < DISC_RECORDS; i++) {
+        const struct DiscoveryRecord *r = &d->records[i];
+
+        if (r->type == DNS_TYPE_PTR && r->link == link &&
+            !due(now, r->expires) && same_key(r->key, owner) &&
+            same_key(r->data, instance)) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+static BOOL wanted_instance(const struct MDNSDiscovery *d,
+    const UBYTE *instance, ULONG link, ULONG now)
 {
     LONG i;
 
@@ -329,6 +407,10 @@ static BOOL wanted_instance(const struct MDNSDiscovery *d, const UBYTE *instance
         const struct DiscoverySession *s = &d->sessions[i];
 
         if (live(s) && s->resolve && same_key(s->key, instance)) {
+            return TRUE;
+        }
+        if (live(s) && !s->resolve &&
+            ptr_targets(d, s->key, instance, link, now)) {
             return TRUE;
         }
     }
@@ -343,7 +425,8 @@ static BOOL wanted_host(const struct MDNSDiscovery *d, const UBYTE *host,
         const struct DiscoveryRecord *r = &d->records[i];
 
         if (r->type == DNS_TYPE_SRV && r->link == link && !due(now, r->expires) &&
-            same_key(r->data + 6, host) && wanted_instance(d, r->key)) {
+            same_key(r->data + 6, host) &&
+            wanted_instance(d, r->key, link, now)) {
             return TRUE;
         }
     }
@@ -357,7 +440,7 @@ static BOOL wanted(const struct MDNSDiscovery *d, UWORD type, const UBYTE *key,
         return browsed(d, key);
     case DNS_TYPE_SRV:
     case DNS_TYPE_TXT:
-        return wanted_instance(d, key);
+        return wanted_instance(d, key, link, now);
     case DNS_TYPE_A:
     case DNS_TYPE_AAAA:
         return wanted_host(d, key, link, now);
@@ -428,8 +511,10 @@ static void fail_wanting(struct MDNSDiscovery *d, UWORD type, const UBYTE *key,
         if (!live(s)) {
             continue;
         }
-        if (s->resolve ? type != DNS_TYPE_PTR && same_key(s->key, key) :
-            same_key(s->key, type == DNS_TYPE_PTR ? key : key + key[0] + 1)) {
+        if ((s->resolve && type != DNS_TYPE_PTR && same_key(s->key, key)) ||
+            (!s->resolve && type == DNS_TYPE_PTR && same_key(s->key, key)) ||
+            (!s->resolve && type != DNS_TYPE_PTR &&
+                ptr_targets(d, s->key, key, link, now))) {
             fail(d, s);
         }
     }
@@ -500,6 +585,42 @@ static BOOL valid_type(const UBYTE *key)
     memcpy(type + n + 1, key + n + 2, 4);
     type[n + 5] = '\0';
     return type_key(type, expected) && same_key(expected, key);
+}
+
+/* Return the base type portion of a valid subtype owner, or NULL. */
+static const UBYTE *subtype_base(const UBYTE *key)
+{
+    LONG i;
+    const UBYTE *sub;
+    const UBYTE *base;
+
+    if (key[0] < 2 || key[0] > 63 || key[1] != '_') {
+        return NULL;
+    }
+    for (i = 2; i <= key[0]; i++) {
+        UBYTE c = lower(key[i]);
+
+        if (!(c >= 'a' && c <= 'z') && !(c >= '0' && c <= '9') &&
+            c != '-') {
+            return NULL;
+        }
+    }
+    sub = key + key[0] + 1;
+    if (sub[0] != 4 || lower(sub[1]) != '_' || lower(sub[2]) != 's' ||
+        lower(sub[3]) != 'u' || lower(sub[4]) != 'b') {
+        return NULL;
+    }
+    base = sub + 5;
+    return valid_type(base) ? base : NULL;
+}
+
+static BOOL ptr_owner_matches(const UBYTE *owner, const UBYTE *instance)
+{
+    const UBYTE *base = instance + instance[0] + 1;
+    const UBYTE *subtype = subtype_base(owner);
+
+    return same_key(owner, base) ||
+        (subtype != NULL && same_key(subtype, base));
 }
 
 /* What a type found by enumeration is told as: its type, no instance. */
@@ -697,7 +818,7 @@ void mdnsDiscoveryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
             return;
         }
         if (is_services(key) ? !valid_type(data) :
-            !valid_instance(data) || !same_key(key, data + data[0] + 1)) {
+            !valid_instance(data) || !ptr_owner_matches(key, data)) {
             return;
         }
         size = key_length(data);
@@ -817,7 +938,8 @@ static struct DiscoveryView *view_of(struct MDNSDiscovery *d,
     return NULL;
 }
 
-static void release_type_views(struct MDNSDiscovery *d, const UBYTE *type)
+static void release_type_views(struct MDNSDiscovery *d, const UBYTE *type,
+    ULONG now)
 {
     LONG i;
     BOOL services = is_services(type);
@@ -826,7 +948,7 @@ static void release_type_views(struct MDNSDiscovery *d, const UBYTE *type)
         struct DiscoveryView *view = &d->views[i];
 
         if (view->key[0] != 0 && view->type == services &&
-            (services || same_key(view->key + view->key[0] + 1, type))) {
+            (services || ptr_targets(d, type, view->key, view->link, now))) {
             memset(view, 0, sizeof(*view));
         }
     }
@@ -841,14 +963,26 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
      * that their room can be taken by new instances. */
     for (i = 0; i < DISC_VIEWS; i++) {
         d->views[i].active = FALSE;
+        d->views[i].activeBrowsers = 0;
+        memset(d->views[i].activeHandles, 0,
+            sizeof(d->views[i].activeHandles));
     }
     for (i = 0; i < DISC_RECORDS; i++) {
         struct DiscoveryRecord *r = &d->records[i];
         struct DiscoveryView *view;
 
+        UWORD browsers = r->type == DNS_TYPE_PTR ?
+            browse_sessions(d, r->key) : 0;
+
         if (r->type == DNS_TYPE_PTR && !due(now, r->expires) &&
-            browsed(d, r->key) && (view = view_of(d, r)) != NULL) {
+            browsers != 0 && (view = view_of(d, r)) != NULL) {
             view->active = TRUE;
+            view->activeBrowsers |= browsers;
+            for (j = 0; j < DISC_SESSIONS; j++) {
+                if ((browsers & (1U << j)) != 0) {
+                    view->activeHandles[j] = d->sessions[j].handle;
+                }
+            }
         }
     }
     for (i = 0; i < DISC_VIEWS; i++) {
@@ -856,7 +990,7 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
 
         if (v->key[0] != 0 && !v->active) {
             if (v->present) {
-                notify(md, v, MEVENT_REMOVE);
+                notify(md, v, MEVENT_REMOVE, v->browsers);
             }
             memset(v, 0, sizeof(*v));
         }
@@ -864,9 +998,11 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
     for (i = 0; i < DISC_RECORDS; i++) {
         struct DiscoveryRecord *r = &d->records[i];
         struct DiscoveryView *view;
+        UWORD browsers = r->type == DNS_TYPE_PTR ?
+            browse_sessions(d, r->key) : 0;
 
         if (r->type != DNS_TYPE_PTR || due(now, r->expires) ||
-            !browsed(d, r->key) || view_of(d, r) != NULL) {
+            browsers == 0 || view_of(d, r) != NULL) {
             continue;
         }
         for (view = NULL, j = 0; j < DISC_VIEWS; j++) {
@@ -875,6 +1011,16 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
                 memcpy(view->key, r->data, 256);
                 view->link = r->link;
                 view->active = TRUE;
+                view->activeBrowsers = browsers;
+                {
+                    LONG k;
+
+                    for (k = 0; k < DISC_SESSIONS; k++) {
+                        if ((browsers & (1U << k)) != 0) {
+                            view->activeHandles[k] = d->sessions[k].handle;
+                        }
+                    }
+                }
                 view->type = is_services(r->key);
                 break;
             }
@@ -892,13 +1038,14 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
             }
             /* The failed type no longer has a live browse. Return its views
              * now so a later PTR in this rebuild can use them. */
-            release_type_views(d, r->key);
+            release_type_views(d, r->key, now);
         }
     }
     for (i = 0; i < DISC_VIEWS; i++) {
         struct DiscoveryView *v = &d->views[i];
         struct MDNSDiscoveryEvent event;
-        BOOL present;
+        BOOL present, changed;
+        UWORD added = 0, removed = 0;
 
         if (v->key[0] == 0) {
             continue;
@@ -909,14 +1056,37 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
         } else {
             present = snapshot(md, d, v->key, v->link, &event, now);
         }
-        if (v->present && (!present || memcmp(&event, &v->event, sizeof(event)) != 0)) {
-            notify(md, v, MEVENT_REMOVE);
+        changed = present && v->present &&
+            memcmp(&event, &v->event, sizeof(event)) != 0;
+        for (j = 0; present && v->present && !changed &&
+                j < DISC_SESSIONS; j++) {
+            BOOL was = (v->browsers & (1U << j)) != 0;
+            BOOL is = (v->activeBrowsers & (1U << j)) != 0;
+
+            if (was && (!is || v->browserHandles[j] !=
+                    v->activeHandles[j])) {
+                removed |= (UWORD)(1U << j);
+            }
+            if (is && (!was || v->browserHandles[j] !=
+                    v->activeHandles[j])) {
+                added |= (UWORD)(1U << j);
+            }
         }
-        if (present && (!v->present || memcmp(&event, &v->event, sizeof(event)) != 0)) {
+        if (v->present && (!present || changed)) {
+            notify(md, v, MEVENT_REMOVE, v->browsers);
+        } else if (removed != 0) {
+            notify(md, v, MEVENT_REMOVE, removed);
+        }
+        if (present && (!v->present || changed)) {
             v->event = event;
-            notify(md, v, MEVENT_ADD);
+            notify(md, v, MEVENT_ADD, v->activeBrowsers);
+        } else if (added != 0) {
+            notify(md, v, MEVENT_ADD, added);
         }
         v->present = present;
+        v->browsers = v->activeBrowsers;
+        memcpy(v->browserHandles, v->activeHandles,
+            sizeof(v->browserHandles));
     }
 }
 
@@ -1115,7 +1285,9 @@ LONG mdnsDiscoveryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
                 MDNS_TYPE_SERVICES_DNS_SD) == 0) {
             /* type enumeration: the types on the link, each once */
             memcpy(s->key, services_key, sizeof(services_key));
-        } else if (!type_key(msg->mi_ServiceType, s->key)) {
+        } else if (s->resolve ?
+                !type_key(msg->mi_ServiceType, s->key) :
+                !browse_key(msg->mi_ServiceType, s->key)) {
             return MDNSERR_BADTYPE;
         }
         if (s->resolve) {
@@ -1141,8 +1313,10 @@ LONG mdnsDiscoveryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         for (i = 0; i < DISC_VIEWS; i++) {
             const struct DiscoveryView *v = &d->views[i];
 
-            if (!s->resolve && v->present && same_key(s->key,
-                    v->type ? services_key : v->key + v->key[0] + 1)) {
+            if (!s->resolve && v->present &&
+                (v->type ? same_key(s->key, services_key) :
+                    ptr_targets(d, s->key, v->key, v->link,
+                        mdnsTicks()))) {
                 struct MDNSDiscoveryEvent event = v->event;
 
                 event.de_Code = MEVENT_ADD;
@@ -1258,7 +1432,8 @@ void mdnsDiscoveryReset(struct MDNSDaemon *md)
     }
     for (i = 0; i < DISC_VIEWS; i++) {
         if (d->views[i].present) {
-            notify(md, &d->views[i], MEVENT_REMOVE);
+            notify(md, &d->views[i], MEVENT_REMOVE,
+                d->views[i].browsers);
         }
     }
     memset(d->records, 0, sizeof(d->records));

@@ -111,6 +111,11 @@ struct VLayerHandle;
 #define VOCR_LIMITED		0	/* luma 16-235, chroma 16-240 */
 #define VOCR_FULL			1	/* 0-255 */
 
+/* GetVLayerAttr(), AROS extension: TRUE when the layer goes below the screen
+   (an underlay; see VOA_UseBackfill), so what the application draws in the
+   window over it shows on top of the video. */
+#define VOA_Underlay		(VOA_TAGBASE+0x74)	/* BOOL */
+
 /* QueryVLayerAttr() attributes */
 
 #define VSQ_Dummy				(TAG_USER+0xa5000)

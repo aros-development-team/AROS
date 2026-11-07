@@ -269,9 +269,16 @@
  
 --- ./drm-6.18.44/nouveau/dispnv50/core507d.c
 +++ ./drm/nouveau/dispnv50/core507d.c
-@@ -67,6 +67,10 @@
+@@ -65,8 +65,17 @@
+ 	s64 time = nvif_msec(device, 2000ULL,
+ 		if (NVBO_TD32(bo, offset, NV_DISP_CORE_NOTIFIER_1, COMPLETION_0, DONE, ==, TRUE))
  			break;
++#if defined(__AROS__)
++		/* up to a frame: sleep instead of spinning (see base507c.c) */
++		usleep_range(100, 200);
++#else
  		usleep_range(1, 2);
++#endif
  	);
 +#if defined(__AROS__)
 +	if (time < 0)
@@ -333,7 +340,7 @@
  			  NVDEF(NVCA7D, SET_SURFACE_ADDRESS_LO_NOTIFIER, ENABLE, ENABLE));
  
  		PUSH_MTHD(push, NVCA7D, SET_NOTIFIER_CONTROL,
-@@ -54,49 +59,278 @@
+@@ -54,49 +59,283 @@
  	return PUSH_KICK(push);
  }
  
@@ -625,14 +632,19 @@
 +			return ret;
 +		if (core->func->ntfy_wait_done(disp->sync, NV50_DISP_CORE_NTFY,
 +					       core->chan.base.device))
++		{
++			extern void nvkm_gsp_rpc_report(const char *);
++
 +			printk(KERN_ERR "[nouveau] window assignment: core notifier timeout\n");
++			nvkm_gsp_rpc_report("window assignment core notifier timeout");
++		}
 +	}
 +	core->assign_windows = false;
 +	return 0;
  }
  
  static const struct nv50_core_func
-@@ -107,7 +341,7 @@
+@@ -107,7 +346,7 @@
  	.caps_class = GB202_DISP_CAPS,
  	.ntfy_wait_done = corec37d_ntfy_wait_done,
  	.update = coreca7d_update,
@@ -966,7 +978,7 @@
  static void
  nv50_disp_atomic_commit_core(struct drm_atomic_state *state, u32 *interlock)
  {
-@@ -2122,8 +2370,10 @@
+@@ -2122,8 +2370,17 @@
  	core->func->ntfy_init(disp->sync, NV50_DISP_CORE_NTFY);
  	core->func->update(core, interlock, true);
  	if (core->func->ntfy_wait_done(disp->sync, NV50_DISP_CORE_NTFY,
@@ -974,11 +986,18 @@
 +				       disp->core->chan.base.device)) {
  		NV_ERROR(drm, "core notifier timeout\n");
 +		nv50_disp_core_timeouts++;
++#if defined(__AROS__)
++		if (drm->client.device.info.family >= NV_DEVICE_INFO_V0_TURING) {
++			extern void nvkm_gsp_rpc_report(const char *);
++
++			nvkm_gsp_rpc_report("core notifier timeout");
++		}
++#endif
 +	}
  
  	for_each_new_mst_mgr_in_state(state, mgr, mst_state, i) {
  		mstm = nv50_mstm(mgr);
-@@ -2193,6 +2443,52 @@
+@@ -2193,6 +2450,52 @@
  	if (atom->lock_core)
  		mutex_lock(&disp->mutex);
  
@@ -1031,7 +1050,7 @@
  	/* Disable head(s). */
  	for_each_oldnew_crtc_in_state(state, crtc, old_crtc_state, new_crtc_state, i) {
  		struct nv50_head_atom *asyh = nv50_head_atom(new_crtc_state);
-@@ -2381,10 +2677,20 @@
+@@ -2381,10 +2684,20 @@
  		struct nv50_wndw_atom *asyw = nv50_wndw_atom(new_plane_state);
  		struct nv50_wndw *wndw = nv50_wndw(plane);
  		int ret = nv50_wndw_wait_armed(wndw, asyw);
@@ -1053,7 +1072,7 @@
  	for_each_new_crtc_in_state(state, crtc, new_crtc_state, i) {
  		if (new_crtc_state->event) {
  			unsigned long flags;
-@@ -2401,6 +2707,9 @@
+@@ -2401,6 +2714,9 @@
  		}
  	}
  
@@ -1063,7 +1082,7 @@
  	nv50_crc_atomic_start_reporting(state);
  	if (!flushed)
  		nv50_crc_atomic_release_notifier_contexts(state);
-@@ -2473,6 +2782,10 @@
+@@ -2473,6 +2789,10 @@
  	 */
  	pm_runtime_get_noresume(dev->dev);
  
@@ -1074,7 +1093,7 @@
  	if (nonblock)
  		queue_work(system_unbound_wq, &state->commit_work);
  	else
-@@ -2525,7 +2838,8 @@
+@@ -2525,7 +2845,8 @@
  			return PTR_ERR(outp);
  
  		if (outp->encoder->encoder_type == DRM_MODE_ENCODER_DPMST ||
@@ -1084,7 +1103,7 @@
  			atom->flush_disable = true;
  		outp->clr.ctrl = true;
  		atom->lock_core = true;
-@@ -2850,11 +3164,31 @@
+@@ -2850,11 +3171,31 @@
  	dev->mode_config.normalize_zpos = true;
  
  	/* small shared memory area we use for notifiers and semaphores */
@@ -1358,6 +1377,21 @@
  	PUSH_MTHD(push, NVCA7D, HEAD_SET_RASTER_SIZE(i),
  		  NVVAL(NVCA7D, HEAD_SET_RASTER_SIZE, WIDTH, m->h.active) |
  		  NVVAL(NVCA7D, HEAD_SET_RASTER_SIZE, HEIGHT, m->v.active),
+--- ./drm-6.18.44/nouveau/dispnv50/ovly827e.c
++++ ./drm/nouveau/dispnv50/ovly827e.c
+@@ -72,7 +72,12 @@
+ 	s64 time = nvif_msec(device, 2000ULL,
+ 		if (NVBO_TD32(bo, offset, NV_DISP_NOTIFICATION_1, _3, STATUS, ==, BEGUN))
+ 			break;
++#if defined(__AROS__)
++		/* up to a frame: sleep instead of spinning (see base507c.c) */
++		usleep_range(100, 200);
++#else
+ 		usleep_range(1, 2);
++#endif
+ 	);
+ 	return time < 0 ? time : 0;
+ }
 --- ./drm-6.18.44/nouveau/dispnv50/wndw.c
 +++ ./drm/nouveau/dispnv50/wndw.c
 @@ -45,6 +45,90 @@
@@ -2894,7 +2928,7 @@
  		if (NVVAL_GET(data, NV_PRISCV, RISCV_CPUCTL, HALTED))
  			return 0;
  
-@@ -65,6 +77,278 @@
+@@ -65,6 +77,291 @@
  	return !NVVAL_GET(data, NV_PFALCON, FALCON_HWCFG2, RISCV_BR_PRIV_LOCKDOWN);
  }
  
@@ -3116,10 +3150,10 @@
 +	struct nvkm_subdev *subdev = &gsp->subdev;
 +	struct nvkm_device *device = subdev->device;
 +	struct pci_dev *pdev = container_of(device, struct nvkm_device_pci, device)->pdev;
-+	u32 cfg[64], devcap, id;
-+	u16 devctl;
++	u32 cfg[64], devcap, id, rebar[6];
++	u16 devctl, rebarpos;
 +	u8 pos = pdev->pcie_cap;
-+	int i, t, ret;
++	int i, t, ret, nrebar = 0;
 +
 +	if (!pos) {
 +		u8 next, cap;
@@ -3143,6 +3177,16 @@
 +	}
 +	for (i = 0; i < 64; i++)
 +		pci_read_config_dword(pdev, i * 4, &cfg[i]);
++	/* the reset also returns resized BARs to their default size */
++	rebarpos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_REBAR);
++	if (rebarpos) {
++		pci_read_config_dword(pdev, rebarpos + PCI_REBAR_CTRL, &rebar[0]);
++		nrebar = (rebar[0] & PCI_REBAR_CTRL_NBAR_MASK) >> PCI_REBAR_CTRL_NBAR_SHIFT;
++		if (nrebar > 6)
++			nrebar = 6;
++		for (i = 0; i < nrebar; i++)
++			pci_read_config_dword(pdev, rebarpos + PCI_REBAR_CTRL + i * 8, &rebar[i]);
++	}
 +	pci_read_config_word(pdev, pos + 8, &devctl);
 +	pci_write_config_word(pdev, pos + 8, devctl | 0x8000);
 +	msleep(100);
@@ -3158,6 +3202,9 @@
 +		nvkm_error(subdev, "GSP-FMC recovery: device gone after FLR (id %08x)\n", id);
 +		return -EIO;
 +	}
++	/* sizes first: a BAR takes its address bits from its size */
++	for (i = 0; i < nrebar; i++)
++		pci_write_config_dword(pdev, rebarpos + PCI_REBAR_CTRL + i * 8, rebar[i]);
 +	for (i = 1; i < 64; i++)
 +		pci_write_config_dword(pdev, i * 4, cfg[i]);
 +	pci_write_config_dword(pdev, 4, cfg[1]);
@@ -3173,7 +3220,7 @@
  int
  gh100_gsp_init(struct nvkm_gsp *gsp)
  {
-@@ -102,6 +386,88 @@
+@@ -102,6 +399,88 @@
  	if (gsp->rm->wpr->rsvd_size_pmu)
  		rsvd_size = ALIGN(rsvd_size + gsp->rm->wpr->rsvd_size_pmu, 0x200000);
  
@@ -3262,7 +3309,7 @@
  	ret = nvkm_fsp_boot_gsp_fmc(device->fsp, gsp->fmc.args.addr, rsvd_size, resume,
  				    gsp->fmc.fw.addr, gsp->fmc.hash, gsp->fmc.pkey, gsp->fmc.sig);
  	if (ret)
-@@ -123,6 +489,7 @@
+@@ -123,6 +502,7 @@
  		nvkm_error(subdev, "GSP-FMC boot failed (mbox: 0x%08x)\n", mbox0);
  		return -EIO;
  	}
@@ -3270,7 +3317,7 @@
  
  	return r535_gsp_init(gsp);
  }
-@@ -344,6 +711,7 @@
+@@ -344,6 +724,7 @@
  
  static struct nvkm_gsp_fwif
  gh100_gsps[] = {
@@ -3278,7 +3325,7 @@
  	{ 0, gh100_gsp_load, &gh100_gsp, &r570_rm_gh100, "570.144" },
  	{}
  };
-@@ -356,3 +724,4 @@
+@@ -356,3 +737,4 @@
  }
  
  NVKM_GSP_FIRMWARE_FMC(gh100, 570.144);
@@ -3991,7 +4038,18 @@
  const struct nvkm_rm_impl
 --- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/rm/r535/rpc.c
 +++ ./drm/nouveau/nvkm/subdev/gsp/rm/r535/rpc.c
-@@ -150,7 +150,30 @@
+@@ -138,6 +138,10 @@
+ 	}
+ }
+ 
++#if defined(__AROS__)
++static void r535_gsp_rpc_report(struct nvkm_gsp *, const char *);
++#endif
++
+ static int
+ r535_gsp_msgq_wait(struct nvkm_gsp *gsp, u32 gsp_rpc_len, int *ptime)
+ {
+@@ -150,7 +154,30 @@
  		return -EINVAL;
  
  	do {
@@ -4023,7 +4081,21 @@
  
  		used = wptr + gsp->msgq.cnt - rptr;
  		if (used >= gsp->msgq.cnt)
-@@ -172,6 +195,10 @@
+@@ -161,8 +188,12 @@
+ 		usleep_range(1, 2);
+ 	} while (--(*ptime));
+ 
+-	if (WARN_ON(!*ptime))
++	if (WARN_ON(!*ptime)) {
++#if defined(__AROS__)
++		r535_gsp_rpc_report(gsp, "no message from RM in time");
++#endif
+ 		return -ETIMEDOUT;
++	}
+ 
+ 	return used;
+ }
+@@ -172,11 +203,69 @@
  {
  	u32 rptr = *gsp->msgq.rptr;
  
@@ -4034,7 +4106,66 @@
  	/* Skip the first page, which is the message queue info */
  	return (void *)((u8 *)gsp->shm.msgq.ptr + GSP_PAGE_SIZE +
  	       rptr * GSP_PAGE_SIZE);
-@@ -280,6 +307,9 @@
+ }
+ 
++#if defined(__AROS__)
++/*
++ * A request to GSP-RM that times out says why: the last request sent and the
++ * reply being waited for, where both queues stand, the next message RM has
++ * queued if there is one, and whether the GSP's RISC-V core still runs.
++ */
++static struct nvkm_gsp *rpc_report_gsp;
++static u32 rpc_last_fn = ~0U, rpc_last_seq, rpc_wait_fn = ~0U;
++
++static void
++r535_gsp_rpc_report(struct nvkm_gsp *gsp, const char *why)
++{
++	struct nvkm_falcon *falcon = &gsp->falcon;
++	u32 mq_r, mq_w, cq_r, cq_w, pending;
++
++	if (!gsp->msgq.rptr || !gsp->msgq.wptr || !gsp->cmdq.rptr || !gsp->cmdq.wptr) {
++		nvkm_error(&gsp->subdev, "%s: queues not set up\n", why);
++		return;
++	}
++	compat_dma_sync_for_cpu(gsp->msgq.wptr, sizeof(*gsp->msgq.wptr));
++	compat_dma_sync_for_cpu(gsp->cmdq.rptr, sizeof(*gsp->cmdq.rptr));
++	mq_r = *gsp->msgq.rptr;
++	mq_w = *gsp->msgq.wptr;
++	cq_r = *gsp->cmdq.rptr;
++	cq_w = *gsp->cmdq.wptr;
++	pending = gsp->cmdq.cnt ? (cq_w + gsp->cmdq.cnt - cq_r) % gsp->cmdq.cnt : 0;
++
++	nvkm_error(&gsp->subdev, "%s: last request fn %d seq %u, waiting for fn %d; "
++		   "msgq rptr %u wptr %u of %u; cmdq wptr %u rptr %u of %u (%u not taken by RM); "
++		   "RISC-V %s, mailbox %08x/%08x\n", why,
++		   (int)rpc_last_fn, rpc_last_seq, (int)rpc_wait_fn,
++		   mq_r, mq_w, gsp->msgq.cnt, cq_w, cq_r, gsp->cmdq.cnt, pending,
++		   nvkm_falcon_riscv_active(falcon) ? "running" : "halted",
++		   nvkm_falcon_rd32(falcon, 0x040), nvkm_falcon_rd32(falcon, 0x044));
++
++	if (mq_r != mq_w) {
++		struct r535_gsp_msg *mqe = r535_gsp_msgq_get_entry(gsp);
++		struct nvfw_gsp_rpc *rpc = (void *)mqe->data;
++
++		nvkm_error(&gsp->subdev, "%s: next message from RM: fn %u result 0x%x "
++			   "length %u, element seq %u count %u\n", why, rpc->function,
++			   rpc->rpc_result, rpc->length, mqe->sequence, mqe->elem_count);
++	}
++}
++
++/* For the display code: a core notifier that times out is serviced by RM. */
++void
++nvkm_gsp_rpc_report(const char *why)
++{
++	if (rpc_report_gsp)
++		r535_gsp_rpc_report(rpc_report_gsp, why);
++}
++#endif
++
+ /**
+  * DOC: Receive a GSP message queue element
+  *
+@@ -280,6 +369,9 @@
  
  	mb();
  	(*gsp->msgq.rptr) = rptr;
@@ -4044,7 +4175,7 @@
  	return buf;
  }
  
-@@ -377,6 +407,9 @@
+@@ -377,6 +469,9 @@
  	wptr = *gsp->cmdq.wptr;
  	do {
  		do {
@@ -4054,7 +4185,17 @@
  			free = *gsp->cmdq.rptr + gsp->cmdq.cnt - wptr - 1;
  			if (free >= gsp->cmdq.cnt)
  				free -= gsp->cmdq.cnt;
-@@ -409,6 +442,10 @@
+@@ -387,6 +482,9 @@
+ 		} while(--time);
+ 
+ 		if (WARN_ON(!time)) {
++#if defined(__AROS__)
++			r535_gsp_rpc_report(gsp, "command queue stayed full");
++#endif
+ 			kvfree(msg);
+ 			return -ETIMEDOUT;
+ 		}
+@@ -409,6 +507,10 @@
  	wmb();
  	(*gsp->cmdq.wptr) = wptr;
  	mb();
@@ -4065,6 +4206,29 @@
  
  	nvkm_falcon_wr32(&gsp->falcon, 0xc00, 0x00000000);
  
+@@ -457,6 +559,10 @@
+ 	struct nvfw_gsp_rpc *rpc;
+ 	int retries = 4000000, i;
+ 
++#if defined(__AROS__)
++	rpc_report_gsp = gsp;
++	rpc_wait_fn = fn;
++#endif
+ retry:
+ 	rpc = r535_gsp_msgq_peek(gsp, sizeof(*rpc), &retries);
+ 	if (IS_ERR_OR_NULL(rpc))
+@@ -594,6 +700,11 @@
+ 	else
+ 		rpc->sequence = gsp->rpc_seq++;
+ 
++#if defined(__AROS__)
++	rpc_report_gsp = gsp;
++	rpc_last_fn = fn;
++	rpc_last_seq = rpc->sequence;
++#endif
+ 	ret = r535_gsp_cmdq_push(gsp, rpc);
+ 	if (ret)
+ 		return ERR_PTR(ret);
 --- ./drm-6.18.44/nouveau/nvkm/subdev/gsp/rm/r535/vmm.c
 +++ ./drm/nouveau/nvkm/subdev/gsp/rm/r535/vmm.c
 @@ -154,7 +154,7 @@

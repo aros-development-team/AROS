@@ -338,11 +338,11 @@ struct socket *so;
  * Queue a process for a select on a socket buffer.
  */
 void
-sbselqueue(sb, cp)
+sbselqueue(sb, w)
 struct sockbuf *sb;
-struct SocketBase *cp;
+struct SocketWaiter *w;
 {
-    selenter(cp, &sb->sb_sel);
+    selenter(w, &sb->sb_sel);
     sb->sb_flags |= SB_SEL; /* notify us if something happens */
 }
 
@@ -404,8 +404,9 @@ register struct sockbuf *sb;
     }
     if(so->so_state & SS_ASYNC) {
 #ifdef AMITCP
-        if(so->so_pgid)
-            Signal(so->so_pgid->thisTask, so->so_pgid->sigIOMask);
+        /* a shared base has no task to signal until one sets the mask */
+        if(so->so_pgid && so->so_pgid->sigIOMask)
+            Signal(so->so_pgid->sigIOTask, so->so_pgid->sigIOMask);
 #else
         if(so->so_pgid < 0)
             gsignal(-so->so_pgid, SIGIO);
@@ -459,7 +460,7 @@ void soevent(struct socket *so, u_long event)
                 }
                 if(se) {
                     se->events = event;
-                    Signal(so->so_pgid->thisTask, so->so_pgid->sigEventMask);
+                    Signal(so->so_pgid->sigEventTask, so->so_pgid->sigEventMask);
                 } else
                     __log(LOG_CRIT, "Unable to send socket event, out of memory");
                 ReleaseSemaphore(&so->so_pgid->EventLock);

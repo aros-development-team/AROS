@@ -71,6 +71,10 @@ struct
 	int pass;
 	BOOL verbose;
 	BOOL unformat;
+	error_t incomplete;	/* first failure preventing a complete scan */
+	BOOL setupdone;		/* root and layout metadata are available */
+	BOOL readfailed;
+	uint32 badblock;		/* last unreadable metadata block in CHECK */
 
 	enum {syntax, resbitmap, mainbitmap, anodebitmap, finished} stage;
 
@@ -111,7 +115,11 @@ static error_t RemoveDirEntry(struct direntry *de, c_dirblock_t *dirblk);
 static error_t DeleteAnode(uint32 anodechain, uint32 node);
 static error_t GetExtraFields(struct extrafields *extrafields, struct direntry *de);
 static error_t SetExtraFields(struct extrafields *extrafields, struct direntry *from, c_dirblock_t *dirblk);
+#ifdef __GNUC__
+static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk) __attribute__((noinline));
+#else
 static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk);
+#endif
 static error_t CheckAnode(canode_t *anode, uint32 nr, bool fix);
 static error_t RepairAnodeTree(void);
 static error_t RepairBitmapTree(void);
@@ -130,6 +138,7 @@ static bitmap_t *bg_InitBitmap(int32 start, int32 stop, int32 step);
 static void bg_KillBitmap(bitmap_t **bm);
 static BOOL bg_IsItemUsed(bitmap_t *bm, uint32 nr);
 error_t SearchInDir(uint32 diranodenr, uint32 target, int *result);
+static error_t FindInDir(uint32 diranodenr, uint32 target, int *result, uint32 *linkhead, bool *complete);
 static void AddExtraFields(struct direntry *direntry, struct extrafields *extra);
 static bool MakeMountFile(char *fname);
 static error_t BuildRootBlock_hub(void);
@@ -161,6 +170,39 @@ static bool IsOperationalError(error_t error)
 	return error == e_read_error || error == e_write_error ||
 		error == e_out_of_memory || error == e_options_error ||
 		error == e_aborted || error == e_alloc_fail || error == e_fatal_error;
+}
+
+/* CHECK may skip an unreadable subtree, but must not infer that its
+ * references are absent or compare allocation maps built without it. */
+static bool SkipCheckReadError(error_t error)
+{
+	if (mode != check || error != e_read_error || aborting)
+		return false;
+	if (!ss.incomplete)
+		ss.incomplete = error;
+	return true;
+}
+
+/* A damaged object need not stop a read-only scan of unrelated objects.
+ * Never use this for device failures, allocation failures or user aborts. */
+static error_t UnresolvedObject(void)
+{
+	if (mode != check)
+		return e_fatal_error;
+	if (!ss.incomplete)
+		ss.incomplete = e_anode_error;
+	return e_anode_error;
+}
+
+static void ReportCheckReadError(error_t error, uint32 blocknr)
+{
+	if (SkipCheckReadError(error)) {
+		ss.readfailed = true;
+		ss.badblock = blocknr;
+		sprintf(bericht, "unreadable metadata block %lu (check incomplete)",
+			(unsigned long)blocknr);
+		adderror(bericht);
+	}
 }
 
 static bool DiscardUnreadableBlock(error_t error, const char *kind, uint32 blocknr)
@@ -199,6 +241,9 @@ static BOOL FileSizeCheck(ULONG low, ULONG high, ULONG numblocks)
 error_t StandardScan(uint32 opties)
 {
 	uint32 flags;
+	enum mode savedmode = mode;
+	error_t (*writer)(uint8 *, int32, uint32) = volume.writerawblocks;
+	error_t error;
 
 	aborting = 0;
 	// onbreak(&brk);
@@ -211,7 +256,17 @@ error_t StandardScan(uint32 opties)
 
 	/* init stats */
 	memset(&stats, 0, sizeof(stats));
-	return mainStandardScan(flags);
+	/* SEARCH uses the CHECK scan, including its non-destructive handling of
+	 * damaged entries. Keep simulated cache updates off the device through
+	 * exitStandardScan's final flush, also for callers outside the console. */
+	if (mode == search)
+		mode = check;
+	if (mode == check)
+		volume.writerawblocks = dev_WriteBlocksDummy;
+	error = mainStandardScan(flags);
+	volume.writerawblocks = writer;
+	mode = savedmode;
+	return error;
 }
 
 // core standardscan 
@@ -263,6 +318,7 @@ static error_t mainStandardScan(uint32 flags)
 	if ((error = GetRext()) || aborting)
 		return exitStandardScan(error);
 
+	ss.setupdone = true;
 	GetPFS2Revision(bericht);
 	volume.showmsg("Disk formatted with ");
 	volume.showmsg(bericht);
@@ -276,8 +332,6 @@ static error_t mainStandardScan(uint32 flags)
 		sprintf(bericht, "Starting pass %d\n", ss.pass);
 		volume.showmsg(bericht);
 		volume.updatestats();
-		if (mode == check && stats.numerrors > 0)
-			break;
 		error = ss_CheckDirTree();
 		if ((error != e_none) || aborting)
 			return exitStandardScan(error);
@@ -286,8 +340,11 @@ static error_t mainStandardScan(uint32 flags)
 		ss.pass++; 
 	}
 
-	if (ss.stage != finished)
+	if (ss.stage != finished) {
+		if (mode == check && !ss.incomplete)
+			ss.incomplete = e_max_pass_exceeded;
 		return exitStandardScan(e_max_pass_exceeded);
+	}
 
 	volume.status(0, "finishing up", 2);
 	volume.progress(0, 1);
@@ -317,7 +374,10 @@ static error_t exitStandardScan(error_t error)
 	KillMainBitmap();
 	ExitFullScan();
 
-	if ((error != e_none) || aborting)
+	if (mode == check && ss.setupdone &&
+	    ss.incomplete && error == ss.incomplete && !aborting)
+		volume.showmsg("INCOMPLETE\n");
+	else if ((error != e_none) || aborting)
 		volume.showmsg("ABORTED\n");
 	else if (ss.unformat)
 	{
@@ -370,12 +430,16 @@ static error_t ss_CheckDirTree(void)
 		case mainbitmap:
 
 			if (ss.flags & SSF_GEN_MAINBITMAP)
-				InitMainBitmap();
+				if ((error = InitMainBitmap()))
+					return error;
 
 		case anodebitmap:
 
-			if (ss.flags & SSF_GEN_ANODEBITMAP)
-				InitAnodeBitmap();
+			if (ss.flags & SSF_GEN_ANODEBITMAP) {
+				error = InitAnodeBitmap();
+				if (IsOperationalError(error) && !SkipCheckReadError(error))
+					return error;
+			}
 
 		default:
 
@@ -387,8 +451,15 @@ static error_t ss_CheckDirTree(void)
 		return error;
 
 	/* directory tree */
-	if ((error = RepairDirTree()) || aborting)
+	error = RepairDirTree();
+	if ((error && !SkipCheckReadError(error)) || aborting)
 		return error;
+	if (cache.writeerror)
+		return cache.writeerror;
+	if (ss.incomplete) {
+		volume.showmsg("Scan incomplete: metadata not fully checked; allocation-map comparisons skipped.\n");
+		return ss.incomplete;
+	}
 	
 	/* on hardlink conflict */
 	if (redosyntax)
@@ -531,10 +602,13 @@ error_t vol_GetBlock(cachedblock_t *blok, ULONG bloknr)
 	realbloknr = bloknr;
 	if ((error = vol_CheckBlockNr(&realbloknr)))
 		return error;
+	if (mode == check && ss.readfailed && ss.badblock == bloknr)
+		return e_read_error;
 
 	if ((error = ReadPFS3Metadata((uint8 *)blok->data, realbloknr,
 		SIZEOF_RESBLOCK, PFS3_METADATA_RESERVED)))
 	{
+		ReportCheckReadError(error, bloknr);
 		return error;
 	}
 	else
@@ -552,9 +626,13 @@ error_t vol_GetRawBlock(cachedblock_t *blok, ULONG bloknr)
 
 	if ((error = vol_CheckBlockNr(&realbloknr)))
 		return error;
+	if (mode == check && ss.readfailed && ss.badblock == bloknr)
+		return e_read_error;
 	if ((error = c_GetBlock((uint8 *)blok->data, realbloknr,
-		SIZEOF_RESBLOCK)))
+		SIZEOF_RESBLOCK))) {
+		ReportCheckReadError(error, bloknr);
 		return error;
+	}
 
 	blok->mode = check;
 	blok->blocknr = bloknr;
@@ -589,6 +667,7 @@ error_t vol_WriteBlock(cachedblock_t *blok)
 {
 	int status;
 	uint32 bloknr;
+	cachedblock_t *owner;
 
 	if (blok->mode != build)
 	{
@@ -596,10 +675,20 @@ error_t vol_WriteBlock(cachedblock_t *blok)
 		if ((status = vol_CheckBlockNr(&bloknr)))
 			return status;
 
-		return WritePFS3Metadata((uint8 *)blok->data, bloknr,
+		status = WritePFS3Metadata((uint8 *)blok->data, bloknr,
 			SIZEOF_RESBLOCK, PFS3_METADATA_RESERVED);
+		if (!status && ss.readfailed && ss.badblock == blok->blocknr)
+			ss.readfailed = false;
+		return status;
 	}
 
+	/* GetResBlock returns caller-owned storage even for pending rebuilds.
+	 * Keep the build-list copy authoritative until it is published. */
+	owner = GetBuildBlock(blok->data->id, blok->data->indexblock.seqnr);
+	if (!owner)
+		return e_fatal_error;
+	if (owner->data != blok->data)
+		memcpy(owner->data, blok->data, SIZEOF_RESBLOCK);
 	return e_none;
 }
 
@@ -751,6 +840,8 @@ static error_t GetRootBlock(void)
 		}
 		else
 		{
+			if (mode == check)
+				return e_rbl_not_found;
 			okuser = volume.askuser("Rootblock not found.\n"
 			"Select ok to build a new one.\n"
 			"WARNING: Make sure this is a PFS partition.\n"
@@ -800,7 +891,7 @@ static error_t GetRootBlock(void)
 			return error;
 
 		default:
-			return BuildRootBlock_hub();
+			return error;
 	}
 
 	exitblock();
@@ -1030,17 +1121,21 @@ static error_t GetRext(void)
 				sprintf(bericht, "replaced block %lu with backup %lu", oldbloknr, bloknr);
 				fixederror(bericht);
 				rbl->extension = bloknr;
+				if ((error = WritePFS3Metadata((uint8 *)rbl,
+					ROOTBLOCK + volume.firstblock, volume.blocksize, PFS3_METADATA_ROOT)))
+					return error;
 				return GetRext();
 			}
 			else
 			{
 				volume.showmsg("No replacement block found\n");
 				free (rext.data);
-				if ((error = BuildRext(&rext)))
+				if ((error = BuildRext(&rext))) {
 					adderror("building new rootblockextension failed");
-				else
-					fixederror("new rootblockextension created");
-				return error;
+					return error;
+				}
+				fixederror("new rootblockextension created");
+				/* Apply the same volume setup as for a recovered extension. */
 			}
 		}
 		else
@@ -1055,7 +1150,9 @@ static error_t GetRext(void)
 	if (!(rbl->options & MODE_EXTENSION))
 	{
 		rbl->options |= MODE_EXTENSION;
-		volume.writeblock((cachedblock_t *)&rext);
+		if (mode == repair && (error = WritePFS3Metadata((uint8 *)rbl,
+			ROOTBLOCK + volume.firstblock, volume.blocksize, PFS3_METADATA_ROOT)))
+			return error;
 		if (mode == check)
 			adderror("MODE_EXTENSION is disabled");
 		else
@@ -1068,22 +1165,12 @@ static error_t GetRext(void)
 		if (rext.data->fnsize < 30 || rext.data->fnsize > 108)
 		{
 			sprintf(bericht, "illegal filename size of %d", rext.data->fnsize);
-			if (mode == check)
-				adderror(bericht);
-			else
-			{
-				if (rext.data->fnsize < 30)
-				{
-					fixederror("reset filename size to 30");
-					rext.data->fnsize = 30;
-				}
-				else
-				{
-					fixederror("reset filename size to 100");
-					rext.data->fnsize = 100;
-				}
-				volume.writeblock((cachedblock_t *)&rext);
-			}
+			/* Bound the diagnostic scan too, without rejecting recoverable
+			 * names just because the stored limit has been lost. */
+			fixederror(bericht);
+			rext.data->fnsize = 108;
+			if (mode != check && (error = volume.writeblock((cachedblock_t *)&rext)))
+				return error;
 		}
 		volume.fnsize = rext.data->fnsize - 1;
 	}
@@ -1394,6 +1481,8 @@ static error_t dd_CheckBlock(uint32 bloknr, int seqnr, bool *valid)
 	{
 		adderror("couldn't read deldirblock");
 		free (ddblk.data);
+		if (SkipCheckReadError(error))
+			return e_none;
 		if (DiscardUnreadableBlock(error, "deleted-file directory", bloknr))
 			return e_none;
 		return IsOperationalError(error) ? error : e_none;
@@ -1428,6 +1517,8 @@ static error_t dd_CheckBlock(uint32 bloknr, int seqnr, bool *valid)
 			for (ddnr = dde->anodenr; ddnr; ddnr = delnode.next)
 			{
 				error = ReadAnode(&delnode, ddnr, false);
+				if (SkipCheckReadError(error))
+					goto next_entry;
 				if (IsOperationalError(error)) {
 					free(ddblk.data);
 					return error;
@@ -1475,6 +1566,8 @@ static error_t dd_CheckBlock(uint32 bloknr, int seqnr, bool *valid)
 		for (ddnr = dde->anodenr; ddnr; ddnr = delnode.next)
 		{
 			error = ReadAnode(&delnode, ddnr, false);
+			if (SkipCheckReadError(error))
+				goto next_entry;
 			if (error) {
 				if (IsOperationalError(error)) {
 					free(ddblk.data);
@@ -1490,6 +1583,8 @@ static error_t dd_CheckBlock(uint32 bloknr, int seqnr, bool *valid)
 			// if (ss.stage == doubledel && isAnodeDouble(ddnr))
 			//	dde->anodenr = 0;
 		}
+ next_entry:
+		;
 	}
 
 	free(ddblk.data);
@@ -1590,11 +1685,112 @@ static error_t RepairDirTree(void)
 }
 
 
+/* Find a directory chain's unique extent before visiting its entries.  Brent's
+ * check uses constant space; only a proven cycle needs the extra walks below.
+ * On a read failure, stop identifies the unreadable node so CHECK can
+ * still visit its readable prefix.
+ * The first node is supplied and retained for the common one-block directory. */
+/* Do not retain preflight locals in every recursive RepairDir frame. */
+#ifdef __GNUC__
+static error_t CheckDirChain(canode_t *, uint32 *, uint32 *) __attribute__((noinline));
+#endif
+static error_t CheckDirChain(canode_t *first, uint32 *length, uint32 *stop)
+{
+	canode_t node = *first, other;
+	uint32 checkpoint = first->nr, distance = 0, power = 1;
+	uint32 lead, tail, i, cyclelength = 0;
+	error_t error;
+
+	*length = 0;
+	*stop = 0;
+	for (;;) {
+		if (aborting)
+			return e_aborted;
+		++*length;
+		if (!node.next) {
+			*stop = 0;
+			return e_none;
+		}
+		++distance;
+		if (node.next == checkpoint)
+			break;
+		if (distance == power) {
+			checkpoint = node.next;
+			distance = 0;
+			power = power < 0x80000000UL ? power * 2 : ~(uint32)0;
+		}
+		if ((error = ReadAnode(&node, *stop = node.next, true))) {
+			if (mode == repair && (error == e_number_error || error == e_not_found)) {
+				/* Keep the readable directory prefix when its successor is
+				 * structurally absent. Propagate failed reads instead of cutting. */
+				node.next = 0;
+				if ((error = WriteAnode(&node, node.nr))) {
+					addfileerror("cannot cut invalid directory tail; directory retained");
+					return IsOperationalError(error) ? error : e_fatal_error;
+				}
+				if (node.nr == first->nr)
+					*first = node;
+				fixedfileerror("removed invalid directory chain tail");
+				*stop = 0;
+				return e_none;
+			}
+			goto read_failed;
+		}
+	}
+
+	/* Locate the entry to the cycle, then its closing edge.  Cutting the
+	 * detection edge instead could orphan distinct directory blocks. */
+	cyclelength = distance;
+	*length = 0;
+	lead = tail = first->nr;
+	for (i = 0; i < cyclelength; i++) {
+		if ((error = ReadAnode(&node, *stop = lead, true)))
+			goto read_failed;
+		lead = node.next;
+	}
+	while (tail != lead) {
+		if ((error = ReadAnode(&node, *stop = tail, true)) ||
+		    (error = ReadAnode(&other, *stop = lead, true)))
+			goto read_failed;
+		tail = node.next;
+		lead = other.next;
+		++*length;
+	}
+	/* The node immediately before lead reached the cycle entry closes it. */
+	if (*length)
+		node = other;
+	*length += cyclelength;
+	if (mode == repair) {
+		node.next = 0;
+		if ((error = WriteAnode(&node, node.nr))) {
+			addfileerror("cannot cut directory chain cycle; directory retained");
+			return IsOperationalError(error) ? error : e_fatal_error;
+		}
+		if (node.nr == first->nr)
+			*first = node;
+		fixedfileerror("removed directory chain cycle");
+	} else
+		addfileerror("cyclic directory anode chain");
+	*stop = 0;
+	return e_none;
+
+read_failed:
+	if (mode == repair && !IsOperationalError(error)) {
+		addfileerror("cannot inspect directory chain; directory retained");
+		return e_fatal_error;
+	}
+	/* A transient failure may occur on a later lap. Stop at its first
+	 * occurrence in the real walk, not at the probe's iteration count. */
+	*length = ~(uint32)0;
+	return error;
+}
+
 static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 {
-	uint32 mainanodenr, anodenr, parentanodenr;
+	uint32 mainanodenr, anodenr, parentanodenr, remaining, stop;
+	BOOL firstnode = TRUE;
 	canode_t dirnode;
-	error_t error = e_none;
+	error_t error = e_none, chainerror;
 
 	stats.numdirs++;
 	if (de)
@@ -1609,18 +1805,39 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 
 		/* repair linkchain, remove if necessary */
 		error = RepairLinkChain(de, parent);
-		if (IsOperationalError(error))
+		if (IsOperationalError(error) && !SkipCheckReadError(error))
 			return error;
 	}
 
 	parentanodenr = parent ? parent->data->anodenr : 0;
 	mainanodenr = de ? de->anode : ANODE_ROOTDIR;
-	for (anodenr = mainanodenr; anodenr; anodenr=dirnode.next)
+	if (!mainanodenr)
+		return e_none;
+	if ((error = ReadAnode(&dirnode, mainanodenr, true))) {
+		if (IsOperationalError(error))
+			return error;
+		if (mode != repair && !ss.incomplete)
+			ss.incomplete = error;
+		return (mode != repair || error == e_number_error || error == e_not_found)
+			? e_remove : e_fatal_error;
+	}
+	chainerror = CheckDirChain(&dirnode, &remaining, &stop);
+	if (chainerror && mode != repair && !IsOperationalError(chainerror)) {
+		addfileerror("invalid directory anode chain; checking readable prefix");
+		if (!ss.incomplete)
+			ss.incomplete = chainerror;
+		chainerror = e_none;
+	}
+	if (chainerror && !SkipCheckReadError(chainerror))
+		return chainerror;
+	for (anodenr = mainanodenr; anodenr && remaining && anodenr != stop;
+	     anodenr = dirnode.next, remaining--)
 	{
 		/* get anode */
-		if ((error = ReadAnode(&dirnode, anodenr, true)))
-			return IsOperationalError(error) ? error : e_remove;
+		if (!firstnode && (error = ReadAnode(&dirnode, anodenr, true)))
+			return IsOperationalError(error) ? error : e_fatal_error;
 
+		firstnode = FALSE;
 		/* check anode */
 		if (dirnode.clustersize != 1)
 		{
@@ -1652,19 +1869,28 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 				
 			case e_remove:
 
-				if (error != e_empty)
-				{
-					if (mode == repair)
-						fixedfileerror("removing corrupt directory block");
-					else
-						addfileerror("corrupt directory block");
+				if (mode == check) {
+					addfileerror("corrupt directory block");
+					if (!ss.incomplete)
+						ss.incomplete = e_syntax_error;
+					error = e_none;
+					break;
 				}
-				
+				if (mode != repair)
+					addfileerror("corrupt directory block");
 				error = DeleteAnode(mainanodenr, anodenr);
+				if (error && error != e_empty) {
+					/* Keep the directory if its chain cannot be shortened. */
+					if (mode == repair && !IsOperationalError(error)) {
+						addfileerror("cannot shorten directory anode chain; directory retained");
+						return e_fatal_error;
+					}
+					return error;
+				}
+				if (mode == repair)
+					fixedfileerror("removed corrupt directory block");
 				if (error == e_empty)
 					return e_remove;
-				if (error)
-					return error;
 				/* Deleting the head copied its successor into the head. */
 				if (anodenr == mainanodenr)
 					dirnode.next = mainanodenr;
@@ -1685,41 +1911,157 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 			return error;
 	}
 
+	if (anodenr && !chainerror && mode == repair) {
+		addfileerror("directory chain changed during repair; scan stopped");
+		return e_fatal_error;
+	}
+	return chainerror;
+}
+
+/* The entry used to reach this block is evidence of its parent. Preserve
+ * the contents when the old parent is stale, but do not choose between live
+ * owners or guess which entries an uncertain directory lookup would retain. */
+#ifdef __GNUC__
+static error_t CheckDirParent(c_dirblock_t *, uint32) __attribute__((noinline));
+#endif
+static error_t CheckDirParent(c_dirblock_t *dirblk, uint32 parent)
+{
+	struct dirstack *ancestor;
+	int type = 0;
+	bool complete;
+	error_t error;
+
+	if (dirblk->data->parent == parent)
+		return e_none;
+	addfileerror("invalid directory parent");
+	for (ancestor = currentobject ? currentobject->parent : NULL;
+	     ancestor; ancestor = ancestor->parent)
+		if (ancestor->anodenr == dirblk->data->anodenr) {
+			addfileerror("directory reference points to an ancestor");
+			return UnresolvedObject();
+		}
+	if (dirblk->data->anodenr != ANODE_ROOTDIR) {
+		error = FindInDir(dirblk->data->parent, dirblk->data->anodenr,
+			&type, NULL, &complete);
+		if (error)
+			return error;
+		if (type || !complete) {
+			addfileerror("directory owner is ambiguous; contents retained");
+			return UnresolvedObject();
+		}
+	} else if (parent)
+		return UnresolvedObject();
+
+	dirblk->data->parent = parent;
+	if (mode == check) {
+		if (!ss.incomplete)
+			ss.incomplete = e_syntax_error;
+		return e_none;
+	}
+	if ((error = volume.writeblock((cachedblock_t *)dirblk)))
+		return error;
+	fixedfileerror("corrected directory parent");
 	return e_none;
+}
+
+/* The normal metadata reader rejects an invalid entry chain before converting
+ * anything. Recover only its bounded prefix in a private buffer; the caller
+ * must still check the directory identity before writing it back. */
+/* Keep this exceptional path's locals out of recursive directory frames. */
+#ifdef __GNUC__
+static error_t RecoverDirPrefix(c_dirblock_t *, uint32) __attribute__((noinline));
+#endif
+static error_t RecoverDirPrefix(c_dirblock_t *dirblk, uint32 bloknr)
+{
+	uint8 *data = (uint8 *)dirblk->data;
+	uint32 offset, next;
+	error_t error;
+
+	if ((error = vol_GetRawBlock((cachedblock_t *)dirblk, bloknr)))
+		return error;
+	if (PFS3DiskBlockId(data) != DBLKID)
+		return e_syntax_error;
+
+	for (offset = sizeof(struct dirblock); offset < SIZEOF_RESBLOCK; offset += next) {
+		next = data[offset];
+		if (!next)
+			return e_syntax_error;
+		/* Leave room for the terminating zero, including at the block end. */
+		if (next < sizeof(struct direntry) || next >= SIZEOF_RESBLOCK - offset) {
+			memset(data + offset, 0, SIZEOF_RESBLOCK - offset);
+			return PFS3MetadataToHostForRecovery(data, SIZEOF_RESBLOCK,
+				PFS3_METADATA_RESERVED) ? e_none : e_syntax_error;
+		}
+	}
+	return e_syntax_error;
 }
 
 static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool discardable)
 {
 	c_dirblock_t dirblk;
 	struct direntry *entry;
+	uint8 *end;
+	bool truncated = false;
 	error_t error;
 
 	/* get block */
 	dirblk.data = calloc(1, SIZEOF_RESBLOCK);
 	if (!dirblk.data)
 		return e_out_of_memory;
-	if ((error = volume.getblock((cachedblock_t *)&dirblk, bloknr)))
+	error = volume.getblock((cachedblock_t *)&dirblk, bloknr);
+	if (error == e_syntax_error) {
+		error = RecoverDirPrefix(&dirblk, bloknr);
+		truncated = error == e_none;
+	}
+	if (error)
 	{
 		free (dirblk.data);
+		if (SkipCheckReadError(error))
+			return e_none;
 		if (discardable && DiscardUnreadableBlock(error, "directory", bloknr))
 			return e_remove;
 		return IsOperationalError(error) ? error : e_remove;
 	}
 
 	/* check dirblock */
-	if (dirblk.data->id != DBLKID || dirblk.data->anodenr != anodenr ||
-		dirblk.data->parent != parent)
+	if (dirblk.data->id != DBLKID || dirblk.data->anodenr != anodenr)
 	{
 		free (dirblk.data);
 		return e_remove;
 	}
+	if ((error = CheckDirParent(&dirblk, parent))) {
+		free(dirblk.data);
+		return error;
+	}
 	
+	if (truncated) {
+		if (mode == repair) {
+			if ((error = volume.writeblock((cachedblock_t *)&dirblk))) {
+				free(dirblk.data);
+				return error;
+			}
+			fixedfileerror("removed invalid directory entry tail; readable prefix retained");
+		} else {
+			addfileerror("invalid directory entry tail; checking readable prefix");
+			if (!ss.incomplete)
+				ss.incomplete = e_syntax_error;
+		}
+	}
 	entry = (struct direntry *)dirblk.data->entries;
+	end = (uint8 *)dirblk.data + SIZEOF_RESBLOCK;
 
-	while (entry->next)
+	while ((uint8 *)entry < end && entry->next)
 	{
+		if (entry->next < sizeof(*entry) || entry->next >= end - (uint8 *)entry) {
+			free(dirblk.data);
+			return e_fatal_error;
+		}
 		if ((error = RepairDirEntry(entry, &dirblk)))
 		{
+			if (SkipCheckReadError(error)) {
+				entry = NEXTENTRY(entry);
+				continue;
+			}
 			if (IsOperationalError(error)) {
 				free(dirblk.data);
 				return error;
@@ -1728,16 +2070,29 @@ static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool
 			{
 				redosyntax = true;
 				fixedfileerror("removing corrupt directory entry");
-				RemoveDirEntry(entry, &dirblk);
+				if ((error = RemoveDirEntry(entry, &dirblk))) {
+					free(dirblk.data);
+					return error;
+				}
 			}
 			else
 			{
 				addfileerror("corrupt directory entry");
+				if (entry->next & 1) {
+					if (!ss.incomplete)
+						ss.incomplete = e_syntax_error;
+					break;
+				}
 				entry = NEXTENTRY(entry);
 			}
 		}
 		else
 			entry = NEXTENTRY(entry);
+	}
+
+	if ((uint8 *)entry >= end) {
+		free(dirblk.data);
+		return e_fatal_error;
 	}
 
 	/* has to be done after main check, because an empty block can
@@ -1753,6 +2108,107 @@ static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool
 
 	free (dirblk.data);
 	return error;
+}
+
+/* Keep the low size word and infer only the missing high word, from a
+ * complete, bounded allocation chain. No rounding up to allocated bytes. */
+#ifdef __GNUC__
+static error_t RecoverSizeHigh(struct direntry *, uint32 *) __attribute__((noinline));
+#endif
+static error_t RecoverSizeHigh(struct direntry *de, uint32 *high)
+{
+	canode_t node;
+	uint32 nr = de->anode, checkpoint = nr, distance = 0, power = 1;
+	uint32 blocks = 0, lowblocks, difference;
+	error_t error;
+
+	while (nr) {
+		if (aborting)
+			return e_aborted;
+		if ((error = ReadAnode(&node, nr, false))) {
+			if (IsOperationalError(error))
+				return error;
+			goto uncertain;
+		}
+		if (node.clustersize) {
+			if (node.blocknr <= rbl->lastreserved || node.blocknr >= volume.disksize ||
+			    node.clustersize > volume.disksize - node.blocknr ||
+			    node.clustersize > volume.disksize - blocks)
+				goto uncertain;
+			blocks += node.clustersize;
+		}
+		if (node.next && node.next == checkpoint)
+			goto uncertain;
+		if (++distance == power) {
+			checkpoint = node.next;
+			distance = 0;
+			power = power < 0x80000000UL ? power * 2 : ~(uint32)0;
+		}
+		nr = node.next;
+	}
+	lowblocks = (de->fsize >> volume.blockshift) +
+		((de->fsize & (volume.blocksize - 1)) != 0);
+	if (blocks < lowblocks)
+		goto uncertain;
+	difference = blocks - lowblocks;
+	if (difference & (((uint32)1 << (32 - volume.blockshift)) - 1))
+		goto uncertain;
+	*high = difference >> (32 - volume.blockshift);
+	return e_none;
+
+uncertain:
+	addfileerror("cannot reconstruct file size; file retained");
+	return UnresolvedObject();
+}
+
+/* The handler requires valid name/comment/extra-field packing, not merely
+ * a traversable entry chain. Preserve names and comments when only the packed
+ * fields are unusable; otherwise let normal entry removal handle the damage. */
+#ifdef __GNUC__
+static error_t CheckDirEntryLayout(struct direntry *, c_dirblock_t *) __attribute__((noinline));
+#endif
+static error_t CheckDirEntryLayout(struct direntry *de, c_dirblock_t *dirblk)
+{
+	struct extrafields extra;
+	uint8 *data = (uint8 *)de;
+	uint32 offset, high = 0;
+	error_t error;
+
+	if (PFS3GetExtraFields(de, &extra) != (UWORD)~0)
+		return e_none;
+	if (mode != repair) {
+		if (!ss.incomplete)
+			ss.incomplete = e_direntry_error;
+	}
+	offset = offsetof(struct direntry, startofname) + de->nlength;
+	if (offset >= de->next) {
+		addfileerror("invalid filename");
+		return e_direntry_error;
+	}
+	offset = (sizeof(*de) + de->nlength + data[offset]) & ~1U;
+	if (offset > de->next - sizeof(UWORD)) {
+		addfileerror("invalid filenote");
+		return e_direntry_error;
+	}
+	if (mode != repair)
+		return e_direntry_error;
+	if ((rbl->options & MODE_LARGEFILE) && de->type == ST_FILE) {
+		if ((error = RecoverSizeHigh(de, &high)))
+			return error;
+		if (high && offset > de->next - 2 * sizeof(UWORD)) {
+			addfileerror("no room for recovered file size; file retained");
+			return UnresolvedObject();
+		}
+	}
+	memset(data + de->next - sizeof(UWORD), 0, sizeof(UWORD));
+	if (high) {
+		data[de->next - 4] = high >> 8;
+		data[de->next - 3] = high;
+		data[de->next - 2] = 4; /* packed fsizex flag, stored big endian */
+		fixedfileerror("recovered high file size from allocation chain");
+	}
+	fixedfileerror("removed malformed directory extra fields");
+	return volume.writeblock((cachedblock_t *)dirblk);
 }
 
 static error_t RepairDirEntry(struct direntry *de, c_dirblock_t *dirblk)
@@ -1771,6 +2227,9 @@ static error_t RepairDirEntry(struct direntry *de, c_dirblock_t *dirblk)
 			addfileerror("odd directory entry length");
 			return e_direntry_error;
 		}
+
+		if ((error = CheckDirEntryLayout(de, dirblk)))
+			return error;
 
 		if (de->nlength + offsetof(struct direntry, nlength) > de->next)
 		{
@@ -1908,17 +2367,80 @@ static error_t RepairFile(struct direntry *de, c_dirblock_t *parent)
 	if (error != e_none)
 	{
 		/* invalidate bitmaps to force generation in next stage. */
-		InvalidBitmap(volume.mainbitmap);
-		InvalidBitmap(volume.anodebitmap);
+		if (volume.mainbitmap)
+			InvalidBitmap(volume.mainbitmap);
+		if (volume.anodebitmap)
+			InvalidBitmap(volume.anodebitmap);
 		return error;
 	}
 
 	return e_none;	
 }
 
-/* Repair hardlink. If a hardlink is removed that has consequences for
- * the linkchain and the linked to file.
+/* A skipped target directory is unknown, not evidence of a dangling link. */
+#ifdef __GNUC__
+static error_t FindLinkTarget(uint32, uint32, int *, uint32 *) __attribute__((noinline));
+#endif
+static error_t FindLinkTarget(uint32 directory, uint32 object, int *type, uint32 *head)
+{
+	bool complete;
+	error_t error = FindInDir(directory, object, type, head, &complete);
+	if (error)
+		return error;
+	if (!*type && !complete) {
+		addfileerror("cannot inspect hardlink target; link retained");
+		return UnresolvedObject();
+	}
+	return e_none;
+}
+
+/* A surviving link must belong to its object's backlink chain.  Otherwise
+ * the handler cannot safely delete it or preserve it when moving the object.
+ * Keep the exceptional lookup's storage out of the recursive directory frame.
  */
+#ifdef __GNUC__
+static error_t CheckLinkMembership(uint32 directory, uint32 object, uint32 link)
+    __attribute__((noinline));
+#endif
+
+static error_t CheckLinkMembership(uint32 directory, uint32 object, uint32 link)
+{
+	uint32 head = 0, checkpoint, distance = 0, power = 1;
+	canode_t node;
+	error_t error;
+	int type;
+
+	if ((error = FindLinkTarget(directory, object, &type, &head)))
+		return error;
+	checkpoint = head;
+	while (head) {
+		if (aborting)
+			return e_aborted;
+		if (head == link)
+			return e_none;
+		if ((error = ReadAnode(&node, head, false))) {
+			if (IsOperationalError(error))
+				return error;
+			goto uncertain;
+		}
+		if (node.next && node.next == checkpoint)
+			goto uncertain;
+		if (++distance == power) {
+			checkpoint = node.next;
+			distance = 0;
+			power = power < 0x80000000UL ? power * 2 : ~(uint32)0;
+		}
+		head = node.next;
+	}
+	addfileerror("hardlink missing from object link chain");
+	return e_remove;
+
+uncertain:
+	addfileerror("cannot verify hardlink membership; link retained");
+	return UnresolvedObject();
+}
+
+/* Repair a hardlink and verify both directions of its object reference. */
 static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok)
 {
 	struct extrafields extra;
@@ -1954,7 +2476,7 @@ static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok)
 	 * It is not checked if the link itself is infact a link, 
      * just that it exists.
 	 */
-	if ((error = SearchInDir(linknode.clustersize, extra.link, &type)))
+	if ((error = FindLinkTarget(linknode.clustersize, extra.link, &type, NULL)))
 		return error;
 	switch (type)
 	{
@@ -1983,6 +2505,10 @@ static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok)
 			}
 			break;
 	}
+
+	if (ss.stage == syntax &&
+		(error = CheckLinkMembership(linknode.clustersize, extra.link, de->anode)))
+		return error;
 
 	if ((error = AnodeUsed(de->anode)))
 		return error;
@@ -2029,20 +2555,20 @@ static error_t RepairRollover(struct direntry *de, c_dirblock_t *dirblok)
 static error_t RemoveDirEntry(struct direntry *de, c_dirblock_t *dirblk)
 {
 	uint8 *dest, *source;
-	uint32 movelen;
+	uint32 movelen, removed = de->next;
 
 	dest = (uint8 *)de;
-	source = dest + de->next;
-	movelen = ((uint8 *)(dirblk->data) + SIZEOF_RESBLOCK) - dest;
+	source = dest + removed;
+	movelen = ((uint8 *)(dirblk->data) + SIZEOF_RESBLOCK) - source;
 	if (movelen > 0 && movelen < SIZEOF_RESBLOCK)
 	{
 		memmove(dest, source, movelen);
-		volume.writeblock((cachedblock_t *)dirblk);
+		memset(dest + movelen, 0, removed);
+		return volume.writeblock((cachedblock_t *)dirblk);
 	}
 	else
 		return e_fatal_error;
 
-	return e_none;
 }
 
 
@@ -2051,19 +2577,21 @@ static error_t RemoveDirEntry(struct direntry *de, c_dirblock_t *dirblk)
 static error_t DeleteAnode(uint32 anodechain, uint32 node)
 {
 	canode_t prev_node, next_node;
-	uint32 previous;
+	uint32 previous, checkpoint = anodechain, distance = 0, power = 1;
 	error_t error;
 
 	if ((error = ReadAnode(&next_node, node, false)))
 		return error;
 	if (next_node.next == node)
-		return e_anode_error;
+		goto cycle;
 	if (anodechain == node)
 	{
 		if (!next_node.next)
 			return e_empty;
 		if ((error = ReadAnode(&next_node, next_node.next, false)))
 			return error;
+		if (next_node.next == node)
+			goto cycle;
 		return WriteAnode(&next_node, node);
 	}
 
@@ -2073,10 +2601,24 @@ static error_t DeleteAnode(uint32 anodechain, uint32 node)
 			return error;
 		if (prev_node.next == node)
 		{
+			if (next_node.next == previous)
+				goto cycle;
 			prev_node.next = next_node.next;
 			return WriteAnode(&prev_node, previous);
 		}
+		/* Brent's cycle check needs no extra reads or chain-sized storage. */
+		if (prev_node.next == checkpoint)
+			goto cycle;
+		if (++distance == power) {
+			checkpoint = prev_node.next;
+			distance = 0;
+			power = power < 0x80000000UL ? power * 2 : ~(uint32)0;
+		}
 	}
+	return e_anode_error;
+
+cycle:
+	adderror("cyclic anode chain");
 	return e_anode_error;
 }
 
@@ -2090,7 +2632,7 @@ static error_t GetExtraFields(struct extrafields *extrafields, struct direntry *
 }
 
 /* Set extrafields. Requirement is that the new directory entry fits.
- * To make sure it does, extrafields are removed only, not added.
+ * Callers must only shrink the entry or check room before growing it.
  */
 static error_t SetExtraFields(struct extrafields *extrafields, struct direntry *from,
 	 c_dirblock_t *dirblk)
@@ -2125,6 +2667,36 @@ static void AddExtraFields(struct direntry *direntry, struct extrafields *extra)
 }
 
 
+/* A replacement head can need one more packed word. Refuse growth when
+ * either the entry byte or the block's terminating zero would be lost. */
+static error_t SetLinkHead(struct extrafields *extra, uint32 head,
+	struct direntry *de, c_dirblock_t *dirblk)
+{
+	int growth = 2 * ((head >> 16 != 0) + ((head & 0xffff) != 0)
+		- (extra->link >> 16 != 0) - ((extra->link & 0xffff) != 0));
+	struct direntry *end;
+
+	if (growth > 0) {
+		for (end = de; end->next; end = NEXTENTRY(end))
+			;
+		if (de->next + growth > 254 ||
+			(uint8 *)end + growth >= (uint8 *)dirblk->data + SIZEOF_RESBLOCK) {
+			addfileerror("cannot redirect hardlink chain: directory entry has no room");
+			return UnresolvedObject();
+		}
+	}
+	extra->link = head;
+	return SetExtraFields(extra, de, dirblk);
+}
+
+static error_t LinkChainError(error_t error)
+{
+	if (IsOperationalError(error))
+		return error;
+	addfileerror("invalid hardlink chain; object retained");
+	return UnresolvedObject();
+}
+
 /* Repair the hardlinks chain referring to a file
  */
 static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
@@ -2133,7 +2705,7 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 	canode_t linknode;
 	error_t error;
 	int type;
-	uint32 parent;
+	uint32 parent, checkpoint, distance = 0, power = 1;
 
 	/* check extra fields */
 	if ((error = GetExtraFields(&extra, de)))
@@ -2144,11 +2716,18 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 		return e_none;
 
 	if ((error = ReadAnode(&linknode, extra.link, false)))
-		return IsOperationalError(error) ? error : e_anode_error;
+		return LinkChainError(error);
 
 	parent = dirblk->data->anodenr;
+	checkpoint = extra.link;
 	for (;;)
 	{
+		if (aborting)
+			return e_aborted;
+		if (linknode.next && linknode.next == checkpoint) {
+			addfileerror("cyclic hardlink chain");
+			return UnresolvedObject();
+		}
 		// check objectdir (clustersize) against actual objectdir
 		if (linknode.clustersize != parent)
 		{
@@ -2163,22 +2742,27 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 			return error;
 		if (!type)
 		{
-			fixedfileerror("dangling hardlink");
-			error = DeleteAnode(extra.link, linknode.nr);
-			if (error == e_empty && linknode.nr == extra.link)
-			{
-				extra.link = 0;
-				return SetExtraFields(&extra, de, dirblk);
-			}
+			if (linknode.nr == extra.link) {
+				/* Link entries name their own anodes. Copying the successor
+				 * into the head (as for a directory chain) orphans them. */
+				error = SetLinkHead(&extra, linknode.next, de, dirblk);
+			} else
+				error = DeleteAnode(extra.link, linknode.nr);
 			if (error)
-				return error;
+				return LinkChainError(error);
+			fixedfileerror("dangling hardlink");
 		}
 
 		if (!linknode.next)
 			return e_none;
 
+		if (++distance == power) {
+			checkpoint = linknode.next;
+			distance = 0;
+			power = power < 0x80000000UL ? power * 2 : ~(uint32)0;
+		}
 		if ((error = ReadAnode(&linknode, linknode.next, false)))
-			return IsOperationalError(error) ? error : e_anode_error;
+			return LinkChainError(error);
 	}
 }
 
@@ -2202,11 +2786,20 @@ static error_t CheckAnode(canode_t *anode, uint32 nr, bool fix)
  */
 error_t SearchInDir(uint32 diranodenr, uint32 target, int *result)
 {
+	return FindInDir(diranodenr, target, result, NULL, NULL);
+}
+
+static error_t FindInDir(uint32 diranodenr, uint32 target, int *result, uint32 *linkhead, bool *complete)
+{
+	uint32 mainanode = diranodenr, checkpoint = diranodenr, distance = 0, power = 1;
+	uint32 entryanode;
 	canode_t anode;
 	c_dirblock_t dirblk;
 	struct direntry *de;
 	error_t error, read_error = e_none;
 
+	if (complete)
+		*complete = true;
 	dirblk.data = calloc(1, SIZEOF_RESBLOCK);
 	if (!dirblk.data)
 		return e_out_of_memory;
@@ -2214,26 +2807,73 @@ error_t SearchInDir(uint32 diranodenr, uint32 target, int *result)
 	{
 		error = ReadAnode(&anode, diranodenr, false);
 		if (error) {
+			if (complete && error != e_number_error && error != e_not_found)
+				*complete = false;
 			if (IsOperationalError(error))
 				goto failed;
 			break;
 		}
+		if (complete && !anode.clustersize && !anode.blocknr && !anode.next)
+			break; /* a free anode cannot own directory entries */
+		if (complete && (anode.blocknr < rbl->firstreserved ||
+		    anode.blocknr > rbl->lastreserved))
+			goto next_anode; /* file data cannot be a reserved dirblock */
 		error = volume.getblock((cachedblock_t *)&dirblk, anode.blocknr);
+		if (error == e_syntax_error) {
+			if (complete && mode != repair)
+				*complete = false;
+			error = RecoverDirPrefix(&dirblk, anode.blocknr);
+		}
 		if (aborting) {
 			error = e_aborted;
 			goto failed;
+		}
+		/* In REPAIR only the readable prefix can survive. A bad ID or
+		 * discarded tail cannot own a surviving entry; a block belonging
+		 * to another directory still leaves ownership uncertain. */
+		if (complete) {
+			if (error) {
+				if (mode != repair || IsOperationalError(error))
+					*complete = false;
+			} else if (dirblk.data->id == DBLKID) {
+				if (dirblk.data->anodenr != mainanode)
+					*complete = false;
+			} else if (mode != repair)
+				*complete = false;
 		}
 		if (error == e_read_error)
 			read_error = error;
 		else if (IsOperationalError(error))
 			goto failed;
-		else if (!error && dirblk.data->id == DBLKID) {
-			for (de = FIRSTENTRY(&dirblk); de->next; de = NEXTENTRY(de))
-				if (de->anode == target) {
+		else if (!error && dirblk.data->id == DBLKID && dirblk.data->anodenr == mainanode) {
+			for (de = FIRSTENTRY(&dirblk); de->next; de = NEXTENTRY(de)) {
+				/* Repair removes odd-sized entries; later entries can still
+				 * be found before compaction, including on 68000/010. */
+				if (de->next & 1)
+					continue;
+				if ((IPTR)de & 1)
+					CopyMem((uint8 *)de + offsetof(struct direntry, anode), &entryanode, sizeof(entryanode));
+				else
+					entryanode = de->anode;
+				if (entryanode == target) {
 					*result = de->type;
+					if (linkhead) {
+						struct extrafields extra;
+						PFS3GetExtraFields(de, &extra);
+						*linkhead = extra.link;
+					}
 					free(dirblk.data);
 					return e_none;
 				}
+			}
+		}
+	next_anode:
+		if (anode.next && anode.next == checkpoint)
+			break; /* every distinct block in this cycle was searched */
+		if (++distance == power) {
+			checkpoint = anode.next;
+			distance = 0;
+			power = power < 0x80000000UL ? power * 2 : ~(uint32)0;
 		}
 		diranodenr = anode.next;
 	}
@@ -2326,7 +2966,7 @@ error_t RepairAnodeBlock(uint32 *bloknr, uint32 seqnr)
 		if ((error = GetRepairBlock((cachedblock_t *)&ablk, *bloknr)))
 		{
 			free (ablk.data);
-			return error;
+			return SkipCheckReadError(error) ? e_none : error;
 		}
 
 		enterblock(*bloknr);
@@ -2443,7 +3083,7 @@ error_t RepairBitmapBlock(uint32 *bloknr, uint32 seqnr)
 		if ((error = GetRepairBlock((cachedblock_t *)&bmblk, *bloknr)))
 		{
 			free (bmblk.data);
-			return error;
+			return SkipCheckReadError(error) ? e_none : error;
 		}
 	}
 
@@ -2526,7 +3166,8 @@ error_t RepairIndexBlock(uint16 bloktype, error_t (*repairchild)(uint32 *, uint3
 		if ((error = GetRepairBlock((cachedblock_t *)&iblk, *bloknr)))
 		{
 			free (iblk.data);
-			return error;
+			exitblock();
+			return SkipCheckReadError(error) ? e_none : error;
 		}
 
 		/* check id */
@@ -2705,6 +3346,8 @@ static error_t InitAnodeBitmap(void)
 
 	KillAnodeBitmap();
 	iblk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (!iblk.data)
+		return e_out_of_memory;
 
 	/* determine number of anodebitmap blocks
 	 * If any anode or indexblocks are generated, the anodebitmap has to be
@@ -2720,7 +3363,7 @@ static error_t InitAnodeBitmap(void)
 			return error;
 		}
 
-		for (i=INDEX_PER_BLOCK - 1; !iblk.data->index[i]; i--);
+		for (i=INDEX_PER_BLOCK - 1; i && !iblk.data->index[i]; i--);
 	}
 	else
 	{
@@ -2730,6 +3373,10 @@ static error_t InitAnodeBitmap(void)
 	s = s*INDEX_PER_BLOCK*INDEX_PER_BLOCK*ANODES_PER_BLOCK;
 	s += (++i * INDEX_PER_BLOCK * ANODES_PER_BLOCK) - 1;
 	volume.anodebitmap = bg_InitBitmap(0, s, 1);
+	if (!volume.anodebitmap) {
+		free(iblk.data);
+		return e_out_of_memory;
+	}
 	for (i=0; i<ANODE_ROOTDIR; i++)
 		AnodeUsed(i);
 	
@@ -3162,7 +3809,7 @@ static error_t AnodeUsed(uint32 nr)
 
 static BOOL IsAnodeUsed(uint32 nr)
 {
-	if (!nr) return FALSE;
+	if (!nr || !volume.anodebitmap) return FALSE;
 	nr = (nr >> 16) * ANODES_PER_BLOCK + (uint16)nr;
 	return bg_IsItemUsed(volume.anodebitmap, nr);
 }

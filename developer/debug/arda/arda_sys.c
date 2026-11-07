@@ -202,7 +202,7 @@ void arda_cmd_sysinfo(struct Arda *a, char *args)
         arda_resp_line(r, "DATESTAMP=%ld,%ld,%ld", (long)ds.ds_Days, (long)ds.ds_Minute, (long)ds.ds_Tick);
     }
 
-    arda_resp_line(r, "AGENT_UPTIME=%lu", (unsigned long)a->uptime);
+    arda_resp_line(r, "AGENT_UPTIME=%lu", (unsigned long)a->sh->uptime);
     arda_resp_end(r);
 }
 

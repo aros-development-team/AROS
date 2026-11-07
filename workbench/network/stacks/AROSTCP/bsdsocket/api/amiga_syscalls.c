@@ -691,6 +691,10 @@ LONG sdFind(struct SocketBase *libPtr, LONG *fdp)
     D(bug("[AROSTCP](amiga_syscalls.c) sdFind()\n"));
 #endif
 
+    /* a closed base has no table to put a descriptor in */
+    if(libPtr->dTable == NULL)
+        return EBADF;
+
 #if defined(ENABLE_FDLIBRARY)
     /*
      * When fd.library is available it is the system-wide descriptor-number
