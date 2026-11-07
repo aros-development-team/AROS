@@ -38,8 +38,12 @@
       SEED/N              random seed for the initial drops
 
     Controls: drag outside the pool to orbit, drag on the water to add drops,
-    drag the sphere to move it, SPACE pauses, G toggles gravity, R adds a
-    random drop, ESC quits.
+    drag the sphere to move it, mouse wheel zooms, SPACE pauses, G toggles
+    gravity, R adds a random drop, ESC quits.
+
+    The simulation is stepped on a time base (120 steps/s, as the original
+    gets at 60 Hz with two steps per frame), so wave speed and damping do not
+    depend on the frame rate the driver manages.
 */
 
 #define DEBUG 1
@@ -49,6 +53,7 @@
 #include <exec/lists.h>
 #include <dos/dos.h>
 #include <devices/timer.h>
+#include <devices/rawkeycodes.h>
 #include <intuition/intuition.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -985,10 +990,10 @@ static unsigned hash2(unsigned x, unsigned y)
     return h ^ (h >> 16);
 }
 
-/* Procedural ceramic tile sheet: 6x6 tiles with grout lines. */
+/* Procedural ceramic tile sheet: 12x12 tiles with grout lines. */
 static GLuint make_tiles(void)
 {
-    const int size = 256, tiles = 6;
+    const int size = 512, tiles = 12;
     GLubyte *px = malloc(size * size * 3);
     GLuint tex;
     int x, y;
@@ -1004,15 +1009,15 @@ static GLuint make_tiles(void)
             int tx = (int)(u * tiles), ty = (int)(v * tiles);
             float r, g, b;
 
-            if (fu < 0.045f || fv < 0.045f)
+            if (fu < 0.06f || fv < 0.06f)
             {
                 r = 0.52f; g = 0.52f; b = 0.48f;              /* grout */
             }
             else
             {
                 float shade = ((hash2(tx, ty) & 255) / 255.0f - 0.5f) * 0.10f;
-                float edge  = 1.0f - 0.08f * (1.0f - clampf((fu - 0.045f) * 12.0f, 0.0f, 1.0f))
-                                   - 0.08f * (1.0f - clampf((fv - 0.045f) * 12.0f, 0.0f, 1.0f));
+                float edge  = 1.0f - 0.08f * (1.0f - clampf((fu - 0.06f) * 10.0f, 0.0f, 1.0f))
+                                   - 0.08f * (1.0f - clampf((fv - 0.06f) * 10.0f, 0.0f, 1.0f));
                 r = (0.74f + shade) * edge;
                 g = (0.80f + shade) * edge;
                 b = (0.86f + shade) * edge;
@@ -1124,6 +1129,12 @@ static struct mesh m_quad, m_grid, m_sphere, m_pool;
 static const vec3 light_dir_raw = { 2.0f, 2.0f, -1.0f };
 static vec3  light_dir;
 static float angle_x = -25.0f, angle_y = -200.5f;
+static float camera_dist = 4.0f;
+
+/* 120 simulation steps per second: the original's two steps per 60 Hz frame */
+#define SIM_STEP_DT (1.0f / 120.0f)
+#define SIM_MAX_STEPS_PER_FRAME 12
+static float sim_accum = 0.0f;
 static vec3  sphere_center, sphere_old_center, sphere_velocity;
 static const vec3 gravity = { 0.0f, -4.0f, 0.0f };
 static float sphere_radius = 0.25f;
@@ -1322,7 +1333,7 @@ static void render_caustics(void)
 
 static void update_camera(void)
 {
-    mat4 t1 = mat4_translation(0.0f, 0.0f, -4.0f);
+    mat4 t1 = mat4_translation(0.0f, 0.0f, -camera_dist);
     mat4 rx = mat4_rotation(-angle_x, 1.0f, 0.0f, 0.0f);
     mat4 ry = mat4_rotation(-angle_y, 0.0f, 1.0f, 0.0f);
     mat4 t2 = mat4_translation(0.0f, 0.5f, 0.0f);
@@ -1380,6 +1391,8 @@ static void draw_scene(void)
 
 static void update(float dt)
 {
+    int steps;
+
     if (drag_mode == MODE_SPHERE)
     {
         /* start from rest when released after being moved by hand */
@@ -1402,8 +1415,14 @@ static void update(float dt)
     water_move_sphere(sphere_old_center, sphere_center, sphere_radius);
     sphere_old_center = sphere_center;
 
-    water_step();
-    water_step();
+    sim_accum += dt;
+    for (steps = 0; sim_accum >= SIM_STEP_DT && steps < SIM_MAX_STEPS_PER_FRAME; steps++)
+    {
+        water_step();
+        sim_accum -= SIM_STEP_DT;
+    }
+    if (sim_accum > SIM_STEP_DT)      /* too slow to keep up: drop the backlog */
+        sim_accum = 0.0f;
     water_update_normals();
     render_caustics();
 }
@@ -1779,6 +1798,15 @@ static void handle_messages(void)
             }
             break;
 
+        case IDCMP_RAWKEY:
+            if (msg->Code == RAWKEY_NM_WHEEL_UP || msg->Code == RAWKEY_NM_WHEEL_DOWN)
+            {
+                camera_dist *= (msg->Code == RAWKEY_NM_WHEEL_UP) ? 0.9f : 1.1f;
+                camera_dist = clampf(camera_dist, 1.2f, 16.0f);
+                update_camera();
+            }
+            break;
+
         case IDCMP_MOUSEBUTTONS:
             if (msg->Code == SELECTDOWN)
                 mouse_down(mx, my);
@@ -1847,7 +1875,8 @@ int main(void)
         WA_ReportMouse,   TRUE,
         WA_SimpleRefresh, TRUE,
         WA_NoCareRefresh, TRUE,
-        WA_IDCMP,         IDCMP_VANILLAKEY | IDCMP_CLOSEWINDOW | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE,
+        WA_IDCMP,         IDCMP_VANILLAKEY | IDCMP_RAWKEY | IDCMP_CLOSEWINDOW |
+                          IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE,
         TAG_DONE);
 
     UnlockPubScreen(NULL, pubscreen);
