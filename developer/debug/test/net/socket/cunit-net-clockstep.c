@@ -11,7 +11,8 @@
       prefix;
     - a route from a Route Information Option (RFC 4191);
     - a DNS server from an RDNSS option (RFC 8106);
-    - a path MTU an ICMPv6 Packet Too Big lowered (RFC 8201).
+    - a path MTU an ICMPv6 Packet Too Big lowered (RFC 8201);
+    - an answer in the resolver's cache, by its TTL (RFC 1035).
     Applications see and give a route's expiry as a time of day, as in
     BSD; one given reads back as it was.
 
@@ -562,6 +563,41 @@ void testCLOCKSTEP_EXPIRE_GIVEN(void)
     host_route(RTM_DELETE, "2001:db8:4d54:55::1", 0);
 }
 
+/* An answer cached for 600 s still answers after the clock goes a day on;
+ * the server is gone by then, so only the cache can. */
+void testCLOCKSTEP_DNSCACHE_FORWARD(void)
+{
+    NEED_IF();
+    if (!dns_ready) {
+        CU_PASS("the test's DNS server is not running - skipping");
+        return;
+    }
+    CU_ASSERT_EQUAL_FATAL(send_rdnss(600), 0);
+    CU_ASSERT_EQUAL_FATAL(dns_lookup("cached.rdnss.test"), 83);
+    CU_ASSERT_EQUAL_FATAL(send_rdnss(0), 0);
+    CU_ASSERT_EQUAL_FATAL(dns_lookup("cached.rdnss.test"), 83);    /* the cache's */
+    CU_ASSERT_EQUAL_FATAL(clock_step(DAY), 0);
+    CU_ASSERT_EQUAL(dns_lookup("cached.rdnss.test"), 83);
+    clock_restore();
+}
+
+/* One cached for 3 s ends in 3 s after the clock goes a day back. */
+void testCLOCKSTEP_DNSCACHE_BACK(void)
+{
+    NEED_IF();
+    if (!dns_ready) {
+        CU_PASS("the test's DNS server is not running - skipping");
+        return;
+    }
+    CU_ASSERT_EQUAL_FATAL(send_rdnss(600), 0);
+    CU_ASSERT_EQUAL_FATAL(dns_lookup("short.rdnss.test"), 84);
+    CU_ASSERT_EQUAL_FATAL(send_rdnss(0), 0);
+    CU_ASSERT_EQUAL_FATAL(clock_step(-DAY), 0);
+    Delay(5 * TICKS_PER_SECOND);
+    CU_ASSERT_EQUAL(dns_lookup("short.rdnss.test"), 0);
+    clock_restore();
+}
+
 /* -------------------------------------------------------------------- main */
 
 int main(int argc, char **argv)
@@ -607,7 +643,9 @@ int main(int argc, char **argv)
         !CU_add_test(p, "an RIO route ends on time after a step back", testCLOCKSTEP_ROUTE_BACK) ||
         !CU_add_test(p, "an RDNSS server outlives a step forward", testCLOCKSTEP_RDNSS_FORWARD) ||
         !CU_add_test(p, "a path MTU outlives a step forward", testCLOCKSTEP_PMTU_FORWARD) ||
-        !CU_add_test(p, "a route's expiry reads back as given", testCLOCKSTEP_EXPIRE_GIVEN))
+        !CU_add_test(p, "a route's expiry reads back as given", testCLOCKSTEP_EXPIRE_GIVEN) ||
+        !CU_add_test(p, "a cached answer outlives a step forward", testCLOCKSTEP_DNSCACHE_FORWARD) ||
+        !CU_add_test(p, "a cached answer ends on time after a step back", testCLOCKSTEP_DNSCACHE_BACK))
     {
         CU_cleanup_registry();
         goto out;

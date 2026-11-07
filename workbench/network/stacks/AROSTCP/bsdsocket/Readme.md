@@ -83,6 +83,9 @@ entries first, then the dynamic ones (DHCP, Router Advertisements); a final dot 
 A `NAMESERVER` line in the NetDB takes an IPv4 or an IPv6 address; a link-local IPv6 server needs a
 zone, which the line has no room for, and goes with its interface instead (`DNS6=`, or learned from
 a Router Advertisement).
+The resolver's cache (`api/dns_cache.c`) keeps an answer for its smallest TTL, at most a day, on the
+monotonic clock (`GetUpTime()`): setting the system time neither drops answers early nor keeps them
+past their TTL.
 The networks table (`db/networks`) holds each network's number in host order, as
 `getnetent(3)` and the autodoc say, read with `inet_network()`'s rules (`__inet_network()`: "10.1"
 is 0x0a01), so `getnetbyaddr(127, AF_INET)` finds `loop 127`.
