@@ -46,12 +46,11 @@ static LIBBASETYPEPTR PumpBase = NULL;          /* device base for the RX pump *
 #define ETH_FRAME_LEN   1518
 
 /*
- * Arm the SDIO card interrupt (1) or poll only (0). The BCM2835 Arasan card
- * interrupt fires once but does not reliably re-edge per frame (the chip-side
- * re-arm is a known quirk - michalsc's WiFiPi.device polls for the same reason),
- * so the RX pump uses adaptive-backoff polling instead and leaves this off.
+ * Wake the RX pump on the SDIO card interrupt (1) or poll only (0). The timer
+ * stays as a backstop: if it finds frames the interrupt did not announce, the
+ * pump falls back to adaptive polling until the interrupt catches up.
  */
-#define BWFM_USE_IRQ    0
+#define BWFM_USE_IRQ    1
 
 /* RX poll backoff window: poll fast while frames flow, ease off when idle. */
 #define BWFM_POLL_MIN   1000            /* 1 ms  - busy */
@@ -511,7 +510,7 @@ static void bwfm_pump(void)
     int use_irq = 0, idle = 0;
 
     /* Card interrupt wakes us via BWFMSetRxSignal; the handler masks it in
-     * INT_ENABLE, we clear the chip's SDPCM int + re-arm after draining. */
+     * SIGNAL_ENABLE, we clear the chip's SDPCM int, drain, then re-arm. */
     irqsig = (ULONG)-1;
     if (BWFM_USE_IRQ)
         irqsig = AllocSignal(-1);
@@ -538,10 +537,11 @@ static void bwfm_pump(void)
         ULONG info, len;
         int got = 0;
 
-        /* Drain everything in F2 (and the glom queue), THEN ack the chip's card
-         * interrupt: clearing HMB_FRAME_IND with F2 already empty deasserts DAT1,
-         * so the next frame re-triggers the edge-sensitive Arasan card interrupt
-         * (true per-frame IRQ rather than a one-shot + timer poll). */
+        /* Clear the chip's interrupt status before draining: a frame that
+         * lands during the drain sets it again and re-fires on BWFMAckRx. */
+        if (use_irq)
+            BWFMClearInt();
+
         while ((len = (ULONG)BWFMRxFrame(rxbuf, sizeof(rxbuf), &info)) > 0)
         {
             if (info & BWFM_RX_EVENT)
@@ -581,9 +581,6 @@ static void bwfm_pump(void)
             got = 1;
         }
 
-        if (use_irq)
-            BWFMClearInt();
-
         /*
          * Spin guard: if the card interrupt keeps waking us with nothing to
          * read (chip int not clearing), stop using it and fall back to timer
@@ -594,16 +591,19 @@ static void bwfm_pump(void)
             if (++idle >= 8)
             {
                 use_irq = 0;
+                BWFMSetRxSignal(NULL, 0);   /* release DAT1, as when polled */
                 D(bug("[bwfm.device] card IRQ not self-clearing - polling\n"));
             }
         }
         else
             idle = 0;
 
-        /* Adaptive backoff: reset to the fast interval whenever a frame turned
-         * up, else double the wait up to the idle ceiling - low latency under
-         * load, low CPU when quiet (mirrors WiFiPi.device's poll strategy). */
-        if (got)
+        /* Adaptive backoff: reset to the fast interval whenever the timer
+         * found frames, else double the wait up to the idle ceiling. Frames
+         * the interrupt announced leave the timer at the ceiling. */
+        D(if (use_irq && got && !(woke & irqmask) && delay > BWFM_POLL_MIN)
+              bug("[bwfm.device] frames without card IRQ\n"));
+        if (got && !(woke & irqmask))
             delay = BWFM_POLL_MIN;
         else if ((delay <<= 1) > BWFM_POLL_MAX)
             delay = BWFM_POLL_MAX;
@@ -620,6 +620,10 @@ static void bwfm_pump(void)
             if (!CheckIO((struct IORequest *)tr))
                 AbortIO((struct IORequest *)tr);
             WaitIO((struct IORequest *)tr);
+            /* An aborted request is often replied before WaitIO() looks, so
+             * it never Wait()s and the port signal stays set - the next
+             * Wait() would return at once, forever. */
+            SetSignal(0, timersig);
         }
         else
         {
