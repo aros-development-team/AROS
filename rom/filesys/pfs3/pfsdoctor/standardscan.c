@@ -115,7 +115,11 @@ static error_t RemoveDirEntry(struct direntry *de, c_dirblock_t *dirblk);
 static error_t DeleteAnode(uint32 anodechain, uint32 node);
 static error_t GetExtraFields(struct extrafields *extrafields, struct direntry *de);
 static error_t SetExtraFields(struct extrafields *extrafields, struct direntry *from, c_dirblock_t *dirblk);
+#ifdef __GNUC__
+static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk) __attribute__((noinline));
+#else
 static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk);
+#endif
 static error_t CheckAnode(canode_t *anode, uint32 nr, bool fix);
 static error_t RepairAnodeTree(void);
 static error_t RepairBitmapTree(void);
@@ -2505,7 +2509,7 @@ static error_t GetExtraFields(struct extrafields *extrafields, struct direntry *
 }
 
 /* Set extrafields. Requirement is that the new directory entry fits.
- * To make sure it does, extrafields are removed only, not added.
+ * Callers must only shrink the entry or check room before growing it.
  */
 static error_t SetExtraFields(struct extrafields *extrafields, struct direntry *from,
 	 c_dirblock_t *dirblk)
@@ -2540,6 +2544,28 @@ static void AddExtraFields(struct direntry *direntry, struct extrafields *extra)
 }
 
 
+/* A replacement head can need one more packed word. Refuse growth when
+ * either the entry byte or the block's terminating zero would be lost. */
+static error_t SetLinkHead(struct extrafields *extra, uint32 head,
+	struct direntry *de, c_dirblock_t *dirblk)
+{
+	int growth = 2 * ((head >> 16 != 0) + ((head & 0xffff) != 0)
+		- (extra->link >> 16 != 0) - ((extra->link & 0xffff) != 0));
+	struct direntry *end;
+
+	if (growth > 0) {
+		for (end = de; end->next; end = NEXTENTRY(end))
+			;
+		if (de->next + growth > 254 ||
+			(uint8 *)end + growth >= (uint8 *)dirblk->data + SIZEOF_RESBLOCK) {
+			addfileerror("cannot redirect hardlink chain: directory entry has no room");
+			return e_fatal_error;
+		}
+	}
+	extra->link = head;
+	return SetExtraFields(extra, de, dirblk);
+}
+
 /* Repair the hardlinks chain referring to a file
  */
 static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
@@ -2548,7 +2574,7 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 	canode_t linknode;
 	error_t error;
 	int type;
-	uint32 parent;
+	uint32 parent, checkpoint, distance = 0, power = 1;
 
 	/* check extra fields */
 	if ((error = GetExtraFields(&extra, de)))
@@ -2562,8 +2588,15 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 		return IsOperationalError(error) ? error : e_anode_error;
 
 	parent = dirblk->data->anodenr;
+	checkpoint = extra.link;
 	for (;;)
 	{
+		if (aborting)
+			return e_aborted;
+		if (linknode.next && linknode.next == checkpoint) {
+			addfileerror("cyclic hardlink chain; repair stopped");
+			return e_fatal_error;
+		}
 		// check objectdir (clustersize) against actual objectdir
 		if (linknode.clustersize != parent)
 		{
@@ -2578,20 +2611,25 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 			return error;
 		if (!type)
 		{
-			fixedfileerror("dangling hardlink");
-			error = DeleteAnode(extra.link, linknode.nr);
-			if (error == e_empty && linknode.nr == extra.link)
-			{
-				extra.link = 0;
-				return SetExtraFields(&extra, de, dirblk);
-			}
+			if (linknode.nr == extra.link) {
+				/* Link entries name their own anodes. Copying the successor
+				 * into the head (as for a directory chain) orphans them. */
+				error = SetLinkHead(&extra, linknode.next, de, dirblk);
+			} else
+				error = DeleteAnode(extra.link, linknode.nr);
 			if (error)
 				return error;
+			fixedfileerror("dangling hardlink");
 		}
 
 		if (!linknode.next)
 			return e_none;
 
+		if (++distance == power) {
+			checkpoint = linknode.next;
+			distance = 0;
+			power = power < 0x80000000UL ? power * 2 : ~(uint32)0;
+		}
 		if ((error = ReadAnode(&linknode, linknode.next, false)))
 			return IsOperationalError(error) ? error : e_anode_error;
 	}
