@@ -1566,19 +1566,8 @@ static error_t dd_CheckBlock(uint32 bloknr, int seqnr, bool *valid)
 			return error;
 		}
 		size = GetDDFileSize(dde, &high);
-		if (error || !FileSizeCheck(size, high, blocks)) {
-			if (mode == check)
-				adderror("delfile anode error");
-			else {
-				fixederror("delfile anode error");
-				dde->anodenr = 0;
-				if ((error = volume.writeblock((cachedblock_t *)&ddblk))) {
-					free(ddblk.data);
-					return error;
-				}
-			}
-			continue;
-		}
+		if (error || !FileSizeCheck(size, high, blocks))
+			goto invalid_entry;
 
 		for (ddnr = dde->anodenr; ddnr && remaining;
 		     ddnr = delnode.next, remaining--) {
@@ -1588,11 +1577,29 @@ static error_t dd_CheckBlock(uint32 bloknr, int seqnr, bool *valid)
 			if (!error)
 				error = AnodeUsed(ddnr);
 			if (error) {
+				if (!IsOperationalError(error)) {
+					/* Earlier nodes may already be marked in this pass. */
+					if (mode == repair)
+						redosyntax = true;
+					goto invalid_entry;
+				}
 				free(ddblk.data);
 				return error;
 			}
 		}
+		continue;
 
+ invalid_entry:
+		if (mode == check)
+			adderror("delfile anode error");
+		else {
+			fixederror("delfile anode error");
+			dde->anodenr = 0;
+			if ((error = volume.writeblock((cachedblock_t *)&ddblk))) {
+				free(ddblk.data);
+				return error;
+			}
+		}
  next_entry:
 		;
 	}
@@ -3966,6 +3973,10 @@ static error_t bg_ItemUsed(bitmap_t *bm, uint32 nr)
 static BOOL bg_IsItemUsed(bitmap_t *bm, uint32 nr)
 {
 	uint32 index, bit;
+
+	/* Outside the generated range is unavailable to deleted files. */
+	if (nr < bm->start || nr > bm->stop)
+		return TRUE;
 
 	nr -= bm->start;
 	nr /= bm->step;
