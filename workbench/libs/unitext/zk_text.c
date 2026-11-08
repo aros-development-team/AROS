@@ -542,6 +542,11 @@ long zt_measure(zt_font *f, const char *s, size_t n, unsigned flags)
     return e ? e->bx[e->nb - 1] : 0;
 }
 
+int zt_ready(zt_font *f, const char *s, size_t n, unsigned flags)
+{
+    return !n || get(f, s, n, flags) != NULL;
+}
+
 /* The index of the last boundary at or before off. */
 static size_t bindex(const struct shaped *e, size_t off)
 {

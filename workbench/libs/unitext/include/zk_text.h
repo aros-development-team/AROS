@@ -109,6 +109,12 @@ int zt_face_for(zt_font *f, unsigned long cp);
    memory for the shaping (a font call that fails draws nothing). */
 long zt_measure(zt_font *f, const char *s, size_t n, unsigned flags);
 
+/* Shapes s[0..n) now, as the calls below do when they need it, and keeps
+   it: 1, or 0 when out of memory (those calls would then measure 0 and
+   draw nothing). A class checks this before it clears what it shows, so a
+   failed drawing leaves the last one rather than an empty field. */
+int zt_ready(zt_font *f, const char *s, size_t n, unsigned flags);
+
 /* The x of the caret boundary at off (or the cluster start before it) in
    s[0..n) shaped as one piece: the place the drawing puts it. */
 long zt_x(zt_font *f, const char *s, size_t n, size_t off, unsigned flags);

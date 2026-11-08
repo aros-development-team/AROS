@@ -6,6 +6,7 @@
 #include <proto/dos.h>
 #include <proto/graphics.h>
 #include <graphics/gfx.h>
+#include <graphics/gfxmacros.h>
 #include <libraries/codesets.h>
 #include <string.h>
 #include <stdlib.h>
@@ -28,8 +29,12 @@ static struct Library *zt_cs_base;
 /* zk_text.c reaches FreeType through this base (inline calls). */
 struct Library *FreeType2Base;
 struct Library *zt_cgx_base;
-static struct codeset *zt_cs;              /* the system's set; NULL: Latin-1 */
-static char zt_cs_name[64] = "ISO-8859-1";
+/* The system's set. Written under the layer's lock by read_charset;
+   read without it, as one atomic load each (a codeset stays valid while
+   codesets.library is open, which is while the layer is). */
+static struct codeset *zt_cs;              /* codesets' set; NULL: Latin-1 built in */
+static int zt_cs_known = 1;                /* 0: CHARSET names a set nobody here knows */
+static char zt_cs_name[64] = "ISO-8859-1"; /* under the lock only */
 static int zt_users;
 
 /* The layer's lock, set up once. A compare and swap decides who sets it
@@ -56,6 +61,46 @@ static void lock(void)
 
 static void unlock(void) { ReleaseSemaphore(&zt_sem); }
 
+static int latin1_name(const char *n)
+{
+    static const char *const names[] = { "iso-8859-1", "iso8859-1", "latin1", "latin-1", NULL };
+    int i, k;
+    for (i = 0; names[i]; i++) {
+        for (k = 0; n[k] && names[i][k] && (n[k] | 0x20) == names[i][k]; k++) ;
+        if (!n[k] && !names[i][k]) return 1;
+    }
+    return 0;
+}
+
+/* Reads ENV:CHARSET again, with the lock held. No CHARSET, or one naming
+   Latin-1: Latin-1, built in and exact. A set codesets.library knows:
+   that set. Anything else (a name codesets does not know, or no
+   codesets.library for a set other than Latin-1): unknown, and nothing
+   is guessed: bytes of 0x80 and up are no character, characters of
+   U+0080 and up have no byte. */
+static void read_charset(void)
+{
+    char name[64];
+    struct codeset *cs = NULL;
+    int known = 1;
+    LONG got = GetVar((CONST_STRPTR)"CHARSET", (STRPTR)name, sizeof name, GVF_GLOBAL_ONLY);
+    if (got > 0 && !latin1_name(name)) {
+        if (zt_cs_base) {
+            /* the TagItem forms only: a program that links codesets'
+               stubs would turn the varargs forms into calls through its
+               own CodesetsBase, which may not be open yet */
+            struct TagItem no[] = { { CSA_FallbackToDefault, FALSE }, { TAG_DONE, 0 } };
+            cs = CodesetsFindA((CONST_STRPTR)name, no);
+        }
+        known = cs != NULL;
+    }
+    if (got <= 0 || latin1_name(name)) strcpy(name, "ISO-8859-1");
+    else if (cs && cs->name) { strncpy(name, (const char *)cs->name, sizeof name - 1); name[sizeof name - 1] = 0; }
+    strcpy(zt_cs_name, name);
+    __atomic_store_n(&zt_cs, cs, __ATOMIC_RELEASE);
+    __atomic_store_n(&zt_cs_known, known, __ATOMIC_RELEASE);
+}
+
 int zt_layer_open(void)
 {
     int r = ZT_OK;
@@ -63,22 +108,9 @@ int zt_layer_open(void)
     if (!zt_users) {
         if (!(FreeType2Base = OpenLibrary((CONST_STRPTR)"freetype2.library", 0))) r = ZT_ERR_LIBRARY;
         else {
-            char name[64];
             zt_cgx_base = OpenLibrary((CONST_STRPTR)"cybergraphics.library", 0);
-            if ((zt_cs_base = OpenLibrary((CONST_STRPTR)"codesets.library", 6))) {
-                /* the TagItem forms only: a program that links codesets'
-                   stubs would turn the varargs forms into calls through
-                   its own CodesetsBase, which may not be open yet */
-                struct TagItem no[] = { { CSA_FallbackToDefault, FALSE }, { TAG_DONE, 0 } };
-                struct TagItem yes[] = { { CSA_FallbackToDefault, TRUE }, { TAG_DONE, 0 } };
-                if (GetVar((CONST_STRPTR)"CHARSET", (STRPTR)name, sizeof name, GVF_GLOBAL_ONLY) > 0)
-                    zt_cs = CodesetsFindA((CONST_STRPTR)name, no);
-                if (!zt_cs) zt_cs = CodesetsFindA(NULL, yes);
-                if (zt_cs && zt_cs->name) {
-                    strncpy(zt_cs_name, (const char *)zt_cs->name, sizeof zt_cs_name - 1);
-                    zt_cs_name[sizeof zt_cs_name - 1] = 0;
-                }
-            }
+            zt_cs_base = OpenLibrary((CONST_STRPTR)"codesets.library", 6);
+            read_charset();
         }
     }
     if (r == ZT_OK) zt_users++;
@@ -90,17 +122,36 @@ void zt_layer_close(void)
 {
     lock();
     if (zt_users && !--zt_users) {
+        __atomic_store_n(&zt_cs, (struct codeset *)NULL, __ATOMIC_RELEASE);
+        __atomic_store_n(&zt_cs_known, 1, __ATOMIC_RELEASE);
+        strcpy(zt_cs_name, "ISO-8859-1");
         if (zt_cs_base) CloseLibrary(zt_cs_base);
         if (zt_cgx_base) CloseLibrary(zt_cgx_base);
         if (FreeType2Base) CloseLibrary(FreeType2Base);
         zt_cs_base = zt_cgx_base = FreeType2Base = NULL;
-        zt_cs = NULL;
-        strcpy(zt_cs_name, "ISO-8859-1");
     }
     unlock();
 }
 
-const char *zt_charset_name(void) { return zt_cs_name; }
+int zt_charset_refresh(void)
+{
+    int known = 0;
+    lock();
+    if (zt_users) read_charset();
+    known = zt_cs_known;
+    unlock();
+    return known;
+}
+
+int zt_charset(char *name, size_t n)
+{
+    int known;
+    lock();
+    known = zt_cs_known;
+    if (name && n) { strncpy(name, zt_cs_name, n - 1); name[n - 1] = 0; }
+    unlock();
+    return known;
+}
 
 /* ---------------------------------------------------------------- fonts */
 
@@ -199,20 +250,24 @@ int zt_fonts_check(const zt_fontset *set, char *why, ULONG whylen)
 
 /* ------------------------------------------------------------- drawing */
 
-void zt_blit(struct RastPort *rp, struct ColorMap *cm, ULONG pen, const UBYTE *cov, LONG bw, LONG bh,
-             LONG c0, LONG c1, LONG x, LONG y)
+int zt_blit(struct RastPort *rp, struct ColorMap *cm, ULONG pen, const UBYTE *cov, LONG bw, LONG bh,
+            LONG c0, LONG c1, LONG x, LONG y)
 {
     ULONG rgb[3];
     LONG i, j;
+    UBYTE *px = NULL;
+    int r = ZT_OK;
     if (c0 < 0) c0 = 0;
     if (c1 > bw) c1 = bw;
-    if (c1 <= c0 || bh <= 0 || !cm) return;
-    GetRGB32(cm, pen, 1, rgb);
-    if (zt_cgx_base && GetBitMapAttr(rp->BitMap, BMA_DEPTH) > 8) {
+    if (c1 <= c0 || bh <= 0) return ZT_OK;
+    if (zt_cgx_base && cm && GetBitMapAttr(rp->BitMap, BMA_DEPTH) > 8 &&
+        !(px = (UBYTE *)AllocVec((ULONG)((c1 - c0) * bh * 3), MEMF_ANY)))
+        r = ZT_ERR_MEMORY;                  /* drawn below with the pen, not left out */
+    if (px) {
         LONG pw = c1 - c0;
-        UBYTE *px = (UBYTE *)AllocVec((ULONG)(pw * bh * 3), MEMF_ANY);
-        ULONG pr = rgb[0] >> 24, pg = rgb[1] >> 24, pb = rgb[2] >> 24;
-        if (!px) return;
+        ULONG pr, pg, pb;
+        GetRGB32(cm, pen, 1, rgb);
+        pr = rgb[0] >> 24; pg = rgb[1] >> 24; pb = rgb[2] >> 24;
         ReadPixelArray(px, 0, 0, pw * 3, rp, x + c0, y, pw, bh, RECTFMT_RGB);
         for (j = 0; j < bh; j++)
             for (i = 0; i < pw; i++) {
@@ -231,6 +286,18 @@ void zt_blit(struct RastPort *rp, struct ColorMap *cm, ULONG pen, const UBYTE *c
             for (i = c0; i < c1; i++)
                 if (cov[j * bw + i] >= 128) WritePixel(rp, x + i, y + j);
     }
+    return r;
+}
+
+void zt_stale(struct RastPort *rp, ULONG pen, LONG x0, LONG y0, LONG x1, LONG y1)
+{
+    static UWORD pattern[] = { 0x8888, 0x2222 };
+    if (x1 < x0 || y1 < y0) return;
+    SetAfPt(rp, pattern, 1);
+    SetAPen(rp, pen);
+    SetDrMd(rp, JAM1);
+    RectFill(rp, x0, y0, x1, y1);
+    SetAfPt(rp, NULL, 0);
 }
 
 /* -------------------------------------------------------- the 8-bit set */
@@ -251,12 +318,14 @@ static size_t enc(unsigned long cp, char *u)
 size_t zt_from_local(UBYTE ch, char *utf8)
 {
     size_t n = 0;
-    if (ch < 0x80 || !zt_cs_base || !zt_cs) return enc(ch, utf8);
+    struct codeset *cs = __atomic_load_n(&zt_cs, __ATOMIC_ACQUIRE);
+    if (ch < 0x80) return enc(ch, utf8);
+    if (!cs) return __atomic_load_n(&zt_cs_known, __ATOMIC_ACQUIRE) ? enc(ch, utf8) : 0;
     {
         char src[2];
         UTF8 *u;
         src[0] = (char)ch; src[1] = 0;
-        struct TagItem t[] = { { CSA_SourceCodeset, (IPTR)zt_cs }, { CSA_Source, (IPTR)src }, { CSA_SourceLen, 1 },
+        struct TagItem t[] = { { CSA_SourceCodeset, (IPTR)cs }, { CSA_Source, (IPTR)src }, { CSA_SourceLen, 1 },
                                { TAG_DONE, 0 } };
         u = CodesetsUTF8CreateA(t);
         if (u) {
@@ -273,13 +342,14 @@ UBYTE zt_to_local(unsigned long cp)
 {
     char u[5];
     size_t n;
+    struct codeset *cs = __atomic_load_n(&zt_cs, __ATOMIC_ACQUIRE);
     if (cp < 0x80) return (UBYTE)cp;
     if (cp > 0x10ffff) return '?';
-    if (!zt_cs_base || !zt_cs) return cp < 256 ? (UBYTE)cp : '?';
+    if (!cs) return cp < 256 && __atomic_load_n(&zt_cs_known, __ATOMIC_ACQUIRE) ? (UBYTE)cp : '?';
     n = enc(cp, u);
     u[n] = 0;
     {
-        struct TagItem t[] = { { CSA_DestCodeset, (IPTR)zt_cs }, { CSA_Source, (IPTR)u }, { CSA_SourceLen, n },
+        struct TagItem t[] = { { CSA_DestCodeset, (IPTR)cs }, { CSA_Source, (IPTR)u }, { CSA_SourceLen, n },
                                { TAG_DONE, 0 } };
         STRPTR s = CodesetsUTF8ToStrA(t);
         UBYTE r = '?';
@@ -326,6 +396,7 @@ char *zt_path_to_dos(const char *utf8, size_t *bad)
     const char *c;
     if (bad) *bad = 0;
     if (!zt_valid(utf8, n)) { if (bad) *bad = 0; return NULL; }
+    zt_charset_refresh();                       /* the set as it is now */
     /* a name typed with a combining accent is the same name as the set's
        one letter: composed first */
     nfc = zt_compose(utf8, n, &cn);
@@ -356,6 +427,7 @@ char *zt_path_from_dos(const char *local)
     size_t n = strlen(local), i, k = 0;
     char *out = (char *)malloc(n * 4 + 1);
     if (!out) return NULL;
+    zt_charset_refresh();
     for (i = 0; i < n; i++) {
         size_t w = zt_from_local((UBYTE)local[i], out + k);
         if (!w) w = enc(0xfffd, out + k);          /* a byte the set leaves empty: shown, not dropped */
