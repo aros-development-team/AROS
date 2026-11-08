@@ -449,13 +449,13 @@ static error_t ss_CheckDirTree(void)
 			break;
 	}
 
-	/* deldir */
-	if ((error = RepairDeldir()) || aborting)
-		return error;
-
 	/* directory tree */
 	error = RepairDirTree();
 	if ((error && !SkipCheckReadError(error)) || aborting)
+		return error;
+	/* Deleted entries must yield to the live namespace, not claim its
+	 * anodes first and cause a live file to be removed. */
+	if ((error = RepairDeldir()) || aborting)
 		return error;
 	if (cache.writeerror)
 		return cache.writeerror;
@@ -1514,8 +1514,8 @@ static error_t dd_CheckBlock(uint32 bloknr, int seqnr, bool *valid)
 		if (!dde->anodenr)
 			continue;
 
-		/* Never cut a deleted chain: it may overlap a live file
-		 * or another old entry. */
+		/* Live files have already claimed their anodes.  Never cut a
+		 * deleted chain: it may overlap a live file or another old entry. */
 		error = CheckDataChain(dde->anodenr, &blocks, &remaining, true);
 		if (SkipCheckReadError(error))
 			continue;
