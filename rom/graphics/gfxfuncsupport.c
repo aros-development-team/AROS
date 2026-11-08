@@ -330,6 +330,8 @@ ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
         struct Rectangle torender, intersect;
 
         LockLayerRom(L);
+        /* the RastPort's BitMap is read under the layer lock, nothing may change it now */
+        bm = rp->BitMap;
 
         have_rp_cliprectangle = GetRPClipRectangleForLayer(rp, L, &rp_clip_rectangle, GfxBase);
 
@@ -487,6 +489,7 @@ ULONG do_pixel_func(struct RastPort *rp
         BOOL found = FALSE;
 
         LockLayerRom(L);
+        bm = rp->BitMap;
 
         have_rp_cliprectangle = GetRPClipRectangleForLayer(rp, L, &rp_clip_rectangle, GfxBase);
 
@@ -830,7 +833,7 @@ BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, WORD xSrc, W
             OOP_GetAttr(gc, aHidd_GC_Foreground, &old_fg);
 
             /*
-             * An alpha-channel bitmap whose friend has none (a composited
+             * An alpha-channel bitmap allocated with a friend (a composited
              * layer's surface, see AllocBitMap()) clears to transparent: pen 0
              * is opaque there, so a plain 0 pixel is written instead. Any
              * other bitmap clears to pen 0 in its own pixel values.

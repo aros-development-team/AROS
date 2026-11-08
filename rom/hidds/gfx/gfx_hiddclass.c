@@ -35,6 +35,9 @@
 
 #include <hidd/gfx.h>
 
+/* CopyBox dispatches CopyMemBox8/16/24/32 by bytes per pixel */
+GFX_ASSERT_BPP_METHODS(CopyMemBox);
+
 /*****************************************************************************************
 
     NAME
@@ -1068,46 +1071,30 @@ static VOID copybox_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBo
                  *        If this is fixed, we can even throw away HIDD_BM_CopyMemBoxXX at all, reducing
                  *        kickstart size.
                  */
-                switch(srcpf->bytes_per_pixel)
+                if (srcpf->bytes_per_pixel >= 1 && srcpf->bytes_per_pixel <= 4)
                 {
-                case 1:
                     /*
+                     * HIDD_BM_CopyMemBox8/16/24/32() according to bytes per pixel.
                      * In fact all these methods are static, they ignore object pointer, and it's
                      * needed only for OOP_DoMethod() to fetch class information.
                      * We use destination bitmap pointer, we can also source one.
                      */
-                    HIDD_BM_CopyMemBox8(msg->dest,
-                                        srcPixels, msg->srcX, msg->srcY,
-                                        destPixels, msg->destX, msg->destY,
-                                        msg->width, msg->height,
-                                        src_bytesperline, dest_bytesperline);
-                    return;
+                    struct pHidd_BitMap_CopyMemBox8 p;
 
-                case 2:
-                    HIDD_BM_CopyMemBox16(msg->dest,
-                                         srcPixels, msg->srcX, msg->srcY,
-                                         destPixels, msg->destX, msg->destY,
-                                         msg->width, msg->height,
-                                         src_bytesperline, dest_bytesperline);
+                    p.mID    = HiddBitMapBase + moHidd_BitMap_CopyMemBox8 + srcpf->bytes_per_pixel - 1;
+                    p.src    = srcPixels;
+                    p.srcX   = msg->srcX;
+                    p.srcY   = msg->srcY;
+                    p.dst    = destPixels;
+                    p.dstX   = msg->destX;
+                    p.dstY   = msg->destY;
+                    p.width  = msg->width;
+                    p.height = msg->height;
+                    p.srcMod = src_bytesperline;
+                    p.dstMod = dest_bytesperline;
+                    OOP_DoMethod(msg->dest, &p.mID);
                     return;
-
-                case 3:
-                    HIDD_BM_CopyMemBox24(msg->dest,
-                                         srcPixels, msg->srcX, msg->srcY,
-                                         destPixels, msg->destX, msg->destY,
-                                         msg->width, msg->height,
-                                         src_bytesperline, dest_bytesperline);
-                    return;
-
-                case 4:
-                    HIDD_BM_CopyMemBox32(msg->dest,
-                                         srcPixels, msg->srcX, msg->srcY,
-                                         destPixels, msg->destX, msg->destY,
-                                         msg->width, msg->height,
-                                         src_bytesperline, dest_bytesperline);
-                    return;
-
-                } /* switch(srcpf->bytes_per_pixel) */
+                }
            } /* srcpf == dstpf */
            else
            {
@@ -1122,7 +1109,14 @@ static VOID copybox_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBo
                  * Supply NULL pixlut. In this case bitmap's own colormap will be used
                  * for color lookup (if needed).
                  */
-                HIDD_BM_ConvertPixels(msg->dest,
+                OOP_Object *convertbm = msg->dest;
+
+                if (IS_PALETTE(srcpf) && IS_TRUECOLOR(dstpf))
+                {
+                    if (BM__Internal__SnapshotPalette(CSD(cl), src, NULL, 0))
+                        convertbm = src;
+                }
+                HIDD_BM_ConvertPixels(convertbm,
                                       &srcPixels, srcpf, src_bytesperline,
                                       &destPixels, dstpf, dest_bytesperline,
                                       msg->width, msg->height, NULL);
@@ -1230,8 +1224,16 @@ static VOID copybox_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBo
         }
         else if (IS_TRUECOLOR(dstpf))
         {
-            /* Get the colortab */
-            HIDDT_Color *ctab = ((HIDDT_ColorLUT *)HBM(src)->colmap)->colors;
+            HIDDT_Color *ctab = AllocVec(256 * sizeof(*ctab), MEMF_ANY);
+
+            if (!ctab)
+            {
+                GC_FG(gc) = memFG;
+                return;
+            }
+
+            if (!BM__Internal__SnapshotPalette(CSD(cl), src, ctab, 256))
+                BM__Internal__SnapshotPalette(CSD(cl), dest, ctab, 256);
 
             DCOPYBOX(bug("COPY FROM PALETTE TO TRUECOLOR, DRAWMODE %d, CTAB %p\n", GC_DRMD(gc), ctab));
 
@@ -1243,7 +1245,7 @@ static VOID copybox_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBo
                     HIDDT_Color col;
                     
                     pix = HIDD_BM_GetPixel(src, srcX + x, srcY + y);
-                    col = ctab[pix];
+                    col = pix < 256 ? ctab[pix] : (HIDDT_Color){0};
 
                     /*
                      * !!!! HIDD_BM_MapColor() pokes pixval of the passed HIDDT_Color,
@@ -1256,6 +1258,7 @@ static VOID copybox_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBo
                     
                 }
             }
+            FreeVec(ctab);
         }
         
     } /* if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf)) else ... */
@@ -1263,16 +1266,22 @@ static VOID copybox_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBo
     GC_FG(gc) = memFG;
 }
 
-VOID GFXHIDD__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBox *msg)
+static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBoxMasked *msg);
+
+/*
+ * CursorFB de-masquerade and software pointer bracket, shared by CopyBox and
+ * CopyBoxMasked. pHidd_Gfx_CopyBoxMasked starts with the same fields as
+ * pHidd_Gfx_CopyBox; masked selects the implementation msg is really for.
+ */
+GFX_SHARED IPTR copybox_bracket(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBox *msg,
+                                BOOL masked)
 {
     OOP_Object *realsrc = cursorfb_realbitmap(CSD(cl), msg->src);
     OOP_Object *realdst = cursorfb_realbitmap(CSD(cl), msg->dest);
     OOP_Object *display = NULL;
     struct SignalSemaphore *sem = NULL;
     BOOL bracket = FALSE;
-
-    if (gfx_is_video_bm(cl, msg->src) || gfx_is_video_bm(cl, msg->dest))
-        return;
+    IPTR ret = 0;
 
     if (realdst)
         display = cursorfb_display(CSD(cl), msg->dest);
@@ -1314,8 +1323,10 @@ VOID GFXHIDD__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx
          * refuses these too lands here again with nothing left to unwrap
          * and takes the branch below, so this cannot recurse.
          */
-        OOP_DoMethod(obj, (OOP_Msg)msg);
+        ret = OOP_DoMethod(obj, (OOP_Msg)msg);
     }
+    else if (masked)
+        ret = copyboxmasked_impl(cl, obj, (struct pHidd_Gfx_CopyBoxMasked *)msg);
     else
         copybox_impl(cl, obj, msg);
 
@@ -1325,6 +1336,16 @@ VOID GFXHIDD__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx
             GfxDisplay_CursorRender(CSD(cl), display);
         ReleaseSemaphore(sem);
     }
+
+    return ret;
+}
+
+VOID GFXHIDD__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBox *msg)
+{
+    if (gfx_is_video_bm(cl, msg->src) || gfx_is_video_bm(cl, msg->dest))
+        return;
+
+    copybox_bracket(cl, obj, msg, FALSE);
 }
 
 /*****************************************************************************************
@@ -1404,6 +1425,7 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
     OOP_Object *src_pf, *dest_pf;
     HIDDT_ColorModel src_colmod, dest_colmod;
     HIDDT_Color *ctab = NULL;
+    BOOL palette_conversion = FALSE;
     ULONG bytes_per_line, lines_per_step, doing_lines, lines_done;
     IPTR mask_align, mask_bpr;
     HIDDT_Pixel pixmask = ~0;
@@ -1425,18 +1447,7 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
          * case destination bitmap needs to have a palette. This will happen if it's either a displayable
          * bitmap, or is a friend of displayable bitmap (will share friend's palette then).
          */
-        HIDDT_ColorLUT *colmap = (HIDDT_ColorLUT *)HBM(msg->src)->colmap;
-
-        if (!colmap)
-            colmap = (HIDDT_ColorLUT *)HBM(msg->dest)->colmap;
-
-        if (!colmap)
-        {
-            D(bug("BltMaskBitMapRastPort could not retrieve pixel table for blit from palette to truecolor bitmap"));
-            return FALSE;
-        }
-
-        ctab = colmap->colors;
+        palette_conversion = TRUE;
     }
     else if ((src_colmod == vHidd_ColorModel_TrueColor) && (dest_colmod == vHidd_ColorModel_TrueColor))
     {
@@ -1459,12 +1470,24 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
         return FALSE;
     }
 
-    /* Mask width in pixels corresponds to full bitmap width (including alignment) */
-    OOP_GetAttr(msg->src, aHidd_BitMap_Width, &mask_bpr);
-    OOP_GetAttr(msg->src, aHidd_BitMap_Align, &mask_align);
+    /* A planar row stride can exceed the UWORD pixel-width attribute.
+     * Obtain it before converting to pixels, so a padded mask does not
+     * wrap to a much shorter row in the software fallback. */
+    {
+        struct BitMap *maskbm = NULL;
 
-    mask_align--;
-    mask_bpr = ((mask_bpr + mask_align) & ~mask_align) >> 3;
+        OOP_GetAttr(msg->src, aHidd_PlanarBM_BitMap, (IPTR *)&maskbm);
+        if (maskbm) {
+            mask_bpr = maskbm->BytesPerRow;
+            if ((maskbm->Flags & BMF_INTERLEAVED) && maskbm->Depth)
+                mask_bpr /= maskbm->Depth;
+        } else {
+            OOP_GetAttr(msg->src, aHidd_BitMap_Width, &mask_bpr);
+            OOP_GetAttr(msg->src, aHidd_BitMap_Align, &mask_align);
+            mask_align--;
+            mask_bpr = ((mask_bpr + mask_align) & ~mask_align) >> 3;
+        }
+    }
 
     /* How wide a source value is, for the ANBC minterm to complement within */
     if (src_colmod == vHidd_ColorModel_Palette)
@@ -1505,6 +1528,24 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
     {
         UBYTE *destbuf = srcbuf + lines_per_step * bytes_per_line;
         HIDDT_DrawMode drawmode = GC_DRMD(msg->gc);
+
+        if (palette_conversion)
+        {
+            ctab = AllocVec(256 * sizeof(*ctab), MEMF_ANY);
+            if (!ctab)
+            {
+                FreeMem(srcbuf, 2 * lines_per_step * bytes_per_line);
+                return FALSE;
+            }
+            if (!BM__Internal__SnapshotPalette(CSD(cl), msg->src, ctab, 256) &&
+                !BM__Internal__SnapshotPalette(CSD(cl), msg->dest, ctab, 256))
+            {
+                D(bug("BltMaskBitMapRastPort could not retrieve pixel table for blit from palette to truecolor bitmap"));
+                FreeVec(ctab);
+                FreeMem(srcbuf, 2 * lines_per_step * bytes_per_line);
+                return FALSE;
+            }
+        }
 
         /* PutImage needs to be called in Copy mode for proper operation */
         GC_DRMD(msg->gc) = vHidd_GC_DrawMode_Copy;
@@ -1576,7 +1617,7 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
                                  * itself will be modified, if we pass "&ctab[pix]" to HIDD_BM_MapColor() !!!!
                                  */
                                  
-                                HIDDT_Color col = ctab[pix];
+                                HIDDT_Color col = pix < 256 ? ctab[pix] : (HIDDT_Color){0};
 
                                 pix = HIDD_BM_MapColor(msg->dest, &col);
                             }
@@ -1605,6 +1646,7 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
         GC_DRMD(msg->gc) = drawmode;
 
         /* Free our temporary buffer */
+        FreeVec(ctab);
         FreeMem(srcbuf, 2 * lines_per_step * bytes_per_line);
 
         return TRUE;
@@ -1619,57 +1661,8 @@ static IPTR copyboxmasked_impl(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_
 
 IPTR GFXHIDD__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBoxMasked *msg)
 {
-    OOP_Object *realsrc = cursorfb_realbitmap(CSD(cl), msg->src);
-    OOP_Object *realdst = cursorfb_realbitmap(CSD(cl), msg->dest);
-    OOP_Object *display = NULL;
-    struct SignalSemaphore *sem = NULL;
-    BOOL bracket = FALSE;
-    IPTR ret;
-
-    if (realdst)
-        display = cursorfb_display(CSD(cl), msg->dest);
-    else if (realsrc)
-        display = cursorfb_display(CSD(cl), msg->src);
-
-    if (display)
-    {
-        WORD w = msg->width, h = msg->height;
-
-        sem = GfxDisplay_CursorSem(CSD(cl), display);
-        ObtainSemaphore(sem);
-
-        if (realdst && GfxDisplay_CursorIntersects(CSD(cl), display, realdst,
-                msg->destX, msg->destY, msg->destX + w - 1, msg->destY + h - 1))
-            bracket = TRUE;
-        if (realsrc && GfxDisplay_CursorIntersects(CSD(cl), display, realsrc,
-                msg->srcX, msg->srcY, msg->srcX + w - 1, msg->srcY + h - 1))
-            bracket = TRUE;
-
-        if (bracket)
-            GfxDisplay_CursorRemove(CSD(cl), display);
-    }
-
     /* See CopyBox: give the driver a chance at its own bitmaps */
-    if (realsrc || realdst)
-    {
-        if (realsrc)
-            msg->src = realsrc;
-        if (realdst)
-            msg->dest = realdst;
-
-        ret = OOP_DoMethod(obj, (OOP_Msg)msg);
-    }
-    else
-        ret = copyboxmasked_impl(cl, obj, msg);
-
-    if (display)
-    {
-        if (bracket)
-            GfxDisplay_CursorRender(CSD(cl), display);
-        ReleaseSemaphore(sem);
-    }
-
-    return ret;
+    return copybox_bracket(cl, obj, (struct pHidd_Gfx_CopyBox *)msg, TRUE);
 }
 
 /*****************************************************************************************

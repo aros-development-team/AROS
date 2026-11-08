@@ -35,6 +35,27 @@ static const UBYTE dwmac_broadcast[ETH_ADDRESSSIZE] =
  * or a descriptor could be owned before its contents are visible.
  * CacheClearE is the exec spelling of that fence.
  */
+/*
+ * Cache maintenance for the non-coherent engine (see dwmac.h). The exec
+ * calls are the platform's: Zicbom clean/flush on the Titan, fences where
+ * the caches are coherent anyway.
+ *   DWMAC_TO_DEVICE: the CPU wrote it, push it out (clean).
+ *   DWMAC_FROM_DEVICE: the engine wrote it, drop the CPU's copy (flush of
+ *   a line the CPU never dirtied = invalidate; descriptors are cleaned
+ *   right after every CPU write, so theirs are never dirty here).
+ */
+static inline void DWMAC_TO_DEVICE(APTR addr, ULONG len)
+{
+    ULONG l = len;
+
+    CachePreDMA(addr, &l, DMA_ReadFromRAM);
+}
+static inline void DWMAC_FROM_DEVICE(APTR addr, ULONG len)
+{
+    ULONG l = len;
+
+    CachePostDMA(addr, &l, 0);
+}
 #define DWMAC_SYNC(addr, len) CacheClearE((APTR)(addr), (len), CACRF_ClearD)
 
 static void DWMAC_RXProcess(struct DWMACUnit *unit);
@@ -89,10 +110,10 @@ void DWMAC_ReportEvents(struct DWMACBase *base, struct DWMACUnit *unit,
     struct List *list;
 
     list = &unit->dwu_RequestPorts[EVENT_QUEUE]->mp_MsgList;
+
+    DWMAC_PORT_LOCK(base, unit->dwu_RequestPorts[EVENT_QUEUE]);
     next = (APTR)list->lh_Head;
     tail = (APTR)&list->lh_Tail;
-
-    Disable();
     while (next != tail)
     {
         request = next;
@@ -105,7 +126,7 @@ void DWMAC_ReportEvents(struct DWMACBase *base, struct DWMACUnit *unit,
             ReplyMsg((APTR)request);
         }
     }
-    Enable();
+    DWMAC_PORT_UNLOCK(base, unit->dwu_RequestPorts[EVENT_QUEUE]);
 }
 
 /* == address filtering ================================================== */
@@ -263,9 +284,13 @@ void DWMAC_CopyPacket(struct DWMACBase *base, struct DWMACUnit *unit,
             filtered = TRUE;
     }
 
-    /* A rejected packet leaves the request queued for the next one */
+    /* A rejected packet puts the request back for the next one (the
+       caller took it off its queue) */
     if (filtered)
+    {
+        PutMsg(DWMAC_QueuePort(unit, request), (struct Message *)request);
         return;
+    }
 
     if (!opener->rx_function(request->ios2_Data, ptr, packet_size))
     {
@@ -275,9 +300,6 @@ void DWMAC_CopyPacket(struct DWMACBase *base, struct DWMACUnit *unit,
                            S2EVENT_BUFF | S2EVENT_RX);
     }
 
-    Disable();
-    Remove((APTR)request);
-    Enable();
     ReplyMsg((APTR)request);
 }
 
@@ -308,48 +330,58 @@ static void DWMAC_RXPacket(struct DWMACBase *base, struct DWMACUnit *unit,
         tracker->stats.BytesReceived += length;
     }
 
+    /* Openers come and go from other CPUs; the walk holds the list lock */
+    DWMAC_LIST_LOCK(base, unit);
     opener = (APTR)unit->dwu_Openers.mlh_Head;
     opener_tail = (APTR)&unit->dwu_Openers.mlh_Tail;
 
     while (opener != opener_tail)
     {
-        request = (APTR)opener->read_port.mp_MsgList.lh_Head;
-        request_tail = (APTR)&opener->read_port.mp_MsgList.lh_Tail;
+        struct MsgPort *port = &opener->read_port;
+
         accepted = FALSE;
 
-        while (request != request_tail && !accepted)
+        /* Find the request and take it off the queue under the port's
+           lock; the copy and the reply happen outside it */
+        DWMAC_PORT_LOCK(base, port);
+        request = (APTR)port->mp_MsgList.lh_Head;
+        request_tail = (APTR)&port->mp_MsgList.lh_Tail;
+        while (request != request_tail)
         {
-            struct IOSana2Req *next =
-                (APTR)request->ios2_Req.io_Message.mn_Node.ln_Succ;
-
             /* An 802.3 length field matches any small-type request */
             if (request->ios2_PacketType == packet_type ||
                 (request->ios2_PacketType <= ETH_MTU &&
                  packet_type <= ETH_MTU))
             {
-                DWMAC_CopyPacket(base, unit, request, length, packet_type,
-                                 frame);
+                Remove((APTR)request);
                 accepted = TRUE;
+                break;
             }
-            request = next;
+            request = (APTR)request->ios2_Req.io_Message.mn_Node.ln_Succ;
         }
+        DWMAC_PORT_UNLOCK(base, port);
 
         if (accepted)
+        {
+            DWMAC_CopyPacket(base, unit, request, length, packet_type, frame);
             is_orphan = FALSE;
+        }
 
         opener = (APTR)opener->node.mln_Succ;
     }
+    DWMAC_LIST_UNLOCK(base, unit);
 
     if (is_orphan)
     {
+        struct MsgPort *port = unit->dwu_RequestPorts[ADOPT_QUEUE];
+
         unit->dwu_Stats.UnknownTypesReceived++;
 
-        if (!IsListEmpty(&unit->dwu_RequestPorts[ADOPT_QUEUE]->mp_MsgList))
-        {
-            DWMAC_CopyPacket(base, unit,
-                (APTR)unit->dwu_RequestPorts[ADOPT_QUEUE]->mp_MsgList.lh_Head,
-                length, packet_type, frame);
-        }
+        DWMAC_PORT_LOCK(base, port);
+        request = (APTR)RemHead(&port->mp_MsgList);
+        DWMAC_PORT_UNLOCK(base, port);
+        if (request)
+            DWMAC_CopyPacket(base, unit, request, length, packet_type, frame);
     }
 }
 
@@ -363,16 +395,19 @@ static void DWMAC_RXProcess(struct DWMACUnit *unit)
     for (;;)
     {
         ULONG slot = unit->dwu_RXCurrent;
-        volatile struct dwmac_desc *desc =
-            (volatile struct dwmac_desc *)&unit->dwu_RXDesc[slot];
+        volatile struct dwmac_desc *desc = DWMAC_RXD(unit, slot);
         UBYTE *buf = unit->dwu_RXBuf + slot * unit->dwu_BufSize;
-        ULONG des3 = desc->des3;
+        ULONG des3;
+
+        /* The engine may have written the descriptor back: fresh read */
+        DWMAC_FROM_DEVICE((APTR)desc, sizeof(*desc));
+        des3 = desc->des3;
 
         if (des3 & DWMAC_RDES3_OWN)
             break;
 
-        /* The ownership read must land before the frame is looked at */
-        DWMAC_SYNC(buf, unit->dwu_BufSize);
+        /* and the frame it put in the buffer */
+        DWMAC_FROM_DEVICE(buf, unit->dwu_BufSize);
 
         if ((des3 & (DWMAC_RDES3_FD | DWMAC_RDES3_LD)) ==
             (DWMAC_RDES3_FD | DWMAC_RDES3_LD) && !(des3 & DWMAC_RDES3_ES))
@@ -391,9 +426,8 @@ static void DWMAC_RXProcess(struct DWMACUnit *unit)
         desc->des0 = (ULONG)(IPTR)buf;
         desc->des1 = (ULONG)((UQUAD)(IPTR)buf >> 32);
         desc->des2 = 0;
-        DWMAC_SYNC(desc, sizeof(*desc));
         desc->des3 = DWMAC_RDES3_OWN | DWMAC_RDES3_IOC | DWMAC_RDES3_BUF1V;
-        DWMAC_SYNC(desc, sizeof(*desc));
+        DWMAC_TO_DEVICE((APTR)desc, sizeof(*desc));
 
         /*
          * The tail is the freshest refilled slot; the engine stops just
@@ -420,8 +454,7 @@ static AROS_INTH1(DWMAC_TXIntF, struct DWMACUnit *, unit)
     {
         ULONG slot = unit->dwu_TXHead;
         ULONG next = (slot + 1) % DWMAC_TXDESC;
-        volatile struct dwmac_desc *desc =
-            (volatile struct dwmac_desc *)&unit->dwu_TXDesc[slot];
+        volatile struct dwmac_desc *desc = DWMAC_TXD(unit, slot);
         UBYTE *buffer = unit->dwu_TXBuf + slot * unit->dwu_BufSize;
         struct IOSana2Req *request;
         struct Opener *opener;
@@ -434,7 +467,13 @@ static AROS_INTH1(DWMAC_TXIntF, struct DWMACUnit *, unit)
             break;
         }
 
-        request = (APTR)port->mp_MsgList.lh_Head;
+        /* Off the queue first, under the port's lock: PutMsg() from
+           another CPU appends to this list meanwhile */
+        DWMAC_PORT_LOCK(base, port);
+        request = (APTR)RemHead(&port->mp_MsgList);
+        DWMAC_PORT_UNLOCK(base, port);
+        if (!request)
+            break;
         data_size = packet_size = request->ios2_DataLength;
         opener = request->ios2_BufferManagement;
 
@@ -476,20 +515,22 @@ static AROS_INTH1(DWMAC_TXIntF, struct DWMACUnit *, unit)
 
             packet_type = ((UWORD)buffer[12] << 8) | buffer[13];
 
+            /* The frame first, then the descriptor that points at it */
+            DWMAC_TO_DEVICE(buffer, packet_size);
             desc->des0 = (ULONG)(IPTR)buffer;
             desc->des1 = (ULONG)((UQUAD)(IPTR)buffer >> 32);
             desc->des2 = DWMAC_TDES2_IOC |
                          (packet_size & DWMAC_TDES2_B1L_MASK);
-            DWMAC_SYNC(desc, sizeof(*desc));
             desc->des3 = DWMAC_TDES3_OWN | DWMAC_TDES3_FD | DWMAC_TDES3_LD |
                          (packet_size & DWMAC_TDES3_LEN_MASK);
-            DWMAC_SYNC(desc, sizeof(*desc));
+            DWMAC_TO_DEVICE((APTR)desc, sizeof(*desc));
 
             unit->dwu_TXHead = next;
             DWMAC_Write(hw, DWMAC_DMA_CH0_TXDESC_TAIL,
-                        (ULONG)(IPTR)&unit->dwu_TXDesc[next]);
+                        (ULONG)(IPTR)DWMAC_TXD(unit, next));
 
             unit->dwu_Stats.PacketsSent++;
+            DWMAC_LIST_LOCK(base, unit);
             tracker = DWMAC_FindTypeStats(&unit->dwu_TypeTrackers,
                                           packet_type);
             if (tracker)
@@ -497,18 +538,36 @@ static AROS_INTH1(DWMAC_TXIntF, struct DWMACUnit *, unit)
                 tracker->stats.PacketsSent++;
                 tracker->stats.BytesSent += packet_size;
             }
+            DWMAC_LIST_UNLOCK(base, unit);
         }
 
         request->ios2_Req.io_Error = error;
         request->ios2_WireError = wire_error;
-        Disable();
-        Remove((APTR)request);
-        Enable();
         ReplyMsg((APTR)request);
     }
 
-    /* A full ring stalls the queue; the completion interrupt reopens it */
-    port->mp_Flags = proceed ? PA_SOFTINT : PA_IGNORE;
+    /*
+     * A full ring stalls the queue; the completion interrupt reopens it.
+     * That interrupt can run between the full check above and this point
+     * (on another CPU, or interrupting this soft interrupt): it then sees
+     * PA_SOFTINT, frees the ring and reopens nothing, and with the ring
+     * empty no further completion comes - the queue would stay stalled
+     * for good. So stall first, then look at the ring again; the fences
+     * pair with DWMAC_TXComplete(), which frees slots before it looks at
+     * the port, so one side always sees the other.
+     */
+    if (proceed)
+        port->mp_Flags = PA_SOFTINT;
+    else
+    {
+        port->mp_Flags = PA_IGNORE;
+        __atomic_thread_fence(__ATOMIC_SEQ_CST);
+        if ((unit->dwu_TXHead + 1) % DWMAC_TXDESC != unit->dwu_TXTail)
+        {
+            port->mp_Flags = PA_SOFTINT;
+            Cause(&unit->dwu_TXInt);
+        }
+    }
 
     return FALSE;
 
@@ -522,9 +581,12 @@ static void DWMAC_TXComplete(struct DWMACUnit *unit)
     while (unit->dwu_TXTail != unit->dwu_TXHead)
     {
         ULONG slot = unit->dwu_TXTail;
-        volatile struct dwmac_desc *desc =
-            (volatile struct dwmac_desc *)&unit->dwu_TXDesc[slot];
-        ULONG des3 = desc->des3;
+        volatile struct dwmac_desc *desc = DWMAC_TXD(unit, slot);
+        ULONG des3;
+
+        /* The engine clears OWN in memory; a cached copy says nothing */
+        DWMAC_FROM_DEVICE((APTR)desc, sizeof(*desc));
+        des3 = desc->des3;
 
         if (des3 & DWMAC_TDES3_OWN)
             break;
@@ -535,6 +597,8 @@ static void DWMAC_TXComplete(struct DWMACUnit *unit)
         unit->dwu_TXTail = (slot + 1) % DWMAC_TXDESC;
     }
 
+    /* Publish the freed slots before looking at the port (see DWMAC_TXIntF) */
+    __atomic_thread_fence(__ATOMIC_SEQ_CST);
     if (port->mp_Flags == PA_IGNORE &&
         (unit->dwu_TXHead + 1) % DWMAC_TXDESC != unit->dwu_TXTail)
     {
@@ -642,7 +706,7 @@ void DWMAC_GoOnline(struct DWMACBase *base, struct DWMACUnit *unit)
 
     /* Nudge receive into its ring */
     DWMAC_Write(hw, DWMAC_DMA_CH0_RXDESC_TAIL,
-                (ULONG)(IPTR)&unit->dwu_RXDesc[DWMAC_RXDESC - 1]);
+                (ULONG)(IPTR)DWMAC_RXD(unit, DWMAC_RXDESC - 1));
 
     unit->dwu_Flags |= IFF_UP;
 
@@ -717,31 +781,35 @@ static void DWMAC_InitRings(struct DWMACUnit *unit)
 
     for (i = 0; i < DWMAC_TXDESC; i++)
     {
-        unit->dwu_TXDesc[i].des0 = 0;
-        unit->dwu_TXDesc[i].des1 = 0;
-        unit->dwu_TXDesc[i].des2 = 0;
-        unit->dwu_TXDesc[i].des3 = 0;
+        volatile struct dwmac_desc *d = DWMAC_TXD(unit, i);
+
+        d->des0 = 0;
+        d->des1 = 0;
+        d->des2 = 0;
+        d->des3 = 0;
     }
 
     for (i = 0; i < DWMAC_RXDESC; i++)
     {
+        volatile struct dwmac_desc *d = DWMAC_RXD(unit, i);
         IPTR buf = (IPTR)(unit->dwu_RXBuf + i * unit->dwu_BufSize);
 
-        unit->dwu_RXDesc[i].des0 = (ULONG)buf;
-        unit->dwu_RXDesc[i].des1 = (ULONG)((UQUAD)buf >> 32);
-        unit->dwu_RXDesc[i].des2 = 0;
-        unit->dwu_RXDesc[i].des3 = DWMAC_RDES3_OWN | DWMAC_RDES3_IOC |
-                                   DWMAC_RDES3_BUF1V;
+        d->des0 = (ULONG)buf;
+        d->des1 = (ULONG)((UQUAD)buf >> 32);
+        d->des2 = 0;
+        d->des3 = DWMAC_RDES3_OWN | DWMAC_RDES3_IOC | DWMAC_RDES3_BUF1V;
     }
 
     unit->dwu_TXHead = 0;
     unit->dwu_TXTail = 0;
     unit->dwu_RXCurrent = 0;
 
-    DWMAC_SYNC(unit->dwu_TXDesc,
-               (DWMAC_TXDESC + DWMAC_RXDESC) * sizeof(struct dwmac_desc));
+    DWMAC_TO_DEVICE(unit->dwu_TXDesc,
+                    (DWMAC_TXDESC + DWMAC_RXDESC) * DWMAC_DESC_STRIDE);
 
-    DWMAC_Write(hw, DWMAC_DMA_CH0_CONTROL, 0);
+    /* The engine steps DWMAC_DESC_STRIDE between descriptors too */
+    DWMAC_Write(hw, DWMAC_DMA_CH0_CONTROL,
+                unit->dwu_DSL << DWMAC_DMA_CH0_DSL_SHIFT);
     DWMAC_Write(hw, DWMAC_DMA_CH0_TX_CONTROL,
                 (8 << DWMAC_DMA_TX_PBL_SHIFT) | DWMAC_DMA_TX_OSF);
     DWMAC_Write(hw, DWMAC_DMA_CH0_RX_CONTROL,
@@ -759,9 +827,56 @@ static void DWMAC_InitRings(struct DWMACUnit *unit)
     DWMAC_Write(hw, DWMAC_DMA_CH0_RXDESC_RINGLEN, DWMAC_RXDESC - 1);
 
     DWMAC_Write(hw, DWMAC_DMA_CH0_TXDESC_TAIL,
-                (ULONG)(IPTR)&unit->dwu_TXDesc[0]);
+                (ULONG)(IPTR)DWMAC_TXD(unit, 0));
     DWMAC_Write(hw, DWMAC_DMA_CH0_RXDESC_TAIL,
-                (ULONG)(IPTR)&unit->dwu_RXDesc[DWMAC_RXDESC - 1]);
+                (ULONG)(IPTR)DWMAC_RXD(unit, DWMAC_RXDESC - 1));
+}
+
+/*
+ * The descriptor skip length is counted in bus words, and the bus width
+ * is not in a register this driver knows. Probe: with a wrong DSL the
+ * engine fetches the wrong 16 bytes as its first receive descriptor -
+ * zeros, OWN clear - and raises RBU at once; with the right one it owns
+ * all DWMAC_RXDESC descriptors and stays quiet. Tried from the widest
+ * bus down, before the unit is ever online.
+ */
+static void DWMAC_ProbeDSL(struct DWMACUnit *unit)
+{
+    struct dwmac_hw *hw = unit->dwu_HW;
+    static const ULONG try[] = { 3, 6 };    /* 128-bit, 64-bit buses */
+    ULONG i;
+
+    for (i = 0; i < sizeof(try) / sizeof(try[0]); i++)
+    {
+        ULONG spins;
+        BOOL rbu = FALSE;
+
+        unit->dwu_DSL = try[i];
+        DWMAC_InitRings(unit);
+        DWMAC_Write(hw, DWMAC_DMA_CH0_STATUS, 0xffffffff);
+        DWMAC_Write(hw, DWMAC_DMA_CH0_RX_CONTROL,
+                    DWMAC_Read(hw, DWMAC_DMA_CH0_RX_CONTROL) | DWMAC_DMA_RX_SR);
+        DWMAC_Write(hw, DWMAC_DMA_CH0_RXDESC_TAIL,
+                    (ULONG)(IPTR)DWMAC_RXD(unit, DWMAC_RXDESC - 1));
+        /* a few ms: the first descriptor fetch is immediate */
+        for (spins = 0; spins < 200000 && !rbu; spins++)
+            if (DWMAC_Read(hw, DWMAC_DMA_CH0_STATUS) & DWMAC_DMA_STAT_RBU)
+                rbu = TRUE;
+        DWMAC_Write(hw, DWMAC_DMA_CH0_RX_CONTROL,
+                    DWMAC_Read(hw, DWMAC_DMA_CH0_RX_CONTROL) & ~DWMAC_DMA_RX_SR);
+        DWMAC_Write(hw, DWMAC_DMA_CH0_STATUS, 0xffffffff);
+        if (!rbu)
+        {
+            bug("[dwmac] descriptor skip %lu (%lu-bit bus): one descriptor per %u-byte line\n",
+                (unsigned long)try[i],
+                (unsigned long)((DWMAC_DESC_STRIDE - sizeof(struct dwmac_desc)) / try[i] * 8),
+                DWMAC_DESC_STRIDE);
+            return;
+        }
+    }
+    bug("[dwmac] WARNING: no descriptor skip length accepted (RBU on every try) - keeping %lu\n",
+        (unsigned long)try[0]);
+    unit->dwu_DSL = try[0];
 }
 
 /* == the unit process =================================================== */
@@ -790,6 +905,8 @@ static void DWMAC_CheckLink(struct DWMACBase *base, struct DWMACUnit *unit)
     D(bug("[dwmac] link %s, %u Mbit %s duplex\n", up ? "up" : "down",
           mbps, fullduplex ? "full" : "half");)
 }
+
+
 
 static void DWMAC_UnitTask(void)
 {
@@ -1040,7 +1157,7 @@ struct DWMACUnit *DWMAC_CreateUnit(struct DWMACBase *base)
     DWMAC_ConfigMTU(unit);
 
     unit->dwu_DescMemSize =
-        (DWMAC_TXDESC + DWMAC_RXDESC) * sizeof(struct dwmac_desc) + 63;
+        (DWMAC_TXDESC + DWMAC_RXDESC) * DWMAC_DESC_STRIDE + 63;
     unit->dwu_DescMem = AllocMem(unit->dwu_DescMemSize,
                                  MEMF_PUBLIC | MEMF_CLEAR);
     unit->dwu_BufMemSize =
@@ -1055,7 +1172,8 @@ struct DWMACUnit *DWMAC_CreateUnit(struct DWMACBase *base)
 
     unit->dwu_TXDesc = (struct dwmac_desc *)
         (((IPTR)unit->dwu_DescMem + 63) & ~63);
-    unit->dwu_RXDesc = unit->dwu_TXDesc + DWMAC_TXDESC;
+    unit->dwu_RXDesc = (struct dwmac_desc *)
+        ((UBYTE *)unit->dwu_TXDesc + DWMAC_TXDESC * DWMAC_DESC_STRIDE);
     unit->dwu_TXBuf = (UBYTE *)(((IPTR)unit->dwu_BufMem + 63) & ~63);
     unit->dwu_RXBuf = unit->dwu_TXBuf + DWMAC_TXDESC * unit->dwu_BufSize;
 
@@ -1088,6 +1206,7 @@ struct DWMACUnit *DWMAC_CreateUnit(struct DWMACBase *base)
     }
 
     DWMAC_SetMACAddress(hw, unit->dwu_DevAddr);
+    DWMAC_ProbeDSL(unit);
     DWMAC_InitRings(unit);
     D(bug("[dwmac] rings ready, tx %p rx %p\n",
           unit->dwu_TXDesc, unit->dwu_RXDesc);)

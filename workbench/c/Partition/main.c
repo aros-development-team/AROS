@@ -75,6 +75,9 @@
         FORCE -- Do not ask for confirmation before partitioning the drive.
         QUIET -- Do not print any output. This option can only be used when
             FORCE is also specified.
+        BOOTSIZE -- Size in megabytes of an optional boot partition.
+        BOOTTYPE -- "fat32" for an EFI system partition: type 0xEF on
+            MBR, or the EFI system partition GUID on GPT.
         SCHEME -- Specify the partition scheme to use 
                              mbr - (default)
                              gpt - 
@@ -109,7 +112,10 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/partition.h>
+#include <proto/ptedit.h>
 #include <proto/utility.h>
+#include <libraries/uuid.h>
+#include <string.h>
 
 #include <aros/debug.h>
 
@@ -121,7 +127,7 @@
 #define MAX_SFS_SIZE (124L * 1024)
 #define MAX_SIZE(A) (((A) == &sfs0) ? MAX_SFS_SIZE : MAX_FFS_SIZE)
 
-const TEXT version_string[] = "$VER: Partition 42.2 (03.09.2026)";
+const TEXT version_string[] = "$VER: Partition 42.3 (02.11.2026)";
 
 static const struct PartitionType fat32 = { "FAT\2", 4 };
 static const struct PartitionType dos3 = { "DOS\3", 4 };
@@ -151,6 +157,170 @@ static UQUAD CylToBlock(struct DosEnvec *de, LONG cyl)
     return (UQUAD)(cyl * (de->de_Surfaces * de->de_BlocksPerTrack));
 }
 
+/* GPT holds an RDB container plus optional firmware/boot partitions.
+ * SYS and Work retain the same RDB filesystem settings as MBR installs. */
+static struct PartitionHandle *CreateGPTPartition(struct PartitionHandle *root,
+    UQUAD first, UQUAD blocks, CONST_STRPTR name, const uuid_t *id, BOOL bootable)
+{
+    struct DosEnvec de = root->de;
+    struct PartitionType type;
+
+    if (!blocks || first > 0xffffffffULL || blocks > 0xffffffffULL - first)
+        return NULL;
+    CopyMem(id, type.id, sizeof(*id));
+    type.id_len = sizeof(*id);
+    de.de_Surfaces = 1;
+    de.de_BlocksPerTrack = 1;
+    de.de_LowCyl = first;
+    de.de_HighCyl = first + blocks - 1;
+    de.de_Reserved = 2;
+    de.de_BootPri = 0;
+    return AddPartitionTags(root, PT_DOSENVEC, (IPTR)&de, PT_TYPE, (IPTR)&type,
+        PT_NAME, (IPTR)name, PT_BOOTABLE, bootable, PT_AUTOMOUNT, TRUE, TAG_DONE);
+}
+
+static LONG CreateGPTLayout(struct PartitionHandle *root, ULONG sysSize,
+    ULONG workSize, const struct PartitionType *sysType, const struct PartitionType *workType)
+{
+    static const uuid_t bios = MAKE_UUID(0x21686148, 0x6449, 0x6E6F, 0x744E, 0x656564454649ULL);
+    static const uuid_t esp = MAKE_UUID(0xC12A7328, 0xF81F, 0x11D2, 0xBA4B, 0x00A0C93EC93BULL);
+    static const uuid_t rdbID = MAKE_UUID(0x5244534B, 0xBB67, 0x46C5, 0xAA4A, 0xF502CA018E5EULL);
+    struct PartitionHandle *ph, *next;
+    UQUAD first = 0, last = 0, low = 0, high = 0, candidate;
+    UQUAD blocksize = root->de.de_SizeBlock << 2;
+    UQUAD align, biosblocks, bootblocks = 0, sysblocks, workblocks, available;
+    BOOL hasBIOS = FALSE, hasESP = FALSE;
+    LONG error;
+    ULONG reserved = 0;
+    ULONG bootSize = ARG(BOOTSIZE) ? *(LONG *)ARG(BOOTSIZE) : 0;
+
+    if (root->table->type != PHPTT_GPT || blocksize > MB || MB % blocksize)
+        return ERROR_BAD_NUMBER;
+    if (ARG(BOOTSIZE) && (!bootSize ||
+        Stricmp((CONST_STRPTR)ARG(BOOTTYPE), "fat32")))
+        return ERROR_BAD_NUMBER;
+    GetPartitionTableAttrsTags(root, PTT_FIRSTUSABLE, (IPTR)&first,
+        PTT_LASTUSABLE, (IPTR)&last, TAG_DONE);
+    if (!first || last < first)
+        return ERROR_NOT_IMPLEMENTED;
+    /* Keep placement within the DosEnvec interface's addressable range. */
+    if (last >= 0xffffffffULL)
+        last = 0xfffffffeULL;
+    if (first > last)
+        return ERROR_DISK_FULL;
+    align = MB / blocksize;
+
+    ForeachNode(&root->table->list, next)
+    {
+        struct PartitionType type = { { 0 }, 0 };
+        GetPartitionAttrsTags(next, PT_TYPE, (IPTR)&type, TAG_DONE);
+        if (type.id_len == sizeof(uuid_t))
+        {
+            if (!memcmp(type.id, &bios, sizeof(bios)))
+                hasBIOS = TRUE;
+            if (!memcmp(type.id, &esp, sizeof(esp)))
+                hasESP = TRUE;
+        }
+    }
+    biosblocks = hasBIOS ? 0 : align;
+
+    /* Find the largest aligned gap; handles need not be ordered by LBA. */
+    candidate = first;
+    for (;;)
+    {
+        UQUAD start = ((candidate + align - 1) / align) * align;
+        UQUAD limit = last + 1;
+        ForeachNode(&root->table->list, next)
+        {
+            UQUAD a = 0, b = 0;
+            GetPartitionAttrsTags(next, PT_STARTBLOCK, (IPTR)&a, PT_ENDBLOCK, (IPTR)&b, TAG_DONE);
+            if (a < start && b >= start)
+                limit = start;
+            else if (a >= start && a < limit)
+                limit = a;
+        }
+        limit = (limit / align) * align;
+        if (limit > start && limit - start > high - low)
+        {
+            low = start;
+            high = limit;
+        }
+        /* Visit each partition end in increasing order, including gaps
+         * before the first partition and after the last. */
+        limit = last + 1;
+        ForeachNode(&root->table->list, next)
+        {
+            UQUAD end = 0;
+            GetPartitionAttrsTags(next, PT_ENDBLOCK, (IPTR)&end, TAG_DONE);
+            if (end >= candidate && end < limit)
+                limit = end;
+        }
+        if (limit == last + 1)
+            break;
+        candidate = limit + 1;
+    }
+    bootblocks = hasESP ? 0 : (UQUAD)bootSize * MB / blocksize;
+    available = high - low;
+    if (available <= biosblocks || bootblocks > available - biosblocks)
+        return ERROR_DISK_FULL;
+    available -= biosblocks + bootblocks;
+    /* One aligned MiB includes the RDB metadata reserved area. */
+    if (available <= align)
+        return ERROR_DISK_FULL;
+    available -= align;
+    sysblocks = sysSize ? (UQUAD)sysSize * MB / blocksize : available;
+    if (sysblocks > (UQUAD)MAX_SIZE(sysType) * MB / blocksize)
+        sysblocks = (UQUAD)MAX_SIZE(sysType) * MB / blocksize;
+    workblocks = ARG(MAXWORK) && sysblocks <= available ? available - sysblocks :
+        (UQUAD)workSize * MB / blocksize;
+    if (workblocks > (UQUAD)MAX_SIZE(workType) * MB / blocksize)
+        workblocks = (UQUAD)MAX_SIZE(workType) * MB / blocksize;
+    if (sysblocks < MIN_SIZE * MB / blocksize || sysblocks > available ||
+        workblocks > available - sysblocks)
+        return ERROR_DISK_FULL;
+
+    if (biosblocks)
+    {
+        ph = CreateGPTPartition(root, low, biosblocks, "BIOS boot", &bios, FALSE);
+        if (!ph)
+            return ERROR_NO_FREE_STORE;
+        low += biosblocks;
+    }
+    if (bootblocks)
+    {
+        ph = CreateGPTPartition(root, low, bootblocks,
+            ARG(BOOTNAME) ? (CONST_STRPTR)ARG(BOOTNAME) : (CONST_STRPTR)"EFI", &esp, FALSE);
+        if (!ph)
+            return ERROR_NO_FREE_STORE;
+        low += bootblocks;
+    }
+    ph = CreateGPTPartition(root, low, align + sysblocks + workblocks,
+        "AROS RDB", &rdbID, FALSE);
+    if (!ph)
+        return ERROR_NO_FREE_STORE;
+    SetPartitionAttrsTags(ph, PT_AUTOMOUNT, FALSE, TAG_DONE);
+    error = CreatePartitionTable(ph, PHPTT_RDB);
+    if (error)
+        return error;
+    GetPartitionTableAttrsTags(ph, PTT_RESERVED, (IPTR)&reserved, TAG_DONE);
+    if (reserved > align)
+        error = ERROR_DISK_FULL;
+    else if (!CreateRDBPartition(ph, align, align + sysblocks - 1,
+        (CONST_STRPTR)ARG(SYSNAME), TRUE, sysType))
+        error = ERROR_NO_FREE_STORE;
+    else if (workblocks && !CreateRDBPartition(ph, align + sysblocks,
+        align + sysblocks + workblocks - 1,
+        (CONST_STRPTR)ARG(WORKNAME), FALSE, workType))
+        error = ERROR_NO_FREE_STORE;
+    /* Publish the container only after its RDB has been saved. */
+    if (!error)
+        error = WritePartitionTable(ph);
+    ClosePartitionTable(ph);
+    if (!error)
+        error = WritePartitionTable(root);
+    return error;
+}
+
 /*** Functions **************************************************************/
 int main(void)
 {
@@ -177,6 +347,13 @@ int main(void)
         {
             PutStr("ERROR: BOOTSIZE and BOOTTYPE must be specified together.\n");
             error = ERROR_REQUIRED_ARG_MISSING;
+        }
+
+        if (ARG(BOOTTYPE) &&
+            Stricmp((CONST_STRPTR)ARG(BOOTTYPE), "fat32") != 0)
+        {
+            PutStr("ERROR: BOOTTYPE must be 'fat32'.\n");
+            error = ERROR_BAD_TEMPLATE;
         }
 
         if (ARG(WORKSIZE) != (IPTR)NULL && ARG(SYSSIZE) == (IPTR)NULL)
@@ -305,15 +482,23 @@ int main(void)
     {
         /* Open the existing partition table, or create it if none exists */
         D(bug("[C:Partition] Opening existing root partition table..."));
-        if (OpenPartitionTable(root) != 0)
+        LONG openError = OpenPartitionTable(root);
+        if (openError != 0 && openError != 1 && !ARG(WIPE))
+        {
+            error = openError;
+            PutStr("*** ERROR: Cannot read the existing partition table; it has not been replaced.\n");
+            CloseRootPartition(root);
+            root = NULL;
+        }
+        else if (openError != 0)
         {
             D(bug("failed\n[C:Partition] Creating %s root partition table\n",
                   ARG(SCHEME) ? (char *)ARG(SCHEME) : "MBR"));
 
             /* Create a root partition table */
-            if ((error == 0) && (CreatePartitionTable(root, scheme) != 0))
+            error = CreatePartitionTable(root, scheme);
+            if (error != 0)
             {
-                error = ERROR_UNKNOWN;
                 PutStr("*** ERROR: Creating root partition table failed.\n");
                 CloseRootPartition(root);
                 root = NULL;
@@ -321,6 +506,24 @@ int main(void)
         }
         else
             D(bug("ok\n"));
+    }
+
+    if (error == 0 && (root->table->type == PHPTT_GPT || scheme == PHPTT_GPT))
+    {
+        if (root->table->type != PHPTT_GPT ||
+            (ARG(SCHEME) && scheme != root->table->type))
+        {
+            PutStr("*** ERROR: The requested scheme differs from the existing partition table. Use WIPE to replace it.\n");
+            error = ERROR_OBJECT_WRONG_TYPE;
+        }
+        else
+            error = CreateGPTLayout(root, sysSize, workSize, sysType, workType);
+        ClosePartitionTable(root);
+        CloseRootPartition(root);
+        if (!ARG(QUIET) && !error)
+            Printf("Partitioning completed\n");
+        PrintFault(error, NULL);
+        return error ? RETURN_FAIL : RETURN_OK;
     }
 
     if ((error == 0) && ARG(BOOTSIZE))
@@ -334,7 +537,7 @@ int main(void)
         /* Create Boot partition if it doesn't exist */
         if (bootPart == NULL)
         {
-            ULONG fstype = 0xC; // Fat32
+            ULONG fstype = 0xef; /* EFI system partition */
 
             D(bug("[C:Partition] Creating Boot partition (%u MB)\n", bootSize));
 
@@ -421,7 +624,8 @@ int main(void)
                 {
                     D(bug("[C:Partition] EBR container handle @ 0x%p\n", extPartition));
 
-                    if (CreatePartitionTable(extPartition, PHPTT_EBR) != 0)
+                    error = CreatePartitionTable(extPartition, PHPTT_EBR);
+                    if (error != 0)
                     {
                         PutStr("*** ERROR: Creating extended partition table failed.\n");
                         extPartition = NULL;
@@ -435,6 +639,7 @@ int main(void)
                 else
                 {
                     D(bug("[C:Partition] Failed to create EBR container\n"));
+                    error = ERROR_DISK_FULL;
                 }
             }
         }
@@ -547,8 +752,8 @@ int main(void)
                 error = ERROR_UNKNOWN;
 
             if (error == 0
-                && workSize != 0
-                && sysHighCyl < diskPart->de.de_HighCyl - diskPart->de.de_LowCyl)
+                && (workSize != 0 || ARG(MAXWORK))
+                && sysHighCyl < highCyl)
             {
                 /* Create Work partition (defaults to SFS) */
                 workPart = CreateRDBPartition(diskPart, sysHighCyl + 1, highCyl,
@@ -589,23 +794,22 @@ int main(void)
         if (!hasActive && activePart)
             SetPartitionAttrsTags(activePart, PT_ACTIVE, TRUE, TAG_DONE);
 
-        /* Save to disk and deallocate */
-        WritePartitionTable(diskPart);
-        ClosePartitionTable(diskPart);
-
-        if (parent == extPartition)
-        {
-            WritePartitionTable(extPartition);
-            ClosePartitionTable(extPartition);
-        }
-
-        /* Save to disk and deallocate */
-        WritePartitionTable(root);
-        ClosePartitionTable(root);
+        /* Write children before publishing them in their parent tables.
+         * With SCHEME=rdb, diskPart and root refer to the same table. */
+        error = WritePartitionTable(diskPart);
+        if (error == 0 && parent == extPartition)
+            error = WritePartitionTable(extPartition);
+        if (error == 0 && diskPart != root)
+            error = WritePartitionTable(root);
     }
 
     if (root != NULL)
+    {
+        /* Closing the root table recursively discards all child tables,
+         * including on an earlier creation or write failure. */
+        ClosePartitionTable(root);
         CloseRootPartition(root);
+    }
 
     if (!ARG(QUIET) && error == 0) Printf("Partitioning completed\n");
 
@@ -867,19 +1071,25 @@ static LONG RecurviseDestroyPartitions(struct PartitionHandle *root)
         {
             if (OpenPartitionTable(partition) == 0)
             {
-                error += RecurviseDestroyPartitions(partition);
+                error = RecurviseDestroyPartitions(partition);
             }
             else
             {
                 APTR buffer = AllocMem(ZEROBUFFSIZE, MEMF_CLEAR);
-                /* Damage first blocks of partition */
-                WritePartitionDataQ(partition, buffer, ZEROBUFFSIZE, 0);
+                if (buffer == NULL)
+                    return ERROR_NO_FREE_STORE;
+                /* Damage first blocks of partition. Do not discard its
+                 * parent table if the requested wipe fails. */
+                error = WritePartitionDataQ(partition, buffer, ZEROBUFFSIZE, 0);
                 FreeMem(buffer, ZEROBUFFSIZE);
+                if (error)
+                    return error == TDERR_WriteProt
+                        ? ERROR_DISK_WRITE_PROTECTED : ERROR_UNKNOWN;
             }
+            if (error)
+                return error;
         }
     }
 
-    error += DestroyPartitionTable(root);
-
-    return error;
+    return DestroyPartitionTable(root);
 }

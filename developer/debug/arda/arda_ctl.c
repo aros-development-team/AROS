@@ -29,12 +29,11 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define CTL_CHUNK           65536       /* file transfer chunk */
-#define CTL_MAX_PUT         (512UL * 1024 * 1024)
+#define CTL_CHUNK           ARDA_CTL_CHUNK
+#define CTL_MAX_PUT         (3UL * 1024 * 1024 * 1024)   /* streamed to the file; the size word is 32 bits */
 #define CTL_JOB_STACK       (256 * 1024)
 #define CTL_WAIT_MAX        600         /* seconds a WAIT may block the agent */
 
-static char *ctlbuf;                    /* CTL_CHUNK bytes, allocated in init */
 
 /* ---- helpers ---------------------------------------------------------- */
 
@@ -74,9 +73,9 @@ void arda_ctl_init(struct Arda *a)
 {
     ULONG i;
 
-    ctlbuf = AllocMem(CTL_CHUNK, MEMF_PUBLIC);
+    a->ctlbuf = AllocMem(CTL_CHUNK, MEMF_PUBLIC);
     for (i = 0; i < ARDA_MAX_JOBS; i++)
-        a->jobs[i].state = ARDA_JOB_FREE;
+        a->sh->jobs[i].state = ARDA_JOB_FREE;
 }
 
 void arda_ctl_exit(struct Arda *a)
@@ -85,12 +84,12 @@ void arda_ctl_exit(struct Arda *a)
 
     /* jobs still running keep their wrapper; the slots are just forgotten */
     for (i = 0; i < ARDA_MAX_JOBS; i++)
-        if (a->jobs[i].state == ARDA_JOB_RUNNING)
-            a->jobs[i].orphaned = TRUE;
-    if (ctlbuf)
+        if (a->sh->jobs[i].state == ARDA_JOB_RUNNING)
+            a->sh->jobs[i].orphaned = TRUE;
+    if (a->ctlbuf)
     {
-        FreeMem(ctlbuf, CTL_CHUNK);
-        ctlbuf = NULL;
+        FreeMem(a->ctlbuf, CTL_CHUNK);
+        a->ctlbuf = NULL;
     }
 }
 
@@ -252,24 +251,27 @@ void arda_cmd_get(struct Arda *a, char *args)
         a->replied = TRUE;
         return;
     }
+    /* the body uses only this connection's buffer: other clients go on meanwhile */
+    arda_unlock(a);
     for (left = size; left && a->client.fd >= 0; )
     {
         ULONG want = (left < CTL_CHUNK) ? left : CTL_CHUNK;
-        LONG got = Read(fh, ctlbuf, want);
+        LONG got = Read(fh, a->ctlbuf, want);
 
         if (got <= 0)
         {
             /* the file shrank under us: pad so the client's count still works */
-            memset(ctlbuf, 0, want);
+            memset(a->ctlbuf, 0, want);
             got = want;
         }
-        if (!arda_net_send(a, a->client.fd, ctlbuf, got))
+        if (!arda_net_send(a, a->client.fd, a->ctlbuf, got))
         {
             arda_net_close_client(a, "send failed");
             break;
         }
         left -= got;
     }
+    arda_lock(a);
     Close(fh);
     a->replied = TRUE;
 }
@@ -475,9 +477,9 @@ void arda_cmd_run(struct Arda *a, char *args)
     }
     for (i = 0; i < ARDA_MAX_JOBS; i++)
     {
-        if (a->jobs[i].state == ARDA_JOB_FREE || a->jobs[i].state == ARDA_JOB_DONE)
+        if (a->sh->jobs[i].state == ARDA_JOB_FREE || a->sh->jobs[i].state == ARDA_JOB_DONE)
         {
-            job = &a->jobs[i];
+            job = &a->sh->jobs[i];
             break;
         }
     }
@@ -487,10 +489,10 @@ void arda_cmd_run(struct Arda *a, char *args)
         return;
     }
     memset(job, 0, sizeof(*job));
-    job->id = ++a->jobseq;
+    job->id = ++a->sh->jobseq;
     strncpy(job->output, output, sizeof(job->output) - 1);
     strncpy(job->command, cmd, sizeof(job->command) - 1);
-    job->started = a->uptime;
+    job->started = a->sh->uptime;
     job->state = ARDA_JOB_RUNNING;
     snprintf(name, sizeof(name), "ARDA job %lu", (unsigned long)job->id);
     job->proc = CreateNewProcTags(NP_Entry, (IPTR)arda_job_entry,
@@ -517,12 +519,12 @@ void arda_ctl_poll(struct Arda *a)
 
     for (i = 0; i < ARDA_MAX_JOBS; i++)
     {
-        struct ArdaJob *job = &a->jobs[i];
+        struct ArdaJob *job = &a->sh->jobs[i];
 
         if (job->state == ARDA_JOB_RUNNING && job->finished)
         {
             job->state = ARDA_JOB_DONE;
-            job->ended = a->uptime;
+            job->ended = a->sh->uptime;
             arda_log(a, "ARDA: job %lu finished, rc %ld", (unsigned long)job->id, (long)job->rc);
         }
     }
@@ -536,7 +538,7 @@ static void ctl_job_record(struct Arda *a, struct ArdaJob *job)
     arda_resp_line(&a->resp, "JOB ID=%lu STATE=%s RC=%ld OUTPUT=\"%s\" STARTED=%lu ELAPSED=%lu COMMAND=\"%s\"",
                    (unsigned long)job->id, job->state == ARDA_JOB_DONE ? "done" : "running", (long)job->rc,
                    job->output, (unsigned long)job->started,
-                   (unsigned long)((job->state == ARDA_JOB_DONE ? job->ended : a->uptime) - job->started), cmd);
+                   (unsigned long)((job->state == ARDA_JOB_DONE ? job->ended : a->sh->uptime) - job->started), cmd);
 }
 
 static struct ArdaJob *ctl_find_job(struct Arda *a, ULONG id)
@@ -544,8 +546,8 @@ static struct ArdaJob *ctl_find_job(struct Arda *a, ULONG id)
     ULONG i;
 
     for (i = 0; i < ARDA_MAX_JOBS; i++)
-        if (a->jobs[i].state != ARDA_JOB_FREE && a->jobs[i].id == id)
-            return &a->jobs[i];
+        if (a->sh->jobs[i].state != ARDA_JOB_FREE && a->sh->jobs[i].id == id)
+            return &a->sh->jobs[i];
     return NULL;
 }
 
@@ -559,9 +561,9 @@ void arda_cmd_jobs(struct Arda *a, char *args)
     arda_resp_begin(&a->resp);
     for (i = 0; i < ARDA_MAX_JOBS; i++)
     {
-        if (a->jobs[i].state != ARDA_JOB_FREE)
+        if (a->sh->jobs[i].state != ARDA_JOB_FREE)
         {
-            ctl_job_record(a, &a->jobs[i]);
+            ctl_job_record(a, &a->sh->jobs[i]);
             count++;
         }
     }
@@ -594,7 +596,7 @@ void arda_cmd_wait(struct Arda *a, char *args)
     char ids[16], secs[16];
     char *rest;
     struct ArdaJob *job;
-    ULONG limit, waited = 0;
+    ULONG limit, waited = 0, id;
 
     if (!ctl_enabled(a))
         return;
@@ -604,18 +606,27 @@ void arda_cmd_wait(struct Arda *a, char *args)
     if (limit > CTL_WAIT_MAX)
         limit = CTL_WAIT_MAX;
     arda_ctl_poll(a);
-    job = ids[0] ? ctl_find_job(a, (ULONG)strtoul(ids, NULL, 10)) : NULL;
+    id = ids[0] ? (ULONG)strtoul(ids, NULL, 10) : 0;
+    job = id ? ctl_find_job(a, id) : NULL;
     if (!job)
     {
         arda_resp_err(&a->resp, 404, "no such job");
         return;
     }
-    /* the agent blocks here: one client, and it asked for it */
+    /* only this connection waits: the others' commands run meanwhile */
     while (job->state == ARDA_JOB_RUNNING && waited < limit * 5)
     {
+        arda_unlock(a);
         Delay(10);                  /* 0.2 s */
+        arda_lock(a);
         waited++;
         arda_ctl_poll(a);
+        if (job->id != id)
+        {
+            /* finished, and its slot went to another client's RUN meanwhile */
+            arda_resp_err(&a->resp, 410, "job record reused");
+            return;
+        }
     }
     if (job->state != ARDA_JOB_DONE)
     {
@@ -633,6 +644,6 @@ void arda_cmd_reboot(struct Arda *a, char *args)
     if (!ctl_enabled(a))
         return;
     arda_ctl_flush("SYS:");         /* buffered writes reach the boot medium first */
-    a->reboot = TRUE;               /* the main loop reboots after the reply went out */
+    a->sh->reboot = TRUE;               /* the main loop reboots after the reply went out */
     arda_resp_ok(&a->resp, "REBOOTING");
 }

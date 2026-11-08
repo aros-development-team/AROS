@@ -37,8 +37,10 @@ struct IntCGXVBase;
 
 #undef HiddBitMapAttrBase
 #undef HiddDisplayAttrBase
+#undef HiddPixFmtAttrBase
 #define HiddBitMapAttrBase  (GetCGXVBase(CGXVideoBase)->cgxv_HiddBitMapAttrBase)
 #define HiddDisplayAttrBase (GetCGXVBase(CGXVideoBase)->cgxv_HiddDisplayAttrBase)
+#define HiddPixFmtAttrBase  (GetCGXVBase(CGXVideoBase)->cgxv_HiddPixFmtAttrBase)
 
 #include <aros/surfacetrack.h>
 
@@ -48,7 +50,8 @@ struct IntCGXVBase
 
     OOP_AttrBase              cgxv_HiddBitMapAttrBase;
     OOP_AttrBase              cgxv_HiddDisplayAttrBase;
-    struct OOP_ABDescr        attrbases[3];
+    OOP_AttrBase              cgxv_HiddPixFmtAttrBase;
+    struct OOP_ABDescr        attrbases[4];
     OOP_MethodID              cgxv_HiddBitMapBase;
     OOP_MethodID              cgxv_HiddDisplayBase;
     OOP_Class                *basebm;             /* CLID_Hidd_BitMap, for CreateObject */
@@ -71,6 +74,7 @@ struct IntCGXVBase
 #define VHF_BACKFILL    (1 << 2)    /* VOA_UseBackfill                                   */
 #define VHF_ATTACHED    (1 << 3)    /* surface attached to a window                      */
 #define VHF_BACKFILLHOOK (1 << 4)   /* our backfill hook is installed                    */
+#define VHF_UNDERLAY    (1 << 5)    /* asks to go below the screen (CRF_UNDERLAY_OK): owns the fill */
 
 struct VLayerHandle
 {
@@ -100,6 +104,7 @@ struct VLayerHandle
     ULONG                        buffers;
     LONG                         indents[4];/* left, top, right, bottom                */
 
+    BOOL                         underlaid; /* shown below the screen now (SHF_UNDERLAY) */
     BOOL                         locked;
     ULONG                        lockedBuffer;
     UBYTE                       *lockedAddr;
@@ -125,6 +130,8 @@ BOOL cgxv_NullBackend(void);
 BOOL  cgxv_GetDisplay(struct Screen *screen, OOP_Object **bmobjPtr, OOP_Object **displayPtr,
                       struct Library *CGXVideoBase);
 BOOL  cgxv_MapFormat(ULONG srctype, HIDDT_StdPixFmt *pixfmt, ULONG *videofmt);
+BOOL  cgxv_CanUnderlay(OOP_Object *display, OOP_Object *screenbm, ULONG videofmt,
+                       struct Library *CGXVideoBase);
 void  cgxv_Refresh(struct VLayerHandle *vh);
 ULONG cgxv_Attach(struct VLayerHandle *vh, struct Window *window, struct TagItem *tags);
 void  cgxv_Detach(struct VLayerHandle *vh);

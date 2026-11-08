@@ -14,7 +14,6 @@
 #define IID_Hidd_Amdgpu  "hidd.gfx.amdgpu"
 #define CLID_Hidd_Amdgpu "hidd.gfx.amdgpu"
 #define CLID_Hidd_Display_Amdgpu "hidd.display.amdgpu"
-#define CLID_Hidd_Gallium_Amdgpu  "hidd.gallium.amdgpu"
 
 struct AmdgpuHiddData
 {

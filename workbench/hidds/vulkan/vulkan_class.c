@@ -1,11 +1,16 @@
 /*
     Copyright 2025-2026, The AROS Development Team. All rights reserved.
 
-    Vulkan base HIDD class — abstract stubs.
-    Hardware drivers (RADV, lavapipe, etc.) subclass and override.
+    Vulkan base HIDD class. A driver subclasses it, overriding
+    GetInstanceProcAddr with its ICD's entry point; every other method here
+    is implemented through that, so the driver needs nothing else to serve
+    the loader (vulkan_loader.c) and gallium-on-Vulkan (zink.hidd). Objects
+    come from the display driver's CreateObject, or are the software
+    driver's. Without an overriding GetInstanceProcAddr the methods fail,
+    as for a device without Vulkan.
 
-    All methods dispatch to VulkanDriverCallbacks on the preferred GPU.
-    If no driver is registered, methods return error codes or do nothing.
+    Handles cross the interface as APTR; on the 64-bit targets every Vulkan
+    handle fits one, arrays of handles included.
 */
 
 #include <aros/debug.h>
@@ -14,6 +19,9 @@
 #include <proto/utility.h>
 #include <proto/exec.h>
 
+#define VK_NO_PROTOTYPES
+#include <vulkan/vulkan.h>
+
 #include <hidd/vulkan_hidd.h>
 
 #include "vulkan_intern.h"
@@ -21,13 +29,44 @@
 #undef HiddVulkanAttrBase
 #define HiddVulkanAttrBase   (SD(cl)->vulkanAttrBase)
 
-/* VK_ERROR_INITIALIZATION_FAILED */
-#define VK_INIT_FAIL ((IPTR)(-3))
+#define VK_INIT_FAIL ((IPTR)VK_ERROR_INITIALIZATION_FAILED)
 
-/* Helper: get preferred GPU or NULL */
-#define GET_GPU(sd) VulkanGetPreferredGPU(sd)
-/* Helper: get preferred display-capable GPU for presentation paths */
-#define GET_DISPLAY_GPU(sd) VulkanGetPreferredDisplayGPU(sd)
+/* a handle from / to the interface's APTR */
+#define H(type, v)      ((type)(IPTR)(v))
+#define HA(type, v)     ((type *)(v))
+#define OUT(p, v)       (*(p) = (APTR)(IPTR)(v))
+
+/*
+ * The driver's entry point for a Vulkan function: through the subclass's
+ * GetInstanceProcAddr, asked once for vkGetInstanceProcAddr itself, then
+ * directly. Device commands resolve through the instance the object
+ * created, as the specification allows.
+ */
+static PFN_vkVoidFunction vkproc(OOP_Class *cl, OOP_Object *o, const char *name)
+{
+    struct HiddVulkanData *data = OOP_INST_DATA(cl, o);
+
+    if (!data->gipa)
+    {
+        struct pHidd_Vulkan_GetInstanceProcAddr msg;
+
+        msg.mID = SD(cl)->mbase + moHidd_Vulkan_GetInstanceProcAddr;
+        msg.instance = NULL;
+        msg.pName = "vkGetInstanceProcAddr";
+        data->gipa = (PFN_vkGetInstanceProcAddr)OOP_DoMethod(o, (OOP_Msg)&msg);
+        if (!data->gipa)
+            return NULL;
+    }
+    return ((PFN_vkGetInstanceProcAddr)data->gipa)(H(VkInstance, data->instance), name);
+}
+
+#define VKFN(name)  PFN_vk##name fn = (PFN_vk##name)vkproc(cl, o, "vk" #name)
+/* a method returning the VkResult of its function */
+#define VKCALL(name, ...) \
+    do { VKFN(name); if (!fn) return VK_INIT_FAIL; return (IPTR)fn(__VA_ARGS__); } while (0)
+/* a method returning nothing */
+#define VKVOID(name, ...) \
+    do { VKFN(name); if (fn) fn(__VA_ARGS__); } while (0)
 
 /* ---- Root interface ---- */
 
@@ -45,7 +84,15 @@ OOP_Object *METHOD(HiddVulkan, Root, New)
         return NULL;
     }
 
-    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    if (o)
+    {
+        struct HiddVulkanData *data = OOP_INST_DATA(cl, o);
+
+        data->gipa = NULL;
+        data->instance = NULL;
+    }
+    return o;
 }
 
 VOID METHOD(HiddVulkan, Root, Get)
@@ -61,9 +108,6 @@ VOID METHOD(HiddVulkan, Root, Get)
             case aoHidd_Vulkan_InterfaceVersion:
                 *msg->storage = VULKAN_INTERFACE_VERSION;
                 return;
-            case aoHidd_Vulkan_GPUCount:
-                *msg->storage = (IPTR)SD(cl)->gpu_count;
-                return;
         }
     }
 
@@ -76,32 +120,44 @@ VOID METHOD(HiddVulkan, Root, Get)
 
 APTR METHOD(HiddVulkan, Hidd_Vulkan, CreateInstance)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
+    struct HiddVulkanData *data = OOP_INST_DATA(cl, o);
+    VkApplicationInfo app = {
+        .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+        .pApplicationName = msg->applicationName,
+        .applicationVersion = msg->applicationVersion,
+        .pEngineName = "AROS",
+        .apiVersion = VK_API_VERSION_1_2,
+    };
+    VkInstanceCreateInfo info = {
+        .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+        .pApplicationInfo = &app,
+    };
+    VkInstance instance = VK_NULL_HANDLE;
+    VKFN(CreateInstance);
+
     D(bug("[Vulkan] %s(app='%s')\n", __func__,
           msg->applicationName ? msg->applicationName : "(null)"));
-    if (gpu && gpu->callbacks.CreateInstance)
-        return gpu->callbacks.CreateInstance(msg->applicationName,
-                                             msg->applicationVersion,
-                                             gpu->driver_data);
-    return NULL;
+    if (!fn || fn(&info, NULL, &instance) != VK_SUCCESS)
+        return NULL;
+    /* the first instance is the one device commands resolve through */
+    if (!data->instance)
+        data->instance = (APTR)instance;
+    return (APTR)instance;
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, DestroyInstance)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.DestroyInstance)
-        gpu->callbacks.DestroyInstance(msg->instance, gpu->driver_data);
+    struct HiddVulkanData *data = OOP_INST_DATA(cl, o);
+
+    VKVOID(DestroyInstance, H(VkInstance, msg->instance), NULL);
+    if (data->instance == msg->instance)
+        data->instance = NULL;
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, EnumeratePhysicalDevices)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.EnumeratePhysicalDevices)
-        return (IPTR)gpu->callbacks.EnumeratePhysicalDevices(
-            msg->instance, msg->pPhysicalDeviceCount,
-            msg->pPhysicalDevices, gpu->driver_data);
-    if (msg->pPhysicalDeviceCount) *msg->pPhysicalDeviceCount = 0;
-    return VK_INIT_FAIL;
+    VKCALL(EnumeratePhysicalDevices, H(VkInstance, msg->instance),
+           (uint32_t *)msg->pPhysicalDeviceCount, HA(VkPhysicalDevice, msg->pPhysicalDevices));
 }
 
 /* ==================================================================
@@ -110,64 +166,40 @@ IPTR METHOD(HiddVulkan, Hidd_Vulkan, EnumeratePhysicalDevices)
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, GetPhysicalDeviceProperties)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.GetPhysicalDeviceProperties)
-        gpu->callbacks.GetPhysicalDeviceProperties(
-            msg->physicalDevice, msg->pProperties, gpu->driver_data);
+    VKVOID(GetPhysicalDeviceProperties, H(VkPhysicalDevice, msg->physicalDevice), msg->pProperties);
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, GetPhysicalDeviceProperties2)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.GetPhysicalDeviceProperties2)
-        gpu->callbacks.GetPhysicalDeviceProperties2(
-            msg->physicalDevice, msg->pProperties, gpu->driver_data);
+    VKVOID(GetPhysicalDeviceProperties2, H(VkPhysicalDevice, msg->physicalDevice), msg->pProperties);
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, GetPhysicalDeviceFeatures)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.GetPhysicalDeviceFeatures)
-        gpu->callbacks.GetPhysicalDeviceFeatures(
-            msg->physicalDevice, msg->pFeatures, gpu->driver_data);
+    VKVOID(GetPhysicalDeviceFeatures, H(VkPhysicalDevice, msg->physicalDevice), msg->pFeatures);
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, GetPhysicalDeviceFeatures2)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.GetPhysicalDeviceFeatures2)
-        gpu->callbacks.GetPhysicalDeviceFeatures2(
-            msg->physicalDevice, msg->pFeatures, gpu->driver_data);
+    VKVOID(GetPhysicalDeviceFeatures2, H(VkPhysicalDevice, msg->physicalDevice), msg->pFeatures);
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, GetPhysicalDeviceMemoryProperties)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.GetPhysicalDeviceMemoryProperties)
-        gpu->callbacks.GetPhysicalDeviceMemoryProperties(
-            msg->physicalDevice, msg->pMemoryProperties, gpu->driver_data);
+    VKVOID(GetPhysicalDeviceMemoryProperties, H(VkPhysicalDevice, msg->physicalDevice),
+           msg->pMemoryProperties);
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, GetPhysicalDeviceQueueFamilyProperties)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.GetPhysicalDeviceQueueFamilyProperties)
-        gpu->callbacks.GetPhysicalDeviceQueueFamilyProperties(
-            msg->physicalDevice, msg->pQueueFamilyPropertyCount,
-            msg->pQueueFamilyProperties, gpu->driver_data);
-    else if (msg->pQueueFamilyPropertyCount)
-        *msg->pQueueFamilyPropertyCount = 0;
+    VKVOID(GetPhysicalDeviceQueueFamilyProperties, H(VkPhysicalDevice, msg->physicalDevice),
+           (uint32_t *)msg->pQueueFamilyPropertyCount, msg->pQueueFamilyProperties);
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, EnumerateDeviceExtensionProperties)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.EnumerateDeviceExtensionProperties)
-        return (IPTR)gpu->callbacks.EnumerateDeviceExtensionProperties(
-            msg->physicalDevice, msg->pLayerName,
-            msg->pPropertyCount, msg->pProperties, gpu->driver_data);
-    if (msg->pPropertyCount) *msg->pPropertyCount = 0;
-    return 0;
+    VKCALL(EnumerateDeviceExtensionProperties, H(VkPhysicalDevice, msg->physicalDevice),
+           msg->pLayerName, (uint32_t *)msg->pPropertyCount, msg->pProperties);
 }
 
 /* ==================================================================
@@ -176,127 +208,83 @@ IPTR METHOD(HiddVulkan, Hidd_Vulkan, EnumerateDeviceExtensionProperties)
 
 APTR METHOD(HiddVulkan, Hidd_Vulkan, CreateDevice)
 {
-    struct vulkanstaticdata *sd = SD(cl);
-    struct VulkanGPUEntry *gpu = GET_GPU(sd);
-    APTR device;
+    VkDevice device = VK_NULL_HANDLE;
+    VKFN(CreateDevice);
 
     D(bug("[Vulkan] %s(physDev=%p)\n", __func__, msg->physicalDevice));
-
-    if (!gpu || !gpu->callbacks.CreateDevice)
+    if (!fn || fn(H(VkPhysicalDevice, msg->physicalDevice), msg->pCreateInfo, NULL, &device) != VK_SUCCESS)
         return NULL;
-
-    ObtainSemaphoreShared(&sd->registry_lock);
-    if (gpu->locked) {
-        ReleaseSemaphore(&sd->registry_lock);
-        return NULL;
-    }
-    ReleaseSemaphore(&sd->registry_lock);
-
-    device = gpu->callbacks.CreateDevice(msg->physicalDevice,
-                                          msg->pCreateInfo,
-                                          gpu->driver_data);
-    if (device) {
-        ObtainSemaphore(&sd->registry_lock);
-        gpu->use_count++;
-        ReleaseSemaphore(&sd->registry_lock);
-    }
-    return device;
+    return (APTR)device;
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, DestroyDevice)
 {
-    struct vulkanstaticdata *sd = SD(cl);
-    struct VulkanGPUEntry *gpu = GET_GPU(sd);
-
-    if (gpu && gpu->callbacks.DestroyDevice) {
-        gpu->callbacks.DestroyDevice(msg->device, gpu->driver_data);
-        ObtainSemaphore(&sd->registry_lock);
-        if (gpu->use_count > 0) gpu->use_count--;
-        if (gpu->use_count == 0) gpu->locked = FALSE;
-        ReleaseSemaphore(&sd->registry_lock);
-    }
+    VKVOID(DestroyDevice, H(VkDevice, msg->device), NULL);
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, GetDeviceQueue)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.GetDeviceQueue)
-        gpu->callbacks.GetDeviceQueue(msg->device, msg->queueFamilyIndex,
-                                       msg->queueIndex, msg->pQueue,
-                                       gpu->driver_data);
-    else if (msg->pQueue)
-        *msg->pQueue = NULL;
+    VkQueue queue = VK_NULL_HANDLE;
+
+    VKVOID(GetDeviceQueue, H(VkDevice, msg->device), msg->queueFamilyIndex, msg->queueIndex, &queue);
+    OUT(msg->pQueue, queue);
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, DeviceWaitIdle)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.DeviceWaitIdle)
-        return (IPTR)gpu->callbacks.DeviceWaitIdle(msg->device,
-                                                    gpu->driver_data);
-    return VK_INIT_FAIL;
+    VKCALL(DeviceWaitIdle, H(VkDevice, msg->device));
 }
 
 /* ==================================================================
- * Display (optional)
+ * Display: a driver that can show an image overrides this
  * ================================================================== */
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, DisplayResource)
 {
-    struct VulkanGPUEntry *gpu = GET_DISPLAY_GPU(SD(cl));
-    if (gpu && gpu->callbacks.DisplayResource)
-        gpu->callbacks.DisplayResource(msg->image, msg->srcx, msg->srcy,
-                                        msg->rastPort, msg->dstx, msg->dsty,
-                                        msg->width, msg->height,
-                                        gpu->driver_data);
 }
 
 /* ==================================================================
- * Memory management
+ * Memory
  * ================================================================== */
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, AllocateMemory)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.AllocateMemory)
-        return (IPTR)gpu->callbacks.AllocateMemory(
-            msg->device, msg->allocationSize, msg->memoryTypeIndex,
-            msg->pMemory, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VkMemoryAllocateInfo info = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        .allocationSize = msg->allocationSize,
+        .memoryTypeIndex = msg->memoryTypeIndex,
+    };
+    VkDeviceMemory memory = VK_NULL_HANDLE;
+    VkResult res;
+    VKFN(AllocateMemory);
+
+    if (!fn)
+        return VK_INIT_FAIL;
+    res = fn(H(VkDevice, msg->device), &info, NULL, &memory);
+    OUT(msg->pMemory, memory);
+    return (IPTR)res;
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, FreeMemory)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.FreeMemory)
-        gpu->callbacks.FreeMemory(msg->device, msg->memory, gpu->driver_data);
+    VKVOID(FreeMemory, H(VkDevice, msg->device), H(VkDeviceMemory, msg->memory), NULL);
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, MapMemory)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.MapMemory)
-        return (IPTR)gpu->callbacks.MapMemory(
-            msg->device, msg->memory, msg->offset, msg->size,
-            msg->flags, msg->ppData, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VKCALL(MapMemory, H(VkDevice, msg->device), H(VkDeviceMemory, msg->memory),
+           msg->offset, msg->size, msg->flags, (void **)msg->ppData);
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, UnmapMemory)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.UnmapMemory)
-        gpu->callbacks.UnmapMemory(msg->device, msg->memory, gpu->driver_data);
+    VKVOID(UnmapMemory, H(VkDevice, msg->device), H(VkDeviceMemory, msg->memory));
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, GetMemoryHostPointerPropertiesEXT)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.GetMemoryHostPointerPropertiesEXT)
-        return (IPTR)gpu->callbacks.GetMemoryHostPointerPropertiesEXT(
-            msg->device, msg->handleType, msg->pHostPointer,
-            msg->pMemoryHostPointerProperties, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VKCALL(GetMemoryHostPointerPropertiesEXT, H(VkDevice, msg->device), msg->handleType,
+           msg->pHostPointer, msg->pMemoryHostPointerProperties);
 }
 
 /* ==================================================================
@@ -305,48 +293,47 @@ IPTR METHOD(HiddVulkan, Hidd_Vulkan, GetMemoryHostPointerPropertiesEXT)
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, CreateBuffer)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CreateBuffer)
-        return (IPTR)gpu->callbacks.CreateBuffer(
-            msg->device, msg->size, msg->usage, msg->sharingMode,
-            msg->pBuffer, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VkBufferCreateInfo info = {
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = msg->size,
+        .usage = msg->usage,
+        .sharingMode = msg->sharingMode,
+    };
+    VkBuffer buffer = VK_NULL_HANDLE;
+    VkResult res;
+    VKFN(CreateBuffer);
+
+    if (!fn)
+        return VK_INIT_FAIL;
+    res = fn(H(VkDevice, msg->device), &info, NULL, &buffer);
+    OUT(msg->pBuffer, buffer);
+    return (IPTR)res;
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, DestroyBuffer)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.DestroyBuffer)
-        gpu->callbacks.DestroyBuffer(msg->device, msg->buffer,
-                                      gpu->driver_data);
+    VKVOID(DestroyBuffer, H(VkDevice, msg->device), H(VkBuffer, msg->buffer), NULL);
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, BindBufferMemory)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.BindBufferMemory)
-        return (IPTR)gpu->callbacks.BindBufferMemory(
-            msg->device, msg->buffer, msg->memory,
-            msg->memoryOffset, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VKCALL(BindBufferMemory, H(VkDevice, msg->device), H(VkBuffer, msg->buffer),
+           H(VkDeviceMemory, msg->memory), msg->memoryOffset);
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, GetBufferMemoryRequirements)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.GetBufferMemoryRequirements)
-        gpu->callbacks.GetBufferMemoryRequirements(
-            msg->device, msg->buffer, msg->pMemoryRequirements,
-            gpu->driver_data);
+    VKVOID(GetBufferMemoryRequirements, H(VkDevice, msg->device), H(VkBuffer, msg->buffer),
+           msg->pMemoryRequirements);
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, GetBufferDeviceAddress)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.GetBufferDeviceAddress)
-        return (IPTR)gpu->callbacks.GetBufferDeviceAddress(
-            msg->device, msg->pInfo, gpu->driver_data);
-    return 0;
+    VKFN(GetBufferDeviceAddress);
+
+    if (!fn)
+        return 0;
+    return (IPTR)fn(H(VkDevice, msg->device), msg->pInfo);
 }
 
 /* ==================================================================
@@ -355,58 +342,51 @@ IPTR METHOD(HiddVulkan, Hidd_Vulkan, GetBufferDeviceAddress)
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, CreateDescriptorSetLayout)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CreateDescriptorSetLayout)
-        return (IPTR)gpu->callbacks.CreateDescriptorSetLayout(
-            msg->device, msg->pCreateInfo, msg->pSetLayout,
-            gpu->driver_data);
-    return VK_INIT_FAIL;
+    VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+    VkResult res;
+    VKFN(CreateDescriptorSetLayout);
+
+    if (!fn)
+        return VK_INIT_FAIL;
+    res = fn(H(VkDevice, msg->device), msg->pCreateInfo, NULL, &layout);
+    OUT(msg->pSetLayout, layout);
+    return (IPTR)res;
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, DestroyDescriptorSetLayout)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.DestroyDescriptorSetLayout)
-        gpu->callbacks.DestroyDescriptorSetLayout(
-            msg->device, msg->descriptorSetLayout, gpu->driver_data);
+    VKVOID(DestroyDescriptorSetLayout, H(VkDevice, msg->device),
+           H(VkDescriptorSetLayout, msg->descriptorSetLayout), NULL);
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, CreateDescriptorPool)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CreateDescriptorPool)
-        return (IPTR)gpu->callbacks.CreateDescriptorPool(
-            msg->device, msg->pCreateInfo, msg->pDescriptorPool,
-            gpu->driver_data);
-    return VK_INIT_FAIL;
+    VkDescriptorPool pool = VK_NULL_HANDLE;
+    VkResult res;
+    VKFN(CreateDescriptorPool);
+
+    if (!fn)
+        return VK_INIT_FAIL;
+    res = fn(H(VkDevice, msg->device), msg->pCreateInfo, NULL, &pool);
+    OUT(msg->pDescriptorPool, pool);
+    return (IPTR)res;
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, DestroyDescriptorPool)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.DestroyDescriptorPool)
-        gpu->callbacks.DestroyDescriptorPool(
-            msg->device, msg->descriptorPool, gpu->driver_data);
+    VKVOID(DestroyDescriptorPool, H(VkDevice, msg->device), H(VkDescriptorPool, msg->descriptorPool), NULL);
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, AllocateDescriptorSets)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.AllocateDescriptorSets)
-        return (IPTR)gpu->callbacks.AllocateDescriptorSets(
-            msg->device, msg->pAllocateInfo, msg->pDescriptorSets,
-            gpu->driver_data);
-    return VK_INIT_FAIL;
+    VKCALL(AllocateDescriptorSets, H(VkDevice, msg->device), msg->pAllocateInfo,
+           HA(VkDescriptorSet, msg->pDescriptorSets));
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, UpdateDescriptorSets)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.UpdateDescriptorSets)
-        gpu->callbacks.UpdateDescriptorSets(
-            msg->device, msg->descriptorWriteCount, msg->pDescriptorWrites,
-            msg->descriptorCopyCount, msg->pDescriptorCopies,
-            gpu->driver_data);
+    VKVOID(UpdateDescriptorSets, H(VkDevice, msg->device), msg->descriptorWriteCount,
+           msg->pDescriptorWrites, msg->descriptorCopyCount, msg->pDescriptorCopies);
 }
 
 /* ==================================================================
@@ -415,66 +395,63 @@ VOID METHOD(HiddVulkan, Hidd_Vulkan, UpdateDescriptorSets)
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, CreateCommandPool)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CreateCommandPool)
-        return (IPTR)gpu->callbacks.CreateCommandPool(
-            msg->device, msg->queueFamilyIndex, msg->flags,
-            msg->pCommandPool, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VkCommandPoolCreateInfo info = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+        .flags = msg->flags,
+        .queueFamilyIndex = msg->queueFamilyIndex,
+    };
+    VkCommandPool pool = VK_NULL_HANDLE;
+    VkResult res;
+    VKFN(CreateCommandPool);
+
+    if (!fn)
+        return VK_INIT_FAIL;
+    res = fn(H(VkDevice, msg->device), &info, NULL, &pool);
+    OUT(msg->pCommandPool, pool);
+    return (IPTR)res;
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, DestroyCommandPool)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.DestroyCommandPool)
-        gpu->callbacks.DestroyCommandPool(msg->device, msg->commandPool,
-                                           gpu->driver_data);
+    VKVOID(DestroyCommandPool, H(VkDevice, msg->device), H(VkCommandPool, msg->commandPool), NULL);
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, ResetCommandPool)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.ResetCommandPool)
-        return (IPTR)gpu->callbacks.ResetCommandPool(
-            msg->device, msg->commandPool, msg->flags, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VKCALL(ResetCommandPool, H(VkDevice, msg->device), H(VkCommandPool, msg->commandPool), msg->flags);
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, AllocateCommandBuffers)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.AllocateCommandBuffers)
-        return (IPTR)gpu->callbacks.AllocateCommandBuffers(
-            msg->device, msg->commandPool, msg->level, msg->count,
-            msg->pCommandBuffers, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VkCommandBufferAllocateInfo info = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = H(VkCommandPool, msg->commandPool),
+        .level = msg->level,
+        .commandBufferCount = msg->count,
+    };
+
+    VKCALL(AllocateCommandBuffers, H(VkDevice, msg->device), &info, HA(VkCommandBuffer, msg->pCommandBuffers));
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, FreeCommandBuffers)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.FreeCommandBuffers)
-        gpu->callbacks.FreeCommandBuffers(
-            msg->device, msg->commandPool, msg->count,
-            msg->pCommandBuffers, gpu->driver_data);
+    VKVOID(FreeCommandBuffers, H(VkDevice, msg->device), H(VkCommandPool, msg->commandPool),
+           msg->count, HA(const VkCommandBuffer, msg->pCommandBuffers));
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, BeginCommandBuffer)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.BeginCommandBuffer)
-        return (IPTR)gpu->callbacks.BeginCommandBuffer(
-            msg->commandBuffer, msg->flags, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VkCommandBufferBeginInfo info = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = msg->flags,
+    };
+
+    VKCALL(BeginCommandBuffer, H(VkCommandBuffer, msg->commandBuffer), &info);
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, EndCommandBuffer)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.EndCommandBuffer)
-        return (IPTR)gpu->callbacks.EndCommandBuffer(
-            msg->commandBuffer, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VKCALL(EndCommandBuffer, H(VkCommandBuffer, msg->commandBuffer));
 }
 
 /* ==================================================================
@@ -483,21 +460,12 @@ IPTR METHOD(HiddVulkan, Hidd_Vulkan, EndCommandBuffer)
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, QueueSubmit)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.QueueSubmit)
-        return (IPTR)gpu->callbacks.QueueSubmit(
-            msg->queue, msg->submitCount, msg->pSubmits,
-            msg->fence, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VKCALL(QueueSubmit, H(VkQueue, msg->queue), msg->submitCount, msg->pSubmits, H(VkFence, msg->fence));
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, QueueWaitIdle)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.QueueWaitIdle)
-        return (IPTR)gpu->callbacks.QueueWaitIdle(msg->queue,
-                                                   gpu->driver_data);
-    return VK_INIT_FAIL;
+    VKCALL(QueueWaitIdle, H(VkQueue, msg->queue));
 }
 
 /* ==================================================================
@@ -506,47 +474,40 @@ IPTR METHOD(HiddVulkan, Hidd_Vulkan, QueueWaitIdle)
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, CreateFence)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CreateFence)
-        return (IPTR)gpu->callbacks.CreateFence(
-            msg->device, msg->flags, msg->pFence, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VkFenceCreateInfo info = {
+        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+        .flags = msg->flags,
+    };
+    VkFence fence = VK_NULL_HANDLE;
+    VkResult res;
+    VKFN(CreateFence);
+
+    if (!fn)
+        return VK_INIT_FAIL;
+    res = fn(H(VkDevice, msg->device), &info, NULL, &fence);
+    OUT(msg->pFence, fence);
+    return (IPTR)res;
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, DestroyFence)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.DestroyFence)
-        gpu->callbacks.DestroyFence(msg->device, msg->fence,
-                                     gpu->driver_data);
+    VKVOID(DestroyFence, H(VkDevice, msg->device), H(VkFence, msg->fence), NULL);
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, WaitForFences)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.WaitForFences)
-        return (IPTR)gpu->callbacks.WaitForFences(
-            msg->device, msg->fenceCount, msg->pFences,
-            msg->waitAll, msg->timeout, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VKCALL(WaitForFences, H(VkDevice, msg->device), msg->fenceCount, HA(const VkFence, msg->pFences),
+           msg->waitAll, msg->timeout);
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, ResetFences)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.ResetFences)
-        return (IPTR)gpu->callbacks.ResetFences(
-            msg->device, msg->fenceCount, msg->pFences, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VKCALL(ResetFences, H(VkDevice, msg->device), msg->fenceCount, HA(const VkFence, msg->pFences));
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, GetFenceStatus)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.GetFenceStatus)
-        return (IPTR)gpu->callbacks.GetFenceStatus(
-            msg->device, msg->fence, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VKCALL(GetFenceStatus, H(VkDevice, msg->device), H(VkFence, msg->fence));
 }
 
 /* ==================================================================
@@ -555,20 +516,21 @@ IPTR METHOD(HiddVulkan, Hidd_Vulkan, GetFenceStatus)
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, CreateSemaphore)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CreateSemaphore)
-        return (IPTR)gpu->callbacks.CreateSemaphore(
-            msg->device, msg->pCreateInfo, msg->pSemaphore,
-            gpu->driver_data);
-    return VK_INIT_FAIL;
+    VkSemaphoreCreateInfo info = { .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+    VkSemaphore sem = VK_NULL_HANDLE;
+    VkResult res;
+    VKFN(CreateSemaphore);
+
+    if (!fn)
+        return VK_INIT_FAIL;
+    res = fn(H(VkDevice, msg->device), msg->pCreateInfo ? msg->pCreateInfo : &info, NULL, &sem);
+    OUT(msg->pSemaphore, sem);
+    return (IPTR)res;
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, DestroySemaphore)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.DestroySemaphore)
-        gpu->callbacks.DestroySemaphore(msg->device, msg->semaphore,
-                                         gpu->driver_data);
+    VKVOID(DestroySemaphore, H(VkDevice, msg->device), H(VkSemaphore, msg->semaphore), NULL);
 }
 
 /* ==================================================================
@@ -577,97 +539,94 @@ VOID METHOD(HiddVulkan, Hidd_Vulkan, DestroySemaphore)
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, CreateEvent)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CreateEvent)
-        return (IPTR)gpu->callbacks.CreateEvent(
-            msg->device, msg->pEvent, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VkEventCreateInfo info = { .sType = VK_STRUCTURE_TYPE_EVENT_CREATE_INFO };
+    VkEvent event = VK_NULL_HANDLE;
+    VkResult res;
+    VKFN(CreateEvent);
+
+    if (!fn)
+        return VK_INIT_FAIL;
+    res = fn(H(VkDevice, msg->device), &info, NULL, &event);
+    OUT(msg->pEvent, event);
+    return (IPTR)res;
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, DestroyEvent)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.DestroyEvent)
-        gpu->callbacks.DestroyEvent(msg->device, msg->event,
-                                     gpu->driver_data);
+    VKVOID(DestroyEvent, H(VkDevice, msg->device), H(VkEvent, msg->event), NULL);
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, SetEvent)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.SetEvent)
-        return (IPTR)gpu->callbacks.SetEvent(
-            msg->device, msg->event, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VKCALL(SetEvent, H(VkDevice, msg->device), H(VkEvent, msg->event));
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, ResetEvent)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.ResetEvent)
-        return (IPTR)gpu->callbacks.ResetEvent(
-            msg->device, msg->event, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VKCALL(ResetEvent, H(VkDevice, msg->device), H(VkEvent, msg->event));
 }
 
 /* ==================================================================
- * Shader / pipeline
+ * Shaders and pipelines
  * ================================================================== */
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, CreateShaderModule)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CreateShaderModule)
-        return (IPTR)gpu->callbacks.CreateShaderModule(
-            msg->device, msg->pCode, msg->codeSize,
-            msg->pShaderModule, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VkShaderModuleCreateInfo info = {
+        .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        .codeSize = msg->codeSize,
+        .pCode = (const uint32_t *)msg->pCode,
+    };
+    VkShaderModule module = VK_NULL_HANDLE;
+    VkResult res;
+    VKFN(CreateShaderModule);
+
+    if (!fn)
+        return VK_INIT_FAIL;
+    res = fn(H(VkDevice, msg->device), &info, NULL, &module);
+    OUT(msg->pShaderModule, module);
+    return (IPTR)res;
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, DestroyShaderModule)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.DestroyShaderModule)
-        gpu->callbacks.DestroyShaderModule(msg->device, msg->shaderModule,
-                                            gpu->driver_data);
+    VKVOID(DestroyShaderModule, H(VkDevice, msg->device), H(VkShaderModule, msg->shaderModule), NULL);
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, CreatePipelineLayout)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CreatePipelineLayout)
-        return (IPTR)gpu->callbacks.CreatePipelineLayout(
-            msg->device, msg->setLayoutCount, msg->pSetLayouts,
-            msg->pushConstantRangeCount, msg->pPushConstantRanges,
-            msg->pPipelineLayout, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VkPipelineLayoutCreateInfo info = {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .setLayoutCount = msg->setLayoutCount,
+        .pSetLayouts = HA(const VkDescriptorSetLayout, msg->pSetLayouts),
+        .pushConstantRangeCount = msg->pushConstantRangeCount,
+        .pPushConstantRanges = msg->pPushConstantRanges,
+    };
+    VkPipelineLayout layout = VK_NULL_HANDLE;
+    VkResult res;
+    VKFN(CreatePipelineLayout);
+
+    if (!fn)
+        return VK_INIT_FAIL;
+    res = fn(H(VkDevice, msg->device), &info, NULL, &layout);
+    OUT(msg->pPipelineLayout, layout);
+    return (IPTR)res;
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, DestroyPipelineLayout)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.DestroyPipelineLayout)
-        gpu->callbacks.DestroyPipelineLayout(msg->device,
-                                              msg->pipelineLayout,
-                                              gpu->driver_data);
+    VKVOID(DestroyPipelineLayout, H(VkDevice, msg->device), H(VkPipelineLayout, msg->pipelineLayout), NULL);
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, CreateComputePipelines)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CreateComputePipelines)
-        return (IPTR)gpu->callbacks.CreateComputePipelines(
-            msg->device, msg->createInfoCount, msg->pCreateInfos,
-            msg->pPipelines, gpu->driver_data);
-    return VK_INIT_FAIL;
+    VKCALL(CreateComputePipelines, H(VkDevice, msg->device), VK_NULL_HANDLE, msg->createInfoCount,
+           msg->pCreateInfos, NULL, HA(VkPipeline, msg->pPipelines));
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, DestroyPipeline)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.DestroyPipeline)
-        gpu->callbacks.DestroyPipeline(msg->device, msg->pipeline,
-                                        gpu->driver_data);
+    VKVOID(DestroyPipeline, H(VkDevice, msg->device), H(VkPipeline, msg->pipeline), NULL);
 }
 
 /* ==================================================================
@@ -676,274 +635,131 @@ VOID METHOD(HiddVulkan, Hidd_Vulkan, DestroyPipeline)
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, CreateQueryPool)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CreateQueryPool)
-        return (IPTR)gpu->callbacks.CreateQueryPool(
-            msg->device, msg->pCreateInfo, msg->pQueryPool,
-            gpu->driver_data);
-    return VK_INIT_FAIL;
+    VkQueryPool pool = VK_NULL_HANDLE;
+    VkResult res;
+    VKFN(CreateQueryPool);
+
+    if (!fn)
+        return VK_INIT_FAIL;
+    res = fn(H(VkDevice, msg->device), msg->pCreateInfo, NULL, &pool);
+    OUT(msg->pQueryPool, pool);
+    return (IPTR)res;
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, DestroyQueryPool)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.DestroyQueryPool)
-        gpu->callbacks.DestroyQueryPool(msg->device, msg->queryPool,
-                                         gpu->driver_data);
+    VKVOID(DestroyQueryPool, H(VkDevice, msg->device), H(VkQueryPool, msg->queryPool), NULL);
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, GetQueryPoolResults)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.GetQueryPoolResults)
-        return (IPTR)gpu->callbacks.GetQueryPoolResults(
-            msg->device, msg->queryPool, msg->firstQuery, msg->queryCount,
-            msg->dataSize, msg->pData, msg->stride, msg->flags,
-            gpu->driver_data);
-    return VK_INIT_FAIL;
+    VKCALL(GetQueryPoolResults, H(VkDevice, msg->device), H(VkQueryPool, msg->queryPool),
+           msg->firstQuery, msg->queryCount, msg->dataSize, msg->pData, msg->stride, msg->flags);
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, ResetQueryPool)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.ResetQueryPool)
-        gpu->callbacks.ResetQueryPool(msg->device, msg->queryPool,
-                                       msg->firstQuery, msg->queryCount,
-                                       gpu->driver_data);
+    VKVOID(ResetQueryPool, H(VkDevice, msg->device), H(VkQueryPool, msg->queryPool),
+           msg->firstQuery, msg->queryCount);
 }
 
 /* ==================================================================
- * Command recording — compute
+ * Command recording
  * ================================================================== */
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, CmdBindPipeline)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CmdBindPipeline)
-        gpu->callbacks.CmdBindPipeline(msg->commandBuffer,
-                                        msg->pipelineBindPoint, msg->pipeline,
-                                        gpu->driver_data);
+    VKVOID(CmdBindPipeline, H(VkCommandBuffer, msg->commandBuffer), msg->pipelineBindPoint,
+           H(VkPipeline, msg->pipeline));
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, CmdBindDescriptorSets)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CmdBindDescriptorSets)
-        gpu->callbacks.CmdBindDescriptorSets(
-            msg->commandBuffer, msg->pipelineBindPoint, msg->layout,
-            msg->firstSet, msg->descriptorSetCount, msg->pDescriptorSets,
-            msg->dynamicOffsetCount, msg->pDynamicOffsets,
-            gpu->driver_data);
+    VKVOID(CmdBindDescriptorSets, H(VkCommandBuffer, msg->commandBuffer), msg->pipelineBindPoint,
+           H(VkPipelineLayout, msg->layout), msg->firstSet, msg->descriptorSetCount,
+           HA(const VkDescriptorSet, msg->pDescriptorSets), msg->dynamicOffsetCount,
+           (const uint32_t *)msg->pDynamicOffsets);
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, CmdPushConstants)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CmdPushConstants)
-        gpu->callbacks.CmdPushConstants(
-            msg->commandBuffer, msg->layout, msg->stageFlags,
-            msg->offset, msg->size, msg->pValues, gpu->driver_data);
+    VKVOID(CmdPushConstants, H(VkCommandBuffer, msg->commandBuffer), H(VkPipelineLayout, msg->layout),
+           msg->stageFlags, msg->offset, msg->size, msg->pValues);
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, CmdDispatch)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CmdDispatch)
-        gpu->callbacks.CmdDispatch(msg->commandBuffer,
-                                    msg->groupCountX, msg->groupCountY,
-                                    msg->groupCountZ, gpu->driver_data);
+    VKVOID(CmdDispatch, H(VkCommandBuffer, msg->commandBuffer), msg->groupCountX, msg->groupCountY,
+           msg->groupCountZ);
 }
-
-/* ==================================================================
- * Command recording — transfer
- * ================================================================== */
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, CmdCopyBuffer)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CmdCopyBuffer)
-        gpu->callbacks.CmdCopyBuffer(msg->commandBuffer,
-                                      msg->srcBuffer, msg->dstBuffer,
-                                      msg->regionCount, msg->pRegions,
-                                      gpu->driver_data);
+    VKVOID(CmdCopyBuffer, H(VkCommandBuffer, msg->commandBuffer), H(VkBuffer, msg->srcBuffer),
+           H(VkBuffer, msg->dstBuffer), msg->regionCount, msg->pRegions);
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, CmdFillBuffer)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CmdFillBuffer)
-        gpu->callbacks.CmdFillBuffer(msg->commandBuffer,
-                                      msg->dstBuffer, msg->dstOffset,
-                                      msg->size, msg->data,
-                                      gpu->driver_data);
+    VKVOID(CmdFillBuffer, H(VkCommandBuffer, msg->commandBuffer), H(VkBuffer, msg->dstBuffer),
+           msg->dstOffset, msg->size, msg->data);
 }
-
-/* ==================================================================
- * Command recording — synchronization
- * ================================================================== */
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, CmdPipelineBarrier)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CmdPipelineBarrier)
-        gpu->callbacks.CmdPipelineBarrier(
-            msg->commandBuffer, msg->srcStageMask, msg->dstStageMask,
-            msg->dependencyFlags,
-            msg->memoryBarrierCount, msg->pMemoryBarriers,
-            msg->bufferMemoryBarrierCount, msg->pBufferMemoryBarriers,
-            msg->imageMemoryBarrierCount, msg->pImageMemoryBarriers,
-            gpu->driver_data);
+    VKVOID(CmdPipelineBarrier, H(VkCommandBuffer, msg->commandBuffer), msg->srcStageMask, msg->dstStageMask,
+           msg->dependencyFlags, msg->memoryBarrierCount, msg->pMemoryBarriers,
+           msg->bufferMemoryBarrierCount, msg->pBufferMemoryBarriers,
+           msg->imageMemoryBarrierCount, msg->pImageMemoryBarriers);
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, CmdSetEvent)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CmdSetEvent)
-        gpu->callbacks.CmdSetEvent(msg->commandBuffer, msg->event,
-                                    msg->stageMask, gpu->driver_data);
+    VKVOID(CmdSetEvent, H(VkCommandBuffer, msg->commandBuffer), H(VkEvent, msg->event), msg->stageMask);
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, CmdResetEvent)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CmdResetEvent)
-        gpu->callbacks.CmdResetEvent(msg->commandBuffer, msg->event,
-                                      msg->stageMask, gpu->driver_data);
+    VKVOID(CmdResetEvent, H(VkCommandBuffer, msg->commandBuffer), H(VkEvent, msg->event), msg->stageMask);
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, CmdWaitEvents)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CmdWaitEvents)
-        gpu->callbacks.CmdWaitEvents(
-            msg->commandBuffer, msg->eventCount, msg->pEvents,
-            msg->srcStageMask, msg->dstStageMask,
-            msg->memoryBarrierCount, msg->pMemoryBarriers,
-            msg->bufferMemoryBarrierCount, msg->pBufferMemoryBarriers,
-            msg->imageMemoryBarrierCount, msg->pImageMemoryBarriers,
-            gpu->driver_data);
+    VKVOID(CmdWaitEvents, H(VkCommandBuffer, msg->commandBuffer), msg->eventCount,
+           HA(const VkEvent, msg->pEvents), msg->srcStageMask, msg->dstStageMask,
+           msg->memoryBarrierCount, msg->pMemoryBarriers,
+           msg->bufferMemoryBarrierCount, msg->pBufferMemoryBarriers,
+           msg->imageMemoryBarrierCount, msg->pImageMemoryBarriers);
 }
-
-/* ==================================================================
- * Command recording — queries
- * ================================================================== */
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, CmdWriteTimestamp)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CmdWriteTimestamp)
-        gpu->callbacks.CmdWriteTimestamp(msg->commandBuffer,
-                                          msg->pipelineStage,
-                                          msg->queryPool, msg->query,
-                                          gpu->driver_data);
+    VKVOID(CmdWriteTimestamp, H(VkCommandBuffer, msg->commandBuffer), msg->pipelineStage,
+           H(VkQueryPool, msg->queryPool), msg->query);
 }
 
 VOID METHOD(HiddVulkan, Hidd_Vulkan, CmdResetQueryPool)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.CmdResetQueryPool)
-        gpu->callbacks.CmdResetQueryPool(msg->commandBuffer,
-                                          msg->queryPool,
-                                          msg->firstQuery, msg->queryCount,
-                                          gpu->driver_data);
+    VKVOID(CmdResetQueryPool, H(VkCommandBuffer, msg->commandBuffer), H(VkQueryPool, msg->queryPool),
+           msg->firstQuery, msg->queryCount);
 }
 
 /* ==================================================================
- * GPU registry management
- * ================================================================== */
-
-ULONG METHOD(HiddVulkan, Hidd_Vulkan, EnumerateGPUs)
-{
-    struct vulkanstaticdata *sd = SD(cl);
-    ULONG count = 0;
-    ULONG i;
-
-    ObtainSemaphoreShared(&sd->registry_lock);
-
-    for (i = 0; i < VULKAN_MAX_GPUS && count < msg->max_count; i++)
-    {
-        if (sd->gpus[i].in_use)
-        {
-            if (msg->gpu_info)
-            {
-                struct VulkanGPUInfo *out = &msg->gpu_info[count];
-                struct VulkanGPUEntry *e  = &sd->gpus[i];
-                ULONG j;
-
-                out->vendor_id = e->vendor_id;
-                out->device_id = e->device_id;
-                out->flags     = e->flags;
-                out->priority  = e->priority;
-                out->vram_size = e->vram_size;
-                out->pci_bus   = e->pci_bus;
-                out->pci_dev   = e->pci_dev;
-                out->pci_func  = e->pci_func;
-
-                for (j = 0; j < sizeof(out->name) - 1 && e->name[j]; j++)
-                    out->name[j] = e->name[j];
-                out->name[j] = '\0';
-
-                for (j = 0; j < sizeof(out->class_id) - 1 && e->class_id[j]; j++)
-                    out->class_id[j] = e->class_id[j];
-                out->class_id[j] = '\0';
-            }
-            count++;
-        }
-    }
-
-    ReleaseSemaphore(&sd->registry_lock);
-
-    return count;
-}
-
-VOID METHOD(HiddVulkan, Hidd_Vulkan, SetGPUPriority)
-{
-    struct vulkanstaticdata *sd = SD(cl);
-    ULONG target_idx = msg->gpu_index;
-    ULONG count = 0;
-    ULONG i;
-
-    ObtainSemaphore(&sd->registry_lock);
-
-    for (i = 0; i < VULKAN_MAX_GPUS; i++)
-    {
-        if (sd->gpus[i].in_use)
-        {
-            if (count == target_idx)
-            {
-                sd->gpus[i].priority = msg->priority;
-                break;
-            }
-            count++;
-        }
-    }
-
-    ReleaseSemaphore(&sd->registry_lock);
-}
-
-/* ==================================================================
- * ICD-style function lookup
+ * ICD-style function lookup: GetInstanceProcAddr is the driver's
  * ================================================================== */
 
 APTR METHOD(HiddVulkan, Hidd_Vulkan, GetInstanceProcAddr)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.GetInstanceProcAddr)
-        return gpu->callbacks.GetInstanceProcAddr(
-            msg->instance, msg->pName, gpu->driver_data);
     return NULL;
 }
 
 APTR METHOD(HiddVulkan, Hidd_Vulkan, GetDeviceProcAddr)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.GetDeviceProcAddr)
-        return gpu->callbacks.GetDeviceProcAddr(
-            msg->device, msg->pName, gpu->driver_data);
-    if (gpu && gpu->callbacks.GetInstanceProcAddr)
-        return gpu->callbacks.GetInstanceProcAddr(
-            NULL, msg->pName, gpu->driver_data);
-    return NULL;
+    VKFN(GetDeviceProcAddr);
+
+    if (!fn)
+        return NULL;
+    return (APTR)fn(H(VkDevice, msg->device), msg->pName);
 }
 
 /* ==================================================================
@@ -952,22 +768,19 @@ APTR METHOD(HiddVulkan, Hidd_Vulkan, GetDeviceProcAddr)
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, EnumerateInstanceVersion)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.EnumerateInstanceVersion)
-        return (IPTR)gpu->callbacks.EnumerateInstanceVersion(
-            msg->pApiVersion, gpu->driver_data);
-    /* No driver — report Vulkan 1.0 */
-    if (msg->pApiVersion) *msg->pApiVersion = (1 << 22); /* VK_API_VERSION_1_0 */
-    return 0;
+    VKFN(EnumerateInstanceVersion);
+
+    /* absent before Vulkan 1.1 */
+    if (!fn)
+    {
+        *msg->pApiVersion = VK_API_VERSION_1_0;
+        return (IPTR)VK_SUCCESS;
+    }
+    return (IPTR)fn((uint32_t *)msg->pApiVersion);
 }
 
 IPTR METHOD(HiddVulkan, Hidd_Vulkan, EnumerateInstanceExtensionProperties)
 {
-    struct VulkanGPUEntry *gpu = GET_GPU(SD(cl));
-    if (gpu && gpu->callbacks.EnumerateInstanceExtensionProperties)
-        return (IPTR)gpu->callbacks.EnumerateInstanceExtensionProperties(
-            msg->pLayerName, msg->pPropertyCount, msg->pProperties,
-            gpu->driver_data);
-    if (msg->pPropertyCount) *msg->pPropertyCount = 0;
-    return 0;
+    VKCALL(EnumerateInstanceExtensionProperties, msg->pLayerName, (uint32_t *)msg->pPropertyCount,
+           msg->pProperties);
 }

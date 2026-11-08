@@ -26,25 +26,25 @@ static void hashlittle2(const void *key, size_t length,
 static void __fill_statbuffer(
     struct stat          *sb,
     char                 *buffer,
-    struct FileInfoBlock64 *fib,
+    struct FileInfoBlock *fib,
     int                  fallback_to_defaults,
     BPTR                 lock);
 static void __fill_stat64buffer(
     struct stat64          *sb,
     char                 *buffer,
-    struct FileInfoBlock64 *fib,
+    struct FileInfoBlock *fib,
     int                  fallback_to_defaults,
     BPTR                 lock);
 
 int __stat(BPTR lock, struct stat *sb, BOOL filehandle)
 {
-    struct FileInfoBlock64 *fib;
+    struct FileInfoBlock *fib;
     UBYTE *buffer;
     int buffersize = 256;
     int fallback_to_defaults = 0;
     BOOL Examined;
 
-    fib = AllocVec(sizeof(struct FileInfoBlock64), MEMF_PUBLIC | MEMF_CLEAR);
+    fib = AllocVec(sizeof(struct FileInfoBlock), MEMF_PUBLIC | MEMF_CLEAR);
 
     if (!fib)
     {
@@ -133,13 +133,13 @@ int __stat(BPTR lock, struct stat *sb, BOOL filehandle)
 
 int __stat64(BPTR lock, struct stat64 *sb, BOOL filehandle)
 {
-    struct FileInfoBlock64 *fib;
+    struct FileInfoBlock *fib;
     UBYTE *buffer;
     int buffersize = 256;
     int fallback_to_defaults = 0;
     BOOL Examined;
 
-    fib = AllocVec(sizeof(struct FileInfoBlock64), MEMF_PUBLIC | MEMF_CLEAR);
+    fib = AllocVec(sizeof(struct FileInfoBlock), MEMF_PUBLIC | MEMF_CLEAR);
 
     if (!fib)
     {
@@ -235,7 +235,7 @@ int __stat_from_path(const char *path, struct stat *sb)
     char                 *abspath = NULL;
     char                 *filepart = NULL;
     char                 *split;
-    struct FileInfoBlock64 *fib = NULL;
+    struct FileInfoBlock *fib = NULL;
     BPTR                 lock = BNULL;
     BPTR                 cwdlock;
     int                  fallback_to_defaults = 0;
@@ -307,7 +307,7 @@ int __stat_from_path(const char *path, struct stat *sb)
     strcpy(filepart, split);
     *split = '\0';
 
-    if (   !(fib = AllocVec(sizeof(struct FileInfoBlock64), MEMF_PUBLIC | MEMF_CLEAR))
+    if (   !(fib = AllocVec(sizeof(struct FileInfoBlock), MEMF_PUBLIC | MEMF_CLEAR))
         || !(lock = Lock(abspath, SHARED_LOCK)))
     {
         errno = __stdc_ioerr2errno(IoErr());
@@ -381,7 +381,7 @@ int __stat64_from_path(const char *path, struct stat64 *sb)
     char                 *abspath = NULL;
     char                 *filepart = NULL;
     char                 *split;
-    struct FileInfoBlock64 *fib = NULL;
+    struct FileInfoBlock *fib = NULL;
     BPTR                 lock = BNULL;
     BPTR                 cwdlock;
     int                  fallback_to_defaults = 0;
@@ -453,7 +453,7 @@ int __stat64_from_path(const char *path, struct stat64 *sb)
     strcpy(filepart, split);
     *split = '\0';
 
-    if (   !(fib = AllocVec(sizeof(struct FileInfoBlock64), MEMF_PUBLIC | MEMF_CLEAR))
+    if (   !(fib = AllocVec(sizeof(struct FileInfoBlock), MEMF_PUBLIC | MEMF_CLEAR))
         || !(lock = Lock(abspath, SHARED_LOCK)))
     {
         errno = __stdc_ioerr2errno(IoErr());
@@ -792,7 +792,7 @@ static void hashlittle2(
 static void __fill_statbuffer(
     struct stat          *sb,
     char                 *buffer,
-    struct FileInfoBlock64 *fib,
+    struct FileInfoBlock *fib,
     int                  fallback_to_defaults,
     BPTR                 lock)
 {
@@ -805,8 +805,8 @@ static void __fill_statbuffer(
     if(fallback_to_defaults)
     {
         /* Empty file, not protected, as old as it can be... */
-        fib->fib_Size = 0;
-        fib->fib_NumBlocks = 0;
+        fib->fib_Size64 = 0;
+        fib->fib_NumBlocks64 = 0;
         fib->fib_Date.ds_Days = 0;
         fib->fib_Date.ds_Minute = 0;
         fib->fib_Date.ds_Tick = 0;
@@ -820,7 +820,7 @@ static void __fill_statbuffer(
     sb->st_dev     = (dev_t) (lock ? ((struct FileLock *)BADDR(lock))->fl_Volume : BNULL);
     sb->st_ino     = hash;    /* hash value will be truncated if st_ino size is
                                  smaller than uint64_t, but it's ok */
-    sb->st_size    = (off_t)fib->fib_Size;
+    sb->st_size    = (off_t)fib->fib_Size64;
     sb->st_atime   =
     sb->st_ctime   =
     sb->st_mtime   = (fib->fib_Date.ds_Days * 24*60 + fib->fib_Date.ds_Minute + __stdc_gmtoffset()) * 60 +
@@ -848,9 +848,9 @@ static void __fill_statbuffer(
             sb->st_blksize = 1024;
         }
     }
-    if(fib->fib_Size > 0 && sb->st_blksize > 0)
+    if(fib->fib_Size64 > 0 && sb->st_blksize > 0)
         sb->st_blocks =
-            (1 + ((QUAD) fib->fib_Size - 1) / sb->st_blksize) *
+            (1 + ((QUAD) fib->fib_Size64 - 1) / sb->st_blksize) *
             (sb->st_blksize / 512);
     else
         sb->st_blocks  = 0;
@@ -885,7 +885,7 @@ static void __fill_statbuffer(
 static void __fill_stat64buffer(
     struct stat64          *sb,
     char                 *buffer,
-    struct FileInfoBlock64 *fib,
+    struct FileInfoBlock *fib,
     int                  fallback_to_defaults,
     BPTR                 lock)
 {
@@ -898,8 +898,8 @@ static void __fill_stat64buffer(
     if(fallback_to_defaults)
     {
         /* Empty file, not protected, as old as it can be... */
-        fib->fib_Size = 0;
-        fib->fib_NumBlocks = 0;
+        fib->fib_Size64 = 0;
+        fib->fib_NumBlocks64 = 0;
         fib->fib_Date.ds_Days = 0;
         fib->fib_Date.ds_Minute = 0;
         fib->fib_Date.ds_Tick = 0;
@@ -913,7 +913,7 @@ static void __fill_stat64buffer(
     sb->st_dev     = (dev_t) (lock ? ((struct FileLock *)BADDR(lock))->fl_Volume : BNULL);
     sb->st_ino     = hash;    /* hash value will be truncated if st_ino size is
                                  smaller than uint64_t, but it's ok */
-    sb->st_size    = (off_t)fib->fib_Size;
+    sb->st_size    = (off_t)fib->fib_Size64;
     sb->st_atime   =
     sb->st_ctime   =
     sb->st_mtime   = (fib->fib_Date.ds_Days * 24*60 + fib->fib_Date.ds_Minute + __stdc_gmtoffset()) * 60 +
@@ -942,9 +942,9 @@ static void __fill_stat64buffer(
             sb->st_blksize = 1024;
         }
     }
-    if(fib->fib_Size > 0 && sb->st_blksize > 0)
+    if(fib->fib_Size64 > 0 && sb->st_blksize > 0)
         sb->st_blocks =
-            (1 + ((QUAD) fib->fib_Size - 1) / sb->st_blksize) *
+            (1 + ((QUAD) fib->fib_Size64 - 1) / sb->st_blksize) *
             (sb->st_blksize / 512);
     else
         sb->st_blocks  = 0;

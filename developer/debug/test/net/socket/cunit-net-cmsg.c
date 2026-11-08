@@ -6,7 +6,10 @@
     (section 6.3), IPV6_TCLASS (section 6.5) and IPv4's IP_RECVDSTADDR and
     IP_RECVTOS - the traffic class and the TOS byte set by option or by
     ancillary data on the datagram (ECN for QUIC, RFC 9000 section 13.4) -
-    and IP_RECVDSTADDR on a multicast datagram, looped back on IFNAME's
+    IP_RECVTTL - the TTL the datagram arrived with, one byte, as FreeBSD;
+    an mDNS responder checks it is 255 (RFC 6762 section 11) - and
+    IP_RECVDSTADDR, IP_RECVTOS and IP_RECVTTL on a multicast datagram,
+    looped back on IFNAME's
     address. Usage:  cunit-net-cmsg [IFNAME]  (default eth0; the multicast
     test is skipped without an IPv4 address on it). Each message must carry its whole
     data at CMSG_DATA() with cmsg_len = CMSG_LEN() - on LP64 the data starts
@@ -268,6 +271,121 @@ static int got_tos(int r)
     return *(unsigned char *)CMSG_DATA(c);
 }
 
+/* The byte an IP_RECVTTL message carries, or -1 without one; the whole
+ * control buffer must be that one message. */
+static int got_ttl(int r)
+{
+    ctlbuf ctl;
+    struct msghdr mh;
+    struct cmsghdr *c;
+
+    if (recv_ctl(r, &ctl, sizeof(ctl), &mh) < 0)
+        return -2;
+    c = find(&mh, IPPROTO_IP, IP_RECVTTL);
+    if (c == NULL)
+        return -1;
+    CU_ASSERT_EQUAL(c->cmsg_len, CMSG_LEN(sizeof(unsigned char)));
+    CU_ASSERT_EQUAL(mh.msg_controllen, CMSG_SPACE(sizeof(unsigned char)));
+    CU_ASSERT_EQUAL((char *)CMSG_DATA(c) - (char *)c, CMSG_LEN(0));
+    CU_ASSERT_EQUAL(mh.msg_flags & MSG_CTRUNC, 0);
+    return *(unsigned char *)CMSG_DATA(c);
+}
+
+/* IP_RECVTTL: off by default; it takes 1 and 0 back; an int only. */
+void testCMSG_V4_TTL_OPTION(void)
+{
+    int s = socket(AF_INET, SOCK_DGRAM, 0), v = -1, on = 1, off = 0;
+    socklen_t l = sizeof(v);
+    char b = 1;
+
+    CU_ASSERT_FATAL(s >= 0);
+    CU_ASSERT_EQUAL(getsockopt(s, IPPROTO_IP, IP_RECVTTL, &v, &l), 0);
+    CU_ASSERT_EQUAL(v, 0);
+    CU_ASSERT_EQUAL(setsockopt(s, IPPROTO_IP, IP_RECVTTL, &on, sizeof(on)), 0);
+    l = sizeof(v);
+    CU_ASSERT_EQUAL(getsockopt(s, IPPROTO_IP, IP_RECVTTL, &v, &l), 0);
+    CU_ASSERT_EQUAL(v, 1);
+    CU_ASSERT_EQUAL(setsockopt(s, IPPROTO_IP, IP_RECVTTL, &off, sizeof(off)), 0);
+    l = sizeof(v);
+    CU_ASSERT_EQUAL(getsockopt(s, IPPROTO_IP, IP_RECVTTL, &v, &l), 0);
+    CU_ASSERT_EQUAL(v, 0);
+    CU_ASSERT_NOT_EQUAL(setsockopt(s, IPPROTO_IP, IP_RECVTTL, &b, sizeof(b)), 0);
+    CloseSocket(s);
+}
+
+/* IP_RECVTTL reports the TTL each datagram arrives with - the sender's,
+ * not the receiving socket's own IP_TTL - and nothing once it is off. */
+void testCMSG_V4_TTL(void)
+{
+    struct sockaddr_storage dst;
+    socklen_t dlen;
+    int r, s, on = 1, off = 0, mine = 99, t37 = 37, t200 = 200;
+
+    CU_ASSERT_EQUAL(pair(AF_INET, &r, &s, &dst, &dlen), 0);
+    CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVTTL, &on, sizeof(on)), 0);
+    CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_TTL, &mine, sizeof(mine)), 0);
+    CU_ASSERT_EQUAL(setsockopt(s, IPPROTO_IP, IP_TTL, &t37, sizeof(t37)), 0);
+    CU_ASSERT_EQUAL(sendto(s, "a", 1, 0, (struct sockaddr *)&dst, dlen), 1);
+    CU_ASSERT_EQUAL(got_ttl(r), 37);
+    CU_ASSERT_EQUAL(setsockopt(s, IPPROTO_IP, IP_TTL, &t200, sizeof(t200)), 0);
+    CU_ASSERT_EQUAL(sendto(s, "b", 1, 0, (struct sockaddr *)&dst, dlen), 1);
+    CU_ASSERT_EQUAL(got_ttl(r), 200);
+    CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVTTL, &off, sizeof(off)), 0);
+    CU_ASSERT_EQUAL(sendto(s, "c", 1, 0, (struct sockaddr *)&dst, dlen), 1);
+    CU_ASSERT_EQUAL(got_ttl(r), -1);
+    CloseSocket(s);
+    CloseSocket(r);
+}
+
+/* A datagram that came in fragments (4000 bytes over the loopback's 1536)
+ * reports its TTL too. */
+void testCMSG_V4_TTL_FRAGMENTED(void)
+{
+    static char big[4000];
+    struct sockaddr_storage dst;
+    socklen_t dlen;
+    int r, s, on = 1, t42 = 42, rcv = 8192;
+
+    CU_ASSERT_EQUAL(pair(AF_INET, &r, &s, &dst, &dlen), 0);
+    setsockopt(r, SOL_SOCKET, SO_RCVBUF, &rcv, sizeof(rcv));
+    CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVTTL, &on, sizeof(on)), 0);
+    CU_ASSERT_EQUAL(setsockopt(s, IPPROTO_IP, IP_TTL, &t42, sizeof(t42)), 0);
+    memset(big, 'f', sizeof(big));
+    CU_ASSERT_EQUAL(sendto(s, big, sizeof(big), 0, (struct sockaddr *)&dst, dlen), (int)sizeof(big));
+    CU_ASSERT_EQUAL(got_ttl(r), 42);
+    CloseSocket(s);
+    CloseSocket(r);
+}
+
+/* With IP_RECVDSTADDR and IP_RECVTTL both on, a control buffer with room
+ * for the first message only, or for not even a header, reports
+ * MSG_CTRUNC and returns no more than it was given. */
+void testCMSG_V4_TTL_CTRUNC(void)
+{
+    ctlbuf ctl;
+    struct sockaddr_storage dst;
+    struct msghdr mh;
+    socklen_t dlen;
+    int r, s, on = 1;
+
+    CU_ASSERT_EQUAL(pair(AF_INET, &r, &s, &dst, &dlen), 0);
+    CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVDSTADDR, &on, sizeof(on)), 0);
+    CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVTTL, &on, sizeof(on)), 0);
+    CU_ASSERT_EQUAL(sendto(s, "x", 1, 0, (struct sockaddr *)&dst, dlen), 1);
+    CU_ASSERT_EQUAL(recv_ctl(r, &ctl, CMSG_SPACE(sizeof(struct in_addr)), &mh), 1);
+    CU_ASSERT_PTR_NOT_NULL(find(&mh, IPPROTO_IP, IP_RECVDSTADDR));
+    CU_ASSERT_PTR_NULL(find(&mh, IPPROTO_IP, IP_RECVTTL));
+    CU_ASSERT(mh.msg_flags & MSG_CTRUNC);
+    CU_ASSERT(mh.msg_controllen <= CMSG_SPACE(sizeof(struct in_addr)));
+    CU_ASSERT_EQUAL(sendto(s, "y", 1, 0, (struct sockaddr *)&dst, dlen), 1);
+    CU_ASSERT_EQUAL(recv_ctl(r, &ctl, 4, &mh), 1);
+    CU_ASSERT_PTR_NULL(CMSG_FIRSTHDR(&mh));
+    CU_ASSERT(mh.msg_flags & MSG_CTRUNC);
+    CU_ASSERT(mh.msg_controllen <= 4);
+    CloseSocket(s);
+    CloseSocket(r);
+}
+
 /* IPV6_TCLASS: set on the socket, or on one datagram, it is what the
  * datagram arrives with; IPV6_RECVTCLASS reports it. */
 void testCMSG_V6_TCLASS(void)
@@ -313,7 +431,7 @@ void testCMSG_V4_TOS(void)
 }
 
 /* A multicast datagram carries the ancillary data too: IP_RECVDSTADDR is
- * the group, IP_RECVTOS the TOS byte. */
+ * the group, IP_RECVTOS the TOS byte, IP_RECVTTL its IP_MULTICAST_TTL. */
 void testCMSG_V4_MCAST(void)
 {
     ctlbuf ctl;
@@ -349,6 +467,7 @@ void testCMSG_V4_MCAST(void)
     CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mr, sizeof(mr)), 0);
     CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVDSTADDR, &on, sizeof(on)), 0);
     CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVTOS, &on, sizeof(on)), 0);
+    CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVTTL, &on, sizeof(on)), 0);
     CU_ASSERT_EQUAL(setsockopt(s, IPPROTO_IP, IP_MULTICAST_IF, &mr.imr_interface, sizeof(mr.imr_interface)), 0);
     setsockopt(s, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
     setsockopt(s, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
@@ -371,6 +490,10 @@ void testCMSG_V4_MCAST(void)
     CU_ASSERT_PTR_NOT_NULL(c);
     if (c != NULL)
         CU_ASSERT_EQUAL(*(unsigned char *)CMSG_DATA(c), 0x02);
+    c = find(&mh, IPPROTO_IP, IP_RECVTTL);
+    CU_ASSERT_PTR_NOT_NULL(c);
+    if (c != NULL)
+        CU_ASSERT_EQUAL(*(unsigned char *)CMSG_DATA(c), ttl);
     setsockopt(r, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mr, sizeof(mr));
     CloseSocket(s);
     CloseSocket(r);
@@ -400,6 +523,10 @@ int main(int argc, char **argv)
         !CU_add_test(p, "IP_RECVDSTADDR over 127.0.0.1", testCMSG_V4_RECVDSTADDR) ||
         !CU_add_test(p, "IPV6_TCLASS by option and per datagram", testCMSG_V6_TCLASS) ||
         !CU_add_test(p, "IP_TOS by option and per datagram", testCMSG_V4_TOS) ||
+        !CU_add_test(p, "IP_RECVTTL: off by default, on and off", testCMSG_V4_TTL_OPTION) ||
+        !CU_add_test(p, "IP_RECVTTL: the TTL the datagram arrived with", testCMSG_V4_TTL) ||
+        !CU_add_test(p, "IP_RECVTTL on a fragmented datagram", testCMSG_V4_TTL_FRAGMENTED) ||
+        !CU_add_test(p, "IP_RECVTTL and a short control buffer", testCMSG_V4_TTL_CTRUNC) ||
         !CU_add_test(p, "a multicast datagram has its ancillary data", testCMSG_V4_MCAST))
     {
         CU_cleanup_registry();

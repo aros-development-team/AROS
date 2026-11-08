@@ -67,6 +67,8 @@ static int __close_stdio(struct StdCIOIntBase *StdCIOBase)
 {
     struct FileHandle *_fh;
     FILE *stream;
+    struct Process *me;
+    BPTR cis = BNULL, cos = BNULL;
 
     D(bug("[%s] %s: StdCIOBase = 0x%p, DOSBase = 0x%p\n", STDCNAME, __func__, StdCIOBase, DOSBase));
 
@@ -80,14 +82,27 @@ static int __close_stdio(struct StdCIOIntBase *StdCIOBase)
        started the C runtime itself, so the Shell's Close() dropped the
        program's buffered tail and its script stopped (2026-09-16). */
 #define STDCIO_FHF_MODEBITS (0x00000004 | 0x00000008)   /* FHF_LINEBUF | FHF_NOBUF */
-    if (StdCIOBase->intstdout.fh)
+    /* The base can outlive the handles it cached. A library's root base
+       is closed when the library is expunged, by whichever task ran the
+       low-memory handlers, long after the process it was opened in closed
+       them; the write below then lands in freed memory (seen as a DosList
+       node's dol_Next gaining FHF_NOBUF). Only a handle that is still this
+       process's own can be restored. */
+    me = (struct Process *)FindTask(NULL);
+    if (me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+    {
+        cis = me->pr_CIS;
+        cos = me->pr_COS;
+    }
+
+    if (StdCIOBase->intstdout.fh && StdCIOBase->intstdout.fh == cos)
     {
         _fh = BADDR(StdCIOBase->intstdout.fh);
         _fh->fh_Flags = (_fh->fh_Flags & ~STDCIO_FHF_MODEBITS)
                       | (StdCIOBase->intstdout.fhFlags & STDCIO_FHF_MODEBITS);
     }
 
-    if (StdCIOBase->intstdin.fh)
+    if (StdCIOBase->intstdin.fh && StdCIOBase->intstdin.fh == cis)
     {
         _fh = BADDR(StdCIOBase->intstdin.fh);
         _fh->fh_Flags = (_fh->fh_Flags & ~STDCIO_FHF_MODEBITS)

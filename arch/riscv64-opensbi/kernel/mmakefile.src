@@ -28,6 +28,7 @@ CFILES := \
         kernel_plic \
         intr \
         kernel_timer \
+        kernel_watchdog \
         kernel_mmu \
         kernel_cpu \
         kernel_elf \

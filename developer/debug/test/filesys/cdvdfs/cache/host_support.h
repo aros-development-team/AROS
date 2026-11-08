@@ -7,6 +7,7 @@
 
 typedef void *APTR;
 typedef uint8_t UBYTE;
+typedef int32_t LONG;
 typedef uint32_t ULONG;
 typedef uintptr_t IPTR;
 #define TRUE 1
@@ -18,9 +19,16 @@ typedef uintptr_t IPTR;
 #define MEMF_CHIP 2u
 #define MEMF_NO_EXPUNGE (1u << 31)
 #define SCSI_BUFSIZE 2048
-#define AROS_INTH1(name,type,arg) int name(type arg)
+/* Exec calls a low-memory handler with these three arguments. */
+struct MemHandlerData;
+struct ExecBase;
+#define AROS_INTH1(name,type,arg) LONG name(struct MemHandlerData *mhd, type arg, struct ExecBase *SysBase)
 #define AROS_INTFUNC_INIT
 #define AROS_INTFUNC_EXIT
+#define AROS_UFHA(type,name,reg) type name
+#define AROS_UFH3(t,n,a1,a2,a3) t n(a1, a2, a3)
+#define AROS_USERFUNC_INIT
+#define AROS_USERFUNC_EXIT
 #define D(x) do {} while (0)
 struct FakeProcess { struct { int tc_State; } pr_Task; };
 struct FakeVolume { uint64_t read_end; };
@@ -43,13 +51,13 @@ typedef struct CDROM {
     ULONG cache_memory_type;
 } CDROM;
 static unsigned allocations_left, io_count, live_allocations, bad_flags;
-static int (*allocation_interrupt)(CDROM *);
+static LONG (*allocation_interrupt)(struct MemHandlerData *, CDROM *, struct ExecBase *);
 static CDROM *allocation_cd;
 static unsigned recovery_reclaimed;
 static APTR AllocVec(size_t n, ULONG flags)
 {
     if (flags != (MEMF_PUBLIC | MEMF_CHIP | MEMF_NO_EXPUNGE)) bad_flags++;
-    if (allocation_interrupt && allocation_interrupt(allocation_cd) != MEM_DID_NOTHING)
+    if (allocation_interrupt && allocation_interrupt(NULL, allocation_cd, NULL) != MEM_DID_NOTHING)
         recovery_reclaimed++;
     if (!allocations_left) return NULL;
     void *p = malloc(n);

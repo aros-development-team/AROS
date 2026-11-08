@@ -726,6 +726,9 @@ AROS_UFH3(void, buttons_function,
                 get(resizemovegadgets.pt, PTCT_ActivePartition, &partition);
                 de = &partition->de;
                 get(object, MUIA_String_Contents, &str);
+                /* Short RDB environments can omit the cylinder geometry. */
+                if (!de->de_BlocksPerTrack || !de->de_Surfaces)
+                    return;
                 size = sizeStrToUL((STRPTR)str);
                 size = (size*2+1)/partition->de.de_BlocksPerTrack/partition->de.de_Surfaces+1;
             }

@@ -287,9 +287,7 @@ OOP_Object *Amdgpu__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
         XSD(cl)->amdgpudisplay = OOP_NewObject(XSD(cl)->amdgpudisplayclass, NULL, displaytags);
         if (XSD(cl)->amdgpudisplay)
-        {
             OOP_GetAttr(XSD(cl)->amdgpudisplay, aHidd_Display_DMEnumerator, (IPTR *)&XSD(cl)->dmenum);
-        }
         else
         {
             OOP_MethodID dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
@@ -402,10 +400,10 @@ VOID Amdgpu__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Co
             srcbd->fb.handle)
         {
             if (srcbd == dstbd)
-                gpu = Amdgpu_2D_CopyBox(&XSD(cl)->kms, srcbd, msg->srcX, msg->srcY,
+                gpu = Amdgpu_2D_CopyBox(msg->src, msg->srcX, msg->srcY,
                                         msg->destX, msg->destY, msg->width, msg->height);
             else if (!dstbd->fb.handle && msg->width * msg->height >= AMDGPU_2D_MIN_READ)
-                gpu = Amdgpu_2D_Read(&XSD(cl)->kms, srcbd, msg->srcX, msg->srcY, msg->width, msg->height,
+                gpu = Amdgpu_2D_Read(msg->src, msg->srcX, msg->srcY, msg->width, msg->height,
                                      dstbd->VideoData + msg->destY * dstbd->pitch + msg->destX * 4,
                                      dstbd->pitch);
         }
@@ -469,8 +467,6 @@ VOID Amdgpu__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Co
 static int Amdgpu_InitStatic(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[Amdgpu] %s()\n", __func__);)
-
-    Amdgpu_2D_Init();
 
     if (!OOP_ObtainAttrBases(attrbases))
     {

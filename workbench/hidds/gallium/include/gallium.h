@@ -2,7 +2,7 @@
 #define HIDD_GALLIUM_H
 
 /*
-    Copyright 2010-2019, The AROS Development Team. All rights reserved.
+    Copyright 2010-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -53,12 +53,19 @@ enum
 {
     aoHidd_Gallium_InterfaceVersion = 0,
     aoHidd_Gallium_CoreAPI,
+    aoHidd_Gallium_VulkanObject,    /* [I..] OOP_Object *: the hidd.vulkan object a gallium-on-Vulkan
+                                       driver (hidd.gallium.zink) renders through */
+    aoHidd_Gallium_LinearDisplay,   /* [..G] BOOL: DisplayResource needs linear colour buffers (it reads
+                                       their memory directly); FALSE when it can present tiled ones.
+                                       A driver that does not answer is taken to need them. */
 
     num_Hidd_Gallium_Attrs
 };
 
 #define aHidd_Gallium_InterfaceVersion  (HiddGalliumAttrBase + aoHidd_Gallium_InterfaceVersion)
 #define aHidd_Gallium_CoreAPI  (HiddGalliumAttrBase + aoHidd_Gallium_CoreAPI)
+#define aHidd_Gallium_VulkanObject  (HiddGalliumAttrBase + aoHidd_Gallium_VulkanObject)
+#define aHidd_Gallium_LinearDisplay  (HiddGalliumAttrBase + aoHidd_Gallium_LinearDisplay)
 #define aHidd_Gallium_WinSys  (HiddGalliumAttrBase + aoHidd_Gallium_WinSys)
 
 #define IS_GALLIUM_ATTR(attr, idx) \

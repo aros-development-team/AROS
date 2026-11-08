@@ -19,7 +19,7 @@
 /*  SYNOPSIS */
 
 /*  LOCATION */
-        struct Library *, PartitionBase, 24, Partition)
+        struct Library *, PartitionBase, 17, Partition)
 
 /*  FUNCTION
         Perform a deferred loading of boot filesystems.
@@ -71,16 +71,13 @@
 
         res = AddFS(PartitionBase, bfs->handle);
         if (res)
-        {
             lasterr = res;
-        }
-        else
-        {
-            /* A filesystem is loaded, remove it from the queue and free associated data. */
-            Remove(&bfs->ln);
-            bfs->handle->handler->freeFileSystem(bfs->handle);
-            FreeMem(bfs, sizeof(struct BootFileSystem));
-        }
+
+        /* This queue is consumed once during DOS startup, including entries
+         * already resident or unable to load. There is no deferred retry. */
+        Remove(&bfs->ln);
+        bfs->handle->handler->freeFileSystem(bfs->handle);
+        FreeMem(bfs, sizeof(struct BootFileSystem));
     }
 
     ReleaseSemaphore(&PBASE(PartitionBase)->bootSem);

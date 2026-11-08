@@ -8,6 +8,7 @@
 #include <exec/memory.h>
 #include <aros/debug.h>
 #include <proto/exec.h>
+#include <aros/atomic.h>
 #include <proto/locale.h>
 #include <proto/utility.h>
 #include <utility/date.h>
@@ -68,6 +69,7 @@ extern const ULONG m68kemu_thunks_locale_manual_count;
 ULONG shadow_register(struct M68KEmuContext *ctx, ULONG m68k_addr, void *native, UWORD type);
 void *shadow_lookup(struct M68KEmuContext *ctx, ULONG m68k_addr);
 static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w);
+static void window_flags_in(struct M68KEmuContext *ctx);
 static void rp_state_out(struct M68KEmuContext *ctx, ULONG mrp, struct RastPort *rp, BOOL font);
 IPTR m68k_NewObjectA(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_MakeClass(struct M68KEmuContext *ctx, void *cpu);
@@ -165,18 +167,19 @@ ULONG M68KEmu_OpenLibrary(struct M68KEmuContext *ctx, const char *name)
     return 0;
 }
 
-/* -552: OpenLibrary(A1=name, D0=version) -> D0=library */
-static IPTR thunk_exec_OpenLibrary(struct M68KEmuContext *ctx, void *cpu)
+/* Shared lookup; only the classic entry thunks normalize the version. */
+static IPTR open_library(struct M68KEmuContext *ctx, void *cpu, UWORD version)
 {
     const char *name = (const char *)THUNK_PTR(1); /* A1 */
     struct M68KTaskState *ts = m68k_ts(ctx);
     if (!name) return 0;
 
     ULONG base = M68KEmu_OpenLibrary(ctx, name);
-    if (base) return (IPTR)base;
+    if (base)
+        return m68k_read16(ctx, base + M68K_LIB_VERSION) >= version ? (IPTR)base : 0;
 
     /* a native BOOPSI class library */
-    base = m68k_open_class_library(ctx, name, THUNK_D(0));
+    base = m68k_open_class_library(ctx, name, version);
     if (base) return (IPTR)base;
 
     /* a 68k library already loaded: its own Open vector opens it again */
@@ -184,10 +187,10 @@ static IPTR thunk_exec_OpenLibrary(struct M68KEmuContext *ctx, void *cpu)
         if (!strcasecmp(ctx->m68klibs[i].name, (const char *)FilePart((STRPTR)name)))
         {
             base = ctx->m68klibs[i].base;
-            if (m68k_read16(ctx, base + M68K_LIB_VERSION) < THUNK_D(0))
+            if (m68k_read16(ctx, base + M68K_LIB_VERSION) < version)
                 return 0;
             ts->tail_pc = ctx->m68klibs[i].reopen;
-            ts->tail_d0 = THUNK_D(0);
+            ts->tail_d0 = version;
             ts->tail_a0 = 0;
             ts->tail_a6 = THUNK_A(6);
             return base;
@@ -195,7 +198,7 @@ static IPTR thunk_exec_OpenLibrary(struct M68KEmuContext *ctx, void *cpu)
 
     /* No native library found — try loading m68k .library from LIBS: */
     ts->tail_a6 = THUNK_A(6);
-    base = M68KEmu_LoadM68KLibrary(ctx, name, THUNK_D(0));
+    base = M68KEmu_LoadM68KLibrary(ctx, name, version);
     if (base) {
         if (ctx->trace_calls) bug("[m68kemu] Loaded m68k library %s at 0x%lx\n", name, (unsigned long)base);
         return (IPTR)base;
@@ -205,10 +208,16 @@ static IPTR thunk_exec_OpenLibrary(struct M68KEmuContext *ctx, void *cpu)
     return 0;
 }
 
+/* -552: OpenLibrary(A1=name, D0.W=version) -> D0=library */
+static IPTR thunk_exec_OpenLibrary(struct M68KEmuContext *ctx, void *cpu)
+{
+    return open_library(ctx, cpu, (UWORD)THUNK_D(0));
+}
+
 /* -408: OldOpenLibrary(A1=name) -> D0=library */
 static IPTR thunk_exec_OldOpenLibrary(struct M68KEmuContext *ctx, void *cpu)
 {
-    return thunk_exec_OpenLibrary(ctx, cpu);
+    return open_library(ctx, cpu, 0);
 }
 
 /* -168: AddIntServer(D0=intNum, A1=interrupt). Only the vertical blank
@@ -241,14 +250,118 @@ static IPTR thunk_exec_RemIntServer(struct M68KEmuContext *ctx, void *cpu)
     return 0;
 }
 
+/* ── ciaa.resource, ciab.resource: AddICRVector(D0=bit, A1=interrupt) gives
+   a timer its code, which runs each time the timer reaches zero (the
+   emulator's CIA timers count the E clock); the other sources never fire ── */
+static IPTR cia_vector(struct M68KEmuContext *ctx, void *cpu, int chip, BOOL add)
+{
+    ULONG bit = THUNK_D(0) & 7, is = THUNK_A(1);
+    struct M68KCiaTimer *t;
+
+    if (bit > 1 || !is)
+        return 0;
+    t = &ctx->cia_timer[chip][bit];
+    if (add)
+    {
+        if (t->owner)
+            return t->owner;
+        t->owner = is;
+        t->code = m68k_read32(ctx, is + 18);
+        t->data = m68k_read32(ctx, is + 14);
+        ctx->cia_icr_enable[chip] |= 1 << bit;
+        if (ctx->trace_calls)
+            bug("[m68kemu] cia%c timer %c vector: code %08lx data %08lx\n", 'a' + chip, 'A' + bit,
+                (unsigned long)t->code, (unsigned long)t->data);
+        return 0;
+    }
+    if (t->owner == is)
+    {
+        t->owner = t->code = t->data = 0;
+        t->armed = FALSE;
+    }
+    return 0;
+}
+
+static IPTR cia_able(struct M68KEmuContext *ctx, void *cpu, int chip)
+{
+    ULONG mask = THUNK_D(0);
+    UBYTE old = ctx->cia_icr_enable[chip];
+
+    if (mask & 0x80)
+        ctx->cia_icr_enable[chip] |= mask & 0x1F;
+    else
+        ctx->cia_icr_enable[chip] &= ~(mask & 0x1F);
+    return old;
+}
+
+static IPTR ciaa_AddICRVector(struct M68KEmuContext *ctx, void *cpu) { return cia_vector(ctx, cpu, 0, TRUE); }
+static IPTR ciaa_RemICRVector(struct M68KEmuContext *ctx, void *cpu) { return cia_vector(ctx, cpu, 0, FALSE); }
+static IPTR ciaa_AbleICR(struct M68KEmuContext *ctx, void *cpu) { return cia_able(ctx, cpu, 0); }
+static IPTR ciab_AddICRVector(struct M68KEmuContext *ctx, void *cpu) { return cia_vector(ctx, cpu, 1, TRUE); }
+static IPTR ciab_RemICRVector(struct M68KEmuContext *ctx, void *cpu) { return cia_vector(ctx, cpu, 1, FALSE); }
+static IPTR ciab_AbleICR(struct M68KEmuContext *ctx, void *cpu) { return cia_able(ctx, cpu, 1); }
+static IPTR cia_SetICR(struct M68KEmuContext *ctx, void *cpu) { return 0; }
+
+static const struct M68KThunkEntry cia_a_tab[] = {
+    { 6, ciaa_AddICRVector }, { 12, ciaa_RemICRVector }, { 18, ciaa_AbleICR }, { 24, cia_SetICR },
+};
+static const struct M68KThunkEntry cia_b_tab[] = {
+    { 6, ciab_AddICRVector }, { 12, ciab_RemICRVector }, { 18, ciab_AbleICR }, { 24, cia_SetICR },
+};
+
+/* -180: Cause(A1=interrupt): the software interrupt's code runs now, with
+   A1 its is_Data and A5 its is_Code as exec calls it */
+static IPTR thunk_exec_Cause(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG is = THUNK_A(1), code, data, regs[15];
+    struct M68KTaskState *ts = m68k_ts(ctx);
+    UWORD i;
+
+    if (!is || !m68k_in_mem(ctx, is, 22))
+        return 0;
+    code = m68k_read32(ctx, is + 18);
+    data = m68k_read32(ctx, is + 14);
+    if (!code || !m68k_in_mem(ctx, code, 2))
+        return 0;
+    /* Caused while it runs: once more after it returns, as exec queues it */
+    for (i = 0; i < ts->cause_depth; i++)
+        if (ts->cause_is[i] == is)
+        {
+            ts->cause_again |= 1 << i;
+            return 0;
+        }
+    if (ts->cause_depth >= 8)
+        return 0;
+    i = ts->cause_depth++;
+    ts->cause_is[i] = is;
+    do
+    {
+        ts->cause_again &= ~(1 << i);
+        memset(regs, 0, sizeof(regs));
+        regs[9] = data;
+        regs[13] = code;
+        regs[14] = ctx->m68k_sysbase;
+        M68KEmu_Call68k(ctx, cpu, code, regs);
+    } while (ts->cause_again & (1 << i));
+    ts->cause_depth--;
+    return 0;
+}
+
 /* -498: OpenResource(A1=name) -> D0=resource. A native resource base is a
    64-bit pointer the m68k side would call into; only a thunked one is usable,
    anything else reads as absent. */
 static IPTR thunk_exec_OpenResource(struct M68KEmuContext *ctx, void *cpu)
 {
     const char *name = (const char *)THUNK_PTR(1);
+    ULONG base;
     if (!name) return 0;
-    return (IPTR)M68KEmu_FindLibBase(ctx, name);
+    base = M68KEmu_FindLibBase(ctx, name);
+    if (!base && (!strcmp(name, "ciaa.resource") || !strcmp(name, "ciab.resource")))
+    {
+        const struct M68KThunkEntry *tab = name[3] == 'b' ? cia_b_tab : cia_a_tab;
+        base = M68KEmu_SetupLibBase(ctx, ctx->num_libs, name, m68k_lib_vectors(tab, 4, NULL, 0), tab, 4, NULL, 0);
+    }
+    return (IPTR)base;
 }
 
 /* -414: CloseLibrary(A1=library) */
@@ -321,7 +434,7 @@ ULONG m68k_process_of(struct M68KEmuContext *ctx, struct Task *task)
                 memset(ctx->mem + m68k_cli, 0, M68K_SIZEOF_CLI);
                 m68k_write32(ctx, m68k + M68K_PR_CLI, m68k_cli >> 2);
                 m68k_write32(ctx, m68k_cli + M68K_CLI_DEFAULTSTACK, 4096);
-                m68k_write32(ctx, m68k_cli + M68K_CLI_MODULE, ctx->seg_start ? (ctx->seg_start >> 2) : 1);
+                m68k_write32(ctx, m68k_cli + M68K_CLI_MODULE, ctx->seg_start ? ((ctx->seg_start - 4) >> 2) : 1);
                 if (ctx->program_name[0])
                 {
                     ULONG len = (ULONG)strnlen(ctx->program_name, sizeof(ctx->program_name) - 1);
@@ -391,8 +504,9 @@ static IPTR thunk_exec_TypeOfMem(struct M68KEmuContext *ctx, void *cpu)
 
 
 /* Helper: translate m68k format args (big-endian packed 32-bit) to native IPTR array */
-static IPTR *translate_fmt_args(struct M68KEmuContext *ctx, const char *fmt, ULONG m68k_args, int *out_count)
+static IPTR *translate_fmt_args(struct M68KEmuContext *ctx, const char *fmt, ULONG m68k_args, int *out_count, ULONG *out_used)
 {
+    *out_used = 0;
     if (!fmt || !m68k_args) { *out_count = 0; return NULL; }
     int nargs = 0;
     for (const char *f = fmt; *f; f++)
@@ -402,11 +516,12 @@ static IPTR *translate_fmt_args(struct M68KEmuContext *ctx, const char *fmt, ULO
     IPTR *native = (IPTR *)AllocMem(nargs * sizeof(IPTR), MEMF_CLEAR);
     if (!native) { *out_count = 0; return NULL; }
 
-    UBYTE *src = (UBYTE *)m68k_to_host(ctx, m68k_args);
+    UBYTE *src = (UBYTE *)m68k_to_host(ctx, m68k_args), *start = src;
     int ai = 0;
     for (const char *f = fmt; *f && ai < nargs; f++) {
         if (*f != '%') continue;
         f++;
+        if (*f == '%') continue;
         while (*f == '-' || *f == '+' || *f == ' ' || *f == '0' || (*f >= '1' && *f <= '9') || *f == '.') f++;
         int is_long = 0;
         if (*f == 'l') { is_long = 1; f++; }
@@ -428,6 +543,7 @@ static IPTR *translate_fmt_args(struct M68KEmuContext *ctx, const char *fmt, ULO
         }
     }
     *out_count = nargs;
+    *out_used = src - start;
     return native;
 }
 
@@ -511,56 +627,122 @@ APTR m68k_to_native_fmt_stream(struct M68KEmuContext *ctx, const char *fmt, ULON
     return stream;
 }
 
-/* -522: RawDoFmt(A0=fmt, A1=dataStream, A2=putProc, A3=putData) -> D0=result */
-static IPTR thunk_exec_RawDoFmt(struct M68KEmuContext *ctx, void *cpu)
+/* The formatted text goes through the program's PutChProc, a 68k routine
+   called with D0=char and A3=putData, the terminating NUL included: a stub
+   in the program's memory loops over the text after the thunk.  The text
+   is in a block of the program's memory, its size first, that the stub
+   frees: A0 is the block, D0 the result the caller gets */
+static ULONG fmt_stub(struct M68KEmuContext *ctx)
 {
-    const char *fmt = (const char *)THUNK_PTR(0);
-    ULONG m68k_args = THUNK_A(1);
-    UBYTE *putData = (UBYTE *)THUNK_PTR(3);
-
-    if (!fmt) return 0;
-
-    int n = 0;
-    IPTR *args = m68k_args ? translate_fmt_args(ctx, fmt, m68k_args, &n) : NULL;
-
-    char buf[1024];
-    char *out = buf;
-    const char *f = fmt;
-    int ai = 0;
-    while (*f && (out - buf) < 1020)
+    static const UWORD code[] =
     {
-        if (*f == '%')
+        0x48E7, 0x303C,                 /* movem.l d2-d3/a2-a5,-(sp) */
+        0x2600,                         /* move.l d0,d3             */
+        0x2A48,                         /* movea.l a0,a5            */
+        0x49ED, 0x0004,                 /* lea 4(a5),a4             */
+        0x7000,                         /* loop: moveq #0,d0        */
+        0x101C,                         /* move.b (a4)+,d0          */
+        0x2400,                         /* move.l d0,d2             */
+        0x4E92,                         /* jsr (a2)                 */
+        0x4A82,                         /* tst.l d2                 */
+        0x66F4,                         /* bne.b loop               */
+        0x2015,                         /* move.l (a5),d0           */
+        0x224D,                         /* movea.l a5,a1            */
+        0x2C78, 0x0004,                 /* movea.l 4.w,a6           */
+        0x4EAE, 0xFF2E,                 /* jsr FreeMem(a6)          */
+        0x2003,                         /* move.l d3,d0             */
+        0x4CDF, 0x3C0C,                 /* movem.l (sp)+,d2-d3/a2-a5 */
+        0x4E75                          /* rts                      */
+    };
+    ULONG s = ctx->fmt_stub, i;
+
+    if (s)
+        return s;
+    if (!(s = M68KEmu_HeapAlloc(ctx, sizeof(code), MEMF_CLEAR)))
+        return 0;
+    for (i = 0; i < sizeof(code) / sizeof(code[0]); i++)
+        m68k_write16(ctx, s + i * 2, code[i]);
+    ctx->fmt_stub = s;
+    return s;
+}
+
+/* The text of fmt with its arguments, written to out when it fits in room;
+   returns its length */
+static ULONG fmt_text(const char *fmt, IPTR *args, int n, char *out, ULONG room)
+{
+    const char *f = fmt;
+    ULONG len = 0;
+    int ai = 0;
+
+    while (*f)
+    {
+        if (*f == '%' && f[1] != '%')
         {
-            /* Capture the full specifier into spec[] */
             const char *start = f++;
+            char spec[32], *dst;
+            int slen, r;
+
             while (*f == '-' || *f == '+' || *f == ' ' || *f == '0' ||
                    (*f >= '1' && *f <= '9') || *f == '.') f++;
             if (*f == 'l') f++;
             if (*f) f++;
-            char spec[32];
-            int slen = f - start;
+            slen = f - start;
             if (slen >= (int)sizeof(spec)) slen = (int)sizeof(spec) - 1;
             memcpy(spec, start, slen);
             spec[slen] = 0;
-
-            if (ai < n)
-                out += snprintf(out, 1020 - (out - buf), spec, args[ai++]);
-            else
-                out += snprintf(out, 1020 - (out - buf), "%s", spec);
+            dst = out && len < room ? out + len : NULL;
+            r = ai < n ? snprintf(dst, dst ? room - len : 0, spec, args[ai++])
+                       : snprintf(dst, dst ? room - len : 0, "%s", spec);
+            if (r > 0) len += r;
         }
         else
         {
-            *out++ = *f++;
+            if (out && len + 1 < room) out[len] = *f;
+            len++;
+            f += *f == '%' ? 2 : 1;
         }
     }
-    *out = 0;
+    if (out && room) out[len < room ? len : room - 1] = 0;
+    return len;
+}
 
+/* -522: RawDoFmt(A0=fmt, A1=dataStream, A2=putProc, A3=putData) -> D0=next data */
+static IPTR thunk_exec_RawDoFmt(struct M68KEmuContext *ctx, void *cpu)
+{
+    const char *fmt = (const char *)THUNK_PTR(0);
+    ULONG m68k_args = THUNK_A(1), putProc = THUNK_A(2), used = 0, len, blk, stub;
+    UBYTE *putData = (UBYTE *)THUNK_PTR(3);
+    IPTR *args;
+    char *buf;
+    int n = 0;
+
+    if (!fmt) return 0;
+    args = m68k_args ? translate_fmt_args(ctx, fmt, m68k_args, &n, &used) : NULL;
+    len = fmt_text(fmt, args, n, NULL, 0);
+    if ((buf = AllocMem(len + 1, MEMF_ANY)))
+        fmt_text(fmt, args, n, buf, len + 1);
     if (args) FreeMem(args, n * sizeof(IPTR));
+    if (!buf) return 0;
 
-    if (putData)
-        memcpy(putData, buf, out - buf + 1);
+    if (putProc)
+    {
+        if (m68k_in_mem(ctx, putProc, 2) && (stub = fmt_stub(ctx)) &&
+            (blk = M68KEmu_HeapAlloc(ctx, len + 5, 0)))
+        {
+            struct M68KTaskState *ts = m68k_ts(ctx);
 
-    return (IPTR)(out - buf);
+            m68k_write32(ctx, blk, len + 5);
+            memcpy(ctx->mem + blk + 4, buf, len + 1);
+            ts->tail_pc = stub;
+            ts->tail_d0 = m68k_args + used;
+            ts->tail_a0 = blk;
+            ts->tail_a6 = THUNK_A(6);
+        }
+    }
+    else if (putData)
+        memcpy(putData, buf, len + 1);
+    FreeMem(buf, len + 1);
+    return m68k_args + used;
 }
 
 /* The program's semaphores live in its memory and work between its tasks
@@ -1026,6 +1208,7 @@ static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w)
     m68k_write16(ctx, mw + M68K_WIN_MOUSEY,   (UWORD)w->MouseY);
     m68k_write16(ctx, mw + M68K_WIN_MOUSEX,   (UWORD)w->MouseX);
     m68k_write32(ctx, mw + M68K_WIN_FLAGS,    w->Flags);
+    m68k_write32(ctx, mw + M68K_WIN_FLAGS_SYNC, w->Flags);
     ctx->mem[mw + M68K_WIN_BORDERLEFT]   = w->BorderLeft;
     ctx->mem[mw + M68K_WIN_BORDERTOP]    = w->BorderTop;
     ctx->mem[mw + M68K_WIN_BORDERRIGHT]  = w->BorderRight;
@@ -1228,6 +1411,7 @@ static IPTR thunk_intuition_CloseWindow(struct M68KEmuContext *ctx, void *cpu)
 static IPTR thunk_exec_WaitPort(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG mp = THUNK_A(0);
+    window_flags_in(ctx);
     if (ctx->trace_calls) bug("[m68kemu] WaitPort: m68k_port=0x%lx\n", (unsigned long)mp);
     struct MsgPort *port = (struct MsgPort *)shadow_lookup(ctx, mp);
     if (ctx->trace_calls) bug("[m68kemu] WaitPort: native=%p\n", port);
@@ -1236,9 +1420,18 @@ static IPTR thunk_exec_WaitPort(struct M68KEmuContext *ctx, void *cpu)
     if (port)
     {
         struct Message *m;
-        m68k_gil_release(ctx);
-        m = WaitPort(port);
-        m68k_gil_obtain(ctx);
+        if (port->mp_SigTask == FindTask(NULL) && port->mp_Flags == PA_SIGNAL)
+        {
+            while (IsListEmpty(&port->mp_MsgList))
+                m68k_wait_sigs(ctx, 1UL << port->mp_SigBit);
+            m = (struct Message *)port->mp_MsgList.lh_Head;
+        }
+        else
+        {
+            m68k_gil_release(ctx);
+            m = WaitPort(port);
+            m68k_gil_obtain(ctx);
+        }
         if (ctx->trace_calls) bug("[m68kemu] WaitPort: woke with %p (sigbit %d task %p)\n", m, port->mp_SigBit, port->mp_SigTask);
         return m ? (IPTR)mp : 0;        /* non-zero; the program then calls GetMsg */
     }
@@ -1251,9 +1444,39 @@ static ULONG imsg_to_m68k(struct M68KEmuContext *ctx, struct IntuiMessage *imsg)
 static void gadget_strinfo_sync(struct M68KEmuContext *ctx);
 static ULONG notifymsg_to_m68k(struct M68KEmuContext *ctx, struct NotifyMessage *nm);
 
+
+/* Programs set and clear WFLG_RMBTRAP and WFLG_REPORTMOUSE in Window->Flags
+   themselves. Before the program waits, the bits it changed in the shadow
+   since the emulator last wrote it go to the native window, bit by bit, as
+   Intuition's input handler changes other bits of the same word; then the
+   shadow is written from the native window again. */
+#define M68K_WIN_PROGRAM_FLAGS (WFLG_RMBTRAP | WFLG_REPORTMOUSE)
+static void window_flags_in(struct M68KEmuContext *ctx)
+{
+    for (UWORD i = 0; i < ctx->num_shadows; i++)
+    {
+        struct Window *w = (struct Window *)ctx->shadow_map[i].native_ptr;
+        ULONG mw = ctx->shadow_map[i].m68k_addr, mf, last, set, clear;
+
+        if (ctx->shadow_map[i].type != 1 || !w)
+            continue;
+        mf = m68k_read32(ctx, mw + M68K_WIN_FLAGS);
+        last = m68k_read32(ctx, mw + M68K_WIN_FLAGS_SYNC);
+        set = mf & ~last & M68K_WIN_PROGRAM_FLAGS;
+        clear = last & ~mf & M68K_WIN_PROGRAM_FLAGS;
+        if (set)
+            AROS_ATOMIC_OR(w->Flags, set);
+        if (clear)
+            AROS_ATOMIC_AND(w->Flags, ~clear);
+        m68k_write32(ctx, mw + M68K_WIN_FLAGS, w->Flags);
+        m68k_write32(ctx, mw + M68K_WIN_FLAGS_SYNC, w->Flags);
+    }
+}
+
 static IPTR thunk_exec_GetMsg(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG mp = THUNK_A(0), mmsg;
+    window_flags_in(ctx);
     struct MsgPort *port = (struct MsgPort *)shadow_lookup(ctx, mp);
     if (!port)
         return m68k_port_is_68k(ctx, mp) ? m68k_port_getmsg(ctx, mp) : 0;
@@ -1262,6 +1485,8 @@ static IPTR thunk_exec_GetMsg(struct M68KEmuContext *ctx, void *cpu)
     if (!imsg) return 0;
     if ((mmsg = m68k_msg_from_native(ctx, &imsg->ExecMessage)))
         return mmsg;
+    if (ctx->wb_startup && &imsg->ExecMessage == ctx->wb_startup)
+        return m68k_wbstartup_in(ctx, &imsg->ExecMessage);
     {
         struct NotifyMessage *nm = (struct NotifyMessage *)imsg;
         if (nm->nm_Class == NOTIFY_CLASS && nm->nm_Code == NOTIFY_CODE)
@@ -1323,8 +1548,11 @@ static IPTR thunk_exec_ReplyMsg(struct M68KEmuContext *ctx, void *cpu)
     ULONG m_msg = THUNK_A(1);
     const struct M68KStructLayout *nml = shadow_find_layout("NotifyMessage");
     BOOL notify = FALSE;
-    struct Message *msg = (struct Message *)shadow_lookup(ctx, m_msg);
+    struct Message *msg;
 
+    if (m68k_wbstartup_reply(ctx, m_msg))
+        return 0;
+    msg = (struct Message *)shadow_lookup(ctx, m_msg);
     for (UWORD i = 0; nml && i < ctx->num_shadows; i++)
         if (ctx->shadow_map[i].m68k_addr == m_msg && ctx->shadow_map[i].type == nml->shadow_type)
             notify = TRUE;
@@ -1356,12 +1584,10 @@ static IPTR thunk_exec_PutMsg_m(struct M68KEmuContext *ctx, void *cpu)
 /* exec -318: Wait(D0=signalSet): the program's other tasks run meanwhile */
 static IPTR thunk_exec_Wait_m(struct M68KEmuContext *ctx, void *cpu)
 {
-    ULONG sigs = THUNK_D(0), r;
+    ULONG sigs = THUNK_D(0);
 
-    m68k_gil_release(ctx);
-    r = Wait(sigs);
-    m68k_gil_obtain(ctx);
-    return r;
+    window_flags_in(ctx);
+    return m68k_wait_sigs(ctx, sigs);
 }
 
 /* ── DOS notification: the request the handler sees is a native copy ──
@@ -1749,6 +1975,7 @@ const struct M68KThunkEntry m68kemu_thunks_exec[] = {
     { 552, thunk_exec_OpenLibrary },
     { 408, thunk_exec_OldOpenLibrary },
     { 498, thunk_exec_OpenResource },
+    { 180, thunk_exec_Cause },
     { 168, thunk_exec_AddIntServer },
     { 174, thunk_exec_RemIntServer },
     { 414, thunk_exec_CloseLibrary },
@@ -1921,7 +2148,8 @@ static IPTR thunk_dos_FPuts(struct M68KEmuContext *ctx, void *cpu)
 /* -198: Delay(D1=timeout) */
 static IPTR thunk_dos_Delay(struct M68KEmuContext *ctx, void *cpu)
 {
-    Delay((ULONG)THUNK_D(1));
+    window_flags_in(ctx);
+    m68k_delay_ticks(ctx, (ULONG)THUNK_D(1));
     return 0;
 }
 
@@ -2456,7 +2684,8 @@ static struct ExAllControl *exall_control(struct M68KEmuContext *ctx, ULONG m)
 
 static IPTR thunk_dos_ExAll(struct M68KEmuContext *ctx, void *cpu)
 {
-    static const UBYTE recsize[8] = { 8, 8, 12, 16, 20, 32, 36, 40 };
+    /* m68k ExAllData sizes per type; ED_SIZE64 adds ed_Size64 at 40 */
+    static const UBYTE recsize[9] = { 8, 8, 12, 16, 20, 32, 36, 40, 48 };
     BPTR lock = m68k_bptr_in(ctx, THUNK_D(1));
     ULONG mbuf = THUNK_D(2), size = THUNK_D(3), type = THUNK_D(4), mctl = THUNK_D(5);
     struct ExAllControl *eac = exall_control(ctx, mctl);
@@ -2470,7 +2699,8 @@ static IPTR thunk_dos_ExAll(struct M68KEmuContext *ctx, void *cpu)
         SetIoErr(ERROR_BAD_NUMBER);
         return DOSFALSE;
     }
-    if (type > 7) type = 7;
+    /* Unknown types get everything up to ED_OWNER, as before */
+    if (type > ED_SIZE64) type = ED_OWNER;
     if (!type) type = 1;
     if (!m68k_read32(ctx, mctl + 4))
         eac->eac_LastKey = 0;
@@ -2513,6 +2743,11 @@ static IPTR thunk_dos_ExAll(struct M68KEmuContext *ctx, void *cpu)
         {
             m68k_write16(ctx, p + 36, ed->ed_OwnerUID);
             m68k_write16(ctx, p + 38, ed->ed_OwnerGID);
+        }
+        if (type >= ED_SIZE64)
+        {
+            m68k_write32(ctx, p + 40, (ULONG)(ed->ed_Size64 >> 32));
+            m68k_write32(ctx, p + 44, (ULONG)ed->ed_Size64);
         }
         if (prev)
             m68k_write32(ctx, prev, p);
@@ -2761,18 +2996,9 @@ static IPTR thunk_dos_Delay_m(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG ticks = THUNK_D(1);
 
-    m68k_gil_release(ctx);
-    Delay(ticks);
-    m68k_gil_obtain(ctx);
+    window_flags_in(ctx);
+    m68k_delay_ticks(ctx, ticks);
     return 0;
-}
-
-static IPTR thunk_dos_CreateProc(struct M68KEmuContext *ctx, void *cpu)
-{
-    struct MsgPort *port = CreateProc((CONST_STRPTR)m68k_to_host(ctx, THUNK_D(1)),
-                                     THUNK_D(2), m68k_bptr_in(ctx, THUNK_D(3)), THUNK_D(4));
-    if (!port) return 0;
-    return shadow_create_by_name(ctx, "MsgPort", port);
 }
 
 /* ── DOS: CLI Init ── */
@@ -3141,7 +3367,7 @@ const struct M68KThunkEntry m68kemu_thunks_dos[] = {
     { 570, thunk_dos_SetProgramName_m },
     { 582, thunk_dos_SetPrompt_m },
     { 492, m68k_dos_Cli },
-    { 138, thunk_dos_CreateProc },
+    { 138, m68k_dos_CreateProc },
     { 930, thunk_dos_CliInitNewcli },
     { 936, thunk_dos_CliInitRun },
     { 150, thunk_dos_LoadSeg },
@@ -3550,6 +3776,19 @@ static void translate_intuitext(struct M68KEmuContext *ctx, ULONG m68k_it,
     native->LeftEdge  = (WORD)m68k_read16(ctx, m68k_it + M68K_IT_LEFTEDGE);
     native->TopEdge   = (WORD)m68k_read16(ctx, m68k_it + M68K_IT_TOPEDGE);
     native->ITextFont = NULL;
+    ULONG m68k_ta = m68k_read32(ctx, m68k_it + M68K_IT_ITEXTFONT);
+    if (m68k_ta && m68k_in_mem(ctx, m68k_ta, M68K_SIZEOF_TEXTATTR) && m68k_read32(ctx, m68k_ta + M68K_TA_NAME))
+    {
+        struct TextAttr *ta = (struct TextAttr *)AllocMem(sizeof(struct TextAttr), MEMF_CLEAR);
+        if (ta)
+        {
+            ta->ta_Name  = (STRPTR)m68k_to_host(ctx, m68k_read32(ctx, m68k_ta + M68K_TA_NAME));
+            ta->ta_YSize = m68k_read16(ctx, m68k_ta + M68K_TA_YSIZE);
+            ta->ta_Style = ctx->mem[m68k_ta + M68K_TA_STYLE];
+            ta->ta_Flags = ctx->mem[m68k_ta + M68K_TA_FLAGS];
+            native->ITextFont = ta;
+        }
+    }
     ULONG m68k_text = m68k_read32(ctx, m68k_it + M68K_IT_ITEXT);
     native->IText     = m68k_text ? (STRPTR)m68k_to_host(ctx, m68k_text) : NULL;
     ULONG m68k_next = m68k_read32(ctx, m68k_it + M68K_IT_NEXTTEXT);
@@ -3563,7 +3802,14 @@ static void translate_intuitext(struct M68KEmuContext *ctx, ULONG m68k_it,
 static void free_intuitext_chain(struct IntuiText *it)
 {
     struct IntuiText *n;
-    for (n = it->NextText; n; ) { struct IntuiText *tmp = n->NextText; FreeMem(n, sizeof(struct IntuiText)); n = tmp; }
+    if (it->ITextFont) FreeMem(it->ITextFont, sizeof(struct TextAttr));
+    for (n = it->NextText; n; )
+    {
+        struct IntuiText *tmp = n->NextText;
+        if (n->ITextFont) FreeMem(n->ITextFont, sizeof(struct TextAttr));
+        FreeMem(n, sizeof(struct IntuiText));
+        n = tmp;
+    }
 }
 
 /* intuition -348: AutoRequest(A0=win, A1=body, A2=posText, A3=negText, D0-D3) */
@@ -3579,6 +3825,8 @@ static IPTR thunk_intuition_AutoRequest(struct M68KEmuContext *ctx, void *cpu)
     BOOL result = AutoRequest(win, m_body ? &body : NULL, m_pos ? &pos : NULL, m_neg ? &neg : NULL,
                               THUNK_D(0), THUNK_D(1), THUNK_D(2), THUNK_D(3));
     if (m_body) free_intuitext_chain(&body);
+    if (m_pos) free_intuitext_chain(&pos);
+    if (m_neg) free_intuitext_chain(&neg);
     return (IPTR)result;
 }
 
@@ -3885,6 +4133,20 @@ static IPTR thunk_gfx_ScrollRaster(struct M68KEmuContext *ctx, void *cpu)
 }
 
 /* ── Intuition manual thunks (shadow struct) ── */
+
+/* -330: IntuiTextLength(A0=itext) -> D0=width */
+static IPTR thunk_intuition_IntuiTextLength(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG m68k_it = THUNK_A(0);
+    struct IntuiText it;
+    LONG w;
+    if (!m68k_it) return 0;
+    memset(&it, 0, sizeof(it));
+    translate_intuitext(ctx, m68k_it, &it, 1);
+    w = IntuiTextLength(&it);
+    free_intuitext_chain(&it);
+    return (IPTR)(ULONG)w;
+}
 
 /* -216: PrintIText(A0=rp, A1=itext, D0=left, D1=top) */
 static IPTR thunk_intuition_PrintIText(struct M68KEmuContext *ctx, void *cpu)
@@ -5411,6 +5673,7 @@ const struct M68KThunkEntry m68kemu_thunks_intuition_manual[] = {
     { 186, thunk_intuition_OnGadget_t },
     { 174, thunk_intuition_OffGadget_t },
     { 216, thunk_intuition_PrintIText },
+    { 330, thunk_intuition_IntuiTextLength },
     { 114, thunk_intuition_DrawImage },
     { 108, thunk_intuition_DrawBorder },
     { 204, thunk_intuition_OpenWindow },
@@ -5488,78 +5751,170 @@ static IPTR thunk_exec_CacheControl_m(struct M68KEmuContext *ctx, void *cpu)
     return old;
 }
 
-/* Allocate() and Deallocate() on a MemHeader the program built in its own
-   memory (C runtimes keep their malloc pools this way): the chunk list is
-   m68k (mc_Next, mc_Bytes) and blocks are 8-byte aligned, as in exec */
+/* Allocate() and Deallocate() on a classic private MemHeader. Its bounds
+   fields need not be initialized: Exec's private-pool example sets only
+   mh_First and mh_Free. Validate the actual chunks in containment instead.
+   A chunk and each rounded allocation are multiples of eight bytes. */
 #define M68K_MEM_BLOCKSIZE 8
+
+static BOOL memheader_range(struct M68KEmuContext *ctx, ULONG addr, ULONG size)
+{
+    return ctx->mem && addr && addr < ctx->mem_size && size <= ctx->mem_size - addr;
+}
+
+static BOOL memheader_write(struct M68KEmuContext *ctx, ULONG addr)
+{
+    return memheader_range(ctx, addr, 4) && m68k_write_allowed(ctx, addr);
+}
+
+/* Both spans have already passed memheader_range(), so their ends fit. */
+static BOOL memheader_overlap(ULONG a, ULONG asize, ULONG b, ULONG bsize)
+{
+    return a < b + bsize && b < a + asize;
+}
+
+struct MemHeaderScan
+{
+    ULONG available;
+    ULONG prev, prev_bytes;
+    ULONG chunk, bytes, next;
+};
+
+/* Find the first fit (block == 0) or free insertion point while validating
+   the list. Keep its neighbours so neither caller walks the list again.
+   The tail is checked before mutation, even after an early fit. */
+static BOOL memheader_scan(struct M68KEmuContext *ctx, ULONG mh,
+                           ULONG size, ULONG block, struct MemHeaderScan *scan)
+{
+    ULONG mc, next, end = 0, sum = 0, prev = 0, prev_bytes = 0;
+    ULONG left = ctx->mem_size / M68K_MEM_BLOCKSIZE;
+    BOOL selected = FALSE;
+
+    if (!memheader_range(ctx, mh, M68K_SIZEOF_MEMHEADER) ||
+        !memheader_write(ctx, mh + M68K_MH_FIRST) ||
+        !memheader_write(ctx, mh + M68K_MH_FREE))
+        return FALSE;
+    memset(scan, 0, sizeof(*scan));
+    scan->available = m68k_read32(ctx, mh + M68K_MH_FREE);
+    for (mc = m68k_read32(ctx, mh + M68K_MH_FIRST); mc; mc = next)
+    {
+        ULONG bytes;
+
+        if (!left || (mc & (M68K_MEM_BLOCKSIZE - 1)) || mc < end ||
+            !memheader_range(ctx, mc, M68K_MEM_BLOCKSIZE))
+            return FALSE;
+        --left;
+        bytes = m68k_read32(ctx, mc + 4);
+        next = m68k_read32(ctx, mc);
+        if (!bytes || (bytes & (M68K_MEM_BLOCKSIZE - 1)) ||
+            !memheader_range(ctx, mc, bytes) ||
+            memheader_overlap(mc, bytes, mh, M68K_SIZEOF_MEMHEADER) ||
+            !memheader_write(ctx, mc) || !memheader_write(ctx, mc + 4) ||
+            bytes > scan->available - sum)
+            return FALSE;
+        sum += bytes;
+        end = mc + bytes;
+        if (!selected && (block ? mc >= block : bytes >= size))
+        {
+            scan->prev = prev;
+            scan->prev_bytes = prev_bytes;
+            scan->chunk = mc;
+            scan->bytes = bytes;
+            scan->next = next;
+            selected = TRUE;
+        }
+        prev = mc;
+        prev_bytes = bytes;
+    }
+    if (!selected)
+    {
+        scan->prev = prev;
+        scan->prev_bytes = prev_bytes;
+    }
+    /* Exec permits an overstated mh_Free. The running sum is bounded by
+       it above; it need not equal it. Preserve the caller's surplus. */
+    return TRUE;
+}
 
 /* exec -186: Allocate(A0=memHeader, D0=byteSize) -> D0=block */
 static IPTR thunk_exec_Allocate_m(struct M68KEmuContext *ctx, void *cpu)
 {
-    ULONG mh = THUNK_A(0), size = THUNK_D(0), prev, mc;
-    int guard = 0;
+    ULONG mh = THUNK_A(0), size = THUNK_D(0), link;
+    struct MemHeaderScan scan;
 
-    if (!mh || !size)
+    if (!size || size > (ULONG)-1 - (M68K_MEM_BLOCKSIZE - 1))
         return 0;
-    size = (size + M68K_MEM_BLOCKSIZE - 1) & ~(M68K_MEM_BLOCKSIZE - 1);
-    if (m68k_read32(ctx, mh + M68K_MH_FREE) < size)
+    size = (size + M68K_MEM_BLOCKSIZE - 1) & ~(ULONG)(M68K_MEM_BLOCKSIZE - 1);
+    if (!memheader_scan(ctx, mh, size, 0, &scan) ||
+        scan.available < size || !scan.chunk)
         return 0;
-    for (prev = mh + M68K_MH_FIRST, mc = m68k_read32(ctx, prev);
-         mc && guard++ < 1000000;
-         prev = mc, mc = m68k_read32(ctx, mc))
+    link = scan.prev ? scan.prev : mh + M68K_MH_FIRST;
+    if (scan.bytes == size)
+        m68k_write32(ctx, link, scan.next);
+    else
     {
-        ULONG bytes = m68k_read32(ctx, mc + 4);
+        ULONG tail = scan.chunk + size;
 
-        if (bytes < size)
-            continue;
-        if (bytes == size)
-            m68k_write32(ctx, prev, m68k_read32(ctx, mc));
-        else
-        {
-            m68k_write32(ctx, mc + size, m68k_read32(ctx, mc));
-            m68k_write32(ctx, mc + size + 4, bytes - size);
-            m68k_write32(ctx, prev, mc + size);
-        }
-        m68k_write32(ctx, mh + M68K_MH_FREE, m68k_read32(ctx, mh + M68K_MH_FREE) - size);
-        return mc;
+        if (!memheader_write(ctx, tail) || !memheader_write(ctx, tail + 4))
+            return 0;
+        m68k_write32(ctx, tail, scan.next);
+        m68k_write32(ctx, tail + 4, scan.bytes - size);
+        m68k_write32(ctx, link, tail);
     }
-    return 0;
+    m68k_write32(ctx, mh + M68K_MH_FREE, scan.available - size);
+    return scan.chunk;
 }
 
-/* exec -192: Deallocate(A0=memHeader, A1=block, D0=byteSize) */
+/* exec -192: Deallocate(A0=memHeader, A1=block, D0=byteSize). As Exec,
+   include the whole caller span when rounding its start down and end up. */
 static IPTR thunk_exec_Deallocate_m(struct M68KEmuContext *ctx, void *cpu)
 {
-    ULONG mh = THUNK_A(0), blk = THUNK_A(1), size = THUNK_D(0), prev, mc, end, freed;
-    int guard = 0;
+    ULONG mh = THUNK_A(0), blk = THUNK_A(1), size = THUNK_D(0), offset;
+    ULONG end, freed, insert, next;
+    struct MemHeaderScan scan;
 
-    if (!mh || !blk || !size)
+    if (!blk || !size)
         return 0;
-    size = (size + (blk & (M68K_MEM_BLOCKSIZE - 1)) + M68K_MEM_BLOCKSIZE - 1) & ~(M68K_MEM_BLOCKSIZE - 1);
-    blk &= ~(M68K_MEM_BLOCKSIZE - 1);
+    offset = blk & (M68K_MEM_BLOCKSIZE - 1);
+    if (size > (ULONG)-1 - offset - (M68K_MEM_BLOCKSIZE - 1))
+        return 0;
+    size = (size + offset + M68K_MEM_BLOCKSIZE - 1) & ~(ULONG)(M68K_MEM_BLOCKSIZE - 1);
+    blk &= ~(ULONG)(M68K_MEM_BLOCKSIZE - 1);
+    if (!memheader_range(ctx, blk, size) ||
+        !memheader_scan(ctx, mh, 0, blk, &scan) ||
+        memheader_overlap(blk, size, mh, M68K_SIZEOF_MEMHEADER) ||
+        size > (ULONG)-1 - scan.available)
+        return 0;
     end = blk + size;
     freed = size;
+    if ((scan.prev && blk < scan.prev + scan.prev_bytes) ||
+        (scan.chunk && end > scan.chunk))
+        return 0;                       /* overlap, including a double free */
 
-    for (prev = mh + M68K_MH_FIRST, mc = m68k_read32(ctx, prev);
-         mc && mc < blk && guard++ < 1000000;
-         prev = mc, mc = m68k_read32(ctx, mc))
-        ;
-    /* merge with the following chunk */
-    if (mc && mc == end)
+    insert = blk;
+    next = scan.chunk;
+    if (scan.chunk && scan.chunk == end)
     {
-        size += m68k_read32(ctx, mc + 4);
-        mc = m68k_read32(ctx, mc);
+        if (scan.bytes > (ULONG)-1 - size)
+            return 0;
+        size += scan.bytes;
+        next = scan.next;
     }
-    m68k_write32(ctx, blk, mc);
-    m68k_write32(ctx, blk + 4, size);
-    /* merge with the preceding chunk */
-    if (prev != mh + M68K_MH_FIRST && prev + m68k_read32(ctx, prev + 4) == blk)
+    if (scan.prev && scan.prev + scan.prev_bytes == blk)
     {
-        m68k_write32(ctx, prev, mc);
-        m68k_write32(ctx, prev + 4, m68k_read32(ctx, prev + 4) + size);
+        if (scan.prev_bytes > (ULONG)-1 - size)
+            return 0;
+        insert = scan.prev;
+        size += scan.prev_bytes;
     }
-    else
-        m68k_write32(ctx, prev, blk);
-    m68k_write32(ctx, mh + M68K_MH_FREE, m68k_read32(ctx, mh + M68K_MH_FREE) + freed);
+    if (!memheader_write(ctx, insert) || !memheader_write(ctx, insert + 4))
+        return 0;
+
+    m68k_write32(ctx, insert, next);
+    m68k_write32(ctx, insert + 4, size);
+    if (insert != scan.prev)
+        m68k_write32(ctx, scan.prev ? scan.prev : mh + M68K_MH_FIRST, insert);
+    m68k_write32(ctx, mh + M68K_MH_FREE, scan.available + freed);
     return 0;
 }
 
@@ -6564,7 +6919,19 @@ static IPTR thunk_gfx_BltBitMap_m(struct M68KEmuContext *ctx, void *cpu)
     return (IPTR)planes;
 }
 
+/* graphics -270: WaitTOF(); the wait of a program that polls instead of reading a port */
+static IPTR thunk_gfx_WaitTOF_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    window_flags_in(ctx);
+    if (m68k_cia_armed(ctx))
+        m68k_delay_ticks(ctx, 1);
+    else
+        WaitTOF();
+    return 0;
+}
+
 const struct M68KThunkEntry m68kemu_thunks_graphics_manual[] = {
+    { 270, thunk_gfx_WaitTOF_m },
     { 30, thunk_gfx_BltBitMap_m },
     { 282, thunk_gfx_InitArea_m },
     { 468, thunk_gfx_InitTmpRas_m },

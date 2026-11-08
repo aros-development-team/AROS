@@ -62,6 +62,20 @@
 #define SCSI_STATUS_CHECK_CONDITION 0x02
 #define SCSI_STATUS_BUSY            0x08
 
+/* Media state reported by atapi_TestUnitOK() */
+#define ATAPI_MEDIA_PRESENT         0   /* unit ready, or a sense other than NOT READY */
+#define ATAPI_MEDIA_ABSENT          1   /* NOT READY, other than becoming ready */
+#define ATAPI_MEDIA_BECOMING_READY  2   /* NOT READY, LOGICAL UNIT IS IN PROCESS OF BECOMING READY */
+#define ATAPI_MEDIA_UNKNOWN         3   /* command failed without usable sense data */
+
+/*
+ * How long ata_Identify() waits for a drive that reports BECOMING READY
+ * (e.g. still spinning up the boot disc after the bus reset), so the
+ * initial media state is known before the unit is published.
+ */
+#define ATAPI_SPINUP_POLLS          20
+#define ATAPI_SPINUP_DELAY          500000  /* microseconds per poll */
+
 /*
    Don't blame me for information redundance here!
 

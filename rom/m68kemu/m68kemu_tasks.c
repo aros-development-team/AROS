@@ -24,6 +24,7 @@
 #include <exec/memory.h>
 #include <exec/ports.h>
 #include <exec/semaphores.h>
+#include <devices/timer.h>
 #include <dos/dos.h>
 #include <dos/dostags.h>
 #include <dos/dosextens.h>
@@ -33,6 +34,7 @@
 #include <string.h>
 
 #include "m68kemu_intern.h"
+#include "m68kemu_shadow.h"
 #include "m68kemu_thunks.h"
 #include "m68kemu_offsets.h"
 
@@ -100,6 +102,139 @@ void m68k_ts_main(struct M68KEmuContext *ctx)
     ctx->tasks[0].running = TRUE;
 }
 
+/* ── waiting: CIA timers due meanwhile run their vector's code here, as
+   the interrupt would have ── */
+static BOOL cia_wait_req(struct M68KTaskState *ts)
+{
+    if (ts->cia_req)
+        return TRUE;
+    if (!(ts->cia_port = CreateMsgPort()))
+        return FALSE;
+    ts->cia_req = (struct timerequest *)CreateIORequest(ts->cia_port, sizeof(struct timerequest));
+    ts->delay_req = (struct timerequest *)CreateIORequest(ts->cia_port, sizeof(struct timerequest));
+    if (!ts->cia_req || !ts->delay_req ||
+        OpenDevice((CONST_STRPTR)"timer.device", UNIT_MICROHZ, (struct IORequest *)ts->cia_req, 0))
+    {
+        if (ts->cia_req) DeleteIORequest((struct IORequest *)ts->cia_req);
+        if (ts->delay_req) DeleteIORequest((struct IORequest *)ts->delay_req);
+        DeleteMsgPort(ts->cia_port);
+        ts->cia_req = ts->delay_req = NULL;
+        ts->cia_port = NULL;
+        return FALSE;
+    }
+    ts->delay_req->tr_node.io_Device = ts->cia_req->tr_node.io_Device;
+    ts->delay_req->tr_node.io_Unit = ts->cia_req->tr_node.io_Unit;
+    return TRUE;
+}
+
+void m68k_ts_timers_free(struct M68KTaskState *ts)
+{
+    if (!ts->cia_req)
+        return;
+    if (!CheckIO((struct IORequest *)ts->cia_req)) AbortIO((struct IORequest *)ts->cia_req);
+    WaitIO((struct IORequest *)ts->cia_req);
+    if (!CheckIO((struct IORequest *)ts->delay_req)) AbortIO((struct IORequest *)ts->delay_req);
+    WaitIO((struct IORequest *)ts->delay_req);
+    CloseDevice((struct IORequest *)ts->cia_req);
+    DeleteIORequest((struct IORequest *)ts->cia_req);
+    DeleteIORequest((struct IORequest *)ts->delay_req);
+    DeleteMsgPort(ts->cia_port);
+    ts->cia_req = ts->delay_req = NULL;
+    ts->cia_port = NULL;
+}
+
+static void cia_fire_due(struct M68KEmuContext *ctx, struct M68KTaskState *ts)
+{
+    ULONG code, data, regs[15];
+    int n = 0;
+
+    while (n++ < 4 && m68k_cia_due(ctx, &code, &data))
+    {
+        memset(regs, 0, sizeof(regs));
+        regs[9] = data;                  /* A1 */
+        regs[13] = code;                 /* A5 */
+        regs[14] = ctx->m68k_sysbase;    /* A6 */
+        M68KEmu_Call68k(ctx, ts->cur_cpu, code, regs);
+    }
+}
+
+/* Wait() for sigs, or until the request completes, serving the timers */
+static ULONG wait_core(struct M68KEmuContext *ctx, ULONG sigs, struct IORequest *until)
+{
+    struct M68KTaskState *ts = m68k_ts(ctx);
+    ULONG r, portsig;
+
+    if (!m68k_cia_armed(ctx) || !cia_wait_req(ts))
+    {
+        m68k_gil_release(ctx);
+        if (until)
+        {
+            WaitIO(until);
+            r = 0;
+        }
+        else
+            r = Wait(sigs);
+        m68k_gil_obtain(ctx);
+        return r;
+    }
+    portsig = 1UL << ts->cia_port->mp_SigBit;
+    for (;;)
+    {
+        ULONG us = m68k_cia_next_us(ctx);
+
+        if (us == 0)
+        {
+            cia_fire_due(ctx, ts);
+            if (until && CheckIO(until)) { WaitIO(until); return 0; }
+            continue;
+        }
+        if (us > 2000000) us = 2000000;
+        ts->cia_req->tr_node.io_Command = TR_ADDREQUEST;
+        ts->cia_req->tr_time.tv_secs = us / 1000000;
+        ts->cia_req->tr_time.tv_micro = us % 1000000;
+        SendIO((struct IORequest *)ts->cia_req);
+        m68k_gil_release(ctx);
+        r = Wait(sigs | portsig);
+        m68k_gil_obtain(ctx);
+        if (!CheckIO((struct IORequest *)ts->cia_req)) AbortIO((struct IORequest *)ts->cia_req);
+        WaitIO((struct IORequest *)ts->cia_req);
+        cia_fire_due(ctx, ts);
+        if (until && CheckIO(until)) { WaitIO(until); SetSignal(0, portsig); return 0; }
+        if (r & sigs) return r & sigs;
+        if (!m68k_cia_armed(ctx))
+        {
+            m68k_gil_release(ctx);
+            if (until) { WaitIO(until); r = 0; }
+            else r = Wait(sigs);
+            m68k_gil_obtain(ctx);
+            return r;
+        }
+    }
+}
+
+ULONG m68k_wait_sigs(struct M68KEmuContext *ctx, ULONG sigs)
+{
+    return wait_core(ctx, sigs, NULL);
+}
+
+void m68k_delay_ticks(struct M68KEmuContext *ctx, ULONG ticks)
+{
+    struct M68KTaskState *ts = m68k_ts(ctx);
+
+    if (!m68k_cia_armed(ctx) || !cia_wait_req(ts))
+    {
+        m68k_gil_release(ctx);
+        Delay(ticks);
+        m68k_gil_obtain(ctx);
+        return;
+    }
+    ts->delay_req->tr_node.io_Command = TR_ADDREQUEST;
+    ts->delay_req->tr_time.tv_secs = ticks / 50;
+    ts->delay_req->tr_time.tv_micro = (ticks % 50) * 20000;
+    SendIO((struct IORequest *)ts->delay_req);
+    wait_core(ctx, 0, (struct IORequest *)ts->delay_req);
+}
+
 /* this task is done with the program: its CPUs and signal go */
 void m68k_ts_drop(struct M68KEmuContext *ctx)
 {
@@ -107,6 +242,7 @@ void m68k_ts_drop(struct M68KEmuContext *ctx)
 
     if (!ts)
         return;
+    m68k_ts_timers_free(ts);
     M68KEmu_FreeNestCpus(ctx, ts);
     if (ts->semsig >= 0)
         FreeSignal(ts->semsig);
@@ -478,9 +614,7 @@ ULONG m68k_port_wait(struct M68KEmuContext *ctx, ULONG mport)
     while (!(head = m68k_read32(ctx, mport + MP_LIST)) || !m68k_read32(ctx, head))
     {
         UBYTE bit = ctx->mem[mport + MP_SIGBIT];
-        m68k_gil_release(ctx);
-        Wait(1UL << (bit & 31));
-        m68k_gil_obtain(ctx);
+        m68k_wait_sigs(ctx, 1UL << (bit & 31));
     }
     return head;
 }
@@ -612,6 +746,100 @@ ULONG m68k_msg_from_native(struct M68KEmuContext *ctx, struct Message *m)
     return mmsg;
 }
 
+/* Workbench started the program: the startup message RunHunk took from the
+   process port, in the program's layout, locks and names in its memory */
+ULONG m68k_wbstartup_in(struct M68KEmuContext *ctx, struct Message *msg)
+{
+    struct WBStartup *wbs = (struct WBStartup *)msg;
+    const struct M68KStructLayout *layout = shadow_find_layout("WBStartup");
+    ULONG m = 0, args = 0, size, pos, proc, i, nargs = wbs->sm_NumArgs;
+
+    size = nargs * 8 + (wbs->sm_ToolWindow ? strlen(wbs->sm_ToolWindow) + 1 : 0);
+    for (i = 0; i < nargs; i++)
+        if (wbs->sm_ArgList[i].wa_Name)
+            size += strlen(wbs->sm_ArgList[i].wa_Name) + 1;
+    if (!layout || !(m = shadow_create(ctx, layout, wbs)) || (size && !(args = M68KEmu_HeapAlloc(ctx, size, 0))))
+    {
+        if (m)
+            shadow_destroy(ctx, layout, m);
+        ReplyMsg(msg);
+        ctx->wb_startup = NULL;
+        ctx->wb_queued = FALSE;
+        return 0;
+    }
+    pos = args + nargs * 8;
+    for (i = 0; i < nargs; i++)
+    {
+        STRPTR name = wbs->sm_ArgList[i].wa_Name;
+
+        m68k_write32(ctx, args + i * 8, m68k_bptr_out(ctx, wbs->sm_ArgList[i].wa_Lock));
+        m68k_write32(ctx, args + i * 8 + 4, name ? pos : 0);
+        if (name)
+        {
+            strcpy((char *)ctx->mem + pos, name);
+            pos += strlen(name) + 1;
+        }
+    }
+    proc = m68k_process_of(ctx, FindTask(NULL));
+    m68k_write32(ctx, m + 10, 0);                                   /* ln_Name */
+    m68k_write32(ctx, m + 14, 0);                                   /* mn_ReplyPort */
+    m68k_write32(ctx, m + 20, proc ? proc + M68K_PR_MSGPORT : 0);   /* sm_Process */
+    m68k_write32(ctx, m + 24, m68k_bptr_out(ctx, wbs->sm_Segment));
+    m68k_write32(ctx, m + 28, nargs);
+    m68k_write32(ctx, m + 32, 0);
+    if (wbs->sm_ToolWindow)
+    {
+        strcpy((char *)ctx->mem + pos, wbs->sm_ToolWindow);
+        m68k_write32(ctx, m + 32, pos);
+    }
+    m68k_write32(ctx, m + 36, nargs ? args : 0);
+    ctx->wb_queued = FALSE;
+    ctx->wb_m68k = m;
+    ctx->wb_args = args;
+    ctx->wb_argsize = size;
+    return m;
+}
+
+static void wbstartup_forget(struct M68KEmuContext *ctx)
+{
+    if (ctx->wb_m68k)
+        shadow_destroy(ctx, shadow_find_layout("WBStartup"), ctx->wb_m68k);
+    if (ctx->wb_args)
+        M68KEmu_HeapFree(ctx, ctx->wb_args, ctx->wb_argsize);
+    ctx->wb_startup = NULL;
+    ctx->wb_queued = FALSE;
+    ctx->wb_m68k = ctx->wb_args = ctx->wb_argsize = 0;
+}
+
+/* ReplyMsg of the startup message: Workbench gets its own message back */
+BOOL m68k_wbstartup_reply(struct M68KEmuContext *ctx, ULONG mmsg)
+{
+    struct Message *msg = ctx->wb_startup;
+
+    if (!msg || !ctx->wb_m68k || mmsg != ctx->wb_m68k)
+        return FALSE;
+    wbstartup_forget(ctx);
+    ReplyMsg(msg);
+    return TRUE;
+}
+
+/* the program ended with the startup message untaken or unreplied */
+void m68k_wbstartup_done(struct M68KEmuContext *ctx)
+{
+    struct Message *msg = ctx->wb_startup;
+
+    if (!msg)
+        return;
+    if (ctx->wb_queued)
+    {
+        Forbid();
+        Remove(&msg->mn_Node);
+        Permit();
+    }
+    wbstartup_forget(ctx);
+    ReplyMsg(msg);
+}
+
 /* ReplyMsg of a message in the program's memory */
 void m68k_reply(struct M68KEmuContext *ctx, ULONG mmsg)
 {
@@ -678,22 +906,49 @@ void m68k_native_proc_exit(IPTR rc, IPTR data)
     m68k_context_release(ctx);
 }
 
-/* dos -498: CreateNewProc(D1=tags): NP_Entry is 68k code of the program */
-IPTR m68k_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
+static char *proc_name(struct M68KEmuContext *ctx, ULONG data)
 {
-    ULONG state = M68KEmu_GetD(cpu, 1), ti;
+    ULONG len;
+    char *name;
+
+    if (!m68k_in_mem(ctx, data, 1))
+        return NULL;
+    len = strnlen((char *)ctx->mem + data, ctx->mem_size - data);
+    if ((name = AllocVec(len + 1, MEMF_ANY)))
+    {
+        memcpy(name, ctx->mem + data, len);
+        name[len] = 0;
+    }
+    return name;
+}
+
+/* A process of the program: from CreateNewProc tags, or CreateProc's name,
+   priority, seglist and stack; NP_Entry or the seglist is 68k code */
+static IPTR create_proc(struct M68KEmuContext *ctx, void *cpu, ULONG state,
+                        ULONG name68k, LONG pri, ULONG seglist, ULONG stacksize)
+{
+    ULONG ti, tags = state;
     struct M68KChild *ch;
     struct TagItem t[20];
     struct Process *p;
     char *name = NULL;
     int n = 0;
-    ULONG seglist = 0;
 
     if (!(ch = AllocVec(sizeof(*ch), MEMF_CLEAR)))
         return 0;
     ch->ctx = ctx;
     ch->stacksize = 16384;
-    while ((ti = m68k_next_tag(ctx, &state)) && n < 12)
+    if (stacksize > ch->stacksize)
+        ch->stacksize = (stacksize + 15) & ~15;
+    if (name68k && (name = proc_name(ctx, name68k)))
+    {
+        t[n].ti_Tag = NP_Name; t[n++].ti_Data = (IPTR)name;
+    }
+    if (pri)
+    {
+        t[n].ti_Tag = NP_Priority; t[n++].ti_Data = (IPTR)pri;
+    }
+    while (state && (ti = m68k_next_tag(ctx, &state)) && n < 12)
     {
         ULONG tag = m68k_read32(ctx, ti), data = m68k_read32(ctx, ti + 4);
 
@@ -706,13 +961,8 @@ IPTR m68k_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
         case NP_ExitData:   ch->exitdata = data; break;
         case NP_Priority:   t[n].ti_Tag = tag; t[n++].ti_Data = (IPTR)(LONG)data; break;
         case NP_Name:
-            if (m68k_in_mem(ctx, data, 1))
+            if ((name = proc_name(ctx, data)))
             {
-                ULONG len = strnlen((char *)ctx->mem + data, ctx->mem_size - data);
-                if (!(name = AllocVec(len + 1, MEMF_ANY)))
-                    break;
-                memcpy(name, ctx->mem + data, len);
-                name[len] = 0;
                 t[n].ti_Tag = tag; t[n++].ti_Data = (IPTR)name;
             }
             break;
@@ -732,9 +982,13 @@ IPTR m68k_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
             break;
         }
     }
-    /* a program LoadSeg() gave it: a 68k one runs in this one's memory, a
-       native one (Directory Opus starting the WBStartup programs) natively */
-    if (!ch->entry && seglist)
+    /* a segment of the program itself, its code after the link (a program
+       that detaches its second hunk): run here; a program LoadSeg() gave
+       it: a 68k one runs in this one's memory, a native one (Directory
+       Opus starting the WBStartup programs) natively */
+    if (!ch->entry && seglist && seglist < (M68KEMU_HANDLE_BASE >> 2) && m68k_in_mem(ctx, seglist << 2, 8))
+        ch->entry = (seglist << 2) + 4;
+    else if (!ch->entry && seglist)
     {
         BPTR seg = m68k_bptr_in(ctx, seglist);
         IPTR hunk = 0;
@@ -784,9 +1038,9 @@ IPTR m68k_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
     {
         if (ctx->trace_calls || ctx->trace_end)
         {
-            ULONG st = M68KEmu_GetD(cpu, 1), t2;
+            ULONG st = tags, t2;
             bug("[m68kemu] CreateNewProc: no 68k entry (%08lx), not started; tags:\n", (unsigned long)ch->entry);
-            while ((t2 = m68k_next_tag(ctx, &st)))
+            while (st && (t2 = m68k_next_tag(ctx, &st)))
                 bug("[m68kemu]   %08lx = %08lx\n", (unsigned long)m68k_read32(ctx, t2), (unsigned long)m68k_read32(ctx, t2 + 4));
         }
         FreeVec(ch);
@@ -812,6 +1066,20 @@ IPTR m68k_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
         return 0;
     }
     return m68k_process_of(ctx, &p->pr_Task);
+}
+
+/* dos -498: CreateNewProc(D1=tags) */
+IPTR m68k_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
+{
+    return create_proc(ctx, cpu, M68KEmu_GetD(cpu, 1), 0, 0, 0, 0);
+}
+
+/* dos -138: CreateProc(D1=name, D2=pri, D3=seglist, D4=stack) -> the process's port */
+IPTR m68k_dos_CreateProc(struct M68KEmuContext *ctx, void *cpu)
+{
+    IPTR proc = create_proc(ctx, cpu, 0, M68KEmu_GetD(cpu, 1), (LONG)M68KEmu_GetD(cpu, 2),
+                            M68KEmu_GetD(cpu, 3), M68KEmu_GetD(cpu, 4));
+    return proc ? proc + M68K_PR_MSGPORT : 0;
 }
 
 /* dos -492: Cli(): the program's CommandLineInterface, a BPTR */

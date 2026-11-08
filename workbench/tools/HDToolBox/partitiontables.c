@@ -8,6 +8,7 @@
 #include <proto/gadtools.h>
 #include <proto/intuition.h>
 #include <proto/partition.h>
+#include <proto/ptedit.h>
 
 #include <devices/bootblock.h>
 #include <devices/scsidisk.h>

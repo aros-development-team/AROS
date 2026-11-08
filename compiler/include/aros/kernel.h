@@ -31,6 +31,7 @@ typedef enum
 	MAP_CacheInhibit 	= 0x0001,
 	MAP_WriteThrough	= 0x0002,
 	MAP_Guarded 		= 0x0004,
+	MAP_WriteCombine	= 0x0008,	/* write-combining, not with MAP_CacheInhibit */
 
 	MAP_Readable		= 0x0100,
 	MAP_Writable		= 0x0200,

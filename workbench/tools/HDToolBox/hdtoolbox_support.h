@@ -1,11 +1,12 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef HDTOOLBOX_SUPPORT_H
 #define HDTOOLBOX_SUPPORT_H
 
 #include <proto/partition.h>
+#include <proto/ptedit.h>
 #include <proto/alib.h>
 #include <exec/nodes.h>
 #include <exec/lists.h>

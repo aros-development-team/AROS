@@ -21,3 +21,20 @@ USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
 	files="cunit-fat-bpb" \
 	progname=cunit-fat-bpb targetdir=$(CUNITEXEDIR) \
 	uselibs="fatbpb cunit posixc"
+
+#MM- test : test-fat-fullroot
+#MM- test-quick : test-fat-fullroot-quick
+
+#MM test-fat-fullroot : includes linklibs
+
+%build_prog mmake=test-fat-fullroot \
+	files="fatfullroot" \
+	progname=fatfullroot targetdir=$(AROS_TESTS)/filesys/fat
+
+#MM- test : test-fat-parent-rename
+#MM- test-quick : test-fat-parent-rename-quick
+#MM test-fat-parent-rename : includes linklibs
+
+%build_prog mmake=test-fat-parent-rename \
+	files="parent_rename" \
+	progname=parent_rename targetdir=$(AROS_TESTS)/filesys/fat

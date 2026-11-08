@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Hardware management routines for IBM PC-AT timer
 */
@@ -178,7 +178,7 @@ void Timer0Setup(struct TimerBase *TimerBase)
     outb(CH0|ACCESS_LATCH, PIT_CONTROL);        /* Latch the current time value */
     current_tick = ch_read(PIT_CH0);	    	/* Read out current 16-bit time */
 
-    outb(CH0|ACCESS_FULL|MODE_SW_STROBE, PIT_CONTROL);  /* Software strobe mode, 16-bit access  */
+    outb(CH0|ACCESS_FULL|MODE_TERMINAL, PIT_CONTROL);   /* Terminal count mode, 16-bit access */
     ch_write(delay, PIT_CH0);                           /* Activate the new delay               */
 
     /*

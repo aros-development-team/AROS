@@ -24,7 +24,12 @@ struct in6_addr;
  *   syncache_expand  - handle the final ACK of a handshake: locate the matching
  *                      entry (or validate a SYN cookie) and create the fully
  *                      established socket.  Returns 1 and stores the new socket
- *                      in *sop on success, 0 otherwise.
+ *                      in *sop on success; 0 when the ACK completes nothing
+ *                      (no entry and no valid cookie, or an entry whose SYN-ACK
+ *                      it does not acknowledge), which the caller answers with
+ *                      a reset (RFC 9293 section 3.10.7.2); -1 when it is to be
+ *                      dropped quietly (out of sequence for its entry, or no
+ *                      socket could be made for it).
  *   syncache_chkrst  - drop a matching half-open entry on a valid RST.
  *   syncache_timer   - retransmit/expire pending entries (called every slow
  *                      timer tick from tcp_slowtimo()).

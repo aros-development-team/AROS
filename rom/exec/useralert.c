@@ -109,7 +109,13 @@ LONG Alert_AskSuspend(struct Task *task, ULONG alertNum, char * buffer, struct E
             /* Determine set of buttons */
             es.es_GadgetFormat = (alertNum & AT_DeadEnd) ? deadend_buttons : recoverable_buttons;
 
-            D(bug("[UserAlert] Body text:\n%s\n", buffer));
+            /*
+             * The requester may never appear - the display driver can be the
+             * crashed party, or the GPU already dead (Titan, 2026-11-01: a
+             * trap in 'nouveau probe' left the machine silent). Serial gets
+             * the formatted text first, so there is always a trace.
+             */
+            bug("[UserAlert] %s\n", buffer);
 reshow:
             choice = SafeEasyRequest(&es, full, IntuitionBase);
 

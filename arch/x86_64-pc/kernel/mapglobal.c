@@ -148,8 +148,13 @@ static void set_pde_2m(struct PDE2M *entry, IPTR phys, KRN_MapAttr flags)
     tmp.p = (flags & (MAP_Readable | MAP_Writable | MAP_Executable)) ? 1 : 0;
     tmp.rw = (flags & MAP_Writable) ? 1 : 0;
     tmp.us = 1;
-    tmp.pwt = (flags & MAP_WriteThrough) ? 1 : 0;
-    tmp.pcd = (flags & MAP_CacheInhibit) ? 1 : 0;
+    if (flags & MAP_WriteCombine)
+        tmp.pat = 1;                    /* PAT index 4, write-combining */
+    else
+    {
+        tmp.pwt = (flags & MAP_WriteThrough) ? 1 : 0;
+        tmp.pcd = (flags & MAP_CacheInhibit) ? 1 : 0;
+    }
     tmp.ps = 1;
     tmp.base_low = phys >> 13;
     tmp.base_high = (phys >> 32) & 0x000FFFFF;
@@ -165,8 +170,13 @@ static void set_pte(struct PTE *entry, IPTR phys, KRN_MapAttr flags)
     tmp.p = (flags & (MAP_Readable | MAP_Writable | MAP_Executable)) ? 1 : 0;
     tmp.rw = (flags & MAP_Writable) ? 1 : 0;
     tmp.us = 1;
-    tmp.pwt = (flags & MAP_WriteThrough) ? 1 : 0;
-    tmp.pcd = (flags & MAP_CacheInhibit) ? 1 : 0;
+    if (flags & MAP_WriteCombine)
+        tmp.pat = 1;                    /* PAT index 4, write-combining */
+    else
+    {
+        tmp.pwt = (flags & MAP_WriteThrough) ? 1 : 0;
+        tmp.pcd = (flags & MAP_CacheInhibit) ? 1 : 0;
+    }
     tmp.base_low = phys >> 12;
     tmp.base_high = (phys >> 32) & 0x000FFFFF;
     memcpy(&val, &tmp, sizeof(val));

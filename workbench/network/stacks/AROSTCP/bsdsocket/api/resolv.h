@@ -56,7 +56,7 @@
 #define RES_STAYOPEN	0x0100		/* Keep TCP socket open */
 #define RES_DNSRCH	0x0200		/* search up local domain tree */
 
-#define RES_DEFAULT	(RES_RECURSE | RES_DEFNAMES | RES_INIT)
+#define RES_DEFAULT	(RES_RECURSE | RES_DEFNAMES | RES_DNSRCH | RES_INIT)
 
 #define AROSTCP_RES_DISABLED 0x8000       /* Implements MiamiDisallowDNS() */
 

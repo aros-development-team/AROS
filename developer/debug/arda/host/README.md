@@ -12,6 +12,8 @@ developer/debug/arda/
   arda_sys.c                       SYSINFO MEMORY TASKS
   arda_log.c                       LOG STATUS/READ/CLEAR, log.resource listener
   arda_netdiag.c                   NET STATUS/INTERFACES/ROUTES/ARP/STATS
+  arda_mem.c                       SYMBOL PEEK STACK
+  arda_dbg.c                       BREAK BACKTRACE ADDRESS MODULES LIBS DEVICES RESOURCES PORTS SEMAPHORES
   ardatrace.h ardatrace.c          instrumentation API + link library (Phase 6)
   tracetest.c                      emits trace events (test helper)
   host/aros_debug.py               the client
@@ -48,7 +50,9 @@ ARDA [PORT=<n>] [ADDRESS=<dotted quad>] [IDLE=<secs>] [QUIET] [CONTROL]
   `ADDRESS=` (the interface address or `0.0.0.0`) and should only be used on
   a trusted development network: the protocol has no authentication.
 * `IDLE` (default 60, 0 = never) drops a client that sends nothing.
-* One client at a time; a second connection gets `ERR 503` and is closed.
+* Up to four clients at once (a thread each) where the stack can share a
+  library base between tasks; otherwise one at a time. A connection over
+  the limit gets `ERR 503` and is closed.
 * Stop it with Ctrl-C / `Break <n> C`; it closes the client, the listening
   socket and every library it opened.
 * Typical: `Run >T:arda.log SYS:Developer/Debug/ARDA ADDRESS=10.0.0.2`
@@ -75,14 +79,24 @@ python3 aros_debug.py --host 10.0.0.2 net interfaces
 python3 aros_debug.py --host 10.0.0.2 raw "LOG READ SINCE=120 SRC=app"
 
 # control mode (agent started with CONTROL)
-python3 aros_debug.py --host 10.0.0.2 put build/nouveau.hidd SYS:Devs/Drivers/nouveau.hidd
+python3 aros_debug.py --host 10.0.0.2 put build/nvgfx.hidd SYS:Devs/Drivers/nvgfx.hidd
 python3 aros_debug.py --host 10.0.0.2 get SYS:nouveau.log nouveau.log
 python3 aros_debug.py --host 10.0.0.2 setenv NOUVEAU_NVDEC_EXP 6
 python3 aros_debug.py --host 10.0.0.2 run RAM:job.out SYS:Extras/MultiMedia/Video/vadecode -n 2 clip.mp4
 python3 aros_debug.py --host 10.0.0.2 --timeout 300 wait 1 240
 python3 aros_debug.py --host 10.0.0.2 dir SYS:nouveau-dump
 python3 aros_debug.py --host 10.0.0.2 reboot
+
+# memory inspection (agent 0.3; PEEK and STACK need control mode)
+python3 aros_debug.py --host 10.0.0.2 symbol 0x827651ba 0x98608cf4
+python3 aros_debug.py --host 10.0.0.2 peek 0x90929a20 256 Q        # 64-bit words + symbols
+python3 aros_debug.py --host 10.0.0.2 stack Veloren FROM=0x90929a60 # code pointers above a crash SP
 ```
+
+For a crashed program sitting in its "Program failed" requester: take the
+SP from the alert's CPU context on the serial log, then `stack <task>
+FROM=<sp>` lists the return addresses above the crash, and `peek <sp> 256 Q`
+shows the frame itself (a zeroed frame means a stack overrun).
 
 * `ARDA_HOST` / `ARDA_PORT` in the environment set the defaults.
 * `--connect-timeout`, `--timeout` (response), `--json`, `--output FILE`

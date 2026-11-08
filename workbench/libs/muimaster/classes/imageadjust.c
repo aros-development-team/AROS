@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -33,8 +33,161 @@
 #include "imageadjust_private.h"
 #include "locale.h"
 
+/****** Imageadjust.mui/MUIC_Imageadjust ************
+*
+*   NAME
+*       MUIC_Imageadjust
+*
+*   SUPERCLASS
+*       Register.mui
+*
+*   DESCRIPTION
+*       Edit an image specification through register pages selected at
+*       construction. All provides Pattern, Vector, Color, External, Bitmap and
+*       Gradient. Image provides Pattern, Vector, Color and External. Background
+*       provides Pattern, Color, Bitmap and Gradient. Pen provides only Color.
+*       These are editor configurations, not a promise that every input
+*       specification can be converted in each configuration.
+*       The class owns Group/Register children, external-entry copies and a
+*       generated getter string. Dispose frees that string, delegates child
+*       disposal and returns zero. Hooks and child callbacks rely on the
+*       instance remaining alive. Originator is borrowed. Normal child lifecycle
+*       and deferred requester/popup callbacks must complete before disposal.
+*
+*   METHODS
+*       There are eighteen patterns and twenty-four vector choices. Selecting
+*       one deselects the previous tracked choice. With no tracked choice, Get
+*       falls back to 0:128. The color page delegates to Penadjust; the external
+*       page enumerates files below IMAGES:Zune/ when page three is selected,
+*       clearing the old list first. Enumeration is synchronous and recursive,
+*       with no input pumping, depth/cycle bound or complete error status.
+*       Bitmap acknowledgement or Popasl Active FALSE refreshes its preview only
+*       for a nonempty filename. The preview uses a 255-byte buffer including
+*       the 5: prefix and can truncate long paths. Get instead builds from the
+*       string contents and can differ from that preview. A Workbench AppMessage
+*       uses only its first argument and assumes one exists; successful
+*       NameFromLock/AddPart updates preview and string without selecting the
+*       Bitmap page.
+*       Gradient controls select scaled 7: or tiled 8:, angle zero through 179
+*       and two color endpoints. The buttons labelled Vertical and Horizontal
+*       set zero and ninety respectively. Loading a gradient reduces endpoint
+*       channels to eight-bit values and expands each byte back to 32 bits; it
+*       is not a lossless 32-bit roundtrip. Swap exchanges endpoint colors and
+*       refreshes the preview.
+*
+*   NOTES
+*       Spec input must be a valid string with the prefix and content
+*       appropriate for the available controls. The setter switches on the first
+*       byte and reads from byte two without generally validating the colon or
+*       length. Unknown prefixes leave controls unchanged; 6: parses a number
+*       but implements no selection. Numeric conversions for
+*       pattern/vector/config are unchecked. Passing a prefix for an absent page
+*       is not a supported conversion: several branches use fixed page indices
+*       or missing controls.
+*       For a 2: color input, Penadjust copies a complete 32-byte MUI_PenSpec
+*       starting at input+2. Provide that much readable storage, not merely a
+*       short terminated string. For 3:/4: external input, matching uses a
+*       relative directory/filename; an input with no path separator can
+*       underflow the directory comparison length. Use a valid relative path
+*       with a separator. Output for external selections always uses 3:,
+*       including an input originally using 4:.
+*       External entries copy directory and filename into the List pool, but
+*       allocation failure for either string is not rolled back. Enumeration
+*       ignores many errors and insertion failures and can leave a partial list.
+*       Names ending exactly .mf1 or .mb1 are excluded; other files are not
+*       validated as images. Display labels strip recognized lowercase .mf0,
+*       .mb0, .mbr and .image suffixes. Directory recursion follows the ExAll
+*       type classification without resolving soft-link targets or detecting
+*       cycles.
+*
+*/
+/****** Imageadjust.mui/MUIA_Imageadjust_Type ************
+*
+*   NAME
+*       MUIA_Imageadjust_Type
+*
+*   FUNCTION
+*       Choose the set and order of editor pages.
+*
+*   INPUTS
+*       Initialize only, LONG. Default MUIV_Imageadjust_Type_All (0). Other
+*       declared values are Image (1), Background (2) and Pen (3). No local
+*       setter or getter.
+*
+*   NOTES
+*       All: Pattern, Vector, Color, External, Bitmap, Gradient. Image: Pattern,
+*       Vector, Color, External. Background: Pattern, Color, Bitmap, Gradient.
+*       Pen: Color. Supply one of these values; there is no default construction
+*       branch for unknown values and already-created components have no
+*       complete failure cleanup on that path. Keep active-page selection within
+*       the constructed page range: Spec Get indexes its fixed mapping without
+*       an independent bounds check.
+*
+*/
+/****** Imageadjust.mui/MUIA_Imageadjust_Spec ************
+*
+*   NAME
+*       MUIA_Imageadjust_Spec
+*
+*   FUNCTION
+*       Load editor controls or generate the specification for the active page.
+*
+*   INPUTS
+*       Initialize, set and get in this AROS implementation, despite the header
+*       get-only annotation. Input is a readable specification string; NULL is
+*       treated as 0:128. No input string ownership is transferred.
+*
+*   NOTES
+*       The last constructor Spec tag is used; Set processes each Spec in tag
+*       order. Input is applied to controls rather than retained verbatim. With
+*       no input, 0:128 is applied; on Pen configuration the existing Penadjust
+*       default remains m5 and Get yields 2:m5. Unsupported prefix/configuration
+*       combinations are not validated; follow the class input restrictions.
+*       Get frees the previous generated string before allocating a new one and
+*       reports TRUE even if allocation fails or no valid selection exists, then
+*       returning literal 0:128 as fallback. Every returned pointer is borrowed:
+*       do not free or modify it, and copy it before another Get or disposal.
+*       Set does not itself free the last getter buffer, but synchronous
+*       notifications can cause another Get.
+*       Pattern output is 0:index+128; vector output is 1:index; color is 2:
+*       plus Penadjust output; external is 3:relative-directory/filename; bitmap
+*       is 5: plus string contents; gradient is the current generated 7:/8:
+*       string. Get is not a lossless serialization of the original input. User
+*       control changes do not automatically emit Imageadjust_Spec
+*       notifications; explicit Set forwards its original tags through Register.
+*
+*/
+/****** Imageadjust.mui/MUIA_Imageadjust_Originator ************
+*
+*   NAME
+*       MUIA_Imageadjust_Originator
+*
+*   FUNCTION
+*       Supply the Popimage receiver for external-list double-click acceptance.
+*
+*   INPUTS
+*       Initialize only, borrowed Object pointer; default NULL. No local setter
+*       or getter.
+*
+*   NOTES
+*       For All/Image configurations, a non-NULL originator receives a queued
+*       private MUIM_Popimage_CloseWindow(TRUE) through the application when the
+*       external list emits DoubleClick. It must be a compatible live Popimage
+*       with an existing editor window and remain alive until queued execution
+*       completes. No lifetime reference, compatibility check or queue
+*       cancellation is provided. Other page choices do not use this pointer for
+*       automatic acceptance.
+*
+*/
+
 extern struct Library *MUIMasterBase;
 
+/*
+ * Duplicate a non-NULL terminated string into the supplied live pool;
+ * return owned pooled pointer or NULL for NULL input/allocation failure.
+ * Caller must free using original length plus one and matching pool. No
+ * truncation or overflow checking.
+ */
 STATIC STRPTR StrDupPooled(APTR pool, CONST_STRPTR str)
 {
     char *newstr;
@@ -46,6 +199,12 @@ STATIC STRPTR StrDupPooled(APTR pool, CONST_STRPTR str)
     return newstr;
 }
 
+/*
+ * Read borrowed bitmap String_Contents; for nonempty input format 5: plus
+ * filename in 255 stack bytes and synchronously set preview. Requires live
+ * controls and hook message holding instance pointer. Empty input leaves
+ * old preview, long paths truncate; no return status.
+ */
 static void Bitmap_Function(struct Hook *hook, Object *obj, APTR msg)
 {
     struct Imageadjust_DATA *data = *(struct Imageadjust_DATA **)msg;
@@ -61,6 +220,12 @@ static void Bitmap_Function(struct Hook *hook, Object *obj, APTR msg)
 }
 
 
+/*
+ * Use first Workbench argument to build a 5: path in 255 stack bytes, then
+ * set preview and string on successful NameFromLock/AddPart. Requires non-
+ * NULL AppMessage with at least one valid argument and live controls; no
+ * argument-count check or page switch. No ownership transfer.
+ */
 static void AppMessage_Function(struct Hook *hook, Object *obj, void **msg)
 {
     struct Imageadjust_DATA *data = *(struct Imageadjust_DATA **)msg;
@@ -81,6 +246,13 @@ static void AppMessage_Function(struct Hook *hook, Object *obj, void **msg)
 }
 
 
+/*
+ * Read angle/type and borrowed endpoint RGB values, format into instance
+ * gradient_imagespec and synchronously update preview. Requires live
+ * gradient controls and successful valid RGB getters; pointers are
+ * dereferenced without checking. No return status or Imageadjust_Spec
+ * notification.
+ */
 static void Gradient_Function(struct Hook *hook, Object *obj, APTR msg)
 {
     struct Imageadjust_DATA *data = *(struct Imageadjust_DATA **)msg;
@@ -108,6 +280,12 @@ static void Gradient_Function(struct Hook *hook, Object *obj, APTR msg)
         data->gradient_imagespec);
 }
 
+/*
+ * Read endpoint RGB pointers, preserve start locally, set start from end
+ * and end from saved start, then refresh gradient. Requires live endpoints
+ * and valid getters; setters may notify synchronously. No ownership
+ * transfer or return status.
+ */
 static void GradientSwap_Function(struct Hook *hook, Object *obj, APTR msg)
 {
     struct Imageadjust_DATA *data = *(struct Imageadjust_DATA **)msg;
@@ -128,6 +306,12 @@ static void GradientSwap_Function(struct Hook *hook, Object *obj, APTR msg)
 }
 
 
+/*
+ * Deselect previous tracked pattern when not -1 and store new index from
+ * callback message. Requires known index in 0..17 and live instance/images;
+ * no bounds check. Does not select the new image itself or notify Spec; no
+ * return status.
+ */
 static VOID Pattern_Select_Function(struct Hook *hook, Object *obj,
     void **msg)
 {
@@ -141,6 +325,12 @@ static VOID Pattern_Select_Function(struct Hook *hook, Object *obj,
 }
 
 
+/*
+ * Deselect previous tracked vector when not -1 and store callback index.
+ * Requires index in 0..23 and live instance/images; no bounds check. New
+ * selection is supplied by the triggering object, not this hook; no Spec
+ * notification or result.
+ */
 static VOID Vector_Select_Function(struct Hook *hook, Object *obj,
     void **msg)
 {
@@ -163,6 +353,12 @@ struct ExternalListEntry
     LONG type;
 };
 
+/*
+ * Format borrowed entry basename into shared static 256-byte buffer and
+ * strip supported lowercase suffix. Requires non-NULL entry and valid
+ * display slot; NULL filename leaves slot unchanged. Buffer is overwritten
+ * by next call and must be consumed synchronously; no ownership transfer.
+ */
 static void Imageadjust_External_Display(struct Hook *h, char **strings,
     struct ExternalListEntry *entry)
 {
@@ -186,6 +382,13 @@ static void Imageadjust_External_Display(struct Hook *h, char **strings,
     }
 }
 
+/*
+ * Allocate pooled entry and duplicate filename/reldir from source. Return
+ * NULL for NULL input, missing filename or entry allocation failure.
+ * String-copy failures leave a partially populated returned entry; no
+ * rollback. Caller/List owns entry and copied strings with recorded
+ * original lengths.
+ */
 static struct ExternalListEntry *Imageadjust_External_Construct(struct Hook
     *h, APTR pool, struct ExternalListEntry *ele)
 {
@@ -208,6 +411,11 @@ static struct ExternalListEntry *Imageadjust_External_Construct(struct Hook
     return NULL;
 }
 
+/*
+ * Free non-NULL entry strings with recorded lengths plus one and then entry
+ * from the supplied pool. Requires matching pool and unchanged allocation-
+ * length metadata. Accept NULL entry; no return or ownership retained.
+ */
 static void Imageadjust_External_Destruct(struct Hook *h, APTR pool,
     struct ExternalListEntry *entry)
 {
@@ -225,6 +433,13 @@ static void Imageadjust_External_Destruct(struct Hook *h, APTR pool,
 /**************************************************************************
  Adds a directory to the list
 **************************************************************************/
+/*
+ * Recursively enumerate ExAll ED_TYPE into live List from a readable path
+ * under IMSPEC_EXTERNAL_PREFIX; parent argument is unused. Return zero on
+ * initial lock/control/buffer failure, otherwise one even after enumeration
+ * errors or partial inserts. Frees local buffers/control/lock; no input
+ * pumping, recursion/cycle guard or aggregate error propagation.
+ */
 static int AddDirectory(Object *list, STRPTR dir, LONG parent)
 {
     BPTR lock = Lock(dir, ACCESS_READ);
@@ -342,6 +557,13 @@ static int AddDirectory(Object *list, STRPTR dir, LONG parent)
 /**************************************************************************
  ...
 **************************************************************************/
+/*
+ * Apply input prefix to current controls, using 0:128 for NULL. Requires
+ * valid appropriately padded string and a compatible editor configuration.
+ * Numeric parse results and most control statuses are unchecked; absent
+ * pages and external path matching have documented limitations. Input is
+ * not retained; no success result.
+ */
 STATIC VOID Imageadjust_SetImagespec(Object *obj,
     struct Imageadjust_DATA *data, char *spec)
 {
@@ -489,6 +711,13 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj,
     }
 }
 
+/*
+ * Create configuration-specific Register children/hooks, initialize
+ * gradient, install external scan/double-click routing and apply last Spec.
+ * Return object or zero on superclass failure. Requires valid Type and
+ * appropriate Spec; child allocation/insertion failures lack comprehensive
+ * cleanup/reporting. Originator remains borrowed.
+ */
 IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Imageadjust_DATA *data;
@@ -889,6 +1118,12 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Free last generated getter string, delegate child disposal to Register
+ * and return zero. Requires completed child requester/popup callbacks and
+ * queued originator work. Does not dispose borrowed Originator or
+ * independently cancel callbacks.
+ */
 IPTR Imageadjust__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Imageadjust_DATA *data = INST_DATA(cl, obj);
@@ -900,6 +1135,12 @@ IPTR Imageadjust__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return 0;
 }
 
+/*
+ * Apply each Spec to controls in tag order and return Register setter
+ * result for original tags. Type/Originator are not updated locally. Input
+ * must satisfy class restrictions; does not preserve original string or
+ * expose conversion success.
+ */
 IPTR Imageadjust__OM_SET(struct IClass *cl, Object *obj,
     struct opSet *msg)
 {
@@ -920,6 +1161,13 @@ IPTR Imageadjust__OM_SET(struct IClass *cl, Object *obj,
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * For Spec, free prior generated buffer, map current page and generate
+ * current selection or literal fallback 0:128, returning TRUE. Requires
+ * valid active page and writable storage. Returned pointer is borrowed
+ * until next Get/disposal; no allocation-error result. Delegate other
+ * queries.
+ */
 IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj,
     struct opGet *msg)
 {
@@ -1058,6 +1306,12 @@ IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj,
     return (DoSuperMethodA(cl, obj, (Msg) msg));
 }
 
+/*
+ * Private MUIM_Imageadjust_ReadExternal clears external list, enables
+ * Quiet, synchronously scans IMAGES:Zune/, then disables Quiet and returns
+ * zero. Requires All/Image external list and live instance. Ignores scan
+ * status, loses old selection and does not restore previous Quiet value.
+ */
 IPTR Imageadjust__MUIM_Imageadjust_ReadExternal(struct IClass *cl,
     Object *obj, Msg msg)
 {
@@ -1071,6 +1325,12 @@ IPTR Imageadjust__MUIM_Imageadjust_ReadExternal(struct IClass *cl,
 }
 
 #if 0
+/*
+ * Inactive #if 0 helper: would queue private Popimage Close(TRUE) to
+ * borrowed originator when present, then return zero. Not dispatched or
+ * executable in this build. Would require live application/originator and
+ * completed queue lifetime.
+ */
 IPTR Imageadjust__MUIM_Imageadjust_ExternalSelected(struct IClass *cl,
     Object *obj, Msg msg)
 {
@@ -1084,6 +1344,12 @@ IPTR Imageadjust__MUIM_Imageadjust_ExternalSelected(struct IClass *cl,
 #endif
 
 #if ZUNE_BUILTIN_IMAGEADJUST
+/*
+ * Dispatch local overrides and private ReadExternal, returning their
+ * results; delegate other messages to Register. Requires ABI-correct
+ * message and live object except construction. Inactive ExternalSelected is
+ * not dispatched; resources follow class lifecycle contract.
+ */
 BOOPSI_DISPATCHER(IPTR, Imageadjust_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)

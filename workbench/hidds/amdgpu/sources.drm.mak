@@ -40,6 +40,7 @@ AROS_AMDGPU_DRMCORE_SOURCES = \
             drm/drm_property \
             drm/drm_rect \
             drm/drm_self_refresh_helper \
+            drm/drm_vblank \
             drm/ttm/ttm_bo \
             drm/ttm/ttm_bo_util \
             drm/ttm/ttm_device \
@@ -67,6 +68,7 @@ AROS_AMDGPU_DRMCORE_SOURCES = \
             drm-compat/linux_string \
             drm-compat/linux_time \
             drm-compat/linux_workqueue \
+            drm-compat/linux_rcu \
             drm-aros/drm_drv \
             drm-aros/drm_aros_pci \
             drm-aros/drm_stubs \

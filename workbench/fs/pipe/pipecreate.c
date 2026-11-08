@@ -230,6 +230,7 @@ OPENMEMERR1:
 
           pipekey->iotype= PIPEREAD;
           pipe->flags  |=  OPEN_FOR_READ;
+          pipe->flags  &=  ~READER_GONE;
         }
       else if (openmode == MODE_NEWFILE)
         { if (pipe->flags & OPEN_FOR_WRITE)
@@ -343,7 +344,9 @@ struct DosPacket  *pkt;
   pipe= pipekey->pipe;
 
   if ((pipekey->iotype == PIPEREAD) || (pipekey->iotype == PIPERW))
-    pipe->flags &= ~OPEN_FOR_READ;
+    { pipe->flags &= ~OPEN_FOR_READ;
+      pipe->flags |= READER_GONE;
+    }
 
   if ((pipekey->iotype == PIPEWRITE) || (pipekey->iotype == PIPERW))
     pipe->flags &= ~OPEN_FOR_WRITE;

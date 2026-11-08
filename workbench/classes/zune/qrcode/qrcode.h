@@ -21,6 +21,12 @@
 #define MUIA_QRCode_ECC    (MUIB_QRCode | 0x03)
 /* [..G] ULONG; one of MUIV_QRCode_Status_*. */
 #define MUIA_QRCode_Status (MUIB_QRCode | 0x04)
+/* [ISG] const struct MUI_PenSpec *; copied on set, NULL resets to MPEN_TEXT. */
+#define MUIA_QRCode_ForegroundPenSpec (MUIB_QRCode | 0x05)
+/* [ISG] const struct MUI_PenSpec *; copied on set, NULL resets to MPEN_BACKGROUND. */
+#define MUIA_QRCode_BackgroundPenSpec (MUIB_QRCode | 0x06)
+/* [ISG] BOOL; TRUE draws the Zune background behind the matrix. */
+#define MUIA_QRCode_Transparent     (MUIB_QRCode | 0x07)
 
 #define MUIV_QRCode_ECC_L 0
 #define MUIV_QRCode_ECC_M 1

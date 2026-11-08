@@ -51,6 +51,8 @@ VK_RUNTIME_SOURCES := \
     $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_nir_lower_descriptor_heaps \
     $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_object \
     $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_physical_device \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/rmv/vk_rmv_common \
+    $(top_srcdir)/$(CUR_MESADIR)/runtime/rmv/vk_rmv_exporter \
     $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_pipeline \
     $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_pipeline_cache \
     $(top_srcdir)/$(CUR_MESADIR)/runtime/vk_pipeline_layout \

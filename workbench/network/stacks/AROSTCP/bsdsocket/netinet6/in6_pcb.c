@@ -57,7 +57,7 @@
 
 /* Defined later in this file. */
 struct inpcb *in6_pcblookup(struct inpcbhead *, struct in6_addr *, u_int,
-                            struct in6_addr *, u_int);
+                            struct in6_addr *, u_int, const struct ifnet *);
 
 /* netinet/in_pcb.c - stack internal, not part of the public in_pcb.h */
 int in_pcbisipv6(struct inpcb *);
@@ -94,7 +94,7 @@ in6_ifbyindex(u_int32_t index)
  * Our address addr, on ifp if that is not NULL, usable as a local address
  * (not tentative or duplicated). NULL if there is none.
  */
-static struct in6_ifaddr *
+struct in6_ifaddr *
 in6_ourifa(const struct in6_addr *addr, struct ifnet *ifp)
 {
     struct in6_ifaddr *ia;
@@ -144,7 +144,7 @@ in6_porttaken(struct inpcb *inp, u_short lport, void *arg)
 
     bzero(&wild, sizeof(wild));
     return in6_pcblookup(inp->inp_pcbinfo->listhead, &wild, 0,
-                         (struct in6_addr *)arg, lport) != NULL;
+                         (struct in6_addr *)arg, lport, NULL) != NULL;
 }
 
 /* ------------------------------------------------------------------ *
@@ -223,7 +223,7 @@ in6_pcbbind(struct inpcb *inp, struct mbuf *nam)
 
                 bzero(&wildf, sizeof(wildf));
                 if(in6_pcblookup(head, &wildf, 0,
-                                 &sin6->sin6_addr, sin6->sin6_port) != NULL)
+                                 &sin6->sin6_addr, sin6->sin6_port, NULL) != NULL)
                     return EADDRINUSE;
             }
         }
@@ -254,7 +254,7 @@ int
 in6_pcbconnect(struct inpcb *inp, struct mbuf *nam)
 {
     struct sockaddr_in6 *sin6;
-    struct ifnet *zone = NULL;
+    struct ifnet *zone = NULL, *oifp;
 
     if(nam == NULL || nam->m_len < (int)sizeof(struct sockaddr_in6))
         return EINVAL;
@@ -296,8 +296,18 @@ in6_pcbconnect(struct inpcb *inp, struct mbuf *nam)
      * SYN (and every later segment) would never be accepted.  Mirrors the
      * source selection udp6_output() performs for unbound datagram sockets.
      */
-    if(IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6) && zone != NULL) {
-        struct in6_ifaddr *ia = in6_ifawithifp(zone, &sin6->sin6_addr);
+    /*
+     * A group with no zone is reached by the IPV6_MULTICAST_IF interface
+     * (RFC 3493 section 5.2), as each datagram udp6_output() sends to it
+     * is: the source comes from there too. The socket is not bound to it.
+     */
+    if(zone == NULL && IN6_IS_ADDR_MULTICAST(&sin6->sin6_addr) &&
+            inp->in6p_moptions && inp->in6p_moptions->im6o_multicast_ifp)
+        oifp = inp->in6p_moptions->im6o_multicast_ifp;
+    else
+        oifp = zone;
+    if(IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6) && oifp != NULL) {
+        struct in6_ifaddr *ia = in6_ifawithifp(oifp, &sin6->sin6_addr);
 
         if(ia == NULL)
             return EADDRNOTAVAIL;
@@ -387,7 +397,7 @@ in6_setpeeraddr(struct inpcb *inp, struct mbuf *nam)
 struct inpcb *
 in6_pcblookup(struct inpcbhead *head,
               struct in6_addr *faddr, u_int fport_arg,
-              struct in6_addr *laddr, u_int lport_arg)
+              struct in6_addr *laddr, u_int lport_arg, const struct ifnet *ifp)
 {
     struct inpcb *inp, *match = NULL;
     int matchwild = 3;
@@ -399,6 +409,11 @@ in6_pcblookup(struct inpcbhead *head,
         /* IPv4 PCBs share this list and leave the IPv6 addresses zeroed,
            which would make them look like wildcard IPv6 sockets here */
         if(!in_pcbisipv6(inp))
+            continue;
+        /* with the interface the packet came in by: a socket bound to
+         * another one (SO_BINDTODEVICE, its zone) does not hear it */
+        if(ifp != NULL && ((inp->inp_boundif && inp->inp_boundif != ifp) ||
+                           (inp->inp_flags & INP_BOUNDGONE)))
             continue;
 
         int wildcard = 0;

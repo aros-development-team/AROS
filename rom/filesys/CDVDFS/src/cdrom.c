@@ -11,6 +11,8 @@
  * ----------------------------------------------------------------------
  * History:
  *
+ * 03-Nov-26 aros    Declare the low-memory handler with exec's memory
+ *                   handler arguments.
  * 29-Oct-26 aros    Recover small file caches after memory pressure eases.
  * 28-Dec-12 neil    Pass corrected TOC length back from Read_TOC instead of
  *                   the raw TOC header. Errors in the length field of this
@@ -97,9 +99,12 @@ AROS_INTH1(CDChangeHandler, struct CDVDBase *, global)
     AROS_INTFUNC_EXIT
 }
 
-static AROS_INTH1(CDCacheLowMemHandler, CDROM *, cd)
+static AROS_UFH3(LONG, CDCacheLowMemHandler,
+    AROS_UFHA(struct MemHandlerData *, mhd, A0),
+    AROS_UFHA(CDROM *, cd, A1),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
-    AROS_INTFUNC_INIT
+    AROS_USERFUNC_INIT
 
     if (!cd->cache_io_busy &&
         cd->global->DosProc->pr_Task.tc_State == TS_WAIT)
@@ -147,7 +152,7 @@ static AROS_INTH1(CDCacheLowMemHandler, CDROM *, cd)
 
     return MEM_DID_NOTHING;
 
-    AROS_INTFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /*

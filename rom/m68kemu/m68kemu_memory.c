@@ -105,6 +105,7 @@ struct M68KEmuContext *M68KEmu_CreateContext(struct M68KEmuLibBase *base)
 void M68KEmu_DestroyContext(struct M68KEmuContext *ctx)
 {
     if (!ctx) return;
+    m68k_paula_free(ctx);
     m68k_vbl_close(ctx);
     for (int i = 0; i < M68KEMU_MAX_TASKS; i++)
         M68KEmu_FreeNestCpus(ctx, &ctx->tasks[i]);
@@ -711,12 +712,16 @@ ULONG M68KEmu_LoadHunksFromMemory(struct M68KEmuContext *ctx, UBYTE *data, LONG 
        the part of a hunk its block does not fill read as zero */
     for (i = 0; i < num_hunks; i++)
     {
-        ULONG addr = M68KEmu_HeapAlloc(ctx, hunk_sizes[i], hunk_reqs[i]);
-        if (!addr && hunk_reqs[i]) addr = M68KEmu_HeapAlloc(ctx, hunk_sizes[i], 0);
+        ULONG addr = M68KEmu_HeapAlloc(ctx, hunk_sizes[i] + 8, hunk_reqs[i]);
+        if (!addr && hunk_reqs[i]) addr = M68KEmu_HeapAlloc(ctx, hunk_sizes[i] + 8, 0);
         if (!addr) goto fail;
-        memset(ctx->mem + addr, 0, hunk_sizes[i]);
-        hunk_addrs[i] = addr;
-        if (i == 0) entry_point = addr;
+        memset(ctx->mem + addr, 0, hunk_sizes[i] + 8);
+        /* as LoadSeg() lays it out: ULONG size, BPTR next, data */
+        m68k_write32(ctx, addr, hunk_sizes[i] + 8);
+        if (i > 0)
+            m68k_write32(ctx, hunk_addrs[i - 1] - 4, (addr + 4) >> 2);
+        hunk_addrs[i] = addr + 8;
+        if (i == 0) entry_point = addr + 8;
     }
 
     /* Parse hunk contents */
@@ -853,7 +858,7 @@ fail:
     if (hunk_addrs) {
         for (i = 0; i < num_hunks; i++) {
             if (hunk_addrs[i])
-                M68KEmu_HeapFree(ctx, hunk_addrs[i], hunk_sizes[i]);
+                M68KEmu_HeapFree(ctx, hunk_addrs[i] - 8, hunk_sizes[i] + 8);
         }
         FreeMem(hunk_addrs, num_hunks * sizeof(ULONG));
     }

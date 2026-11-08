@@ -106,6 +106,8 @@
     INPUTS
         tags - MDNS_ServiceName (STRPTR), the instance: required.
                MDNS_ServiceType (STRPTR), as "_http._tcp": required.
+               MDNS_ServiceSubtype (STRPTR), a subtype label such as
+                   "_printer"; repeat the tag for up to eight subtypes.
                MDNS_Port (UWORD): required, not 0.
                MDNS_TXTRecord (STRPTR): "key=value" items with a space
                    between them; see <bonami/mdns.h>.
@@ -135,6 +137,11 @@
         unlike upstream Bonami. Register from a task that stays alive for
         the desired lifetime; another task keeping the library open does
         not keep this registration alive.
+
+        Subtypes are one underscored DNS label of at most 63 bytes and are
+        fixed for the registration's lifetime. Browse one with its RFC 6763
+        owner, for example "_printer._sub._ipp._tcp". UpdateServiceA() does
+        not add or remove subtype membership.
 
         A proxy target is a single host label or a name in .local, with an
         address. It must differ from this host's current and base names.

@@ -182,6 +182,18 @@ in6_control_locked(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
             return EADDRNOTAVAIL;
         break;
 
+    case SIOCGIFAFLAG_IN6:
+        /* the flags of the address given, on this interface (KAME) */
+        for(; ia; ia = ia->ia_next)
+            if(ia->ia6_ifp == ifp &&
+                    IN6_ARE_ADDR_EQUAL(&ia->ia_addr.sin6_addr,
+                                       &ifr->ifr_ifru.ifru_addr.sin6_addr))
+                break;
+        if(ia == NULL)
+            return EADDRNOTAVAIL;
+        ifr->ifr_ifru.ifru_flags6 = ia->ia6_ifaflags;
+        return 0;
+
     default:
         if(ifp == NULL || ifp->if_ioctl == NULL)
             return EOPNOTSUPP;
@@ -1187,7 +1199,7 @@ in6_tmpifadd(struct ifnet *ifp, struct nd_prefix *pr)
         return error;
 
     /* find the newly created address and set temporary flags + lifetimes */
-    GetSysTime(&_tv);
+    GetUpTime(&_tv);
     for(newia = in6_ifaddr; newia; newia = newia->ia_next) {
         if(IN6_ARE_ADDR_EQUAL(&newia->ia_addr.sin6_addr, &tmpaddr) &&
            newia->ia6_ifp == ifp)
@@ -1225,17 +1237,20 @@ in6_tmpaddrtimer(void)
     struct in6_ifaddr *ia, *nia;
     struct timeval _tv;
 
-    GetSysTime(&_tv);
+    GetUpTime(&_tv);
 
+    /* temporary addresses (RFC 4941) and those stateless autoconfiguration
+     * made (RFC 4862 section 5.5.4): deprecated at the end of the preferred
+     * lifetime, removed at the end of the valid one */
     for(ia = in6_ifaddr; ia; ia = nia) {
         nia = ia->ia_next;
-        if(!(ia->ia6_ifaflags & IN6_IFF_TEMPORARY))
+        if(!(ia->ia6_ifaflags & (IN6_IFF_TEMPORARY | IN6_IFF_AUTOCONF)))
             continue;
 
         /* check valid lifetime expiry */
         if(ia->ia6_lifetime_expire &&
            (u_int32_t)_tv.tv_sec >= ia->ia6_lifetime_expire) {
-            D(bug("[AROSTCP:IN6] %s: removing expired temporary addr\n",
+            D(bug("[AROSTCP:IN6] %s: removing expired autoconfigured addr\n",
                   __func__));
             in6_purgeaddr((struct ifaddr *)ia);
             continue;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef ERROR_H
@@ -16,7 +16,8 @@ enum
 	ERR_VISUAL,
 	ERR_GADGETS,
 	ERR_WINDOW,
-	ERR_MEMORY
+	ERR_MEMORY,
+	ERR_PTEDIT
 };
 
 #endif

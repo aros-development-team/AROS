@@ -234,9 +234,6 @@ void kernel_cstart(const struct TagItem *start_msg)
     struct mb_mmap *mmap = NULL;
     IPTR mmap_len = 0, addr = 0, klo  = 0, memtop = 0, maptop = 0;
     struct TagItem *tag;
-#if defined(__AROSEXEC_SMP__)
-    struct X86SchedulerPrivate  *scheduleData;
-#endif
     UWORD *ranges[] =
     {
         NULL,
@@ -555,15 +552,10 @@ void kernel_cstart(const struct TagItem *start_msg)
     krnCreateROMHeader("Kickstart ROM", (APTR)klo, (APTR)kick_highest);
 
 #if defined(__AROSEXEC_SMP__)
-    D(bug("[Kernel] Allocating CPU #0 Scheduling Data\n"));
-    scheduleData = AllocMem(sizeof(struct X86SchedulerPrivate), MEMF_PUBLIC|MEMF_CLEAR);
-    if (!scheduleData)
-        krnPanic(KernelBase, "Failed to Allocate Boot Processor Scheduling Data!");
-
-    core_InitScheduleData(scheduleData);
-
-    TLS_SET(ScheduleData, scheduleData);
-    D(bug("[Kernel] Scheduling Data @ 0x%p\n", TLS_GET(ScheduleData)));
+    /* CPU #0's scheduling data sits in its TLS block, zeroed when that was
+       allocated; only the tick values are left to set. */
+    core_InitScheduleData(&((tls_t *)__KernBootPrivate->BOOTTLS)->Sched);
+    D(bug("[Kernel] Scheduling Data @ 0x%p\n", &((tls_t *)__KernBootPrivate->BOOTTLS)->Sched));
 #endif
     /*
      * Now we have working exec.library memory allocator.
@@ -599,6 +591,13 @@ void kernel_cstart(const struct TagItem *start_msg)
      * into .rodata. This way we prevent it from ocassional modification by buggy software.
      */
     core_ProtKernelArea(addr, kick_highest - addr, 1, 0, 1);
+
+    /*
+     * ... except the boot CPU's TLS page. Its scheduler block is written by
+     * Forbid(), Disable() and the task-storage calls, which run in user
+     * mode; every other CPU's block comes from normal memory already.
+     */
+    core_ProtKernelArea((intptr_t)__KernBootPrivate->BOOTTLS, PAGE_SIZE, 1, 1, 1);
 
     /* Transfer the rest of memory list into SysBase */
     D(bug("[Kernel] Transferring memory list into SysBase...\n"));
@@ -794,6 +793,25 @@ void core_CPUSetup(apicid_t cpuNo, APTR cpuGDT, IPTR SystemStack)
 
     // Reload GS segment (user)
     asm volatile ("mov %0,%%gs"::"a"(USER_GS));
+
+    /* IA32_PAT entry 4 becomes write-combining, for MAP_WriteCombine; on every CPU */
+    {
+        ULONG cpuid_edx = 0;
+
+        asm volatile ("cpuid" : "=d"(cpuid_edx) : "a"(1) : "ebx", "ecx");
+        if (cpuid_edx & (1 << 16))          /* CPUID.01H:EDX.PAT */
+        {
+            ULONG lo = 0x00070406UL;        /* PA3..PA0: UC, UC-, WT, WB   */
+            ULONG hi = 0x00070401UL;        /* PA7..PA4: UC, UC-, WT, WC   */
+
+            asm volatile ("wrmsr" :: "c"(0x277), "a"(lo), "d"(hi));
+        }
+        else
+        {
+            D(bug("[Kernel] %s[%03u]: no PAT support, MAP_WriteCombine will be WB\n",
+                  __func__, cpuNo));
+        }
+    }
 }
 
 /* Boot-Time Allocation routines ... */
@@ -802,7 +820,15 @@ static APTR core_BSPAllocTLS(struct KernBootPrivate *__KernBootPrivate)
 {
     tls_t *tlsPtr;
 
-    tlsPtr = (tls_t *)krnAllocBootMem(sizeof(tls_t));
+    /*
+     * The per-CPU scheduler state is a member of this block, and exec writes
+     * it from user mode, so it needs a page of its own: the rest of the
+     * kickstart area is made read-only once ExecBase exists, and the page
+     * holding this block is handed back its write permission there.
+     */
+    tlsPtr = (tls_t *)krnAllocBootMemAligned(PAGE_SIZE, PAGE_SIZE);
+
+    memset(tlsPtr, 0, PAGE_SIZE);
 
     return (APTR)tlsPtr;
 }

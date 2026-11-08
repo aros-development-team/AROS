@@ -21,7 +21,7 @@
         AROS_LHA(const struct TagItem *, taglist, A2),
 
 /*  LOCATION */
-        struct Library *, PartitionBase, 13, Partition)
+        struct Library *, PartitionBase, 9, Partition)
 
 /*  FUNCTION
         Get attributes of a partition table.
@@ -36,6 +36,10 @@
         PTT_MAXLEADIN (LONG *)
         PTT_RESERVED (ULONG *)
             Get number of reserved blocks
+
+        PTT_FIRSTUSABLE, PTT_LASTUSABLE (UQUAD *)
+            Inclusive usable block range, excluding partition metadata.
+            QueryPartitionTableAttrs() indicates support for these tags.
 
     RESULT
 

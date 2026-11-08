@@ -796,6 +796,10 @@ LONG DoExamineEntry(struct emulbase *emulbase, struct filehandle *fh, char *Foun
     WIN32_FILE_ATTRIBUTE_DATA FIB;
     ULONG error;
 
+    /* Check, if the type is supported (sizes[] ends at ED_OWNER). */
+    if (type > ED_OWNER)
+        return ERROR_BAD_NUMBER;
+
     /* Check, if the supplied buffer is large enough. */
     next=(STRPTR)ead+sizes[type];
     end =(STRPTR)ead+size;

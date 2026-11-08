@@ -32,6 +32,13 @@ typedef void (*VOID_FUNC)(void);
 #endif
 #define AROS_UFHA(type,name,reg)    type,name,reg
 
+#define AROS_UFH3(t,n,a1,a2,a3) \
+    __AROS_UFH_PREFIX t n (\
+    __AROS_UFHA(a1),\
+    __AROS_UFHA(a2),\
+    __AROS_UFHA(a3)\
+    ) {
+
 #define AROS_UFH5(t,n,a1,a2,a3,a4,a5) \
     __AROS_UFH_PREFIX t n (\
     __AROS_UFHA(a1),\

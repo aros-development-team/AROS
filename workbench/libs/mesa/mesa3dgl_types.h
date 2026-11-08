@@ -26,6 +26,7 @@ struct mesa3dgl_framebuffer
     ULONG                       width;
     ULONG                       height;
     BOOL                        resized;
+    BOOL                        linear_display;  /* the driver's DisplayResource needs linear colour buffers */
 
     /* 3D scan-out (gallium.library scan-out framebuffer): when the window's
      * display can show the colour buffers itself, the FRONT_LEFT attachment
@@ -41,6 +42,7 @@ struct mesa3dgl_framebuffer
     BOOL                        scanout_tried;   /* creation attempted for this size */
     BOOL                        noscanout;       /* ENV:MESA3DGL_NOSCANOUT */
     ULONG                       scanout_buffers; /* wanted (ENV:MESA3DGL_SCANOUT_BUFFERS, default 3) */
+    int                         scanout_vsync;   /* swap interval applied to the scan-out framebuffer, -1 = not yet */
 };
 
 /* mesa/gallium GL context */
@@ -60,7 +62,7 @@ struct mesa3dgl_context
     ULONG                       visible_rp_height;
     ULONG                      top, bottom;
     ULONG                      left, right;
-
+    int                        swap_interval;   /* GLA_SwapInterval / glASwapInterval() */
 };
 
 /*  state trackers GL API */

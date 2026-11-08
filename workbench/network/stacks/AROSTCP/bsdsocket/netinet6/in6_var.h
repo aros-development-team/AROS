@@ -189,6 +189,7 @@ int  in6_ifinit(struct ifnet *, struct in6_ifaddr *, struct sockaddr_in6 *, int)
 void in6_purgeaddr(struct ifaddr *);
 int  in6_ifconf(int, caddr_t);
 struct in6_ifaddr *in6_ifawithifp(struct ifnet *, struct in6_addr *);
+struct in6_ifaddr *in6_ourifa(const struct in6_addr *, struct ifnet *);
 struct in6_ifaddr *in6_ifaof_ifpforlinklocal(struct ifnet *);
 int  in6_localaddr(struct in6_addr *);
 void in6_if_up(struct ifnet *);

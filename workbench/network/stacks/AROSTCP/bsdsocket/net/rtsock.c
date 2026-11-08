@@ -293,6 +293,7 @@ badif:
             rtm->rtm_msglen = len;
             rtm->rtm_flags = rt->rt_flags;
             rtm->rtm_rmx = rt->rt_rmx;
+            rtm->rtm_rmx.rmx_expire = rt_expire_out(rt->rt_rmx.rmx_expire);
             cp = (caddr_t)(1 + rtm);
             len = ROUNDUP(dst->sa_len);
             Bcopy(dst, cp, len);
@@ -423,8 +424,9 @@ register struct rt_metrics *in, *out;
     metric(RTV_RTTVAR, rmx_rttvar);
     metric(RTV_HOPCOUNT, rmx_hopcount);
     metric(RTV_MTU, rmx_mtu);
-    metric(RTV_EXPIRE, rmx_expire);
 #undef metric
+    if(which & RTV_EXPIRE)      /* a time of day; kept as uptime */
+        out->rmx_expire = rt_expire_in(in->rmx_expire);
 }
 
 /*
@@ -770,6 +772,7 @@ register struct walkarg *w;
         w->w_rtm.rtm_flags = rt->rt_flags;
         w->w_rtm.rtm_use = rt->rt_use;
         w->w_rtm.rtm_rmx = rt->rt_rmx;
+        w->w_rtm.rtm_rmx.rmx_expire = rt_expire_out(rt->rt_rmx.rmx_expire);
         w->w_rtm.rtm_index = rt->rt_ifp->if_index;
 #undef next
 #define next(l) {n = (l); Bcopy(sa, cp, n); cp += n;}

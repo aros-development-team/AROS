@@ -84,6 +84,9 @@ Object *optObjCheckCreateWork = NULL;
 Object *sys_size = NULL;
 Object *work_size = NULL;
 Object *optObjCheckEFI = NULL;
+#ifdef INSTALL_BL_PC_EFI
+Object *optObjCycleBootMode = NULL;
+#endif
 Object *optObjCheckFormatESP = NULL;
 Object *optObjCheckCopyESP = NULL;
 Object *bootopt_grubgroup = NULL;
@@ -194,6 +197,10 @@ int main(int argc, char *argv[])
         NULL
     };
     
+#ifdef INSTALL_BL_PC_EFI
+    static char *opt_bootmodes[] = { "BIOS (GRUB)", "UEFI", NULL };
+#endif
+
     static char *opt_fstypes[] = {
         "FFS-Intl",
         "SFS",
@@ -655,6 +662,25 @@ int main(int argc, char *argv[])
             End),
         TAG_DONE);
 
+#ifdef INSTALL_BL_PC_EFI
+    optObjCycleBootMode = Install_MakeOption(InstallObj,
+            MUIA_InstallOption_ID, (IPTR)"bootmode",
+            MUIA_InstallOption_ValueTag, MUIA_Cycle_Active,
+            MUIA_InstallOption_Obj, (IPTR)(CycleObject,
+                MUIA_CycleChain, 1,
+                MUIA_Cycle_Entries, opt_bootmodes,
+                MUIA_Cycle_Active, BootLoaderType == BOOTLOADER_EFI,
+                MUIA_Disabled, BIOSBootLoaderType == BOOTLOADER_NONE ||
+                    !BootLoaderData[BOOTLOADER_EFI].match,
+            End),
+        TAG_DONE);
+    if (BootLoaderType == BOOTLOADER_EFI)
+    {
+        OPTOSET(optObjCheckEFI, MUIA_Selected, TRUE);
+        OPTOSET(optObjCyclePartScheme, MUIA_Cycle_Active, 2);
+    }
+#endif
+
     optObjCheckBootloader = Install_MakeOption(InstallObj, 
             MUIA_InstallOption_ID, (IPTR)"reboot",
             MUIA_InstallOption_ValueTag, MUIA_Selected,
@@ -836,6 +862,10 @@ int main(int argc, char *argv[])
                                             Child, (IPTR) LLabel(_(MSG_INSTALLDEVEL)),
                                             Child, (IPTR) optObjCheckBootloader,
                                             Child, (IPTR) LLabel(_(MSG_INSTALLBOOT)),
+#ifdef INSTALL_BL_PC_EFI
+                                            Child, (IPTR) optObjCycleBootMode,
+                                            Child, (IPTR) LLabel("BIOS / UEFI"),
+#endif
                                         End,
                                         Child, (IPTR) HVSpace,
                                         Child, (IPTR) HVSpace,

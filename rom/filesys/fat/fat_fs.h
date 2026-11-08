@@ -138,7 +138,7 @@ struct GlobalLock
     ULONG               attr;           /* file attributes, from the dir entry */
     ULONG               size;           /* file size, from the dir entry */
 
-    UBYTE name[FAT_MAX_LONG_FILENAME];  /* copy of the name (bstr) */
+    UBYTE name[FAT_MAX_LONG_FILENAME + 1];  /* copy of the name (bstr) */
 #if DEBUG_NAMES
     UBYTE shortname[FAT_MAX_SHORT_NAME + 2]; /* copy of the short name (bstr) */
 #endif

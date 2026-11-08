@@ -588,8 +588,8 @@ ULONG shadow_init_execbase(struct M68KEmuContext *ctx, ULONG m68k_base, void *na
                         m68k_write32(ctx, m68k_proc + M68K_PR_CLI, m68k_cli >> 2);
                         /* cli_DefaultStack */
                         m68k_write32(ctx, m68k_cli + M68K_CLI_DEFAULTSTACK, 4096);
-                        /* cli_Module — non-zero signals CLI start */
-                        m68k_write32(ctx, m68k_cli + M68K_CLI_MODULE, 1);
+                        /* cli_Module: the program's segment link */
+                        m68k_write32(ctx, m68k_cli + M68K_CLI_MODULE, ctx->seg_start ? ((ctx->seg_start - 4) >> 2) : 1);
                         /* cli_CommandName — BPTR to BCPL string */
                         if (ctx->program_name[0])
                         {

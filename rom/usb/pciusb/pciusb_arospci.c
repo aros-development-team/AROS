@@ -790,9 +790,12 @@ void pciExpunge(struct PCIDevice *hd)
         }
         FreePooled(hd->hd_MemPool, hu, sizeof(struct PCIUnit));
     }
-    if(hd->hd_PCIHidd) {
-        OOP_DisposeObject(hd->hd_PCIHidd);
-    }
+    /* hd_PCIHidd is pci.hidd's singleton bus object: its Dispose method
+       does nothing, and pci.hidd disposes the object itself when it is
+       expunged. That can happen before this device is expunged (no PCI
+       driver keeps pci.hidd in use), so the object may already be freed
+       here: do not call it. */
+    hd->hd_PCIHidd = NULL;
 }
 /* \\\ */
 

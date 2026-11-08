@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <string.h>
@@ -31,20 +31,29 @@
         struct Library *, MUIMasterBase, 17, MUIMaster)
 
 /*  FUNCTION
+        Redraw an Area-derived object immediately if it is drawable.
+        Account for enclosing virtual groups, update the rendering context's
+        clip rectangle, store the requested drawing flags, and dispatch
+        MUIM_Draw. Apply the disabled overlay when required and copy a
+        buffered result to the window when buffering is active.
 
     INPUTS
+        obj - Non-NULL Area-derived object. A drawable object must have a
+              valid rendering context and drawing resources.
+        flags - Drawing flags, such as MADF_DRAWOBJECT or MADF_DRAWUPDATE.
+                Only bits in MADF_DRAWFLAGS are retained.
 
     RESULT
+        None. An object without MADF_CANDRAW is left unchanged.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        This call dispatches drawing synchronously; it does not queue a
+        redraw or return the result of MUIM_Draw. Call in the owning GUI
+        task. Drawing may change RastPort state and the context's clip
+        rectangle. Do not assume that those values are preserved.
 
     SEE ALSO
-
-    INTERNALS
+        MUI_Layout(), MUI_AddClipRegion(), MUI_RemoveClipRegion()
 
 *****************************************************************************/
 {

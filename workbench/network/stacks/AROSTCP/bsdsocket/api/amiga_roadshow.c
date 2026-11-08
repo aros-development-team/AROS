@@ -189,7 +189,7 @@ AROS_LH1(long, bpf_open,
 
     d = bpf_lookup(handle);
     if(d != NULL) {
-        d->bd_sigtask = libPtr->thisTask;
+        d->bd_sigtask = FindTask(NULL);	/* the caller: any task of a shared base */
     }
 
     return handle;
@@ -397,7 +397,7 @@ AROS_LH2(long, bpf_set_notify_mask,
     }
 
     d->bd_notifymask = mask;
-    d->bd_sigtask = libPtr->thisTask;
+    d->bd_sigtask = FindTask(NULL);	/* the caller: any task of a shared base */
     return 0;
 
     AROS_LIBFUNC_EXIT
@@ -419,7 +419,7 @@ AROS_LH2(long, bpf_set_interrupt_mask,
     }
 
     d->bd_intrmask = mask;
-    d->bd_sigtask = libPtr->thisTask;
+    d->bd_sigtask = FindTask(NULL);	/* the caller: any task of a shared base */
     return 0;
 
     AROS_LIBFUNC_EXIT
@@ -822,6 +822,7 @@ getri_callback(struct radix_node *rn, void *arg)
             rtm->rtm_flags   = rt->rt_flags;
             rtm->rtm_use     = rt->rt_use;
             rtm->rtm_rmx     = rt->rt_rmx;
+            rtm->rtm_rmx.rmx_expire = rt_expire_out(rt->rt_rmx.rmx_expire);
 #if INET6
             /*
              * IPv6 neighbour (ND6) entries keep their expiry time in
@@ -835,8 +836,8 @@ getri_callback(struct radix_node *rn, void *arg)
             if((rt->rt_flags & RTF_LLINFO) && rt->rt_llinfo != NULL) {
                 struct sockaddr *rk = rt_key(rt);
                 if(rk != NULL && rk->sa_family == AF_INET6)
-                    rtm->rtm_rmx.rmx_expire =
-                        ((struct llinfo_nd6 *)rt->rt_llinfo)->ln_expire;
+                    rtm->rtm_rmx.rmx_expire = rt_expire_out(
+                        ((struct llinfo_nd6 *)rt->rt_llinfo)->ln_expire);
             }
 #endif
             if(rt->rt_ifp)
@@ -973,16 +974,56 @@ AROS_LH1(void, ReleaseInterfaceList,
          struct SocketBase *, libPtr, 76, UL)
 {
     AROS_LIBFUNC_INIT
-    __log(LOG_CRIT, "ReleaseInterfaceList() is not implemented");
+    struct Node *n;
+
+    if(list == NULL)
+        return;
+    while((n = RemHead(list)) != NULL)
+        FreeVec(n);
+    FreeVec(list);
     AROS_LIBFUNC_EXIT
 }
 
+/*
+ * ObtainInterfaceList - Roadshow's list of the interfaces: one struct Node
+ * per interface, its name ("eth0", "lo0": what QueryInterfaceTagList() and
+ * the ioctls take) in ln_Name, the name stored with the node. Free it with
+ * ReleaseInterfaceList(). NULL with ENOMEM when memory runs out.
+ */
 AROS_LH0(struct List *, ObtainInterfaceList,
          struct SocketBase *, libPtr, 77, UL)
 {
     AROS_LIBFUNC_INIT
-    __log(LOG_CRIT, "ObtainInterfaceList() is not implemented");
-    return NULL;
+    extern struct ifnet *ifnet;
+    struct ifnet *ifp;
+    struct List *list;
+    spl_t s;
+
+    if((list = AllocVec(sizeof(*list), MEMF_PUBLIC | MEMF_CLEAR)) == NULL) {
+        writeErrnoValue(libPtr, ENOMEM);
+        return NULL;
+    }
+    NewList(list);
+    s = splnet();
+    for(ifp = ifnet; ifp; ifp = ifp->if_next) {
+        struct Node *n = AllocVec(sizeof(*n) + IFNAMSIZ + 4, MEMF_PUBLIC | MEMF_CLEAR);
+
+        if(n == NULL) {
+            struct Node *f;
+
+            splx(s);
+            while((f = RemHead(list)) != NULL)
+                FreeVec(f);
+            FreeVec(list);
+            writeErrnoValue(libPtr, ENOMEM);
+            return NULL;
+        }
+        n->ln_Name = (char *)(n + 1);
+        snprintf(n->ln_Name, IFNAMSIZ + 4, "%s%d", ifp->if_name, ifp->if_unit);
+        AddTail(list, n);
+    }
+    splx(s);
+    return list;
     AROS_LIBFUNC_EXIT
 }
 
@@ -1093,8 +1134,11 @@ AROS_LH1(LONG, AddDomainNameServer,
     nsn->nsn_EntSize = sizeof(nsn->nsn_Ent);
     nsn->nsn_Family = AF_INET;
     nsn->nsn_Ent.ns_addr.s_addr = sa.sin_addr.s_addr;
+    nsn->nsn_OwnerIndex = 0;
+    nsn->nsn_Expire = 0;
 
     ObtainSemaphore(&DynDB.dyn_Lock);
+    ndb_ops_locked();
     AddTail((struct List *)&DynDB.dyn_NameServers, (struct Node *)nsn);
     ndb_Serial++;
     ReleaseSemaphore(&DynDB.dyn_Lock);
@@ -1125,6 +1169,7 @@ AROS_LH1(LONG, RemoveDomainNameServer,
     }
 
     ObtainSemaphore(&DynDB.dyn_Lock);
+    ndb_ops_locked();
     for(node = DynDB.dyn_NameServers.mlh_Head; node->mln_Succ;) {
         struct NameserventNode *nsn = (struct NameserventNode *)node;
         nnode = node->mln_Succ;
@@ -1566,7 +1611,12 @@ AROS_LH5(struct hostent *, RS_gethostbyname_r,
          struct SocketBase *, libPtr, 123, UL)
 {
     AROS_LIBFUNC_INIT
-    return __gethostbyname_r(name, result, buf, buflen, h_errnop, libPtr);
+    struct hostent *r;
+
+    ObtainResolver(libPtr);
+    r = __gethostbyname_r(name, result, buf, buflen, h_errnop, libPtr);
+    ReleaseResolver(libPtr);
+    return r;
     AROS_LIBFUNC_EXIT
 }
 
@@ -1584,8 +1634,13 @@ AROS_LH7(struct hostent *, RS_gethostbyaddr_r,
          struct SocketBase *, libPtr, 124, UL)
 {
     AROS_LIBFUNC_INIT
-    return __gethostbyaddr_r(addr, len, type, result, buf, buflen,
-                             h_errnop, libPtr);
+    struct hostent *r;
+
+    ObtainResolver(libPtr);
+    r = __gethostbyaddr_r(addr, len, type, result, buf, buflen,
+                          h_errnop, libPtr);
+    ReleaseResolver(libPtr);
+    return r;
     AROS_LIBFUNC_EXIT
 }
 
@@ -1749,14 +1804,12 @@ AROS_LH1(void, RS_freeaddrinfo,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH4(LONG, RS_getaddrinfo,
-         AROS_LHA(const char *, hostname, A0),
-         AROS_LHA(const char *, servname, A1),
-         AROS_LHA(const struct addrinfo *, hints, A2),
-         AROS_LHA(struct addrinfo **, result, A3),
-         struct SocketBase *, libPtr, 136, UL)
+/* RS_getaddrinfo() under the base's resolver lock */
+static LONG getaddrinfoLocked(const char *hostname, const char *servname,
+                              const struct addrinfo *hints,
+                              struct addrinfo **result,
+                              struct SocketBase *libPtr)
 {
-    AROS_LIBFUNC_INIT
 
     struct addrinfo sentinel;
     struct addrinfo *cur;
@@ -1984,6 +2037,22 @@ fail:
     }
     return error;
 
+}
+
+AROS_LH4(LONG, RS_getaddrinfo,
+         AROS_LHA(const char *, hostname, A0),
+         AROS_LHA(const char *, servname, A1),
+         AROS_LHA(const struct addrinfo *, hints, A2),
+         AROS_LHA(struct addrinfo **, result, A3),
+         struct SocketBase *, libPtr, 136, UL)
+{
+    AROS_LIBFUNC_INIT
+    LONG r;
+
+    ObtainResolver(libPtr);
+    r = getaddrinfoLocked(hostname, servname, hints, result, libPtr);
+    ReleaseResolver(libPtr);
+    return r;
     AROS_LIBFUNC_EXIT
 }
 
@@ -1998,17 +2067,12 @@ AROS_LH1(STRPTR, RS_gai_strerror,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH7(LONG, RS_getnameinfo,
-         AROS_LHA(struct sockaddr *, sa, A0),
-         AROS_LHA(LONG, salen, D0),
-         AROS_LHA(char *, hostname, A1),
-         AROS_LHA(LONG, hostlen, D1),
-         AROS_LHA(char *, servicename, A2),
-         AROS_LHA(LONG, servicelen, D2),
-         AROS_LHA(LONG, flags, D3),
-         struct SocketBase *, libPtr, 138, UL)
+/* RS_getnameinfo() under the base's resolver lock */
+static LONG getnameinfoLocked(struct sockaddr *sa, LONG salen,
+                              char *hostname, LONG hostlen,
+                              char *servicename, LONG servicelen,
+                              LONG flags, struct SocketBase *libPtr)
 {
-    AROS_LIBFUNC_INIT
 
     if (sa == NULL)
         return EAI_FAIL;
@@ -2107,6 +2171,25 @@ rs_serv_done:
 
     return 0;
 
+}
+
+AROS_LH7(LONG, RS_getnameinfo,
+         AROS_LHA(struct sockaddr *, sa, A0),
+         AROS_LHA(LONG, salen, D0),
+         AROS_LHA(char *, hostname, A1),
+         AROS_LHA(LONG, hostlen, D1),
+         AROS_LHA(char *, servicename, A2),
+         AROS_LHA(LONG, servicelen, D2),
+         AROS_LHA(LONG, flags, D3),
+         struct SocketBase *, libPtr, 138, UL)
+{
+    AROS_LIBFUNC_INIT
+    LONG r;
+
+    ObtainResolver(libPtr);
+    r = getnameinfoLocked(sa, salen, hostname, hostlen, servicename, servicelen, flags, libPtr);
+    ReleaseResolver(libPtr);
+    return r;
     AROS_LIBFUNC_EXIT
 }
 

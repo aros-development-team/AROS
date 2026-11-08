@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -54,7 +54,14 @@
     struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     ULONG Result = TRUE;
-    ULONG lock = LockIBase(0);
+    BOOL screenmode = type == IPREFS_TYPE_SCREENMODE_V37;
+    ULONG lock;
+
+    /* OpenWorkBench/CloseWorkBench take the public-screen list first.
+     * Keep the bitmap alive while comparing the requested mode below. */
+    if (screenmode)
+        LockPubScreenList();
+    lock = LockIBase(0);
 
     DEBUG_SETIPREFS(bug("[Intuition] %s: data %p length %lu type %lu\n", __func__, data, length, type));
 
@@ -88,10 +95,27 @@
             if (!closed)
             {
                 BOOL try = TRUE;
+                struct IScreenModePrefs *cur = GetPrivIBase(IntuitionBase)->ScreenModePrefs;
+                struct IScreenModePrefs *requested = data;
+                struct Screen *wb = GetPrivIBase(IntuitionBase)->WorkBench;
+
+                /* The request may describe the bitmap already supplied by
+                 * an RTG driver. Store that request unchanged, so applying
+                 * a shallower request again remains a no-op too. */
+                if (requested->smp_DisplayID == cur->smp_DisplayID &&
+                    requested->smp_Width == cur->smp_Width &&
+                    requested->smp_Height == cur->smp_Height &&
+                    requested->smp_Control == cur->smp_Control &&
+                    requested->smp_Depth == GetBitMapAttr(wb->RastPort.BitMap, BMA_DEPTH))
+                {
+                    CopyMem(requested, cur, sizeof(*cur));
+                    break;
+                }
 
                 reopen = TRUE;
 
                 UnlockIBase(lock);
+                UnlockPubScreenList();
 
                 while (try && !(closed = CloseWorkBench()))
                 {
@@ -414,6 +438,8 @@
     }
 
     UnlockIBase(lock);
+    if (screenmode)
+        UnlockPubScreenList();
 
     DEBUG_SETIPREFS(bug("[Intuition] %s: Result 0x%lx\n", __func__, Result));
     

@@ -79,6 +79,23 @@ void testSYSCTL_ECN(void)
     CU_ASSERT_EQUAL(v, 2);
 }
 
+/* Proportional rate reduction (RFC 6937) in loss recovery with SACK: off;
+ * it takes 1 and gives it back. */
+void testSYSCTL_PRR(void)
+{
+    LONG v = -1, n = 1;
+
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_PRR, &v, NULL), 0);
+    CU_ASSERT_EQUAL(v, 0);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_PRR, &v, &n), 0);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_PRR, &v, NULL), 0);
+    CU_ASSERT_EQUAL(v, 1);
+    n = 0;
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_PRR, &v, &n), 0);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_PRR, &v, NULL), 0);
+    CU_ASSERT_EQUAL(v, 0);
+}
+
 /* A leaf that does not exist. */
 void testSYSCTL_UNKNOWN(void)
 {
@@ -112,6 +129,7 @@ int main(void)
         !CU_add_test(p, "net.inet.tcp.pmtud", testSYSCTL_PMTUD) ||
         !CU_add_test(p, "net.inet.tcp.pmtud_blackhole", testSYSCTL_PMTUD_BLACKHOLE) ||
         !CU_add_test(p, "net.inet.tcp.ecn", testSYSCTL_ECN) ||
+        !CU_add_test(p, "net.inet.tcp.prr", testSYSCTL_PRR) ||
         !CU_add_test(p, "an unknown leaf is refused", testSYSCTL_UNKNOWN))
     {
         CU_cleanup_registry();

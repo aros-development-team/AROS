@@ -5,28 +5,17 @@
     source file (see mmakefile.src).
 
     stdcio reaches stdc through its own rellib StdCBase (opened by
-    genmodule), and stdc.library is per-opener, so the plain errno
-    macro would set the errno of that private base - never seen by the
-    calling program. stdcio_startup records the program's own StdCBase
-    in StdCIOBase->StdCBase; set errno there when it is known.
+    genmodule). errno is per thread (__stdc_threaderrno.c): whichever base
+    __stdc_geterrnoptr() is called through, it answers the calling thread's
+    errno, the one the program reads. Writing a base's _errno field directly
+    (as this header once did, to the program's base) misses that location.
 */
 #ifndef __STDCIO_ERRNO_H
 #define __STDCIO_ERRNO_H
 
 #include <errno.h>
-#include <libraries/stdc.h>
-#include <libraries/stdcio.h>
-
-static inline int *__stdcio_errnoptr(void)
-{
-    struct StdCIOBase *StdCIOBase = __aros_getbase_StdCIOBase();
-
-    if (StdCIOBase != NULL && StdCIOBase->StdCBase != NULL)
-        return &StdCIOBase->StdCBase->_errno;
-    return __stdc_geterrnoptr();
-}
 
 #undef errno
-#define errno (*__stdcio_errnoptr())
+#define errno (*__stdc_geterrnoptr())
 
 #endif /* __STDCIO_ERRNO_H */

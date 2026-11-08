@@ -170,7 +170,6 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler, irq_handler_t 
         entry->irq_task = (struct Task *)CreateNewProcTags(
             NP_Name, (IPTR)"Amdgpu IRQ",
             NP_Priority, 30,
-            NP_Affinity, TASKAFFINITY_ANY,
             NP_Entry, (IPTR)irq_task_main,
             NP_StackSize, 128 * 1024,
             NP_UserData, (IPTR)entry,

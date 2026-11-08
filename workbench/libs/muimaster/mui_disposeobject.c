@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/muimaster.h>
@@ -19,25 +19,23 @@
         struct Library *, MUIMasterBase, 6, MUIMaster)
 
 /*  FUNCTION
-        Deletes MUI object and its child objects.
-        
+        Dispose of a MUI object, then release its class through MUI_FreeClass().
+        The object's OM_DISPOSE implementation determines which owned
+        children and other resources are released.
+
     INPUTS
-        obj - pointer to MUI object created with MUI_NewObject. May be NULL,
-              in which case this function has no effect.
-        
+        obj - Object to dispose of, or NULL to do nothing.
+
     RESULT
+        None.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        The object pointer is invalid after disposal. Remove a child from
+        its owner before disposing of it independently. Do not separately
+        dispose of children that the parent has already disposed of.
 
     SEE ALSO
-
-    INTERNALS
-        MUI will call DisposeObject(), then call CloseLibrary() on
-        OCLASS(obj)->h_Data if cl_ID!=NULL && h_Data!=NULL.
+        MUI_NewObjectA(), MUI_FreeClass(), intuition.library/DisposeObject()
 
 *****************************************************************************/
 {

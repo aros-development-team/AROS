@@ -30,6 +30,25 @@ only ever reaches the target C driver through the
   (the Rust parts of the NVK Vulkan driver) as AROS link libraries.
 * `tools-crosstools-rust-check` links a std program for the target and fails
   if the AROS executable has undefined symbols.
+* `tools-crosstools-rust-abicheck` (`abicheck.sh`) compares the size and
+  alignment of each type in `abi-types.txt` (the C types the AROS `libc`
+  patches restate in Rust) with the AROS C headers. It checks the `libc`
+  inside the installed std and the crate store's copy, and
+  `contrib-rust-crates-abicheck` checks the contrib store's copy. Nothing
+  runs on the target: both sides are compiled to objects and their symbol
+  sizes compared. `rust-crates-config` and `contrib-rust-crates-config`
+  depend on these checks, so no Rust program builds against a `libc` that
+  disagrees with the headers. When a C header changes, update every `libc`
+  patch (`rustc-*-aros.diff`, `crates/libc-*-aros.diff` and the contrib
+  store's) and add any new type to `abi-types.txt`.
+* std is not rebuilt when only a vendored crate's patch changes: cargo never
+  looks at vendored sources again, and `fetch.sh` applies a patch only once.
+  After changing the `libc` part of `rustc-*-aros.diff`, make the same change
+  in the unpacked `vendor/libc-*` (or unpack again, which rebuilds
+  everything), then remove `stage1-std/<target triple>` under the build
+  directory and the `.installflag-rust-*` file so `tools-crosstools-rust`
+  builds std again. A crate store's copy is refreshed by removing it, its
+  copied patch and its `.applied`/`.unpacked` markers.
 
 `crosstools-rust-create-patch` regenerates the diff from a patched source
 tree, as for the other crosstools.

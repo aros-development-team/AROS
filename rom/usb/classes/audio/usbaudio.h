@@ -74,6 +74,7 @@ struct NepAudioMode
     struct PsdInterface *nam_ZeroBWIF;    /* Interface for without bandwidth use */
     struct PsdEndpoint *nam_EP;           /* Iso Endpoint */
     struct PsdRTIsoHandler *nam_RTIso;    /* Iso Pipe */
+    BOOL                nam_RTIsoRunning; /* started and not stopped since */
     struct PsdPipe     *nam_EP0Pipe;      /* Endpoint 0 pipe */
     struct MsgPort     *nam_TaskMsgPort;  /* Message Port of Subtask */
 

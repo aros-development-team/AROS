@@ -513,7 +513,7 @@ BOOL amdgpu_log_init(void)
     if (!nlog.buf)
         return FALSE;
     CreateNewProcTags(NP_Name, (IPTR)"Amdgpu Log", NP_Priority, -1,
-                      NP_Affinity, TASKAFFINITY_ANY, NP_Entry, (IPTR)nlog_flusher, NP_StackSize, 32 * 1024, TAG_DONE);
+                      NP_Entry, (IPTR)nlog_flusher, NP_StackSize, 32 * 1024, TAG_DONE);
     return TRUE;
 }
 #else
@@ -629,4 +629,12 @@ void print_hex_dump(const char *level, const char *prefix_str, int prefix_type,
             nlog_emit(out, l);
         }
     }
+}
+
+/* a spinner whose lock holder is not running gives the CPU away for a tick */
+void amdgpu_compat_spin_yield(void)
+{
+    Permit();
+    Delay(1);
+    Forbid();
 }

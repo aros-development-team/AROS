@@ -81,14 +81,29 @@ ARCHCONVERTFUNCH(SSE2,XRGB32,BGRA32)
         ULONG x = 0;
 
         for (; x + PIXELSPERCONV <= width; x += PIXELSPERCONV) {
-            // Load 16 pixels = 4 x 128-bit SSE2 register loads, Convert registers, and write them out
-            SSE_ABCDtoDCBA;
+            /*
+             * Load 16 pixels = 4 x 128-bit SSE2 register loads and reverse them.
+             * The source has no alpha: its unused byte lands in the alpha
+             * byte, which is made opaque (as the generic converter does).
+             */
+            __m128i p0 = _mm_loadu_si128((const __m128i*)&src[x]);
+            __m128i p1 = _mm_loadu_si128((const __m128i*)&src[x + 4]);
+            __m128i p2 = _mm_loadu_si128((const __m128i*)&src[x + 8]);
+            __m128i p3 = _mm_loadu_si128((const __m128i*)&src[x + 12]);
+            REVERSECMPNTS_4PX(p0);
+            REVERSECMPNTS_4PX(p1);
+            REVERSECMPNTS_4PX(p2);
+            REVERSECMPNTS_4PX(p3);
+            _mm_storeu_si128((__m128i*)&dst[x],      _mm_or_si128(p0, mask_ff));
+            _mm_storeu_si128((__m128i*)&dst[x + 4],  _mm_or_si128(p1, mask_ff));
+            _mm_storeu_si128((__m128i*)&dst[x + 8],  _mm_or_si128(p2, mask_ff));
+            _mm_storeu_si128((__m128i*)&dst[x + 12], _mm_or_si128(p3, mask_ff));
         }
 
         // Handle remaining pixels
         for (; x < width; ++x) {
             ULONG s = src[x];
-            dst[x] = SHUFFLE24(s, ARGB32, BGRA32);
+            dst[x] = SHUFFLE24(s, ARGB32, BGRA32) | BGRA32_AMASK;
         }
 
         src = (ULONG *)(((UBYTE *)src) + srcMod);
@@ -160,6 +175,8 @@ ARCHCONVERTFUNCH(SSE3,XRGB32,BGRA32)
     const __m128i shuffle_mask = _mm_set_epi8(
         SSE_ABCDtoDCBA_MASK
     );
+    /* The source has no alpha: the byte that becomes alpha is made opaque */
+    const __m128i alpha_mask = _mm_set1_epi32(0xFF);
 
     D(bug("[GFX:SSE] %s()\n", __func__);)
 
@@ -172,16 +189,16 @@ ARCHCONVERTFUNCH(SSE3,XRGB32,BGRA32)
             __m128i p3 = _mm_loadu_si128((const __m128i*)&src[x + 12]);
 
             // Reorder bytes using shuffle
-            _mm_storeu_si128((__m128i*)&dst[x],  _mm_shuffle_epi8(p0, shuffle_mask));
-            _mm_storeu_si128((__m128i*)&dst[x + 4],  _mm_shuffle_epi8(p1, shuffle_mask));
-            _mm_storeu_si128((__m128i*)&dst[x + 8],  _mm_shuffle_epi8(p2, shuffle_mask));
-            _mm_storeu_si128((__m128i*)&dst[x + 12], _mm_shuffle_epi8(p3, shuffle_mask));
+            _mm_storeu_si128((__m128i*)&dst[x],      _mm_or_si128(_mm_shuffle_epi8(p0, shuffle_mask), alpha_mask));
+            _mm_storeu_si128((__m128i*)&dst[x + 4],  _mm_or_si128(_mm_shuffle_epi8(p1, shuffle_mask), alpha_mask));
+            _mm_storeu_si128((__m128i*)&dst[x + 8],  _mm_or_si128(_mm_shuffle_epi8(p2, shuffle_mask), alpha_mask));
+            _mm_storeu_si128((__m128i*)&dst[x + 12], _mm_or_si128(_mm_shuffle_epi8(p3, shuffle_mask), alpha_mask));
         }
 
         // Handle remaining pixels
         for (; x < width; ++x) {
             ULONG s = src[x];
-            dst[x] = SHUFFLE24(s, ARGB32, BGRA32);
+            dst[x] = SHUFFLE24(s, ARGB32, BGRA32) | BGRA32_AMASK;
         }
 
         src = (ULONG *)(((UBYTE *)src) + srcMod);
@@ -238,7 +255,11 @@ ARCHCONVERTFUNCH(SSE3,BGRA32,XRGB32)
 }
 
 /*
- * The following 24bit->32bit functions only operate on 4 pixels at a time
+ * The following 24bit->32bit functions only operate on 4 pixels at a time.
+ * A 16 byte load covers 5 1/3 source pixels, so a block is only done while
+ * the load stays inside the row (x + 6 <= width); the rest goes through the
+ * scalar loop. These routines also serve as the 24bit->ARGB32 converters,
+ * so the scalar loop sets the alpha byte like the vector one.
  */
 
 #define SSE_ABCtoDABC_MASK \
@@ -260,7 +281,7 @@ ARCHCONVERTFUNCH(SSE3,RGB24,XRGB32)
 
     for (y = 0; y < height; y++) {
         ULONG x = 0;
-        for (; x + 4 <= width; x += 4) {
+        for (; x + 6 <= width; x += 4) {
             __m128i p0 = _mm_loadu_si128((const __m128i*)&src[x * 3]);
             __m128i mask = _mm_set_epi8(
                 SSE_ABCtoDABC_MASK
@@ -273,7 +294,8 @@ ARCHCONVERTFUNCH(SSE3,RGB24,XRGB32)
 
         // Handle remaining pixels
         for (; x < width; ++x) {
-            dst[x] = GET24;
+            ULONG s = GET24;
+            dst[x] = s | ARGB32_AMASK;
         }
 
         src = (UBYTE *)(((UBYTE *)src) + srcMod);
@@ -304,7 +326,7 @@ ARCHCONVERTFUNCH(SSE3,BGR24,XRGB32)
 
     for (; y < height; y++) {
         ULONG x = 0;
-        for (; x + 4 <= width; x += 4) {
+        for (; x + 6 <= width; x += 4) {
             __m128i p0 = _mm_loadu_si128((const __m128i*)&src[x * 3]);
             __m128i mask = _mm_set_epi8(
                 SSE_ABCtoDCBA_MASK
@@ -318,7 +340,7 @@ ARCHCONVERTFUNCH(SSE3,BGR24,XRGB32)
         // Handle remaining pixels
         for (; x < width; ++x) {
             ULONG s = GET24_INV;
-            dst[x] = s;
+            dst[x] = s | ARGB32_AMASK;
         }
         src = (UBYTE *)(((UBYTE *)src) + srcMod);
         dst = (ULONG *)(((UBYTE *)dst) + dstMod);

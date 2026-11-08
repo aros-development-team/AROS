@@ -41,8 +41,8 @@ static struct Window *cover    = NULL;
 static struct Screen *scr      = NULL;
 static BOOL           finished = FALSE;
 
-static const char template[] = "SCREEN/S,SECONDS/N,WIDTH/N,HEIGHT/N,NOCOVER/S,BUFFERS/N";
-enum { ARG_SCREEN, ARG_SECONDS, ARG_WIDTH, ARG_HEIGHT, ARG_NOCOVER, ARG_BUFFERS, ARG_COUNT };
+static const char template[] = "SCREEN/S,SECONDS/N,WIDTH/N,HEIGHT/N,NOCOVER/S,BUFFERS/N,LEFT/N,TOP/N";
+enum { ARG_SCREEN, ARG_SECONDS, ARG_WIDTH, ARG_HEIGHT, ARG_NOCOVER, ARG_BUFFERS, ARG_LEFT, ARG_TOP, ARG_COUNT };
 
 static BOOL initgl(void)
 {
@@ -161,7 +161,7 @@ static ULONG ticks_now(void)
     struct DateStamp ds;
 
     DateStamp(&ds);
-    return (ULONG)(ds.ds_Days * 24 * 60 + ds.ds_Minute) * TICKS_PER_SECOND + (ULONG)ds.ds_Tick;
+    return (ULONG)(ds.ds_Days * 24 * 60 + ds.ds_Minute) * 60 * TICKS_PER_SECOND + (ULONG)ds.ds_Tick;
 }
 
 static void report(ULONG second, ULONG frames)
@@ -192,7 +192,7 @@ int main(void)
 {
     struct RDArgs *rda;
     IPTR args[ARG_COUNT] = { 0 };
-    LONG seconds = 20, width = 400, height = 300;
+    LONG seconds = 20, width = 400, height = 300, left = 40, top = 60;
     BOOL ownscreen = FALSE, nocover = FALSE;
     struct Screen *pubscreen = NULL;
     ULONG start, lastsec = 0, frames = 0, totalframes = 0;
@@ -210,6 +210,8 @@ int main(void)
     if (args[ARG_SECONDS]) seconds = *(LONG *)args[ARG_SECONDS];
     if (args[ARG_WIDTH])   width   = *(LONG *)args[ARG_WIDTH];
     if (args[ARG_HEIGHT])  height  = *(LONG *)args[ARG_HEIGHT];
+    if (args[ARG_LEFT])    left    = *(LONG *)args[ARG_LEFT];
+    if (args[ARG_TOP])     top     = *(LONG *)args[ARG_TOP];
     if (args[ARG_BUFFERS])
     {
         LONG b = *(LONG *)args[ARG_BUFFERS];
@@ -256,8 +258,8 @@ int main(void)
         WA_DragBar,       TRUE,
         WA_DepthGadget,   TRUE,
         WA_SizeGadget,    TRUE,
-        WA_Left,          40,
-        WA_Top,           60,
+        WA_Left,          left,
+        WA_Top,           top,
         WA_InnerWidth,    width,
         WA_InnerHeight,   height,
         WA_MinWidth,      100,

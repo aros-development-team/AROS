@@ -76,6 +76,26 @@ usable_interface(struct Library *SocketBase, int sock, const char *name,
     return TRUE;
 }
 
+/* DAD and address lifetime state belong to the address, not the interface.
+ * Do not join or announce through an address until the stack says it is a
+ * usable source, and stop using one that has become detached or deprecated. */
+static BOOL
+usable_address6(struct Library *SocketBase, int sock,
+    const struct in6_ifreq *address)
+{
+    struct in6_ifreq ifr;
+    int unusable = IN6_IFF_TENTATIVE | IN6_IFF_DUPLICATED |
+        IN6_IFF_DETACHED | IN6_IFF_DEPRECATED;
+
+    memset(&ifr, 0, sizeof(ifr));
+    memcpy(ifr.ifr_name, address->ifr_name, IFNAMSIZ);
+    ifr.ifr6_addr = address->ifr6_addr;
+    if (IoctlSocket(sock, SIOCGIFAFLAG_IN6, (char *)&ifr) != 0) {
+        return FALSE;
+    }
+    return (ifr.ifr_ifru.ifru_flags6 & unusable) == 0;
+}
+
 /* The interfaces mDNS can use now. Returns how many were written. */
 static LONG
 find_interfaces(struct Library *SocketBase, struct found *out, LONG max)
@@ -148,6 +168,7 @@ find_interfaces(struct Library *SocketBase, struct found *out, LONG max)
                 struct found *item;
 
                 if (!IN6_IS_ADDR_LINKLOCAL(&req[i].ifr6_addr.sin6_addr) ||
+                    !usable_address6(SocketBase, sock6, &req[i]) ||
                     !usable_interface(SocketBase, sock6, req[i].ifr_name,
                         &index)) {
                     continue;

@@ -77,6 +77,19 @@ void nvme_complete_ioevent(struct nvme_queue *nvmeq, struct nvme_completion *cqe
 */
 void nvme_finish_ioevent(struct completionevent_handler *slot)
 {
+    /* A command the controller refused is reported with its status code: the
+       request only carries IOERR_ABORTED, which says nothing about the cause. */
+    if (slot->ceh_Status && slot->ceh_Msg) {
+        struct IOExtTD *iotd = (struct IOExtTD *)slot->ceh_Msg;
+        struct nvme_Unit *unit = (struct nvme_Unit *)iotd->iotd_Req.io_Unit;
+
+        bug("[NVME%02ld] command %u failed, status type %u code %u (%s): %u bytes at offset %08x%08x, %u DMA segments\n",
+            unit ? unit->au_UnitNum : -1L, iotd->iotd_Req.io_Command,
+            (slot->ceh_Status >> 8) & 0x7, slot->ceh_Status & 0xFF,
+            (slot->ceh_Status & 0x4000) ? "final" : "retry possible",
+            iotd->iotd_Req.io_Length, iotd->iotd_Req.io_Actual, iotd->iotd_Req.io_Offset,
+            slot->ceh_DMAMapCount);
+    }
     nvme_dma_release(slot, TRUE);
 
 #if defined(NVME_DUMP_READS)

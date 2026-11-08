@@ -7,20 +7,21 @@
 */
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/m68kemu.h>
 #include <stdio.h>
 #include <string.h>
 
 int main(int argc, char **argv)
 {
-    struct Library *emubase;
+    struct Library *M68KEmuBase;
 
     if (argc < 2) {
         printf("Usage: RunM68K <m68k-binary> [args]\n");
         return 20;
     }
 
-    emubase = OpenLibrary("m68kemu.library", 0);
-    if (!emubase) {
+    M68KEmuBase = OpenLibrary("m68kemu.library", 0);
+    if (!M68KEmuBase) {
         printf("Cannot open m68kemu.library\n");
         return 20;
     }
@@ -45,11 +46,8 @@ int main(int argc, char **argv)
         argbuf[len] = '\0';
     }
 
-    LONG (*RunFile)(CONST_STRPTR, ULONG, CONST_STRPTR, ULONG) =
-        (LONG (*)(CONST_STRPTR, ULONG, CONST_STRPTR, ULONG))__AROS_GETVECADDR(emubase, 6);
-
     LONG result = RunFile(argv[1], 0, argbuf, (ULONG)len);
 
-    CloseLibrary(emubase);
+    CloseLibrary(M68KEmuBase);
     return result;
 }

@@ -41,13 +41,17 @@
 
 #include <proto/exec.h>
 
+struct SocketBase;
+struct SocketWaiter;
+
 extern BOOL sleep_init(void);
-extern void tsleep_send_timeout(struct SocketBase *, const struct timeval *);
-extern void tsleep_abort_timeout(struct SocketBase *, const struct timeval *);
-extern void tsleep_enter(struct SocketBase *, caddr_t, const char *);
-extern int  tsleep_main(struct SocketBase *, ULONG blockmask);
+extern void tsleep_send_timeout(struct SocketWaiter *, const struct timeval *);
+extern void tsleep_abort_timeout(struct SocketWaiter *, const struct timeval *);
+extern void tsleep_enter(struct SocketWaiter *, caddr_t, const char *);
+extern int  tsleep_main(struct SocketBase *, struct SocketWaiter *, ULONG blockmask);
 extern int  tsleep(struct SocketBase *, caddr_t, const char *,const struct timeval *);
 extern void wakeup(caddr_t);
+extern void wakeup_waiter(struct SocketWaiter *);
 
 /*
  * Spl-levels used in this implementation

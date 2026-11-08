@@ -147,7 +147,31 @@ void InternalObtainSemaphore(struct SignalSemaphore *sigSem, struct Task *owner,
          * Finally, we simply wait, ReleaseSemaphore() will fill in
          * who owns the semaphore.
          */
-        Wait(SIGF_SINGLE);
+        /*
+         * Wait until ReleaseSemaphore() has granted us the semaphore: it
+         * unlinks our request and clears its mln_Succ under the lock
+         * before it signals. On SMP a SIGF_SINGLE can also arrive late
+         * from something else - a reply to a PA_SIGNAL port using
+         * SIGB_SINGLE that WaitIO()/WaitPort() never consumed, delivered
+         * by IPI after the clear above - so one Wait() is not enough: a
+         * waiter that returned without the grant would run unprotected
+         * with its stack request still queued (and the stack reused).
+         */
+        for (;;)
+        {
+            BOOL granted;
+
+            Wait(SIGF_SINGLE);
+#if defined(__AROSEXEC_SMP__)
+            EXEC_SPINLOCK_LOCK(&sigSem->ss_MultipleLink.sr_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+            granted = (sr.sr_Link.mln_Succ == NULL);
+            EXEC_SPINLOCK_UNLOCK(&sigSem->ss_MultipleLink.sr_SpinLock);
+#else
+            granted = TRUE;
+#endif
+            if (granted)
+                break;
+        }
 
         /* All Done! */
         Permit();

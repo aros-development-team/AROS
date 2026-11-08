@@ -298,6 +298,11 @@ void krnTimerInitCore(void)
     hart_lastload[cpu] = krnReadTime();
     hart_lastidle[cpu] = __riscv_cpu_idletime[cpu];
     hart_nexttick[cpu] = hart_lastload[cpu] + tick_interval;
+#if defined(RISCV_KRNWATCHDOG)
+    /* The watchdog runs on the last CPU to start (kernel_watchdog.c) */
+    if (cpu > __krn_wdcpu)
+        __krn_wdcpu = cpu;
+#endif
     sbi_set_timer(hart_nexttick[cpu]);
     csr_set(sie, SIE_STIE);
 }
@@ -396,10 +401,19 @@ void krnTimerTick(struct ExceptionContext *ctx)
     {
         uint32_t cpu = krnRVCPUNumber();
 
+#if defined(RISCV_KRNWATCHDOG)
+        /* The trail the lock-up watchdog reads */
+        krnWatchRecord(ctx);
+#endif
+
         if (cpu != 0)
         {
             (void)ctx;
             krnTimerTickCore(cpu);
+#if defined(RISCV_KRNWATCHDOG)
+            if (__krn_watchdog && cpu == __krn_wdcpu)
+                krnWatchdogService(cpu);
+#endif
             return;
         }
     }
@@ -424,6 +438,8 @@ void krnTimerTick(struct ExceptionContext *ctx)
     }
 
     __timer_ticks++;
+    /* A device line throttled for storming gets another chance */
+    krnIRQUnthrottle();
     next = kpt->kpt_NextTick + tick_interval;
     if ((int64_t)(next - now) <= 0)
         next = now + tick_interval;

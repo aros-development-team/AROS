@@ -65,19 +65,23 @@ mdnsTicks(void)
 static void
 net_down(struct MDNSDaemon *md)
 {
+    struct Library *SocketBase = md->md_SocketBase;
+
     mdnsDiscoveryReset(md);
     mdnsQueryReset(md);
     mdnsRegGoodbyeAll(md);
     mdnsHostGoodbye(md);
     mdnsNetClose(md);
-    if (md->md_SocketBase != NULL) {
-        CloseLibrary(md->md_SocketBase);
+    if (SocketBase != NULL) {
+        SocketBaseTags(SBTM_SETVAL(SBTC_SIG_ADDRESS_CHANGE_MASK), 0,
+            TAG_END);
+        CloseLibrary(SocketBase);
         md->md_SocketBase = NULL;
     }
 }
 
 static void
-net_up(struct MDNSDaemon *md)
+net_up(struct MDNSDaemon *md, ULONG addressMask)
 {
     struct Library *SocketBase;
 
@@ -91,6 +95,7 @@ net_up(struct MDNSDaemon *md)
             SBTM_SETVAL(SBTC_ERRNOPTR(sizeof(daemonErrno))),
             (IPTR)&daemonErrno,
             SBTM_SETREF(SBTC_LOGTAGPTR), (IPTR)"mdnsd",
+            SBTM_SETVAL(SBTC_SIG_ADDRESS_CHANGE_MASK), addressMask,
             TAG_END);
     }
     /* An interface came, went or changed its address: the name is asked
@@ -235,6 +240,8 @@ main(void)
     struct MsgPort *port;
     ULONG portmask;
     ULONG lastScan = 0, lastReap = 0;
+    ULONG addressMask = 0;
+    BYTE addressSignal = -1;
     BOOL running = TRUE, probing = FALSE;
 
     /* One responder owns the host's names. */
@@ -273,14 +280,18 @@ main(void)
     /* Without the service registry, for example when started by hand, it
      * still runs and Ctrl-C stops it. */
     mdnsdServiceOpen(&sig);
-    net_up(md);
+    addressSignal = AllocSignal(-1);
+    if (addressSignal >= 0) {
+        addressMask = 1UL << addressSignal;
+    }
+    net_up(md, addressMask);
     port->mp_Node.ln_Name = (STRPTR)MDNS_IPC_PORT;
     AddPort(port);
 
     while (running) {
         ULONG got = wait_and_receive(md,
             portmask | sig.ms_Stop | sig.ms_Begin | sig.ms_End |
-            SIGBREAKF_CTRL_C, probing);
+            addressMask | SIGBREAKF_CTRL_C, probing);
 
         if (got & (sig.ms_Stop | SIGBREAKF_CTRL_C)) {
             running = FALSE;
@@ -295,11 +306,11 @@ main(void)
         if (got & sig.ms_Begin) {
             net_down(md);
         }
-        if ((got & sig.ms_End) ||
+        if ((got & (sig.ms_End | addressMask)) ||
             mdnsNow() - lastScan >= MDNSD_RESCAN_SECONDS) {
             lastScan = mdnsNow();
             if (md->md_SocketBase != NULL || (got & sig.ms_End)) {
-                net_up(md);
+                net_up(md, addressMask);
             }
         }
 
@@ -346,6 +357,9 @@ main(void)
     mdnsDiscoveryFree(md);
     mdnsQueryFree(md);
     mdnsdServiceClose();
+    if (addressSignal >= 0) {
+        FreeSignal(addressSignal);
+    }
     FreeMem(md->md_RxBuf, MDNS_MAX_PACKET);
     FreeMem(md->md_TxBuf, MDNS_MAX_PACKET);
     return RETURN_OK;

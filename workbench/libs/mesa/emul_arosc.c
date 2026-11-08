@@ -34,6 +34,7 @@ struct aros_malloc_hdr
     ULONG  magic;
     ULONG  total;     /* allocation size including header */
     size_t user_size; /* size requested by caller */
+    void  *raw;       /* start of the allocation: before the header when aligned */
 };
 
 #define HDR_BYTES AROS_ALIGN(sizeof(struct aros_malloc_hdr))
@@ -51,6 +52,7 @@ void *malloc(size_t size)
     h->magic = AROSC_MALLOC_MAGIC;
     h->total = total;
     h->user_size = size;
+    h->raw = raw;
     return raw + HDR_BYTES;
 }
 
@@ -62,7 +64,7 @@ void free(void *ptr)
     if (h->magic != AROSC_MALLOC_MAGIC)
         return;
     h->magic = 0;
-    FreeMem((UBYTE *)h, h->total);
+    FreeMem(h->raw, h->total);
 }
 
 void *calloc(size_t nmemb, size_t size)
@@ -79,6 +81,7 @@ void *calloc(size_t nmemb, size_t size)
     h->magic = AROSC_MALLOC_MAGIC;
     h->total = total;
     h->user_size = user;
+    h->raw = raw;
     return raw + HDR_BYTES;
 }
 
@@ -103,7 +106,64 @@ void *realloc(void *ptr, size_t size)
     }
     return np;
 }
- 
+
+/*
+ * The other C library allocators would come from stdc.library, whose blocks
+ * free() above does not recognise and drops: LLVM's aligned operator new and
+ * every strdup would leak. They allocate here too.
+ */
+void *aligned_alloc(size_t alignment, size_t size)
+{
+    ULONG total;
+    UBYTE *raw, *user;
+    struct aros_malloc_hdr *h;
+
+    if (alignment < AROS_WORSTALIGN)
+        alignment = AROS_WORSTALIGN;
+    total = HDR_BYTES + size + alignment;
+    raw = (UBYTE *)AllocMem(total, MEMF_ANY);
+    if (!raw)
+    {
+        errno = ENOMEM;
+        return NULL;
+    }
+    user = (UBYTE *)(((IPTR)raw + HDR_BYTES + alignment - 1) & ~(IPTR)(alignment - 1));
+    h = (struct aros_malloc_hdr *)(user - HDR_BYTES);
+    h->magic = AROSC_MALLOC_MAGIC;
+    h->total = total;
+    h->user_size = size;
+    h->raw = raw;
+    return user;
+}
+
+int posix_memalign(void **memptr, size_t alignment, size_t size)
+{
+    void *p = aligned_alloc(alignment, size);
+
+    if (!p)
+        return ENOMEM;
+    *memptr = p;
+    return 0;
+}
+
+char *strndup(const char *s, size_t n)
+{
+    size_t len = strnlen(s, n);
+    char *copy = (char *)malloc(len + 1);
+
+    if (copy)
+    {
+        memcpy(copy, s, len);
+        copy[len] = 0;
+    }
+    return copy;
+}
+
+char *strdup(const char *s)
+{
+    return strndup(s, (size_t)-1);
+}
+
 /*
     The purpose of this file is to provide implementation for C functions part
     of arosnixc.library in code where one does not want to use this library.
@@ -139,8 +199,33 @@ int gettimeofday (struct timeval * tv,struct timezone * tz)
 
 int usleep (useconds_t usec)
 {
-    IMPLEMENT();
-    return 0;
+    struct MsgPort * timerport;
+    struct timerequest * timereq;
+    int ret = -1;
+
+    if (usec == 0)
+        return 0;
+
+    timerport = CreateMsgPort();
+    timereq = (struct timerequest *)CreateIORequest(timerport, sizeof(*timereq));
+    if (timereq)
+    {
+        if (OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)timereq, 0) == 0)
+        {
+            timereq->tr_node.io_Command = TR_ADDREQUEST;
+            timereq->tr_time.tv_secs = usec / 1000000;
+            timereq->tr_time.tv_micro = usec % 1000000;
+            DoIO((struct IORequest *)timereq);
+            CloseDevice((struct IORequest *)timereq);
+            ret = 0;
+        }
+        DeleteIORequest((struct IORequest *)timereq);
+    }
+    DeleteMsgPort(timerport);
+
+    if (ret)
+        errno = EINTR;
+    return ret;
 }
 
 /*

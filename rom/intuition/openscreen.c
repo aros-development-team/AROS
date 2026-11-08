@@ -44,6 +44,7 @@
 #include <cybergraphx/cybergraphics.h>
 #else
 #include <hidd/gfx.h>
+#include <cybergraphx/cybergraphics.h>  /* PIXFMT_* */
 #endif
 
 #include <string.h>
@@ -57,6 +58,7 @@
 #include "menus.h"
 #include "monitorclass_intern.h"
 #include "monitorclass_private.h"
+#include "../graphics/graphics_private.h"   /* BMATags_CGXPixFmt */
 
 // disabled as it causes compatibility issues
 //#define USE8BITHACK
@@ -178,6 +180,7 @@ static const char THIS_FILE[] = __FILE__;
     BOOL                   draggable = TRUE;
     ULONG                  compflags = COMPF_ABOVE; // Default to AmigaOS like behaviour.
     struct Hook            *compalphahook = NULL;
+    LONG                   reqpixfmt = -1;
 
     struct TagItem   modetags[] =
     {
@@ -496,6 +499,10 @@ static const char THIS_FILE[] = __FILE__;
             case SA_AlphaPreCompositingHook:
                 compalphahook = (struct Hook *)tag->ti_Data;
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_AlphaPreCompositingHook 0x%p\n", compalphahook));
+                break;
+            case SA_PixelFormat:
+                reqpixfmt = (LONG)tag->ti_Data;
+                DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_PixelFormat %ld\n", reqpixfmt));
                 break;
             case SA_Left:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_Left %ld\n",tag->ti_Data));
@@ -1230,8 +1237,22 @@ static const char THIS_FILE[] = __FILE__;
             struct TagItem bmtags[] =
             {
                 {BMATags_DisplayID, modeid},
+                {TAG_IGNORE       , 0     },
                 {TAG_DONE         , 0     }
             };
+
+            /*
+             * A 32-bit format with alpha the opener asked for (SA_PixelFormat),
+             * so a video plane can show below the screen through it. Taken
+             * where the mode's pixels are of its size (AllocBitMap() checks).
+             */
+            if ((reqpixfmt == PIXFMT_ARGB32) || (reqpixfmt == PIXFMT_BGRA32) || (reqpixfmt == PIXFMT_RGBA32))
+            {
+                bmtags[1].ti_Tag  = BMATags_CGXPixFmt;
+                bmtags[1].ti_Data = reqpixfmt;
+            }
+            else
+                reqpixfmt = -1;
 
             screen->Screen.RastPort.BitMap = AllocBitMap(ns.Width, ns.Height, Depth,
                                                          allocbitmapflags | BMF_CHECKVALUE,
@@ -1312,6 +1333,18 @@ static const char THIS_FILE[] = __FILE__;
 
             if (screen->Screen.RastPort.BitMap)
             {
+                if (reqpixfmt >= 0)
+                {
+                    /* An alpha screen starts opaque, not as transparent zeroes */
+                    struct RastPort rport;
+
+                    InitRastPort(&rport);
+                    rport.BitMap = screen->AllocatedBitMap;
+                    SetRPAttrs(&rport, RPTAG_PenMode, FALSE, RPTAG_FgColor, 0xFF000000, TAG_DONE);
+                    RectFill(&rport, 0, 0, GetBitMapAttr(rport.BitMap, BMA_WIDTH) - 1,
+                             GetBitMapAttr(rport.BitMap, BMA_HEIGHT) - 1);
+                    DeinitRastPort(&rport);
+                }
                 UpdateScreenBitMap(&screen->Screen, IntuitionBase);
 #ifndef __AROS__
                 /*

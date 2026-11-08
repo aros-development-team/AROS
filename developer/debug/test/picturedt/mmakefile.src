@@ -1,0 +1,29 @@
+include $(SRCDIR)/config/aros.cfg
+
+CUNITEXEDIR := $(AROS_TESTS)/cunit/datatypes
+
+CUNITPICTUREDTTESTFILES := \
+    cunit-picturedt-copy
+
+#MM- test : test-picturedt
+#MM- test-quick : test-picturedt-quick
+
+#MM- test-cunit : test-picturedt-cunit
+#MM- test-cunit-quick : test-picturedt-cunit-quick
+
+#MM- test-picturedt : test-picturedt-cunit
+#MM- test-picturedt-quick : test-picturedt-cunit-quick
+
+#MM- test-picturedt-cunit : test-picturedt-$(TARGET_UNITTESTS)-cunit
+#MM- test-picturedt-cunit-quick : test-picturedt-$(TARGET_UNITTESTS)-cunit-quick
+
+#MM test-picturedt-yes-cunit : includes includes-copy linklibs linklibs-cunit
+
+USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+
+%build_progs mmake=test-picturedt-yes-cunit \
+    files=$(CUNITPICTUREDTTESTFILES) targetdir=$(CUNITEXEDIR) \
+    uselibs="cunit posixc"
+
+%common

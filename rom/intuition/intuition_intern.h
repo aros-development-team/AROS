@@ -647,6 +647,7 @@ struct IntIntuitionBase
 #if defined(__AROSEXEC_SMP__)
     void *                       ExecLockBase;
 #endif
+    struct SignalSemaphore      *GfxFontSem;    /* graphics.library/TextFonts, found on first use (misc.c, all builds) */
 };
 
 struct SharedPointer

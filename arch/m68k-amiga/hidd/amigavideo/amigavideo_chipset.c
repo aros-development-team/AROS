@@ -401,7 +401,7 @@ static VOID setcopperscroll2(struct amigavideo_staticdata *csd, struct amigabm_d
     ddfstrt = bm->ddfstrt;
 
     offset = ((xscroll + (xmaxscroll << 3) - 1) >> 3) & ~(xmaxscroll - 1);
-    offset -= (yscroll * bm->bytesperrow) << (bm->interlace ? 1 : 0);
+    offset -= bitmap_row_offset(yscroll, bm->bytesperrow) << (bm->interlace ? 1 : 0);
 
     minearly = 1 << fetchunits[csd->fmode_bpl * 4 + bm->res];
     if (x & (fmodewidth - 1)) {

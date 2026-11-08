@@ -16,12 +16,14 @@
 
           Usage:
             atapitest [DEVICE=ata.device] [UNIT=n] [VERBOSE] [NOMEDIA]
-                      [WAITMEDIA=secs] [VERIFYFILE=path]
+                      [WAITMEDIA=secs] [WAITCHANGE=secs] [VERIFYFILE=path]
 
           Without UNIT the first unit reporting DG_CDROM is used. NOMEDIA
           checks the no-media error paths instead of reading. WAITMEDIA
           waits for media to appear (insert a disc) and then runs the media
-          tests; VERIFYFILE reads a file of the pattern
+          tests. WAITCHANGE waits for TD_CHANGENUM to change while media
+          stays present (a disc swapped for another), then runs the media
+          tests. VERIFYFILE reads a file of the pattern
           byte[i] = (i * 7 + 3) & 0xff through the filesystem afterwards.
 */
 
@@ -41,7 +43,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define TEMPLATE "DEVICE/K,UNIT/N/K,VERBOSE/S,NOMEDIA/S,WAITMEDIA/N/K,VERIFYFILE/K"
+#define TEMPLATE "DEVICE/K,UNIT/N/K,VERBOSE/S,NOMEDIA/S,WAITMEDIA/N/K,WAITCHANGE/N/K,VERIFYFILE/K"
 
 struct Args
 {
@@ -50,6 +52,7 @@ struct Args
     IPTR   verbose;
     IPTR   nomedia;
     IPTR  *waitmedia;
+    IPTR  *waitchange;
     STRPTR verifyfile;
 };
 
@@ -613,7 +616,7 @@ static LONG find_unit(STRPTR device)
 
 int main(void)
 {
-    struct Args args = { NULL, NULL, FALSE, FALSE, NULL, NULL };
+    struct Args args = { NULL, NULL, FALSE, FALSE, NULL, NULL, NULL };
     struct RDArgs *rda;
     STRPTR device = "ata.device";
     LONG unit = -1;
@@ -679,6 +682,8 @@ int main(void)
     {
         changeio->io_Device = io->io_Device;
         changeio->io_Unit   = io->io_Unit;
+        /* Cause() indexes its queues by ln_Pri without bounds checking */
+        memset(&changeint, 0, sizeof(changeint));
         changeint.is_Node.ln_Type = NT_INTERRUPT;
         changeint.is_Node.ln_Name = "atapitest changeint";
         changeint.is_Data = (APTR)&changeints;
@@ -689,19 +694,41 @@ int main(void)
         SendIO((struct IORequest *)changeio);
     }
 
-    tdcmd(TD_CHANGENUM, NULL, 0, 0);
-    LOG("TD_CHANGENUM %lu, media %s\n", (unsigned long)io->io_Actual, media_present() ? "present" : "absent");
-
-    if (args.waitmedia)
     {
-        ULONG changenum, secs = *args.waitmedia;
+        ULONG changenum;
+        BOOL present;
+
+        /* separate statements: media_present() reuses io->io_Actual */
+        tdcmd(TD_CHANGENUM, NULL, 0, 0);
+        changenum = io->io_Actual;
+        present = media_present();
+        LOG("TD_CHANGENUM %lu, media %s\n", (unsigned long)changenum, present ? "present" : "absent");
+    }
+
+    if (args.waitmedia || args.waitchange)
+    {
+        ULONG changenum, secs = args.waitchange ? *args.waitchange : *args.waitmedia;
 
         tdcmd(TD_CHANGENUM, NULL, 0, 0);
         changenum = io->io_Actual;
-        LOG("Waiting up to %lu seconds for media\n", (unsigned long)secs);
-        while (secs-- && !media_present())
-            Delay(50);
-        CHECK(media_present(), "no media appeared\n");
+        if (args.waitchange)
+        {
+            LOG("Waiting up to %lu seconds for a media change\n", (unsigned long)secs);
+            while (secs--)
+            {
+                tdcmd(TD_CHANGENUM, NULL, 0, 0);
+                if (io->io_Actual != changenum)
+                    break;
+                Delay(50);
+            }
+        }
+        else
+        {
+            LOG("Waiting up to %lu seconds for media\n", (unsigned long)secs);
+            while (secs-- && !media_present())
+                Delay(50);
+        }
+        CHECK(media_present(), "no media present\n");
         tdcmd(TD_CHANGENUM, NULL, 0, 0);
         LOG("TD_CHANGENUM %lu -> %lu, change interrupts %lu\n", (unsigned long)changenum, (unsigned long)io->io_Actual, (unsigned long)changeints);
         CHECK(io->io_Actual != changenum, "TD_CHANGENUM did not change\n");

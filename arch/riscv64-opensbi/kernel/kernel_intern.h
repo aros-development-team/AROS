@@ -158,6 +158,16 @@ struct krnFDTInfo
 #define KRN_MAX_PLIC_CONTEXTS   16
     int         plic_contexts[KRN_MAX_PLIC_CONTEXTS];
     unsigned int plic_ncontexts;
+    /*
+     * Hardware quirks named by the controller's compatible string.
+     * KRN_PLIC_QUIRK_CLAIM: UltraRISC CP100/DP1000 (Milk-V Titan). Reading
+     * the claim register while more than one enabled source is pending
+     * loses pending interrupts (Linux: PLIC_QUIRK_CP100_CLAIM_REGISTER_
+     * ERRATUM). A lost ethernet interrupt is a dead network: the DMA
+     * status shows TI|RI set, the PLIC shows the source not pending.
+     */
+#define KRN_PLIC_QUIRK_CLAIM    (1U << 0)
+    uint32_t    plic_quirks;
 };
 int krnParseFDT(void *dtb, struct krnFDTInfo *info);
 void krnDumpFDT(void *dtb);
@@ -186,6 +196,16 @@ void krnHandleExternalIRQ(void);
    riscv,ndev seen plus the unused source 0 */
 #define KRN_MAX_IRQ_SOURCES 161
 extern ULONG __irq_counts[KRN_MAX_IRQ_SOURCES];
+void krnIRQUnthrottle(void);
+
+#if defined(RISCV_KRNWATCHDOG)
+/* Lock-up watchdog (kernel_watchdog.c) */
+struct ExceptionContext;
+extern int __krn_watchdog;
+extern volatile uint32_t __krn_wdcpu;
+void krnWatchRecord(struct ExceptionContext *ctx);
+void krnWatchdogService(uint32_t self);
+#endif
 
 /* How many sources the interrupt controller drives (kernel_plic.c) */
 unsigned int krnPLICSourceCount(void);

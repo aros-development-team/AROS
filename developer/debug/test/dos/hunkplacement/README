@@ -1,0 +1,29 @@
+Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+Native Amiga LoadSeg placement regression
+=======================================
+
+Build with test-dos-hunkplacement or test-dos-hunkplacement-quick. The native
+Amiga DOS component test group selects this test; it requires a stock 2 MiB
+Chip RAM configuration without Fast RAM, with most memory free.
+
+The test writes three small Hunk files to RAM:. Each reserves a 192 KiB hunk
+and records its stack pointer before returning 42. Their memory requests are
+ordinary, Chip RAM, and an extended Chip RAM request explicitly specifying
+MEMF_REVERSE.
+
+Reserve the largest Chip RAM block, leaving 128 KiB for filesystem activity,
+then free two 256 KiB regions separated by a retained allocation. Reserve any
+other blocks large enough to hold the fixture. LoadSeg must place ordinary
+hunks in the lower suitable region and honor the explicit reverse request in
+the upper region. RunCommand must execute each fixture and return 42, using
+the lower suitable free region for its ordinary command stack allocation.
+
+The former unconditional MEMF_REVERSE in LoadSeg places all three hunks in
+the upper region, failing the two ordinary placement checks. Forced reverse
+command stacks fail three additional checks. The corrected routines pass all
+18 checks. No production allocation vectors are patched.
+
+The fixture paths RAM:hunkplacement-any, RAM:hunkplacement-chip, and
+RAM:hunkplacement-reverse are temporary and removed on exit. Run one instance
+at a time on a quiet test machine. Do not use these names for unrelated files.

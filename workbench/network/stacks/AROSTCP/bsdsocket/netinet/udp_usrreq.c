@@ -100,15 +100,18 @@ static	void udp_notify __P((struct inpcb *, int));
 /*
  * udp_savecontrol - the ancillary data inp asked for, from the IP header ip
  * of the datagram (as it arrived: before the checksum overwrote part of
- * it): IP_RECVDSTADDR, IP_RECVTOS. NULL when it asked for none.
+ * it): its receive time (SO_TIMESTAMP), IP_RECVDSTADDR, IP_RECVTOS,
+ * IP_RECVTTL. NULL when it asked for none.
  */
 static struct mbuf *
 udp_savecontrol(const struct inpcb *inp, const struct ip *ip)
 {
-    struct mbuf *opts = NULL, **mp = &opts;
+    struct mbuf *opts = sbcreatetimestamp(inp->inp_socket), **mp = &opts;
 
+    if(opts)
+        mp = &opts->m_next;
     if(!(inp->inp_flags & INP_CONTROLOPTS))
-        return NULL;
+        return opts;
     if(inp->inp_flags & INP_RECVDSTADDR) {
         struct in_addr dst = ip->ip_dst;
 
@@ -121,6 +124,13 @@ udp_savecontrol(const struct inpcb *inp, const struct ip *ip)
         u_char tos = ip->ip_tos;
 
         *mp = sbcreatecontrol((caddr_t)&tos, sizeof(tos), IP_RECVTOS, IPPROTO_IP);
+        if(*mp)
+            mp = &(*mp)->m_next;
+    }
+    if(inp->inp_flags & INP_RECVTTL) {      /* one byte, as FreeBSD */
+        u_char ttl = ip->ip_ttl;
+
+        *mp = sbcreatecontrol((caddr_t)&ttl, sizeof(ttl), IP_RECVTTL, IPPROTO_IP);
         if(*mp)
             mp = &(*mp)->m_next;
     }
@@ -321,7 +331,8 @@ void udp_input(void *args, ...)
         inp = in_pcblookup(&udb, ip->ip_src, uh->uh_sport, ip->ip_dst,
                            uh->uh_dport, INPLOOKUP_WILDCARD);
     }
-    if(inp != NULL && inp->inp_boundif && inp->inp_boundif != m->m_pkthdr.rcvif) {
+    if(inp != NULL && ((inp->inp_flags & INP_BOUNDGONE) ||
+                       (inp->inp_boundif && inp->inp_boundif != m->m_pkthdr.rcvif))) {
         /*
          * The best match is bound to another interface (SO_BINDTODEVICE):
          * take the socket on this port that listens on the interface the
@@ -338,6 +349,8 @@ void udp_input(void *args, ...)
             if(t->inp_faddr.s_addr != INADDR_ANY &&
                     (t->inp_faddr.s_addr != ip->ip_src.s_addr ||
                      t->inp_fport != uh->uh_sport))
+                continue;
+            if(t->inp_flags & INP_BOUNDGONE)
                 continue;
             if(t->inp_boundif == m->m_pkthdr.rcvif)
                 break;
@@ -444,6 +457,12 @@ udp_output(void *arg, ...)
 
     len = m->m_pkthdr.len;
     tos = inp->inp_ip.ip_tos;
+    if(inp->inp_flags & INP_BOUNDGONE) {
+        if(control)
+            m_freem(control);
+        error = ENXIO;                  /* its interface went away */
+        goto release;
+    }
 
     /*
      * Ancillary data: IP_TOS for this datagram (a byte, as FreeBSD, or an

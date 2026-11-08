@@ -375,7 +375,9 @@ void gallium_sfb_CloseNotify(struct Window *window, APTR userData)
         sfb_Free(fb);
         return NULL;
     }
-    fb->nowait = GetTagData(SFB_NoWait, (fb->buffers >= 3) ? TRUE : FALSE, tags) ? TRUE : FALSE;
+    /* not waiting needs a third buffer: with 2 the one rendered next is
+     * the one being displaced */
+    fb->nowait = (fb->buffers >= 3) && GetTagData(SFB_NoWait, TRUE, tags);
 
     /* One pipe_resource per buffer, aliasing the display memory */
     for (i = 0; i < fb->buffers; i++)
@@ -509,7 +511,10 @@ void gallium_sfb_CloseNotify(struct Window *window, APTR userData)
         rendering to the pipe before the call. With 2 buffers the call
         waits until the displaced buffer is off scan-out (unless
         SFB_NoWait); with 3 it returns at once and the returned buffer is
-        one that is not scanned out.
+        one that is neither scanned out nor waiting to be. If the display
+        has not taken the previous buffer yet, the one just rendered is
+        not shown and is returned again, so the newest frame goes up at
+        the next swap after the display is ready.
 
     INPUTS
         fb - the framebuffer
@@ -652,6 +657,9 @@ void gallium_sfb_CloseNotify(struct Window *window, APTR userData)
     case SFBA_Swaps:
         val = sfb->swaps;
         break;
+    case SFBA_NoWait:
+        val = sfb->nowait ? TRUE : FALSE;
+        break;
     }
     ReleaseSemaphore(&sfb->lock);
 
@@ -706,6 +714,66 @@ void gallium_sfb_CloseNotify(struct Window *window, APTR userData)
     ReleaseSemaphore(&GB(GalliumBase)->sfbLock);
 
     return found;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+
+    NAME */
+
+      AROS_LH3(BOOL, SetScanoutFrameBufferAttr,
+
+/*  SYNOPSIS */
+      AROS_LHA(APTR, fb, A0),
+      AROS_LHA(ULONG, attr, D0),
+      AROS_LHA(IPTR, value, D1),
+
+/*  LOCATION */
+      struct Library *, GalliumBase, 16, Gallium)
+
+/*  FUNCTION
+        Changes a scan-out framebuffer setting while it is in use.
+
+        SFBA_NoWait - TRUE: SwapScanoutFrameBuffer() queues the flip and
+            returns at once (rendering is not tied to the refresh rate; a
+            frame finished before the display took the previous one is not
+            shown). FALSE: each swap waits until its buffer is on screen.
+            Only a framebuffer with 3 or more buffers can stop waiting:
+            with 2 the buffer rendered next is the one being displaced.
+
+    INPUTS
+        fb    - the framebuffer
+        attr  - SFBA_NoWait
+        value - the new value
+
+    RESULT
+        TRUE if the setting was applied.
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct GalliumScanoutFB *sfb = fb;
+    BOOL ok = FALSE;
+
+    if (!sfb)
+        return FALSE;
+
+    ObtainSemaphore(&sfb->lock);
+    switch (attr)
+    {
+    case SFBA_NoWait:
+        if (!value || sfb->buffers >= 3)
+        {
+            sfb->nowait = value ? TRUE : FALSE;
+            ok = TRUE;
+        }
+        break;
+    }
+    ReleaseSemaphore(&sfb->lock);
+
+    return ok;
 
     AROS_LIBFUNC_EXIT
 }

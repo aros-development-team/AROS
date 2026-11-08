@@ -22,7 +22,7 @@ methods:
     DTM_FRAMEBOX                superclass
     DTM_SELECT                  ?
     DTM_CLEARSELECTED           ?
-    DTM_COPY                    missing
+    DTM_COPY                    OK, the whole picture as ILBM
     DTM_PRINT                   missing
     DTM_WRITE                   missing
     PDTM_WRITEPIXELARRAY        OK
