@@ -898,13 +898,19 @@ AROS_LH1(LONG, AbortIO,
     AROS_LIBFUNC_EXIT
 }
 
+
 /*****************************************************************************
-    NAME
-        ULONG GetRdskLba(
 
-    SYNOPSIS
-        struct IORequest *io)
+    NAME */
+        AROS_LH1(ULONG, GetRdskLba,
 
+/*  SYNOPSIS */
+        AROS_LHA(struct IORequest *, io, A1),
+
+/*  LOCATION */
+        LIBBASETYPEPTR, LIBBASE, 7, ata)
+
+/*
     FUNCTION
         Return the fixed value zero. This entrypoint does not search
         for or read a rigid disk block.
@@ -921,9 +927,6 @@ AROS_LH1(LONG, AbortIO,
         left unchanged. This entrypoint provides no discovery status.
 
 *****************************************************************************/
-AROS_LH1(ULONG, GetRdskLba,
-    AROS_LHA(struct IORequest *, io, A1),
-    LIBBASETYPEPTR, LIBBASE, 7, ata)
 {
     AROS_LIBFUNC_INIT
 
@@ -932,14 +935,19 @@ AROS_LH1(ULONG, GetRdskLba,
     AROS_LIBFUNC_EXIT
 }
 
+
 /*****************************************************************************
-    NAME
-        ULONG GetBlkSize(
 
-    SYNOPSIS
-        struct IORequest *io)
+    NAME */
+        AROS_LH1(ULONG, GetBlkSize,
 
-    FUNCTION
+/*  SYNOPSIS */
+        AROS_LHA(struct IORequest *, io, A1),
+
+/*  LOCATION */
+        LIBBASETYPEPTR, LIBBASE, 8, ata)
+
+/*  FUNCTION
         Return the sector-size exponent stored for the opened unit.
 
     INPUTS
@@ -961,9 +969,6 @@ AROS_LH1(ULONG, GetRdskLba,
         result is provided for an unopened, closed or invalid request.
 
 *****************************************************************************/
-AROS_LH1(ULONG, GetBlkSize,
-    AROS_LHA(struct IORequest *, io, A1),
-    LIBBASETYPEPTR, LIBBASE, 8, ata)
 {
     AROS_LIBFUNC_INIT
 
