@@ -20,8 +20,10 @@
 #include <aros/x86_64/cpucontext.h>
 #elif defined(__i386__)
 #include <aros/i386/cpucontext.h>
-#elif defined(__riscv)
+#elif defined(__riscv) && (__riscv_xlen == 64)
 #include <aros/riscv64/cpucontext.h>
+#elif defined(__riscv)
+#include <aros/riscv/cpucontext.h>
 #elif defined(__aarch64__)
 #include <aros/aarch64/cpucontext.h>
 #endif
