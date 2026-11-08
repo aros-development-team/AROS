@@ -290,30 +290,94 @@ struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path)
     return NULL;
 }
 
+/* Find the size of the partition behind DOS device devname ("DH0" or
+   "DH0:") and the largest partition its filesystem supports, both in MB.
+   *maxMB is 0 for a filesystem InstallAROS does not format. Returns FALSE
+   if devname is not a mounted disk device. */
+BOOL GetPartitionLimit(CONST_STRPTR devname, UQUAD *sizeMB, ULONG *maxMB,
+    CONST_STRPTR *fsname)
+{
+    struct DosList *dl;
+    struct DeviceNode *dn;
+    struct FileSysStartupMsg *fssm;
+    struct DosEnvec *de;
+    TEXT dname[32];
+    BOOL found = FALSE;
+    UWORD i;
+
+    for (i = 0; devname[i] && devname[i] != ':' && i < sizeof(dname) - 1; i++)
+        dname[i] = devname[i];
+    dname[i] = '\0';
+    if (i == 0)
+        return FALSE;
+
+    dl = LockDosList(LDF_DEVICES | LDF_READ);
+    dn = (struct DeviceNode *)FindDosEntry(dl, dname, LDF_DEVICES);
+    fssm = dn ? BADDR(dn->dn_Startup) : NULL;
+    if (fssm && TypeOfMem(fssm) && TypeOfMem(BADDR(fssm->fssm_Environ)))
+    {
+        ULONG dostype;
+
+        de = BADDR(fssm->fssm_Environ);
+        *sizeMB = ((UQUAD)(de->de_HighCyl - de->de_LowCyl + 1)
+            * de->de_Surfaces * de->de_BlocksPerTrack * de->de_SizeBlock * 4)
+            >> 20;
+        dostype = de->de_TableSize >= DE_DOSTYPE ? de->de_DosType : 0;
+        *maxMB = 0;
+        *fsname = NULL;
+        if ((dostype & 0xffffff00) == 0x444f5300 && (dostype & 0xff) <= 7)
+        {
+            *maxMB = MAX_FFS_SIZE;
+            *fsname = "FFS";
+        }
+        else if (dostype == 0x53465300 || dostype == 0x53465302)
+        {
+            *maxMB = MAX_SFS_SIZE;
+            *fsname = "SFS";
+        }
+        found = TRUE;
+    }
+    UnLockDosList(LDF_DEVICES | LDF_READ);
+
+    return found;
+}
+
+/* Size in MB from a size field, saturated at 0x7fffffff so that a value
+   too large for a LONG (including one MUI wrapped negative) is reported as
+   too big rather than turning into a small or negative size. */
+static LONG SizeInMB(Object *field, BOOL inGB)
+{
+    STRPTR text = NULL;
+    UQUAD size = 0;
+
+    GET(field, MUIA_String_Contents, &text);
+    for (; text != NULL && *text >= '0' && *text <= '9'; text++)
+    {
+        size = size * 10 + (*text - '0');
+        if (size > 0x7fffffff)
+            return 0x7fffffff;
+    }
+    if (inGB)
+        size *= 1024;
+
+    return size > 0x7fffffff ? 0x7fffffff : (LONG)size;
+}
+
 LONG GetPartitionSize(BOOL get_work)
 {
     LONG size = -1;
-    IPTR tmp = 0;
 
     if (!get_work)
     {
         if ((BOOL) XOPTOGET(optObjCheckSysSize, MUIA_Selected))
-        {
-            GET(sys_size, MUIA_String_Integer, &tmp);
-            size = (LONG) tmp;
-            if (XOPTOGET(optObjCycleSysUnits, MUIA_Cycle_Active) == 1)
-                size *= 1024;
-        }
+            size = SizeInMB(sys_size,
+                XOPTOGET(optObjCycleSysUnits, MUIA_Cycle_Active) == 1);
     }
     else
     {
         if ((BOOL) XOPTOGET(optObjCheckSizeWork, MUIA_Selected))
-        {
-            GET(work_size, MUIA_String_Integer, &tmp);
-            size = (LONG) tmp;
-            if (XOPTOGET(optObjCycleWorkUnits, MUIA_Cycle_Active) == 1)
-                size *= 1024;
-        }
+            size = SizeInMB(work_size,
+                XOPTOGET(optObjCycleWorkUnits, MUIA_Cycle_Active) == 1);
     }
 
     return size;

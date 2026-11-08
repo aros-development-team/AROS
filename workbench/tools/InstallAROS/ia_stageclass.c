@@ -104,6 +104,81 @@ BOOL isUSBDevice(const char *devStr);
 
 void create_environment_variable(CONST_STRPTR envarchiveDisk, CONST_STRPTR name, CONST_STRPTR value);
 
+/* An existing partition may have been created by hand larger than its
+   filesystem supports, and formatting it would leave a broken volume.
+   Returns FALSE when the partition behind devname is too large, telling
+   the user in an error window when report is TRUE. */
+static BOOL FormatSizeOK(struct InstallStage_DATA *data, CONST_STRPTR devname,
+    BOOL report)
+{
+    UQUAD sizeMB = 0;
+    ULONG maxMB = 0;
+    CONST_STRPTR fsname = NULL;
+
+    if (devname == NULL || !GetPartitionLimit(devname, &sizeMB, &maxMB, &fsname)
+        || maxMB == 0 || sizeMB <= maxMB)
+        return TRUE;
+
+    if (report)
+    {
+        TEXT msg[strlen(_(MSG_FORMATTOOBIG)) + strlen(devname) + 40];
+
+        sprintf(msg, _(MSG_FORMATTOOBIG), devname, (ULONG)sizeMB, fsname, maxMB);
+        MUI_RequestA(data->installer, data->window, 0, _(MSG_ERROR),
+            _(MSG_OK), msg, NULL);
+    }
+
+    return FALSE;
+}
+
+/* When existing partitions are used, refuse to leave Format selected for
+   a partition its filesystem cannot hold. */
+static void CheckFormatSelection(struct InstallStage_DATA *data, BOOL sys, BOOL work)
+{
+    STRPTR name;
+
+    if (XGET(data->instc_options_main->opt_partmethod, MUIA_Radio_Active) != 2)
+        return;
+
+    if (sys && XOPTOGET(optObjCheckFormatSys, MUIA_Selected))
+    {
+        name = NULL;
+        OPTOGET(optObjDestVolumeName, MUIA_String_Contents, (IPTR *)&name);
+        if (!FormatSizeOK(data, name, TRUE))
+            OPTOSET(optObjCheckFormatSys, MUIA_Selected, FALSE);
+    }
+
+    if (work && XOPTOGET(optObjCheckWork, MUIA_Selected)
+        && XOPTOGET(optObjCheckFormatWork, MUIA_Selected))
+    {
+        name = NULL;
+        GET(work_devname, MUIA_String_Contents, &name);
+        if (!FormatSizeOK(data, name, TRUE))
+            OPTOSET(optObjCheckFormatWork, MUIA_Selected, FALSE);
+    }
+}
+
+/* params[0]: 0 checks the System partition, 1 the Work partition */
+AROS_UFH3S(void, formatcheckHookFunc,
+    AROS_UFHA(struct Hook *, h,  A0),
+    AROS_UFHA(Object*, installer, A2),
+    AROS_UFHA(IPTR *, params, A1))
+{
+    AROS_USERFUNC_INIT
+
+    Class *CLASS = (Class *)h->h_Data;
+
+    CheckFormatSelection(INST_DATA(CLASS, installer), params[0] == 0,
+        params[0] == 1);
+
+    AROS_USERFUNC_EXIT
+}
+
+struct Hook formatcheckHook =
+{
+    .h_Entry = (HOOKFUNC)formatcheckHookFunc,
+};
+
 AROS_UFH3S(BOOL, partradioHookFunc,
     AROS_UFHA(struct Hook *, h,  A0),
     AROS_UFHA(Object*, installer, A2),
@@ -153,6 +228,9 @@ AROS_UFH3S(BOOL, partradioHookFunc,
                 D(bug("[InstallAROS:Stage] %s:     Changing to '%s'\n", __func__, devvolName));
                 SET(work_devname, MUIA_String_Contents, devvolName);
             }
+
+            /* Format may already be selected for these partitions */
+            CheckFormatSelection(data, TRUE, TRUE);
 
             break;
         }
@@ -266,6 +344,21 @@ IPTR InstallStage__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
         partradioHook.h_Data = CLASS;
         DoMethod(data->instc_options_main->opt_partmethod, MUIM_Notify, MUIA_Radio_Active, MUIV_EveryTime,
                  self, 3, MUIM_CallHook, &partradioHook, MUIV_TriggerValue);
+
+        /* Check an existing partition's size when Format is selected for
+           it, or when another partition is entered with Format selected */
+        formatcheckHook.h_Data = CLASS;
+        DoMethod((Object *)XGET(optObjCheckFormatSys, MUIA_InstallOption_Obj),
+                 MUIM_Notify, MUIA_Selected, TRUE,
+                 self, 3, MUIM_CallHook, &formatcheckHook, 0);
+        DoMethod((Object *)XGET(optObjCheckFormatWork, MUIA_InstallOption_Obj),
+                 MUIM_Notify, MUIA_Selected, TRUE,
+                 self, 3, MUIM_CallHook, &formatcheckHook, 1);
+        DoMethod((Object *)XGET(optObjDestVolumeName, MUIA_InstallOption_Obj),
+                 MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+                 self, 3, MUIM_CallHook, &formatcheckHook, 0);
+        DoMethod(work_devname, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+                 self, 3, MUIM_CallHook, &formatcheckHook, 1);
             
         data->instc_options_grub =
             (APTR) GetTagData(MUIA_Grub_Options, (IPTR) NULL,
@@ -1869,6 +1962,27 @@ IPTR InstallStage__MUIM_Format(Class * CLASS, Object * self, Msg message)
     IPTR option = FALSE;
     BPTR lock = BNULL;
     char tmp[100];
+
+    /* An existing partition its filesystem cannot hold is never formatted.
+       Format is unchecked for it when selected, but the device name may
+       have been changed since without being confirmed. */
+    if (XGET(data->instc_options_main->opt_partmethod, MUIA_Radio_Active) == 2)
+    {
+        OPTOGET(optObjDestVolumeName, MUIA_String_Contents, (IPTR *)&name_tmp);
+        if ((BOOL) XOPTOGET(optObjCheckFormatSys, MUIA_Selected)
+            && !FormatSizeOK(data, name_tmp, FALSE))
+        {
+            LOG_Printf("not formatting %s: too large for its filesystem", name_tmp);
+            OPTOSET(optObjCheckFormatSys, MUIA_Selected, FALSE);
+        }
+        GET(work_devname, MUIA_String_Contents, (IPTR *)&name_tmp);
+        if ((BOOL) XOPTOGET(optObjCheckFormatWork, MUIA_Selected)
+            && !FormatSizeOK(data, name_tmp, FALSE))
+        {
+            LOG_Printf("not formatting %s: too large for its filesystem", name_tmp);
+            OPTOSET(optObjCheckFormatWork, MUIA_Selected, FALSE);
+        }
+    }
 
     if ((BOOL) XOPTOGET(optObjCheckFormatSys, MUIA_Selected))
     {

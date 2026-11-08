@@ -6,5 +6,7 @@ extern void ClearSkipList(struct List *SkipList);
 extern BPTR RecursiveCreateDir(CONST_STRPTR dirpath);
 extern LONG CopyDirArray(Class * CLASS, Object * self, CONST_STRPTR sourcePath,
     CONST_STRPTR destinationPath, CONST_STRPTR directories[], struct List *SkipList);
+extern BOOL GetPartitionLimit(CONST_STRPTR devname, UQUAD *sizeMB, ULONG *maxMB,
+    CONST_STRPTR *fsname);
 
 #endif /* IA_DISKIO_H */
