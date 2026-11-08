@@ -47,11 +47,9 @@ static int Amdgpu_Init(LIBBASETYPEPTR LIBBASE)
         goto failure;
 
     xsd->basebm = OOP_FindClass(CLID_Hidd_BitMap);
-    xsd->basegallium = OOP_FindClass(CLID_Hidd_Gallium);
 
-    xsd->hiddGalliumAB = OOP_ObtainAttrBase((STRPTR)IID_Hidd_Gallium);
-    if (xsd->hiddGalliumAB == 0)
-        goto failure;
+    HIDDAmdgpuAMDDInit(xsd);
+    Amdgpu_2D_Init(xsd);
 
     /*
      * The amdgpu driver finds the card, brings it up and owns it from
@@ -74,15 +72,19 @@ failure:
     if (xsd->AmdgpuCyberGfxBase)
         CloseLibrary(xsd->AmdgpuCyberGfxBase);
 
-    if (xsd->hiddGalliumAB)
-        OOP_ReleaseAttrBase((STRPTR)IID_Hidd_Gallium);
-
     OOP_ReleaseAttrBases(abd);
 
     return FALSE;
 }
 
-ADD2INITLIB(Amdgpu_Init, 0)
+static int Amdgpu_Exit(LIBBASETYPEPTR LIBBASE)
+{
+    Amdgpu_2D_Exit();
+    HIDDAmdgpuAMDDExit(&LIBBASE->vsd);
+    return TRUE;
+}
 
-ADD2LIBS((STRPTR)"gallium.hidd", 7, static struct Library *, GalliumHiddBase);
+ADD2INITLIB(Amdgpu_Init, 0)
+ADD2EXPUNGELIB(Amdgpu_Exit, 0)
+
 ADD2LIBS((STRPTR)"pci.hidd", 0, static struct Library *, PciHiddBase);

@@ -9,6 +9,8 @@ POSIXCTESTFILES := \
         chown \
         execl \
         exec_closed_stdin \
+        exec_credentials \
+        exec_empty \
         execl2 execl2_vfork execl2_slave \
         fchdir \
         fchmod \

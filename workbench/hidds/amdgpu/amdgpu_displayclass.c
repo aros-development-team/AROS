@@ -21,6 +21,7 @@
 #include <exec/memory.h>
 #include <hidd/hidd.h>
 #include <hidd/gfx.h>
+#include <hidd/gallium.h>
 #include <oop/oop.h>
 
 #include <string.h>
@@ -129,11 +130,12 @@ OOP_Object *AmdgpuDisplay__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object 
 
         object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&comsg);
     }
-    else if ((XSD(cl)->basegallium && (msg->cl == XSD(cl)->basegallium)) &&
-                XSD(cl)->kms.has3d)
+    else if (msg->cl && (msg->cl == OOP_FindClass(CLID_Hidd_Gallium)))
     {
-        /* Create the gallium 3d driver object .. */
-        object = OOP_NewObject(NULL, CLID_Hidd_Gallium_Amdgpu, msg->attrList);
+        /* A gallium object of radeonsi.amdd, for a card it drives; the
+           caller loaded gallium.hidd */
+        if (HIDDAmdgpuGalliumSupported(XSD(cl)))
+            object = HIDDAmdgpuAMDDGalliumObject(XSD(cl), msg->cl, o, msg->attrList);
     }
     else
         object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);

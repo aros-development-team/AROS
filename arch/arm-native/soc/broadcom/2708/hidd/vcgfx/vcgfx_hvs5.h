@@ -115,6 +115,9 @@
 #define HVS5_CTL0_SIZE_SHIFT    24
 #define HVS5_CTL0_SIZE_MASK     0x3f
 #define HVS5_CTL0_FORMAT_MASK   0xf
+#define HVS5_CTL0_SAND128       (2UL << 20)     /* tiling: 128-byte columns */
+#define HVS5_CTL0_PXF_MASK      0x1f            /* the format is 5 bits wide */
+#define HVS5_PXF_YUV10          17              /* 10-bit YCbCr, SAND128 only */
 #define HVS5_PXF_RGBA8888       7
 #define HVS5_PTR_BUS_ALIAS      0xC0000000
 #define HVS5_PTROFF_FROM_END    3       /* PTR0 = entry[size - 3] */

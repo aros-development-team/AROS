@@ -354,7 +354,7 @@ static bool amdgpu_read_disabled_bios(struct amdgpu_device *adev)
 		false : amdgpu_asic_read_disabled_bios(adev);
 }
 
-#ifdef CONFIG_ACPI
+#if defined(CONFIG_ACPI) || defined(__AROS__)
 /**
  * amdgpu_acpi_vfct_match() - Check if a VFCT entry matches the device
  * @adev: AMDGPU device

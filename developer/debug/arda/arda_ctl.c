@@ -30,7 +30,7 @@
 #include <stdlib.h>
 
 #define CTL_CHUNK           ARDA_CTL_CHUNK
-#define CTL_MAX_PUT         (512UL * 1024 * 1024)
+#define CTL_MAX_PUT         (3UL * 1024 * 1024 * 1024)   /* streamed to the file; the size word is 32 bits */
 #define CTL_JOB_STACK       (256 * 1024)
 #define CTL_WAIT_MAX        600         /* seconds a WAIT may block the agent */
 

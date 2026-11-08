@@ -1,0 +1,8 @@
+# The runner uses a temporary build dir it removes; --build-dir can point
+# elsewhere. Ignore what it writes if that ever happens inside this tree.
+multilib_probe.c
+probe
+sizebar-m32
+sizebar-m64
+sizebar-m32.c
+sizebar-m64.c

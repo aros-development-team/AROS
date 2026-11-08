@@ -3,6 +3,7 @@
 */
 
 #include <aros/debug.h>
+#include <aros/symbolsets.h>
 #include <proto/exec.h>
 #include <exec/lists.h>
 #include <exec/tasks.h>
@@ -36,30 +37,21 @@ void drm_gem_amdgpu_munmap(struct drm_device *dev, struct drm_file *f, uint32_t 
 extern struct drm_device *current_drm_device;
 
 #define MAX_DRM_FILES 128
+/* fds are slots here; a dup'd fd shares its source's drm_file, which is
+   freed when the last slot naming it is closed */
 static struct drm_file *drm_files[MAX_DRM_FILES] = { NULL };
+static struct SignalSemaphore drm_files_lock;
 
 #define DRM_STACK_SIZE  (256 * 1024)
 #define DRM_STACK_MIN   (128 * 1024)
 
 static struct SignalSemaphore drm_stack_lock;
 static struct MinList drm_stack_pool;
-static volatile BOOL drm_stack_ready;
 
 static APTR drm_stack_get(void)
 {
     struct MinNode *n;
 
-    if (!drm_stack_ready)
-    {
-        Forbid();
-        if (!drm_stack_ready)
-        {
-            InitSemaphore(&drm_stack_lock);
-            NEWLIST((struct List *)&drm_stack_pool);
-            drm_stack_ready = TRUE;
-        }
-        Permit();
-    }
     ObtainSemaphore(&drm_stack_lock);
     n = (struct MinNode *)REMHEAD((struct List *)&drm_stack_pool);
     ReleaseSemaphore(&drm_stack_lock);
@@ -152,22 +144,52 @@ int drmCommandWriteRead(int fd, unsigned long drmCommandIndex, void *data, unsig
 
 int drmOpen(const char *name, const char *busid)
 {
+    struct drm_file *file;
     int i;
 
     if (!current_drm_device)
         return -ENODEV;
 
+    file = drm_file_alloc(current_drm_device->primary);
+    if (IS_ERR(file))
+        return PTR_ERR(file);
+
+    ObtainSemaphore(&drm_files_lock);
     for (i = 0; i < MAX_DRM_FILES; i++)
     {
         if (drm_files[i] == NULL)
         {
-            struct drm_file *file = drm_file_alloc(current_drm_device->primary);
-            if (IS_ERR(file))
-                return PTR_ERR(file);
             drm_files[i] = file;
+            ReleaseSemaphore(&drm_files_lock);
             return i;
         }
     }
+    ReleaseSemaphore(&drm_files_lock);
+
+    drm_file_free(file);
+    return -EMFILE;
+}
+
+int drmDupFd(int fd)
+{
+    int i;
+
+    ObtainSemaphore(&drm_files_lock);
+    if (fd < 0 || fd >= MAX_DRM_FILES || !drm_files[fd])
+    {
+        ReleaseSemaphore(&drm_files_lock);
+        return -EBADF;
+    }
+    for (i = 0; i < MAX_DRM_FILES; i++)
+    {
+        if (drm_files[i] == NULL)
+        {
+            drm_files[i] = drm_files[fd];
+            ReleaseSemaphore(&drm_files_lock);
+            return i;
+        }
+    }
+    ReleaseSemaphore(&drm_files_lock);
 
     return -EMFILE;
 }
@@ -175,14 +197,35 @@ int drmOpen(const char *name, const char *busid)
 int drmClose(int fd)
 {
     struct drm_file *f;
+    BOOL last = TRUE;
+    int i;
 
+    ObtainSemaphore(&drm_files_lock);
     if (fd < 0 || fd >= MAX_DRM_FILES || !(f = drm_files[fd]))
+    {
+        ReleaseSemaphore(&drm_files_lock);
         return 0;
-
+    }
     drm_files[fd] = NULL;
-    drm_file_free(f);
+    for (i = 0; i < MAX_DRM_FILES; i++)
+        if (drm_files[i] == f)
+            last = FALSE;
+    ReleaseSemaphore(&drm_files_lock);
+
+    if (last)
+        drm_file_free(f);
     return 0;
 }
+
+static int drm_files_init(void)
+{
+    InitSemaphore(&drm_files_lock);
+    InitSemaphore(&drm_stack_lock);
+    NEWLIST((struct List *)&drm_stack_pool);
+    return TRUE;
+}
+
+ADD2INIT(drm_files_init, 0);
 
 drmVersionPtr drmGetVersion(int fd)
 {
@@ -329,6 +372,7 @@ static int drmIoctl_impl(int fd, unsigned long request, void *arg)
             case DRM_IOCTL_NR(DRM_IOCTL_MODE_GETGAMMA):   ret = drm_mode_gamma_get_ioctl(dev, arg, file); break;
             case DRM_IOCTL_NR(DRM_IOCTL_MODE_SETGAMMA):   ret = drm_mode_gamma_set_ioctl(dev, arg, file); break;
             case DRM_IOCTL_NR(DRM_IOCTL_MODE_PAGE_FLIP):  ret = drm_mode_page_flip_ioctl(dev, arg, file); break;
+            case DRM_IOCTL_NR(DRM_IOCTL_WAIT_VBLANK):     ret = drm_wait_vblank_ioctl(dev, arg, file); break;
             default:
                 bug("[amdgpu] drmIoctl: request 0x%lx not implemented\n", request);
                 return -EINVAL;

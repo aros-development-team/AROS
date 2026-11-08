@@ -16,8 +16,11 @@
           alphascreen) instead of the Workbench screen. The composited window's
           content is drawn with a pen there, which leaves alpha 0 in the
           surface: a constant opacity window must still show at its opacity.
+          ALPHAFORMAT opens them on a screen like the Workbench's but with
+          an alpha pixel format (SA_PixelFormat) and checks it starts opaque
+          and that pens, text and alpha-less blits land opaque in it.
 
-    Usage: compwindow [DELAY=seconds] [OPACITY=n] [ALPHA] [ALPHASCREEN]
+    Usage: compwindow [DELAY=seconds] [OPACITY=n] [ALPHA] [ALPHASCREEN] [ALPHAFORMAT]
 */
 
 #include <proto/exec.h>
@@ -129,6 +132,76 @@ static int check_display_blend(struct Screen *scr, LONG x, LONG y, ULONG cov)
     return 1;
 }
 
+/* The alpha format of a 32-bit screen pixel format, or -1 */
+static LONG alpha_pixfmt(ULONG pf)
+{
+    switch (pf)
+    {
+    case PIXFMT_BGR032: case PIXFMT_BGRA32: return PIXFMT_BGRA32;
+    case PIXFMT_RGB032: case PIXFMT_RGBA32: return PIXFMT_RGBA32;
+    case PIXFMT_0RGB32: case PIXFMT_ARGB32: return PIXFMT_ARGB32;
+    }
+    return -1;
+}
+
+/* Alpha of one pixel of 'rp', in its own coordinates */
+static UBYTE alpha_at(struct RastPort *rp, WORD x, WORD y)
+{
+    UBYTE pix[4];
+
+    ReadPixelArray(pix, 0, 0, 4, rp, x, y, 1, 1, RECTFMT_ARGB);
+    return pix[0];
+}
+
+/* Pens, text and an alpha-less blit drawn into the alpha screen through window 'w' */
+static int check_screen(struct Window *w)
+{
+    struct RastPort *rp = w->RPort;
+    struct BitMap *plain;
+    WORD x0 = w->BorderLeft + 20, y0 = w->BorderTop + 20;
+    int fails = 0;
+    UBYTE a;
+
+    SetAPen(rp, 1);
+    RectFill(rp, x0, y0, x0 + 19, y0 + 19);
+    if ((a = alpha_at(rp, x0 + 10, y0 + 10)) != 0xFF)
+    {
+        printf("FAIL: pen 1 RectFill in the alpha screen has alpha %02x, wanted ff\n", a);
+        fails++;
+    }
+
+    SetAPen(rp, 1);
+    SetBPen(rp, 2);
+    SetDrMd(rp, JAM2);
+    Move(rp, x0 + 30, y0 + rp->TxBaseline);
+    Text(rp, "Ag", 2);
+    if ((a = alpha_at(rp, x0 + 31, y0 + 1)) != 0xFF)
+    {
+        printf("FAIL: JAM2 Text in the alpha screen has alpha %02x, wanted ff\n", a);
+        fails++;
+    }
+
+    plain = AllocBitMap(16, 16, 8, BMF_CLEAR, NULL);
+    if (plain)
+    {
+        struct RastPort prp;
+
+        InitRastPort(&prp);
+        prp.BitMap = plain;
+        SetAPen(&prp, 1);
+        RectFill(&prp, 0, 0, 15, 15);
+        BltBitMapRastPort(plain, 0, 0, rp, x0 + 60, y0, 16, 16, 0xC0);
+        if ((a = alpha_at(rp, x0 + 68, y0 + 8)) != 0xFF)
+        {
+            printf("FAIL: alpha-less blit into the alpha screen has alpha %02x, wanted ff\n", a);
+            fails++;
+        }
+        FreeBitMap(plain);
+    }
+    printf("pens, text and alpha-less blits into the alpha screen: %s\n", fails ? "FAIL" : "opaque");
+    return fails;
+}
+
 static void fill(struct Window *w, ULONG rgb, ULONG border)
 {
     struct RastPort *rp = w->RPort;
@@ -202,10 +275,10 @@ static struct Screen *open_alpha_screen(struct BitMap **bmp)
 
 int main(void)
 {
-    IPTR args[4] = { 0, 0, 0, 0 };
+    IPTR args[5] = { 0, 0, 0, 0, 0 };
     struct RDArgs *rda;
     LONG delay = 8, opacity = 160;
-    BOOL alpha = FALSE, alphascreen = FALSE;
+    BOOL alpha = FALSE, alphascreen = FALSE, alphaformat = FALSE;
     struct Screen *scr = NULL;
     struct BitMap *scrbm = NULL;
     LONG greenpen = -1;
@@ -214,13 +287,14 @@ int main(void)
     UBYTE pix[4];
     ULONG got;
 
-    rda = ReadArgs("DELAY/N,OPACITY/N,ALPHA/S,ALPHASCREEN/S", args, NULL);
+    rda = ReadArgs("DELAY/N,OPACITY/N,ALPHA/S,ALPHASCREEN/S,ALPHAFORMAT/S", args, NULL);
     if (rda)
     {
         if (args[0]) delay   = *(LONG *)args[0];
         if (args[1]) opacity = *(LONG *)args[1];
         alpha = args[2] ? TRUE : FALSE;
         alphascreen = args[3] ? TRUE : FALSE;
+        alphaformat = args[4] ? TRUE : FALSE;
         FreeArgs(rda);
     }
 
@@ -234,6 +308,43 @@ int main(void)
         }
         greenpen = ObtainBestPen(scr->ViewPort.ColorMap, 0, 0xFFFFFFFF, 0, OBP_Precision, PRECISION_EXACT, TAG_END);
     }
+    else if (alphaformat)
+    {
+        struct Screen *wb = LockPubScreen(NULL);
+        LONG apf = wb ? alpha_pixfmt(GetCyberMapAttr(wb->RastPort.BitMap, CYBRMATTR_PIXFMT)) : -1;
+
+        if (wb)
+            UnlockPubScreen(NULL, wb);
+        if (apf < 0)
+        {
+            printf("FAIL: the Workbench screen is not 32-bit\n");
+            return RETURN_FAIL;
+        }
+        scr = OpenScreenTags(NULL, SA_LikeWorkbench, TRUE, SA_PixelFormat, apf,
+                             SA_Title, (IPTR)"compwindow alpha screen", TAG_END);
+        if (!scr)
+        {
+            printf("FAIL: no alpha screen\n");
+            return RETURN_FAIL;
+        }
+        /* below the screen title, nothing drawn there yet */
+        if ((got = alpha_at(&scr->RastPort, scr->Width - 2, scr->Height - 2)) != 0xFF)
+        {
+            printf("FAIL: a fresh alpha screen has alpha %02lx, wanted ff\n", (unsigned long)got);
+            fails++;
+        }
+        /* CGX names the same format for X and A: an alpha written must be read back */
+        {
+            UBYTE argb[4] = { 0x40, 0x10, 0x20, 0x30 };
+
+            WritePixelArray(argb, 0, 0, 4, &scr->RastPort, scr->Width - 2, scr->Height - 2, 1, 1, RECTFMT_ARGB);
+            if ((got = alpha_at(&scr->RastPort, scr->Width - 2, scr->Height - 2)) != 0x40)
+            {
+                printf("FAIL: the screen keeps no alpha (read %02lx back, wrote 40)\n", (unsigned long)got);
+                fails++;
+            }
+        }
+    }
 
     a = OpenWindowTags(NULL,
         WA_Left, 120, WA_Top, 120, WA_Width, 360, WA_Height, 240,
@@ -241,6 +352,8 @@ int main(void)
         scr ? WA_CustomScreen : TAG_IGNORE, (IPTR)scr,
         WA_Activate, FALSE, TAG_END);
     if (!a) { printf("FAIL: plain window\n"); if (scr) { CloseScreen(scr); FreeBitMap(scrbm); } return RETURN_FAIL; }
+    if (alphaformat)
+        fails += check_screen(a);
     /* explicit colours with full alpha: on an alpha screen they are what the display shows */
     fill(a, 0xFFFF0000, 0xFFFFFF00);
 
@@ -306,7 +419,9 @@ int main(void)
      */
     if (alpha && (b->WLayer->Flags & LAYERCOMPOSITED))
     {
-        struct BitMap *plain = AllocBitMap(16, 16, 8, BMF_CLEAR, b->WScreen->RastPort.BitMap);
+        /* without alpha: a friend of the screen has alpha where the screen does,
+         * and the Workbench may be an alpha screen too */
+        struct BitMap *plain = AllocBitMap(16, 16, 24, BMF_CLEAR | BMF_SPECIALFMT | SHIFT_PIXFMT(PIXFMT_RGB24), NULL);
         WORD x0 = b->BorderLeft, y0 = b->BorderTop;
 
         SetAPen(b->RPort, 1);
@@ -325,6 +440,10 @@ int main(void)
             InitRastPort(&prp);
             prp.BitMap = plain;
             FillPixelArray(&prp, 0, 0, 16, 16, 0x0000FF);
+            ReadPixelArray(pix, 0, 0, 4, &prp, 8, 8, 1, 1, RECTFMT_ARGB);
+            if (pix[0] != 0xFF)
+                printf("NOTE: the alpha-less source reads back alpha %02x (CGX pixfmt %lu)\n",
+                       pix[0], (unsigned long)GetCyberMapAttr(plain, CYBRMATTR_PIXFMT));
             BltBitMapRastPort(plain, 0, 0, b->RPort, x0 + 50, y0 + 20, 16, 16, 0xC0);
             ReadPixelArray(pix, 0, 0, 4, b->RPort, x0 + 58, y0 + 28, 1, 1, RECTFMT_ARGB);
             got = ((ULONG)pix[1] << 16) | ((ULONG)pix[2] << 8) | pix[3];

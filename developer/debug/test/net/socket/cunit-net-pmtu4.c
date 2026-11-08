@@ -21,6 +21,7 @@
 #include "socktest.h"
 
 #include <proto/dos.h>
+#include <time.h>
 #include <net/if.h>
 #include <net/route.h>
 #include <net/bpf.h>
@@ -169,13 +170,10 @@ static int send_needfrag(const char *dst, unsigned mtu)
     return r;
 }
 
-/* Seconds, on the clock the stack keeps route lifetimes in. */
+/* Seconds since 1970 in UTC: route lifetimes are given as times of day. */
 static unsigned long now(void)
 {
-    struct DateStamp ds;
-
-    DateStamp(&ds);
-    return ds.ds_Days * 86400UL + ds.ds_Minute * 60UL + ds.ds_Tick / TICKS_PER_SECOND;
+    return (unsigned long)time(NULL);
 }
 
 #define NEED_IF() do { if (!ready) { CU_PASS("no suitable interface - skipping"); return; } } while (0)

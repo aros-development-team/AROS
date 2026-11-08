@@ -31,6 +31,7 @@ struct ClientSurface
     struct SurfaceNode           *sn;        /* node on the screen's list, NULL when the
                                               * screen is not on the stack                */
     LONG                          hookplane; /* plane last reported to the hook, -1 = none */
+    ULONG                         hookflags; /* and its SHF_* */
     ULONG                         firing;    /* hook calls collected but not yet made     */
     struct Task                  *waiter;    /* DetachSurface waiting for firing == 0     */
 };
@@ -58,6 +59,8 @@ struct SurfaceNode
     BOOL                         denied;    /* lost its plane in this pass's test loop    */
     LONG                         plane;     /* scan-out plane showing it, -1 = none       */
     LONG                         zorder;    /* z the plane was given                      */
+    BOOL                         underlay;  /* the plane is below the primary, seen through
+                                             * the screen's alpha (CRF_UNDERLAY_OK)      */
     ULONG                        pflags;    /* PSF_* of the plane state                   */
     struct Rectangle             psrc;      /* plane state: part of the bitmap shown      */
     struct Rectangle             pdest;     /* plane state: where on the display          */
@@ -85,6 +88,8 @@ struct StackBitMapNode
     LONG            lastplane;          /* plane before the current re-plan */
     BOOL            promoted;           /* plane assignment in progress: gets a plane */
     BOOL            planedenied;        /* lost its plane in this pass's test loop */
+    BOOL            underlaid;          /* its plane blends over planes below it, its underlays */
+    BOOL            scaledenied;        /* Show() could not scale it: composed instead */
     /*
      * Geometry: the screen bitmap is scrw x scrh pixels and takes dstw x dsth
      * pixels on the display. They differ (scaled) only with ModePolicy_Native,

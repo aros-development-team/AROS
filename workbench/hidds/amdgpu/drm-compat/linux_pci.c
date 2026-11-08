@@ -42,6 +42,15 @@ void __iomem *ioremap(resource_size_t offset, unsigned long size)
     return HIDD_PCIDriver_MapPCI(pciDriver, (APTR)(IPTR)offset, size);
 }
 
+void __iomem *ioremap_wc(resource_size_t offset, unsigned long size)
+{
+    void __iomem *va = ioremap(offset, size);
+
+    if (va && compat_map_write_combining((void *)va, size))
+        bug("[amdgpu] write-combining not applied at %p (%lu bytes)\n", va, size);
+    return va;
+}
+
 void iounmap(volatile void __iomem *addr)
 {
     if (pciDriver && addr)

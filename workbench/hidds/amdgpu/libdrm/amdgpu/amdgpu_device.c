@@ -107,7 +107,11 @@ static void amdgpu_device_free_internal(amdgpu_device_handle dev)
 		}
 	}
 
-#if !defined(__AROS__)
+#if defined(__AROS__)
+	drmClose(dev->fd);
+	if ((dev->flink_fd >= 0) && (dev->fd != dev->flink_fd))
+		drmClose(dev->flink_fd);
+#else
 	close(dev->fd);
 	if ((dev->flink_fd >= 0) && (dev->fd != dev->flink_fd))
 		close(dev->flink_fd);
@@ -221,7 +225,7 @@ static int _amdgpu_device_initialize(int fd,
 		}
 		if ((flag_auth) && (!flag_authexist)) {
 #if defined(__AROS__)
-			dev->flink_fd = fd;
+			dev->flink_fd = drmDupFd(fd);
 #else
 			dev->flink_fd = fcntl(fd, F_DUPFD_CLOEXEC, 0);
 #endif
@@ -259,8 +263,13 @@ static int _amdgpu_device_initialize(int fd,
 	}
 
 #if defined(__AROS__)
-	/* the fd is an index into the in-process shim, owned by the caller */
-	dev->fd = fd;
+	/* a reference of its own to the caller's DRM file, as F_DUPFD_CLOEXEC */
+	dev->fd = drmDupFd(fd);
+	if (dev->fd < 0) {
+		r = dev->fd;
+		dev->fd = -1;
+		goto cleanup;
+	}
 #else
 	dev->fd = fcntl(fd, F_DUPFD_CLOEXEC, 0);
 #endif
@@ -324,7 +333,10 @@ static int _amdgpu_device_initialize(int fd,
 	return 0;
 
 cleanup:
-#if !defined(__AROS__)
+#if defined(__AROS__)
+	if (dev->fd >= 0)
+		drmClose(dev->fd);
+#else
 	if (dev->fd >= 0)
 		close(dev->fd);
 #endif

@@ -3574,6 +3574,7 @@ struct patb_data
     LONG   a_red, a_green, a_blue;
     LONG   b_red, b_green, b_blue;
     UBYTE  invert;
+    BOOL   dst_opaque;  /* the destination has no alpha channel */
 };
 
 static void JAM1AlphaTemplateBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD height, struct patb_data *data)
@@ -3587,15 +3588,32 @@ static void JAM1AlphaTemplateBuffered(ULONG *xbuf, UWORD starty, UWORD width, UW
         for (x = 0; x < width; x++)
         {
             LONG dst_red, dst_green, dst_blue, alpha;
+            ULONG dst_alpha;
 
             alpha = (*pixarray++) ^ data->invert;
             RGB32_DECOMPOSE(dst_red, dst_green, dst_blue, xbuf[x]);
+            dst_alpha = data->dst_opaque ? 0xFF : ARGB32_ALPHA_VALUE(xbuf[x]);
 
-            dst_red   += do_alpha(alpha, data->a_red, dst_red);
-            dst_green += do_alpha(alpha, data->a_green, dst_green);
-            dst_blue  += do_alpha(alpha, data->a_blue, dst_blue);
+            if (dst_alpha == 0xFF)
+            {
+                /* Opaque destination: blend into it, its alpha stays */
+                dst_red   += do_alpha(alpha, data->a_red, dst_red);
+                dst_green += do_alpha(alpha, data->a_green, dst_green);
+                dst_blue  += do_alpha(alpha, data->a_blue, dst_blue);
 
-            xbuf[x] = ARGB32_COMPOSE(dst_red, dst_green, dst_blue, 0);
+                xbuf[x] = ARGB32_COMPOSE(dst_red, dst_green, dst_blue, xbuf[x]);
+            }
+            else if (alpha)
+            {
+                /* Translucent destination: source-over, the coverage accumulates */
+                ULONG out_a = over_alpha(alpha, dst_alpha);
+
+                dst_red   = over_channel(alpha, dst_alpha, out_a, data->a_red,   dst_red);
+                dst_green = over_channel(alpha, dst_alpha, out_a, data->a_green, dst_green);
+                dst_blue  = over_channel(alpha, dst_alpha, out_a, data->a_blue,  dst_blue);
+
+                xbuf[x] = ARGB32_COMPOSE_A(out_a, dst_red, dst_green, dst_blue);
+            }
         }
 
         xbuf += width;
@@ -3642,7 +3660,8 @@ static void JAM2AlphaTemplateBuffered(ULONG *xbuf, UWORD starty, UWORD width, UW
             dst_green = data->b_green + ((data->a_green - data->b_green) * alpha) / 256;
             dst_blue  = data->b_blue  + ((data->a_blue  - data->b_blue)  * alpha) / 256;
 
-            xbuf[x] = ARGB32_COMPOSE(dst_red, dst_green, dst_blue, 0);
+            /* Foreground over background: opaque */
+            xbuf[x] = ARGB32_COMPOSE_A(0xFF, dst_red, dst_green, dst_blue);
         }
 
         xbuf += width;
@@ -3659,6 +3678,7 @@ VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
     BOOL get = TRUE;
     void (*op)(ULONG *, UWORD, UWORD, UWORD, struct patb_data *);
     struct patb_data data;
+    struct HIDDBitMapData *bmdata = OOP_INST_DATA(cl, o);
     HIDDT_Color color;
 
     EnterFunc(bug("BitMap::PutAlphaTemplate(x=%d, y=%d, width=%d, height=%d)\n"
@@ -3694,6 +3714,7 @@ VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
     data.pixarray = msg->alpha;
     data.modulo   = msg->modulo;
     data.invert   = msg->invertalpha ? 255 : 0;
+    data.dst_opaque = (((HIDDT_PixelFormat *)bmdata->prot.pixfmt)->alpha_mask == 0);
 
     DoBufferedOperation(cl, o, msg->x, msg->y, msg->width, msg->height, get, vHidd_StdPixFmt_ARGB32, (VOID_FUNC)op, &data);
 

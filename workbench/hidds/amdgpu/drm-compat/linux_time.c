@@ -21,8 +21,8 @@
 #include <linux/random.h>
 
 /*
- * All time comes from timer.device: jiffies and ktime are the system
- * clock, delays are TR_ADDREQUEST on a per-caller port, and kernel timers
+ * All time comes from timer.device: jiffies and ktime both count from
+ * boot (GetUpTime), so setting the clock moves neither; delays are TR_ADDREQUEST on a per-caller port, and kernel timers
  * are requests answered on the timer process, which runs the callback.
  */
 
@@ -30,7 +30,6 @@ struct Device *TimerBase = NULL;
 static struct MsgPort *timer_init_port = NULL;
 static struct timerequest *timer_init_req = NULL;
 
-static struct MsgPort *timer_proc_port = NULL;
 static struct Process *timer_proc = NULL;
 static struct Task *timer_parent = NULL;
 static ULONG timer_parent_ack;
@@ -85,7 +84,7 @@ ktime_t ktime_get(void)
 
     if (!TimerBase)
         return 0;
-    GetSysTime(&tv);
+    GetUpTime(&tv);
     return (ktime_t)tv.tv_secs * NSEC_PER_SEC + (ktime_t)tv.tv_micro * NSEC_PER_USEC;
 }
 
@@ -101,7 +100,7 @@ u64 compat_jiffies64(void)
 
     if (!TimerBase)
         return 0;
-    GetSysTime(&tv);
+    GetUpTime(&tv);
     return (u64)tv.tv_secs * 1000ULL + tv.tv_micro / 1000;
 }
 
@@ -224,85 +223,131 @@ void usleep_range(unsigned long min, unsigned long max)
 /* --- kernel timers ---------------------------------------------------- */
 
 /*
- * The timer process owns every request: arming and cancelling are
- * commands sent to it, so that AbortIO/WaitIO always run in the task
- * that owns the reply port and no request is ever re-queued while a
- * stale reply is still in flight.
+ * Armed timers are one list, edited in place under a lock that disables
+ * interrupts: arming and cancelling are atomic for the caller, as in
+ * Linux, so they are legal under a spinlock with interrupts off, from an
+ * interrupt, and a timer may be freed right after del_timer(). The timer
+ * process only sleeps until the earliest deadline, woken by Signal() when
+ * the list changes, and runs the callbacks.
  */
-enum { TIMER_CMD_MOD, TIMER_CMD_DEL };
+static struct MinList timer_armed;
+static volatile LONG timer_armed_lock;
+static struct timer_list * volatile timer_running;
+static ULONG timer_wake_mask;
 
-struct timer_cmd {
-    struct Message msg;
-    int op;
-    struct timer_list *t;
-    unsigned long expires;
-    int result;
-};
+static inline void timer_list_lock(void)
+{
+    Disable();
+    while (__atomic_exchange_n(&timer_armed_lock, 1, __ATOMIC_ACQUIRE))
+        cpu_relax();
+    if (!timer_armed.mlh_Head)
+        NEWLIST((struct List *)&timer_armed);
+}
 
-static void timer_do_disarm(struct timer_list *t)
+static inline void timer_list_unlock(void)
+{
+    __atomic_store_n(&timer_armed_lock, 0, __ATOMIC_RELEASE);
+    Enable();
+}
+
+static inline BOOL timer_can_sleep(void)
+{
+    return !irqs_disabled();
+}
+
+/* under timer_list_lock */
+static int timer_unlink(struct timer_list *t)
 {
     if (!t->pending)
-        return;
-    AbortIO((struct IORequest *)&t->req);
-    WaitIO((struct IORequest *)&t->req);
-    t->pending = FALSE;
+        return 0;
+    Remove((struct Node *)&t->node);
+    t->pending = 0;
+    return 1;
 }
 
-static void timer_do_arm(struct timer_list *t, unsigned long expires)
+/* under timer_list_lock */
+static void timer_link(struct timer_list *t, unsigned long expires)
 {
-    unsigned long now = jiffies;
-    unsigned long delay = time_after(expires, now) ? expires - now : 0;
-    unsigned long usecs = jiffies_to_usecs(delay);
-
     t->expires = expires;
-    t->req = *timer_init_req;
-    t->req.tr_node.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-    t->req.tr_node.io_Message.mn_ReplyPort = timer_proc_port;
-    t->req.tr_node.io_Command = TR_ADDREQUEST;
-    t->req.tr_time.tv_secs = usecs / 1000000;
-    t->req.tr_time.tv_micro = usecs % 1000000;
-    t->pending = TRUE;
-    SendIO((struct IORequest *)&t->req);
+    AddTail((struct List *)&timer_armed, (struct Node *)&t->node);
+    t->pending = 1;
 }
 
-static struct MsgPort *timer_cmd_port = NULL;
+static void timer_wake(void)
+{
+    if (timer_proc)
+        Signal((struct Task *)timer_proc, timer_wake_mask);
+}
 
 static void timer_proc_main(void)
 {
-    struct Message *msg;
-    ULONG sigs;
+    struct MsgPort *port = CreateMsgPort();
+    struct timerequest *req = port ? CreateIORequest(port, sizeof(*req)) : NULL;
+    BYTE wake = AllocSignal(-1);
+    ULONG portsig;
 
-    timer_proc_port = CreateMsgPort();
-    timer_cmd_port = CreateMsgPort();
+    if (req) {
+        *req = *timer_init_req;
+        req->tr_node.io_Message.mn_ReplyPort = port;
+    }
+    if (wake >= 0)
+        timer_wake_mask = 1UL << wake;
     Signal(timer_parent, timer_parent_ack);
-    if (!timer_proc_port || !timer_cmd_port)
+    if (!req || wake < 0)
         return;
+    portsig = 1UL << port->mp_SigBit;
 
     for (;;) {
-        sigs = Wait((1UL << timer_proc_port->mp_SigBit) | (1UL << timer_cmd_port->mp_SigBit));
+        struct timer_list *t, *first;
+        struct MinNode *n;
+        unsigned long now = jiffies, expires = 0;
+        BOOL fire;
 
-        while ((msg = GetMsg(timer_cmd_port))) {
-            struct timer_cmd *cmd = (struct timer_cmd *)msg;
-            struct timer_list *t = cmd->t;
+        /* the earliest deadline, and whether it has passed */
+        timer_list_lock();
+        first = NULL;
+        for (n = timer_armed.mlh_Head; n->mln_Succ; n = n->mln_Succ) {
+            t = container_of(n, struct timer_list, node);
+            if (!first || time_before(t->expires, first->expires))
+                first = t;
+        }
+        if (first)
+            expires = first->expires;
+        fire = first && !time_after(expires, now);
+        if (fire) {
+            timer_unlink(first);
+            timer_running = first;
+        }
+        timer_list_unlock();
 
-            cmd->result = t->pending;
-            timer_do_disarm(t);
-            if (cmd->op == TIMER_CMD_MOD)
-                timer_do_arm(t, cmd->expires);
-            ReplyMsg(msg);
+        if (fire) {
+            if (first->function)
+                first->function(first);
+            timer_list_lock();
+            timer_running = NULL;
+            timer_list_unlock();
+            continue;
         }
 
-        while ((msg = GetMsg(timer_proc_port))) {
-            struct timerequest *treq = (struct timerequest *)msg;
-            struct timer_list *t = container_of(treq, struct timer_list, req);
-
-            if (t->pending) {
-                t->pending = FALSE;
-                if (t->function)
-                    t->function(t);
-            }
+        if (!first) {
+            Wait(timer_wake_mask);
+            continue;
         }
-        (void)sigs;
+
+        {
+            unsigned long usecs = jiffies_to_usecs(expires - now);
+            ULONG sigs;
+
+            req->tr_node.io_Command = TR_ADDREQUEST;
+            req->tr_time.tv_secs = usecs / 1000000;
+            req->tr_time.tv_micro = usecs % 1000000;
+            SendIO((struct IORequest *)req);
+            sigs = Wait(timer_wake_mask | portsig);
+            if (!(sigs & portsig))
+                AbortIO((struct IORequest *)req);
+            WaitIO((struct IORequest *)req);
+            SetSignal(0, portsig);
+        }
     }
 }
 
@@ -320,7 +365,6 @@ static BOOL timer_proc_start(void)
         timer_proc = CreateNewProcTags(
             NP_Name, (IPTR)"Amdgpu Timers",
             NP_Priority, 21,     /* kernel timer callbacks must outrank waiters, like the workqueues */
-            NP_Affinity, TASKAFFINITY_ANY,
             NP_Entry, (IPTR)timer_proc_main,
             NP_StackSize, 64 * 1024,
             TAG_DONE);
@@ -329,49 +373,16 @@ static BOOL timer_proc_start(void)
         FreeSignal(ack);
     }
     ReleaseSemaphore(&timer_lock);
-    return timer_proc && timer_cmd_port;
+    return timer_proc != NULL;
 }
 
-static int timer_send_cmd(int op, struct timer_list *t, unsigned long expires)
+static int init_timerproc(void)
 {
-    struct timer_cmd cmd;
-    struct MsgPort port;
-
-    if (!timer_proc_start())
-        return 0;
-
-    /* commands from the timer process itself act directly */
-    if (FindTask(NULL) == (struct Task *)timer_proc) {
-        int was = t->pending;
-        timer_do_disarm(t);
-        if (op == TIMER_CMD_MOD)
-            timer_do_arm(t, expires);
-        return was;
-    }
-
-    memset(&port, 0, sizeof(port));
-    port.mp_Node.ln_Type = NT_MSGPORT;
-    port.mp_Flags = PA_SIGNAL;
-    port.mp_SigBit = AllocSignal(-1);
-    port.mp_SigTask = FindTask(NULL);
-    NEWLIST(&port.mp_MsgList);
-    if (port.mp_SigBit == (UBYTE)-1)
-        return 0;
-
-    memset(&cmd, 0, sizeof(cmd));
-    cmd.msg.mn_Node.ln_Type = NT_MESSAGE;
-    cmd.msg.mn_ReplyPort = &port;
-    cmd.msg.mn_Length = sizeof(cmd);
-    cmd.op = op;
-    cmd.t = t;
-    cmd.expires = expires;
-
-    PutMsg(timer_cmd_port, &cmd.msg);
-    WaitPort(&port);
-    GetMsg(&port);
-    FreeSignal(port.mp_SigBit);
-    return cmd.result;
+    timer_proc_start();
+    return TRUE;
 }
+
+ADD2INIT(init_timerproc, 6);
 
 void timer_setup(struct timer_list *t, void (*func)(struct timer_list *), unsigned int flags)
 {
@@ -381,12 +392,19 @@ void timer_setup(struct timer_list *t, void (*func)(struct timer_list *), unsign
 
 int timer_pending(const struct timer_list *t)
 {
-    return t->pending;
+    return __atomic_load_n(&t->pending, __ATOMIC_ACQUIRE);
 }
 
 int mod_timer(struct timer_list *t, unsigned long expires)
 {
-    return timer_send_cmd(TIMER_CMD_MOD, t, expires);
+    int was;
+
+    timer_list_lock();
+    was = timer_unlink(t);
+    timer_link(t, expires);
+    timer_list_unlock();
+    timer_wake();
+    return was;
 }
 
 void add_timer(struct timer_list *t)
@@ -396,14 +414,38 @@ void add_timer(struct timer_list *t)
 
 int del_timer(struct timer_list *t)
 {
-    if (!t->pending)
+    int was;
+
+    if (!timer_pending(t))
         return 0;
-    return timer_send_cmd(TIMER_CMD_DEL, t, 0);
+    timer_list_lock();
+    was = timer_unlink(t);
+    timer_list_unlock();
+    return was;
 }
 
+/*
+ * Returns with the timer neither queued nor running: a callback that is
+ * running may re-arm its timer, so the check for a running callback and
+ * the unlink are one step under the lock, repeated until it is not
+ * running. From the timer process itself, or where it cannot sleep, it
+ * only unlinks, as waiting there could never end.
+ */
 int del_timer_sync(struct timer_list *t)
 {
-    return del_timer(t);
+    BOOL wait = FindTask(NULL) != (struct Task *)timer_proc && timer_can_sleep() && !amdgpu_compat_atomic;
+    int was;
+
+    for (;;) {
+        timer_list_lock();
+        if (!wait || timer_running != t) {
+            was = timer_unlink(t);
+            timer_list_unlock();
+            return was;
+        }
+        timer_list_unlock();
+        Delay(1);
+    }
 }
 
 /* --- hrtimers, at timer granularity ------------------------------------ */

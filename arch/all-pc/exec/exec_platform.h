@@ -72,129 +72,31 @@ extern void Kernel_53_KrnSpinUnLock(spinlock_t *, void *);
  */
 #define EXEC_MEMORY_BARRIER()   asm volatile("" ::: "memory")
 
-#if defined(AROS_NO_ATOMIC_OPERATIONS)
-#define IDNESTCOUNT_INC \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __schd->IDNestCnt++; \
-    } while(0)
-#define IDNESTCOUNT_DEC \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __schd->IDNestCnt--; \
-    } while(0)
-#define TDNESTCOUNT_INC \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __schd->TDNestCnt++; \
-    } while(0)
-#define TDNESTCOUNT_DEC \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __schd->TDNestCnt--; \
-    } while(0)
-#define FLAG_SCHEDQUANTUM_CLEAR \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __schd->ScheduleFlags &= ~TLSSF_Quantum; \
-    } while(0)
-#define FLAG_SCHEDQUANTUM_SET \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __schd->ScheduleFlags |= TLSSF_Quantum; \
-    } while(0)
-#define FLAG_SCHEDSWITCH_CLEAR \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __schd->ScheduleFlags &= ~TLSSF_Switch; \
-    } while(0)
-#define FLAG_SCHEDSWITCH_SET \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __schd->ScheduleFlags |= TLSSF_Switch; \
-    } while(0)
-#define FLAG_SCHEDDISPATCH_CLEAR \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __schd->ScheduleFlags &= ~TLSSF_Dispatch; \
-    } while(0)
-#define FLAG_SCHEDDISPATCH_SET \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __schd->ScheduleFlags |= TLSSF_Dispatch; \
-    } while(0)
-#else /* !AROS_NO_ATOMIC_OPERATIONS */
-#define IDNESTCOUNT_INC \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __AROS_ATOMIC_INC_B(__schd->IDNestCnt); \
-    } while(0)
-#define IDNESTCOUNT_DEC \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __AROS_ATOMIC_DEC_B(__schd->IDNestCnt); \
-    } while(0)
-#define TDNESTCOUNT_INC \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __AROS_ATOMIC_INC_B(__schd->TDNestCnt); \
-    } while(0)
-#define TDNESTCOUNT_DEC \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __AROS_ATOMIC_DEC_B(__schd->TDNestCnt); \
-    } while(0)
-#define FLAG_SCHEDQUANTUM_CLEAR \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __AROS_ATOMIC_AND_L(__schd->ScheduleFlags, ~TLSSF_Quantum); \
-    } while(0)
-#define FLAG_SCHEDQUANTUM_SET \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __AROS_ATOMIC_OR_L(__schd->ScheduleFlags, TLSSF_Quantum); \
-    } while(0)
-#define FLAG_SCHEDSWITCH_CLEAR \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __AROS_ATOMIC_AND_L(__schd->ScheduleFlags, ~TLSSF_Switch); \
-    } while(0)
-#define FLAG_SCHEDSWITCH_SET \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __AROS_ATOMIC_OR_L(__schd->ScheduleFlags, TLSSF_Switch); \
-    } while(0)
-#define FLAG_SCHEDDISPATCH_CLEAR \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __AROS_ATOMIC_AND_L(__schd->ScheduleFlags, ~TLSSF_Dispatch); \
-    } while(0)
-#define FLAG_SCHEDDISPATCH_SET \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __AROS_ATOMIC_OR_L(__schd->ScheduleFlags, TLSSF_Dispatch); \
-    } while(0)
-#endif /* !AROS_NO_ATOMIC_OPERATIONS */
+/*
+ * Every one of these is a single %gs-relative access to this CPU's own
+ * scheduler block (see arch/x86_64-pc/kernel/tls.h). They used to load
+ * the block's address out of the TLS and then touch a field through it,
+ * which a reschedule could split: a task moved to another CPU between the
+ * two accesses read, or wrote, the state of the CPU it had left. One
+ * instruction cannot be split by an interrupt, so the CPU that retires it
+ * is the CPU the caller is on.
+ *
+ * The lock prefix is kept only where another CPU writes the same field.
+ * The schedule flags are set for a CPU by whichever one runs the
+ * heartbeat or the VBlank server; the two nest counts are touched by
+ * their own CPU alone, so there the single instruction is enough.
+ */
+#define IDNESTCOUNT_INC                 TLS_INC_B(Sched.IDNestCnt)
+#define IDNESTCOUNT_DEC                 TLS_DEC_B(Sched.IDNestCnt)
+#define TDNESTCOUNT_INC                 TLS_INC_B(Sched.TDNestCnt)
+#define TDNESTCOUNT_DEC                 TLS_DEC_B(Sched.TDNestCnt)
+#define FLAG_SCHEDQUANTUM_CLEAR         TLS_LOCK_AND_L(Sched.ScheduleFlags, ~TLSSF_Quantum)
+#define FLAG_SCHEDQUANTUM_SET           TLS_LOCK_OR_L(Sched.ScheduleFlags, TLSSF_Quantum)
+#define FLAG_SCHEDSWITCH_CLEAR          TLS_LOCK_AND_L(Sched.ScheduleFlags, ~TLSSF_Switch)
+#define FLAG_SCHEDSWITCH_SET            TLS_LOCK_OR_L(Sched.ScheduleFlags, TLSSF_Switch)
+#define FLAG_SCHEDDISPATCH_CLEAR        TLS_LOCK_AND_L(Sched.ScheduleFlags, ~TLSSF_Dispatch)
+#define FLAG_SCHEDDISPATCH_SET          TLS_LOCK_OR_L(Sched.ScheduleFlags, TLSSF_Dispatch)
+
 /*
  * Block IRQ-exit dispatch without going through Forbid()/Permit() (Permit's
  * decrement can trigger Reschedule() which yields - exactly what we don't
@@ -204,104 +106,26 @@ extern void Kernel_53_KrnSpinUnLock(spinlock_t *, void *);
  */
 #define EXEC_BLOCK_DISPATCH_INC         TDNESTCOUNT_INC
 #define EXEC_BLOCK_DISPATCH_DEC         TDNESTCOUNT_DEC
-#define SCHEDQUANTUM_SET(val) \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __schd->Quantum = val; \
-    } while(0)
-#define SCHEDQUANTUM_GET \
-    ({ \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        UWORD __ret = 0; \
-        if (__schd) \
-            __ret = (__schd->Quantum); \
-         __ret;  \
-   })
-#define SCHEDELAPSED_SET(val) \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __schd->Elapsed = val; \
-    } while(0)
-#define SCHEDELAPSED_GET \
-    ({ \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        UWORD __ret = 0; \
-        if (__schd) \
-            __ret = (__schd->Elapsed); \
-         __ret;  \
-   })
-#define IDNESTCOUNT_GET \
-    ({ \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        LONG __ret = 0; \
-        if (__schd) \
-            __ret = (__schd->IDNestCnt); \
-         __ret;  \
-   })
-#define IDNESTCOUNT_SET(val) \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __schd->IDNestCnt = val; \
-    } while(0)
-#define TDNESTCOUNT_GET \
-    ({ \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        LONG __ret = 0; \
-        if (__schd) \
-            __ret = (__schd->TDNestCnt); \
-        __ret;  \
-    })
-#define TDNESTCOUNT_SET(val) \
-    do { \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-            __schd->TDNestCnt = val; \
-    } while(0)
-#define FLAG_SCHEDQUANTUM_ISSET \
-    ({ \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        BOOL __ret = FALSE; \
-        if (__schd) \
-            __ret = (__schd->ScheduleFlags & TLSSF_Quantum); \
-        __ret;  \
-    })
-#define FLAG_SCHEDSWITCH_ISSET \
-    ({ \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        BOOL __ret = FALSE; \
-        if (__schd) \
-            __ret = (__schd->ScheduleFlags & TLSSF_Switch); \
-        __ret;  \
-    })
-#define FLAG_SCHEDDISPATCH_ISSET \
-    ({ \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        BOOL __ret = FALSE; \
-        if (__schd) \
-            __ret = (__schd->ScheduleFlags & TLSSF_Dispatch); \
-        __ret;  \
-    })
-#define GET_THIS_TASK \
-    ({ \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        struct Task *__ret = NULL; \
-        if (__schd) \
-            __ret = __schd->RunningTask; \
-        __ret;  \
-    })
+
+#define SCHEDQUANTUM_SET(val)           TLS_SET(Sched.Quantum, (UWORD)(val))
+#define SCHEDQUANTUM_GET                TLS_GET(Sched.Quantum)
+#define SCHEDELAPSED_SET(val)           TLS_SET(Sched.Elapsed, (UWORD)(val))
+#define SCHEDELAPSED_GET                TLS_GET(Sched.Elapsed)
+#define IDNESTCOUNT_SET(val)            TLS_SET(Sched.IDNestCnt, (BYTE)(val))
+#define IDNESTCOUNT_GET                 ((LONG)TLS_GET(Sched.IDNestCnt))
+#define TDNESTCOUNT_SET(val)            TLS_SET(Sched.TDNestCnt, (BYTE)(val))
+#define TDNESTCOUNT_GET                 ((LONG)TLS_GET(Sched.TDNestCnt))
+#define FLAG_SCHEDQUANTUM_ISSET         ((BOOL)((TLS_GET(Sched.ScheduleFlags) & TLSSF_Quantum) != 0))
+#define FLAG_SCHEDSWITCH_ISSET          ((BOOL)((TLS_GET(Sched.ScheduleFlags) & TLSSF_Switch) != 0))
+#define FLAG_SCHEDDISPATCH_ISSET        ((BOOL)((TLS_GET(Sched.ScheduleFlags) & TLSSF_Dispatch) != 0))
+#define GET_THIS_TASK                   TLS_GET(Sched.RunningTask)
 #define SET_THIS_TASK(x)         \
     ({ \
-        struct X86SchedulerPrivate  *__schd = TLS_GET(ScheduleData); \
-        if (__schd) \
-        { \
-            EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_WRITE); \
-            __schd->RunningTask = (x); \
-            AddHead(&PrivExecBase(SysBase)->TaskRunning, (struct Node *)(x)); \
-            EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock);  \
-        } \
+        struct Task *__newtask = (x); \
+        EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_WRITE); \
+        TLS_SET(Sched.RunningTask, __newtask); \
+        AddHead(&PrivExecBase(SysBase)->TaskRunning, (struct Node *)__newtask); \
+        EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock);  \
     })
 
 #else /* !__AROSEXEC_SMP__ */

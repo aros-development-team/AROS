@@ -27,6 +27,7 @@
 
 #include "vcgfx_bitmap.h"
 #include "vcgfx_hidd.h"
+#include "vcgfx_decode.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -379,6 +380,7 @@ static OOP_Object *vc4_scanout_new(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
         data->pxflags     = pxflags;
         data->videofmt    = videofmt;
         data->colorspace  = GetTagData(aHidd_BitMap_ColorSpace, vHidd_ColorSpace_BT601, msg->attrList);
+        data->colorrange  = GetTagData(aHidd_BitMap_ColorRange, vHidd_ColorRange_Limited, msg->attrList);
         if (videofmt == vHidd_VideoFmt_NV12)
         {
             data->planeoff[0] = pitch * height;
@@ -411,6 +413,9 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     D(bug("[VideoCoreGfx] VideoCoreGfx.OffBitMap::New()\n"));
 
+    screen = vcgfx_dectgt_new(cl, o, msg, &handled);
+    if (handled)
+        return screen;
     screen = vc4_scanout_new(cl, o, msg, &handled);
     if (handled)
         return screen;
@@ -517,13 +522,14 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     struct vcgfx_scanbuf scan[VCGFX_SCAN_BUFFERS];
+    struct vcgfx_dectgt *dectgt = data->dectgt;
     ULONG i;
 #if VC4_GPUBM_ENABLE
     ULONG handle = data->gpuhandle;
 #endif
 
     /* Off the display before the pages go. */
-    if (data->scan[0].sb_Pixels)
+    if (data->scan[0].sb_Pixels || dectgt)
         vcgfx_plane_forget(xsd, o);
     CopyMem(data->scan, scan, sizeof(scan));
 
@@ -531,6 +537,8 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     for (i = 0; i < VCGFX_SCAN_BUFFERS; i++)
         vcgfx_scanout_free(xsd, &scan[i]);
+    if (dectgt)
+        vcgfx_dectgt_dispose(xsd, dectgt);
 #if VC4_GPUBM_ENABLE
     if (handle)
         vc4_gpumem_free(xsd, handle);
@@ -540,24 +548,39 @@ VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /**********  Bitmap::Set()  ***************************************/
 
 /* LeftEdge/TopEdge are how graphics.library drags a screen: the superclass
- * clamps and stores them, the plane follows. */
+ * clamps and stores them, the plane follows. A new colour space or range
+ * goes into the list of the plane showing the bitmap. */
 IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
     struct TagItem *tag, *tstate = msg->attrList;
-    BOOL moved = FALSE;
+    BOOL moved = FALSE, restyled = FALSE;
     ULONG idx;
     IPTR result;
 
     while ((tag = NextTagItem(&tstate)))
     {
-        if (IS_BM_ATTR(tag->ti_Tag, idx)
-            && ((idx == aoHidd_BitMap_LeftEdge) || (idx == aoHidd_BitMap_TopEdge)))
+        if (!IS_BM_ATTR(tag->ti_Tag, idx))
+            continue;
+        if ((idx == aoHidd_BitMap_LeftEdge) || (idx == aoHidd_BitMap_TopEdge))
             moved = TRUE;
+        else if ((idx == aoHidd_BitMap_ColorSpace) && data->videofmt)
+        {
+            data->colorspace = tag->ti_Data;
+            restyled = TRUE;
+        }
+        else if ((idx == aoHidd_BitMap_ColorRange) && data->videofmt)
+        {
+            data->colorrange = tag->ti_Data;
+            restyled = TRUE;
+        }
     }
 
     result = OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (moved)
         vcgfx_plane_moved(XSD(cl), o);
+    if (restyled)
+        vcgfx_plane_restyle(XSD(cl), o);
     return result;
 }
 
@@ -567,6 +590,8 @@ BOOL MNAME_BM(LockBuffer)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Lock
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
+    if (data->dectgt)
+        return vcgfx_dectgt_lock(data->dectgt, msg);
     if (!data->nbufs || (msg->buffer >= data->nbufs) || !msg->addressReturn || !msg->pitchReturn)
         return FALSE;
 
@@ -588,6 +613,12 @@ VOID MNAME_BM(UnlockBuffer)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Un
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     OOP_Object *display = NULL;
     const struct Rectangle *d = msg->dirty;
+
+    if (data->dectgt)
+    {
+        vcgfx_dectgt_unlock(data->dectgt, msg);
+        return;
+    }
 
     /* Video is never blitted: off a plane it shows nothing */
     if (!data->nbufs || data->videofmt || (msg->buffer != data->front)
@@ -612,6 +643,14 @@ BOOL MNAME_BM(SwapBuffers)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Swa
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     OOP_Object *display = NULL;
 
+    /* Never a frame half decoded */
+    if (data->dectgt)
+    {
+        if (!vcgfx_dectgt_page(data->dectgt, msg->newFront))
+            return FALSE;
+        vcgfx_plane_page(cl, o, msg->newFront, !(msg->flags & fHidd_Swap_NoWait));
+        return TRUE;
+    }
     if (!data->nbufs || (msg->newFront >= data->nbufs))
         return FALSE;
     if (msg->newFront == data->front)

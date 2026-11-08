@@ -166,6 +166,7 @@ struct pci_dev *drm_aros_pci_find_supported_video_card()
     /* If objects are set, detection was successful */
     if (pciBus && pciDriver && pdev)
     {
+        compat_pci_card = pdev;
         D(bug("Detected card: 0x%x/0x%x - %s\n",
             pdev->vendor, pdev->device,
             pci_is_pcie(pdev) ? "PCIe" :

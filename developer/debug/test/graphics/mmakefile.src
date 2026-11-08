@@ -7,6 +7,7 @@ FILES := screenppm \
     alphascreen \
     areatest2 \
     bltbitmapalpha \
+    bltbitmap_count \
     copper \
     gfx \
     gfxinfo \
