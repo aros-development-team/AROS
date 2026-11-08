@@ -64,6 +64,7 @@ struct SurfaceNode
     ULONG                        pflags;    /* PSF_* of the plane state                   */
     struct Rectangle             psrc;      /* plane state: part of the bitmap shown      */
     struct Rectangle             pdest;     /* plane state: where on the display          */
+    LONG                         lastplane; /* plane before the current assignment pass     */
 };
 
 /* The request a SurfaceNode shows */

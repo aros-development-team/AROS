@@ -360,6 +360,8 @@ static VOID HIDDCompositorRecalculateVisibleRegions(struct HIDDCompositorData *c
 static VOID HIDDCompositorRedrawVisibleRegions(struct HIDDCompositorData *compdata, struct Rectangle *drawrect);
 static void HIDDCompositorQueryPlanes(struct HIDDCompositorData *compdata);
 static void HIDDCompositorAssignPlanes(struct HIDDCompositorData *compdata);
+static void HIDDCompositorPassthroughBlit(struct HIDDCompositorData *compdata, struct StackBitMapNode *screen,
+                                          struct SurfaceNode *sn, WORD x, WORD y, UWORD width, UWORD height);
 static void HIDDCompositorPlanPlanes(struct HIDDCompositorData *compdata);
 static void HIDDCompositorCommitPlanes(struct HIDDCompositorData *compdata, ULONG flags, struct HookFires *fires);
 static void HIDDCompositorQueuePlaneHooks(struct HIDDCompositorData *compdata, struct HookFires *fires);
@@ -3322,7 +3324,8 @@ static void HIDDCompositorReplan(struct HIDDCompositorData *compdata, struct Cli
                                  struct Region *dirty, struct HookFires *fires)
 {
     struct StackBitMapNode *n, *topnode;
-    BOOL changed = FALSE;
+    struct SurfaceNode *sn;
+    BOOL changed = FALSE, demoted = FALSE;
 
     if (IsListEmpty(&compdata->bitmapstack))
     {
@@ -3331,7 +3334,11 @@ static void HIDDCompositorReplan(struct HIDDCompositorData *compdata, struct Cli
     }
 
     ForeachNode(&compdata->bitmapstack, n)
+    {
         n->lastplane = n->plane;
+        ForeachNode(&n->surfaces, sn)
+            sn->lastplane = sn->plane;
+    }
     HIDDCompositorPlanPlanes(compdata);
     if ((compdata->planecount < 2) && !compdata->nclientsurfaces)
         HIDDCompositorRecalculateVisibleRegions(compdata);      /* AssignPlanes() did not */
@@ -3339,6 +3346,21 @@ static void HIDDCompositorReplan(struct HIDDCompositorData *compdata, struct Cli
     {
         if (n->plane != n->lastplane)
             changed = TRUE;
+        /*
+         * A surface that lost its plane: nothing was drawn under the plane,
+         * so its area holds whatever the display showed before it came and
+         * must be redrawn now, not at the surface's next damage (which a
+         * paused client never sends).
+         */
+        ForeachNode(&n->surfaces, sn)
+        {
+            if ((sn->plane < 0) && (sn->lastplane >= 0) && sn->region)
+            {
+                demoted = TRUE;
+                if (dirty)
+                    OrRegionRegion(sn->region, dirty);
+            }
+        }
     }
     if (cs && cs->sn && cs->sn->region && dirty)
         OrRegionRegion(cs->sn->region, dirty);
@@ -3348,13 +3370,32 @@ static void HIDDCompositorReplan(struct HIDDCompositorData *compdata, struct Cli
         HIDDCompositorToggleCompositing(compdata, FALSE);       /* redraws everything when composing */
     else if (compdata->displaybitmap)
     {
-        if (dirty)
+        if (dirty && !(demoted && !dirty->RegionRectangle))
             HIDDCompositorRedrawRegion(compdata, dirty);
         else
             HIDDCompositorRedrawVisibleRegions(compdata, NULL);
     }
     HIDDCompositorCommitPlanes(compdata, 0, fires);
     HIDDCompositorStampKeys(compdata);
+    if (demoted && !compdata->displaybitmap && compdata->passthroughbm)
+    {
+        /* Passthrough: the demoted surfaces go into the screen bitmap themselves */
+        ForeachNode(&compdata->bitmapstack, n)
+        {
+            if ((n->bm != compdata->passthroughbm) || !(n->sbmflags & STACKNODEF_VISIBLE))
+                continue;
+            ForeachNode(&n->surfaces, sn)
+            {
+                if ((sn->plane < 0) && (sn->lastplane >= 0) && sn->region && sn->client && SURFACE_BLITTABLE(sn))
+                {
+                    struct HIDD_CompositeRequest *req = SNREQ(sn);
+
+                    HIDDCompositorPassthroughBlit(compdata, n, sn, req->Src.MinX, req->Src.MinY,
+                                                  req->Src.MaxX - req->Src.MinX + 1, req->Src.MaxY - req->Src.MinY + 1);
+                }
+            }
+        }
+    }
 }
 
 static VOID HIDDCompositorPurgeBitMapStack(struct HIDDCompositorData *compdata)
@@ -3917,33 +3958,19 @@ OOP_Object *Compositor__Hidd_Compositor__BitMapStackChanged(OOP_Class *cl, OOP_O
  * window that loses the one overlay plane to a newer one froze here before.
  * TRUE when the bitmap is a client surface (handled, or nothing to show).
  */
-static BOOL HIDDCompositorPassthroughSurfaceDamage(struct HIDDCompositorData *compdata, OOP_Object *bm,
-                                                   WORD x, WORD y, UWORD width, UWORD height)
+/*
+ * Lock held: blit the part (x, y, width, height - surface bitmap coordinates)
+ * of a plane-less client surface into the passthrough screen bitmap, over the
+ * surface's visible region (coordinates as HIDDCompositorStampKeys).
+ */
+static void HIDDCompositorPassthroughBlit(struct HIDDCompositorData *compdata, struct StackBitMapNode *screen,
+                                          struct SurfaceNode *sn, WORD x, WORD y, UWORD width, UWORD height)
 {
-    struct StackBitMapNode *screen = NULL;
-    struct SurfaceNode *sn;
-    struct HIDD_CompositeRequest *req;
+    struct HIDD_CompositeRequest *req = SNREQ(sn);
     struct Rectangle srcrect, r;
     struct RegionRectangle *rr;
-    BOOL copy;
+    BOOL copy = sn->opaque || (req->AlphaMode == vHidd_CompAlpha_None && req->Opacity == 0xFF);
 
-    /* displaybitmap and passthroughbm change under the write lock (ToggleCompositing frees
-       the old display bitmap): read them under the read lock only */
-    LOCK_COMPOSITOR_READ
-    if (compdata->displaybitmap || !compdata->passthroughbm ||
-        !(sn = HIDDCompositorFindSurface(compdata, bm, &screen)))
-    {
-        UNLOCK_COMPOSITOR
-        return FALSE;
-    }
-    if ((sn->plane >= 0) || !SURFACE_BLITTABLE(sn) || !sn->region || !screen ||
-        (screen->bm != compdata->passthroughbm) || !(screen->sbmflags & STACKNODEF_VISIBLE))
-    {
-        UNLOCK_COMPOSITOR
-        return TRUE;
-    }
-    req = SNREQ(sn);
-    copy = sn->opaque || (req->AlphaMode == vHidd_CompAlpha_None && req->Opacity == 0xFF);
     /* Surface -> screen -> display coordinates */
     {
         LONG x0 = req->Dest.MinX + (x - req->Src.MinX);
@@ -3969,6 +3996,30 @@ static BOOL HIDDCompositorPassthroughSurfaceDamage(struct HIDDCompositorData *co
             HIDD_BM_UpdateRect(screen->bm, dx, dy, w, h);
         }
     }
+}
+
+static BOOL HIDDCompositorPassthroughSurfaceDamage(struct HIDDCompositorData *compdata, OOP_Object *bm,
+                                                   WORD x, WORD y, UWORD width, UWORD height)
+{
+    struct StackBitMapNode *screen = NULL;
+    struct SurfaceNode *sn;
+
+    /* displaybitmap and passthroughbm change under the write lock (ToggleCompositing frees
+       the old display bitmap): read them under the read lock only */
+    LOCK_COMPOSITOR_READ
+    if (compdata->displaybitmap || !compdata->passthroughbm ||
+        !(sn = HIDDCompositorFindSurface(compdata, bm, &screen)))
+    {
+        UNLOCK_COMPOSITOR
+        return FALSE;
+    }
+    if ((sn->plane >= 0) || !SURFACE_BLITTABLE(sn) || !sn->region || !screen ||
+        (screen->bm != compdata->passthroughbm) || !(screen->sbmflags & STACKNODEF_VISIBLE))
+    {
+        UNLOCK_COMPOSITOR
+        return TRUE;
+    }
+    HIDDCompositorPassthroughBlit(compdata, screen, sn, x, y, width, height);
     UNLOCK_COMPOSITOR
     return TRUE;
 }
