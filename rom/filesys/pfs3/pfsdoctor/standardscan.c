@@ -2758,7 +2758,7 @@ static error_t SetLinkHead(struct extrafields *extra, uint32 head,
 
 static error_t LinkChainError(error_t error)
 {
-	if (IsOperationalError(error))
+	if (error == e_keep_object || IsOperationalError(error))
 		return error;
 	addfileerror("invalid hardlink chain; object retained");
 	return UnresolvedObject();
