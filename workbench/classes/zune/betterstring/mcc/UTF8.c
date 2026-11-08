@@ -22,8 +22,9 @@
  * grapheme cluster boundary: the cursor, Backspace, Delete and the mouse
  * move by user-perceived characters (e with a combining accent, an emoji
  * sequence). Text is shaped and drawn by unitext.library (HarfBuzz and
- * FreeType, the system's Unicode fonts: FONTS:Unicode, then the AROS
- * TrueType fonts) from the object's font's own outline file. Keys are
+ * FreeType) from the object's font's own outline file, then from the
+ * system's set in FONTS:TrueType (DejaVu Sans, Noto Emoji, Open Sans,
+ * Vera Sans). Keys are
  * decoded from the system's character set (ENV:CHARSET) before they are
  * sorted. The clipboard gets a UTF8 chunk and a CHRS copy in the system's
  * set; reading takes the UTF8 chunk first.

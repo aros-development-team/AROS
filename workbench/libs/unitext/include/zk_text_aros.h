@@ -58,9 +58,10 @@ typedef struct zt_fontset {
     CONST_STRPTR const *fallbacks;
 } zt_fontset;
 
-/* The system's set: FONTS:Unicode/ (the unicode-fonts package: DejaVu
-   Sans, DejaVu Sans Mono, Noto Emoji) and the AROS fonts Open Sans, Vera
-   Sans and Vera Sans Mono. Classes without a set of their own use it. */
+/* The system's set, all in FONTS:TrueType: DejaVu Sans, DejaVu Sans Mono
+   and Noto Emoji (installed with AROS for this layer), then Open Sans,
+   Vera Sans and Vera Sans Mono. Classes without a set of their own use
+   it. A program can bring its own faces instead (zt_fontset). */
 const zt_fontset *zt_system_fontset(void);
 
 /* The outline file of an AROS font: the file its .otag in FONTS: (or where

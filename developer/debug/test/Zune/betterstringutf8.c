@@ -4,7 +4,7 @@
     Desc: BetterString.mcc in its UTF-8 mode (MUIA_BetterString_UTF8),
           beside an 8-bit BetterString in the same window.
 
-    BetterStringUTF8 [CLIP]
+    BetterStringUTF8 [CLIP] [WAIT]
 
     Opens a window with both fields and checks, without user input:
     UTF-8 contents kept as given, text that is not UTF-8 refused, positions
@@ -18,6 +18,11 @@
     The allocation failures come from AllocVec patched (SetFunction) for
     this task only, and only for the n-th call from a chosen moment; the
     patch is taken out again before the window closes.
+
+    With WAIT the window stays open after the checks, its fields filled
+    with Polish, Greek, a combining accent and an emoji sequence, until it
+    is closed: for typing by hand, and for several programs using the
+    UTF-8 mode, and unitext.library, at once.
     With CLIP it also copies and pastes through the clipboard (unit 0, whose
     contents it replaces) and checks the UTF8 chunk. Prints one line per
     check, then "PASS n" or "FAIL n of m"; the return code is 0 or 10. It
@@ -87,6 +92,31 @@ static void patch(BOOL on)
     else
         SetFunction((struct Library *)SysBase, -114 * LIB_VECTSIZE, old_allocvec);
     Permit();
+}
+
+/* Whether s is well-formed UTF-8 (shortest forms, no surrogates, at most
+   U+10FFFF). */
+static BOOL valid_utf8(const UBYTE *s)
+{
+    while(*s)
+    {
+        ULONG c = *s, n, k, cp;
+        if(c < 0x80) { s++; continue; }
+        if(c >= 0xc2 && c <= 0xdf) { n = 1; cp = c & 0x1f; }
+        else if(c >= 0xe0 && c <= 0xef) { n = 2; cp = c & 0x0f; }
+        else if(c >= 0xf0 && c <= 0xf4) { n = 3; cp = c & 0x07; }
+        else return FALSE;
+        for(k = 1; k <= n; k++)
+        {
+            if((s[k] & 0xc0) != 0x80)
+                return FALSE;
+            cp = (cp << 6) | (s[k] & 0x3f);
+        }
+        if((n == 2 && (cp < 0x800 || (cp >= 0xd800 && cp <= 0xdfff))) || (n == 3 && (cp < 0x10000 || cp > 0x10ffff)))
+            return FALSE;
+        s += n + 1;
+    }
+    return TRUE;
 }
 
 static LONG status_of(Object *o)
@@ -182,7 +212,16 @@ int main(int argc, char **argv)
 {
     Object *app, *win, *u8, *old, *limited, *secret;
     IPTR status = 99, open = 0;
-    BOOL clip = argc > 1 && !strcmp(argv[1], "CLIP");
+    BOOL clip = FALSE, wait = FALSE;
+    int a;
+
+    for(a = 1; a < argc; a++)
+    {
+        if(!strcmp(argv[a], "CLIP"))
+            clip = TRUE;
+        else if(!strcmp(argv[a], "WAIT"))
+            wait = TRUE;
+    }
     char buf[256];
 
     setvbuf(stdout, NULL, _IONBF, 0);       /* every line out at once */
@@ -364,6 +403,24 @@ int main(int argc, char **argv)
         set(win, MUIA_Window_ActiveObject, (IPTR)limited);
         DoMethod(limited, MUIM_BetterString_DoAction, MUIV_BetterString_DoAction_Paste);
         check(!strcmp(contents(limited), "Za\xc5\xbc\xc3\xb3"), "paste takes UTF-8 and cuts at MaxLen on a boundary");
+    }
+
+    if(wait)
+    {
+        ULONG sigs = 0;
+
+        set(u8, MUIA_String_Contents, (IPTR)(ZOLC " \xce\xb1\xce\xb2\xce\xb3 " E_ACUTE " " FAMILY));
+        set(limited, MUIA_String_Contents, (IPTR)"");
+        set(secret, MUIA_String_Contents, (IPTR)ZOLC);
+        DoMethod(win, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)app, 2,
+                 MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+        printf("..   waiting: close the window to end\n");
+        while(DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs) != MUIV_Application_ReturnID_Quit)
+        {
+            if(sigs && (sigs = Wait(sigs | SIGBREAKF_CTRL_C)) & SIGBREAKF_CTRL_C)
+                break;
+        }
+        check(valid_utf8((const UBYTE *)contents(u8)), "the field typed into by hand still holds UTF-8");
     }
 
     printf("..   closing\n");

@@ -182,11 +182,11 @@ int zt_font_file(struct TextFont *tf, char *out, size_t outn)
     return ok;
 }
 
-static CONST_STRPTR sys_prop[] = { (CONST_STRPTR)"FONTS:Unicode/DejaVuSans.ttf",
+static CONST_STRPTR sys_prop[] = { (CONST_STRPTR)"FONTS:TrueType/DejaVuSans.ttf",
     (CONST_STRPTR)"FONTS:TrueType/OpenSans-Regular.ttf", (CONST_STRPTR)"FONTS:TrueType/VeraSans.ttf", NULL };
-static CONST_STRPTR sys_mono[] = { (CONST_STRPTR)"FONTS:Unicode/DejaVuSansMono.ttf",
+static CONST_STRPTR sys_mono[] = { (CONST_STRPTR)"FONTS:TrueType/DejaVuSansMono.ttf",
     (CONST_STRPTR)"FONTS:TrueType/VeraMono.ttf", NULL };
-static CONST_STRPTR sys_fall[] = { (CONST_STRPTR)"FONTS:Unicode/NotoEmoji.ttf", NULL };
+static CONST_STRPTR sys_fall[] = { (CONST_STRPTR)"FONTS:TrueType/NotoEmoji.ttf", NULL };
 static const zt_fontset sys_set = { sys_prop, sys_mono, sys_fall };
 
 const zt_fontset *zt_system_fontset(void) { return &sys_set; }
@@ -234,7 +234,7 @@ int zt_fonts_check(const zt_fontset *set, char *why, ULONG whylen)
             r = e;
             m = e == ZT_ERR_MEMORY ? "not enough memory to open the fonts"
                                    : "none of the outline fonts for Unicode text opened (the program's "
-                                     "Fonts drawer, FONTS:Unicode, FONTS:TrueType/OpenSans-Regular.ttf)";
+                                     "Fonts drawer, FONTS:TrueType/DejaVuSans.ttf, FONTS:TrueType/OpenSans-Regular.ttf)";
         }
         zt_font_close(f);
         zt_font_close(p);
