@@ -599,6 +599,20 @@ STATIC void UpdatePrintMax (struct PrinterEditor_DATA *data, int units, BOOL fro
     }
 }
 
+/* name is base, with or without ".device" (older preferences left it out);
+   with base NULL, whether name ends in ".device" */
+STATIC BOOL IsDeviceName(CONST_STRPTR name, CONST_STRPTR base)
+{
+    ULONG len = strlen(name);
+    BOOL ext = len >= 7 && strcmp(&name[len - 7], ".device") == 0;
+
+    if (base == NULL)
+        return ext;
+    if (ext)
+        len -= 7;
+    return len == strlen(base) && strncmp(name, base, len) == 0;
+}
+
 /*
  * update struct printerprefs with actual data selected in gadgets
  */
@@ -624,19 +638,19 @@ STATIC void Gadgets2PrinterPrefs (Class *CLASS, Object *self)
     switch (XGET(data->pt_Port, MUIA_Cycle_Active)) {
         case UI_DEVICE_SERIAL:
             txt->pt_Port = PP_SERIAL;
-            strcpy(unit->pu_DeviceName, "serial");
+            strcpy(unit->pu_DeviceName, "serial.device");
             break;
         case UI_DEVICE_PARALLEL:
             txt->pt_Port = PP_PARALLEL;
-            strcpy(unit->pu_DeviceName, "parallel");
+            strcpy(unit->pu_DeviceName, "parallel.device");
             break;
         case UI_DEVICE_USBPARALLEL:
             txt->pt_Port = PP_PARALLEL;
-            strcpy(unit->pu_DeviceName, "usbparallel");
+            strcpy(unit->pu_DeviceName, "usbparallel.device");
             break;
         case UI_DEVICE_PRINTTOFILE:
             txt->pt_Port = PP_PARALLEL;
-            strcpy(unit->pu_DeviceName, "printtofile");
+            strcpy(unit->pu_DeviceName, "printtofile.device");
             break;
     }
 
@@ -644,6 +658,10 @@ STATIC void Gadgets2PrinterPrefs (Class *CLASS, Object *self)
     if (custom) {
         str = (CONST_STRPTR)XGET(data->pu_DeviceName, MUIA_String_Contents);
         strcpy(unit->pu_DeviceName, str);
+        /* The name is passed to OpenDevice() as it is */
+        if (!IsDeviceName(unit->pu_DeviceName, NULL) &&
+            strlen(unit->pu_DeviceName) + 7 < sizeof(unit->pu_DeviceName))
+            strcat(unit->pu_DeviceName, ".device");
     }
     unit->pu_UnitNum = (LONG)XGET(data->pu_UnitNum, MUIA_String_Integer);
 
@@ -729,19 +747,19 @@ STATIC VOID PrinterPrefs2Gadgets(Class *CLASS, Object *self)
 
     NNSET(data->pu_UnitNum, MUIA_String_Integer, unit->pu_UnitNum);
 
-    if (strcmp(unit->pu_DeviceName, "serial") == 0) {
+    if (IsDeviceName(unit->pu_DeviceName, "serial")) {
         NNSET(data->pt_Port, MUIA_Cycle_Active, UI_DEVICE_SERIAL);
         SET(data->pu_DeviceNameCustom, MUIA_Selected, FALSE);
         NNSET(data->pu_DeviceName, MUIA_String_Contents, (IPTR)"");
-    } else if (strcmp(unit->pu_DeviceName, "parallel") == 0) {
+    } else if (IsDeviceName(unit->pu_DeviceName, "parallel")) {
         NNSET(data->pt_Port, MUIA_Cycle_Active, UI_DEVICE_PARALLEL);
         SET(data->pu_DeviceNameCustom, MUIA_Selected, FALSE);
         NNSET(data->pu_DeviceName, MUIA_String_Contents, (IPTR)"");
-    } else if (strcmp(unit->pu_DeviceName, "printtofile") == 0) {
+    } else if (IsDeviceName(unit->pu_DeviceName, "printtofile")) {
         NNSET(data->pt_Port, MUIA_Cycle_Active, UI_DEVICE_PRINTTOFILE);
         SET(data->pu_DeviceNameCustom, MUIA_Selected, FALSE);
         NNSET(data->pu_DeviceName, MUIA_String_Contents, (IPTR)"");
-    } else if (strcmp(unit->pu_DeviceName, "usbparallel") == 0) {
+    } else if (IsDeviceName(unit->pu_DeviceName, "usbparallel")) {
         NNSET(data->pt_Port, MUIA_Cycle_Active, UI_DEVICE_USBPARALLEL);
         SET(data->pu_DeviceNameCustom, MUIA_Selected, FALSE);
         NNSET(data->pu_DeviceName, MUIA_String_Contents, (IPTR)"");

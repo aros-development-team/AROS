@@ -453,7 +453,9 @@ static LONG pd_Query(struct IOStdReq *sio)
     TASK_PRINTERDATA(pd);
 
     D(bug("%s:\n", __func__));
-    if (pd->pd_PUnit->pu_Prefs.pp_Unit.pu_DeviceName[0] != 0 ||
+    if ((strcmp(pd->pd_PUnit->pu_OpenName, "parallel.device") != 0 &&
+         strcmp(pd->pd_PUnit->pu_OpenName, "usbparallel.device") != 0 &&
+         strcmp(pd->pd_PUnit->pu_OpenName, "serial.device") != 0) ||
         (pd->pd_Flags & PDF_NOIO)) {
         sio->io_Actual = 0;
         return IOERR_OPENFAIL;
@@ -502,11 +504,7 @@ static LONG pd_Query(struct IOStdReq *sio)
 static LONG pd_Init(struct PrinterData *pd)
 {
     struct PrinterExtendedData *ped = &pd->pd_SegmentData->ps_PED;
-    TEXT devname[sizeof(pd->pd_Preferences.PrtDevName) + 7 + 1];
-
-    /* Initialize the unit */
-    strcpy(devname, pd->pd_Preferences.PrtDevName);
-    strcat(devname, ".device");
+    CONST_STRPTR devname = pd->pd_PUnit->pu_OpenName;
 
     D(bug("%s: create msgport %p\n", __func__, &pd->pd_Unit));
     if (initMsgPort(&pd->pd_Unit)) {
@@ -798,6 +796,8 @@ static void pd_SyncPrefs(struct PrinterData *pd)
 {
     struct Preferences *dprefs = &pd->pd_Preferences;
     struct PrinterPrefs *uprefs = &pd->pd_PUnit->pu_Prefs;
+    STRPTR openname = pd->pd_PUnit->pu_OpenName;
+    ULONG len;
 
     dprefs->PrinterType = pd->pd_PrinterType;
 
@@ -820,24 +820,37 @@ static void pd_SyncPrefs(struct PrinterData *pd)
 
     if (uprefs->pp_Unit.pu_DeviceName[0] == 0) {
         if (uprefs->pp_Txt.pt_Port == PP_PARALLEL) {
-            strcpy(dprefs->PrtDevName, "parallel");
+            strcpy(openname, "parallel.device");
         } else if (uprefs->pp_Txt.pt_Port == PP_SERIAL) {
-            strcpy(dprefs->PrtDevName, "serial");
+            strcpy(openname, "serial.device");
         } else {
-            strcpy(dprefs->PrtDevName, "printtofile");
+            strcpy(openname, "printtofile.device");
         }
     } else {
-        strncpy(dprefs->PrtDevName, uprefs->pp_Unit.pu_DeviceName, sizeof(dprefs->PrtDevName));
-        dprefs->PrtDevName[sizeof(dprefs->PrtDevName)-1]=0;
+        /* The name passed to OpenDevice(), as on AmigaOS. Older AROS
+           preferences left out ".device". */
+        CopyMem(uprefs->pp_Unit.pu_DeviceName, openname, DEVICENAMESIZE - 1);
+        openname[DEVICENAMESIZE - 1] = 0;
+        len = strlen(openname);
+        if (len < 7 || strcmp(&openname[len - 7], ".device") != 0)
+            strcat(openname, ".device");
     }
 
-    if (strcmp(dprefs->PrtDevName, "parallel") == 0 ||
-        strcmp(dprefs->PrtDevName, "usbparallel") == 0) {
+    /* Preferences.PrtDevName leaves out ".device" and has room for 15
+       characters; the device is opened by its full name. */
+    len = strlen(openname) - 7;
+    if (len > sizeof(dprefs->PrtDevName) - 1)
+        len = sizeof(dprefs->PrtDevName) - 1;
+    CopyMem(openname, dprefs->PrtDevName, len);
+    dprefs->PrtDevName[len] = 0;
+
+    if (strcmp(openname, "parallel.device") == 0 ||
+        strcmp(openname, "usbparallel.device") == 0) {
         pd->pd_ior0.pd_p0.IOPar.io_Message.mn_Length = sizeof(pd->pd_ior0.pd_p0);
         pd->pd_ior0.pd_p0.io_ParFlags = PARF_SHARED;
         pd->pd_ior1.pd_p1.IOPar.io_Message.mn_Length = sizeof(pd->pd_ior1.pd_p1);
         pd->pd_ior1.pd_p1.io_ParFlags = PARF_SHARED;
-    } else if (strcmp(dprefs->PrtDevName, "serial") == 0) {
+    } else if (strcmp(openname, "serial.device") == 0) {
         pd->pd_ior0.pd_s0.IOSer.io_Message.mn_Length = sizeof(pd->pd_ior0.pd_s0);
         pd->pd_ior0.pd_s0.io_SerFlags = SERF_SHARED;
         pd->pd_ior1.pd_s1.IOSer.io_Message.mn_Length = sizeof(pd->pd_ior1.pd_s1);
