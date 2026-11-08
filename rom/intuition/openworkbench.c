@@ -1,11 +1,12 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
 #define DEBUG 0
 #include <aros/config.h>
 #include <intuition/intuition.h>
+#include <intuition/iprefs.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 
@@ -62,6 +63,8 @@ static ULONG FindMode(ULONG width, ULONG height, ULONG depth, struct IntuitionBa
         pointer invalid. If this function fails the return value is NULL.
 
     NOTES
+        While IPrefs is applying the saved preferences, the Workbench
+        screen is not opened until it has finished.
 
     EXAMPLE
 
@@ -85,6 +88,23 @@ static ULONG FindMode(ULONG width, ULONG height, ULONG depth, struct IntuitionBa
     /* Intuition not up yet? */
     if (!GetPrivIBase(IntuitionBase)->DefaultPointer)
         return FALSE;
+
+    /* Wait for IPrefs to finish applying the saved preferences before the
+       screen is opened with the ROM defaults. IPrefs itself holds the
+       semaphore, so its own reopening is not held up, and once the screen
+       is open nobody waits. */
+    if (GetPrivIBase(IntuitionBase)->WorkBench == NULL)
+    {
+        struct SignalSemaphore *sem;
+
+        Forbid();
+        sem = FindSemaphore(IPREFS_SEMAPHORE_NAME);
+        if (sem != NULL)
+            ObtainSemaphoreShared(sem);
+        Permit();
+        if (sem != NULL)
+            ReleaseSemaphore(sem);
+    }
 
     LockPubScreenList();
 
