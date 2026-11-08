@@ -132,15 +132,33 @@ int APICHeartbeatServer(struct ExceptionContext *regs, struct KernelBase *Kernel
             (ULONG)(apicData->cores[cpuNum].cpu_LAPICTick & 0xffffffff)));
 
         apicTLS = apicData->cores[cpuNum].cpu_TLS;
-        if ((apicTLS) && ((apicScheduleData = apicTLS->ScheduleData) != NULL))
+        if (apicTLS)
         {
-            if ((current = apicScheduleData->Elapsed))
+            UWORD next = 0;
+
+            apicScheduleData = &apicTLS->Sched;
+
+            /*
+             * The CPU this tick belongs to writes Elapsed as well, from
+             * SCHEDELAPSED_SET() when it dispatches. Take the tick off with
+             * a compare and exchange so that a quantum reset landing in the
+             * middle is kept, instead of being written back over with the
+             * value read before it.
+             */
+            do
             {
-                if ((apicScheduleData->Elapsed = (current - apicScheduleData->Granularity)) == 0)
-                {
-                    __AROS_ATOMIC_OR_L(apicScheduleData->ScheduleFlags, TLSSF_Quantum);
-                    __AROS_ATOMIC_OR_L(apicScheduleData->ScheduleFlags, TLSSF_Switch);
-                }
+                current = apicScheduleData->Elapsed;
+                if (!current)
+                    break;
+                next = (current > apicScheduleData->Granularity) ?
+                            (current - apicScheduleData->Granularity) : 0;
+            } while (!compare_and_exchange_short((uint16_t *)&apicScheduleData->Elapsed,
+                            (uint16_t)current, (uint16_t)next, NULL));
+
+            if (current && !next)
+            {
+                __AROS_ATOMIC_OR_L(apicScheduleData->ScheduleFlags, TLSSF_Quantum);
+                __AROS_ATOMIC_OR_L(apicScheduleData->ScheduleFlags, TLSSF_Switch);
             }
         }
 #else

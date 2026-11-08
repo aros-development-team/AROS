@@ -37,9 +37,10 @@ It can also list the service types present on the link (RFC 6763 section
 - **Interfaces.** An IPv4 UDP 5353 socket for each usable IPv4 interface,
   bound with `SO_BINDTODEVICE`, and one IPv6 UDP 5353 socket joined to
   `ff02::fb` on every usable IPv6 link. `IPV6_PKTINFO` identifies the input
-  link and scoped destinations select the output link. The
-  interfaces are looked at every three seconds; one that came, went or
-  changed its address makes mdnsd probe again.
+  link and scoped destinations select the output link. Tentative, duplicate,
+  detached and deprecated IPv6 addresses are not used. AROSTCP signals mdnsd
+  when an address changes, and a three-second scan remains as a fallback; a
+  link that came, went or changed its usable address makes mdnsd probe again.
 - **Goodbye.** When it stops, or lets go of the stack, it withdraws the
   record with a time to live of zero.
 
@@ -50,6 +51,11 @@ It can also list the service types present on the link (RFC 6763 section
   instance, the instance's `SRV` (this host's name and the port) and `TXT`,
   and the host's address. Its own records live 75 minutes and the `SRV` two,
   or what its client asked for.
+- **Subtypes.** A registration may repeat `MDNS_ServiceSubtype` for up to
+  eight subtype labels. Each publishes a shared PTR such as
+  `_printer._sub._ipp._tcp.local` to the ordinary instance; SRV, TXT and
+  addresses remain shared with the base registration. Browsing the subtype
+  uses that full `_sub` type and still reports the base type in legacy events.
 - **The name** is asked for and announced as the host's is, and waits for
   the host's name to be settled. When another host has it the service
   becomes `Printer (2)`, then `Printer (3)`; when two hosts ask at the same
@@ -107,6 +113,10 @@ with this same mdnsd. Their canonical PTR, SRV, TXT, address and service-type
 records are reflected internally per interface; the daemon does not depend on
 receiving its own multicast packets. Updates and withdrawals produce the same
 queued changes as records learned from the link.
+Version 41.7 adds RFC 6763 subtype registration and browsing. The repeatable
+`MDNS_ServiceSubtype` tag accepts one underscored DNS label; subtype
+membership is announced, reflected locally and withdrawn with the base
+service. No public structure or vector changed.
 `UnpublishNIPCEntitiesA` does nothing. The remaining compatibility stubs
 invoke no callbacks, change no output buffers and take ownership of no memory.
 Public headers include the upstream handles,
@@ -123,8 +133,8 @@ invents either value from the instance name.
 ### Task lifetime and compatibility
 
 The first fifteen slots, their order/registers and existing tag/error values
-follow upstream Bonami. The AROS implementation is version 41.6. Its daemon
-and library must be installed together: their private IPC is now version 5.
+follow upstream Bonami. The AROS implementation is version 41.7. Its daemon
+and library must be installed together: their private IPC is now version 6.
 
 Registration lifetime deliberately differs from upstream Bonami:
 
@@ -188,8 +198,7 @@ Started by hand it runs until Ctrl-C.
   interface address. AAAA records are cached and available through
   `QueryRecordA()`, but an IPv6-only service does not complete legacy
   browse/resolve until a compatible extended event API is added.
-- One IPv6 link-local address is selected per interface. AROSTCP's public
-  address enumeration does not yet expose tentative/deprecated flags.
+- One usable IPv6 link-local address is selected per interface.
 - The number after a name that was lost is not remembered when mdnsd
   restarts: it starts from the system's name again.
 - At most eight interfaces.

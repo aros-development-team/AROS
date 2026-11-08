@@ -458,18 +458,33 @@ LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de,
     de->index = -1;
     while (nfound < nwant)
     {
-        err = GetDirEntry(dh, de->index + 1, de, glob);
+        ULONG next = de->index + 1;
 
-        /* If we can't get the entry, then we ran off the end, so there's no
-         * space left */
+        err = GetDirEntry(dh, next, de, glob);
+
         if (err == ERROR_OBJECT_NOT_FOUND)
         {
-            D(bug("[fat] ran off the end of the directory, no space left\n"));
-            return ERROR_NO_FREE_STORE;
+            /* We ran off the end. A FAT12/16 root cannot grow, and no
+             * directory goes past 2^16 entries (GetDirEntry() does not set
+             * de->index for those). Any other directory was exactly full
+             * without an end marker, which is valid: write the marker at
+             * the first missing entry, which adds a cluster, and carry on
+             * as if it had been there. */
+            if (dh->ioh.first_cluster == 0 || next >= 0x10000)
+            {
+                D(bug("[fat] ran off the end of the directory, no space left\n"));
+                return ERROR_NO_FREE_STORE;
+            }
+            D(bug("[fat] directory full without an end marker,"
+                " adding one at entry %ld\n", next));
+            SetMem(&de->e.entry, 0, sizeof(struct FATDirEntry));
+            if ((err = UpdateDirEntry(de, glob)) != 0)
+                return err;
+            clusteradded = TRUE;
         }
 
         /* Return any other error direct */
-        if (err != 0)
+        else if (err != 0)
             return err;
 
         /* If it's unused, make a note */
@@ -499,7 +514,17 @@ LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de,
             {
                 err = GetDirEntry(dh, de->index + 1, de, glob);
                 if (err == ERROR_OBJECT_NOT_FOUND)
+                {
+                    /* FAT12/16 roots cannot grow. An exactly full root
+                     * needs no end marker beyond its last entry. */
+                    if (dh->ioh.first_cluster == 0)
+                    {
+                        if (de->index == last)
+                            break;
+                        return ERROR_NO_FREE_STORE;
+                    }
                     clusteradded = TRUE;
+                }
                 else if (err != 0)
                     return err;
                 de->e.entry.name[0] = 0x00;
@@ -542,7 +567,7 @@ LONG AllocDirEntry(struct DirHandle *dh, ULONG gap, struct DirEntry *de,
 LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen,
     UBYTE attr, ULONG cluster, struct DirEntry *de, struct Globals *glob)
 {
-    ULONG gap;
+    ULONG gap, original_len = namelen;
     LONG err;
 
     D(
@@ -550,6 +575,19 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen,
         RawPutChars(name, namelen);
         bug("' attr 0x%02x cluster %ld)\n", attr, cluster);
     )
+
+    /* Use the same spelling for collision checks and the on-disk name.
+     * Keep normal lookups exact, including names written by other systems. */
+    if ((err = NormalizeDirEntryName(&name, &namelen)) != 0)
+        return err;
+    if (namelen != original_len)
+    {
+        err = GetDirEntryByName(dh, name, namelen, de, glob);
+        if (err == 0)
+            return ERROR_OBJECT_EXISTS;
+        if (err != ERROR_OBJECT_NOT_FOUND)
+            return err;
+    }
 
     /* Find out how many extra entries we need for the long name */
     gap = NumLongNameEntries(name, namelen);
@@ -562,12 +600,14 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen,
     /* Build the entry */
     FillDirEntry(de, attr, cluster, glob);
 
-    SetDirEntryName(de, name, namelen);
+    if ((err = SetDirEntryName(de, name, namelen)) != 0)
+        return err;
 
     if ((err = UpdateDirEntry(de, glob)) != 0)
     {
         D(bug(
             "[fat] couldn't update base directory entry, creation failed\n"));
+        DeleteDirEntry(de, glob);
         return err;
     }
 

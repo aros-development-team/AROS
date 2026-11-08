@@ -29,7 +29,7 @@
 /* Library identity (subsystem name, not API prefix) */
 
 #define BONAMI_LIB_VERSION   41
-#define BONAMI_LIB_REVISION  6
+#define BONAMI_LIB_REVISION  7
 
 /*------------------------------------------------------------------------*/
 /* DNS-SD well-known values */
@@ -50,6 +50,8 @@
 #define MDNS_MAX_DOMAIN         16
 #define MDNS_MAX_HOST           64
 #define MDNS_MAX_TXT            256
+#define MDNS_MAX_SUBTYPE        63
+#define MDNS_MAX_SUBTYPES       8
 
 /*------------------------------------------------------------------------*/
 /* TagItem arguments — RegisterServiceA, BrowseServiceTypeA, etc. */
@@ -141,6 +143,11 @@ struct MDNSEventRequest
 #define MDNS_StatusDbgRecs      (MDNS_Dummy + 23)  /* ULONG * discovery records */
 #define MDNS_StatusDbgPtr       (MDNS_Dummy + 24)  /* ULONG * discovery PTR records */
 #define MDNS_StatusDbgNotify    (MDNS_Dummy + 25)  /* ULONG * queue delivery attempts */
+
+/* Repeat this tag once for every DNS-SD subtype label (RFC 6763 section
+ * 7.1), for example "_printer" or "_L3840". Subtypes belong to the
+ * registration for its lifetime and are not changed by UpdateServiceA(). */
+#define MDNS_ServiceSubtype     (MDNS_Dummy + 26)  /* STRPTR, one DNS label */
 
 /*------------------------------------------------------------------------*/
 /* Registration / browse flags (DNSServiceFlags subset) */

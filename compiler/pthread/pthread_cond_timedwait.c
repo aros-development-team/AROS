@@ -123,6 +123,7 @@ int _pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const 
 
     // prepare a waiter node
     waiter.task = task;
+    waiter.signalled = FALSE;
     signal = AllocSignal(-1);
     if (signal == -1)
     {
@@ -144,10 +145,16 @@ int _pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const 
     pthread_mutex_lock(mutex);
     mutex->incond--;
 
-    // remove the node from the list
-    ObtainSemaphore(&cond->semaphore);
-    Remove((struct Node *)&waiter);
-    ReleaseSemaphore(&cond->semaphore);
+    // remove the node from the list, unless a signal took it off already;
+    // a signalled waiter leaves the condition alone, as POSIX lets a
+    // broadcast be followed by destroying it
+    if (!waiter.signalled)
+    {
+        ObtainSemaphore(&cond->semaphore);
+        if (!waiter.signalled)
+            Remove((struct Node *)&waiter);
+        ReleaseSemaphore(&cond->semaphore);
+    }
 
     if (waiter.sigbit != SIGB_COND_FALLBACK)
         FreeSignal(waiter.sigbit);

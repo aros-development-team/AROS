@@ -328,12 +328,31 @@ ip6_ctloutput(int op, struct socket *so, int level, int optname,
             inp->in6p_v6only = (*mtod(*m, int *) != 0);
             break;
 
-        case IPV6_TCLASS:
+        case IPV6_TCLASS: {         /* RFC 3542 section 6.5: -1 is 0 */
+            int v;
+
             if(*m == NULL || (*m)->m_len != sizeof(int)) {
                 error = EINVAL;
                 break;
             }
-            inp->in6p_tclass = *mtod(*m, int *);
+            v = *mtod(*m, int *);
+            if(v < -1 || v > 255) {
+                error = EINVAL;
+                break;
+            }
+            inp->in6p_tclass = v < 0 ? 0 : v;
+        }
+        break;
+
+        case IPV6_RECVTCLASS:
+            if(*m == NULL || (*m)->m_len != sizeof(int)) {
+                error = EINVAL;
+                break;
+            }
+            if(*mtod(*m, int *))
+                inp->in6p_flags |= IN6P_TCLASS;
+            else
+                inp->in6p_flags &= ~IN6P_TCLASS;
             break;
 
         case IPV6_RECVPKTINFO:
@@ -345,6 +364,45 @@ ip6_ctloutput(int op, struct socket *so, int level, int optname,
                 inp->in6p_flags |= IN6P_PKTINFO;
             else
                 inp->in6p_flags &= ~IN6P_PKTINFO;
+            break;
+
+        case IPV6_RECVPATHMTU:      /* RFC 3542 section 11 */
+        case IPV6_DONTFRAG: {
+            int bit = optname == IPV6_DONTFRAG ? IN6P_DONTFRAG : IN6P_RECVPATHMTU;
+
+            if(*m == NULL || (*m)->m_len != sizeof(int)) {
+                error = EINVAL;
+                break;
+            }
+            if(*mtod(*m, int *))
+                inp->in6p_flags |= bit;
+            else
+                inp->in6p_flags &= ~bit;
+        }
+        break;
+
+        case IPV6_USE_MIN_MTU: {
+            int v;
+
+            if(*m == NULL || (*m)->m_len != sizeof(int)) {
+                error = EINVAL;
+                break;
+            }
+            v = *mtod(*m, int *);
+            if(v < -1 || v > 1) {
+                error = EINVAL;
+                break;
+            }
+            inp->in6p_flags &= ~(IN6P_MINMTU | IN6P_PMTU);
+            if(v == 1)
+                inp->in6p_flags |= IN6P_MINMTU;
+            else if(v == 0)
+                inp->in6p_flags |= IN6P_PMTU;
+        }
+        break;
+
+        case IPV6_PATHMTU:          /* get only */
+            error = ENOPROTOOPT;
             break;
 
         case IPV6_RECVHOPLIMIT:     /* RFC 3542 */
@@ -499,6 +557,61 @@ ip6_ctloutput(int op, struct socket *so, int level, int optname,
             (*m)->m_len = sizeof(int);
             *mtod(*m, int *) = (inp->in6p_flags & IN6P_PKTINFO) ? 1 : 0;
             break;
+
+        case IPV6_RECVTCLASS:
+            *m = m_get(M_WAIT, MT_SOOPTS);
+            if(*m == NULL) {
+                error = ENOBUFS;
+                break;
+            }
+            (*m)->m_len = sizeof(int);
+            *mtod(*m, int *) = (inp->in6p_flags & IN6P_TCLASS) ? 1 : 0;
+            break;
+
+        case IPV6_RECVPATHMTU:
+        case IPV6_DONTFRAG:
+        case IPV6_USE_MIN_MTU:
+            *m = m_get(M_WAIT, MT_SOOPTS);
+            if(*m == NULL) {
+                error = ENOBUFS;
+                break;
+            }
+            (*m)->m_len = sizeof(int);
+            *mtod(*m, int *) =
+                optname == IPV6_USE_MIN_MTU ? IN6P_MINMTU_OPT(inp) :
+                (inp->in6p_flags & (optname == IPV6_DONTFRAG ? IN6P_DONTFRAG :
+                                    IN6P_RECVPATHMTU)) ? 1 : 0;
+            break;
+
+        case IPV6_PATHMTU: {        /* RFC 3542 section 11.4 */
+            struct ip6_mtuinfo mi;
+
+            if(IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6)) {
+                error = ENOTCONN;
+                break;
+            }
+            bzero(&mi, sizeof(mi));
+            mi.ip6m_addr.sin6_family = AF_INET6;
+            mi.ip6m_addr.sin6_len = sizeof(mi.ip6m_addr);
+            mi.ip6m_addr.sin6_addr = inp->inp_faddr6;
+            if(inp->inp_boundif != NULL &&
+                    (IN6_IS_ADDR_LINKLOCAL(&inp->inp_faddr6) ||
+                     IN6_IS_ADDR_MC_LINKLOCAL(&inp->inp_faddr6)))
+                mi.ip6m_addr.sin6_scope_id = inp->inp_boundif->if_index;
+            mi.ip6m_mtu = ip6_pathmtu(inp);
+            if(mi.ip6m_mtu == 0) {
+                error = EHOSTUNREACH;
+                break;
+            }
+            *m = m_get(M_WAIT, MT_SOOPTS);
+            if(*m == NULL) {
+                error = ENOBUFS;
+                break;
+            }
+            (*m)->m_len = sizeof(mi);
+            bcopy(&mi, mtod(*m, caddr_t), sizeof(mi));
+        }
+        break;
 
         case IPV6_RECVHOPLIMIT:
         case IPV6_HOPLIMIT:

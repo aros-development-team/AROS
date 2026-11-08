@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -26,6 +26,9 @@
 
 extern struct Library *MUIMasterBase;
 
+/* Return the lowercase byte after the first underscore, or zero for a
+ * NULL label, no underscore, or a trailing underscore. The label is borrowed.
+ */
 STATIC int get_control_char(const char *label)
 {
     /* find the control char */
@@ -49,6 +52,12 @@ STATIC int get_control_char(const char *label)
     return control_char;
 }
 
+/* Build a menustrip from an NM_END-terminated NewMenu array. The caller
+ * owns the returned object tree; menu label and shortcut storage is borrowed.
+ * Return NULL if the root cannot be allocated. Later allocation failures
+ * skip individual objects and may leave a partial tree. Require NM_TITLE
+ * before NM_ITEM and a valid parent item before NM_SUB.
+ */
 STATIC Object *CreateMenuString(struct NewMenu * newmenu, ULONG flags,
     struct Library * MUIMasterBase)
 {
@@ -125,6 +134,11 @@ STATIC Object *CreateMenuString(struct NewMenu * newmenu, ULONG flags,
 }
 
 
+/* Build an image-and-text button using a borrowed label and readable image
+ * path, or a text button when the path cannot be locked. The caller owns
+ * the returned tree. textFont must remain valid while the image uses it.
+ * The 512-byte image-specification buffer can truncate a long path.
+ */
 Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath,
     struct TextFont * textFont)
 {
@@ -196,27 +210,110 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath,
         struct Library *, MUIMasterBase, 20, MUIMaster)
 
 /*  FUNCTION
-        Create an object from the builtin object collection.
-        See file libraries/mui.h for a list of available objects
-        and their parameters. Note that this is not a taglist.
+        Construct a predefined MUI object from positional arguments.
+        The type selects a class or an object tree and the attributes used
+        to construct it. The parameter array is not a tag list.
 
     INPUTS
-        type   - kind of builtin object
-        params - additional parameters for object
+        type - One of the MUIO_* values listed below.
+        params - Array of IPTR-sized values in the order listed for type.
+                 Cast pointer and integer arguments to IPTR. No terminator
+                 follows the positional arguments.
+
+        MUIO_Label: label, flags
+            Text label. flags select SingleFrame or DoubleFrame,
+            LeftAligned or Centered, and FreeVert using the corresponding
+            MUIO_Label_* bits. Right alignment is the default. The low
+            byte selects the highlight character; zero uses an underscore
+            marker in the label. SingleFrame takes precedence over
+            DoubleFrame, and LeftAligned over Centered.
+
+        MUIO_Button: label
+            Text button with relative-verify input and cycle-chain entry.
+            The character after the first underscore is its control key.
+
+        MUIO_Checkmark: label
+            Toggle image. The label supplies the control key; it is not
+            displayed beside the image.
+
+        MUIO_Cycle: label, entries
+        MUIO_Radio: label, entries
+            Cycle or radio gadget. entries is a NULL-terminated array of
+            string pointers. The label supplies the control key.
+
+        MUIO_Slider: label, minimum, maximum
+            Slider with MUIA_Numeric_Min and MUIA_Numeric_Max set from the
+            signed limits. The label supplies the control key.
+
+        MUIO_String: label, maxlen
+            Framed string gadget. maxlen becomes MUIA_String_MaxLen;
+            the label supplies the control key, not initial contents.
+
+        MUIO_PopButton: imagespec
+            Relative-verify image button using MUIA_Image_Spec.
+
+        MUIO_HSpace: width
+        MUIO_VSpace: height
+            Rectangle with fixed width or height, respectively.
+
+        MUIO_HBar: height
+        MUIO_VBar: width
+            Horizontal or vertical separator with the specified thickness.
+
+        MUIO_MenustripNM: newmenu, flags
+            Menustrip from an NM_END-terminated NewMenu array. NM_TITLE
+            precedes its items; NM_SUB follows its parent NM_ITEM.
+            Labels, shortcuts, user data, exclusion masks, and the supported
+            disabled/check/toggle flags are passed to the menu objects.
+            MUIO_MenustripNM_CommandKeyCheck enables the special label
+            handling described under BUGS.
+
+        MUIO_Menuitem: label, shortcut, flags, userdata
+            Menu item. flags use CHECKIT, CHECKED, MENUTOGGLE, and
+            NM_ITEMDISABLED. userdata becomes MUIA_UserData.
+
+        MUIO_BarTitle: label
+            Horizontal separator with MUIA_Rectangle_BarTitle set to label.
+
+        MUIO_NumericButton: label, minimum, maximum, format
+            Numericbutton with signed limits. A non-NULL format sets
+            MUIA_Numeric_Format; NULL retains the class default.
+
+        MUIO_CoolButton: label, image, flags
+            Image-and-text button when compiled with HAVE_COOLIMAGES and
+            an image is available. image is a CoolImage pointer, or an image
+            ID when MUIO_CoolButton_CoolImageID is set. Falls back to
+            MUIO_Button when the image facility or image is unavailable.
+
+        MUIO_ImageButton: label, imagepath
+            Image-and-text button when the path can be locked for reading;
+            otherwise a text button. The image specification is formed in
+            a 512-byte buffer containing the prefix 3: and the path.
 
     RESULT
-        Pointer to object
+        The constructed object, or NULL for an unsupported type or failed
+        construction. A non-NULL menustrip can be incomplete if allocation
+        of an individual menu or item failed.
 
     NOTES
-
-    EXAMPLE
+        Dispose of an independently owned result with MUI_DisposeObject(),
+        or transfer ownership to an appropriate parent. The parameter array
+        itself is not retained; pointed-to data follows the constructed
+        class's ownership rules. In particular, menu titles and shortcuts
+        and Numericbutton format strings are borrowed, not copied here.
+        MUI_MakeObject() is the variadic positional-argument wrapper.
 
     BUGS
+        MUIO_Menuitem_CopyStrings is declared but not implemented.
+        With MUIO_MenustripNM_CommandKeyCheck, a label whose second byte
+        is NUL is advanced by two bytes and that advanced pointer is used
+        for both title and shortcut. This does not implement the apparent
+        intent of separate shortcut and display strings.
+        Long ImageButton paths are silently truncated in the image
+        specification, although the original path was used for the lock.
 
     SEE ALSO
-        MUI_CreateCustomClass(), MUI_DeleteCustomClass()
-
-    INTERNALS
+        MUI_NewObjectA(), MUI_DisposeObject()
 
 *****************************************************************************/
 {

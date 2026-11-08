@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <string.h>
@@ -23,6 +23,137 @@
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
+
+/****** Register.mui/MUIC_Register ************
+*
+*   NAME
+*       MUIC_Register
+*
+*   SUPERCLASS
+*       Group.mui
+*
+*   DESCRIPTION
+*       Display labeled tabs for a Group page set. Construction prepends
+*       Group_PageMode TRUE and Background RegisterBack before caller tags;
+*       later caller tags can override these defaults. Supply a nonempty
+*       NULL-terminated Titles array and one content child per title, in
+*       matching order. The implementation does not validate that title and
+*       child counts agree.
+*       Group owns attached children. Register owns its tab-item array and
+*       setup-time parsed text objects; it borrows the title array and strings.
+*       Keep titles valid through disposal, including repeated Setup/Cleanup
+*       cycles. Construction returns NULL on superclass failure, missing/empty
+*       Titles or item allocation failure; disposing the partly constructed
+*       object also disposes adopted children.
+*
+*   METHODS
+*       Setup first sets up Group, uses the title font, creates parsed text for
+*       each title, computes tab dimensions and installs a mouse/raw-key
+*       handler. Text allocation failures are not checked: depending on
+*       preferences, later width calculation or Cleanup can dereference NULL.
+*       Cleanup destroys parsed texts, removes the handler, then cleans Group.
+*       Dispose frees the item array then disposes Group; it does not replace
+*       Cleanup.
+*       AskMinMax takes Group constraints, raises width requirements for tabs
+*       and sets MaxHeight to MUI_MAXMAX; it returns TRUE. Layout reads
+*       Group_ActivePage, adjusts inner margins and tab hit boxes, invokes Group
+*       layout and returns TRUE regardless of its result. Show similarly returns
+*       TRUE without propagating superclass failure. Draw invokes Group then
+*       draws tabs for full/update flags; otherwise returns zero. It does not
+*       honor a FALSE Group Draw result as a reason to stop drawing tabs.
+*       The event handler maps Press/Right/Toggle to next page, Left to
+*       previous, WordLeft/LineStart to first and WordRight/LineEnd to last.
+*       Clicking another tab selects its index. Handled changes return Eat,
+*       other events zero, without superclass event delegation. Setters use
+*       Group_Forward FALSE, which still permits notifications.
+*
+*   NOTES
+*       Select pages through Group_ActivePage. Keep the index valid for both
+*       children and labels. The constructor clamps only its private tab index,
+*       not Group's stored page; later Layout copies the Group index without
+*       validation. Invalid indices can lead to out-of-bounds old-tab access
+*       during drawing. Child changes do not rebuild the title count or item
+*       array.
+*       Register_Columns controls tab rows; it is unrelated to Group_Columns.
+*       Rows after the active tab row are placed below the content. Geometry and
+*       counts use WORD fields without comprehensive overflow checks. Setup and
+*       layout require a valid connected application, preferences and window.
+*
+*/
+/****** Register.mui/MUIA_Register_Titles ************
+*
+*   NAME
+*       MUIA_Register_Titles
+*
+*   FUNCTION
+*       Provide the labels for the content pages, in child order. This attribute
+*       is required at construction.
+*
+*   INPUTS
+*       Pointer to STRPTR array; initialize and get. Non-NULL pointer to a
+*       nonempty NULL-terminated array of valid strings.
+*
+*   NOTES
+*       The array and strings are borrowed, not freed by Register. The getter
+*       returns the original pointer. Setup parses each label into owned text
+*       objects; Cleanup frees those objects, and a later Setup reads the
+*       original array again. Keep the array and strings alive through disposal.
+*       There is no Register setter or automatic rebuilding after editing
+*       titles.
+*
+*   BUGS
+*       The number of labels is stored in a WORD and is not checked against the
+*       number of children. Missing or empty arrays fail construction, but
+*       unterminated or excessively long arrays are not safely rejected. Setup
+*       does not check parsed-text allocation failure.
+*
+*/
+/****** Register.mui/MUIA_Register_Frame ************
+*
+*   NAME
+*       MUIA_Register_Frame
+*
+*   FUNCTION
+*       Store the requested frame flag and return it through the getter. Default
+*       zero.
+*
+*   INPUTS
+*       BOOL; initialize and get. The supplied value is stored without Boolean
+*       normalization.
+*
+*   NOTES
+*       In this AROS implementation the stored flag is not consulted by drawing,
+*       layout or setup. FALSE therefore does not suppress the register border.
+*       This attribute differs from Area Frame and Group register-frame
+*       title-child handling. There is no Register setter.
+*
+*/
+/****** Register.mui/MUIA_Register_Columns ************
+*
+*   NAME
+*       MUIA_Register_Columns
+*
+*   FUNCTION
+*       Choose the number of tab columns. Default is the number of titles,
+*       producing one row.
+*
+*   INPUTS
+*       Integer initialization value, converted to WORD; no local setter or
+*       getter.
+*
+*   NOTES
+*       After WORD conversion, values at or below zero become one. Rows are the
+*       ceiling of title count divided by columns. Values above the title count
+*       are not capped and can leave unused tab positions. The active row
+*       divides tabs above and below the content. This does not set
+*       Group_Columns.
+*
+*   BUGS
+*       Conversion and later spacing/geometry arithmetic are unchecked. Use a
+*       positive representable count appropriate for the title set; an oversized
+*       value is not a reliable range-error request.
+*
+*/
 
 extern struct Library *MUIMasterBase;
 
@@ -67,6 +198,12 @@ struct Register_DATA
 /**************************************************************************
  Layout Tab Items
 **************************************************************************/
+/*
+ * Compute tab hit rectangles in the owned item array from current size,
+ * active row and tab height. Requires positive columns, valid item count
+ * and setup/layout geometry. Rows after the active row move below content.
+ * Uses unchecked WORD arithmetic; no allocation or error result.
+ */
 static void LayoutTabItems(Object *obj, struct Register_DATA *data)
 {
     WORD extra_space;
@@ -120,6 +257,13 @@ static void LayoutTabItems(Object *obj, struct Register_DATA *data)
 /**************************************************************************
    Render one item
 **************************************************************************/
+/*
+ * Render one tab and its parsed text using live RastPort, pens and item
+ * geometry. Caller must provide an in-range index and valid setup text;
+ * although a range test exists, the item pointer is formed before it.
+ * Temporary clipping is paired with removal. Mutates drawing state; returns
+ * no status.
+ */
 static void RenderRegisterTabItem(struct IClass *cl, Object *obj,
     WORD item)
 {
@@ -235,6 +379,12 @@ static void RenderRegisterTabItem(struct IClass *cl, Object *obj,
 /**************************************************************************
    Render tab bar
 **************************************************************************/
+/*
+ * Paint tab background/border and all tabs, or active/old tabs for a same-
+ * row update. Requires valid active and oldactive indices, nonzero columns
+ * and drawable setup state. The old-item access is unchecked. No allocation
+ * ownership transfer or error result; drawing state is changed.
+ */
 static void RenderRegisterTab(struct IClass *cl, Object *obj, ULONG flags)
 {
     struct Register_DATA *data = INST_DATA(cl, obj);
@@ -338,6 +488,12 @@ static void RenderRegisterTab(struct IClass *cl, Object *obj, ULONG flags)
 /**************************************************************************
  Set the coordinates
 **************************************************************************/
+/*
+ * Write Area inner margins from title row positions and the application
+ * Group-frame preferences. Requires connected preferences, positive columns
+ * and valid active index. Mutates Area state with unchecked arithmetic; no
+ * return value or allocation.
+ */
 static void SetHardCoord(Object *obj, struct Register_DATA *data)
 {
     struct MUI_AreaData *adata = muiAreaData(obj);
@@ -365,6 +521,13 @@ static void SetHardCoord(Object *obj, struct Register_DATA *data)
             obj, adata->mad_HardITop, adata->mad_HardIBottom)); */
 }
 
+/*
+ * Prepend page-mode/background defaults and construct Group, then borrow
+ * required nonempty labels. Allocate an owned cleared tab array; clamp only
+ * private active index, leaving Group page unchanged. Return object or NULL
+ * after disposing partial state. Child/title count and WORD overflow are
+ * not validated.
+ */
 IPTR Register__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Register_DATA *data;
@@ -436,6 +599,11 @@ IPTR Register__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 
+/*
+ * Write stored Frame or borrowed Titles pointer to caller storage and
+ * return one; otherwise return Group getter result. Requires valid IPTR
+ * storage. Frame is not normalized and neither result transfers ownership.
+ */
 IPTR Register__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Register_DATA *data = INST_DATA(cl, obj);
@@ -457,6 +625,12 @@ IPTR Register__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 
 
+/*
+ * Free the owned item array, then dispose Group and return its result.
+ * Requires completed Cleanup for parsed texts and event handler; this
+ * method does not release those resources itself. Borrowed labels are not
+ * freed.
+ */
 IPTR Register__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Register_DATA *data = INST_DATA(cl, obj);
@@ -467,6 +641,13 @@ IPTR Register__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
+/*
+ * Set up Group, choose title font, create owned parsed text per borrowed
+ * label, set margins and register the event handler. Return FALSE on Group
+ * failure, otherwise TRUE. Text allocation failures are unchecked;
+ * nontruncating width calculation and later Cleanup can dereference NULL.
+ * Requires connected application/window and labels still alive.
+ */
 IPTR Register__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
@@ -530,6 +711,12 @@ IPTR Register__MUIM_Setup(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
+/*
+ * Destroy each parsed text, clear its pointer and remove the window
+ * handler, then return Group Cleanup result. Requires successful matching
+ * Setup with non-NULL parsed text objects; text destroy has no NULL guard.
+ * Does not free labels or item array.
+ */
 IPTR Register__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
@@ -547,6 +734,12 @@ IPTR Register__MUIM_Cleanup(struct IClass *cl, Object *obj,
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Ask Group then raise widths to tab requirements and set MaxHeight to
+ * MUI_MAXMAX. Requires writable MinMaxInfo and setup-derived tab
+ * dimensions. Return TRUE regardless of superclass result; no ownership
+ * transfer.
+ */
 IPTR Register__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     struct MUIP_AskMinMax *msg)
 {
@@ -585,6 +778,12 @@ IPTR Register__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
+/*
+ * Read Group page into private WORD index without bounds checking, update
+ * inner sizes, call Group layout and calculate tab geometry. Requires
+ * setup, valid indices and positive columns. Return one regardless of
+ * superclass outcome; oldactive records prior selection for redraw.
+ */
 IPTR Register__MUIM_Layout(struct IClass *cl, Object *obj,
     struct MUIP_Layout *msg)
 {
@@ -618,6 +817,11 @@ IPTR Register__MUIM_Layout(struct IClass *cl, Object *obj,
     return retval;
 }
 
+/*
+ * Invoke Group Show and ignore its result, returning TRUE. Requires
+ * matching setup/layout state; child visibility and lifecycle belong to
+ * Group. No new resource ownership.
+ */
 IPTR Register__MUIM_Show(struct IClass *cl, Object *obj,
     struct MUIP_Show *msg)
 {
@@ -631,6 +835,13 @@ IPTR Register__MUIM_Show(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
+/*
+ * Erase exposed tab-row strips when needed, invoke Group Draw, then render
+ * tabs for full/update flags and save oldactive. Return zero without draw
+ * flags, otherwise TRUE; Group failure is ignored. Requires drawable state
+ * and valid indices; changing-state Group suppression does not itself
+ * suppress this tab renderer.
+ */
 IPTR Register__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
@@ -688,6 +899,13 @@ IPTR Register__MUIM_Draw(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
+/*
+ * Translate supported MUI keys and clicks on a different tab into
+ * Group_ActivePage setters with child forwarding disabled. Notifications
+ * remain enabled. Return Eat for those selections, zero otherwise; do not
+ * delegate events to Group. Requires valid hit boxes, page/title
+ * correspondence and borrowed event message.
+ */
 IPTR Register__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUIP_HandleEvent *msg)
 {
@@ -755,6 +973,12 @@ IPTR Register__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 }
 
 
+/*
+ * Dispatch explicit Register lifecycle, getter, layout, draw and event
+ * overrides; send other messages to Group unchanged. Return selected
+ * handler result. Requires valid class/object and ABI-correct message; no
+ * additional ownership.
+ */
 BOOPSI_DISPATCHER(IPTR, Register_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)

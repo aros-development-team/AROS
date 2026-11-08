@@ -1459,7 +1459,19 @@ sana_connect(struct sana_softc *ssc, struct IOIPReq *req)
                                        | S2EVENT_DISCONNECT;
         BeginIO((struct IORequest *)req);
     } else {
+        /*
+         * No more events from the driver: it does not do S2_ONEVENT (as
+         * tap.device), or the interface went offline. The request is done,
+         * and off every list - sana_poll()'s GetMsg() took it - but still
+         * NT_REPLYMSG, with the links it had on the port: a WaitIO() on it
+         * later (sana_unrun()) would Remove() it from the port a second time,
+         * writing through them into whatever they point at by then. Free it
+         * now.
+         */
         ssc->ss_eventsent--;
+        if(ssc->ss_connectreq == req)
+            ssc->ss_connectreq = NULL;
+        DeleteIORequest((struct IORequest *)req);
     }
 }
 

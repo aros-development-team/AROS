@@ -69,27 +69,59 @@ diff -ruN binutils-2.40/bfd/config.bfd binutils-2.40.aros/bfd/config.bfd
 diff -ruN binutils-2.40/bfd/configure binutils-2.40.aros/bfd/configure
 --- binutils-2.40/bfd/configure	2023-01-14 00:00:00.000000000 +0000
 +++ binutils-2.40.aros/bfd/configure	2026-07-31 15:55:17.263795770 +0100
-@@ -13629,6 +13629,8 @@
+@@ -13629,14 +13629,16 @@
      aout_vec)			 tb="$tb host-aout.lo aout32.lo" ;;
      arc_elf32_be_vec)		 tb="$tb elf32-arc.lo elf32.lo $elf" ;;
      arc_elf32_le_vec)		 tb="$tb elf32-arc.lo elf32.lo $elf" ;;
+-    arm_elf32_be_vec)		 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
+-    arm_elf32_le_vec)		 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
+-    arm_elf32_fdpic_be_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
+-    arm_elf32_fdpic_le_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
+-    arm_elf32_nacl_be_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
+-    arm_elf32_nacl_le_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
+-    arm_elf32_vxworks_be_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
+-    arm_elf32_vxworks_le_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
 +    arm_elf32_aros_be_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-aros.lo $elf" ;;
 +    arm_elf32_aros_le_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-aros.lo $elf" ;;
-     arm_elf32_be_vec)		 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
-     arm_elf32_le_vec)		 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
-     arm_elf32_fdpic_be_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
++    arm_elf32_be_vec)		 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo elf-aros.lo $elf" ;;
++    arm_elf32_le_vec)		 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo elf-aros.lo $elf" ;;
++    arm_elf32_fdpic_be_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo elf-aros.lo $elf" ;;
++    arm_elf32_fdpic_le_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo elf-aros.lo $elf" ;;
++    arm_elf32_nacl_be_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo elf-aros.lo $elf" ;;
++    arm_elf32_nacl_le_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo elf-aros.lo $elf" ;;
++    arm_elf32_vxworks_be_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo elf-aros.lo $elf" ;;
++    arm_elf32_vxworks_le_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo elf-aros.lo $elf" ;;
+     arm_pe_be_vec)		 tb="$tb pe-arm.lo peigen.lo $coff" ;;
+     arm_pe_le_vec)		 tb="$tb pe-arm.lo peigen.lo $coff" ;;
+     arm_pe_wince_be_vec)	 tb="$tb pe-arm-wince.lo pe-arm.lo peigen.lo $coff" ;;
 diff -ruN binutils-2.40/bfd/configure.ac binutils-2.40.aros/bfd/configure.ac
 --- binutils-2.40/bfd/configure.ac	2023-01-14 00:00:00.000000000 +0000
 +++ binutils-2.40.aros/bfd/configure.ac	2026-07-31 15:55:17.264852270 +0100
-@@ -421,6 +421,8 @@
+@@ -419,14 +419,16 @@
+     aout_vec)			 tb="$tb host-aout.lo aout32.lo" ;;
+     arc_elf32_be_vec)		 tb="$tb elf32-arc.lo elf32.lo $elf" ;;
      arc_elf32_le_vec)		 tb="$tb elf32-arc.lo elf32.lo $elf" ;;
-     arm_elf32_be_vec)		 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
-     arm_elf32_le_vec)		 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
+-    arm_elf32_be_vec)		 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
+-    arm_elf32_le_vec)		 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
+-    arm_elf32_fdpic_be_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
+-    arm_elf32_fdpic_le_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
+-    arm_elf32_nacl_be_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
+-    arm_elf32_nacl_le_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
+-    arm_elf32_vxworks_be_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
+-    arm_elf32_vxworks_le_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
++    arm_elf32_be_vec)		 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo elf-aros.lo $elf" ;;
++    arm_elf32_le_vec)		 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo elf-aros.lo $elf" ;;
 +    arm_elf32_aros_be_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-aros.lo $elf" ;;
 +    arm_elf32_aros_le_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-aros.lo $elf" ;;
-     arm_elf32_fdpic_be_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
-     arm_elf32_fdpic_le_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
-     arm_elf32_nacl_be_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo $elf" ;;
++    arm_elf32_fdpic_be_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo elf-aros.lo $elf" ;;
++    arm_elf32_fdpic_le_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo elf-aros.lo $elf" ;;
++    arm_elf32_nacl_be_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo elf-aros.lo $elf" ;;
++    arm_elf32_nacl_le_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo elf-aros.lo $elf" ;;
++    arm_elf32_vxworks_be_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo elf-aros.lo $elf" ;;
++    arm_elf32_vxworks_le_vec)	 tb="$tb elf32-arm.lo elf32.lo elf-nacl.lo elf-vxworks.lo elf-aros.lo $elf" ;;
+     arm_pe_be_vec)		 tb="$tb pe-arm.lo peigen.lo $coff" ;;
+     arm_pe_le_vec)		 tb="$tb pe-arm.lo peigen.lo $coff" ;;
+     arm_pe_wince_be_vec)	 tb="$tb pe-arm-wince.lo pe-arm.lo peigen.lo $coff" ;;
 diff -ruN binutils-2.40/bfd/elf32-arm.c binutils-2.40.aros/bfd/elf32-arm.c
 --- binutils-2.40/bfd/elf32-arm.c	2023-01-14 00:00:00.000000000 +0000
 +++ binutils-2.40.aros/bfd/elf32-arm.c	2026-07-31 15:55:17.266304270 +0100

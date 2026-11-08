@@ -47,6 +47,7 @@
 #include <sys/errno.h>
 #include <sys/synch.h>
 #include <sys/queue.h>
+#include <string.h>      /* memcpy */
 
 #include <net/if.h>
 #include <net/route.h>
@@ -79,7 +80,7 @@ extern void in6_setpeeraddr(struct inpcb *, struct mbuf *);
 extern u_int32_t in6_rcvzone(struct mbuf *, const struct in6_addr *);
 extern struct inpcb *in6_pcblookup(struct inpcbhead *,
                                    struct in6_addr *, u_int,
-                                   struct in6_addr *, u_int);
+                                   struct in6_addr *, u_int, const struct ifnet *);
 extern struct in6_ifaddr *in6_ifawithifp(struct ifnet *, struct in6_addr *);
 extern int  ip6_defhlim;
 
@@ -122,8 +123,19 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     struct ifnet *oifp = NULL;
     struct in6_addr osrc;
     struct ip6_moptions oim6o;
+    /* RFC 3542 section 11: the socket's, unless this datagram says */
+    int minmtu = IN6P_MINMTU_OPT(inp);
+    int dontfrag = (inp->in6p_flags & IN6P_DONTFRAG) != 0;
+    int tclass = inp->in6p_tclass;      /* IPV6_TCLASS, RFC 3542 section 6.5 */
+    int oflags;
 
     bzero(&osrc, sizeof(osrc));
+    if(inp->inp_flags & INP_BOUNDGONE) {
+        if(control)
+            m_freem(control);
+        error = ENXIO;                  /* its interface went away */
+        goto release;
+    }
     if(control) {
         struct cmsghdr *cm = mtod(control, struct cmsghdr *);
         int left = control->m_len;
@@ -137,14 +149,51 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
                 bcopy(CMSG_DATA(cm), (caddr_t)&pi6, sizeof(pi6));
                 oindex = pi6.ipi6_ifindex;
                 osrc   = pi6.ipi6_addr;
+            } else if(cm->cmsg_level == IPPROTO_IPV6 &&
+                      (cm->cmsg_type == IPV6_DONTFRAG ||
+                       cm->cmsg_type == IPV6_USE_MIN_MTU) &&
+                      cm->cmsg_len == CMSG_LEN(sizeof(int))) {
+                int v;
+
+                memcpy(&v, CMSG_DATA(cm), sizeof(v));
+                if(cm->cmsg_type == IPV6_DONTFRAG)
+                    dontfrag = v != 0;
+                else if(v >= -1 && v <= 1)
+                    minmtu = v;
+            } else if(cm->cmsg_level == IPPROTO_IPV6 && cm->cmsg_type == IPV6_TCLASS &&
+                      cm->cmsg_len == CMSG_LEN(sizeof(int))) {
+                int v;
+
+                memcpy(&v, CMSG_DATA(cm), sizeof(v));
+                if(v >= -1 && v <= 255)
+                    tclass = v < 0 ? 0 : v;
             }
             left -= _ALIGN(cm->cmsg_len);
             cm = (struct cmsghdr *)((caddr_t)cm + _ALIGN(cm->cmsg_len));
         }
         m_freem(control);
     }
-    if(addr_m && oindex == 0 && addr_m->m_len >= (int)sizeof(struct sockaddr_in6))
-        oindex = mtod(addr_m, struct sockaddr_in6 *)->sin6_scope_id;
+    if(addr_m && oindex == 0 && addr_m->m_len >= (int)sizeof(struct sockaddr_in6)) {
+        const struct sockaddr_in6 *d6 = mtod(addr_m, struct sockaddr_in6 *);
+
+        oindex = d6->sin6_scope_id;
+        /*
+         * A socket bound to an interface (SO_BINDTODEVICE, or a link-scope
+         * bind() or connect()) is in that zone: a link-scope destination
+         * with no zone is on its link, and one with another zone is an
+         * error, as in6_pcbconnect() has it (and Linux's udpv6_sendmsg()).
+         */
+        if(inp->inp_boundif && (IN6_IS_ADDR_LINKLOCAL(&d6->sin6_addr) ||
+                                IN6_IS_ADDR_MC_LINKLOCAL(&d6->sin6_addr) ||
+                                IN6_IS_ADDR_MC_NODELOCAL(&d6->sin6_addr))) {
+            if(oindex == 0)
+                oindex = inp->inp_boundif->if_index;
+            else if(oindex != (unsigned int)inp->inp_boundif->if_index) {
+                error = EINVAL;
+                goto release;
+            }
+        }
+    }
     if(oindex != 0) {
         extern struct ifnet *ifnet;
 
@@ -211,11 +260,22 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     if(oifp == NULL && IN6_IS_ADDR_MULTICAST(&faddr6) && inp->in6p_moptions)
         oifp = inp->in6p_moptions->im6o_multicast_ifp;
 
-    /* ---- Resolve source address ---- */
-    if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6)) {
-        laddr6 = inp->inp_laddr6;
-    } else if(!IN6_IS_ADDR_UNSPECIFIED(&osrc)) {
+    /*
+     * ---- Resolve source address ----
+     * An IPV6_PKTINFO source must be an address of ours, usable (RFC 3542
+     * section 6.1, as KAME's in6_selectsrc() checks); on a datagram sent
+     * with a destination it wins over the address the socket is bound to.
+     * A connected socket keeps the source of its connection.
+     */
+    if(!IN6_IS_ADDR_UNSPECIFIED(&osrc) && in6_ourifa(&osrc, NULL) == NULL) {
+        error = EADDRNOTAVAIL;
+        goto release;
+    }
+    if(!IN6_IS_ADDR_UNSPECIFIED(&osrc) &&
+            (addr_m != NULL || IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6))) {
         laddr6 = osrc;                  /* IPV6_PKTINFO named it */
+    } else if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6)) {
+        laddr6 = inp->inp_laddr6;
     } else if(oifp != NULL) {
         /* the interface asked for supplies the address */
         struct in6_ifaddr *ia = in6_ifawithifp(oifp, &faddr6);
@@ -260,9 +320,19 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     M_PREPEND(m, sizeof(struct ip6_hdr), M_DONTWAIT);
     if(m == NULL)
         return ENOBUFS;
+    /*
+     * M_PREPEND may have allocated a separate mbuf for the IPv6 header,
+     * leaving the UDP header in the following mbuf.  Pull both headers into
+     * one contiguous mbuf before accessing the UDP checksum field below.
+     */
+    if(m->m_len < sizeof(struct ip6_hdr) + sizeof(struct udphdr)) {
+        m = m_pullup(m, sizeof(struct ip6_hdr) + sizeof(struct udphdr));
+        if(m == NULL)
+            return ENOBUFS;
+    }
     ip6 = mtod(m, struct ip6_hdr *);
-    ip6->ip6_flow = 0;
-    ip6->ip6_vfc  = IPV6_VERSION;	/* must follow ip6_flow (they overlap) */
+    /* version 6 and the traffic class; no flow label */
+    ip6->ip6_flow = htonl(0x60000000 | ((u_int32_t)tclass << 20));
     ip6->ip6_plen = htons((u_short)udplen);
     ip6->ip6_nxt  = IPPROTO_UDP;
     if(IN6_IS_ADDR_MULTICAST(&faddr6))
@@ -282,6 +352,7 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
     if(uh->uh_sum == 0)
         uh->uh_sum = 0xffff; /* RFC 2460: UDP6 checksum must not be zero */
 
+    oflags = ip6_outflags(minmtu, dontfrag, &faddr6);
     if(oifp != NULL) {
         /* hand the interface on the way multicast options do */
         if(inp->in6p_moptions)
@@ -292,10 +363,10 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
             oim6o.im6o_multicast_loop = 1;
         }
         oim6o.im6o_multicast_ifp = oifp;
-        error = ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
+        error = ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, oflags,
                            &oim6o, (struct ifnet **)NULL, inp);
     } else
-        error = ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
+        error = ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, oflags,
                            inp->in6p_moptions, (struct ifnet **)NULL, inp);
     return error;
 
@@ -324,6 +395,10 @@ udp6_append(struct inpcb *inp, struct mbuf *m, int off,
          * Each requested item becomes one cmsg mbuf; they are chained via
          * m_next so sbappendaddr() delivers them together.
          */
+        /* the receive time first (SO_TIMESTAMP), as FreeBSD */
+        *optp = sbcreatetimestamp(inp->inp_socket);
+        if(*optp != NULL)
+            optp = &(*optp)->m_next;
         if(inp->in6p_flags & IN6P_PKTINFO) {
             struct in6_pktinfo pi6;
 
@@ -339,6 +414,13 @@ udp6_append(struct inpcb *inp, struct mbuf *m, int off,
             int hlim = ip6->ip6_hlim;
 
             *optp = sbcreatecontrol((caddr_t)&hlim, sizeof(int), IPV6_HOPLIMIT, IPPROTO_IPV6);
+            if(*optp != NULL)
+                optp = &(*optp)->m_next;
+        }
+        if(inp->in6p_flags & IN6P_TCLASS) {    /* RFC 3542 section 6.5 */
+            int tclass = (ntohl(ip6->ip6_flow) >> 20) & 0xff;
+
+            *optp = sbcreatecontrol((caddr_t)&tclass, sizeof(int), IPV6_TCLASS, IPPROTO_IPV6);
             if(*optp != NULL)
                 optp = &(*optp)->m_next;
         }
@@ -440,7 +522,8 @@ udp6_input(void *args, ...)
             if(inp->inp_lport != uh->uh_dport || !in_pcbisipv6(inp))
                 continue;
             /* a socket bound to an interface only hears that interface */
-            if(inp->inp_boundif && inp->inp_boundif != m->m_pkthdr.rcvif)
+            if((inp->inp_boundif && inp->inp_boundif != m->m_pkthdr.rcvif) ||
+                    (inp->inp_flags & INP_BOUNDGONE))
                 continue;
             if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6) &&
                     !IN6_ARE_ADDR_EQUAL(&inp->inp_laddr6, &dst6.sin6_addr))
@@ -475,7 +558,7 @@ udp6_input(void *args, ...)
 
     /* Find matching socket */
     inp = in6_pcblookup(&udb, &src6.sin6_addr, uh->uh_sport,
-                        &dst6.sin6_addr, uh->uh_dport);
+                        &dst6.sin6_addr, uh->uh_dport, m->m_pkthdr.rcvif);
     if(inp == NULL) {
         /* No socket: Destination Unreachable, port unreachable (RFC 4443
          * section 3.1), as udp_input() does for IPv4; icmp6_error() takes
@@ -638,10 +721,36 @@ udp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
 {
     struct ip6ctlparam *ip6cp = arg;
 
-    /* a Packet Too Big is not an error for a datagram socket: the route
-     * keeps the path MTU, and ip6_output() fragments to it */
-    if(cmd == PRC_MSGSIZE)
+    /*
+     * A Packet Too Big is not an error for a datagram socket: the route
+     * keeps the path MTU, and ip6_output() fragments to it. A socket that
+     * sent the datagram and asked with IPV6_RECVPATHMTU is told the new
+     * path MTU (RFC 3542 section 11.3), as KAME's in6_pcbnotify() does.
+     */
+    if(cmd == PRC_MSGSIZE) {
+        struct sockaddr_in6 *dst = (struct sockaddr_in6 *)sa;
+        struct inpcb *inp;
+
+        if(ip6cp == NULL || dst == NULL)
+            return;
+        for(inp = udb.lh_first; inp != NULL; inp = inp->inp_list.le_next) {
+            if(!in_pcbisipv6(inp) || !(inp->in6p_flags & IN6P_RECVPATHMTU) ||
+                    inp->inp_lport != ip6cp->ip6c_sport)
+                continue;
+            if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6) &&
+                    !IN6_ARE_ADDR_EQUAL(&inp->inp_laddr6, &ip6cp->ip6c_src))
+                continue;
+            if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6) &&
+                    (!IN6_ARE_ADDR_EQUAL(&inp->inp_faddr6, &dst->sin6_addr) ||
+                     inp->inp_fport != ip6cp->ip6c_dport))
+                continue;
+            if(inp->inp_boundif != NULL && dst->sin6_scope_id != 0 &&
+                    (u_int32_t)inp->inp_boundif->if_index != dst->sin6_scope_id)
+                continue;
+            ip6_notify_pmtu(inp, dst, ip6cp->ip6c_mtu);
+        }
         return;
+    }
     if(ip6cp != NULL)
         in6_pcbnotify(&udb, (struct sockaddr_in6 *)sa, ip6cp->ip6c_dport,
                       &ip6cp->ip6c_src, ip6cp->ip6c_sport, cmd, udp6_notify);

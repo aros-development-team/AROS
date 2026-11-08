@@ -1,11 +1,12 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
 #include <proto/gadtools.h>
 #include <proto/intuition.h>
 #include <proto/partition.h>
+#include <proto/ptedit.h>
 #include <proto/alib.h>
 
 #include <devices/trackdisk.h>

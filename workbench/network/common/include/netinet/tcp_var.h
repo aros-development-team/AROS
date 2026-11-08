@@ -46,6 +46,14 @@
  */
 #define MAX_SACK_BLKS	4
 
+/*
+ * The sender's SACK scoreboard (RFC 6675): the ranges the peer has SACKed
+ * above snd_una. A receiver reports at most 4 in one ACK, but with several
+ * holes in a window there are more of them at a time. Each range is 8
+ * bytes in every tcpcb: 32 make it 224 bytes larger than the 4 before.
+ */
+#define TCP_SACK_BOARD	32
+
 struct sackblk {
 	tcp_seq	start;		/* left edge (first unacknowledged byte) */
 	tcp_seq	end;		/* right edge (next byte after SACK'd data) */
@@ -112,6 +120,9 @@ struct tcpcb {
 #define TF_ECN_SND_ECE	0x0010		/* need to send ECE */
 #define TF_SACK_GENERATE 0x0020		/* need to generate SACK option */
 #define TF_PRR		0x0040		/* PRR engaged for this recovery */
+#define TF_PMTUD_BH	0x0080		/* MSS lowered: path MTU black hole suspected */
+#define TF_PMTUD_NODF	0x0100		/* IPv4: DF off after a black hole */
+#define TF_ECN_SYN	0x0200		/* our SYN asked for ECN */
 
 	struct	tcpiphdr *t_template;	/* skeletal packet for transmit */
 	struct	inpcb *t_inpcb;		/* back pointer to internet pcb */
@@ -131,7 +142,7 @@ struct tcpcb {
 /* NewReno / SACK / ECN state */
 	u_short	t_flagsext;		/* extended flags (TF_NEWRENO etc.) */
 	u_short	t_num_sack_blks;	/* number of valid SACK blocks */
-	struct sackblk t_sack_blks[MAX_SACK_BLKS]; /* received SACK blocks */
+	struct sackblk t_sack_blks[TCP_SACK_BOARD]; /* the SACK scoreboard */
 	struct sackblk t_dsack_blks[MAX_SACK_BLKS]; /* SACK blocks to send */
 	u_short	t_num_dsack_blks;	/* number of SACK blocks to send */
 	tcp_seq	snd_fack;		/* forward ACK - highest SACKed seq */
@@ -209,6 +220,51 @@ struct tcpcb {
 	u_long	snd_prr_recover_fs;	/* FlightSize at recovery entry */
 	tcp_seq	snd_prr_hiack;		/* highest ack accounted for delivery */
 	u_long	snd_sacked;		/* bytes SACKed above snd_una (RFC 6675) */
+
+/*
+ * Path MTU black-hole detection (RFC 2923 section 2.1, as FreeBSD's
+ * tcp_pmtud_blackhole_detect): the MSS before it was lowered, given back
+ * when the smaller segments are lost too.
+ */
+	u_short	t_pmtud_saved_maxseg;
+	u_short	t_pmtud_saved_maxopd;
+
+/*
+ * Keepalive per connection (TCP_KEEPINIT, TCP_KEEPIDLE, TCP_KEEPINTVL,
+ * TCP_KEEPCNT, as FreeBSD): slow ticks, or a count; 0 is the system value.
+ */
+	int	t_keepinit;
+	int	t_keepidle;
+	int	t_keepintvl;
+	int	t_keepcnt;
+
+/*
+ * TCP_USER_TIMEOUT (RFC 5482, as Linux): how long data may stay sent and
+ * unacknowledged, or waiting on a zero window, before the connection is
+ * dropped; 0 is off. t_acktime is tcp_now when that wait began or last made
+ * progress, 0 while nothing waits.
+ */
+	u_int	t_uto_ms;
+	u_long	t_acktime;
+
+/*
+ * Challenge ACKs (RFC 5961 section 7): how many this connection has sent
+ * since t_challenge_time (tcp_now), to send at most TCP_CHALLENGE_MAX a
+ * second.
+ */
+	u_long	t_challenge_time;
+	u_int	t_challenge_cnt;
+
+/*
+ * What this connection adds to tcp_now in its TSval (RFC 7323 section 5.4).
+ */
+	u_int32_t t_ts_offset;
+
+/*
+ * Loss recovery with SACK (RFC 6675): the highest sequence number
+ * retransmitted in this recovery (HighRxt), so that a hole goes once.
+ */
+	tcp_seq	snd_highrxt;
 
 /* TUBA stuff */
 	caddr_t	t_tuba_pcb;		/* next level down pcb for TCP over z */
@@ -390,7 +446,11 @@ struct	tcpstat {
 #define	TCPCTL_KEEPINTVL	7	/* interval to send keepalives */
 #define	TCPCTL_SENDSPACE	8	/* send buffer space */
 #define	TCPCTL_RECVSPACE	9	/* receive buffer space */
-#define TCPCTL_MAXID		10
+#define	TCPCTL_PMTUD		10	/* IPv4 path MTU discovery (DF) */
+#define	TCPCTL_PMTUD_BLACKHOLE	11	/* path MTU black-hole detection */
+#define	TCPCTL_ECN		12	/* ECN: 0 off, 1 ask and accept, 2 accept */
+#define	TCPCTL_PRR		13	/* proportional rate reduction (RFC 6937) */
+#define TCPCTL_MAXID		14
 
 #define TCPCTL_NAMES { \
 	{ 0, 0 }, \
@@ -403,6 +463,10 @@ struct	tcpstat {
 	{ "keepintvl", CTLTYPE_INT }, \
 	{ "sendspace", CTLTYPE_INT }, \
 	{ "recvspace", CTLTYPE_INT }, \
+	{ "pmtud", CTLTYPE_INT }, \
+	{ "pmtud_blackhole", CTLTYPE_INT }, \
+	{ "ecn", CTLTYPE_INT }, \
+	{ "prr", CTLTYPE_INT }, \
 }
 
 #ifdef KERNEL
@@ -411,6 +475,30 @@ extern	struct inpcbinfo tcbinfo;
 extern	struct tcpstat tcpstat;	/* tcp statistics */
 extern	int tcp_do_rfc1323;	/* XXX */
 extern	int tcp_do_rfc1644;	/* XXX */
+/* a connection's keepalive values: its own, else the system's */
+#define TP_KEEPINIT(tp)	((tp)->t_keepinit ? (tp)->t_keepinit : TCPTV_KEEP_INIT)
+#define TP_KEEPIDLE(tp)	((tp)->t_keepidle ? (tp)->t_keepidle : tcp_keepidle)
+#define TP_KEEPINTVL(tp)	((tp)->t_keepintvl ? (tp)->t_keepintvl : tcp_keepintvl)
+#define TP_KEEPCNT(tp)	((tp)->t_keepcnt ? (tp)->t_keepcnt : TCPTV_KEEPCNT)
+/* count x interval, as far as the 16-bit timers and the saturating idle
+ * counter reach: below 32767, so a connection idle that long is past it */
+#define TP_MAXIDLE(tp)	(TP_KEEPCNT(tp) * TP_KEEPINTVL(tp) > 32766 ? 32766 : \
+			 TP_KEEPCNT(tp) * TP_KEEPINTVL(tp))
+/* TCP_USER_TIMEOUT in slow ticks, rounded up */
+/* (divided first: no overflow of a large timeout on 32-bit targets) */
+#define TP_UTO_TICKS(tp)	((tp)->t_uto_ms / (1000 / PR_SLOWHZ) + \
+			 ((tp)->t_uto_ms % (1000 / PR_SLOWHZ) != 0))
+/* data now waits for an ACK or a window: the user timeout runs from here */
+#define TCP_UTO_START(tp)	do { if((tp)->t_acktime == 0) (tp)->t_acktime = tcp_now ? tcp_now : 1; } while(0)
+/* an ACK took snd_una forward: progress, or nothing left waiting */
+#define TCP_UTO_PROGRESS(tp)	((tp)->t_acktime = ((tp)->snd_una == (tp)->snd_max) ? 0 : (tcp_now ? tcp_now : 1))
+/* the user timeout has run out */
+#define TCP_UTO_EXPIRED(tp)	((tp)->t_uto_ms != 0 && (tp)->t_acktime != 0 && \
+				 tcp_now - (tp)->t_acktime >= TP_UTO_TICKS(tp))
+/* the largest keepalive time a 16-bit slow-tick timer holds, in seconds */
+#define TCP_KEEP_MAXSECS	(32767 / PR_SLOWHZ)
+extern	int tcp_do_pmtud;		/* IPv4 path MTU discovery */
+extern	int tcp_do_pmtud_blackhole;	/* black-hole detection */
 extern	int tcp_mssdflt;	/* XXX */
 extern	u_long tcp_now;		/* for RFC 1323 timestamps */
 extern	int tcp_rttdflt;	/* XXX */

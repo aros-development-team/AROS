@@ -200,6 +200,7 @@ struct DosPacket  *pkt;
                   pipekey->openmode = MODE_READONLY;
                   pipekey->iotype = PIPEREAD;
                   pipe->flags |= OPEN_FOR_READ;
+                  pipe->flags &= ~READER_GONE;
                   --pipe->lockct;     /* successful conversion consumes the lock */
                   fh->fh_Arg1 = (SIPTR)pipekey;
                   fh->fh_Interactive = DOSTRUE;

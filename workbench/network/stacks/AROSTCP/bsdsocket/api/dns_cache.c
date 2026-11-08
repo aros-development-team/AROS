@@ -90,16 +90,17 @@ static BOOL dns_cache_ready = FALSE;
 BOOL dns_cache_enabled = TRUE;
 
 /*
- * Current time in whole seconds, taken from the same system time source the
- * rest of the resolver uses (GetSysTime(), i.e. timer.device). Absolute
- * expiries are computed against this so a lookup only needs one comparison.
+ * Current time in whole seconds on the monotonic clock (timer.device's
+ * GetUpTime()), so that setting the system time neither drops answers
+ * early nor keeps them past their TTL. Absolute expiries are computed
+ * against this so a lookup only needs one comparison.
  */
 static ULONG
 dns_cache_now(void)
 {
     struct timeval tv;
 
-    GetSysTime(&tv);
+    GetUpTime(&tv);
     return (ULONG)tv.tv_secs;
 }
 

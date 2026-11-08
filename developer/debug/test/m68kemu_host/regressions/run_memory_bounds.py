@@ -39,9 +39,11 @@ def run(args, output):
     header = bridge / 'm68kemu_intern.h'
     cpu = bridge / 'm68kemu_moira.cpp'
     output.mkdir(parents=True, exist_ok=True)
-    accessors = '\n'.join(extract_function(header, name) for name in
-                          ('m68k_read16', 'm68k_read32',
-                           'm68k_write16', 'm68k_write32'))
+    names = ['m68k_read16', 'm68k_read32']
+    if re.search(r'^static inline BOOL m68k_write_allowed\s*\(', header.read_text(), re.M):
+        names.append('m68k_write_allowed')
+    names += ['m68k_write16', 'm68k_write32']
+    accessors = '\n'.join(extract_function(header, name) for name in names)
     callbacks = '\n'.join(extract_function(cpu, name) for name in
                           ('read16', 'write16', 'read16OnReset', 'read16Dasm'))
     (output / 'accessors.inc').write_text(accessors)

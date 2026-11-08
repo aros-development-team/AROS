@@ -150,7 +150,6 @@
                     /* Is the cliprect inside the bounds?... */
                     if (bounds.MinX <= bounds.MaxX && bounds.MinY <= bounds.MaxY)
                     {
-                        struct BitMap * bm;
                         WORD offsetX = bounds.MinX - L->bounds.MinX + L->Scroll_X; /* + scrollx is correct! */
                         WORD offsetY = bounds.MinY - L->bounds.MinY + L->Scroll_Y; /* + scrolly is correct! */
 
@@ -161,7 +160,10 @@
                            further above */
                         if (NULL != CR->lobs)
                         {
-                            bm = rport->BitMap;
+                            /* the hook renders into the backing bitmap, through a RastPort
+                               that _ObtainHookRastPort() provides for it */
+                            struct HookRastPort hrp;
+                            struct BitMap *hbm;
 
                             /* it's a smart layer -: */
                             if (0 != (L->Flags & LAYERSUPER))
@@ -175,7 +177,7 @@
                                 bounds.MinY = bounds.MinY - L->bounds.MinY + L->Scroll_Y;
                                 bounds.MaxX = bounds.MaxX - L->bounds.MinX + L->Scroll_X;
                                 bounds.MaxY = bounds.MaxY - L->bounds.MinY + L->Scroll_Y;
-                                rport->BitMap = L->SuperBitMap;
+                                hbm = L->SuperBitMap;
                             }
                             else
                             {
@@ -193,10 +195,11 @@
                                 bounds.MaxX = bounds.MaxX - CR->bounds.MinX + CR_BMOFFX(CR);
                                 bounds.MaxY = bounds.MaxY - CR->bounds.MinY + CR_BMOFFY(CR);
 
-                                rport->BitMap = CR->BitMap;
+                                hbm = CR->BitMap;
                             }
-                            _CallLayerHook(hook, rport, rport->Layer, &bounds, offsetX, offsetY, LayersBase);
-                            rport->BitMap = bm;
+                            _CallLayerHook(hook, _ObtainHookRastPort(&hrp, rport, hbm, LayersBase),
+                                           rport->Layer, &bounds, offsetX, offsetY, LayersBase);
+                            _ReleaseHookRastPort(&hrp, LayersBase);
 
                         } /* hidden cliprect */
                         else

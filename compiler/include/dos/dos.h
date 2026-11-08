@@ -60,38 +60,31 @@ struct DateStamp
    this value, as it may change in future versions. */
 #define MAXCOMMENTLENGTH 80
 
+/*
+ * 64-bit integers in the DOS structures below follow the Amiga ABI, where
+ * they are only 2-byte aligned (the MorphOS headers use pack(2)). 32-bit
+ * ARM and PowerPC compilers align them to 8 bytes by default, which would
+ * move them away from the offsets other systems and binary handlers use.
+ * 64-bit AROS has no foreign layout to match and keeps natural alignment.
+ */
+#if (__WORDSIZE == 64)
+#define AROS_DOS64_ALIGN
+#else
+#define AROS_DOS64_ALIGN __attribute__((__packed__, __aligned__(2)))
+#endif
+
 /* Structure used to describe a directory entry. Note that not all fields
    are supported by all filesystems. This structure should be allocated
-   with AllocDosObject(). */
-struct FileInfoBlock64
-{
-    IPTR	     fib_DiskKey;
-      /* See <dos/dosextens.h> for definitions. Generally: if this is >= 0
-         the file described is a directory, otherwise it is a plain file. */
-    LONG	     fib_DirEntryType;
-      /* The filename.
-       *
-       *       User applications should always treat this as ASCIIZ.
-       *
-       * NOTE: This is created as a BCPL string in the ACTION_EXAMINE_*
-       *       filesystem handler code, but is converted to a C style
-       *       '\0'-terminated string by the Dos/Examine???() functions.
-       *
-       */
-    UBYTE	     fib_FileName[MAXFILENAMELENGTH];
-    LONG	     fib_Protection;   /* The protection bits (see below). */
-    LONG	     fib_EntryType;
-    UQUAD	     fib_Size;         /* The size of the file. */
-    UQUAD	     fib_NumBlocks;    /* Number of blocks used for file. */
-    struct DateStamp fib_Date;         /* Date of last change to file. */
-    /* The filecomment. Follows the same BSTR/CSTR rules as fib_FileName */
-    UBYTE	     fib_Comment[MAXCOMMENTLENGTH];
-    UWORD	     fib_OwnerUID;     /* UserID of fileowner. */
-    UWORD	     fib_OwnerGID;     /* GroupID of fileowner. */
-    UBYTE	     fib_Reserved[32]; /* PRIVATE */
-};
+   with AllocDosObject().
 
-struct FileInfoBlock32
+   The 64-bit size fields (fib_Size64, fib_NumBlocks64) overlay the reserved
+   area as defined by MorphOS (tm) V51. They are filled by the 64-bit examine
+   calls (dos64.library Examine64(), ExNext64(), ExamineFH64(), packets
+   ACTION_EXAMINE_OBJECT64, _NEXT64, _FH64). Everything before them keeps
+   the classic layout, so the block is the same size as before and the
+   32-bit calls can use it as well. fib_DiskKey is IPTR as handlers may
+   store a pointer in it. */
+struct FileInfoBlock
 {
     IPTR	     fib_DiskKey;
       /* See <dos/dosextens.h> for definitions. Generally: if this is >= 0
@@ -109,21 +102,47 @@ struct FileInfoBlock32
     UBYTE	     fib_FileName[MAXFILENAMELENGTH];
     LONG	     fib_Protection;   /* The protection bits (see below). */
     LONG	     fib_EntryType;
-    LONG	     fib_Size;         /* The size of the file. */
+    LONG	     fib_Size;         /* The size of the file. 0 from the
+                                          64-bit calls when it does not
+                                          fit; see fib_Size64. */
     LONG	     fib_NumBlocks;    /* Number of blocks used for file. */
     struct DateStamp fib_Date;         /* Date of last change to file. */
     /* The filecomment. Follows the same BSTR/CSTR rules as fib_FileName */
     UBYTE	     fib_Comment[MAXCOMMENTLENGTH];
     UWORD	     fib_OwnerUID;     /* UserID of fileowner. */
     UWORD	     fib_OwnerGID;     /* GroupID of fileowner. */
-    UBYTE	     fib_Reserved[32]; /* PRIVATE */
+    union
+    {
+        UBYTE	 fib_un_Reserved[32]; /* PRIVATE */
+        struct
+        {
+            UQUAD fib_un_ext_Size64      AROS_DOS64_ALIGN;
+            UQUAD fib_un_ext_NumBlocks64 AROS_DOS64_ALIGN;
+            ULONG fib_un_ext_Pad0[3];
+            UWORD fib_un_ext_Pad1;
+            UBYTE fib_un_ext_ActExtFlags;
+            UBYTE fib_un_ext_ReqExtFlags;
+        } fib_un_ext;
+    } fib_un;
 };
 
-#if (__DOS64)
-#define FileInfoBlock FileInfoBlock64
-#else
-#define FileInfoBlock FileInfoBlock32
-#endif
+#define fib_Reserved    fib_un.fib_un_Reserved
+#define fib_Size64      fib_un.fib_un_ext.fib_un_ext_Size64      /* 64-bit size of the file */
+#define fib_NumBlocks64 fib_un.fib_un_ext.fib_un_ext_NumBlocks64 /* 64-bit number of blocks */
+/* Extensions the handler filled in (FIBEXTF_ flags). Must be 0 when an
+   ACTION_EXAMINE_*64 packet is sent. The 64-bit size and block count
+   do not need a flag; they are always filled. */
+#define fib_ActExtFlags fib_un.fib_un_ext.fib_un_ext_ActExtFlags
+/* Extensions requested from the handler (FIBEXTF_ flags), or 0. */
+#define fib_ReqExtFlags fib_un.fib_un_ext.fib_un_ext_ReqExtFlags
+
+/* No FIBEXTF_ extensions are defined on AROS yet. Bit 0 is kept free
+   for compatibility: MorphOS uses it (FIBEXTB_POSIXDATE) for a POSIX
+   date in place of fib_Date. */
+
+/* Former names: the 64-bit examine calls use the standard structure */
+#define FileInfoBlock32 FileInfoBlock
+#define FileInfoBlock64 FileInfoBlock
 
 /* Protection bits for files (fib_Protection). */
 /* Flags for owner (they are active-low, i.e. not set means the action is
@@ -173,20 +192,7 @@ struct FileInfoBlock32
  **********************************************************************/
 
 /* Structure used in Info(). Must be longword-aligned. */
-struct InfoData64
-{
-    LONG id_NumSoftErrors; /* Number of soft errors on device. */
-    LONG id_UnitNumber;    /* Unit number of device. */
-    LONG id_DiskState;     /* State the current volume is in (see below). */
-    UQUAD id_NumBlocks;     /* Number of blocks on device. */
-    UQUAD id_NumBlocksUsed; /* Number of blocks in use. */
-    LONG id_BytesPerBlock; /* Bytes per block. */
-    LONG id_DiskType;      /* Type of disk (see below). */
-    BPTR id_VolumeNode;
-    IPTR id_InUse;         /* Set, if device is in use. */
-};
-
-struct InfoData32
+struct InfoData
 {
     LONG id_NumSoftErrors; /* Number of soft errors on device. */
     LONG id_UnitNumber;    /* Unit number of device. */
@@ -199,11 +205,28 @@ struct InfoData32
     IPTR id_InUse;         /* Set, if device is in use. */
 };
 
-#if (__DOS64)
-#define InfoData InfoData64 
-#else
-#define InfoData InfoData32
-#endif
+/* AROS extension, used by dos64.library Info64() and ACTION_INFO64: the
+   standard InfoData followed by 64-bit block counts. The leading part is
+   identical to struct InfoData, so the block can also be filled by
+   ACTION_INFO; id_NumBlocks and id_NumBlocksUsed then hold the 32-bit
+   values. Allocate it with AllocDosObject64(DOS64_INFODATA, NULL). */
+struct InfoData64
+{
+    LONG  id_NumSoftErrors;
+    LONG  id_UnitNumber;
+    LONG  id_DiskState;
+    LONG  id_NumBlocks;       /* 32-bit count, may be clamped */
+    LONG  id_NumBlocksUsed;   /* 32-bit count, may be clamped */
+    LONG  id_BytesPerBlock;
+    LONG  id_DiskType;
+    BPTR  id_VolumeNode;
+    IPTR  id_InUse;
+    UQUAD id_NumBlocks64     AROS_DOS64_ALIGN; /* Number of blocks on device. */
+    UQUAD id_NumBlocksUsed64 AROS_DOS64_ALIGN; /* Number of blocks in use. */
+};
+
+/* Former name */
+#define InfoData32 InfoData
 
 /* id_DiskState */
 #define ID_WRITE_PROTECTED 80 /* Volume is write-protected. */

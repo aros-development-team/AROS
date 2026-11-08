@@ -34,6 +34,17 @@
 
 uint32 maxdatestamp = 0;
 
+/* Absence cannot be proved across unreadable metadata. Let the owner choose
+ * salvage using the readable subset, rather than silently making that choice. */
+static bool AcceptIncompleteSearch(void)
+{
+	return volume.askuser(
+		"This metadata search encountered unreadable blocks.\n"
+		"Continue this reconstruction using only readable metadata?\n"
+		"Missing references may be removed and files may be lost.",
+		"Continue", "Abort") != 0;
+}
+
 void InitFullScan(void)
 {
 	NewList((struct List *)&volume.buildblocks);
@@ -60,7 +71,8 @@ error_t AllocBuildBlocks(void)
 {
 	buildblock_t *bbl, *next;
 	cachedblock_t tblk;
-	error_t error = e_none;
+	extensionblock_t *newrext;
+	error_t error;
 	uint32 blocknr, offset, seqnr;
 	uint16 type;
 
@@ -68,82 +80,90 @@ error_t AllocBuildBlocks(void)
 	{
 		volume.progress(0, 1);
 		next = bbl->next;
-		blocknr = fs_AllocResBlock();
-		if (blocknr)
-		{
-			bbl->b.blocknr = blocknr;
-			bbl->b.mode = done;
-			volume.writeblock(&bbl->b);
-			switch(bbl->b.data->id)
-			{
-				case EXTENSIONID:
-					rbl->extension = blocknr;
-					WritePFS3Metadata((uint8 *)rbl,
-						ROOTBLOCK + volume.firstblock,
-						volume.blocksize, PFS3_METADATA_ROOT);
-					rext.mode = check;
-					rext.data = calloc(1, SIZEOF_RESBLOCK);
-					rext.blocknr = blocknr;
-					memcpy(rext.data, bbl->b.data, SIZEOF_RESBLOCK); 
-					break;
-
-				case SBLKID:
-					rext.data->superindex[bbl->b.data->indexblock.seqnr] = blocknr;
-					volume.writeblock((cachedblock_t *)&rext);
-					break;
-
-				case BMIBLKID:
-					rbl->idx.large.bitmapindex[bbl->b.data->indexblock.seqnr] = blocknr;
-					WritePFS3Metadata((uint8 *)rbl,
-						ROOTBLOCK + volume.firstblock,
-						volume.blocksize, PFS3_METADATA_ROOT);
-					break;
-
-				case IBLKID:
-					if (!(rbl->options & MODE_SUPERDELDIR))
-					{
-						rbl->idx.small.indexblocks[bbl->b.data->indexblock.seqnr] = blocknr;
-						WritePFS3Metadata((uint8 *)rbl,
-							ROOTBLOCK + volume.firstblock,
-							volume.blocksize,
-							PFS3_METADATA_ROOT);
-						break;
-					}
-					type = SBLKID;
-
-				case BMBLKID:
-					if (bbl->b.data->id == BMBLKID)
-						type = BMIBLKID;
-
-					seqnr = bbl->b.data->indexblock.seqnr/INDEX_PER_BLOCK;
-					offset = bbl->b.data->indexblock.seqnr%INDEX_PER_BLOCK;
-					tblk.data = calloc(1, SIZEOF_RESBLOCK);
-					if (tblk.data)
-					{
-						GetResBlock(&tblk, type, seqnr, true);
-						tblk.data->indexblock.index[offset] = blocknr;
-						volume.writeblock(&tblk);
-						free(tblk.data);
-					}
-					else
-					{
-						adderror("memory allocation error");
-						return e_out_of_memory;
-					}
-					break;
-
-			}
-			MinRemove(bbl);
-			FreeBufMem(bbl->b.data);
-			free(bbl);
+		newrext = NULL;
+		if (bbl->b.data->id == EXTENSIONID) {
+			newrext = calloc(1, SIZEOF_RESBLOCK);
+			if (!newrext)
+				return e_out_of_memory;
+			memcpy(newrext, bbl->b.data, SIZEOF_RESBLOCK);
 		}
-		else
-		{
+		blocknr = fs_AllocResBlock();
+		if (!blocknr) {
 			adderror("allocation error");
 			error = e_alloc_fail;
+			goto failed;
 		}
-	}
+		bbl->b.blocknr = blocknr;
+		bbl->b.mode = done;
+		if ((error = volume.writeblock(&bbl->b)))
+			goto failed;
+		switch(bbl->b.data->id)
+		{
+			case EXTENSIONID:
+				rbl->extension = blocknr;
+				if ((error = WritePFS3Metadata((uint8 *)rbl,
+					ROOTBLOCK + volume.firstblock, volume.blocksize, PFS3_METADATA_ROOT)))
+					goto failed;
+				/* Build-mode data belongs to the build list, not rext. */
+				if (rext.mode == check)
+					free(rext.data);
+				rext.mode = check;
+				rext.data = newrext;
+				newrext = NULL;
+				rext.blocknr = blocknr;
+				break;
 
+			case SBLKID:
+				rext.data->superindex[bbl->b.data->indexblock.seqnr] = blocknr;
+				if ((error = volume.writeblock((cachedblock_t *)&rext)))
+					goto failed;
+				break;
+
+			case BMIBLKID:
+				rbl->idx.large.bitmapindex[bbl->b.data->indexblock.seqnr] = blocknr;
+				if ((error = WritePFS3Metadata((uint8 *)rbl,
+					ROOTBLOCK + volume.firstblock, volume.blocksize, PFS3_METADATA_ROOT)))
+					goto failed;
+				break;
+
+			case IBLKID:
+				if (!(rbl->options & MODE_SUPERINDEX)) {
+					rbl->idx.small.indexblocks[bbl->b.data->indexblock.seqnr] = blocknr;
+					if ((error = WritePFS3Metadata((uint8 *)rbl,
+						ROOTBLOCK + volume.firstblock, volume.blocksize, PFS3_METADATA_ROOT)))
+						goto failed;
+					break;
+				}
+				type = SBLKID;
+				/* fall through */
+			case BMBLKID:
+				if (bbl->b.data->id == BMBLKID)
+					type = BMIBLKID;
+				seqnr = bbl->b.data->indexblock.seqnr/INDEX_PER_BLOCK;
+				offset = bbl->b.data->indexblock.seqnr%INDEX_PER_BLOCK;
+				tblk.data = calloc(1, SIZEOF_RESBLOCK);
+				if (!tblk.data) {
+					error = e_out_of_memory;
+					goto failed;
+				}
+				error = GetResBlock(&tblk, type, seqnr, true);
+				if (!error) {
+					tblk.data->indexblock.index[offset] = blocknr;
+					error = volume.writeblock(&tblk);
+				}
+				free(tblk.data);
+				if (error)
+					goto failed;
+				break;
+		}
+		MinRemove(bbl);
+		FreeBufMem(bbl->b.data);
+		free(bbl);
+	}
+	return e_none;
+
+ failed:
+	free(newrext);
 	return error;
 }
 
@@ -191,8 +211,7 @@ error_t Repartition(uint32 bloknr)
 
 	// read rootblock 
 	error = ReadPFS3Metadata((uint8 *)rbl,
-		ROOTBLOCK + volume.firstblock, volume.blocksize,
-		PFS3_METADATA_ROOT);
+		bloknr, volume.blocksize, PFS3_METADATA_ROOT);
 	if (error)
 		goto ret_error;
 
@@ -238,6 +257,7 @@ error_t BuildBootBlock(void)
  */
 error_t BuildRootBlock(rootblock_t *rbl)
 {
+	error_t error;
 	struct DateStamp time;
 	uint32 i, j;
 	scanelement_t ind[104];
@@ -249,7 +269,7 @@ error_t BuildRootBlock(rootblock_t *rbl)
 
 	rbl->disktype = ID_PFS_DISK;
 	rbl->options = MODE_HARDDISK | MODE_SPLITTED_ANODES | MODE_DIR_EXTENSION |
-			MODE_SIZEFIELD | MODE_DATESTAMP | MODE_EXTROVING;
+			MODE_SIZEFIELD | MODE_DATESTAMP | MODE_EXTROVING | MODE_LONGFN;
 #if LARGE_FILE_SIZE
 	rbl->options |= MODE_LARGEFILE;
 	rbl->disktype = ID_PFS2_DISK;
@@ -266,13 +286,20 @@ error_t BuildRootBlock(rootblock_t *rbl)
 		}
 	}
 
+	rbl->reserved_blksize = resblocksize;
+	volume.rescluster = resblocksize / volume.blocksize;
+	if (!volume.rescluster)
+		return e_options_error;
+	volume.lastreserved = volume.disksize - 1;
+
 	rbl->datestamp = ~0;	// don't be a break on search functions
 	rbl->creationday = (UWORD)time.ds_Days;
 	rbl->creationminute = (UWORD)time.ds_Minute;
 	rbl->creationtick = (UWORD)time.ds_Tick;
 	rbl->protection	= 0xf0;
 	rbl->firstreserved = 2;
-	rbl->lastreserved = SearchLastReserved(&volume);
+	if ((error = SearchLastReserved(&volume, &rbl->lastreserved)))
+		return error;
 	volume.progress(0,1);
 	rbl->reserved_free = (rbl->lastreserved - rbl->firstreserved)/volume.rescluster;
 
@@ -288,7 +315,8 @@ error_t BuildRootBlock(rootblock_t *rbl)
 	/* create bitmap index */
 	memset (ind, 0, 104*sizeof(scanelement_t));
 	volume.status(1, "Searching bitmap blocks", rbl->lastreserved - 2);
-	SearchBlocks(ind, 0, 103, rbl->firstreserved, rbl->lastreserved, BMIBLKID);
+	if ((error = SearchBlocks(ind, 0, 103, rbl->firstreserved, rbl->lastreserved, BMIBLKID)))
+		return error;
 	volume.progress(0,1);
 	if (rbl->options & MODE_SUPERINDEX)
 		j = 104;
@@ -303,7 +331,8 @@ error_t BuildRootBlock(rootblock_t *rbl)
 	{
 		memset (ind, 0, 104*sizeof(scanelement_t));
 		volume.status(1,"Searching index blocks", rbl->lastreserved - 2);
-		SearchBlocks(ind, 0, 98, rbl->firstreserved, rbl->lastreserved, IBLKID);
+		if ((error = SearchBlocks(ind, 0, 98, rbl->firstreserved, rbl->lastreserved, IBLKID)))
+			return error;
 		for (i=0; i<99; i++)
 			rbl->idx.small.indexblocks[i] = ind[i].blocknr;
 	}
@@ -320,26 +349,41 @@ error_t BuildRootBlock(rootblock_t *rbl)
  * start = first blocknr 
  * stop = last blocknr
  */
-void SearchBlocks(scanelement_t el[], uint32 seqlow, uint32 seqhigh,
+error_t SearchBlocks(scanelement_t el[], uint32 seqlow, uint32 seqhigh,
 	uint32 start, uint32 stop, uint16 bloktype)
 {
 	cachedblock_t blk;
 	uint32 i, seqnr, ds = 0;
+	error_t error, read_error = e_none;
 
 	blk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (blk.data == NULL)
+		return e_out_of_memory;
 	volume.status(1, NULL, (stop-start)/volume.rescluster);
 	for (i = start; i < stop; i+=volume.rescluster) 
 	{
 		volume.progress(1,1);
-		if (volume.getblock(&blk, i))
-			continue;
-
 		if (aborting)
 		{
 			volume.showmsg("Aborting block search\n");
 			aborting = 0;
-			break;
+			free(blk.data);
+			return e_aborted;
 		}
+
+		error = volume.getblock(&blk, i);
+		if (error == e_syntax_error || error == e_block_outside_reserved ||
+			error == e_block_outside_partition)
+			continue;
+		if (error == e_read_error) {
+			read_error = error;
+			continue;
+		}
+		if (error) {
+			free(blk.data);
+			return error;
+		}
+
 
 		if (blk.data->id == bloktype)
 		{
@@ -357,6 +401,11 @@ void SearchBlocks(scanelement_t el[], uint32 seqlow, uint32 seqhigh,
 
 	free (blk.data);
 	volume.status(1," ",100);
+	if (read_error)
+		for (i = 0; i <= seqhigh - seqlow; i++)
+			if (!el[i].blocknr)
+				return AcceptIncompleteSearch() ? e_none : read_error;
+	return e_none;
 }
 
 /* search for a block on a volume.
@@ -369,15 +418,18 @@ void SearchBlocks(scanelement_t el[], uint32 seqlow, uint32 seqhigh,
  *
  * bloktypes: REXT, BM, BMI, S, AI, A, D
  */
-uint32 SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp, uint32 anodenr,
-	uint32 parent)
+error_t SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp, uint32 anodenr,
+	uint32 parent, uint32 *result)
 {
 	cachedblock_t blk;
 	uint32 ds, tmp;
 	int32 i, bloknr;	// signed !!
 	int found = 0;
+	error_t error, read_error = e_none;
 
 	blk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (blk.data == NULL)
+		return e_out_of_memory;
 	bloknr = ds = 0;
 	if (last)
 	{
@@ -409,16 +461,28 @@ uint32 SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp,
 			break;
 
 		volume.progress(1,1);
-		if (volume.getblock(&blk, i))
-			continue;
-
 		if (aborting)
 		{
-			// break search, don't break repair
+			/* Keep an already found backup, but never infer absence. */
 			volume.showmsg("Aborting block search\n");
 			aborting = 0;
+			read_error = e_aborted;
 			break;
 		}
+
+		error = volume.getblock(&blk, i);
+		if (error == e_syntax_error || error == e_block_outside_reserved ||
+			error == e_block_outside_partition)
+			continue;
+		if (error == e_read_error) {
+			read_error = error;
+			continue;
+		}
+		if (error) {
+			free(blk.data);
+			return error;
+		}
+
 
 		if (blk.data->id == bloktype)
 		{
@@ -456,16 +520,25 @@ uint32 SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp,
 
 	free (blk.data);
 	volume.status(1," ",100);
-	return (uint32)bloknr;
+	if (!bloknr && read_error) {
+		if (read_error != e_read_error || !AcceptIncompleteSearch())
+			return read_error;
+	}
+	*result = (uint32)bloknr;
+	return e_none;
 }
 
 /* Get last reserved block */
-uint32 SearchLastReserved(volume_t *vol)
+error_t SearchLastReserved(volume_t *vol, uint32 *result)
 {
 	cachedblock_t blk;
-	uint32 i, last, cdwn;
+	uint32 i, last, cdwn, last_unreadable = 0;
+	bool found = false;
+	error_t error = e_none, read_error = e_none;
 
 	blk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (blk.data == NULL)
+		return e_out_of_memory;
 	cdwn = 4096;
 	i = last = vol->disksize/256;
 	i -= i % volume.rescluster;
@@ -477,10 +550,19 @@ uint32 SearchLastReserved(volume_t *vol)
 		{
 			volume.showmsg("Aborting filesystem search\n");
 			aborting = 0;
+			error = e_aborted;
 			break;
 		}
 
-		if (vol_GetRawBlock(&blk, i))
+		error = vol_GetRawBlock(&blk, i);
+		if (error == e_read_error) {
+			read_error = error;
+			last_unreadable = i;
+			error = e_none;
+			i += volume.rescluster;
+			continue;
+		}
+		if (error)
 			goto s_ret;
 
 		switch (PFS3DiskBlockId((uint8 *)blk.data))
@@ -496,6 +578,7 @@ uint32 SearchLastReserved(volume_t *vol)
 
 				cdwn = 1024;
 				last = i;
+				found = true;
 				break;
 
 			default:
@@ -511,36 +594,52 @@ uint32 SearchLastReserved(volume_t *vol)
  s_ret:
  	free (blk.data);
 	vol->status(1, " ", 100);
-	return last;
+	if (error == e_none && read_error &&
+		(!found || last_unreadable > last) && !AcceptIncompleteSearch())
+		error = read_error;
+	if (error == e_none)
+		*result = last;
+	return error;
 }
 
 /* Search filesystem on specified execdevice/unit. Start at startblok,
  * end at endblok
  */
-uint32 SearchFileSystem(int32 startblok, int32 endblok)
+error_t SearchFileSystem(int32 startblok, int32 endblok, uint32 *result)
 {
 	rootblock_t *rbl;
 	uint32 blnr = 0, b;
+	error_t error = e_none, read_error = e_none;
 
 	if (!(rbl = (rootblock_t *)AllocBufMem (MAXRESBLOCKSIZE)))
 		return e_out_of_memory;
 
 	volume.status(0, "Searching filesystem", endblok-startblok);
-	startblok = max(startblok, 0);
-	startblok &= ~1;		/* even bloknr */
-	for (b = startblok; b<endblok; b += volume.rescluster)
+	startblok = max(startblok, ROOTBLOCK);
+	for (b = startblok; b<endblok; b++)
 	{
 		volume.progress(0,1);
 		if (aborting)
 		{
 			volume.showmsg("Aborting filesystem search\n");
 			aborting = 0;
+			error = e_aborted;
 			break;
 		}
 
 		// read block and check if it is a rootblock */
-		if (ReadPFS3Metadata((uint8 *)rbl, b, volume.blocksize,
-			PFS3_METADATA_ROOT))
+		error = ReadPFS3Metadata((uint8 *)rbl, b, volume.blocksize,
+			PFS3_METADATA_ROOT);
+		if (error == e_syntax_error) {
+			error = e_none;
+			continue;
+		}
+		if (error == e_read_error) {
+			read_error = error;
+			error = e_none;
+			continue;
+		}
+		if (error)
 			break;
 
 		if (IsRootBlock(rbl))
@@ -551,7 +650,11 @@ uint32 SearchFileSystem(int32 startblok, int32 endblok)
 	}
 
 	FreeBufMem(rbl);
-	return blnr;
+	if (error == e_none && !blnr && read_error && !AcceptIncompleteSearch())
+		error = read_error;
+	if (error == e_none)
+		*result = blnr;
+	return error;
 }
 
 /* cached block structure is managed by caller
@@ -561,6 +664,7 @@ uint32 SearchFileSystem(int32 startblok, int32 endblok)
  */
 error_t BuildRext(c_extensionblock_t *rext)
 {
+	error_t error;
 	struct DateStamp time;
 	struct buildblock *bbl;
 	extensionblock_t *r;
@@ -575,16 +679,20 @@ error_t BuildRext(c_extensionblock_t *rext)
 	if (!(bbl = malloc(sizeof(struct buildblock))))
 	{
 		FreeBufMem(r);
+		rext->data = NULL;
 		return e_out_of_memory;
 	}
 
-	memset (r, 0, volume.blocksize);
+	memset (r, 0, SIZEOF_RESBLOCK);
 	memset (bbl, 0, sizeof(*bbl));
 	DateStamp (&time);
 
 	r->id = EXTENSIONID;
 	r->datestamp = rbl->datestamp;
 	r->pfs2version = (17<<16) + 99;
+	/* The lost extension's filename limit is unknown. Accept every length
+	 * supported by the format rather than discard existing long names. */
+	r->fnsize = (rbl->options & MODE_LONGFN) ? 108 : 32;
 	r->root_date[0] = time.ds_Days;
 	r->root_date[1] = time.ds_Minute;
 	r->root_date[2] = time.ds_Tick;
@@ -593,7 +701,12 @@ error_t BuildRext(c_extensionblock_t *rext)
 	if (rbl->options & MODE_SUPERINDEX)
 	{
 		memset (ind, 0, 16*sizeof(scanelement_t));
-		SearchBlocks(ind, 0, 15, rbl->firstreserved, rbl->lastreserved, SBLKID);
+		if ((error = SearchBlocks(ind, 0, 15, rbl->firstreserved, rbl->lastreserved, SBLKID))) {
+			free(bbl);
+			FreeBufMem(r);
+			rext->data = NULL;
+			return error;
+		}
 		for (i=0; i<16; i++)
 			r->superindex[i] = ind[i].blocknr;
 	}
@@ -613,6 +726,7 @@ error_t BuildRext(c_extensionblock_t *rext)
  */
 error_t BuildIndexBlock(c_indexblock_t *blk, uint16 bloktype, uint32 seqnr)
 {
+	error_t error;
 	struct buildblock *bbl;
 	indexblock_t *ib;
 	int i;
@@ -620,6 +734,7 @@ error_t BuildIndexBlock(c_indexblock_t *blk, uint16 bloktype, uint32 seqnr)
 	scanelement_t *ind;
 
 	volume.status(1, "Building indexblock", INDEX_PER_BLOCK);	
+	blk->data = NULL;
 	if (!(ind = calloc(INDEX_PER_BLOCK, sizeof(scanelement_t))))
 		return e_out_of_memory;
 
@@ -631,6 +746,7 @@ error_t BuildIndexBlock(c_indexblock_t *blk, uint16 bloktype, uint32 seqnr)
 	if (!(bbl = malloc(sizeof(struct buildblock))))
 	{
 		FreeBufMem(ib);
+		blk->data = NULL;
 		free(ind);
 		return e_out_of_memory;
 	}
@@ -651,7 +767,13 @@ error_t BuildIndexBlock(c_indexblock_t *blk, uint16 bloktype, uint32 seqnr)
 		default:		return e_fatal_error;
 	}
 
-	SearchBlocks (ind, seqnr*INDEX_PER_BLOCK, seqnr*INDEX_PER_BLOCK + INDEX_PER_BLOCK - 1, rbl->firstreserved, rbl->lastreserved, childtype);
+	if ((error = SearchBlocks(ind, seqnr*INDEX_PER_BLOCK, seqnr*INDEX_PER_BLOCK + INDEX_PER_BLOCK - 1, rbl->firstreserved, rbl->lastreserved, childtype))) {
+		free(bbl);
+		free(ind);
+		FreeBufMem(ib);
+		blk->data = NULL;
+		return error;
+	}
 	for (i=0; i<INDEX_PER_BLOCK; i++)
 		ib->index[i] = ind[i].blocknr;
 	
@@ -680,6 +802,7 @@ error_t BuildBitmapBlock(c_bitmapblock_t *blk, uint32 seqnr)
 	if (!(bbl = malloc(sizeof(struct buildblock))))
 	{
 		FreeBufMem(bmb);
+		blk->data = NULL;
 		return e_out_of_memory;
 	}
 

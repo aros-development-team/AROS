@@ -83,6 +83,9 @@ struct GalliumBase
 
     char                        *fallback;
     struct Library              *fallbackmodule;
+    struct Library              *vulkanhidd;     /* for a display's Vulkan object */
+    struct Library              *zinkhidd;       /* GL on that Vulkan object */
+    struct Library              *lavapipehidd;   /* the software Vulkan driver, for the zink fallback */
 
     OOP_Class                   *basegallium;
     OOP_AttrBase                gfxAttrBase;

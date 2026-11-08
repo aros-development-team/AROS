@@ -27,9 +27,9 @@
 /*  FUNCTION
         Searches for the first file or directory that matches a given pattern.
         MatchFirst() initializes the AnchorPath structure for you but you
-        must initilize the following fields: ap_Flags, ap_Strlen, ap_BreakBits
-        and ap_FoundBreak. The first call to MatchFirst() also passes you
-        the first matching file, which you can examine in ap_Info, and
+        must initialize ap_Flags, ap_Strlen, ap_BreakBits and ap_FoundBreak.
+        The first call to MatchFirst() also passes you the first matching
+        file, which you can examine in ap_Info, and
         the directory the file is in, in ap_Current->an_Lock. After the first
         call to MatchFirst(), call MatchNext(). The search begins wherever the
         current directory is set to (see CurrentDir()). For more info on
@@ -44,6 +44,7 @@
         other = DOS error code
 
     NOTES
+        AROS currently ignores the APF_DODOT and APF_FollowHLinks options.
 
     EXAMPLE
 

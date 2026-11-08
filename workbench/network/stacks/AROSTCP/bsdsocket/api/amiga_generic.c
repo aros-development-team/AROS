@@ -67,13 +67,13 @@ extern struct Library *FDBase;      /* opened in amiga_fdhooks.c */
 #include <kern/uipc_socket2_protos.h>
 
 /* Local protos */
-static int selscan(struct SocketBase *p,
+static int selscan(struct SocketBase *p, struct SocketWaiter *w,
                    fd_set *in, fd_set *ou, fd_set *ex, fd_mask *obits,
                    int nfd, int *retval, int *selitemcount_p);
-void selenter(struct SocketBase *p, struct newselitem **hdr);
+void selenter(struct SocketWaiter *w, struct newselitem **hdr);
 static void unselect(register struct newselbuf *sb);
 void selwakeup(struct newselitem **hdr);
-static int soo_select(struct socket *so, int which, struct SocketBase *p);
+static int soo_select(struct socket *so, int which, struct SocketWaiter *w);
 static int countSockets(struct SocketBase *libPtr, struct socket *so);
 
 /*
@@ -405,8 +405,20 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
     ULONG sigmask = sigmp ? *sigmp : 0;
 
     struct newselbuf *newselbuf;
+    struct SocketWaiter *w;
 
     CHECK_TASK();
+
+    if(libPtr->closing) {
+        writeErrnoValue(libPtr, EBADF);
+        return -1;
+    }
+
+    /* the opener's waiter, or one lent to this thread of a shared base */
+    if((w = waiter_obtain(libPtr)) == NULL) {
+        writeErrnoValue(libPtr, ENOMEM);
+        return -1;
+    }
 
     if(nfds > libPtr->dTableSize)
         nfds = libPtr->dTableSize;	/* forgiving; slightly wrong */
@@ -432,11 +444,11 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
      */
 
     obitsize = howmany(nfds, NFDBITS) * sizeof(fd_mask);
-    if(allocDataBuffer(&libPtr->selitems, 3 * obitsize) == FALSE) {
+    if(allocDataBuffer(&w->selitems, 3 * obitsize) == FALSE) {
         error = ENOMEM;
         goto Return;
     }
-    obits = (fd_mask *)libPtr->selitems.db_Addr;
+    obits = (fd_mask *)w->selitems.db_Addr;
 
     aligned_bzero((caddr_t)obits, 3 * obitsize);
 
@@ -445,9 +457,9 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
      *	which are already true.  Clearing uu_sb
      *	will keep selenter from doing anything.
      */
-    libPtr->p_sb = 0;
+    w->sb = 0;
     ObtainSyscallSemaphore(libPtr);
-    error = selscan(libPtr, readfds, writefds, exeptfds,
+    error = selscan(libPtr, w, readfds, writefds, exeptfds,
                     obits, nfds, &retval, &selitemcount);
     ReleaseSyscallSemaphore(libPtr);
 
@@ -461,12 +473,12 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
              * Send timeout if there is any.
              */
             if(timeout)
-                tsleep_send_timeout(libPtr, timeout);
+                tsleep_send_timeout(w, timeout);
 
             /*
              * Now, make sure there is room for all the selitems...
              */
-            if(allocDataBuffer(&libPtr->selitems,
+            if(allocDataBuffer(&w->selitems,
                                3 * obitsize + sizeof(struct newselbuf) +
                                selitemcount * sizeof(struct newselitem)) == FALSE) {
                 error = ENOMEM;
@@ -476,8 +488,8 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
              * We need to clear obits again _if_ the memory area for it has
              * changed.
              */
-            if((fd_mask *)libPtr->selitems.db_Addr != obits) {
-                obits = (fd_mask *)libPtr->selitems.db_Addr;
+            if((fd_mask *)w->selitems.db_Addr != obits) {
+                obits = (fd_mask *)w->selitems.db_Addr;
                 aligned_bzero((caddr_t)obits, 3 * obitsize);
             }
             newselbuf = (struct newselbuf *)((caddr_t)obits + (3 * obitsize));
@@ -493,10 +505,10 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
 
                 newselbuf->s_state = SB_WILLWAIT;
                 newselbuf->s_count = 0;
-                libPtr->p_sb = newselbuf;
+                w->sb = newselbuf;
 
                 ObtainSyscallSemaphore(libPtr);
-                error = selscan(libPtr, readfds, writefds, exeptfds,
+                error = selscan(libPtr, w, readfds, writefds, exeptfds,
                                 obits, nfds, &retval, &selitemcount);
                 ReleaseSyscallSemaphore(libPtr);
                 if(error || retval) {
@@ -517,16 +529,22 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
                     ReleaseSemaphore(&select_semaphore);
                 } else {
                     newselbuf->s_state = SB_WAITING;
-                    tsleep_enter(libPtr, (caddr_t)newselbuf, "select");
+                    tsleep_enter(w, (caddr_t)newselbuf, "select");
                     ReleaseSemaphore(&select_semaphore);
                     /* ReleaseSemaphore(&syscall_semaphore); don't have this */
 
-                    error = tsleep_main(libPtr, sigmask);
+                    error = tsleep_main(libPtr, w, sigmask);
 
                     /* ObtainSemaphore(&syscall_semaphore); see above */
                     ObtainSemaphore(&select_semaphore);
                     unselect(newselbuf);
                     ReleaseSemaphore(&select_semaphore);
+
+                    /* woken because the shared base is being closed */
+                    if(libPtr->closing) {
+                        error = EBADF;
+                        break;
+                    }
 
                     if(error != 0) {
                         /*
@@ -549,9 +567,9 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
                  *	Scan for true conditions. Clearing uu_sb
                  *	will keep selenter from doing anything.
                  */
-                libPtr->p_sb = 0;
+                w->sb = 0;
                 ObtainSyscallSemaphore(libPtr);
-                error = selscan(libPtr, readfds, writefds, exeptfds,
+                error = selscan(libPtr, w, readfds, writefds, exeptfds,
                                 obits, nfds, &retval, &selitemcount);
                 ReleaseSyscallSemaphore(libPtr);
                 if(error || retval)
@@ -559,12 +577,12 @@ LONG __WaitSelect(ULONG nfds, fd_set *readfds, fd_set *writefds, fd_set *exeptfd
             } /* while (TRUE) */
 
             if(timeout)		/* abort the timeout if any */
-                tsleep_abort_timeout(libPtr, timeout);
+                tsleep_abort_timeout(w, timeout);
         }
     }
 
 Return:
-    libPtr->p_sb = 0;
+    w->sb = 0;
 
 #define	putbits(name, x) \
   if (name) { \
@@ -586,7 +604,12 @@ Return:
     }
 #undef putbits
 
-    API_STD_RETURN(error, retval);
+    /* errno first: once its waiter is back, a closing base may go */
+    if(error != 0)
+        writeErrnoValue(libPtr, error);
+    waiter_release(libPtr, w);
+
+    return error == 0 ? retval : -1;
 }
 
 AROS_LH6(LONG, WaitSelect,
@@ -646,6 +669,7 @@ AROS_LH1(LONG, GetSocketEvents,
  */
 static int
 selscan(struct SocketBase *p,
+        struct SocketWaiter *w,
         fd_set *in,
         fd_set *ou,
         fd_set *ex,
@@ -662,6 +686,15 @@ selscan(struct SocketBase *p,
     int n = 0;
     int error = 0;
     u_int obitsize = howmany(nfd, NFDBITS); /* in longwords */
+
+    /* a closed base has no table any more */
+    if(p->dTable == NULL) {
+        *retval = 0;
+        *selitemcount_p = 0;
+        return (EBADF);
+    }
+    if(nfd > p->dTableSize)
+        nfd = p->dTableSize;
 
     for(which = 0; which < 3; which++) {
         switch(which) {
@@ -690,7 +723,7 @@ selscan(struct SocketBase *p,
                         break;
                     }
                     selitemcount++;
-                    if(soo_select(so, flag, p)) {
+                    if(soo_select(so, flag, w)) {
                         FD_SET(i + j, (fd_set *)
                                (obits + (which * obitsize)));
                         n++;
@@ -709,10 +742,10 @@ selscan(struct SocketBase *p,
  * Chain all select buffers that are waiting for
  * the same event.
  */
-void selenter(struct SocketBase 	*p,
+void selenter(struct SocketWaiter	*w,
               struct newselitem 	**hdr)
 {
-    register struct newselbuf *sb = p->p_sb;
+    register struct newselbuf *sb = w->sb;
 
     if(sb) {
         register struct newselitem **sip = hdr;
@@ -790,7 +823,7 @@ void selwakeup(struct newselitem **hdr)
 static int
 soo_select(struct socket *so,
            int which,
-           struct SocketBase *p)
+           struct SocketWaiter *w)
 {
     register spl_t s = splnet();
 
@@ -801,7 +834,7 @@ soo_select(struct socket *so,
             splx(s);
             return (1);
         }
-        sbselqueue(&so->so_rcv, p);
+        sbselqueue(&so->so_rcv, w);
         break;
 
     case FWRITE:
@@ -809,7 +842,7 @@ soo_select(struct socket *so,
             splx(s);
             return (1);
         }
-        sbselqueue(&so->so_snd, p);
+        sbselqueue(&so->so_snd, w);
         break;
 
     case 0:
@@ -818,7 +851,7 @@ soo_select(struct socket *so,
             splx(s);
             return (1);
         }
-        sbselqueue(&so->so_rcv, p);
+        sbselqueue(&so->so_rcv, w);
         break;
     }
     splx(s);

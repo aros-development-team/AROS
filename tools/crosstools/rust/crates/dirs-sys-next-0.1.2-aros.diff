@@ -1,0 +1,24 @@
+diff -ruN a/src/lib.rs b/src/lib.rs
+--- a/src/lib.rs	2026-11-05 23:21:56.151456202 +0000
++++ b/src/lib.rs	2026-11-05 23:21:56.300132202 +0000
+@@ -29,8 +29,20 @@
+         return env::var_os("HOME")
+             .and_then(|h| if h.is_empty() { None } else { Some(h) })
+             .or_else(|| unsafe { fallback() })
++            .or_else(progdir)
+             .map(PathBuf::from);
+ 
++        // AROS: with no home directory, a program keeps its files in its own
++        // directory
++        #[cfg(target_os = "aros")]
++        fn progdir() -> Option<OsString> {
++            Some(OsString::from("PROGDIR:"))
++        }
++        #[cfg(not(target_os = "aros"))]
++        fn progdir() -> Option<OsString> {
++            None
++        }
++
+         #[cfg(any(target_os = "android", target_os = "ios", target_os = "emscripten"))]
+         unsafe fn fallback() -> Option<OsString> {
+             None

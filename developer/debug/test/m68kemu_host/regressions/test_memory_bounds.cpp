@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <vector>
 
+using BOOL = int;
 using UBYTE = uint8_t;
 using UWORD = uint16_t;
 using ULONG = uint32_t;
@@ -163,8 +164,38 @@ static void special_addresses()
 #endif
 }
 
+static void shared_low_write_policy()
+{
+    std::vector<UBYTE> memory(0x408, 0xA5);
+    std::vector<bool> allowed(memory.size(), false);
+    for (ULONG a : {0x10u, 0x28u, 0x2Cu, 0x6Cu}) allowed[a] = true;
+    std::fill(allowed.begin() + 0x140, allowed.begin() + 0x190, true);
+    std::fill(allowed.begin() + 0x400, allowed.end(), true);
+    M68KEmuContext ctx;
+    ctx.mem = memory.data(); ctx.mem_size = static_cast<ULONG>(memory.size());
+    ctx.low_guard = true;
+    for (unsigned width : {2u, 4u})
+    {
+        for (ULONG a = 0; a < 0x404; ++a)
+        {
+            std::fill(memory.begin(), memory.end(), 0xA5);
+            auto expected = memory;
+            ULONG value = width == 2 ? 0x1234u : 0x12345678u;
+            if (allowed[a])
+                for (unsigned i = 0; i < width; ++i)
+                    expected[a + i] = static_cast<UBYTE>(value >> ((width - i - 1) * 8));
+            ctx.guard_calls = 0;
+            if (width == 2) m68k_write16(&ctx, a, static_cast<UWORD>(value));
+            else m68k_write32(&ctx, a, value);
+            CHECK(memory == expected);
+            CHECK(ctx.guard_calls == (allowed[a] ? 0u : 1u));
+        }
+    }
+}
+
 int main()
 {
+    shared_low_write_policy();
     for (ULONG size : {0u, 1u, 2u, 3u, 4u, 17u})
         check_arena(size);
     special_addresses();

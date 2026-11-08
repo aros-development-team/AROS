@@ -83,23 +83,37 @@
 
     Disable();
 
-    /* Check to ensure that this node is not already in a list. */
-    if (softint->is_Node.ln_Type != NT_SOFTINT)
-    {
-        /* Scale the priority down to a number between 0 and 4 inclusive
-        We can use that to index into exec's software interrupt lists. */
-        pri = (softint->is_Node.ln_Pri + 0x20)>>4;
+    /* Scale the priority down to a number between 0 and 4 inclusive
+    We can use that to index into exec's software interrupt lists. */
+    pri = (softint->is_Node.ln_Pri + 0x20)>>4;
 
-        /* We are accessing an Exec list, protect ourselves. */
+    /* We are accessing an Exec list, protect ourselves. */
 #if defined(__AROSEXEC_SMP__)
-        EXEC_SPINLOCK_LOCK(&SysBase->SoftInts[pri].sh_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+    EXEC_SPINLOCK_LOCK(&SysBase->SoftInts[pri].sh_SpinLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
+    switch (softint->is_Node.ln_Type)
+    {
+    case NT_SOFTINT:            /* already queued */
+    case NT_SOFTINT_PENDING:    /* running, and already asked to run again */
+        break;
+
+    case NT_SOFTINT_RUNNING:
+        /*
+         * Running on some CPU right now. A soft interrupt is never
+         * re-entered: SoftIntDispatch() queues it again when this
+         * instance returns, so what was Caused now is still served.
+         */
+        softint->is_Node.ln_Type = NT_SOFTINT_PENDING;
+        break;
+
+    default:
         ADDTAIL(&SysBase->SoftInts[pri].sh_List, &softint->is_Node);
         softint->is_Node.ln_Type = NT_SOFTINT;
-#if defined(__AROSEXEC_SMP__)
-        EXEC_SPINLOCK_UNLOCK(&SysBase->SoftInts[pri].sh_SpinLock);
-#endif
+        break;
     }
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&SysBase->SoftInts[pri].sh_SpinLock);
+#endif
 
     /* Signal pending software interrupt condition */
 #ifndef AROS_NO_ATOMIC_OPERATIONS
@@ -172,14 +186,14 @@ AROS_INTH0(SoftIntDispatch)
                 EXEC_SPINLOCK_LOCK(&SysBase->SoftInts[i].sh_SpinLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
                 intr = (struct Interrupt *)RemHead(&SysBase->SoftInts[i].sh_List);
+                if (intr)
+                    intr->is_Node.ln_Type = NT_SOFTINT_RUNNING;
 #if defined(__AROSEXEC_SMP__)
                 EXEC_SPINLOCK_UNLOCK(&SysBase->SoftInts[i].sh_SpinLock);
 #endif
 
                 if (intr)
                 {
-                    intr->is_Node.ln_Type = NT_INTERRUPT;
-
                     /*
                      * SoftInt handlers are called with interrupts enabled,
                      * this is how original AmigaOS(tm) works
@@ -188,6 +202,29 @@ AROS_INTH0(SoftIntDispatch)
 
                     /* Call the software interrupt. */
                     AROS_INTC1(intr->is_Code, intr->is_Data);
+
+                    /*
+                     * Done running. Cause() leaves a request made meanwhile
+                     * as NT_SOFTINT_PENDING rather than queueing the node
+                     * (another CPU would have run a second instance of the
+                     * handler concurrently with this one); queue it now, so
+                     * the scan below finds it. Otherwise it is free again.
+                     */
+                    KrnCli();
+#if defined(__AROSEXEC_SMP__)
+                    EXEC_SPINLOCK_LOCK(&SysBase->SoftInts[i].sh_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+                    if (intr->is_Node.ln_Type == NT_SOFTINT_PENDING)
+                    {
+                        ADDTAIL(&SysBase->SoftInts[i].sh_List, &intr->is_Node);
+                        intr->is_Node.ln_Type = NT_SOFTINT;
+                    }
+                    else
+                        intr->is_Node.ln_Type = NT_INTERRUPT;
+#if defined(__AROSEXEC_SMP__)
+                    EXEC_SPINLOCK_UNLOCK(&SysBase->SoftInts[i].sh_SpinLock);
+#endif
+                    KrnSti();
 
                     /* Get out and start loop *all* over again *from scratch*! */
                     break;

@@ -1,0 +1,22 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-devs-common: workbench-devs-ipp workbench-devs-ipp-findprinters
+
+#MM- workbench-devs-quick: workbench-devs-ipp-quick workbench-devs-ipp-findprinters
+
+#MM workbench-devs-ipp : network-includes-copy
+#MM workbench-devs-ipp-quick : network-includes-copy
+
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-devs-ipp \
+  modname=ipp modtype=device \
+  files="ipp ipp_config ipp_net"
+
+#MM workbench-devs-ipp-findprinters : network-includes-copy
+
+%build_prog mmake=workbench-devs-ipp-findprinters \
+  progname=FindPrinters targetdir=$(AROS_C) \
+  files=findprinters
+
+%common

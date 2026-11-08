@@ -69,11 +69,13 @@
 
 #if (__WORDSIZE == 64)
     {
+        /* MorphOS style: offset and length travel by pointer */
+        UQUAD offset = rec->rec_Offset, length = rec->rec_Length;
         SIPTR err = 0;
         LONG  ret;
 
         ret = dos64_SendPkt(DOS64Base, fileH->fh_Type, ACTION_LOCK_RECORD64,
-                            fileH->fh_Arg1, rec->rec_Offset, rec->rec_Length,
+                            fileH->fh_Arg1, (SIPTR)&offset, (SIPTR)&length,
                             rec->rec_Mode, timeout, &err);
         if (!(ret == DOSFALSE && dos64_UnsupportedAction(err)))
             return ret;

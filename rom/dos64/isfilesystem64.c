@@ -61,11 +61,15 @@
         return DOSFALSE;
 
 #if (__WORDSIZE == 64)
-    /* MorphOS style: a null seek returns the current position */
-    ret = dos64_SendPkt(DOS64Base, fh->fh_Type, ACTION_SEEK64,
-                        fh->fh_Arg1, 0, OFFSET_CURRENT, 0, 0, &err);
-    if (!dos64_UnsupportedPkt(ret, err))
-        return DOSTRUE;
+    /* MorphOS style: a null seek, positions travel by pointer */
+    {
+        QUAD pos = 0, prev = 0;
+
+        ret = dos64_SendPkt(DOS64Base, fh->fh_Type, ACTION_SEEK64,
+                            fh->fh_Arg1, (SIPTR)&pos, OFFSET_CURRENT, (SIPTR)&prev, 0, &err);
+        if (dos64_PktOK(ret, err))
+            return DOSTRUE;
+    }
 
     /* AmigaOS 4 style position query */
     ret = dos64_SendPkt(DOS64Base, fh->fh_Type, ACTION_GET_FILE_POSITION64,

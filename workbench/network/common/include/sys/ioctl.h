@@ -134,6 +134,7 @@ __END_DECLS
 #define SIOCGIFDSTADDR_IN6 _IOWR('i', 34, struct in6_ifreq) /* get IPv6 p-p addr */
 #define SIOCGIFNETMASK_IN6 _IOWR('i', 37, struct in6_ifreq) /* get IPv6 netmask */
 #define SIOCGLIFADDR     _IOWR('i', 56, struct in6_ifconf)  /* get all IPv6 addrs */
+#define SIOCGIFAFLAG_IN6 _IOWR('i', 73, struct in6_ifreq)   /* an address's IN6_IFF_* flags (KAME) */
 
 /*
  * Private extensions to the BSD44 ioctl interface) 

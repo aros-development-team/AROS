@@ -68,7 +68,8 @@ typedef enum {false, true} bool;
 #define FILENAMESIZE 32
 #define DNSIZE 32
 #define CMSIZE 80
-#define MAX_ENTRYSIZE (sizeof(struct direntry) + FILENAMESIZE + CMSIZE + 32)
+/* next is an unsigned byte: allow any complete on-disk directory entry. */
+#define MAX_ENTRYSIZE 256
 #define LONGS_PER_BMB ((rbl->reserved_blksize/4)-3)
 #define INDEX_PER_BLOCK ((rbl->reserved_blksize - 3*4) / sizeof(LONG))
 #define ANODES_PER_BLOCK ((rbl->reserved_blksize - 4*4) / sizeof(anode_t))
@@ -122,8 +123,10 @@ struct cacheline
 {
 	struct cacheline *next;
 	struct cacheline *prev;
-	uint32 blocknr;			/* 1 == unused */
+	uint32 blocknr;
+	uint32 blocks;			/* valid sectors; zero == unused */
 	bool dirty;
+	uint32 dirtyfirst, dirtylast;
 	uint8 *data;
 };
 
@@ -132,6 +135,9 @@ struct cache
 	struct MinList LRUqueue;
 	struct MinList LRUpool;
 	uint32 linesize;			// linesize in blocks
+	uint32 failedline;		/* most recent failed aligned read */
+	bool readfailed;
+	int writeerror;		/* first failed cache write, retained until reinit */
 	uint32 nolines;				
 	struct cacheline *cachelines;
 };
@@ -147,7 +153,7 @@ extern enum mode mode;
 
 /* mode for cached block can be:
  * 'check' -- loaded in cache voor check etc --> indirect (by value) edit
- * 'build' -- loaded in buildblock cache. --> direct edit (by reference)
+ * 'build' -- pending rebuild; writeblock updates the build-list owner
  */
 typedef struct {
 	uint32 blocknr;
@@ -269,7 +275,8 @@ typedef enum {
 	e_syntax_error,
 	e_read_error,
 	e_write_error,
-	e_alloc_fail
+	e_alloc_fail,
+	e_keep_object		/* retained object; allocation may be unknown */
 } error_t;
 
 /**************************************
@@ -397,10 +404,10 @@ error_t BuildRootBlock(rootblock_t *rbl);
 error_t BuildRext(c_extensionblock_t *rext);
 error_t BuildIndexBlock(c_indexblock_t *blk, uint16 bloktype, uint32 seqnr);
 error_t BuildBitmapBlock(c_bitmapblock_t *blk, uint32 seqnr);
-void SearchBlocks(scanelement_t el[], uint32 seqlow, uint32 seqhigh, uint32 start, uint32 stop, uint16 bloktype);
-uint32 SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp, uint32 anodenr, uint32 parent);
-uint32 SearchLastReserved(volume_t *vol);
-uint32 SearchFileSystem(int32 startblok, int32 endblok);
+error_t SearchBlocks(scanelement_t el[], uint32 seqlow, uint32 seqhigh, uint32 start, uint32 stop, uint16 bloktype);
+error_t SearchBlock(uint16 bloktype, uint32 seqnr, uint32 last, uint32 datestamp, uint32 anodenr, uint32 parent, uint32 *result);
+error_t SearchLastReserved(volume_t *vol, uint32 *result);
+error_t SearchFileSystem(int32 startblok, int32 endblok, uint32 *result);
 
 /**********************************************************************/
 /*                        Lists                                       */
@@ -467,14 +474,16 @@ error_t ReadPFS3Metadata(uint8 *data, uint32 bloknr, uint32 bytes,
 	enum pfs3_metadata_type type);
 error_t WritePFS3Metadata(uint8 *data, uint32 bloknr, uint32 bytes,
 	enum pfs3_metadata_type type);
-void UpdateCache(void);
+error_t UpdateCache(void);
 void FreeCache(void);
 
 /* access.c */
 BOOL AccessTest(void);
 cachedblock_t *GetBuildBlock(uint16 bloktype, uint32 seqnr);
 error_t GetResBlock(cachedblock_t *blok, uint16 bloktype, uint32 seqnr, bool fix);
+error_t ReadAnode(canode_t *anode, uint32 anodenr, bool fix);
 bool GetAnode(canode_t *anode, uint32 anodenr, bool fix);
+error_t WriteAnode(canode_t *anode, uint32 nr);
 bool SaveAnode(canode_t *anode, uint32 nr);
 
 /* standardsscan.c */

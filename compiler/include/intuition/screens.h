@@ -206,7 +206,8 @@ struct ExtNewScreen
 #define SA_DisplayHeight        (SA_Dummy + 130) /* [I.G] ULONG           Height of the display mode to search for            */ 
 #define SA_OpacitySupport       (SA_Dummy + 131) /* [..G]                 Reserved                                            */
 #define SA_SourceAlphaSupport   (SA_Dummy + 132) /* [..G]                 Reserved                                            */
-#define SA_PixelFormat          (SA_Dummy + 133) /* [..G] ULONG           Pixel format of the screen                          */
+#define SA_PixelFormat          (SA_Dummy + 133) /* [I.G] ULONG           Pixel format of the screen; AROS: at open, a 32-bit */
+                                                 /*                       one with alpha (PIXFMT_xxxA32) for planes below it  */
 #define SA_ScreenbarTextYPos    (SA_Dummy + 134) /* [..G] LONG            Y position (baseline) of the screen bar text        */
 #define SA_ScreenbarTextPen     (SA_Dummy + 135) /* [..G] ULONG           Pen color for the screenbar text                    */
 #define SA_ScreenbarTextFont    (SA_Dummy + 136) /* [..G] struct TextFont * Font for the screenbar text                       */

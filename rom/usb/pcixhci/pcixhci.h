@@ -83,6 +83,7 @@ struct PTDNode {
 #define PTDF_BUFFER_VALID       (1<<1)
 #define PTDF_SITD               (1<<2)
 #define PTDF_QUEUED             (1<<3)
+#define PTDF_EXPLICIT_FRAME     (1<<4)  /* the client chose this TD's frame */
 
 #define PCIUSB_ISO_PTD_COUNT    8
 

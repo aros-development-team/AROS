@@ -42,6 +42,7 @@ ISG BOOL                  DestMode
 #include <intuition/cghooks.h>
 #include <datatypes/datatypesclass.h>
 #include <datatypes/pictureclass.h>
+#include <libraries/iffparse.h>
 #include <cybergraphx/cybergraphics.h>
 
 #include <clib/alib_protos.h>
@@ -101,7 +102,7 @@ const IPTR SupportedMethods[] =
 
 //    DTM_SELECT,
 //    DTM_CLEARSELECTED,
-//    DTM_COPY,
+    DTM_COPY,
     DTM_PRINT,
     DTM_WRITE,
 
@@ -2079,6 +2080,200 @@ IPTR DT_Write(struct IClass *cl, Object *o, struct dtWrite *msg)
 	
 	SetIoErr(0);
 	return TRUE;    
+}
+
+/**************************************************************************************************/
+
+/* Store a big-endian WORD into a byte buffer */
+static void PutBE16(UBYTE *p, UWORD v)
+{
+    p[0] = v >> 8;
+    p[1] = v & 0xff;
+}
+
+/* The DOS error for a failed iffparse call */
+static LONG CopyIFFError(LONG ifferr)
+{
+    return (ifferr == IFFERR_NOMEM) ? ERROR_NO_FREE_STORE : DTERROR_COULDNT_SAVE;
+}
+
+/* Write the picture as FORM ILBM to iff (opened for writing). Colour-mapped
+   sources (LUT8, GREY8) become 1-8 planes with a CMAP, true colour sources
+   24 planes (red 0-7, green 0-7, blue 0-7); no compression, alpha is not
+   written. Rows are padded to 16 bits with zero bits. Returns 0 or a DOS
+   error. The caller holds the object's lock. */
+static LONG CopyWriteILBM(struct Picture_Data *pd, struct IFFHandle *iff)
+{
+    ULONG width = pd->SrcWidth, height = pd->SrcHeight;
+    ULONG rowbytes = ((width + 15) >> 4) << 1;
+    BOOL lut = (pd->SrcPixelFormat == PBPAFMT_LUT8 || pd->SrcPixelFormat == PBPAFMT_GREY8);
+    UWORD depth, xaspect, yaspect;
+    UBYTE bmhd[20], masking = mskNone;
+    UBYTE *line;
+    ULONG x, y;
+    UWORD p;
+    LONG err;
+
+    if (!width || !height || width > 0xffff || height > 0xffff)
+        return ERROR_OBJECT_WRONG_TYPE;
+
+    if (lut)
+    {
+        UBYTE maxpen = 0;
+
+        for (y = 0; y < height; y++)
+        {
+            UBYTE *src = pd->SrcBuffer + y * pd->SrcWidthBytes;
+            for (x = 0; x < width; x++)
+                if (src[x] > maxpen)
+                    maxpen = src[x];
+        }
+        depth = (pd->bmhd.bmh_Depth >= 1 && pd->bmhd.bmh_Depth <= 8) ? pd->bmhd.bmh_Depth : 8;
+        while (depth < 8 && (1UL << depth) <= maxpen)
+            depth++;
+        if (pd->bmhd.bmh_Masking == mskHasTransparentColor)
+            masking = mskHasTransparentColor;
+    }
+    else if (pd->SrcPixelFormat == PBPAFMT_RGB || pd->SrcPixelFormat == PBPAFMT_ARGB
+             || pd->SrcPixelFormat == PBPAFMT_RGBA)
+    {
+        depth = 24;
+    }
+    else
+        return ERROR_OBJECT_WRONG_TYPE;
+
+    /* IFF chunk sizes are 32-bit */
+    if ((UQUAD) rowbytes * depth * height > 0x7ffffff0)
+        return ERROR_OBJECT_TOO_LARGE;
+
+    xaspect = pd->bmhd.bmh_XAspect ? pd->bmhd.bmh_XAspect : 1;
+    yaspect = pd->bmhd.bmh_YAspect ? pd->bmhd.bmh_YAspect : 1;
+    PutBE16(bmhd + 0, width);
+    PutBE16(bmhd + 2, height);
+    PutBE16(bmhd + 4, 0);
+    PutBE16(bmhd + 6, 0);
+    bmhd[8] = depth;
+    bmhd[9] = masking;
+    bmhd[10] = cmpNone;
+    bmhd[11] = 0;
+    PutBE16(bmhd + 12, masking == mskHasTransparentColor ? pd->bmhd.bmh_Transparent : 0);
+    bmhd[14] = xaspect;
+    bmhd[15] = yaspect;
+    PutBE16(bmhd + 16, width);
+    PutBE16(bmhd + 18, height);
+
+    if ((err = PushChunk(iff, ID_ILBM, ID_FORM, IFFSIZE_UNKNOWN))
+        || (err = PushChunk(iff, ID_ILBM, ID_BMHD, sizeof(bmhd))))
+        return CopyIFFError(err);
+    if (WriteChunkBytes(iff, bmhd, sizeof(bmhd)) != (LONG) sizeof(bmhd))
+        return DTERROR_COULDNT_SAVE;
+    if ((err = PopChunk(iff)))
+        return CopyIFFError(err);
+
+    if (lut)
+    {
+        UBYTE cmap[256 * 3];
+        ULONG i, n = 1UL << depth;
+
+        for (i = 0; i < n * 3; i++)
+            cmap[i] = pd->SrcColRegs[i] >> 24;
+        if ((err = PushChunk(iff, ID_ILBM, ID_CMAP, n * 3)))
+            return CopyIFFError(err);
+        if (WriteChunkBytes(iff, cmap, n * 3) != (LONG)(n * 3))
+            return DTERROR_COULDNT_SAVE;
+        if ((err = PopChunk(iff)))
+            return CopyIFFError(err);
+    }
+
+    if (!(line = AllocVec(rowbytes * depth, MEMF_ANY)))
+        return ERROR_NO_FREE_STORE;
+    if ((err = PushChunk(iff, ID_ILBM, ID_BODY, rowbytes * depth * height)))
+    {
+        FreeVec(line);
+        return CopyIFFError(err);
+    }
+    for (y = 0; y < height; y++)
+    {
+        UBYTE *src = pd->SrcBuffer + y * pd->SrcWidthBytes;
+
+        memset(line, 0, rowbytes * depth);
+        for (x = 0; x < width; x++)
+        {
+            ULONG value;
+            UBYTE bit = 0x80 >> (x & 7);
+            ULONG byte = x >> 3;
+
+            switch (pd->SrcPixelFormat)
+            {
+                case PBPAFMT_RGB:
+                    value = src[x * 3] | (src[x * 3 + 1] << 8) | (src[x * 3 + 2] << 16);
+                    break;
+                case PBPAFMT_ARGB:
+                    value = src[x * 4 + 1] | (src[x * 4 + 2] << 8) | (src[x * 4 + 3] << 16);
+                    break;
+                case PBPAFMT_RGBA:
+                    value = src[x * 4] | (src[x * 4 + 1] << 8) | (src[x * 4 + 2] << 16);
+                    break;
+                default:
+                    value = src[x];
+                    break;
+            }
+            for (p = 0; p < depth; p++)
+                if (value & (1UL << p))
+                    line[p * rowbytes + byte] |= bit;
+        }
+        if (WriteChunkBytes(iff, line, rowbytes * depth) != (LONG)(rowbytes * depth))
+        {
+            FreeVec(line);
+            return DTERROR_COULDNT_SAVE;
+        }
+    }
+    FreeVec(line);
+    if ((err = PopChunk(iff)) || (err = PopChunk(iff)))
+        return CopyIFFError(err);
+    return 0;
+}
+
+/* DTM_COPY: the whole picture to the clipboard (unit 0) as FORM ILBM */
+IPTR DT_Copy(struct IClass *cl, Object *o, struct dtGeneral *msg)
+{
+    struct Picture_Data *pd = (struct Picture_Data *) INST_DATA(cl, o);
+    struct DTSpecialInfo *si = (struct DTSpecialInfo *) ((struct Gadget *) o)->SpecialInfo;
+    struct ClipboardHandle *clip;
+    struct IFFHandle *iff;
+    LONG err;
+
+    ObtainSemaphore(&si->si_Lock);
+    if (!pd->SrcBuffer && pd->SrcBM && !ConvertBitmap2Chunky(pd))
+        err = ERROR_NO_FREE_STORE;
+    else if (!pd->SrcBuffer)
+        err = ERROR_REQUIRED_ARG_MISSING;
+    else if (!(iff = AllocIFF()))
+        err = ERROR_NO_FREE_STORE;
+    else
+    {
+        if (!(clip = OpenClipboard(PRIMARY_CLIP)))
+            err = DTERROR_COULDNT_OPEN_CLIPBOARD;
+        else
+        {
+            iff->iff_Stream = (IPTR) clip;
+            InitIFFasClip(iff);
+            if ((err = OpenIFF(iff, IFFF_WRITE)))
+                err = CopyIFFError(err);
+            else
+            {
+                err = CopyWriteILBM(pd, iff);
+                CloseIFF(iff);
+            }
+            CloseClipboard(clip);
+        }
+        FreeIFF(iff);
+    }
+    ReleaseSemaphore(&si->si_Lock);
+
+    D(bug("picture.datatype/DTM_COPY: error %ld\n", (long)err));
+    SetIoErr(err);
+    return err ? FALSE : TRUE;
 }
 
 /**************************************************************************************************/

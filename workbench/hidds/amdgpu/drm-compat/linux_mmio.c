@@ -24,6 +24,34 @@ void *compat_map_mmio(unsigned long pa, unsigned long size)
     return (void *)pa;
 }
 
+/*
+ * Write-combining for the 2 MiB pages wholly inside [va, va + size). An
+ * identity mapping covers the whole range already; this only changes the
+ * memory type.
+ */
+int compat_map_write_combining(void *va, unsigned long size)
+{
+#if defined(__x86_64__)
+    const IPTR big = 2UL << 20, chunk = 1UL << 30;
+    APTR KernelBase = OpenResource("kernel.resource");
+    IPTR start = ((IPTR)va + big - 1) & ~(big - 1);
+    IPTR end = ((IPTR)va + size) & ~(big - 1);
+
+    if (!KernelBase)
+        return -1;
+    while (start < end)
+    {
+        IPTR len = end - start > chunk ? chunk : end - start;
+
+        if (!KrnMapGlobal((APTR)start, (APTR)start, len,
+                         MAP_Readable | MAP_Writable | MAP_WriteCombine))
+            return -1;
+        start += len;
+    }
+#endif
+    return 0;
+}
+
 #include <proto/dos.h>
 #include <dos/dos.h>
 #include <stdio.h>

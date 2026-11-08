@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/graphics.h>
@@ -23,20 +23,27 @@
         struct Library *, MUIMasterBase, 32, MUIMaster)
 
 /*  FUNCTION
+        Begin a refresh pass for a damaged simple-refresh window. Set the
+        rendering context's refresh flag, lock the screen's LayerInfo, and
+        call intuition.library/BeginRefresh().
 
     INPUTS
+        mri - Non-NULL initialized rendering context. A present window must
+              have a valid window layer and screen.
+        flags - Ignored by this implementation; pass zero.
 
     RESULT
+        TRUE if a refresh pass was begun. FALSE if there is no window, the
+        window is not simple-refresh, its layer does not need refreshing,
+        or this rendering context is already in refresh mode.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        Only after TRUE, complete the pass with MUI_EndRefresh() on the
+        same context. The LayerInfo lock remains held between these calls.
+        Do not close the window or change the context during that interval.
 
     SEE ALSO
-
-    INTERNALS
+        MUI_EndRefresh(), intuition.library/BeginRefresh()
 
 *****************************************************************************/
 {

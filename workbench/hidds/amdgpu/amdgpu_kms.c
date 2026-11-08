@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "amdgpu_kms.h"
+#include "amdgpu_2d.h"
 #include <uapi/drm/drm_fourcc.h>
 
 /* drm-aros/drm_drv.c */
@@ -42,6 +43,7 @@ BOOL Amdgpu_KMS_CreateFB(struct Amdgpu_KMS *kms, struct Amdgpu_FB *fb, ULONG wid
     memset(fb, 0, sizeof(*fb));
 
     LOCK_KMS(kms);
+    fb->id = ++kms->fb_serial;
     ret = drmModeCreateDumb(kms->fd, width, height, bpp, &fb->handle, &fb->pitch, &fb->size);
     if (ret)
     {
@@ -88,6 +90,8 @@ VOID Amdgpu_KMS_DestroyFB(struct Amdgpu_KMS *kms, struct Amdgpu_FB *fb)
     if (!fb->handle)
         return;
 
+    Amdgpu_2D_ReleaseFB(fb);
+
     LOCK_KMS(kms);
     if (kms->curfb == fb)
     {
@@ -123,6 +127,28 @@ drmModeModeInfoPtr Amdgpu_KMS_FindMode(struct Amdgpu_KMS *kms, ULONG width, ULON
     return NULL;
 }
 
+/*
+ * Does the kernel count vblanks for our crtc? Only an active crtc has a vblank
+ * to count, so ask after each mode set.
+ */
+static VOID Amdgpu_KMS_ProbeVBlank(struct Amdgpu_KMS *kms)
+{
+    drmVBlank vbl;
+
+    memset(&vbl, 0, sizeof(vbl));
+    vbl.request.type = DRM_VBLANK_RELATIVE | ((kms->crtc_index << DRM_VBLANK_HIGH_CRTC_SHIFT) & DRM_VBLANK_HIGH_CRTC_MASK);
+    vbl.request.sequence = 0;
+    kms->vblank_ok = (drmWaitVBlank(kms->fd, &vbl) == 0);
+    if (kms->vblank_ok)
+        kms->vblanks = vbl.reply.sequence;
+
+    if (kms->vblank_probes++)
+        return;
+
+    bug("[Amdgpu:KMS] crtc %u: %lu overlay plane(s) for RGB scan-out, vblank %s\n", kms->crtc_id,
+        (unsigned long)kms->nplanes, kms->vblank_ok ? "counted" : "not available");
+}
+
 BOOL Amdgpu_KMS_SetMode(struct Amdgpu_KMS *kms, struct Amdgpu_FB *fb, drmModeModeInfoPtr mode)
 {
     uint32_t connector_id;
@@ -152,6 +178,9 @@ BOOL Amdgpu_KMS_SetMode(struct Amdgpu_KMS *kms, struct Amdgpu_FB *fb, drmModeMod
     UNLOCK_KMS(kms);
 
     D(bug("[Amdgpu:KMS] %s: crtc %u fb %u mode %s: %d\n", __func__, kms->crtc_id, fb->fbid, mode->name, ret));
+
+    if (ret == 0)
+        Amdgpu_KMS_ProbeVBlank(kms);
 
     return (ret == 0);
 }
@@ -366,7 +395,6 @@ BOOL Amdgpu_KMS_MoveCursor(struct Amdgpu_KMS *kms, LONG x, LONG y)
 VOID Amdgpu_KMS_EnumPlanes(struct Amdgpu_KMS *kms)
 {
     drmModePlaneResPtr pres;
-    drmVBlank vbl;
     ULONG i;
 
     kms->nplanes = 0;
@@ -409,16 +437,6 @@ VOID Amdgpu_KMS_EnumPlanes(struct Amdgpu_KMS *kms)
     }
     UNLOCK_KMS(kms);
 
-    /* Does the kernel count vblanks for our crtc? Ask for the current count. */
-    memset(&vbl, 0, sizeof(vbl));
-    vbl.request.type = DRM_VBLANK_RELATIVE | ((kms->crtc_index << DRM_VBLANK_HIGH_CRTC_SHIFT) & DRM_VBLANK_HIGH_CRTC_MASK);
-    vbl.request.sequence = 0;
-    kms->vblank_ok = (drmWaitVBlank(kms->fd, &vbl) == 0);
-    if (kms->vblank_ok)
-        kms->vblanks = vbl.reply.sequence;
-
-    bug("[Amdgpu:KMS] crtc %u: %lu overlay plane(s) for RGB scan-out, vblank %s\n", kms->crtc_id,
-        (unsigned long)kms->nplanes, kms->vblank_ok ? "counted" : "not available");
 }
 
 /* Put framebuffer 'fbid' (0 = switch the plane off) on overlay 'index' */
@@ -562,6 +580,13 @@ static BOOL Amdgpu_KMS_SelectDisplay(struct Amdgpu_KMS *kms)
             kms->crtc_index = i;
     }
     drmModeFreeResources(res);
+
+    /* off first, so the first mode set is a real one and not a plane update of the firmware's mode */
+    if (kms->crtc_id)
+    {
+        int off = drmModeSetCrtc(kms->fd, kms->crtc_id, 0, 0, 0, NULL, 0, NULL);
+        bug("[Amdgpu:KMS] crtc %u released from the firmware's mode: %d\n", kms->crtc_id, off);
+    }
     return (kms->crtc_id != 0);
 }
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -33,6 +33,159 @@
 /*  #define MYDEBUG 1 */
 #include "debug.h"
 
+/****** Coloradjust.mui/MUIC_Coloradjust ************
+*
+*   NAME
+*       MUIC_Coloradjust
+*
+*   SUPERCLASS
+*       Group.mui
+*
+*   DESCRIPTION
+*       Edit RGB using three 0..255 sliders, a Colorfield preview and BOOPSI
+*       color-wheel/gradient controls. Stored components default to 0xffffffff
+*       each. Programmatic RGB updates preserve all 32 bits, while the sliders
+*       display only the high byte. Moving any RGB slider reads all three
+*       sliders and replicates each byte into all four bytes, so all components
+*       are quantized to eight-bit precision by that interaction.
+*       The constructor opens gadgets/colorwheel.gadget and
+*       gadgets/gradientslider.gadget. It returns NULL on superclass
+*       construction failure. The interface-acquisition/drop macros are no-ops
+*       on AROS and do not test library availability. Dispose disposes Group
+*       children and closes opened libraries. Normal Cleanup must precede
+*       disposal for the gradient pen.
+*
+*   METHODS
+*       Programmatic Set synchronizes sliders, preview and wheel/gradient
+*       without child notifications, then forwards the original tags to Group.
+*       It does not synthesize all complementary RGB/component notifications.
+*       Slider callbacks emit the selected component and RGB; wheel and gradient
+*       callbacks emit all components and RGB. The latter paths update state
+*       synchronously through hooks.
+*       Setup calls Group, prepares a gradient pen when a wheel exists and
+*       returns one even if exclusive pen allocation fails; the gradient then
+*       retains shine/shadow fallback entries. The gradient pen represents the
+*       selected hue/saturation at full brightness. Cleanup releases any gradpen
+*       not equal to -1 and delegates to Group.
+*
+*   NOTES
+*       Missing gadget libraries are not a proven safe fallback. Constructor
+*       expressions still create Boopsi wrappers under TAG_IGNORE and store
+*       their pointers; ignored children are not owned through that Group child
+*       tag. Conversion and hooks test wrapper pointers rather than library
+*       availability. WheelFunc leaves brightness uninitialized without a
+*       gradient; GradFunc assumes a wheel. gradpen is not initialized to -1
+*       during construction, so Cleanup without the wheel Setup branch can
+*       attempt to release pen zero. Use the complete gadget configuration and
+*       normal lifecycle; degraded configurations have no safe operation
+*       guarantee in this implementation.
+*       RGB input pointers must address three ULONG values. Set uses tag order
+*       and does not suppress equal values. Preview updates can recolor screen
+*       pens through Colorfield. ModeID is declared but not implemented here.
+*
+*/
+/****** Coloradjust.mui/MUIA_Coloradjust_Red ************
+*
+*   NAME
+*       MUIA_Coloradjust_Red
+*
+*   FUNCTION
+*       Set or retrieve the stored red component.
+*
+*   INPUTS
+*       Initialize, set and get, ULONG in 0..0xffffffff. Default 0xffffffff.
+*
+*   NOTES
+*       Programmatic changes retain all bits and synchronize controls; the
+*       slider displays the high byte. RGB and component tags overwrite common
+*       storage in tag order. Original setter tags drive notifications, without
+*       automatic complementary tags. User movement of any RGB slider quantizes
+*       all components as described by the class; wheel/gradient interactions
+*       can update all components.
+*
+*/
+/****** Coloradjust.mui/MUIA_Coloradjust_Green ************
+*
+*   NAME
+*       MUIA_Coloradjust_Green
+*
+*   FUNCTION
+*       Set or retrieve the stored green component.
+*
+*   INPUTS
+*       Initialize, set and get, ULONG in 0..0xffffffff. Default 0xffffffff.
+*
+*   NOTES
+*       Programmatic changes retain all bits and synchronize controls; the
+*       slider displays the high byte. RGB and component tags overwrite common
+*       storage in tag order. Original setter tags drive notifications, without
+*       automatic complementary tags. User movement of any RGB slider quantizes
+*       all components as described by the class; wheel/gradient interactions
+*       can update all components.
+*
+*/
+/****** Coloradjust.mui/MUIA_Coloradjust_Blue ************
+*
+*   NAME
+*       MUIA_Coloradjust_Blue
+*
+*   FUNCTION
+*       Set or retrieve the stored blue component.
+*
+*   INPUTS
+*       Initialize, set and get, ULONG in 0..0xffffffff. Default 0xffffffff.
+*
+*   NOTES
+*       Programmatic changes retain all bits and synchronize controls; the
+*       slider displays the high byte. RGB and component tags overwrite common
+*       storage in tag order. Original setter tags drive notifications, without
+*       automatic complementary tags. User movement of any RGB slider quantizes
+*       all components as described by the class; wheel/gradient interactions
+*       can update all components.
+*
+*/
+/****** Coloradjust.mui/MUIA_Coloradjust_RGB ************
+*
+*   NAME
+*       MUIA_Coloradjust_RGB
+*
+*   FUNCTION
+*       Set or retrieve the stored RGB triplet.
+*
+*   INPUTS
+*       Initialize and set with a non-NULL pointer to three readable ULONG
+*       values ordered red, green, blue. Get returns a borrowed pointer to the
+*       internal array. Default all 0xffffffff.
+*
+*   NOTES
+*       The values are copied synchronously, not the pointer. Getter storage
+*       lasts until disposal but its contents change during setting or user
+*       interaction; passing that array to Set is supported. Use attributes
+*       instead of direct writes to synchronize controls. A programmatic RGB Set
+*       forwards its original tag without synthesizing component notifications.
+*       User interactions have the separate notification rules documented by the
+*       class.
+*
+*/
+/****** Coloradjust.mui/MUIA_Coloradjust_ModeID ************
+*
+*   NAME
+*       MUIA_Coloradjust_ModeID
+*
+*   FUNCTION
+*       Declared display-mode attribute without local implementation.
+*
+*   INPUTS
+*       The header declares initialize, set and get with ULONG. This
+*       implementation has no local handling, stored value or effective default.
+*
+*   NOTES
+*       Tags are passed to the superclass. The class does not select a screen,
+*       depth or mode from this attribute; do not rely on it to configure the
+*       editor or on a corresponding getter value.
+*
+*/
+
 extern struct Library *MUIMasterBase;
 
 #define FLAG_FIXED_PEN      1
@@ -54,6 +207,12 @@ struct MUIP_CASliderNotifyMsg
     STACKED ULONG caGun;
 };
 
+/*
+ * Issue a synchronous coerced OM_SET containing one component and the RGB
+ * pointer, to deliver notifications after a slider edit. Requires gun in
+ * 0..2 and live instance/object. Borrowed internal array remains owned by
+ * the object; no result or separate failure reporting.
+ */
 static void NotifyGun(Object *obj, struct Coloradjust_DATA *data, ULONG gun)
 {
     static Tag guntotag[3] = {
@@ -75,6 +234,11 @@ static void NotifyGun(Object *obj, struct Coloradjust_DATA *data, ULONG gun)
     CoerceMethod(OCLASS(obj), obj, OM_SET, (IPTR) tags, TAG_DONE);
 }
 
+/*
+ * Issue a synchronous coerced OM_SET for all three components and RGB after
+ * wheel/gradient changes. Requires live instance/object and stable internal
+ * array during callbacks. No ownership transfer or returned status.
+ */
 static void NotifyAll(Object *obj, struct Coloradjust_DATA *data)
 {
     struct TagItem tags[] = {
@@ -92,6 +256,12 @@ static void NotifyAll(Object *obj, struct Coloradjust_DATA *data)
     CoerceMethod(OCLASS(obj), obj, OM_SET, (IPTR) tags, TAG_DONE);
 }
 
+/*
+ * Read all three byte-valued sliders, replicate each byte to ULONG, update
+ * preview/wheel/gradient without child notifications, then notify selected
+ * gun and RGB. Requires gun 0..2, live controls, conversion library and
+ * screen when gradient pen is used. No ownership transfer or return status.
+ */
 static void SliderFunc(struct Hook *hook, Object *obj, struct MUIP_CASliderNotifyMsg *msg)
 {
     struct Coloradjust_DATA *data = msg->caData;
@@ -136,6 +306,13 @@ static void SliderFunc(struct Hook *hook, Object *obj, struct MUIP_CASliderNotif
     NotifyGun(obj, data, gun);
 }
 
+/*
+ * Convert wheel hue/saturation plus inverse gradient brightness to RGB,
+ * synchronize sliders/preview, update full-brightness gradient pen and
+ * notify all. Requires live controls, conversion library and screen.
+ * Without grad the brightness local is uninitialized; that path is not
+ * safe. No returned status.
+ */
 static void WheelFunc(struct Hook *hook, Object *obj, struct MUIP_CANotifyMsg *msg)
 {
     struct Coloradjust_DATA *data = msg->caData;
@@ -175,6 +352,13 @@ static void WheelFunc(struct Hook *hook, Object *obj, struct MUIP_CANotifyMsg *m
     NotifyAll(obj, data);
 }
 
+/*
+ * Convert inverse gradient brightness with wheel hue/saturation,
+ * synchronize sliders/preview and notify all. Requires a live wheel,
+ * conversion library and hook data. Uses full brightness if no grad
+ * pointer, but does not guard wheel absence. No ownership transfer or
+ * returned status.
+ */
 static void GradFunc(struct Hook *hook, Object *obj, struct MUIP_CANotifyMsg *msg)
 {
     struct Coloradjust_DATA *data = msg->caData;
@@ -207,6 +391,13 @@ static void GradFunc(struct Hook *hook, Object *obj, struct MUIP_CANotifyMsg *ms
     NotifyAll(obj, data);
 }
 
+/*
+ * Open gadget libraries, construct Group controls, initialize white RGB,
+ * synchronize controls and register hooks. Return object or zero on
+ * superclass failure; the AROS interface macro cannot fail. Requires
+ * readable RGB input. Missing-library and ignored-child limitations follow
+ * the class contract; do not infer a safe degraded mode.
+ */
 IPTR Coloradjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Coloradjust_DATA *data;
@@ -408,6 +599,12 @@ IPTR Coloradjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Invoke the interface-drop macro (a no-op on AROS), dispose Group
+ * children, then close saved library bases and return Group result.
+ * Requires prior Cleanup of gradient pen and no active callbacks. Does not
+ * independently dispose wrappers omitted from child tags.
+ */
 IPTR Coloradjust__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Coloradjust_DATA *data;
@@ -431,6 +628,13 @@ IPTR Coloradjust__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return retval;
 }
 
+/*
+ * Copy recognized RGB values in tag order, synchronize controls with child
+ * notifications suppressed, update an active gradient pen, then return
+ * Group setter result for original tags. Requires valid RGB array and
+ * gadget configuration. No synthesized complementary notifications or
+ * ownership transfer.
+ */
 IPTR Coloradjust__OM_SET(struct IClass *cl, Object *obj,
     struct opSet *msg)
 {
@@ -518,6 +722,12 @@ IPTR Coloradjust__OM_SET(struct IClass *cl, Object *obj,
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Return TRUE after storing a component or borrowed internal RGB pointer in
+ * valid IPTR storage; delegate other attributes to Group. ModeID is not
+ * handled. Array contents may change on interaction/set and lifetime ends
+ * at disposal.
+ */
 IPTR Coloradjust__OM_GET(struct IClass *cl, Object *obj,
     struct opGet *msg)
 {
@@ -546,6 +756,12 @@ IPTR Coloradjust__OM_GET(struct IClass *cl, Object *obj,
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Call Group, return zero on failure; with wheel obtain a gradient pen and
+ * configure its full-brightness color and fallback array. Return one even
+ * on pen failure. Requires current screen and conversion library; pair with
+ * Cleanup.
+ */
 IPTR Coloradjust__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
@@ -597,6 +813,12 @@ IPTR Coloradjust__MUIM_Setup(struct IClass *cl, Object *obj,
     return 1;
 }
 
+/*
+ * Release gradpen when not -1 using the current screen, set it to -1 and
+ * return Group cleanup result. Requires valid setup/screen. Constructor
+ * does not initialize gradpen to -1; skipping wheel setup can cause release
+ * of initial zero.
+ */
 IPTR Coloradjust__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
@@ -612,6 +834,12 @@ IPTR Coloradjust__MUIM_Cleanup(struct IClass *cl, Object *obj,
 }
 
 #if ZUNE_BUILTIN_COLORADJUST
+/*
+ * Dispatch local methods and return their results, delegating other
+ * messages to the superclass. Requires ABI-correct messages and a live
+ * object except construction. Owned and borrowed resources follow the class
+ * lifecycle contract.
+ */
 BOOPSI_DISPATCHER(IPTR, Coloradjust_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)

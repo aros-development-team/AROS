@@ -94,7 +94,7 @@ void xhciScheduleIsoTDs(struct PCIController *hc)
         BOOL explicit_frame = FALSE;
         struct PTDNode *ptd = (struct PTDNode *)ioreq->iouh_DriverPrivate2;
         if(ptd)
-            explicit_frame = (ptd->ptd_BufferReq.ubr_Frame != 0);
+            explicit_frame = (ptd->ptd_Flags & PTDF_EXPLICIT_FRAME) != 0;
         else
             explicit_frame = (ioreq->iouh_Frame != 0);
 
@@ -204,9 +204,18 @@ WORD xhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         return UHIOERR_NAKTIMEOUT;
 
     struct IOUsbHWBufferReq *bufreq = &ptd->ptd_BufferReq;
+    BOOL explicit_frame;
+
     *bufreq = rtn->rtn_BufferReq;
 
     if(urti) {
+        /*
+         * The frame of the previous request is not this one's: unless the
+         * client schedules frames itself, its request hook sees 0 and the
+         * controller places the TD (Start Isoch ASAP).
+         */
+        if(!(rtn->rtn_Flags & RTISO_FLAG_EXPLICIT_FRAME))
+            bufreq->ubr_Frame = 0;
         if(ioreq->iouh_Dir == UHDIR_IN) {
             if(urti->urti_InReqHook)
                 CallHookPkt(urti->urti_InReqHook, rtn, bufreq);
@@ -224,10 +233,14 @@ WORD xhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     if(!bufreq->ubr_Length)
         bufreq->ubr_Length = ioreq->iouh_Length;
 
-    if(bufreq->ubr_Frame)
+    explicit_frame = (bufreq->ubr_Frame != 0);
+    if(explicit_frame) {
         rtn->rtn_Flags |= RTISO_FLAG_EXPLICIT_FRAME;
-    else
+        ptd->ptd_Flags |= PTDF_EXPLICIT_FRAME;
+    } else {
         rtn->rtn_Flags &= ~RTISO_FLAG_EXPLICIT_FRAME;
+        ptd->ptd_Flags &= ~PTDF_EXPLICIT_FRAME;
+    }
 
     {
         UWORD interval = ioreq->iouh_Interval ? ioreq->iouh_Interval : 1;

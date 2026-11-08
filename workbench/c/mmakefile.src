@@ -44,6 +44,7 @@ FILES := \
     SetDefaultFont \
     SetLocale \
     SetPSM \
+    Sha256Sum \
     Shutdown \
     Sort \
     StackSnoop \

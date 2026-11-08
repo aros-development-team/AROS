@@ -154,6 +154,9 @@ extern "C" {
 /* Query the number of bytes sent so far. */
 #define SBTC_GET_BYTES_SENT 65
 
+/* Install or remove the error code hook, or get the one installed. */
+#define SBTC_ERROR_HOOK 68
+
 /****************************************************************************/
 
 /*
@@ -175,6 +178,29 @@ extern "C" {
 						   configured */
 #define SBSYSSTAT_DefaultRoute		(1L<<5)	/* A default route is
 						   configured */
+
+/****************************************************************************/
+
+/*
+ * The message the SBTC_ERROR_HOOK hook is called with, as the hook's
+ * message argument, whenever the library sets errno or h_errno. The hook
+ * runs on the calling task, so it can set that task's own variable.
+ */
+
+struct ErrorHookMsg
+{
+	ULONG	ehm_Size;	/* Size of this data structure; this
+				   must be >= 12 */
+	ULONG	ehm_Action;	/* See below for a list of definitions */
+
+	LONG	ehm_Code;	/* The error code to use */
+};
+
+/* Which action the hook is to perform */
+#define EHMA_Set_errno		1	/* Set the local 'errno' to what is
+					   found in ehm_Code */
+#define EHMA_Set_h_errno	2	/* Set the local 'h_errno' to what is
+					   found in ehm_Code */
 
 /****************************************************************************/
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/muimaster.h>
@@ -19,22 +19,22 @@
         struct Library *, MUIMasterBase, 10, MUIMaster)
 
 /*  FUNCTION
-        Interface to asl.library
+        Release an allocated ASL requester through asl.library/FreeAslRequest().
+        ASL also releases the requester-specific result storage it owns.
 
     INPUTS
+        requester - Requester allocated by MUI_AllocAslRequest() or
+                    asl.library/AllocAslRequest(), or NULL to do nothing.
 
     RESULT
+        None.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        Call after requester execution has finished. Do not use the requester
+        or its owned result storage after this call.
 
     SEE ALSO
-        asl.library/FreeAslRequest()
-
-    INTERNALS
+        MUI_AllocAslRequest(), MUI_AslRequest(), asl.library/FreeAslRequest()
 
 *****************************************************************************/
 {

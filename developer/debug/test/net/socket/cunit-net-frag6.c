@@ -125,7 +125,7 @@ static int send_group(int size, unsigned char fill)
 {
     static unsigned char payload[BIG];
     struct sockaddr_in6 d;
-    int s = socket(AF_INET6, SOCK_DGRAM, 0), r;
+    int s = socket(AF_INET6, SOCK_DGRAM, 0), r, zero = 0;
 
     if (s < 0)
         return -1;
@@ -133,6 +133,9 @@ static int send_group(int size, unsigned char fill)
     payload[0] = 'F';
     payload[size - 1] = 'L';
     setsockopt(s, IPPROTO_IPV6, IPV6_MULTICAST_IF, &ifindex, sizeof(ifindex));
+    /* to the link MTU: by default multicast leaves at 1280 bytes a packet
+     * (IPV6_USE_MIN_MTU -1, RFC 3542 section 11.1) */
+    setsockopt(s, IPPROTO_IPV6, IPV6_USE_MIN_MTU, &zero, sizeof(zero));
     bzero(&d, sizeof(d));
     d.sin6_len = sizeof(d);
     d.sin6_family = AF_INET6;

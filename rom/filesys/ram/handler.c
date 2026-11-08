@@ -277,7 +277,8 @@ LONG RAMMain(void)
 
          case ACTION_EXAMINE_NEXT:
 
-            if(!CmdExamineNext(handler, BADDR(packet->dp_Arg2)))
+            if(!CmdExamineNext(handler, BADDR(packet->dp_Arg1),
+               BADDR(packet->dp_Arg2)))
                result = DOSFALSE;
             break;
 

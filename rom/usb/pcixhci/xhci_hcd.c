@@ -4290,6 +4290,7 @@ void xhciFree(struct PCIController *hc, struct PCIUnit *hu)
     struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
 
     if(xhcic) {
+        xhciFreeDeferredBounces(hc);
         xhciFreeHCMem(hc, xhcic);
         FreeMem(xhcic, sizeof(*xhcic));
         hc->hc_CPrivate = NULL;

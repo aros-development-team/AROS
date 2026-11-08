@@ -2,7 +2,7 @@
 #define PARTITIONMBR_H
 
 /*
-    Copyright © 2007-2017, The AROS Development Team. All rights reserved.
+    Copyright © 2007-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -33,7 +33,31 @@ struct MBR {
 #define MBR_MAGIC 0xAA55
 #define MBR_STATUS_VALID(status) ((!(status & 0x0F)) || (status & 0x80))
 
+/* MBR: table->data is the MBR block (AllocMem()'d, one block).
+ * Handles and their MBRData are AllocMem()'d separately. */
+struct MBRData {
+    struct PCPartitionTable *entry;
+    UBYTE position;
+};
+
+/* EBR: no table data. Handles and their EBRData are AllocMem()'d separately. */
+struct EBRData
+{
+    UBYTE type;
+    ULONG ebr_block_no; /* Home block of the record itself */
+    ULONG block_no;     /* Start partition block           */
+    ULONG block_count;  /* Length of partition in blocks   */
+};
+
+/* Unaligned little-endian access to packed partition table fields */
+ULONG MBRGetLE32(const void *p);
+void MBRPutLE32(void *p, ULONG v);
+
 LONG MBRCheckPartitionTable(struct Library *PartitionBase, struct PartitionHandle *root, void *buffer);
+struct PartitionHandle *PartitionMBRNewHandle(struct Library *PartitionBase, struct PartitionHandle *root,
+    UBYTE position, struct PCPartitionTable *entry);
+struct PartitionHandle *PartitionEBRNewHandle(struct Library *PartitionBase, struct PartitionHandle *root,
+    UBYTE type, ULONG block_no, ULONG block_count, ULONG ebr_block_no);
 void PartitionMBRSetGeometry
     (
         struct PartitionHandle *root,
@@ -42,8 +66,6 @@ void PartitionMBRSetGeometry
         ULONG count,
         ULONG relative_sector  
     );
-ULONG PartitionMBRDestroyPartitionTable(struct Library *PartitionBase,
-    struct PartitionHandle *root);
 
 #define MBR_MAX_PARTITIONS (4)
 #define MBRT_EXTENDED      (0x05)

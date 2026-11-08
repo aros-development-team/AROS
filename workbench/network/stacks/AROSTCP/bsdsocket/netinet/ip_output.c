@@ -659,6 +659,9 @@ struct mbuf **mp;
             case IP_RECVOPTS:
             case IP_RECVRETOPTS:
             case IP_RECVDSTADDR:
+            case IP_DONTFRAG:
+            case IP_RECVTOS:
+            case IP_RECVTTL:
                 if(m->m_len != sizeof(int))
                     error = EINVAL;
                 else {
@@ -688,6 +691,18 @@ struct mbuf **mp;
 
                     case IP_RECVDSTADDR:
                         OPTSET(INP_RECVDSTADDR);
+                        break;
+
+                    case IP_DONTFRAG:
+                        OPTSET(INP_DONTFRAG);
+                        break;
+
+                    case IP_RECVTOS:
+                        OPTSET(INP_RECVTOS);
+                        break;
+
+                    case IP_RECVTTL:
+                        OPTSET(INP_RECVTTL);
                         break;
                     }
                 }
@@ -732,6 +747,9 @@ struct mbuf **mp;
             case IP_RECVOPTS:
             case IP_RECVRETOPTS:
             case IP_RECVDSTADDR:
+            case IP_DONTFRAG:
+            case IP_RECVTOS:
+            case IP_RECVTTL:
                 *mp = m = m_get(M_WAIT, MT_SOOPTS);
                 if(m == NULL) {		/* allocator may fail here */
                     error = ENOBUFS;
@@ -760,6 +778,18 @@ struct mbuf **mp;
 
                 case IP_RECVDSTADDR:
                     optval = OPTBIT(INP_RECVDSTADDR);
+                    break;
+
+                case IP_DONTFRAG:
+                    optval = OPTBIT(INP_DONTFRAG);
+                    break;
+
+                case IP_RECVTOS:
+                    optval = OPTBIT(INP_RECVTOS);
+                    break;
+
+                case IP_RECVTTL:
+                    optval = OPTBIT(INP_RECVTTL);
                     break;
                 }
                 *mtod(m, int *) = optval;

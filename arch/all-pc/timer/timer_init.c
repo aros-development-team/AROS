@@ -89,9 +89,14 @@ static AROS_INTH1(ResetHandler, struct TimerBase *, LIBBASE)
     LIBBASE->tb_TimerIRQHandle = KrnAddIRQHandler(0, TimerShutdownInt, LIBBASE, SysBase);
     DINT(bug("[Timer] %s: Shutdown IRQ handle = 0x%p\n", __func__, LIBBASE->tb_TimerIRQHandle));
 
-    outb(CH0 | ACCESS_FULL | MODE_TERMINAL, PIT_CONTROL);
-    outb(CH0 | ACCESS_FULL | LATCH_COUNT, PIT_CONTROL);
-    outb(0, PIT_CH0);
+    {
+        ULONG flags = PITLock(LIBBASE);
+
+        outb(CH0 | ACCESS_FULL | MODE_TERMINAL, PIT_CONTROL);
+        outb(CH0 | ACCESS_FULL | LATCH_COUNT, PIT_CONTROL);
+        outb(0, PIT_CH0);
+        PITUnlock(flags, LIBBASE);
+    }
 
     KrnSti();
     KrnCli();
@@ -182,17 +187,23 @@ static int hw_Init(struct TimerBase *LIBBASE)
     AddResetCallback(&LIBBASE->tb_ResetHandler);
 
     D(bug("[Timer] CH0 setup ..\n", chstatus);)
-    /* Set software strobe mode, 16-bit access  */
-    outb(CH0 | ACCESS_FULL | MODE_SW_STROBE, PIT_CONTROL);
+    {
+        ULONG flags = PITLock(LIBBASE);
+
+        /* Set terminal count mode, 16-bit access  */
+        outb(CH0 | ACCESS_FULL | MODE_TERMINAL, PIT_CONTROL);
+        D(
+            /* Read channel 0 status            */
+            outb(READBACK | LATCH_COUNT | RB_CH0, PIT_CONTROL);
+            chstatus = inb(PIT_CH0);
+        )
+        ch_write(LIBBASE->tb_Platform.tb_InitValue, PIT_CH0);
+        PITUnlock(flags, LIBBASE);
+    }
     D(
-        /* Read channel 0 status            */
-        outb(READBACK | LATCH_COUNT | RB_CH0, PIT_CONTROL);
-        chstatus = inb(PIT_CH0);
         bug("[Timer]     configured status = %02x\n", chstatus);
-        bug("[Timer] writing %04x to CH0 data port...\n", LIBBASE->tb_Platform.tb_InitValue);
+        bug("[Timer] wrote %04x to CH0 data port, started\n", LIBBASE->tb_Platform.tb_InitValue);
     )
-    ch_write(LIBBASE->tb_Platform.tb_InitValue, PIT_CH0);
-    D(bug("[Timer]    started\n"));
 
     /* Enable the timer (set PC speaker PIT GATE on) */
     outb((inb(0x61) & 0xfd) | (1 << 0), 0x61);

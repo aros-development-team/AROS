@@ -54,6 +54,8 @@ struct MDNSRegisteredService
     struct Node     rs_Node;
     char            rs_Instance[MDNS_MAX_NAME + 1];
     char            rs_Type[MDNS_MAX_TYPE + 1];
+    UWORD           rs_SubtypeCount;
+    char            rs_Subtypes[MDNS_MAX_SUBTYPES][MDNS_MAX_SUBTYPE + 1];
     char            rs_Domain[MDNS_MAX_DOMAIN + 1];
     char            rs_TXT[MDNS_MAX_TXT + 1];
     UWORD           rs_Port;
@@ -79,6 +81,7 @@ struct MDNSRegisteredService
                                      * is due, or 0 for none */
     LONG            rs_AnswerIf;    /* to which interface, or -1 for all */
     UWORD           rs_AnswerFamilies; /* pending AF_INET/AF_INET6 bit mask */
+    UWORD           rs_AnswerSubtypes; /* subtype PTRs pending for a query */
 };
 
 /* Known PTR answers retain their owner and remaining lifetime. */

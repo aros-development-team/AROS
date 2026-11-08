@@ -41,7 +41,7 @@ cachedblock_t *GetBuildBlock(uint16 bloktype, uint32 seqnr)
 	for (bbl = HeadOf(&volume.buildblocks); bbl->next; bbl = bbl->next)
 	{
 		if (bbl->b.data->id == bloktype &&
-			bbl->b.data->indexblock.seqnr == seqnr)
+			(bloktype == EXTENSIONID || bbl->b.data->indexblock.seqnr == seqnr))
 		{
 			return &bbl->b;
 		}
@@ -65,11 +65,13 @@ error_t GetResBlock(cachedblock_t *blok, uint16 bloktype, uint32 seqnr, bool fix
 	{
 		blok->blocknr = t->blocknr;
 		blok->mode = t->mode;
-		*blok->data = *t->data;
+		memcpy(blok->data, t->data, SIZEOF_RESBLOCK);
 		return e_none;
 	}
 
 	blk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (!blk.data)
+		return e_out_of_memory;
 	index = seqnr/INDEX_PER_BLOCK;
 	offset = seqnr%INDEX_PER_BLOCK;
 	switch(bloktype)
@@ -93,7 +95,7 @@ error_t GetResBlock(cachedblock_t *blok, uint16 bloktype, uint32 seqnr, bool fix
 						*bp = 0;
 					else
 					{
-						volume.writeblock((cachedblock_t *)&rext);
+						error = volume.writeblock((cachedblock_t *)&rext);
 						KillAnodeBitmap();
 					}
 				}
@@ -112,7 +114,7 @@ error_t GetResBlock(cachedblock_t *blok, uint16 bloktype, uint32 seqnr, bool fix
 					if (error)
 						*bp = 0;
 					else
-						WritePFS3Metadata((uint8 *)rbl,
+						error = WritePFS3Metadata((uint8 *)rbl,
 							ROOTBLOCK + volume.firstblock,
 							volume.blocksize, PFS3_METADATA_ROOT);
 				}
@@ -134,6 +136,10 @@ error_t GetResBlock(cachedblock_t *blok, uint16 bloktype, uint32 seqnr, bool fix
 			}
 			else
 			{
+				if (seqnr > MAXSMALLINDEXNR) {
+					free(blk.data);
+					return e_number_error;
+				}
 				bp = &rbl->idx.small.indexblocks[seqnr];
 			}
 			if (!*bp)
@@ -151,9 +157,9 @@ error_t GetResBlock(cachedblock_t *blok, uint16 bloktype, uint32 seqnr, bool fix
 						 */
 						KillAnodeBitmap();
 						if (rbl->options & MODE_SUPERINDEX)
-							volume.writeblock((cachedblock_t *)&blk);
+							error = volume.writeblock((cachedblock_t *)&blk);
 						else
-							WritePFS3Metadata((uint8 *)rbl,
+							error = WritePFS3Metadata((uint8 *)rbl,
 								ROOTBLOCK + volume.firstblock,
 								volume.blocksize,
 								PFS3_METADATA_ROOT);
@@ -206,17 +212,25 @@ error_t GetResBlock(cachedblock_t *blok, uint16 bloktype, uint32 seqnr, bool fix
 					if (error)
 						*bp = 0;
 					else
-						volume.writeblock((cachedblock_t *)&blk);
+						error = volume.writeblock((cachedblock_t *)&blk);
 				}
 			}
 			break;
 	}
 
+	if (error) {
+		free(blk.data);
+		return error;
+	}
 	blknr = *bp;
 
 	free (blk.data);
-	if (!blknr)
+	if (!blknr) {
+		/* Repair may have rebuilt this block without allocating it yet. */
+		if (fix && GetBuildBlock(bloktype, seqnr))
+			return GetResBlock(blok, bloktype, seqnr, false);
 		return e_not_found;
+	}
 
 	error = volume.getblock(blok, blknr);
 	if (error)
@@ -229,51 +243,62 @@ static c_anodeblock_t tablk = { 0 };
 static ULONG tanodedata[MAXRESBLOCKSIZE / 4];
 static anodeblock_t *tanodeblk = (anodeblock_t*)tanodedata;
 
-bool GetAnode(canode_t *anode, uint32 anodenr, bool fix)
+error_t ReadAnode(canode_t *anode, uint32 anodenr, bool fix)
 {
+	error_t error;
 	uint16 seqnr = anodenr >> 16;
 	uint16 offset = anodenr;
+
+	if (offset >= ANODES_PER_BLOCK)
+		return e_number_error;
 
 	if (!(tablk.data && tanodeblk->seqnr == seqnr))
 	{
 		tablk.data = tanodeblk;
-		if (GetResBlock((cachedblock_t *)&tablk, ABLKID, seqnr, fix))
+		if ((error = GetResBlock((cachedblock_t *)&tablk, ABLKID, seqnr, fix)))
 		{
 			tablk.data = NULL;
-			return false;
+			return error;
 		}
 	}
-
-	if (offset >= ANODES_PER_BLOCK)
-		return false;
 
 	anode->nr = anodenr;
 	anode->clustersize = tablk.data->nodes[offset].clustersize;
 	anode->blocknr     = tablk.data->nodes[offset].blocknr;
 	anode->next        = tablk.data->nodes[offset].next;
-	return true;
+	return e_none;
 }
 
-bool SaveAnode(canode_t *anode, uint32 nr)
+bool GetAnode(canode_t *anode, uint32 anodenr, bool fix)
 {
+	return ReadAnode(anode, anodenr, fix) == e_none;
+}
+
+error_t WriteAnode(canode_t *anode, uint32 nr)
+{
+	error_t error;
 	uint16 seqnr = nr >> 16;
 	uint16 offset = nr;
 	c_anodeblock_t ablk;
 	uint32 buffer[MAXRESBLOCKSIZE/4];
 
+	if (offset >= ANODES_PER_BLOCK)
+		return e_number_error;
+
 	tablk.data = NULL;			/* kill anode read cache */
 	ablk.data = (anodeblock_t *)buffer;
-	if (GetResBlock((cachedblock_t *)&ablk, ABLKID, seqnr, false))
-		return false;
-
-	if (offset >= ANODES_PER_BLOCK)
-		return false;
+	if ((error = GetResBlock((cachedblock_t *)&ablk, ABLKID, seqnr, false)))
+		return error;
 
 	ablk.data->nodes[offset].clustersize = anode->clustersize;
 	ablk.data->nodes[offset].blocknr     = anode->blocknr;
 	ablk.data->nodes[offset].next        = anode->next;
-	volume.writeblock((cachedblock_t *)&ablk);
-	return true;
+	return volume.writeblock((cachedblock_t *)&ablk);
+}
+
+bool SaveAnode(canode_t *anode, uint32 nr)
+{
+	return WriteAnode(anode, nr) == e_none;
 }
 
 ULONG GetDEFileSize(struct direntry *direntry, struct extrafields *extra, ULONG *high)

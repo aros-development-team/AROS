@@ -8,6 +8,7 @@ UBYTE xhciEndpointIDFromIndex(UWORD wIndex);
 
 APTR xhciPrepareDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
                           ULONG *dmalen, UWORD effdir, APTR *bounceOut);
+void xhciFreeDeferredBounces(struct PCIController *hc);
 void xhciReleaseDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
                           ULONG actual, UWORD effdir, APTR bounceBuf);
 

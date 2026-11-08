@@ -38,6 +38,32 @@
 static unsigned long plic_base;
 static int           plic_context = -1;
 static unsigned int  plic_ndev;
+static uint32_t      plic_quirks;
+
+/*
+ * The enable words are read-modify-written by krnPLICEnable from any
+ * CPU and, on a controller with the claim quirk, rewritten by the claim
+ * path on the interrupt CPU; one tiny lock keeps those apart. Taken with
+ * interrupts off so the claim path cannot interrupt its own holder.
+ */
+static volatile int  plic_lock;
+
+static inline unsigned long plic_lock_acquire(void)
+{
+    unsigned long sstatus = csr_read(sstatus);
+
+    csr_clear(sstatus, SSTATUS_SIE);
+    while (__atomic_exchange_n(&plic_lock, 1, __ATOMIC_ACQUIRE))
+        __asm__ __volatile__ ("pause" ::: "memory");
+    return sstatus;
+}
+
+static inline void plic_lock_release(unsigned long sstatus)
+{
+    __atomic_store_n(&plic_lock, 0, __ATOMIC_RELEASE);
+    if (sstatus & SSTATUS_SIE)
+        csr_set(sstatus, SSTATUS_SIE);
+}
 
 
 unsigned int krnPLICSourceCount(void)
@@ -84,6 +110,10 @@ int krnPLICInit(struct krnFDTInfo *info)
     plic_base = (unsigned long)info->plic_base;
     plic_context = info->plic_context;
     plic_ndev = info->plic_ndev;
+    plic_quirks = info->plic_quirks;
+    if (plic_quirks & KRN_PLIC_QUIRK_CLAIM)
+        krnSBIPutStr("plic:      UltraRISC claim erratum - sources are"
+                     " isolated before each claim\n");
 
     plic_nctx = info->plic_ncontexts;
     for (n = 0; n < plic_nctx; n++)
@@ -163,6 +193,8 @@ void krnPLICEnable(unsigned int irq, int enable)
 
     plic_write(PLIC_PRIORITY(irq), enable ? 1 : 0);
 
+    unsigned long sstatus = plic_lock_acquire();
+
     for (c = 0; c < plic_nctx; c++)
     {
         uint32_t bits = plic_read(PLIC_ENABLE(plic_ctxlist[c], irq));
@@ -173,6 +205,75 @@ void krnPLICEnable(unsigned int irq, int enable)
             bits &= ~(1U << (irq & 31));
         plic_write(PLIC_ENABLE(plic_ctxlist[c], irq), bits);
     }
+
+    plic_lock_release(sstatus);
+}
+
+/*
+ * One claim from one context.
+ *
+ * On a sound controller that is a single read. The UltraRISC PLIC
+ * loses pending interrupts when the claim register is read with more
+ * than one enabled source pending, so there every other enabled source
+ * is masked for the duration of the read and the lowest pending one is
+ * the only candidate - the workaround Linux ships for the same part.
+ * Nothing pending and enabled means nothing to claim, without a read.
+ */
+static unsigned int plic_claim_ctx(int ctx)
+{
+    uint32_t     saved[32];     /* enable words: the PLIC has at most 1023 sources */
+    uint32_t     pend = 0, iso;
+    unsigned int ngroups = (plic_ndev + 32) / 32, i, j, found = 0, src;
+    unsigned long sstatus;
+
+    if (!(plic_quirks & KRN_PLIC_QUIRK_CLAIM))
+        return plic_read(PLIC_CLAIM(ctx));
+
+    if (ngroups > 32)
+        ngroups = 32;
+
+    sstatus = plic_lock_acquire();
+
+    /* Every enable word is read (all are restored); the first pending wins */
+    for (i = 0; i < ngroups; i++)
+    {
+        saved[i] = plic_read(PLIC_ENABLE(ctx, i * 32));
+        if (!pend && saved[i])
+        {
+            pend = saved[i] & plic_read(PLIC_PENDING(i * 32));
+            if (pend)
+                found = i;
+        }
+    }
+
+    if (!pend)
+    {
+        plic_lock_release(sstatus);
+        return 0;
+    }
+
+    iso = pend & -pend;
+
+    for (j = 0; j < ngroups; j++)
+    {
+        uint32_t want = (j == found) ? iso : 0;
+
+        if (saved[j] != want)
+            plic_write(PLIC_ENABLE(ctx, j * 32), want);
+    }
+
+    src = plic_read(PLIC_CLAIM(ctx));
+
+    for (j = 0; j < ngroups; j++)
+    {
+        uint32_t written = (j == found) ? iso : 0;
+
+        if (saved[j] != written)
+            plic_write(PLIC_ENABLE(ctx, j * 32), saved[j]);
+    }
+
+    plic_lock_release(sstatus);
+    return src;
 }
 
 /*
@@ -192,10 +293,21 @@ unsigned int krnPLICClaim(void)
      * answers is the right one - and it is remembered so the matching
      * completion goes back to the same place.
      */
+    if (plic_context >= 0)
+    {
+        unsigned int src = plic_claim_ctx(plic_context);
+
+        if (src)
+            return src;
+    }
+
     for (c = 0; c < plic_nctx; c++)
     {
-        unsigned int src = plic_read(PLIC_CLAIM(plic_ctxlist[c]));
+        unsigned int src;
 
+        if (plic_ctxlist[c] == plic_context)
+            continue;
+        src = plic_claim_ctx(plic_ctxlist[c]);
         if (src)
         {
             plic_context = plic_ctxlist[c];

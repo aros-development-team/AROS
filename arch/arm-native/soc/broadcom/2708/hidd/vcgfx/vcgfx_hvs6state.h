@@ -91,7 +91,7 @@ struct vc4_hvs6_state
     ULONG   h6_BootAVI[9];
     BOOL    h6_BootAVIOn;
 
-    BOOL    h6_CscLoaded;       /* YCbCr matrix slots 0 and 1 set */
+    ULONG   h6_CscKey[2];       /* what YCbCr matrix slots 0 and 1 hold, 0 = nothing */
 };
 
 #endif /* _VIDEOCOREGFX_HVS6STATE_H */

@@ -1,14 +1,25 @@
-# Copyright (C) 2023, The AROS Development Team. All rights reserved.
+# Copyright (C) 2023-2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
 USER_CFLAGS :=
 
-#MM- test : test-aros-detach
+#MM- test : test-aros-detach test-aros-stack
 #MM  test-aros-detach : includes linklibs
+#MM- test-aros-stack : test-aros-stack-runner test-aros-stack-child
+#MM  test-aros-stack-runner : includes linklibs
+#MM  test-aros-stack-child : includes linklibs
 
 %build_prog mmake=test-aros-detach \
     progname=detach targetdir=$(AROS_TESTS)/aros \
     files=detach detach=yes
+
+%build_prog mmake=test-aros-stack-runner \
+    progname=stack targetdir=$(AROS_TESTS)/aros \
+    files=stack
+
+%build_prog mmake=test-aros-stack-child \
+    progname=stackchild targetdir=$(AROS_TESTS)/aros \
+    files=stackchild
 
 %common

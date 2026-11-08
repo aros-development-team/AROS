@@ -61,6 +61,7 @@ static int DWMAC_Init(LIBBASETYPEPTR LIBBASE)
     InitSemaphore(&LIBBASE->dwm_UnitSem);
 
     LIBBASE->dwm_KernelBase = OpenResource("kernel.resource");
+    LIBBASE->dwm_ExecLockBase = OpenResource("execlock.resource");
     if (!LIBBASE->dwm_KernelBase)
     {
         D(bug("[dwmac] no kernel.resource\n");)
@@ -165,16 +166,26 @@ AROS_LH1(LONG, DWMAC_AbortIO,
      * is either being processed right now or already replied, and in
      * neither case may it be unlinked here.
      */
-    Disable();
-    if (req->ios2_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE &&
-        (req->ios2_Req.io_Flags & IOF_QUICK) == 0)
     {
-        Remove((struct Node *)req);
-        req->ios2_Req.io_Error = IOERR_ABORTED;
-        req->ios2_WireError = S2WERR_GENERIC_ERROR;
-        ReplyMsg(&req->ios2_Req.io_Message);
+        struct DWMACUnit *unit = (struct DWMACUnit *)req->ios2_Req.io_Unit;
+        struct MsgPort *port = unit ? DWMAC_QueuePort(unit, req) : NULL;
+        BOOL queued;
+
+        if (!port)
+            return 0;
+        DWMAC_PORT_LOCK(LIBBASE, port);
+        queued = req->ios2_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE &&
+                 (req->ios2_Req.io_Flags & IOF_QUICK) == 0;
+        if (queued)
+            Remove((struct Node *)req);
+        DWMAC_PORT_UNLOCK(LIBBASE, port);
+        if (queued)
+        {
+            req->ios2_Req.io_Error = IOERR_ABORTED;
+            req->ios2_WireError = S2WERR_GENERIC_ERROR;
+            ReplyMsg(&req->ios2_Req.io_Message);
+        }
     }
-    Enable();
 
     return 0;
 
@@ -258,9 +269,9 @@ static int DWMAC_Open(LIBBASETYPEPTR LIBBASE, struct IORequest *io,
     io->io_Unit = (struct Unit *)unit;
     io->io_Error = 0;
 
-    Disable();
+    DWMAC_LIST_LOCK(LIBBASE, unit);
     AddTail((struct List *)&unit->dwu_Openers, (struct Node *)opener);
-    Enable();
+    DWMAC_LIST_UNLOCK(LIBBASE, unit);
     unit->dwu_OpenCount++;
 
     return TRUE;
@@ -275,9 +286,9 @@ static int DWMAC_Close(LIBBASETYPEPTR LIBBASE, struct IORequest *io)
 
     if (unit && opener)
     {
-        Disable();
+        DWMAC_LIST_LOCK(LIBBASE, unit);
         Remove((struct Node *)opener);
-        Enable();
+        DWMAC_LIST_UNLOCK(LIBBASE, unit);
 
         while ((node = RemHead((struct List *)&opener->initial_stats)))
             FreeMem(node, sizeof(struct TypeStats));

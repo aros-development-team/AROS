@@ -472,7 +472,8 @@ VOID PBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o,
     volatile struct Custom *custom = (struct Custom *)0xdff000;
     ULONG src_offset, dst_offset, bitmap_width;
     ULONG fg, bg, colmask;
-    WORD src_x2, dst_x2, src_width, dst_width, width;
+    LONG src_x2, dst_x2, src_mod, dst_mod;
+    WORD src_width, dst_width, width;
     WORD src_x, dst_x, shift;
     UWORD first_mask, last_mask, shift_a, shift_b;
     BOOL transparent, invert;
@@ -515,8 +516,15 @@ VOID PBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o,
         shift = -shift;
 
     width = src_width > dst_width ? src_width : dst_width;
-    if (!(GfxBase->ChipRevBits0 & GFXF_BIG_BLITS) &&
-        (width > 64 || msg->height > 1024))
+    src_mod = msg->modulo - width * 2;
+    dst_mod = bm->BytesPerRow - width * 2;
+    /* A native bitmap may reach this superclass after declining the same
+     * blit. Do not retry hardware with truncated sizes or row steps. */
+    if (width > 2048 ||
+        (!(GfxBase->ChipRevBits0 & GFXF_BIG_BLITS) &&
+         (width > 64 || msg->height > 1024)) ||
+        (msg->height > 1 &&
+         (src_mod != (WORD)src_mod || dst_mod != (WORD)dst_mod)))
         goto software;
 
     src_offset = (src_x / 16) * 2;
@@ -560,9 +568,9 @@ VOID PBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o,
     WaitBlit();
     custom->bltafwm = first_mask;
     custom->bltalwm = last_mask;
-    custom->bltbmod = msg->modulo - width * 2;
-    custom->bltcmod = bm->BytesPerRow - width * 2;
-    custom->bltdmod = bm->BytesPerRow - width * 2;
+    custom->bltbmod = src_mod;
+    custom->bltcmod = dst_mod;
+    custom->bltdmod = dst_mod;
     custom->bltadat = 0xffff;
 
     for (plane = 0; plane < bm->Depth; plane++)
@@ -702,12 +710,14 @@ VOID PBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o,
         ULONG bitmap_width = (ULONG)bm->BytesPerRow * 8;
         UWORD words = x2 / 16 - x1 / 16 + 1;
         UWORD lines = y2 - y1 + 1;
+        LONG modulo = bm->BytesPerRow - words * 2;
         BOOL chip_planes = TRUE;
 
         if (bm->Flags & BMF_INTERLEAVED)
             bitmap_width /= bm->Depth;
 
-        if ((ULONG)x2 < bitmap_width && words <= 63 && lines <= 1023)
+        if ((ULONG)x2 < bitmap_width && words <= 63 && lines <= 1023 &&
+            (lines == 1 || modulo == (WORD)modulo))
         {
             for (d = 0; d < bm->Depth; d++)
             {
@@ -730,8 +740,8 @@ VOID PBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o,
                 WaitBlit();
                 custom->bltafwm = (UWORD)(0xffff >> (x1 & 15));
                 custom->bltalwm = (UWORD)(0xffff << (15 - (x2 & 15)));
-                custom->bltcmod = bm->BytesPerRow - words * 2;
-                custom->bltdmod = bm->BytesPerRow - words * 2;
+                custom->bltcmod = modulo;
+                custom->bltdmod = modulo;
                 custom->bltcon1 = 0;
                 custom->bltcon0 = 0x0300 | 0xca; /* A ? B : C */
                 custom->bltadat = 0xffff;

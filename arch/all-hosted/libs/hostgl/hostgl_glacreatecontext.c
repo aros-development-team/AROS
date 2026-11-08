@@ -8,6 +8,7 @@
 
 #include <proto/exec.h>
 #include <proto/oop.h>
+#include <proto/utility.h>
 
 #include "hostgl_ctx_manager.h"
 #include "hostgl_funcs.h"
@@ -139,6 +140,7 @@
     }
 
     HostGLStandardInit(ctx, tagList);
+    ctx->swap_interval = GetTagData(GLA_SwapInterval, 0, tagList) > 0 ? 1 : 0;
 
     D(bug("[HostGL] %s: allocating framebuffer ..\n", __func__));
 

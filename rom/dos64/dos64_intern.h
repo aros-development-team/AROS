@@ -13,6 +13,7 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/record.h>
+#include <dos/exall.h>
 #include <dos/dos64.h>
 
 #include <proto/exec.h>
@@ -66,6 +67,43 @@ struct Dos64Base
 #define dos64_UnsupportedPkt(ret, err) \
     (((ret) == -1 || (ret) == DOSFALSE) && ((err) != 0))
 
+/*
+ * The 64-bit structures must keep their published layout: the MorphOS (tm)
+ * V51 offsets on 32-bit systems (64-bit integers 2-byte aligned), natural
+ * alignment on 64-bit systems. Fail the build if a compiler moves a field.
+ */
+#define DOS64_LAYOUT_CHECK(name, cond) typedef char dos64_layout_##name[(cond) ? 1 : -1]
+#if (__WORDSIZE == 64)
+DOS64_LAYOUT_CHECK(fib_size,   __builtin_offsetof(struct FileInfoBlock, fib_Size) == 128);
+DOS64_LAYOUT_CHECK(fib_size64, __builtin_offsetof(struct FileInfoBlock, fib_Size64) == 232);
+DOS64_LAYOUT_CHECK(fib_nblk64, __builtin_offsetof(struct FileInfoBlock, fib_NumBlocks64) == 240);
+DOS64_LAYOUT_CHECK(fib_actext, __builtin_offsetof(struct FileInfoBlock, fib_ActExtFlags) == 262);
+DOS64_LAYOUT_CHECK(fib_total,  sizeof(struct FileInfoBlock) == 264);
+DOS64_LAYOUT_CHECK(ead_size64, __builtin_offsetof(struct ExAllData, ed_Size64) == 56);
+DOS64_LAYOUT_CHECK(rec_offset, __builtin_offsetof(struct RecordLock64, rec_Offset) == 8);
+DOS64_LAYOUT_CHECK(rec_total,  sizeof(struct RecordLock64) == 32);
+DOS64_LAYOUT_CHECK(id_nblk64,  __builtin_offsetof(struct InfoData64, id_NumBlocks64) == 48);
+#else
+DOS64_LAYOUT_CHECK(fib_size,   __builtin_offsetof(struct FileInfoBlock, fib_Size) == 124);
+DOS64_LAYOUT_CHECK(fib_size64, __builtin_offsetof(struct FileInfoBlock, fib_Size64) == 228);
+DOS64_LAYOUT_CHECK(fib_nblk64, __builtin_offsetof(struct FileInfoBlock, fib_NumBlocks64) == 236);
+DOS64_LAYOUT_CHECK(fib_actext, __builtin_offsetof(struct FileInfoBlock, fib_ActExtFlags) == 258);
+DOS64_LAYOUT_CHECK(fib_total,  sizeof(struct FileInfoBlock) == 260);
+DOS64_LAYOUT_CHECK(ead_size64, __builtin_offsetof(struct ExAllData, ed_Size64) == 40);
+DOS64_LAYOUT_CHECK(rec_offset, __builtin_offsetof(struct RecordLock64, rec_Offset) == 4);
+DOS64_LAYOUT_CHECK(rec_length, __builtin_offsetof(struct RecordLock64, rec_Length) == 12);
+DOS64_LAYOUT_CHECK(rec_total,  sizeof(struct RecordLock64) == 24);
+DOS64_LAYOUT_CHECK(id_nblk64,  __builtin_offsetof(struct InfoData64, id_NumBlocks64) == 36);
+#endif
+
+/*
+ * A MorphOS style packet (results stored through pointers, dp_Res1 a
+ * success flag) succeeded. dp_Res2 is cleared before the packet is sent,
+ * so a handler that answers an unknown packet with a non-zero dp_Res1
+ * still sets an error and is not mistaken for success.
+ */
+#define dos64_PktOK(ret, err) (((ret) != DOSFALSE) && ((err) == 0))
+
 /* Largest chunk handed to the 32-bit ACTION_READ/ACTION_WRITE packets */
 #define DOS64_IOCHUNK 0x40000000
 
@@ -86,10 +124,12 @@ QUAD dos64_SeekBuffered(struct Dos64Base *DOS64Base, BPTR file,
 QUAD dos64_SetFileSize(struct Dos64Base *DOS64Base, struct FileHandle *fh,
                        QUAD offset, LONG mode, BOOL wantsize);
 QUAD dos64_GetFileSize(struct Dos64Base *DOS64Base, struct FileHandle *fh);
-void dos64_FixFIB64(struct FileInfoBlock64 *fib);
-void dos64_WidenFIB(const struct FileInfoBlock32 *src, struct FileInfoBlock64 *dst);
-void dos64_NarrowFIB(const struct FileInfoBlock64 *src, struct FileInfoBlock32 *dst);
+void dos64_FixFIB64(struct FileInfoBlock *fib);
+void dos64_PrepFIB64(struct FileInfoBlock *fib);
+void dos64_FixSizeFH(struct Dos64Base *DOS64Base, struct FileHandle *fh,
+                     struct FileInfoBlock *fib);
+void dos64_SetFIBSize(struct FileInfoBlock *fib, UQUAD size);
 LONG dos64_Examine32(struct Dos64Base *DOS64Base, BPTR lock,
-                     struct FileInfoBlock64 *fib, LONG action);
+                     struct FileInfoBlock *fib, LONG action);
 
 #endif /* DOS64_INTERN_H */

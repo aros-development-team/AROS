@@ -272,6 +272,7 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access,
                     }
                 }
             }
+            ReleaseDirHandle(&dh, glob);
         }
     }
 

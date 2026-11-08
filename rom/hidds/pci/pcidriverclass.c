@@ -339,6 +339,67 @@ VOID PCIDrv__Hidd_PCIDriver__RemoveInterrupt(OOP_Class *cl, OOP_Object *o,
     KrnRemIRQHandler(msg->interrupt->is_Node.ln_Succ);
 }
 
+/*****************************************************************************************
+
+    NAME
+        moHidd_PCIDriver_ResizeBAR
+
+    SYNOPSIS
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_PCIDriver_ResizeBAR *Msg);
+
+        BOOL HIDD_PCIDriver_ResizeBAR(OOP_Object *obj, OOP_Object *device,
+                                      UBYTE bar, IPTR size);
+
+    LOCATION
+        CLID_Hidd_PCIDriver
+
+    FUNCTION
+        Give a base address register of a device with the Resizable BAR
+        capability a new size, at an address the host bridge forwards.
+
+        Changing the size moves the region, and only the driver of the
+        host bridge knows its address windows, so this is the driver's
+        job: switch the device's memory decoding off, write the new size
+        to its Resizable BAR control register, assign a naturally aligned
+        address that overlaps nothing else, widen the windows of the
+        bridges above it, make the region reachable by the CPU, and switch
+        decoding back on.
+
+        It is called by moHidd_PCIDevice_ResizeBAR, which has already
+        checked that the device supports the size. Drivers do not call it
+        directly.
+
+    INPUTS
+        obj    - Pointer to the driver object.
+        device - The device object.
+        bar    - Index of the base address register (0-5).
+        size   - The new size in bytes, a size the device supports.
+
+    RESULT
+        TRUE if the register now has the new size and is reachable at
+        its new address. FALSE if it was left exactly as it was.
+
+    NOTES
+        The default implementation knows no address windows and always
+        returns FALSE.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHidd_PCIDevice_ResizeBAR
+
+    INTERNALS
+
+*****************************************************************************************/
+
+BOOL PCIDrv__Hidd_PCIDriver__ResizeBAR(OOP_Class *cl, OOP_Object *o,
+     struct pHidd_PCIDriver_ResizeBAR *msg)
+{
+    return FALSE;
+}
+
 VOID PCIDrv__Root__Get(OOP_Class *cl, OOP_Object *o,
     struct pRoot_Get *msg)
 {

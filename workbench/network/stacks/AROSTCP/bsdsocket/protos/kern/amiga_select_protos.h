@@ -12,7 +12,10 @@ LONG __asm _WaitSelect(register __a6 struct SocketBase * , register __d0 ULONG ,
 #endif
 
 
+struct SocketWaiter;
+
 int selscan(struct SocketBase * p,
+            struct SocketWaiter * w,
             fd_mask * in,
             fd_mask * ou,
             fd_mask * ex,
@@ -21,7 +24,7 @@ int selscan(struct SocketBase * p,
             int * retval,
 	    int * selitemcount);
 
-void selenter(struct SocketBase * p,
+void selenter(struct SocketWaiter * w,
               struct newselitem **hdr);
 
 void unselect(register struct newselbuf * sb);
@@ -30,5 +33,5 @@ void selwakeup(struct newselitem **hdr);
 
 int soo_select(struct socket * so,
                int which,
-               struct SocketBase * p);
+               struct SocketWaiter * w);
 

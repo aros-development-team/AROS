@@ -1784,7 +1784,6 @@ static BYTE ata_Identify(struct ata_Unit *unit)
         unit->au_Write32        = atapi_Write;
         unit->au_DirectSCSI     = atapi_DirectSCSI;
         unit->au_Eject          = atapi_Eject;
-        unit->au_Flags         |= AF_DiscChanged;
         unit->au_DevType        = (unit->au_Drive->id_General >>8) & 0x1f;
         unit->au_XferModes      = AF_XFER_PACKET;
         unit->au_UseModes      |= AF_XFER_PACKET; /* OR because this field may already contain AF_XFER_PIO32 */
@@ -1862,7 +1861,25 @@ static BYTE ata_Identify(struct ata_Unit *unit)
                 break;
         }
 
-        atapi_TestUnitOK(unit);
+        {
+            UWORD poll = 0;
+
+            /*
+             * Establish the initial media state before publishing the
+             * unit. A drive still spinning up after the bus reset reports
+             * BECOMING READY; recording that as "no disc" would make the
+             * first daemon poll announce the boot disc as a change, so give
+             * the drive a bounded time to settle.
+             */
+            while ((atapi_TestUnitOK(unit) == ATAPI_MEDIA_BECOMING_READY)
+                && (++poll < ATAPI_SPINUP_POLLS))
+            {
+                ata_WaitTO(unit->au_Bus->ab_Timer, 0, ATAPI_SPINUP_DELAY, 0);
+            }
+        }
+
+        /* Only subsequent changes should notify filesystem handlers. */
+        unit->au_Flags &= ~AF_DiscChanged;
     }
     else
     {
@@ -2321,6 +2338,11 @@ static BYTE ata_Eject(struct ata_Unit *unit)
 /*
  * atapi commands
  */
+
+/*
+ * Issue TEST UNIT READY, update AF_DiscPresent and set AF_DiscChanged
+ * when the media state changed. Returns one of the ATAPI_MEDIA_* codes.
+ */
 int atapi_TestUnitOK(struct ata_Unit *unit)
 {
     UBYTE cmd[6] = {
@@ -2333,7 +2355,9 @@ int atapi_TestUnitOK(struct ata_Unit *unit)
        0
     };
     UWORD i;
-    UBYTE key;
+    UBYTE key = 0, asc = 0, ascq = 0;
+    BOOL attention = FALSE;
+    int state = ATAPI_MEDIA_UNKNOWN;
 
     D(bug("[ATA%02ld] atapi_TestUnitOK()\n", unit->au_UnitNum));
 
@@ -2349,38 +2373,79 @@ int atapi_TestUnitOK(struct ata_Unit *unit)
      * invalid (or at least not so useful) sense data straight after reset */
     for (i = 0; i < 2; i++)
     {
-        sense[2] = 0;
+        sense[2] = sense[12] = sense[13] = 0;
+        key = asc = ascq = 0;
+
         if (unit->au_DirectSCSI(unit, &sc) == 0)
-            sense[2] = 0;
+        {
+            state = ATAPI_MEDIA_PRESENT;
+            continue;
+        }
+
+        /*
+         * Only a CHECK CONDITION with returned sense data says anything
+         * about the media. A timeout or transport error does not.
+         */
+        if ((sc.scsi_Status != SCSI_STATUS_CHECK_CONDITION) || (sc.scsi_SenseActual < 3))
+        {
+            state = ATAPI_MEDIA_UNKNOWN;
+            continue;
+        }
+
+        key = sense[2] & 0x0f;
+        if (sc.scsi_SenseActual > 12)
+            asc = sense[12];
+        if (sc.scsi_SenseActual > 13)
+            ascq = sense[13];
+
+        /*
+         * UNIT ATTENTION, NOT READY TO READY CHANGE, MEDIUM MAY HAVE
+         * CHANGED is reported once, by the first command after the drive
+         * loaded new media, so honour it from either attempt.
+         */
+        if ((key == 6) && (asc == 0x28))
+            attention = TRUE;
+
+        /*
+         * per MMC, drives are expected to return 02-3a-0# status, when disc is not present
+         * that would translate into following code:
+         *    absent = ((key == 2) && (asc == 0x3a));
+         * unfortunately, it's what MMC says, not what vendors code, so any
+         * NOT READY counts as absent - except BECOMING READY (02-04-01),
+         * which a drive reports while it spins up a disc that is present.
+         */
+        if (key == 2)
+            state = ((asc == 0x04) && (ascq == 0x01)) ? ATAPI_MEDIA_BECOMING_READY : ATAPI_MEDIA_ABSENT;
+        else
+            state = ATAPI_MEDIA_PRESENT;
     }
-    key = sense[2] & 0x0f;
     unit->au_SenseKey = key;
 
     /*
-     * we may have just lost the disc...?
+     * Leave the recorded state alone while it cannot be determined; the
+     * next poll will catch up.
      */
-    /*
-     * per MMC, drives are expected to return 02-3a-0# status, when disc is not present
-     * that would translate into following code:
-     *    int p1 = ((key == 2) && (sense[12] == 0x3a)) ? 1 : 0;
-     * unfortunately, it's what MMC says, not what vendors code.
-     */
-    int p1 = (key == 2) ? 1 : 0;
-    int p2 = (0 != (AF_DiscPresent & unit->au_Flags)) ? 1 : 0;
-
-    if (p1 == p2)
+    if ((state == ATAPI_MEDIA_PRESENT) || (state == ATAPI_MEDIA_ABSENT))
     {
-        //unit->au_Flags ^= AF_DiscPresent;
-        if (p1 == 0)
-            unit->au_Flags |= AF_DiscPresent;
-        else
-            unit->au_Flags &= ~AF_DiscPresent;
+        BOOL present = (state == ATAPI_MEDIA_PRESENT);
 
-        unit->au_Flags |= AF_DiscChanged;
+        if (present != ((unit->au_Flags & AF_DiscPresent) != 0))
+        {
+            if (present)
+                unit->au_Flags |= AF_DiscPresent;
+            else
+                unit->au_Flags &= ~AF_DiscPresent;
+
+            unit->au_Flags |= AF_DiscChanged;
+        }
     }
 
-    DATAPI(bug("[ATA%02ld] atapi_TestUnitOK: Test Unit Ready sense: %02lx, Media %s\n", unit->au_UnitNum, key, unit->au_Flags & AF_DiscPresent ? "PRESENT" : "ABSENT"));
-    return key;
+    /* The disc may have been swapped between two polls */
+    if (attention)
+        unit->au_Flags |= AF_DiscChanged;
+
+    DATAPI(bug("[ATA%02ld] atapi_TestUnitOK: Test Unit Ready sense: %02x/%02x/%02x, state %d, Media %s%s\n", unit->au_UnitNum, (int)key, (int)asc, (int)ascq, state, unit->au_Flags & AF_DiscPresent ? "PRESENT" : "ABSENT", attention ? " (changed)" : ""));
+    return state;
 }
 
 /*

@@ -18,7 +18,8 @@ PREFSDIR    := $(AROSDIR)/Prefs/Env-Archive
 USER_CFLAGS := -DHAVE_COOLIMAGES
 
 #MM- workbench-tools: workbench-tools-hdtoolbox
-#MM workbench-tools-hdtoolbox : workbench-tools-hdtoolbox-prefs workbench-tools-hdtoolbox-catalogs workbench-libs-uuid
+#MM workbench-tools-hdtoolbox : workbench-tools-hdtoolbox-prefs workbench-tools-hdtoolbox-catalogs workbench-libs-uuid \
+#MM     workbench-libs-ptedit
 
 %build_prog mmake=workbench-tools-hdtoolbox \
     progname=HDToolBox targetdir=$(EXEDIR) \

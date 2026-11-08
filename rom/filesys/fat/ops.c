@@ -106,6 +106,9 @@ static LONG MoveToSubdir(struct DirHandle *dh, UBYTE **pname,
             return err;
         }
 
+        if (!(de.e.entry.attr & ATTR_DIRECTORY))
+            return ERROR_OBJECT_WRONG_TYPE;
+
         InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(&de), dh, TRUE, glob);
     }
 
@@ -535,15 +538,57 @@ delete_failed:
     return err;
 }
 
+/* Read a directory's parent link without retaining a cache block. */
+static LONG GetParentEntry(ULONG cluster, struct DirEntry *de,
+    struct Globals *glob)
+{
+    struct DirHandle dh;
+    LONG err;
+
+    if (cluster < 2 || cluster - 2 >= glob->sb->clusters_count)
+        return ERROR_NOT_A_DOS_DISK;
+    InitDirHandle(glob->sb, cluster, &dh, FALSE, glob);
+    err = GetDirEntry(&dh, 1, de, glob);
+    ReleaseDirHandle(&dh, glob);
+    if (err == 0 && (!(de->e.entry.attr & ATTR_DIRECTORY) ||
+        memcmp(de->e.entry.name, "..         ", FAT_MAX_SHORT_NAME) != 0))
+        err = ERROR_NOT_A_DOS_DISK;
+    return err;
+}
+
+/* Updating .. must not create a cycle through the destination directory. */
+static LONG CheckDirectoryMove(ULONG source, ULONG destination,
+    struct Globals *glob)
+{
+    struct DirEntry de;
+    ULONG count = 0;
+    LONG err;
+
+    while (destination != 0 && destination != glob->sb->rootdir_cluster)
+    {
+        if (destination == source)
+            return ERROR_OBJECT_IN_USE;
+        if (count++ >= glob->sb->clusters_count)
+            return ERROR_NOT_A_DOS_DISK;
+        err = GetParentEntry(destination, &de, glob);
+        if (err != 0)
+            return err;
+        destination = FIRST_FILE_CLUSTER(&de);
+    }
+    return 0;
+}
+
 LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
     ULONG snamelen, struct ExtFileLock *ddirlock, UBYTE *dname,
     ULONG dnamelen, struct Globals *glob)
 {
     struct DirHandle sdh, ddh;
-    struct DirEntry sde, dde;
+    struct DirEntry sde, dde, parent;
+    struct FATDirEntry oldparent;
+    BOOL move_directory;
     struct GlobalLock *gl;
     LONG err;
-    ULONG len;
+    ULONG len, rawlen;
 
     /* Get the source dir handle */
     InitDirHandle(glob->sb,
@@ -577,40 +622,47 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
         return err;
     }
 
-    /* Check the source and dest dirs. If either is read-only, do nothing */
-    err = GetDirEntry(&sdh, 0, &dde, glob);
-    if (err != 0)
+    /* The root has no dot entry; slot zero belongs to an unrelated object. */
+    if (sdh.ioh.first_cluster != glob->sb->rootdir_cluster)
     {
-        ReleaseDirHandle(&ddh, glob);
-        ReleaseDirHandle(&sdh, glob);
-        return err;
+        err = GetDirEntry(&sdh, 0, &dde, glob);
+        if (err != 0)
+        {
+            ReleaseDirHandle(&ddh, glob);
+            ReleaseDirHandle(&sdh, glob);
+            return err;
+        }
+        if (dde.e.entry.attr & ATTR_READ_ONLY)
+        {
+            D(bug("[fat] source dir is read only, doing nothing\n"));
+            ReleaseDirHandle(&ddh, glob);
+            ReleaseDirHandle(&sdh, glob);
+            return ERROR_WRITE_PROTECTED;
+        }
     }
-    if (dde.e.entry.attr & ATTR_READ_ONLY)
+    if (ddh.ioh.first_cluster != glob->sb->rootdir_cluster)
     {
-        D(bug("[fat] source dir is read only, doing nothing\n"));
-        ReleaseDirHandle(&ddh, glob);
-        ReleaseDirHandle(&sdh, glob);
-        return ERROR_WRITE_PROTECTED;
-    }
-    err = GetDirEntry(&ddh, 0, &dde, glob);
-    if (err != 0)
-    {
-        ReleaseDirHandle(&ddh, glob);
-        ReleaseDirHandle(&sdh, glob);
-        return err;
-    }
-    if (dde.e.entry.attr & ATTR_READ_ONLY)
-    {
-        D(bug("[fat] dest dir is read only, doing nothing\n"));
-        ReleaseDirHandle(&ddh, glob);
-        ReleaseDirHandle(&sdh, glob);
-        return ERROR_WRITE_PROTECTED;
+        err = GetDirEntry(&ddh, 0, &dde, glob);
+        if (err != 0)
+        {
+            ReleaseDirHandle(&ddh, glob);
+            ReleaseDirHandle(&sdh, glob);
+            return err;
+        }
+        if (dde.e.entry.attr & ATTR_READ_ONLY)
+        {
+            D(bug("[fat] dest dir is read only, doing nothing\n"));
+            ReleaseDirHandle(&ddh, glob);
+            ReleaseDirHandle(&sdh, glob);
+            return ERROR_WRITE_PROTECTED;
+        }
     }
 
     /* Now see if the wanted name is in this dir. If it exists, and is not a capilazation change, do nothing */
     if ((err = GetDirEntryByName(&ddh, dname, dnamelen, &dde, glob)) == 0)
     {
-        if ((dnamelen != snamelen) || (strnicmp(sname, dname, snamelen) != 0))
+        if (sde.cluster != dde.cluster || sde.index != dde.index ||
+            (dnamelen != snamelen) || (strnicmp(sname, dname, snamelen) != 0))
         {
             ReleaseDirHandle(&ddh, glob);
             ReleaseDirHandle(&sdh, glob);
@@ -624,11 +676,47 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
         return err;
     }
 
+    /* The raw spelling was checked above. Check the spelling we will store
+     * as well, allowing a rename back onto this same entry. */
+    rawlen = dnamelen;
+    err = NormalizeDirEntryName(&dname, &dnamelen);
+    if (err == 0 && dnamelen != rawlen)
+    {
+        err = GetDirEntryByName(&ddh, dname, dnamelen, &dde, glob);
+        if (err == 0 && (sde.cluster != dde.cluster || sde.index != dde.index))
+            err = ERROR_OBJECT_EXISTS;
+        else if (err == ERROR_OBJECT_NOT_FOUND)
+            err = 0;
+    }
+    if (err != 0)
+    {
+        ReleaseDirHandle(&ddh, glob);
+        ReleaseDirHandle(&sdh, glob);
+        return err;
+    }
+
     /* At this point we have the source entry in sde, and we know the dest
      * doesn't exist or it is a capitalization change */
 
     /* XXX: if sdh and ddh are the same dir and there's room in the existing
      * entries for the new name, just overwrite the name */
+
+    move_directory = (sde.e.entry.attr & ATTR_DIRECTORY) &&
+        sdh.ioh.first_cluster != ddh.ioh.first_cluster;
+    if (move_directory)
+    {
+        err = CheckDirectoryMove(FIRST_FILE_CLUSTER(&sde),
+            ddh.ioh.first_cluster, glob);
+        if (err == 0)
+            err = GetParentEntry(FIRST_FILE_CLUSTER(&sde), &parent, glob);
+        if (err != 0)
+        {
+            ReleaseDirHandle(&ddh, glob);
+            ReleaseDirHandle(&sdh, glob);
+            return err;
+        }
+        oldparent = parent.e.entry;
+    }
 
     /* Make a new entry in the target dir */
     if ((err = CreateDirEntry(&ddh, dname, dnamelen,
@@ -660,15 +748,27 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
         return err;
     }
 
+    if (move_directory)
+    {
+        ULONG cluster = ddh.ioh.first_cluster;
+
+        /* FAT encodes a root parent as zero, including on FAT32. */
+        if (cluster == glob->sb->rootdir_cluster)
+            cluster = 0;
+        parent.e.entry.first_cluster_lo = AROS_WORD2LE(cluster & 0xffff);
+        parent.e.entry.first_cluster_hi = AROS_WORD2LE(cluster >> 16);
+        err = UpdateDirEntry(&parent, glob);
+        if (err != 0)
+            goto rename_failed;
+    }
+
+    /* Resolve watchers of the old path while that entry still exists. */
+    SendNotifyByDirEntry(sdh.ioh.sb, &sde);
+
     /* Keep the original lock until its directory entry is gone. */
     err = DeleteDirEntry(&sde, glob);
     if (err != 0)
-    {
-        DeleteDirEntry(&dde, glob);
-        ReleaseDirHandle(&ddh, glob);
-        ReleaseDirHandle(&sdh, glob);
-        return err;
-    }
+        goto rename_failed;
 
     /* Update the global lock (if present) with the new dir cluster/entry */
     ForeachNode(&sdh.ioh.sb->info->locks, gl)
@@ -697,6 +797,17 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
     ReleaseDirHandle(&sdh, glob);
 
     return 0;
+
+rename_failed:
+    if (move_directory)
+    {
+        parent.e.entry = oldparent;
+        UpdateDirEntry(&parent, glob);
+    }
+    DeleteDirEntry(&dde, glob);
+    ReleaseDirHandle(&ddh, glob);
+    ReleaseDirHandle(&sdh, glob);
+    return err;
 }
 
 LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
@@ -1294,6 +1405,7 @@ LONG OpAddNotify(struct NotifyRequest *nr, struct Globals *glob)
         err =
             GetDirEntryByPath(&dh, nr->nr_FullName, strlen(nr->nr_FullName),
             &de, glob);
+        ReleaseDirHandle(&dh, glob);
         if (err != 0 && err != ERROR_OBJECT_NOT_FOUND)
             return err;
 

@@ -5,7 +5,9 @@
     the stack picks for one datagram must not stick to the socket. The
     socket stays bound to the unspecified address, keeps receiving
     datagrams sent to its other addresses, and an IPV6_PKTINFO source on a
-    later datagram is used. A group datagram leaves by, and takes its source
+    later datagram is used - also on a socket bound to another address
+    (RFC 3542 section 6.1), while one that is not an address of ours is
+    refused with EADDRNOTAVAIL. A group datagram leaves by, and takes its source
     from, the IPV6_MULTICAST_IF interface.
 
     Everything runs over the loopback addresses ::1 and the link-local of
@@ -67,6 +69,35 @@ static int recv_from(int s, struct sockaddr_in6 *from)
     return recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr *)from, &len);
 }
 
+/* sendmsg() of one octet to d with an IPV6_PKTINFO source. */
+static int send_pktinfo(int s, struct sockaddr_in6 *d, const struct in6_addr *src)
+{
+    union { struct cmsghdr c; char b[CMSG_SPACE(sizeof(struct in6_pktinfo))]; } ctl;
+    struct in6_pktinfo pi;
+    struct msghdr mh;
+    struct iovec iov;
+    struct cmsghdr *c;
+
+    bzero(&mh, sizeof(mh));
+    bzero(&ctl, sizeof(ctl));
+    iov.iov_base = "y";
+    iov.iov_len = 1;
+    mh.msg_name = d;
+    mh.msg_namelen = sizeof(*d);
+    mh.msg_iov = &iov;
+    mh.msg_iovlen = 1;
+    mh.msg_control = &ctl;
+    mh.msg_controllen = sizeof(ctl);
+    c = CMSG_FIRSTHDR(&mh);
+    c->cmsg_level = IPPROTO_IPV6;
+    c->cmsg_type = IPV6_PKTINFO;
+    c->cmsg_len = CMSG_LEN(sizeof(pi));
+    bzero(&pi, sizeof(pi));
+    pi.ipi6_addr = *src;
+    memcpy(CMSG_DATA(c), &pi, sizeof(pi));
+    return sendmsg(s, &mh, 0);
+}
+
 #define NEED_LL() do { if (!have_ll) { CU_PASS("no link-local - skipping"); return; } } while (0)
 
 /* ----------------------------------------------------------------- tests */
@@ -120,12 +151,7 @@ void testSENDTO6_STILL_RECEIVES(void)
 void testSENDTO6_PKTINFO_SOURCE(void)
 {
     struct in6_addr any = IN6ADDR_ANY_INIT, lo = IN6ADDR_LOOPBACK_INIT;
-    union { struct cmsghdr c; char b[CMSG_SPACE(sizeof(struct in6_pktinfo))]; } ctl;
     struct sockaddr_in6 d, from;
-    struct in6_pktinfo pi;
-    struct msghdr mh;
-    struct iovec iov;
-    struct cmsghdr *c;
     unsigned short sp, rp;
     int s, r;
     NEED_LL();
@@ -138,26 +164,49 @@ void testSENDTO6_PKTINFO_SOURCE(void)
     CU_ASSERT_EQUAL(recv_from(r, &from), 1);
 
     /* to ::1 again, from the link-local this time */
-    bzero(&mh, sizeof(mh));
-    bzero(&ctl, sizeof(ctl));
-    iov.iov_base = "y";
-    iov.iov_len = 1;
-    mh.msg_name = &d;
-    mh.msg_namelen = sizeof(d);
-    mh.msg_iov = &iov;
-    mh.msg_iovlen = 1;
-    mh.msg_control = &ctl;
-    mh.msg_controllen = sizeof(ctl);
-    c = CMSG_FIRSTHDR(&mh);
-    c->cmsg_level = IPPROTO_IPV6;
-    c->cmsg_type = IPV6_PKTINFO;
-    c->cmsg_len = CMSG_LEN(sizeof(pi));
-    bzero(&pi, sizeof(pi));
-    pi.ipi6_addr = linklocal;
-    memcpy(CMSG_DATA(c), &pi, sizeof(pi));
-    CU_ASSERT_EQUAL(sendmsg(s, &mh, 0), 1);
+    CU_ASSERT_EQUAL(send_pktinfo(s, &d, &linklocal), 1);
     CU_ASSERT_EQUAL(recv_from(r, &from), 1);
     CU_ASSERT(memcmp(&from.sin6_addr, &linklocal, sizeof(linklocal)) == 0);
+    CloseSocket(r);
+    CloseSocket(s);
+}
+
+/* On a socket bound to an address, an IPV6_PKTINFO source still wins
+ * (RFC 3542 section 6.1); the bound port stays. */
+void testSENDTO6_PKTINFO_OVER_BOUND(void)
+{
+    struct in6_addr any = IN6ADDR_ANY_INIT, lo = IN6ADDR_LOOPBACK_INIT;
+    struct sockaddr_in6 d, from;
+    unsigned short sp, rp;
+    int s, r;
+    NEED_LL();
+    s = udp_bound(&lo, &sp);
+    r = udp_bound(&any, &rp);
+    CU_ASSERT_FATAL(s >= 0 && r >= 0);
+    sa6(&d, &lo, rp, 0);
+    CU_ASSERT_EQUAL(send_pktinfo(s, &d, &linklocal), 1);
+    CU_ASSERT_EQUAL(recv_from(r, &from), 1);
+    CU_ASSERT(memcmp(&from.sin6_addr, &linklocal, sizeof(linklocal)) == 0);
+    CU_ASSERT_EQUAL(from.sin6_port, sp);
+    CloseSocket(r);
+    CloseSocket(s);
+}
+
+/* An IPV6_PKTINFO source that is not an address of ours is refused with
+ * EADDRNOTAVAIL (RFC 3542 section 6.1), not sent. */
+void testSENDTO6_PKTINFO_NOT_OURS(void)
+{
+    struct in6_addr any = IN6ADDR_ANY_INIT, lo = IN6ADDR_LOOPBACK_INIT, other;
+    struct sockaddr_in6 d, from;
+    unsigned short sp, rp;
+    int s = udp_bound(&any, &sp), r = udp_bound(&any, &rp);
+
+    CU_ASSERT_FATAL(s >= 0 && r >= 0);
+    inet_pton(AF_INET6, "2001:db8:4d54:b0::99", &other);
+    sa6(&d, &lo, rp, 0);
+    CU_ASSERT_EQUAL(send_pktinfo(s, &d, &other), -1);
+    CU_ASSERT_EQUAL(Errno(), EADDRNOTAVAIL);
+    CU_ASSERT_EQUAL(recv_from(r, &from), -1);
     CloseSocket(r);
     CloseSocket(s);
 }
@@ -246,6 +295,8 @@ int main(int argc, char **argv)
         !CU_add_test(p, "sendto() leaves the socket unbound", testSENDTO6_STAYS_UNBOUND) ||
         !CU_add_test(p, "after sendto() the socket receives on its other addresses", testSENDTO6_STILL_RECEIVES) ||
         !CU_add_test(p, "an IPV6_PKTINFO source is used", testSENDTO6_PKTINFO_SOURCE) ||
+        !CU_add_test(p, "it wins over the bound address", testSENDTO6_PKTINFO_OVER_BOUND) ||
+        !CU_add_test(p, "one not ours is refused", testSENDTO6_PKTINFO_NOT_OURS) ||
         !CU_add_test(p, "IPV6_MULTICAST_IF names a group datagram's source", testSENDTO6_MULTICAST_IF))
     {
         CU_cleanup_registry();

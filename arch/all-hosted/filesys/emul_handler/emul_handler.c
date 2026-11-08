@@ -304,7 +304,7 @@ const ULONG sizes[] = {
     offsetof(struct ExAllData,ed_Days),
     offsetof(struct ExAllData,ed_Comment),
     offsetof(struct ExAllData,ed_OwnerUID),
-    sizeof(struct ExAllData)
+    offsetof(struct ExAllData,ed_Size64)    /* ED_OWNER: up to ed_OwnerGID */
 };
 
 static SIPTR examine(struct emulbase *emulbase, struct filehandle *fh,

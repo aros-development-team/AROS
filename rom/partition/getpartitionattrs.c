@@ -23,7 +23,7 @@
         AROS_LHA(const struct TagItem *, taglist, A2),
 
 /*  LOCATION */
-        struct Library *, PartitionBase, 15, Partition)
+        struct Library *, PartitionBase, 10, Partition)
 
 /*  FUNCTION
         Get attributes of a partition.
@@ -182,11 +182,12 @@
                 break;
 
             case PT_STARTBLOCK:
-                *((UQUAD *)tag->ti_Data) = (UQUAD)ph->de.de_LowCyl * ph->de.de_Surfaces * ph->de.de_BlocksPerTrack;
+                *((UQUAD *)tag->ti_Data) = PartitionMulQ(ph->de.de_LowCyl, ph->de.de_Surfaces, ph->de.de_BlocksPerTrack);
                 break;
 
             case PT_ENDBLOCK:
-                *((UQUAD *)tag->ti_Data) = ((UQUAD)ph->de.de_HighCyl + 1) * ph->de.de_Surfaces * ph->de.de_BlocksPerTrack - 1;
+                *((UQUAD *)tag->ti_Data) = PartitionMulQ(ph->de.de_HighCyl, ph->de.de_Surfaces, ph->de.de_BlocksPerTrack) +
+                    PartitionMulQ(ph->de.de_Surfaces, ph->de.de_BlocksPerTrack, 1) - 1;
                 break;
             }
         }

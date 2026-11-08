@@ -26,6 +26,12 @@ existing reserved `UWORD` is named `re_InterfaceIndex` and contains the
 receiving link's scope/interface index. The structure size and old binaries
 are unchanged.
 
+Library revision 41.7 accepts RFC 6763 subtype browse names such as
+`_printer._sub._ipp._tcp`. Registrations repeat `MDNS_ServiceSubtype` once
+per subtype label. A subtype PTR selects the same base instance and shared
+SRV/TXT/address cache; the legacy event continues to return `_ipp._tcp` in
+`de_Type`. Private IPC version is 6; no public structure or vector changed.
+
 ## Calls and ownership
 
 ```c

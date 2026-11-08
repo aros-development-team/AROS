@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/graphics.h>
@@ -23,20 +23,24 @@
         struct Library *, MUIMasterBase, 27, MUIMaster)
 
 /*  FUNCTION
+        Release the colormap allocation recorded in a MUI_ObtainPen() token.
+        Existing, unallocated pens require no release and are left alone.
 
     INPUTS
+        mri - Non-NULL rendering context used to obtain the token, with its
+              original colormap still valid.
+        pen - Complete token returned by MUI_ObtainPen(), or -1 to do nothing.
 
     RESULT
+        None.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        Release each allocated token once. Do not mask the token with
+        MUIPEN() before passing it here: doing so removes the allocation
+        flag. A -1 token is ignored before mri is accessed.
 
     SEE ALSO
-
-    INTERNALS
+        MUI_ObtainPen(), graphics.library/ReleasePen()
 
 *****************************************************************************/
 {

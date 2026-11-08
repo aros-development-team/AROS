@@ -49,6 +49,22 @@ void _CallLayerHook(struct Hook * h,
                     WORD offsety,
                     struct LayersBase * LayersBase);
 
+/* The RastPort a hook renders into a bitmap other than the application's
+   through - see _ObtainHookRastPort() */
+struct HookRastPort
+{
+#if defined(__AROSEXEC_SMP__)
+    struct RastPort   rp;
+#else
+    struct RastPort * rp;
+    struct BitMap   * bm;
+#endif
+};
+
+struct RastPort *_ObtainHookRastPort(struct HookRastPort *h, struct RastPort *rp,
+                                     struct BitMap *bm, struct LayersBase *LayersBase);
+void _ReleaseHookRastPort(struct HookRastPort *h, struct LayersBase *LayersBase);
+
 
 /***************************************************************************/
 /*                                 LAYER                                   */

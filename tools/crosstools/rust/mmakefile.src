@@ -238,6 +238,26 @@ tools-crosstools-rust-cbindgen :
 	    && $(TOUCH) $(rust-cbindgen-installflag) ; \
 	fi
 
+## libc ABI check ###
+
+# The AROS libc patches restate C types in Rust (src/unix/aros/mod.rs of the
+# crate). When a C header changes and a patch does not follow, Rust code hands
+# C a buffer of the wrong size: a stale pthread_attr_t in std once made every
+# std::thread::spawn() overwrite its caller's frame. abicheck.sh compares the
+# size and alignment of each type in abi-types.txt with the C headers, for the
+# libc inside the installed std and for the crate store's patched copy, without
+# running anything on the target. rust-crates-config depends on it, so no Rust
+# program builds against a libc that disagrees with the headers.
+#
+# std is not rebuilt when only a vendored crate's patch changes (cargo does not
+# look at vendored sources again): after changing the libc patch in
+# rustc-*-aros.diff, remove $(RUST_BUILDDIR)/$(RUST_HOST_TRIPLE)/stage1-std/$(RUST_TARGET_TRIPLE)
+# and $(rust-installflag) so tools-crosstools-rust builds std again.
+#MM tools-crosstools-rust-abicheck : tools-crosstools-rust includes includes-copy rust-crates-libc
+#MM
+tools-crosstools-rust-abicheck :
+	@$(call RUST_ABICHECK,$(HOSTGENDIR)/$(CURDIR)/abicheck) $(RUST_CRATESDIR)/$(RUST_CRATE_LIBC)
+
 ## Smoke test ###
 
 # Builds a std program for the target and checks that the AROS link left no

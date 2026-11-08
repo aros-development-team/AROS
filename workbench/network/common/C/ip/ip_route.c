@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "ip.h"
 
@@ -208,9 +209,10 @@ print_route(struct rt_msghdr *rtm)
 	if (opts.detail) {
 		if (rtm->rtm_rmx.rmx_mtu)
 			printf(" mtu %lu", (unsigned long)rtm->rtm_rmx.rmx_mtu);
+		/* a time of day, as time() gives it; shown as what is left */
 		if (rtm->rtm_rmx.rmx_expire)
 			printf(" expires %lds",
-			    (long)rtm->rtm_rmx.rmx_expire);
+			    (long)(rtm->rtm_rmx.rmx_expire - time(NULL)));
 	}
 
 	/* Flags in detail mode */

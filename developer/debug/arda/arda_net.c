@@ -3,7 +3,9 @@
 
     ARDA - bsdsocket.library transport.
 
-    One listening socket, at most one client.  The listening socket is
+    One listening socket. Each accepted client gets a thread of its own
+    (arda_client_start()) where the stack shares the library base, otherwise
+    at most one client is served, by the main loop. The listening socket is
     non-blocking so accept() can never stall; accepted sockets inherit that,
     so every recv()/send() is paired with a bounded WaitSelect().
 */
@@ -27,7 +29,7 @@ extern struct Library *SocketBase;
 
 static BOOL err_would_block(void)
 {
-    LONG e = Errno();
+    LONG e = arda_errno();
     return (e == EWOULDBLOCK || e == EAGAIN || e == EINTR);
 }
 
@@ -96,33 +98,53 @@ void arda_net_accept(struct Arda *a)
 {
     struct sockaddr_in sa;
     socklen_t len = sizeof(sa);
+    char peer[48];
     int fd, on = 1;
 
     fd = accept(a->ls, (struct sockaddr *)&sa, &len);
     if (fd < 0)
     {
         if (!err_would_block())
-            arda_log(a, "ARDA: accept() failed (errno %ld)", (long)Errno());
+            arda_log(a, "ARDA: accept() failed (errno %ld)", (long)arda_errno());
         return;
     }
 
     IoctlSocket(fd, FIONBIO, (char *)&on);
+    snprintf(peer, sizeof(peer), "%s:%u",
+             Inet_NtoA(sa.sin_addr.s_addr), (unsigned)ntohs(sa.sin_port));
+
+    if (a->sh->shared_base)
+    {
+        /* a process of its own for each connection, up to a limit */
+        if (a->sh->clients < ARDA_MAX_CLIENTS && arda_client_start(a, fd, peer))
+        {
+            a->sh->conns++;
+            return;
+        }
+        {
+            static const char busy[] = "ERR 503 busy, too many clients\n";
+            arda_net_send(a, fd, busy, sizeof(busy) - 1);
+        }
+        CloseSocket(fd);
+        a->sh->rejected++;
+        arda_log(a, "ARDA: refused client %s (%lu connected)", peer, (unsigned long)a->sh->clients);
+        return;
+    }
 
     if (a->client.fd >= 0)
     {
         static const char busy[] = "ERR 503 busy, one client at a time\n";
         arda_net_send(a, fd, busy, sizeof(busy) - 1);
         CloseSocket(fd);
-        a->rejected++;
+        a->sh->rejected++;
         arda_log(a, "ARDA: refused second client while %s is connected", a->client.peer);
         return;
     }
 
     memset(&a->client, 0, sizeof(a->client));
     a->client.fd = fd;
-    snprintf(a->client.peer, sizeof(a->client.peer), "%s:%u",
-             Inet_NtoA(sa.sin_addr.s_addr), (unsigned)ntohs(sa.sin_port));
-    a->conns++;
+    strcpy(a->client.peer, peer);
+    a->sh->conns++;
     arda_log(a, "ARDA: client %s connected", a->client.peer);
 }
 
@@ -164,7 +186,7 @@ BOOL arda_net_send(struct Arda *a, int fd, const char *data, ULONG len)
                 a->running = FALSE;
                 return FALSE;
             }
-            if (r < 0 && Errno() != EINTR)
+            if (r < 0 && arda_errno() != EINTR)
                 return FALSE;
         }
     }
@@ -217,6 +239,7 @@ void arda_net_input(struct Arda *a)
 
     c->idle = 0;
 
+    arda_lock(a);
     for (i = 0; i < n && a->client.fd >= 0; i++)
     {
         char ch;
@@ -244,7 +267,7 @@ void arda_net_input(struct Arda *a)
 
             if (!line_is_clean(c->line))
             {
-                a->errors++;
+                a->sh->errors++;
                 arda_resp_err(&a->resp, 400, "request contains non-printable characters");
                 arda_net_reply(a);
                 continue;
@@ -260,7 +283,7 @@ void arda_net_input(struct Arda *a)
         {
             c->discard = TRUE;
             c->linelen = 0;
-            a->errors++;
+            a->sh->errors++;
             arda_resp_err(&a->resp, 400, "request line too long (max " 
                           "256 bytes)");
             arda_net_reply(a);
@@ -268,4 +291,5 @@ void arda_net_input(struct Arda *a)
         }
         c->line[c->linelen++] = ch;
     }
+    arda_unlock(a);
 }

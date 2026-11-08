@@ -308,7 +308,7 @@ VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIma
             case 4:
 #ifdef OnBitmap
                 if (data->fb.handle && msg->width * msg->height >= AMDGPU_2D_MIN_READ &&
-                    Amdgpu_2D_Read(&XSD(cl)->kms, data, msg->x, msg->y, msg->width, msg->height,
+                    Amdgpu_2D_Read(o, msg->x, msg->y, msg->width, msg->height,
                                    msg->pixels, msg->modulo))
                     break;
 #endif
@@ -339,7 +339,7 @@ VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIma
             case 4:
 #ifdef OnBitmap
                 if (data->fb.handle && msg->width * msg->height >= AMDGPU_2D_MIN_READ &&
-                    Amdgpu_2D_Read(&XSD(cl)->kms, data, msg->x, msg->y, msg->width, msg->height,
+                    Amdgpu_2D_Read(o, msg->x, msg->y, msg->width, msg->height,
                                    msg->pixels, msg->modulo))
                     break;
 #endif
@@ -359,7 +359,7 @@ VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIma
         if (data->fb.handle && data->bytesperpix == 4 && msg->width * msg->height >= AMDGPU_2D_MIN_READ)
         {
             copy = AllocVec(msg->width * msg->height * 4, MEMF_ANY);
-            if (copy && Amdgpu_2D_Read(&XSD(cl)->kms, data, msg->x, msg->y, msg->width, msg->height,
+            if (copy && Amdgpu_2D_Read(o, msg->x, msg->y, msg->width, msg->height,
                                        copy, msg->width * 4))
             {
                 src_pixels = copy;
@@ -510,7 +510,7 @@ VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRe
 #ifdef OnBitmap
                     if (data->fb.handle &&
                         (msg->maxX - msg->minX + 1) * (msg->maxY - msg->minY + 1) >= AMDGPU_2D_MIN_FILL &&
-                        Amdgpu_2D_Fill(&XSD(cl)->kms, data, msg->minX, msg->minY,
+                        Amdgpu_2D_Fill(o, msg->minX, msg->minY,
                                        msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, pixel))
                         break;
 #endif

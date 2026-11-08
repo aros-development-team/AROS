@@ -486,7 +486,6 @@ struct task_struct *kthread_run_compat(int (*threadfn)(void *data), void *data, 
     proc = CreateNewProcTags(
         NP_Name, (IPTR)name,
         NP_Priority, 5,
-        NP_Affinity, TASKAFFINITY_ANY,
         NP_Entry, (IPTR)kthread_entry,
         NP_StackSize, 128 * 1024,
         NP_UserData, (IPTR)ks,
@@ -557,7 +556,8 @@ bool kthread_queue_work(struct kthread_worker *worker, struct kthread_work *work
 
 void kthread_flush_worker(struct kthread_worker *worker)
 {
-    flush_workqueue(worker->wq);
+    if (worker)
+        flush_workqueue(worker->wq);
 }
 
 void kthread_destroy_worker(struct kthread_worker *worker)

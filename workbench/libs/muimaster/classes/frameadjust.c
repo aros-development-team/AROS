@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2003, The AROS Development Team. All rights reserved.
+    Copyright  2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include "intuition/classusr.h"
@@ -31,8 +31,89 @@
 #include "support.h"
 #include "support_classes.h"
 
+/****** Frameadjust.mui/MUIC_Frameadjust ************
+*
+*   NAME
+*       MUIC_Frameadjust
+*
+*   SUPERCLASS
+*       Group.mui
+*
+*   DESCRIPTION
+*       Edit a frame through preview buttons, four spacing sliders and
+*       rounded-frame controls. Group owns its children and embedded hooks.
+*       Construction returns NULL on superclass construction failure; later
+*       preview creation, insertion and notification registration results are
+*       not comprehensively checked. No local Dispose or Set override exists.
+*       Spacing sliders range from zero to nine. Rounded radius ranges zero to
+*       fifteen, default five; width ranges one to five, default one. Stored
+*       frame fields initially remain zero unless Spec is supplied; control
+*       defaults alone do not set rounded frame fields.
+*
+*   METHODS
+*       Changing top spacing also sets bottom to the same value without its
+*       notification; changing left also sets right. Bottom and right changes
+*       are independent. These hooks update internal fields and the preview, not
+*       a Frameadjust_Spec notification.
+*       Enabling rounded mode sets type FST_ROUNDED and copies radius/width
+*       controls. Disabling it changes a currently rounded type to numeric type
+*       two and clears radius/width. Adjusting radius/width while rounded mode
+*       is disabled also follows that clearing path. Clicking a frame sample
+*       replaces type/state but leaves optional radius/width fields and checkbox
+*       state unchanged.
+*       Sample buttons include types zero through ten in normal state and one
+*       through ten in selected state. Custom sample loops include types twelve
+*       through twenty-two and twenty through twenty-four in both states,
+*       duplicating twenty through twenty-two; they do not include
+*       twenty-five/twenty-six. Type eleven is configured through rounded
+*       controls.
+*
+*   NOTES
+*       Spec is initialize/get only. The constructor parses its string and sets
+*       preview/control values before registering change notifications. It
+*       ignores parser failure; partial parsed state is possible. Margins above
+*       nine and widths outside one..five can remain in parsed fields while
+*       their sliders clamp, until later interaction rewrites them. Repeated
+*       Spec tags can leave previous control state where fields are not
+*       explicitly reset.
+*       Get serializes stored fields to a borrowed instance buffer; it does not
+*       read controls anew. There is no local setter to reload Spec after
+*       construction and no automatic Spec-change notification. Preserve the
+*       built-in child/hook arrangement. Frame encoding and parser limitations
+*       are those documented by Framedisplay.
+*
+*/
+/****** Frameadjust.mui/MUIA_Frameadjust_Spec ************
+*
+*   NAME
+*       MUIA_Frameadjust_Spec
+*
+*   FUNCTION
+*       Initialize the editor or retrieve its current serialized frame.
+*
+*   INPUTS
+*       Initialize and get, NUL-terminated frame-specification string. No local
+*       setter. With no tag the stored fields are zero.
+*
+*   NOTES
+*       Construction parses values and initializes preview/controls without
+*       retaining the input pointer. Validation failure is ignored and can
+*       partially change fields. Get writes six or eight characters to embedded
+*       storage and returns its borrowed pointer with TRUE. The pointer lasts
+*       until disposal and is overwritten by later Get. Editing changes stored
+*       fields through internal hooks, without publishing this attribute as a
+*       notification. Control ranges can differ from the parser ranges; see the
+*       class contract.
+*
+*/
+
 extern struct Library *MUIMasterBase;
 
+/*
+ * Create a zero..nine slider with empty label and set CycleChain one.
+ * Return object or NULL; the setter is attempted without a local NULL
+ * guard. Caller transfers successful object into Group ownership.
+ */
 static Object *MakeSpacingSlider(void)
 {
     Object *obj = MUI_MakeObject(MUIO_Slider, (IPTR) "", 0, 9);
@@ -40,6 +121,11 @@ static Object *MakeSpacingSlider(void)
     return obj;
 }
 
+/*
+ * Create slider with supplied bounds; when non-NULL set CycleChain and
+ * initial value, then return it. No ownership transfer until caller adds it
+ * to a group; NULL represents construction failure.
+ */
 static Object *MakeRoundedSlider(ULONG min, ULONG max, ULONG def)
 {
     Object *obj = MUI_MakeObject(MUIO_Slider, (IPTR) "", min, max);
@@ -55,6 +141,12 @@ struct SliderFuncMsg {
     STACKED struct Frameadjust_DATA *data;
 };
 
+/*
+ * Read changed spacing slider; top mirrors bottom and left mirrors right
+ * through nnset, while bottom/right update alone. Serialize fields into
+ * stack buffer and synchronously update preview. Requires live known
+ * slider/instance and valid bounded fields; no return or Spec notification.
+ */
 static void SliderFunc(struct Hook *hook, Object *obj,
                        struct SliderFuncMsg *msg)
 {
@@ -88,6 +180,12 @@ struct RoundedFuncMsg {
     STACKED struct Frameadjust_DATA *data;
 };
 
+/*
+ * Read checkbox/radius/width controls, set rounded type/properties or clear
+ * properties and replace rounded type with two. Serialize and update
+ * preview synchronously. Requires live controls; no Frameadjust_Spec
+ * notification or returned status.
+ */
 static void RoundedFunc(struct Hook *hook, Object *obj,
                         struct RoundedFuncMsg *msg)
 {
@@ -125,6 +223,12 @@ struct FramesFuncMsg {
     STACKED struct Frameadjust_DATA *data;
 };
 
+/*
+ * Store callback type/state, retaining margins and optional rounded fields,
+ * then serialize and update preview. Requires live instance/preview and
+ * supported callback values. Does not synchronize checkbox or emit Spec
+ * notification; no return status.
+ */
 static void FramesFunc(struct Hook *hook, Object *obj,
                        struct FramesFuncMsg *msg)
 {
@@ -137,6 +241,12 @@ static void FramesFunc(struct Hook *hook, Object *obj,
     set(data->FD_display, MUIA_Framedisplay_Spec, (IPTR)fs);
 }
 
+/*
+ * Create fixed 32-pixel sample for type/state with all inner margins nine,
+ * or return HVSpace for type outside 0..26. Return constructed object for
+ * caller-owned insertion. Sample creation/CycleChain setting has no local
+ * failure handling; no borrowed data retained.
+ */
 static Object *MakeFrameDisplay(int i, int state)
 {
     struct MUI_FrameSpec_intern fsi;
@@ -161,6 +271,13 @@ static Object *MakeFrameDisplay(int i, int state)
     return obj;
 }
 
+/*
+ * Construct Group controls and frame samples, parse constructor Spec into
+ * embedded state and initialize controls before registering callbacks.
+ * Return object or zero on superclass failure. Later child failures and
+ * parser errors are not propagated; child ownership follows Group and input
+ * strings are not retained.
+ */
 IPTR Frameadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Frameadjust_DATA *data;
@@ -363,6 +480,12 @@ IPTR Frameadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
+/*
+ * Serialize current stored frame fields into embedded buffer and return
+ * borrowed Spec pointer with TRUE; delegate other attributes. Requires
+ * valid storage. Does not resample controls, allocate memory or provide a
+ * setter; buffer changes on each Get.
+ */
 IPTR Frameadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Frameadjust_DATA *data = INST_DATA(cl, obj);
@@ -378,6 +501,12 @@ IPTR Frameadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 
 #if ZUNE_BUILTIN_FRAMEADJUST
+/*
+ * Dispatch local overrides and return their results, delegating other
+ * messages to superclass. Requires ABI-correct message and live object
+ * except construction. Resources and deferred callbacks follow the class
+ * lifecycle contract.
+ */
 BOOPSI_DISPATCHER(IPTR, Frameadjust_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID) {

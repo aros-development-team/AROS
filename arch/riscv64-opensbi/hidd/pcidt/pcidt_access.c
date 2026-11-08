@@ -246,7 +246,7 @@ void PCIDT_DropBootCfgWindows(struct pcidt_bridge *b)
 #define DWC_ATU_MEM64_REGION    1
 #define DWC_ATU_MEM32_REGION    2
 
-static void dwc_outbound_mem(struct pcidt_bridge *b, unsigned int region,
+static BOOL dwc_outbound_mem(struct pcidt_bridge *b, unsigned int region,
                              IPTR cpu, IPTR pci, IPTR size)
 {
     IPTR atu;
@@ -278,11 +278,14 @@ static void dwc_outbound_mem(struct pcidt_bridge *b, unsigned int region,
             (APTR)b->dbiBase, region,
             mmio_read32(atu + DWC_ATU_LOWER_BASE),
             mmio_read32(atu + DWC_ATU_CTRL2));
-        return;
+        mmio_write32(atu + DWC_ATU_CTRL2, 0);
+        (void)mmio_read32(atu + DWC_ATU_CTRL2);
+        return FALSE;
     }
 
     D(bug("[PCIDT] dbi %p: outbound mem window %u %p+%p -> %p\n",
         (APTR)b->dbiBase, region, (APTR)cpu, (APTR)size, (APTR)pci);)
+    return TRUE;
 }
 
 void PCIDT_SetupOutboundWindows(struct pcidt_bridge *b)
@@ -306,6 +309,135 @@ void PCIDT_SetupOutboundWindows(struct pcidt_bridge *b)
     if (b->mem32Size)
         dwc_outbound_mem(b, DWC_ATU_MEM32_REGION,
                          b->mem32CpuBase, b->mem32PciBase, b->mem32Size);
+}
+
+/*
+ * Forwarding more of the 64-bit window, for a region that has been moved
+ * or grown past what the windows above forward.
+ *
+ * Each region's limit register holds the low 32 bits only, unless the core
+ * has the "increase region size" option and an upper limit register, so a
+ * region is assumed never to cross a 4GiB boundary and the span is covered
+ * 4GiB-aligned piece by piece. A piece an existing memory region already
+ * forwards with the same translation is left to it; the rest each take a
+ * free region. Regions below DWC_ATU_FIRST_SPARE are this driver's fixed
+ * ones.
+ */
+#define DWC_ATU_FIRST_SPARE     3
+#define DWC_ATU_MAX_REGIONS     32
+#define DWC_ATU_UPPER_LIMIT     0x20
+#define DWC_ATU_INCREASE_SIZE   (1 << 13)
+
+static IPTR dwc_outbound_regs(struct pcidt_bridge *b, unsigned int region)
+{
+    if (b->atuUnroll)
+        return b->dbiBase + DWC_ATU_REGION(region);
+
+    dwc_vp_select(b, region, 0);
+    return b->dbiBase + DWC_ATU_VP_CTRL1 - DWC_ATU_CTRL1;
+}
+
+/* Does an enabled memory region forward [cpu, cpu + size) to pci? */
+static BOOL dwc_outbound_covers(struct pcidt_bridge *b, IPTR cpu, IPTR pci,
+                                IPTR size)
+{
+    unsigned int i;
+
+    for (i = 0; i < DWC_ATU_MAX_REGIONS; i++)
+    {
+        IPTR atu = dwc_outbound_regs(b, i);
+        ULONG ctrl1, ctrl2;
+        IPTR base, limit, target;
+
+        ctrl2 = mmio_read32(atu + DWC_ATU_CTRL2);
+        ctrl1 = mmio_read32(atu + DWC_ATU_CTRL1);
+        if (!(ctrl2 & DWC_ATU_ENABLE) || (ctrl1 & 0x1f) != DWC_ATU_TYPE_MEM)
+            continue;
+
+        base   = ((IPTR)mmio_read32(atu + DWC_ATU_UPPER_BASE) << 32) |
+                 mmio_read32(atu + DWC_ATU_LOWER_BASE);
+        target = ((IPTR)mmio_read32(atu + DWC_ATU_UPPER_TARGET) << 32) |
+                 mmio_read32(atu + DWC_ATU_LOWER_TARGET);
+        if (ctrl1 & DWC_ATU_INCREASE_SIZE)
+            limit = ((IPTR)mmio_read32(atu + DWC_ATU_UPPER_LIMIT) << 32) |
+                    mmio_read32(atu + DWC_ATU_LIMIT);
+        else
+            limit = (base & ~(IPTR)0xffffffff) | mmio_read32(atu + DWC_ATU_LIMIT);
+
+        if (base <= cpu && limit >= cpu + size - 1 &&
+            target - base == pci - cpu)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+void PCIDT_DropOutbound(struct pcidt_bridge *b, ULONG regions)
+{
+    unsigned int i;
+
+    if (b->access != PCIDT_ACCESS_DWC || !b->dbiBase)
+        return;
+
+    for (i = 0; i < DWC_ATU_MAX_REGIONS; i++)
+    {
+        if (regions & (1UL << i))
+        {
+            IPTR atu = dwc_outbound_regs(b, i);
+
+            mmio_write32(atu + DWC_ATU_CTRL2, 0);
+            (void)mmio_read32(atu + DWC_ATU_CTRL2);
+        }
+    }
+}
+
+ULONG PCIDT_ForwardOutbound(struct pcidt_bridge *b, IPTR cpu, IPTR pci,
+                            IPTR size)
+{
+    IPTR end = cpu + size;
+    ULONG added = 0;
+    unsigned int next = DWC_ATU_FIRST_SPARE;
+
+    if (b->access != PCIDT_ACCESS_DWC || !b->dbiBase)
+        return 0;
+
+    while (cpu < end)
+    {
+        IPTR piece = ((cpu | 0xffffffffUL) + 1) - cpu;
+
+        if (piece > end - cpu)
+            piece = end - cpu;
+
+        if (!dwc_outbound_covers(b, cpu, pci, piece))
+        {
+            BOOL placed = FALSE;
+
+            for (; next < DWC_ATU_MAX_REGIONS && !placed; next++)
+            {
+                IPTR atu = dwc_outbound_regs(b, next);
+
+                if (mmio_read32(atu + DWC_ATU_CTRL2) & DWC_ATU_ENABLE)
+                    continue;
+                if (!dwc_outbound_mem(b, next, cpu, pci, piece))
+                    break;      /* past the regions the core has */
+                added |= 1UL << next;
+                placed = TRUE;
+            }
+
+            if (!placed)
+            {
+                bug("[PCIDT] dbi %p: no outbound region left for %p+%p\n",
+                    (APTR)b->dbiBase, (APTR)cpu, (APTR)piece);
+                PCIDT_DropOutbound(b, added);
+                return ~0U;
+            }
+        }
+
+        cpu += piece;
+        pci += piece;
+    }
+
+    return added;
 }
 
 void PCIDT_EnableDMA(struct pcidt_bridge *b, IPTR base, IPTR size)

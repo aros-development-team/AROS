@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <intuition/classusr.h>
@@ -30,20 +30,30 @@
         struct Library *, MUIMasterBase, 21, MUIMaster)
 
 /*  FUNCTION
+        Set a child object's geometry relative to its parent's inner origin,
+        then invoke MUIM_Layout on the child. For a virtual-group parent,
+        subtract the parent's horizontal and vertical scroll offsets first.
 
     INPUTS
+        obj - Non-NULL Area-derived child with a valid parent and initialized
+              layout data. This helper is used by group layout code.
+        left, top - Position relative to the parent's inner origin before
+                    virtual-group scroll offsets are subtracted.
+        width, height - Dimensions stored in the child's geometry.
+        flags - Ignored by this implementation; pass zero.
 
     RESULT
+        Always TRUE after the layout method returns. The result of
+        MUIM_Layout is discarded.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        This helper neither validates the dimensions against the child's
+        minimum and maximum sizes nor requests a redraw. The layout owner
+        must supply suitable geometry. NULL objects and parentless objects
+        are not accepted.
 
     SEE ALSO
-
-    INTERNALS
+        MUI_Redraw()
 
 *****************************************************************************/
 {

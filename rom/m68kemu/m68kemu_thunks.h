@@ -59,6 +59,7 @@ extern const struct M68KLibThunkSet m68kemu_rexx_lib;
 ULONG m68k_next_tag(struct M68KEmuContext *ctx, ULONG *state);
 /* m68kemu_tasks.c */
 IPTR m68k_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu);
+IPTR m68k_dos_CreateProc(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_dos_Cli(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_utility_FindTagItem(struct M68KEmuContext *ctx, void *cpu);
 IPTR m68k_utility_GetTagData(struct M68KEmuContext *ctx, void *cpu);

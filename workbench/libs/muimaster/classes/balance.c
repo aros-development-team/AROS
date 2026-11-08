@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <string.h>
@@ -23,6 +23,90 @@
 /*  #define MYDEBUG 0 */
 #include "debug.h"
 
+/****** Balance.mui/MUIC_Balance ************
+*
+*   NAME
+*       MUIC_Balance
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       Let the user redistribute sibling layout weights by dragging a separator
+*       in a Group. Setup reads the parent's Group_Horiz once. A horizontal
+*       group uses a vertical separator and horizontal weights; a vertical group
+*       uses a horizontal separator and vertical weights. Changing parent
+*       orientation later does not update this cached selection.
+*       Place Balance between visible siblings in a normally laid-out Group,
+*       with resizable members on both sides for normal dragging. Parent, child
+*       list and sibling objects are borrowed. Keep group membership, visibility
+*       and geometry stable during a drag. The implementation caches sibling
+*       pointers and weight totals without lifetime protection. No public
+*       position attribute or class-specific method is provided.
+*
+*   METHODS
+*       Setup registers a window mouse-button handler after successful Area
+*       setup and returns TRUE without checking registration status. Cleanup
+*       removes that handler and returns the superclass result. AskMinMax adds
+*       three pixels to minimum separator thickness, fixes its default and
+*       maximum thickness to that minimum, and allows MUI_MAXMAX along the other
+*       axis. It returns TRUE.
+*       SELECTDOWN inside the object starts a drag and enables mouse-move
+*       events. Shift at mouse-down selects only the nearest visible sibling on
+*       each side; this search does not skip fixed-size siblings. Without Shift,
+*       dragging redistributes weights across visible, non-fixed siblings on
+*       both sides. Shift state is sampled only at the start. Every other
+*       changed-position move is skipped by a private toggle, which is not reset
+*       at mouse-down.
+*       Any subsequent mouse-button code other than SELECTDOWN ends the drag.
+*       Changes already made are retained; there is no cancel-and-restore path.
+*       A final parent Hide/Layout/Show and redraw occurs when weight totals
+*       were established. HandleEvent always returns zero and does not delegate
+*       to Area. It adds no keyboard resizing behavior.
+*
+*   NOTES
+*       Weight changes write Area's private UWORD fields directly and do not
+*       issue attribute setters or weight notifications. Intermediate
+*       calculations also use signed WORD values; large weights, counts or
+*       coordinates can overflow or truncate. Normal dragging divides changes
+*       among siblings with integer remainders, using rand and at most four
+*       redistribution passes. Mouse-down calls srand(1), affecting the C
+*       random-generator state used by this code. Exact weight conservation is
+*       not guaranteed after truncation or the pass limit.
+*       The balancing-look preference selects full live object display or an
+*       outline preview. Both paths modify weights and invoke parent Layout
+*       during dragging. The full-display path surrounds layout with Hide and
+*       Show. Outline mode clears the parent background and draws sibling
+*       frames, with crosses for resizable objects. Its attempted separator
+*       redraw passes MADF_DRAWOBJECT as a method identifier rather than
+*       invoking MUIM_Draw. Quiet has no effect on either mode.
+*       Use the normal window-handler lifecycle; Cleanup does not implement drag
+*       cancellation or restore weights. Draw calls Area, paints a three-pixel
+*       separator with reversed edge pens while dragging, and returns TRUE;
+*       without MADF_DRAWOBJECT it returns zero. No separately allocated private
+*       drag buffer is owned.
+*
+*/
+/****** Balance.mui/MUIA_Balance_Quiet ************
+*
+*   NAME
+*       MUIA_Balance_Quiet
+*
+*   FUNCTION
+*       Declared constructor attribute with no implemented behavior.
+*
+*   INPUTS
+*       Header declares initialize-only LONG. The constructor recognizes the
+*       identifier but ignores its value.
+*
+*   NOTES
+*       No state is stored and no local getter or setter implements this
+*       attribute. It does not defer layout, suppress notifications, select
+*       outline mode or change redraw behavior. The balancing-look preference
+*       controls the display mode instead.
+*
+*/
+
 extern struct Library *MUIMasterBase;
 
 /*
@@ -30,6 +114,12 @@ extern struct Library *MUIMasterBase;
  */
 
 
+/*
+ * Construct Area and initialize mouse-handler descriptor. Quiet tags are
+ * accepted but ignored. Return object or zero on superclass failure.
+ * Private zero-initialized state starts not clicked; no sibling ownership
+ * or buffer allocation.
+ */
 IPTR Balance__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Balance_DATA *data;
@@ -66,6 +156,12 @@ IPTR Balance__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Call Area, cache parent Group_Horiz when parent exists, and register
+ * window mouse handler. Return FALSE on superclass failure, otherwise TRUE
+ * ignoring getter/registration status. Requires connected group/window and
+ * matching Cleanup.
+ */
 IPTR Balance__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
@@ -82,6 +178,11 @@ IPTR Balance__MUIM_Setup(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
+/*
+ * Remove window mouse handler and return Area Cleanup result. Requires live
+ * enclosing window and matching Setup. Does not reset drag state, restore
+ * weights or own/free sibling objects.
+ */
 IPTR Balance__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
@@ -95,6 +196,12 @@ IPTR Balance__MUIM_Cleanup(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
+/*
+ * Call Area; add three pixels to separator minimum thickness, fix
+ * default/maximum thickness, and allow maximum extent on the other axis.
+ * Return TRUE. Requires writable MinMaxInfo and cached orientation; no
+ * layout or allocation.
+ */
 IPTR Balance__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     struct MUIP_AskMinMax *msg)
 {
@@ -121,6 +228,12 @@ IPTR Balance__MUIM_AskMinMax(struct IClass *cl, Object *obj,
 }
 
 
+/*
+ * Call Area; return zero unless MADF_DRAWOBJECT, otherwise TRUE after
+ * drawing or empty-geometry skip. Paint three-pixel separator using pens
+ * reversed while clicked. Requires live render context and cached
+ * orientation; no resource allocation.
+ */
 IPTR Balance__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
@@ -174,6 +287,11 @@ IPTR Balance__MUIM_Draw(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
+/*
+ * Outline a borrowed sibling using the balance RastPort; add diagonals
+ * unless fixed. Requires valid object geometry and live pens/RastPort.
+ * Mutates drawing state only; returns no status.
+ */
 static void draw_object_frame(Object *obj, Object *o, BOOL fixed)
 {
     SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
@@ -190,6 +308,12 @@ static void draw_object_frame(Object *obj, Object *o, BOOL fixed)
     }
 }
 
+/*
+ * Return leading sibling coordinate plus minimum dimension, subdimension
+ * and parent spacing on selected axis. Requires live parent and Area
+ * geometry; getter failure leaves spacing zero. No mutation or ownership
+ * transfer.
+ */
 static LONG get_first_bound(struct Balance_DATA *data, Object *obj)
 {
     ULONG spacing = 0;
@@ -206,6 +330,12 @@ static LONG get_first_bound(struct Balance_DATA *data, Object *obj)
     }
 }
 
+/*
+ * Return trailing sibling coordinate minus minimum dimension, subdimension
+ * and parent spacing on selected axis. Requires live parent and Area
+ * geometry; getter failure leaves spacing zero. No mutation or ownership
+ * transfer.
+ */
 static LONG get_second_bound(struct Balance_DATA *data, Object *obj)
 {
     ULONG spacing = 0;
@@ -223,6 +353,11 @@ static LONG get_second_bound(struct Balance_DATA *data, Object *obj)
 }
 
 
+/*
+ * Return the parent inner leading coordinate on the cached group axis.
+ * Requires a live parent and valid geometry. No allocation, mutation or
+ * ownership transfer.
+ */
 static LONG get_first_bound_multi(struct Balance_DATA *data, Object *obj)
 {
     if (data->horizgroup)
@@ -235,6 +370,11 @@ static LONG get_first_bound_multi(struct Balance_DATA *data, Object *obj)
     }
 }
 
+/*
+ * Return the parent inner trailing coordinate on the cached group axis.
+ * Requires a live parent and valid geometry. No allocation, mutation or
+ * ownership transfer.
+ */
 static LONG get_second_bound_multi(struct Balance_DATA *data, Object *obj)
 {
     if (data->horizgroup)
@@ -247,6 +387,11 @@ static LONG get_second_bound_multi(struct Balance_DATA *data, Object *obj)
     }
 }
 
+/*
+ * Return whether sibling minimum and maximum dimensions match on the cached
+ * axis. Requires live Area-compatible object. Does not inspect weight,
+ * visibility or ownership.
+ */
 static BOOL is_fixed_size(struct Balance_DATA *data, Object *obj)
 {
     if (data->horizgroup)
@@ -260,6 +405,10 @@ static BOOL is_fixed_size(struct Balance_DATA *data, Object *obj)
 }
 
 
+/*
+ * Return sum of two sibling weights on cached axis. Requires two live Area-
+ * compatible objects. No attribute getter, mutation or ownership transfer.
+ */
 static ULONG get_total_weight_2(struct Balance_DATA *data, Object *objA,
     Object *objB)
 {
@@ -274,6 +423,13 @@ static ULONG get_total_weight_2(struct Balance_DATA *data, Object *objA,
 }
 
 
+/*
+ * Partition cached total weight between cached neighbors from pointer
+ * coordinate and bounds; endpoints assign all weight to one side. Write
+ * private UWORD weights directly without notifications. Requires valid live
+ * neighbors and consistent bounds; arithmetic/conversion is unchecked. No
+ * result.
+ */
 static void set_weight_2(struct Balance_DATA *data, WORD current)
 {
     LONG weightB;
@@ -321,6 +477,13 @@ static void set_weight_2(struct Balance_DATA *data, WORD current)
 }
 
 
+/*
+ * Lazily locate nearest visible siblings around Balance and cache
+ * bounds/total; return without mutation if either is missing. Otherwise
+ * update their weights from mouse coordinate. Fixed-size siblings are not
+ * skipped. Requires stable borrowed child list; cached pointers are not
+ * retained or protected.
+ */
 static void recalc_weights_neighbours(struct IClass *cl, Object *obj,
     WORD mouse)
 {
@@ -370,6 +533,11 @@ static void recalc_weights_neighbours(struct IClass *cl, Object *obj,
     set_weight_2(data, mouse);
 }
 
+/*
+ * Read private axis-specific UWORD weight and return it as LONG. Requires
+ * live Area-compatible object and cached orientation. No notification,
+ * mutation or ownership transfer.
+ */
 static LONG get_weight(struct Balance_DATA *data, Object *obj)
 {
     if (data->horizgroup)
@@ -382,6 +550,11 @@ static LONG get_weight(struct Balance_DATA *data, Object *obj)
     }
 }
 
+/*
+ * Assign LONG argument to private axis-specific UWORD weight with normal C
+ * conversion. Requires live Area-compatible object. No range validation,
+ * setter dispatch, notification or result.
+ */
 static void set_weight(struct Balance_DATA *data, Object *obj, LONG w)
 {
     if (data->horizgroup)
@@ -394,6 +567,11 @@ static void set_weight(struct Balance_DATA *data, Object *obj, LONG w)
     }
 }
 
+/*
+ * Return current outer width or height on cached axis. Requires live object
+ * with valid layout geometry. No mutation, allocation or ownership
+ * transfer.
+ */
 static LONG get_size(struct Balance_DATA *data, Object *obj)
 {
     if (data->horizgroup)
@@ -407,6 +585,12 @@ static LONG get_size(struct Balance_DATA *data, Object *obj)
 }
 
 #if 0
+/*
+ * Inactive #if 0 helper: scale private axis weight by neww/oldw or set zero
+ * if oldw is zero. Would require live object and representable
+ * multiplication; no validation, notifications or result. Not part of the
+ * compiled behavior.
+ */
 static void set_interpolated_weight(struct Balance_DATA *data, Object *obj,
     LONG oldw, LONG neww)
 {
@@ -428,6 +612,14 @@ static void set_interpolated_weight(struct Balance_DATA *data, Object *obj,
 }
 #endif
 
+/*
+ * Compute side totals from drag displacement and initial weight/size
+ * density, then distribute deltas among cached eligible counts. Use random
+ * remainder offsets and up to four redistribution passes. Write private
+ * weights and cache desired totals. Requires nonzero counts and stable
+ * list; signed WORD conversions can lose range. No status or exact-
+ * conservation guarantee.
+ */
 static void set_weight_all(struct Balance_DATA *data, Object *obj,
     WORD current)
 {
@@ -568,6 +760,13 @@ static void set_weight_all(struct Balance_DATA *data, Object *obj,
 }
 
 
+/*
+ * Lazily scan visible non-fixed siblings, collect side counts/weights/sizes
+ * and parent bounds, then redistribute weights. Return early when first,
+ * balance position or last is missing. Requires eligible siblings on both
+ * sides and stable borrowed list; malformed ordering is not fully
+ * validated. No allocation or status.
+ */
 static void recalc_weights_all(struct IClass *cl, Object *obj, WORD mouse)
 {
     struct Balance_DATA *data = INST_DATA(cl, obj);
@@ -655,6 +854,13 @@ static void recalc_weights_all(struct IClass *cl, Object *obj, WORD mouse)
 }
 
 
+/*
+ * Recalculate all or neighbor weights according to clicked state; return
+ * when not clicked. Relayout and redraw parent using live-object or outline
+ * preference, ignoring method results. Requires stable parent/list/render
+ * context. Outline path issues MADF_DRAWOBJECT as a method ID; no ownership
+ * or cancellation rollback.
+ */
 static void handle_move(struct IClass *cl, Object *obj, WORD mouse)
 {
     struct Balance_DATA *data = INST_DATA(cl, obj);
@@ -710,6 +916,14 @@ static void handle_move(struct IClass *cl, Object *obj, WORD mouse)
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
+/*
+ * Start in-object SELECTDOWN drag, sample Shift, borrow child list and
+ * reseed random generator; end on any other button code retaining changes.
+ * Throttle changed moves by toggle, temporarily remove handler during
+ * relayout and re-add it. Return zero on all paths, including NULL imsg.
+ * Requires stable group/window and normal event lifecycle; no superclass
+ * delegation.
+ */
 IPTR Balance__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUIP_HandleEvent *msg)
 {
@@ -819,6 +1033,12 @@ IPTR Balance__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 }
 
 #if ZUNE_BUILTIN_BALANCE
+/*
+ * Dispatch local overrides and return their results; delegate other
+ * messages to Area. Requires ABI-correct message and live object except
+ * construction. Private resource ownership follows the class lifecycle
+ * contract.
+ */
 BOOPSI_DISPATCHER(IPTR, Balance_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)

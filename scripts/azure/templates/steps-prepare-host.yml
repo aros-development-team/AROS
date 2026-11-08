@@ -50,6 +50,9 @@ steps:
     if [ "$AROSBUILD_LLVM_VERSION" != "" ]; then
       CONFIGOPTS="$CONFIGOPTS --with-llvm-version=$(arosbuild.llvm.version)"
     fi
+    if [ "$AROSBUILD_RUST_VERSION" != "" ]; then
+      CONFIGOPTS="$CONFIGOPTS --enable-rust --with-rust-version=$(arosbuild.rust.version)"
+    fi
     if [ "$AROSBUILD_WITHUNITTESTS" != "" ]; then
       export CONFIGOPTS="$CONFIGOPTS --enable-unit-tests=$(arosbuild.withunittests)"
     fi
@@ -108,6 +111,9 @@ steps:
     fi
     if [ -n "${AROSBUILD_LLVM_VERSION:-}" ]; then
       CONFIGOPTS="$CONFIGOPTS --with-llvm-version=$(arosbuild.llvm.version)"
+    fi
+    if [ -n "${AROSBUILD_RUST_VERSION:-}" ]; then
+      CONFIGOPTS="$CONFIGOPTS --enable-rust --with-rust-version=$(arosbuild.rust.version)"
     fi
 
     # Homebrew is expected to be present on Microsoft-hosted macOS agents.

@@ -45,6 +45,15 @@
 #define ND6_LLINFO_PROBE	4	/* sending unicast NS probes */
 
 /*
+ * The times kept below in seconds (expire, preferred, probed, the RS and
+ * DAD timers) are on the monotonic clock, timer.device's GetUpTime(), as
+ * FreeBSD's are on time_uptime: setting the system time does not end a
+ * lifetime early or make it last longer. The addresses' lifetimes
+ * (in6_ifaddr) and the servers and domains of RA options (amiga_netdb.c)
+ * are on the same clock.
+ */
+
+/*
  * Neighbor cache entry (llinfo_nd6).
  * One per neighbor, linked in a doubly-linked list with sentinel.
  */
@@ -101,6 +110,7 @@ struct nd_defrouter {
 	u_int8_t flags;			/* ND_RA_FLAG_* */
 	int8_t pref;			/* RFC 4191 preference: 1 high, 0 medium, -1 low */
 	u_int8_t installed;		/* route installed in FIB */
+	long probed;			/* when it was last probed (RFC 4191 section 3.5) */
 };
 
 /*
@@ -231,7 +241,7 @@ caddr_t nd6_ifptomac(struct ifnet *);
 /* --- nd6_nbr.c: Neighbor Solicitation / Advertisement + DAD --- */
 void nd6_ns_input(struct mbuf *, int, int);
 void nd6_ns_output(struct ifnet *, struct in6_addr *, struct in6_addr *,
-	struct llinfo_nd6 *, int);
+	const struct llinfo_nd6 *, int);
 void nd6_na_input(struct mbuf *, int, int);
 void nd6_na_output(struct ifnet *, struct in6_addr *, struct in6_addr *,
 	u_long, int, struct sockaddr *);
@@ -247,7 +257,11 @@ void nd6_ra_input(struct mbuf *, int, int);
 void nd6_redirect_input(struct mbuf *, int, int);
 struct nd_defrouter *defrouter_lookup(struct in6_addr *, struct ifnet *);
 void defrouter_select(void);
-struct nd_prefix *nd6_prefix_lookup(struct sockaddr_in6 *, int);
+void defrouter_unreachable(struct in6_addr *, struct ifnet *);
+void defrouter_reachable(struct in6_addr *, struct ifnet *);
+void defrouter_notrouter(struct in6_addr *, struct ifnet *);
+void nd6_probe(struct ifnet *, struct in6_addr *);
+struct nd_prefix *nd6_prefix_lookup(struct sockaddr_in6 *, int, const struct ifnet *);
 void nd6_prefix_timer(void);
 void nd6_defrouter_timer(void);
 void nd6_purge_routers(struct ifnet *);
