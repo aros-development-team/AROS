@@ -10,7 +10,6 @@
 #include <aros/debug.h>
 
 #include <exec/errors.h>
-#include <intuition/preferences.h>      /* DEVNAME_SIZE */
 #include <devices/serial.h>
 #include <devices/printer.h>
 
@@ -23,7 +22,7 @@
 #define UtilityBase     (pb->pb_UtilityBase)
 
 struct portBase {
-    TEXT  pb_DeviceName[DEVNAME_SIZE];
+    TEXT  pb_DeviceName[256];
     LONG  pb_DeviceFlags;
     enum { PORT_SERIAL, PORT_PARALLEL, PORT_PRINTER, PORT_STREAM } pb_Mode;
     struct Library *pb_UtilityBase;
