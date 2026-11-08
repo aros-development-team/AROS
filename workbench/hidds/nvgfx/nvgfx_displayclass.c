@@ -431,6 +431,7 @@ VOID HIDDNVGfxEnumPlanes(LONG fd, struct HIDDNVGfxData *gfxdata)
                 {
                     plane->formats = fmts;
                     plane->fbid    = 0;
+                    plane->bm      = NULL;
                     if (!HIDDNVGfxPlaneAtomic(plane))
                         gfxdata->atomic = FALSE;
                     nvlog("[Nouveau] plane %lu: formats %03lx (video mask %02lx) zpos %lu..%lu%s%s%s\n",
@@ -1113,6 +1114,7 @@ static int HIDDNVGfxPlaneRequest(drmModeAtomicReqPtr req, struct HIDDNVGfxData *
 static VOID HIDDNVGfxPlaneRemember(struct HIDDNVGfxPlane *p, ULONG fbid, struct HIDD_PlaneState *st)
 {
     p->fbid = fbid;
+    p->bm = (fbid && st) ? st->BitMap : NULL;
     if (!fbid || !st)
         return;
     p->crtc_x = st->Dest.MinX;
@@ -1217,6 +1219,7 @@ static BOOL HIDDNVGfxPlanesCheckTimeouts(LONG fd, struct HIDDNVGfxData *gfxdata,
         UNLOCK_ENGINE
         nvlog("[Nouveau] plane %lu: off after timeout: %d\n", (unsigned long)p->id, ret);
         p->fbid = 0;
+        p->bm = NULL;
     }
     return died;
 }
@@ -1333,17 +1336,25 @@ BOOL METHOD(NVGfxDisplay, Hidd_Display, CommitPlanes)
             else if (p->fbid)
                 ret = HIDDNVGfxPlaneRequest(req, gfxdata, p, 0, NULL);
         }
+        /*
+         * The lock covers the commit and the bookkeeping below together: a
+         * SwapBuffers() of the bitmap that held a plane until this commit
+         * must find the plane's new owner recorded, or it would flip the
+         * plane back to its own buffer (one window black, the plane showing
+         * another's frames, 2026-11-08).
+         */
         if (!ret)
         {
             LOCK_ENGINE
             ret = drmModeAtomicCommit(NOUVEAU_DEV_FD(nvdev), req,
                     (msg->flags & fHidd_Commit_Test) ? DRM_MODE_ATOMIC_TEST_ONLY : 0, NULL);
-            UNLOCK_ENGINE
         }
         drmModeAtomicFree(req);
         if (msg->flags & fHidd_Commit_Test)
         {
-            if (ret)
+            if (!ret)
+                UNLOCK_ENGINE
+            else
                 nvlog("[Nouveau] atomic test of %lu plane state(s): %d\n", (unsigned long)msg->count, ret);
             return ret ? FALSE : TRUE;
         }
@@ -1381,6 +1392,7 @@ BOOL METHOD(NVGfxDisplay, Hidd_Display, CommitPlanes)
                 touched |= 1UL << (st->Plane - 1);
             }
         }
+        UNLOCK_ENGINE
     }
     else if (msg->flags & fHidd_Commit_Test)
         return TRUE;
@@ -1423,6 +1435,8 @@ BOOL METHOD(NVGfxDisplay, Hidd_Display, CommitPlanes)
                 return FALSE;
             LOCK_ENGINE
             ret = HIDDNVGfxPlaneSetLegacy(NOUVEAU_DEV_FD(nvdev), gfxdata, p, bmdata->fbid, st);
+            if (!ret)
+                HIDDNVGfxPlaneRemember(p, bmdata->fbid, st);   /* with the lock held: see the atomic commit */
             UNLOCK_ENGINE
             D(bug("[Nouveau] plane %lu: fb %lu (%lux%lu bo %p) at %d,%d %dx%d%s on crtc %lu: %d\n", (unsigned long)p->id,
                 (unsigned long)bmdata->fbid, (unsigned long)bmdata->drawable.width, (unsigned long)bmdata->drawable.height,
@@ -1434,16 +1448,15 @@ BOOL METHOD(NVGfxDisplay, Hidd_Display, CommitPlanes)
                 HIDDNVGfxPlanesCheckTimeouts(NOUVEAU_DEV_FD(nvdev), gfxdata, touched);
                 return FALSE;
             }
-            HIDDNVGfxPlaneRemember(p, bmdata->fbid, st);
             changed = TRUE;
         }
         else if (p->fbid)
         {
             LOCK_ENGINE
             ret = HIDDNVGfxPlaneSetLegacy(NOUVEAU_DEV_FD(nvdev), gfxdata, p, 0, NULL);
+            HIDDNVGfxPlaneRemember(p, 0, NULL);
             UNLOCK_ENGINE
             nvlog("[Nouveau] plane %lu: off: %d\n", (unsigned long)p->id, ret);
-            HIDDNVGfxPlaneRemember(p, 0, NULL);
             changed = TRUE;
             touched |= 1UL << (st->Plane - 1);
         }
@@ -1469,37 +1482,50 @@ BOOL METHOD(NVGfxDisplay, Hidd_Display, CommitPlanes)
 
 /*
  * SwapBuffers of a scan-out bitmap: if one of the display's overlays shows
- * the old framebuffer, re-program it with the new one at the same geometry
+ * the bitmap, re-program it with the new framebuffer at the same geometry
  * and (unless told not to) wait for the vblank that retires the old buffer.
- * FALSE when no plane shows it (the bitmap is composed instead).
+ * PLANESWAP_COMPOSED when no plane shows it (the compositor blits it).
  */
 /* set while a non-blocking flip is queued (drm/nouveau/dispnv50/disp.c) */
 extern volatile int nouveau_flip_pending;
 
-LONG HIDDNVGfxPlaneSwap(OOP_Object *display, ULONG oldfbid, ULONG newfbid, BOOL wait)
+LONG HIDDNVGfxPlaneSwap(OOP_Object *display, OOP_Object *bm, ULONG newfbid, BOOL wait)
 {
     OOP_Class *cl = OOP_OCLASS(display);
     struct HIDDNVGfxData *gfxdata = HIDDNVGfxGfxData(cl, display);
     struct nouveau_device *nvdev = SD(cl)->carddata.dev;
     struct HIDDNVGfxPlane *p = NULL;
-    ULONG i;
+    ULONG i, oldfbid;
     int ret;
 
-    if (!gfxdata || !oldfbid || !newfbid)
+    if (!gfxdata || !bm || !newfbid)
         return PLANESWAP_COMPOSED;
+    /*
+     * The plane is found by the bitmap the last commit put on it, under the
+     * engine lock the commit holds while it records that: a bitmap that just
+     * lost its plane to another is composed from here on, whatever buffer
+     * the plane showed last.
+     */
+    LOCK_ENGINE
     for (i = 0; i < gfxdata->nplanes; i++)
     {
-        if (gfxdata->planes[i].fbid == oldfbid)
+        if (gfxdata->planes[i].bm == bm)
             p = &gfxdata->planes[i];
     }
     if (!p)
+    {
+        UNLOCK_ENGINE
         return PLANESWAP_COMPOSED;
+    }
+    oldfbid = p->fbid;
 
     /* the previous flip has not latched: the kernel would refuse this one
      * after a full atomic check, so do not ask */
     if (!wait && gfxdata->atomic && nouveau_flip_pending)
+    {
+        UNLOCK_ENGINE
         return PLANESWAP_BUSY;
-    LOCK_ENGINE
+    }
     if (gfxdata->atomic)
     {
         drmModeAtomicReqPtr req = drmModeAtomicAlloc();
@@ -1523,6 +1549,8 @@ LONG HIDDNVGfxPlaneSwap(OOP_Object *display, ULONG oldfbid, ULONG newfbid, BOOL 
                               p->crtc_x, p->crtc_y, p->crtc_w, p->crtc_h,
                               p->src_x, p->src_y, p->src_w, p->src_h);
     }
+    if (!ret)
+        p->fbid = newfbid;
     UNLOCK_ENGINE
     if (ret == -EBUSY && !wait)
         return PLANESWAP_BUSY;
@@ -1533,7 +1561,6 @@ LONG HIDDNVGfxPlaneSwap(OOP_Object *display, ULONG oldfbid, ULONG newfbid, BOOL 
         HIDDNVGfxPlanesCheckTimeouts(NOUVEAU_DEV_FD(nvdev), gfxdata, 1UL << (p - gfxdata->planes));
         return PLANESWAP_DONE;  /* it is on a plane; nothing to compose either way */
     }
-    p->fbid = newfbid;
     if (HIDDNVGfxPlanesCheckTimeouts(NOUVEAU_DEV_FD(nvdev), gfxdata, 1UL << (p - gfxdata->planes)))
         return PLANESWAP_COMPOSED;  /* the window died: the bitmap is composed from now on */
     /* A blocking commit returns once the new buffer has latched, so the

@@ -1406,7 +1406,7 @@ BOOL METHOD(NVGfxBitMap, Hidd_BitMap, SwapBuffers)
     bmdata->fbid = newfbid;
     UNLOCK_BITMAP
 
-    switch (HIDDNVGfxPlaneSwap(display, oldfbid, newfbid, (msg->flags & fHidd_Swap_NoWait) ? FALSE : TRUE))
+    switch (HIDDNVGfxPlaneSwap(display, o, newfbid, (msg->flags & fHidd_Swap_NoWait) ? FALSE : TRUE))
     {
     case PLANESWAP_BUSY:
         /* The previous flip is still pending: this frame is not shown

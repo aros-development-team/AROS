@@ -84,6 +84,8 @@ struct HIDDNVGfxPlane
     ULONG               id;             /* KMS plane object id */
     ULONG               formats;        /* KMSFMT_* it scans out */
     ULONG               fbid;           /* framebuffer on it, 0 = off */
+    OOP_Object          *bm;            /* the scan-out bitmap the last commit put on it: only its
+                                           swaps flip the plane (another bitmap's are composed) */
     BOOL                dead;           /* its window channel timed out: not used again this boot */
 
     /* DRM property ids (0 = the plane has none), read at enumeration */
@@ -140,7 +142,7 @@ BOOL HIDDNVGfxEnsureBufferFB(OOP_Object *bm, ULONG buffer);
 #define PLANESWAP_COMPOSED  0   /* not on a plane: the compositor shows the bitmap */
 #define PLANESWAP_DONE      1   /* the plane shows (or will show at the next vblank) newfbid */
 #define PLANESWAP_BUSY      2   /* no wait asked and the previous flip has not latched yet: nothing changed */
-LONG HIDDNVGfxPlaneSwap(OOP_Object *display, ULONG oldfbid, ULONG newfbid, BOOL wait);
+LONG HIDDNVGfxPlaneSwap(OOP_Object *display, OOP_Object *bm, ULONG newfbid, BOOL wait);
 
 struct HIDDNVGfxDisplayData
 {
