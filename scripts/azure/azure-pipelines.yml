@@ -22,7 +22,8 @@
 #    arosbuild.packagefmt, arosbuild.vmimage, SF_RSYNC_USER, SF_RSYNC_PASSWORD
 # Optional:
 #    arosbuild.nativetoolchain, arosbuild.toolchain.family, arosbuild.gcc.version,
-#    arosbuild.llvm.version, arosbuild.bootpackage, arosbuild.bootpackagefmt,
+#    arosbuild.llvm.version, arosbuild.rust.version (builds the Rust cross
+#    compiler into the toolchain), arosbuild.bootpackage, arosbuild.bootpackagefmt,
 #    arosbuild.withcontrib, arosbuild.withtoolchain, arosbuild.withunittests,
 #    arosbuild.deploy, arosbuild.config.extra, arosbuild.log.parsetranslations
 #
@@ -48,6 +49,7 @@ variables:
   AROSTOOLCHAINFAMILY:   $[ coalesce(variables['arosbuild.toolchain.family'], 'gnu') ]
   AROSTOOLCHAINGCCVER:   $[ coalesce(variables['arosbuild.gcc.version'], 'default') ]
   AROSTOOLCHAINLLVMVER:  $[ coalesce(variables['arosbuild.llvm.version'], 'default') ]
+  AROSTOOLCHAINRUSTVER:  $[ coalesce(variables['arosbuild.rust.version'], 'none') ]
 
 stages:
 # =============================================================================
@@ -92,7 +94,7 @@ stages:
         # collect-aros is installed into the toolchain directory and travels
         # in the cached tarball, so a change to it has to miss the cache the
         # way a change under tools/crosstools does.
-        key: 'aros-toolchain | "$(arosbuild.name)" | "$(AROSTOOLCHAINFAMILY)" | "$(AROSTOOLCHAINGCCVER)" | "$(AROSTOOLCHAINLLVMVER)" | tools/crosstools/** | tools/collect-aros/**'
+        key: 'aros-toolchain | "$(arosbuild.name)" | "$(AROSTOOLCHAINFAMILY)" | "$(AROSTOOLCHAINGCCVER)" | "$(AROSTOOLCHAINLLVMVER)" | "$(AROSTOOLCHAINRUSTVER)" | tools/crosstools/** | tools/collect-aros/**'
         path: '$(Agent.TempDirectory)/toolchain-cache'
         cacheHitVar: TOOLCHAIN_RESTORED
       displayName: 'Restore cached toolchain'

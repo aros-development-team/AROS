@@ -758,7 +758,8 @@ static char *appendargs(char *argptr, int *argssizeptr, char *const args[], APTR
     
     for (argsit = args; *argsit && argptr; argsit++)
     {
-        if(containswhite(*argsit))
+        /* DOS treats a leading quote as syntax, and skips unquoted empties. */
+        if (**argsit == '\0' || **argsit == '"' || containswhite(*argsit))
         {
             char *escaped = escape(*argsit);
             if(!escaped)

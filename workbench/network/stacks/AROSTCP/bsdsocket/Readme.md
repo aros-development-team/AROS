@@ -83,6 +83,9 @@ entries first, then the dynamic ones (DHCP, Router Advertisements); a final dot 
 A `NAMESERVER` line in the NetDB takes an IPv4 or an IPv6 address; a link-local IPv6 server needs a
 zone, which the line has no room for, and goes with its interface instead (`DNS6=`, or learned from
 a Router Advertisement).
+The resolver's cache (`api/dns_cache.c`) keeps an answer for its smallest TTL, at most a day, on the
+monotonic clock (`GetUpTime()`): setting the system time neither drops answers early nor keeps them
+past their TTL.
 The networks table (`db/networks`) holds each network's number in host order, as
 `getnetent(3)` and the autodoc say, read with `inet_network()`'s rules (`__inet_network()`: "10.1"
 is 0x0a01), so `getnetbyaddr(127, AF_INET)` finds `loop 127`.
@@ -549,6 +552,15 @@ for a reload - is queued and applied in order by the next holder before its own 
 entries name their interface by index (`nsn_OwnerIndex`, `dn_OwnerIndex`), which is never reused,
 so those of an interface already gone cannot dangle meanwhile.
 
+Every time Neighbour Discovery keeps in seconds - when a neighbour's state ends, a default router's
+and a prefix's lifetimes, a route from a Route Information Option, the lifetimes of SLAAC and
+temporary addresses, the DAD and Router Solicitation timers, the servers and domains of RA options -
+is on the monotonic clock, timer.device's `GetUpTime()` (posixc's `CLOCK_MONOTONIC`), as FreeBSD's
+are on `time_uptime`. Setting the system time, by hand or from the network, ends none of them early
+and stretches none: with `GetSysTime()` a clock set a day forward took every SLAAC address, RIO route
+and RDNSS server away at the next tick, and one set back kept them a day too long
+(`cunit-net-clockstep`).
+
 An in-place reload deletes every address of every interface, the link-local included, and forgets
 the routers and prefixes heard on it (`nd6_purge_routers()`, `nd6_purge_prefixes()`). For an
 interface that stays up and running, `addifent()` then makes the link-local again with `in6_if_up()`,
@@ -649,6 +661,12 @@ says when), then the larger one is tried again (RFC 8201 section 4): `rt_pmtu_ti
 `ip_slowtimo()`) deletes a host route added for it and gives any other route its previous MTU back.
 The routes are held, with a reference, in a table of 32 (`pmtu_routes[]`, `net/route.c`, shared with
 IPv4 - §7); when it is full the one closest to expiring gives way.
+
+A route's `rmx_expire` is kept on the monotonic clock (`GetUpTime()`), as FreeBSD keeps it on
+`time_uptime`, so setting the system time does not give a path MTU back early or keep it longer. The
+routing socket (`RTM_GET`, the `NET_RT_DUMP` sysctl, `RTV_EXPIRE` in `RTM_ADD`/`RTM_CHANGE`) and
+`GetRouteInfo()` give and take it as BSD does, as a time of day: seconds since 1970 in UTC, what
+`time()` returns (`rt_expire_out()`, `rt_expire_in()`); `ip route` shows what is left of it.
 
 The other ICMPv6 errors (Destination Unreachable, Time Exceeded, Parameter Problem) go to the
 upper-layer protocol of the packet they quote, as in KAME: `icmp6_notify_error()` copies out the

@@ -25,10 +25,13 @@ struct Box
 struct Amdgpu_FB
 {
     ULONG                       handle;         /* GEM handle of the buffer */
+    ULONG                       name;           /* its GEM flink name, 0 until asked for */
+    ULONG                       id;             /* new for every buffer made (kms->fb_serial) */
     ULONG                       fbid;           /* KMS framebuffer id, 0 when not registered */
     ULONG                       pitch;          /* bytes per line */
     UQUAD                       size;
     APTR                        map;            /* CPU view of the buffer */
+    UQUAD                       va;             /* GPU address for the driver's 2D, 0 until used */
     ULONG                       width, height;
     ULONG                       bpp, depth;
 };
@@ -72,6 +75,7 @@ struct Amdgpu_KMS
     ULONG                       max_width;      /* largest mode offered */
     ULONG                       max_height;
     BOOL                        has3d;
+    ULONG                       fb_serial;
     BOOL                    no_dirtyfb;
 
     /* cursor */
@@ -90,6 +94,7 @@ struct Amdgpu_KMS
     ULONG                       nplanes;        /* overlay planes usable on our crtc */
     struct Amdgpu_Plane     planes[AMDGPU_MAX_PLANES];
     BOOL                        vblank_ok;      /* the kernel answers vblank waits for our crtc */
+    ULONG                       vblank_probes;  /* vblank probes made, one per mode set */
     ULONG                       vblanks;        /* last vblank sequence seen */
 };
 

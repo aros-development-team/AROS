@@ -250,6 +250,25 @@ NVGFX_DRM_C_SOURCES := \
             $(AROS_DRM_CORE_SOURCES) \
             $(AROS_DRM_NVIDIA_SOURCES)
 
+# The Linux code's x86 parts are chosen by CONFIG_X86, as on Linux.
+ifneq ($(filter i386 x86_64,$(AROS_TARGET_CPU)),)
+USER_CPPFLAGS += -DCONFIG_X86
+
+# NVGFX_ACPI=yes (build option, off by default): the firmware's ACPI methods
+# through acpica.library - Optimus/_DSM detection, the VBIOS from _ROM, MXM
+# data, and the ACPI data GSP-RM is given at boot. Without ACPI at run time
+# it behaves as the build without it. It changes struct nouveau_drm, so
+# switching it needs the drm objects rebuilt (make hidd-nvgfx-drm-clean).
+NVGFX_ACPI ?= no
+ifeq ($(NVGFX_ACPI),yes)
+USER_CPPFLAGS += -DCONFIG_ACPI
+NVGFX_DRM_C_SOURCES += \
+            drm-compat/linux_acpi \
+            drm-compat/linux_acpi_bridge \
+            drm/nouveau/nouveau_acpi
+endif
+endif
+
 %build_linklib mmake=hidd-nvgfx-drm libname=drm_nouveau \
     files="$(NVGFX_DRM_C_SOURCES)" srcdir="$(SRCDIR)/$(CURDIR)" usetree=yes
 

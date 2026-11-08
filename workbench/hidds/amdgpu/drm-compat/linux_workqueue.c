@@ -132,7 +132,6 @@ struct workqueue_struct *alloc_workqueue(const char *fmt, unsigned int flags, in
          * scheduling. The workers sleep unless work is queued.
          */
         NP_Priority, (flags & WQ_HIGHPRI) ? 22 : 21,
-        NP_Affinity, TASKAFFINITY_ANY,
         NP_Entry, (IPTR)worker_main,
         NP_StackSize, 256 * 1024,
         NP_UserData, (IPTR)wq,
@@ -405,6 +404,7 @@ void tasklet_kill(struct tasklet_struct *t)
  * that the processes exist before any interrupt tries to queue to them.
  */
 BOOL amdgpu_log_init(void);
+void compat_rcu_init(void);
 
 BOOL workqueue_init(void)
 {
@@ -416,6 +416,7 @@ BOOL workqueue_init(void)
     system_wq = alloc_workqueue("Amdgpu WorkQueue", 0, 0);
     if (!system_wq)
         return FALSE;
+    compat_rcu_init();
     system_highpri_wq = alloc_workqueue("Amdgpu WorkQueue HiPri", WQ_HIGHPRI, 0);
     if (!system_highpri_wq)
         system_highpri_wq = system_wq;

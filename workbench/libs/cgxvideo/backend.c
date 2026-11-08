@@ -21,6 +21,8 @@
 #include <proto/utility.h>
 #include <proto/oop.h>
 
+#include <string.h>
+
 #include "cgxvideo_intern.h"
 
 /*****************************************************************************/
@@ -140,6 +142,42 @@ void cgxv_Refresh(struct VLayerHandle *vh)
 /*****************************************************************************/
 
 /*
+ * Can a layer of video format 'videofmt' (0: any) go below the screen? The
+ * primary blends over planes below it, a plane for the format can go there,
+ * and the screen bitmap has alpha to blend with.
+ */
+BOOL cgxv_CanUnderlay(OOP_Object *display, OOP_Object *screenbm, ULONG videofmt,
+                      struct Library *CGXVideoBase)
+{
+    struct HIDD_PlaneInfo primary, pi;
+    OOP_Object *pf = NULL;
+    IPTR count = 0, amask = 0, i;
+
+    OOP_GetAttr(screenbm, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    if (pf)
+        OOP_GetAttr(pf, aHidd_PixFmt_AlphaMask, &amask);
+    memset(&primary, 0, sizeof(primary));
+    if (!amask || !HIDD_Display_GetPlaneInfo(display, 0, &primary, sizeof(primary))
+        || (primary.Type != vHidd_Plane_Primary)
+        || !(primary.AlphaModes & (1UL << vHidd_CompAlpha_PerPixel)))
+        return FALSE;
+
+    OOP_GetAttr(display, aHidd_Display_PlaneCount, &count);
+    for (i = 1; i < count; i++)
+    {
+        memset(&pi, 0, sizeof(pi));
+        if (!HIDD_Display_GetPlaneInfo(display, i, &pi, sizeof(pi)))
+            break;
+        if ((pi.Type == vHidd_Plane_Overlay) && (pi.ZMin < primary.ZMin)
+            && (videofmt ? ((videofmt < 32) && (pi.VideoFmtMask & (1UL << videofmt))) : (pi.VideoFmtMask != 0)))
+            return TRUE;
+    }
+    return FALSE;
+}
+
+/*****************************************************************************/
+
+/*
  * Compositor -> client surface hook. Runs in the damaging task with no
  * compositor lock held; it must neither block nor allocate heavily.
  */
@@ -153,6 +191,12 @@ AROS_UFH3(static IPTR, cgxv_SurfaceHook,
     struct VLayerHandle *vh = hook->h_Data;
     struct Rectangle inner;
 
+    if (msg && ((msg->Type == vHidd_SurfaceHook_PlaneGained) || (msg->Type == vHidd_SurfaceHook_PlaneLost)))
+    {
+        /* The fill serves both places (cgxv_FillRect()): only reported */
+        vh->underlaid = (msg->Type == vHidd_SurfaceHook_PlaneGained) && (msg->Flags & SHF_UNDERLAY);
+        return 0;
+    }
     if (!msg || msg->Type != vHidd_SurfaceHook_Damage)
         return 0;
 
@@ -189,7 +233,17 @@ static void cgxv_FillRect(struct VLayerHandle *vh, struct RastPort *rp, struct R
 
     (void)CGXVideoBase;
 
-    if (vh->colorkeypen >= 0)
+    if ((vh->flags & VHF_UNDERLAY) || !(vh->flags & VHF_COLORKEY))
+    {
+        /*
+         * The key's colour with alpha 0: transparent while the layer is below
+         * the screen, the key (RGB only) while above. So the fill need not
+         * change when the layer moves.
+         */
+        FillPixelArray(rp, r->MinX, r->MinY, r->MaxX - r->MinX + 1, r->MaxY - r->MinY + 1,
+                       (vh->flags & VHF_COLORKEY) ? vh->colorkey : 0x00000000);
+    }
+    else if (vh->colorkeypen >= 0)
     {
         SetDrMd(rp, JAM1);
         SetAPen(rp, vh->colorkeypen);
@@ -356,7 +410,8 @@ ULONG cgxv_Attach(struct VLayerHandle *vh, struct Window *window, struct TagItem
         vh->req.Shape     = shape;
         vh->req.Opacity   = 255;
         vh->req.AlphaMode = vHidd_CompAlpha_None;
-        vh->req.Flags     = CRF_PLANE_REQUIRED;
+        vh->req.Flags     = CRF_PLANE_REQUIRED | ((vh->flags & VHF_UNDERLAY) ? CRF_UNDERLAY_OK : 0);
+        vh->underlaid     = FALSE;
         vh->req.ZOrder    = 0;
         vh->req.UserData  = NULL;
         if ((dest.MaxX - dest.MinX) != (LONG)(vh->width - 1) ||
@@ -381,7 +436,7 @@ ULONG cgxv_Attach(struct VLayerHandle *vh, struct Window *window, struct TagItem
     vh->flags |= VHF_ATTACHED;
     AddTail((struct List *)&base->handles, (struct Node *)&vh->node);
 
-    if ((vh->flags & (VHF_COLORKEY | VHF_NULL)) == VHF_COLORKEY)
+    if ((vh->flags & (VHF_COLORKEY | VHF_UNDERLAY)) && !(vh->flags & VHF_NULL))
     {
         cgxv_FillKey(vh);
 
@@ -419,6 +474,7 @@ void cgxv_Detach(struct VLayerHandle *vh)
     Remove((struct Node *)&vh->node);
     vh->window = NULL;
     vh->flags &= ~VHF_ATTACHED;
+    vh->underlaid = FALSE;
     st_Reset(&vh->track);
     vh->req.Shape = NULL;
 }

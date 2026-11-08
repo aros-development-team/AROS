@@ -12,13 +12,12 @@
 #include <linux/debugobjects.h>
 #include <linux/stringify.h>
 
-/* kernel timers are delivered through the delayed-work timer process */
+/* an armed timer is on the compat layer's list; pending is its Linux-visible state */
 struct timer_list {
     void (*function)(struct timer_list *);
     unsigned long expires;
-    struct timerequest req;
-    BOOL pending;
     struct MinNode node;
+    volatile LONG pending;
 };
 #define from_timer(var, callback_timer, timer_fieldname) container_of(callback_timer, typeof(*var), timer_fieldname)
 #define timer_container_of(var, callback_timer, timer_fieldname) from_timer(var, callback_timer, timer_fieldname)

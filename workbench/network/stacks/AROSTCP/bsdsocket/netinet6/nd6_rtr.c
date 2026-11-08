@@ -91,7 +91,7 @@ nd6_rtexpire(u_int32_t lifetime)
 
     if(lifetime == 0xffffffff)
         return 0;
-    GetSysTime(&_tv);
+    GetUpTime(&_tv);
     if(lifetime > (u_int32_t)(0x7fffffff - _tv.tv_sec))
         return 0;
     return _tv.tv_sec + (long)lifetime;
@@ -104,7 +104,7 @@ nd6_rtexpired(long expire)
 
     if(expire == 0)
         return 0;
-    GetSysTime(&_tv);
+    GetUpTime(&_tv);
     return expire < _tv.tv_sec;
 }
 
@@ -263,7 +263,7 @@ nd6_now(void)
 {
     struct timeval tv;
 
-    GetSysTime(&tv);
+    GetUpTime(&tv);
     return tv.tv_sec;
 }
 
@@ -665,7 +665,7 @@ nd6_prefix_add(struct ifnet *ifp, struct nd_opt_prefix_info *pi)
     prefix.sin6_len    = sizeof(prefix);
     prefix.sin6_addr   = pi->nd_opt_pi_prefix;
 
-    GetSysTime(&_tv);
+    GetUpTime(&_tv);
 
     pr = nd6_prefix_lookup(&prefix, plen, ifp);
     if(pr) {
@@ -867,7 +867,7 @@ nd6_prefix_timer(void)
     struct nd_prefix *pr, **pp;
     struct timeval _tv;
 
-    GetSysTime(&_tv);
+    GetUpTime(&_tv);
 
     pp = &nd6_prefixlist;
     while((pr = *pp) != NULL) {
@@ -924,7 +924,7 @@ nd6_slaac_lifetimes(struct in6_ifaddr *ia, u_int32_t vltime, u_int32_t pltime,
     struct timeval _tv;
     u_int32_t now;
 
-    GetSysTime(&_tv);
+    GetUpTime(&_tv);
     now = (u_int32_t)_tv.tv_sec;
     if(!fresh && vltime <= 7200) {
         u_int32_t left = ia->ia6_lifetime_expire == 0 ? 0xffffffff :

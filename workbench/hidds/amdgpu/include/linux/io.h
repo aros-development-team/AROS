@@ -93,14 +93,15 @@ static inline void iowrite32_rep(void __iomem *addr, const void *buf, unsigned l
  * CPU window that reaches it; the length is remembered for iounmap.
  */
 void __iomem *ioremap(resource_size_t offset, unsigned long size);
+void __iomem *ioremap_wc(resource_size_t offset, unsigned long size);
 void iounmap(volatile void __iomem *addr);
+int compat_map_write_combining(void *va, unsigned long size);
 #define ioremap_nocache(o, s)   ioremap(o, s)
-#define ioremap_wc(o, s)        ioremap(o, s)
 #define ioremap_uc(o, s)        ioremap(o, s)
 #define ioremap_cache(o, s)     ioremap(o, s)
 #define ioremap_np(o, s)        ioremap(o, s)
 #define devm_ioremap(d, o, s)   ioremap(o, s)
-#define devm_ioremap_wc(d, o, s) ioremap(o, s)
+#define devm_ioremap_wc(d, o, s) ioremap_wc(o, s)
 #define devm_iounmap(d, a)      iounmap(a)
 #define memremap(o, s, f)       ioremap(o, s)
 #define memunmap(a)             iounmap(a)

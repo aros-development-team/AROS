@@ -397,6 +397,7 @@ struct hvs_src
     ULONG yuv;              /* HVS YUV format, 0 = RGB */
     ULONG cphys[2], cpitch; /* its chroma: CbCr, or Cb then Cr */
     ULONG csc[3];
+    ULONG amode;            /* POS2 alpha mode: 0 = per-pixel, 1 = fixed */
 };
 
 /* The plane's rectangle in output pixels. FALSE when empty. */
@@ -632,7 +633,7 @@ static ULONG hvs_put_src(struct vc4_hvs_state *st, ULONG *w, ULONG words,
     if (words == HVS_UNITY_WORDS)
     {
         w[0] = HVS_CTL0_XRGB_UNITY;
-        w[2] = (1UL << HVS_POS2_AMODE_SHIFT)
+        w[2] = (s->amode << HVS_POS2_AMODE_SHIFT)
              | (oh << HVS_POS2_H_SHIFT)
              | (ow << HVS_POS2_W_SHIFT);
         w[3] = 0;
@@ -646,7 +647,7 @@ static ULONG hvs_put_src(struct vc4_hvs_state *st, ULONG *w, ULONG words,
 
     w[0]            = HVS_CTL0_XRGB_SCALED;
     w[HVS_SC_POS1]  = (oh << HVS_POS2_H_SHIFT) | (ow << HVS_POS2_W_SHIFT);
-    w[HVS_SC_POS2]  = (1UL << HVS_POS2_AMODE_SHIFT)
+    w[HVS_SC_POS2]  = (s->amode << HVS_POS2_AMODE_SHIFT)
                     | (srch << HVS_POS2_H_SHIFT)
                     | (srcw << HVS_POS2_W_SHIFT);
     w[4]            = 0;
@@ -699,6 +700,7 @@ static void hvs_plane_src(struct VideoCoreGfx_staticdata *xsd, struct vcgfx_plan
     s->cw    = xsd->vcsd_DispW;
     s->ch    = xsd->vcsd_DispH;
     s->yuv   = pl->pl_Yuv;
+    s->amode = pl->pl_Alpha ? 0 : 1;
     if (s->yuv)
     {
         ULONG base = (ULONG)(IPTR)d->VideoData, cx = pl->pl_SrcX / 2, cy = pl->pl_SrcY / 2;
@@ -707,7 +709,7 @@ static void hvs_plane_src(struct VideoCoreGfx_staticdata *xsd, struct vcgfx_plan
         s->cphys[0] = base + d->planeoff[0] + cy * d->cpitch
                     + cx * ((s->yuv == HVS_PXF_YUV420_2PLANE) ? 2 : 1);
         s->cphys[1] = base + d->planeoff[1] + cy * d->cpitch + cx;
-        vcgfx_yuv_csc(d->colorspace, s->csc);
+        vcgfx_yuv_csc(d->colorspace, d->colorrange, s->csc);
     }
 }
 
@@ -724,6 +726,7 @@ static void hvs_fb_src(struct vc4_hvs_state *st, struct hvs_src *s)
     s->x     = 0;
     s->y     = 0;
     s->yuv   = 0;
+    s->amode = 1;
 }
 
 /* The fb plane, verbatim but for its pointer - or our own buffer. */
@@ -822,7 +825,8 @@ static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
         need = lb;
         swords[i] = words;
 
-        bottom = vcgfx_plane_occlude(px, py, pw, ph, left, top, right, bottom);
+        if (!pl->pl_Alpha)  /* a blended plane hides nothing behind it */
+            bottom = vcgfx_plane_occlude(px, py, pw, ph, left, top, right, bottom);
     }
 
     if (bottom > top)

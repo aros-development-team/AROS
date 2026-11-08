@@ -557,7 +557,7 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
 
         {
             struct timeval _tv;
-            GetSysTime(&_tv);
+            GetUpTime(&_tv);
             ln->ln_expire = _tv.tv_sec + ND6_REACHABLE_TIME / 1000;
         }
         if(ln->ln_router && !is_router)
@@ -593,7 +593,7 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
             if(is_solicited) {
                 ln->ln_state = ND6_LLINFO_REACHABLE;
                 struct timeval _tv;
-                GetSysTime(&_tv);
+                GetUpTime(&_tv);
                 ln->ln_expire = _tv.tv_sec +
                                 ND6_REACHABLE_TIME / 1000;
             } else if(llchange) {
@@ -679,7 +679,7 @@ nd6_dad_start(struct in6_ifaddr *ia)
     dp->ns_ocount = 0;
 
     /* schedule first probe after a random delay (0-1s) */
-    GetSysTime(&_tv);
+    GetUpTime(&_tv);
     dp->timer = _tv.tv_sec + 1;	/* 1 second delay */
 
     /* insert into DAD queue */
@@ -719,7 +719,7 @@ nd6_dad_timer(void)
     struct timeval _tv;
     long now;
 
-    GetSysTime(&_tv);
+    GetUpTime(&_tv);
     now = _tv.tv_sec;
 
     pp = &dadq_head;

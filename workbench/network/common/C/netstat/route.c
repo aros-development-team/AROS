@@ -518,10 +518,14 @@ p_rtentry(rt)
 				 "%.6s%d", name, ifnet.if_unit);
 		}
 		if(rt->rt_rmx.rmx_expire) {
+			/* read from the stack's memory, so on its clock:
+			 * the monotonic one (GetUpTime()), as in FreeBSD */
+			struct timespec up;
 			time_t expire_time;
 
+			clock_gettime(CLOCK_MONOTONIC, &up);
 		        if ((expire_time
-			       =rt->rt_rmx.rmx_expire - time((time_t *)0)) > 0)
+			       =rt->rt_rmx.rmx_expire - up.tv_sec) > 0)
 			    printf(" %8.8s %6d%s", prettyname,
 				   expire_time,
 				   rt->rt_nodes[0].rn_dupedkey ? " =>" : "");

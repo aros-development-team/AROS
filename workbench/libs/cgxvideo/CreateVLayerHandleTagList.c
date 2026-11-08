@@ -92,7 +92,12 @@ static void cgxv_FreeHandle(struct VLayerHandle *vh, struct Library *CGXVideoBas
                 VOA_UseBackFill (BOOL) - If you specify VOA_UseBackFill as TRUE automatic
                         backfilling for the videolayer is enabled. This
                         option is only available if color keying is
-                        enabled.
+                        enabled. AROS: where the display can show the
+                        layer below the screen (an underlay), the backfill
+                        makes the window transparent instead and the layer
+                        goes there, so what the application draws over
+                        it shows on top; VOA_UseColorKey is then not
+                        needed.
 
                 VOA_Modulo (ULONG) - bytes per source row (V43). Defaults to
                         VOA_SrcWidth * 2. The display backend chooses its
@@ -263,6 +268,10 @@ static void cgxv_FreeHandle(struct VLayerHandle *vh, struct Library *CGXVideoBas
     OOP_GetAttr(vh->bm, aHidd_BitMap_Buffers, &val);
     vh->buffers = val ? val : buffers;
 
+    /* Below the screen where it can go, shown through a transparent backfill;
+     * keyed, where the display keys, when it is placed above instead */
+    if (usefill && cgxv_CanUnderlay(display, bmobj, videofmt, CGXVideoBase))
+        vh->flags |= VHF_UNDERLAY | VHF_BACKFILL;
     if (usekey && (caps.Flags & SCF_COLORKEY))
     {
         struct TagItem pentags[] =

@@ -175,6 +175,9 @@ void __iomem *pci_platform_rom(struct pci_dev *pdev, size_t *size);
 struct pci_dev *pci_get_domain_bus_and_slot(int domain, unsigned int bus, unsigned int devfn);
 #define pci_get_bus_and_slot(bus, devfn) pci_get_domain_bus_and_slot(0, bus, devfn)
 struct pci_dev *pci_get_class(unsigned int class, struct pci_dev *from);
+struct pci_dev *pci_get_base_class(unsigned int class, struct pci_dev *from);
+/* the one device the driver drives, set when it is found */
+extern struct pci_dev *compat_pci_card;
 struct pci_dev *pci_get_device(unsigned int vendor, unsigned int device, struct pci_dev *from);
 #define pci_save_state(pdev)            (0)
 #define pci_restore_state(pdev)         do { } while (0)

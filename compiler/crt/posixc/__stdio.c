@@ -19,6 +19,7 @@
 #include <aros/symbolsets.h>
 #include <aros/debug.h>
 #include "__stdio.h"
+#include "__fdesc.h"
 
 int __smode2oflags(const char *mode)
 {
@@ -111,6 +112,32 @@ int __oflags2sflags(int omode)
     return ret;
 }
 
+FILE *__stdio_file(int fd, int oflags)
+{
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+    FILENODE *fn = AllocPooled(PosixCBase->internalpool, sizeof(FILENODE));
+
+    if (!fn)
+        return NULL;
+    AddTail((struct List *)&PosixCBase->stdio_files, (struct Node *)fn);
+    fn->File.flags = __oflags2sflags(oflags);
+    fn->File.fd = fd;
+    return FILENODE2FILE(fn);
+}
+
+static FILE *__stdio_standard(int fd, int default_flags)
+{
+    fdesc *desc = __getfdesc(fd);
+
+    /* A closed standard descriptor still has a FILE object, just as after
+       close(0) in a running program. Do not reopen it or reject this opener.
+       Later stdio calls report EBADF until the descriptor is reused. This
+       hook runs before StdCBase is published, so fdopen's errno path is not
+       available here. Preserve inherited access/append flags when present. */
+    return __stdio_file(fd, desc ? desc->fcb->flags : default_flags);
+}
+
 int __init_stdio(struct PosixCIntBase *PosixCIntBase)
 {
     struct PosixCBase *PosixCBase = (struct PosixCBase *)PosixCIntBase;
@@ -118,9 +145,9 @@ int __init_stdio(struct PosixCIntBase *PosixCIntBase)
 
     if
     (
-        !(PosixCBase->_stdin  = fdopen(STDIN_FILENO, NULL))  ||
-        !(PosixCBase->_stdout = fdopen(STDOUT_FILENO, NULL)) ||
-        !(PosixCBase->_stderr = fdopen(STDERR_FILENO, NULL))
+        !(PosixCBase->_stdin  = __stdio_standard(STDIN_FILENO, O_RDONLY))  ||
+        !(PosixCBase->_stdout = __stdio_standard(STDOUT_FILENO, O_WRONLY | O_APPEND)) ||
+        !(PosixCBase->_stderr = __stdio_standard(STDERR_FILENO, O_WRONLY | O_APPEND))
     )
     {
         SetIoErr(ERROR_NO_FREE_STORE);

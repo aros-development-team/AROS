@@ -1013,8 +1013,8 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
 
         if (ap == NULL)
         {
-            UnLock(startparent);
-            return 0;
+            error = ERROR_NO_FREE_STORE;
+            break;
         }
 
         ap->ap_Strlen = MAX_PATH_LEN;
@@ -1127,7 +1127,14 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
                             else
                             {
                                 FreeMem(dirnode, sizeof(struct DirNode));
+                                dirnode = NULL;
                             }
+                        }
+
+                        if (dirnode == NULL)
+                        {
+                            error = ERROR_NO_FREE_STORE;
+                            break;
                         }
                     }
                 }
@@ -1170,8 +1177,10 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
 
 
         /* A directory found by ALL that cannot be listed doesn't end
-           the walk: report it and go on with the next one. */
-        if (error && queued && error != ERROR_BREAK)
+           the walk: report it and go on with the next one. A break or
+           running out of memory still ends it. */
+        if (error && queued && error != ERROR_BREAK &&
+            error != ERROR_NO_FREE_STORE)
         {
             PrintFault(error, filename);
             stats->nErrors++;
@@ -1196,6 +1205,10 @@ int listFile(CONST_STRPTR filename, BOOL showFiles, BOOL showDirs,
         }
     } while (dirnode);
         
+    /* A break or an error leaves directories queued but not listed */
+    while ((dirnode = (struct DirNode *)RemHead(&DirList)))
+        AddTail(&FreeDirNodeList, (struct Node *)dirnode);
+
     while ((dirnode = (struct DirNode *)RemHead(&FreeDirNodeList)))
     {
         FreeVec(dirnode->dirname);

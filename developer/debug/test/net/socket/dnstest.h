@@ -17,13 +17,17 @@
 
 #define DNS_PORT    53
 
-static const struct { const char *name; unsigned char last; } dns_records[] = {
+/* 192.0.2.last, with a TTL of 0 - the resolver's cache keeps none - but
+ * for the names that test it. */
+static const struct { const char *name; unsigned char last; unsigned long ttl; } dns_records[] = {
     { "one.rdnss.test", 77 },
     { "two.rdnss.test", 78 },
     { "host.b.search.test", 79 },
     { "www.search.test", 80 },
     { "www.search.test.a.search.test", 81 },
     { "x.y.b.search.test", 82 },
+    { "cached.rdnss.test", 83, 600 },
+    { "short.rdnss.test", 84, 3 },
 };
 
 /* The question's name, dotted, into name; the offset after it, 0 if bad. */
@@ -72,13 +76,16 @@ static int dns_answer(int s)
     if (i < count) {
         q[3] = 0x80;                            /* no error */
         if (q[end] == 0 && q[end + 1] == 1) {   /* type A: 192.0.2.last */
-            static const unsigned char rr[] = {
-                0xc0, 12, 0, 1, 0, 1, 0, 0, 0, 0, 0, 4, 192, 0, 2   /* TTL 0 */
+            unsigned char rr[] = {
+                0xc0, 12, 0, 1, 0, 1, 0, 0, 0, 0, 0, 4, 192, 0, 2, 0
             };
+            unsigned long ttl = dns_records[i].ttl;
+
+            rr[6] = ttl >> 24; rr[7] = ttl >> 16; rr[8] = ttl >> 8; rr[9] = ttl;
+            rr[15] = dns_records[i].last;
             q[7] = 1;                           /* ANCOUNT */
             memcpy(q + n, rr, sizeof(rr));
-            q[n + sizeof(rr)] = dns_records[i].last;
-            n += sizeof(rr) + 1;
+            n += sizeof(rr);
         }
     }
     sendto(s, (char *)q, n, 0, (struct sockaddr *)&from, fl);

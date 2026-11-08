@@ -9,7 +9,8 @@ GLTESTFILES 	    := \
         glcustomscreen \
         gltri \
         gltexfbo \
-        glscanout
+        glscanout \
+        glwater
 
 EXEDIR      := $(AROS_TESTS)/graphics/gl
 

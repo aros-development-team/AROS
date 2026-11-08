@@ -20,6 +20,10 @@
 #include <linux/stringify.h>
 #include <linux/compiler.h>
 #include <linux/list.h>
+#include <exec/tasks.h>
+
+/* Permit, sleep a tick, Forbid: lets a holder that is not running finish */
+void amdgpu_compat_spin_yield(void);
 
 static inline void __compat_spin_acquire(struct raw_spinlock *lock)
 {
@@ -31,9 +35,21 @@ static inline void __compat_spin_acquire(struct raw_spinlock *lock)
         return;
     }
 #if defined(__AROSEXEC_SMP__)
-    while (__atomic_exchange_n(&lock->locked, 1, __ATOMIC_ACQUIRE))
-        while (__atomic_load_n(&lock->locked, __ATOMIC_RELAXED))
-            __builtin_ia32_pause();
+    while (__atomic_exchange_n(&lock->locked, 1, __ATOMIC_ACQUIRE)) {
+        unsigned long n = 0;
+        while (__atomic_load_n(&lock->locked, __ATOMIC_RELAXED)) {
+            cpu_relax();
+            if (++n == 100000) {
+                struct Task *owner = lock->owner;
+                /* a holder that is not on a CPU cannot finish while we spin under Forbid;
+                   never sleep with interrupts off (the irqsave variants) */
+                if (owner && owner->tc_State != TS_RUN &&
+                    !irqs_disabled())
+                    amdgpu_compat_spin_yield();
+                n = 0;
+            }
+        }
+    }
 #else
     lock->locked = 1;
 #endif

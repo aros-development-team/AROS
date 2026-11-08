@@ -822,6 +822,7 @@ getri_callback(struct radix_node *rn, void *arg)
             rtm->rtm_flags   = rt->rt_flags;
             rtm->rtm_use     = rt->rt_use;
             rtm->rtm_rmx     = rt->rt_rmx;
+            rtm->rtm_rmx.rmx_expire = rt_expire_out(rt->rt_rmx.rmx_expire);
 #if INET6
             /*
              * IPv6 neighbour (ND6) entries keep their expiry time in
@@ -835,8 +836,8 @@ getri_callback(struct radix_node *rn, void *arg)
             if((rt->rt_flags & RTF_LLINFO) && rt->rt_llinfo != NULL) {
                 struct sockaddr *rk = rt_key(rt);
                 if(rk != NULL && rk->sa_family == AF_INET6)
-                    rtm->rtm_rmx.rmx_expire =
-                        ((struct llinfo_nd6 *)rt->rt_llinfo)->ln_expire;
+                    rtm->rtm_rmx.rmx_expire = rt_expire_out(
+                        ((struct llinfo_nd6 *)rt->rt_llinfo)->ln_expire);
             }
 #endif
             if(rt->rt_ifp)
