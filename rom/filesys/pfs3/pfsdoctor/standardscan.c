@@ -1467,8 +1467,8 @@ static error_t dd_CheckBlock(uint32 bloknr, int seqnr, bool *valid)
 {
 	error_t error;
 	c_deldirblock_t ddblk;
-	int i, ddnr;
-	int32 blocks;
+	int i;
+	uint32 ddnr, blocks, remaining;
 	canode_t delnode;
 	struct deldirentry *dde;
 	ULONG size, high;
@@ -1514,78 +1514,43 @@ static error_t dd_CheckBlock(uint32 bloknr, int seqnr, bool *valid)
 		if (!dde->anodenr)
 			continue;
 
-		/* syntax fix */
-		if (ss.stage == syntax)
-		{
-			for (ddnr = dde->anodenr; ddnr; ddnr = delnode.next)
-			{
-				error = ReadAnode(&delnode, ddnr, false);
-				if (SkipCheckReadError(error))
-					goto next_entry;
-				if (IsOperationalError(error)) {
+		/* Never cut a deleted chain: it may overlap a live file
+		 * or another old entry. */
+		error = CheckDataChain(dde->anodenr, &blocks, &remaining, true);
+		if (SkipCheckReadError(error))
+			continue;
+		if (IsOperationalError(error)) {
+			free(ddblk.data);
+			return error;
+		}
+		size = GetDDFileSize(dde, &high);
+		if (error || !FileSizeCheck(size, high, blocks)) {
+			if (mode == check)
+				adderror("delfile anode error");
+			else {
+				fixederror("delfile anode error");
+				dde->anodenr = 0;
+				if ((error = volume.writeblock((cachedblock_t *)&ddblk))) {
 					free(ddblk.data);
 					return error;
 				}
-				if (error || IsAnodeUsed(ddnr))
-				{
-					if (mode == check)
-						adderror("delfile anode error");
-					else
-					{
-						fixederror("delfile anode error");
-						dde->anodenr = 0;
-						if ((error = volume.writeblock((cachedblock_t *)&ddblk))) {
-							free(ddblk.data);
-							return error;
-						}
-					}
-					break;
-				}
-
-				blocks += (uint32)(delnode.clustersize);
 			}
-			
-			size = GetDDFileSize(dde, &high);
-			if (!FileSizeCheck(size, high, blocks))
-			{
-				sprintf(bericht, "delfile anode %#lx error", dde->anodenr);
-				if (mode == check)
-					adderror(bericht);
-				else
-				{
-					fixederror(bericht);
-					dde->anodenr = 0;
-					if ((error = volume.writeblock((cachedblock_t *)&ddblk))) {
-						free(ddblk.data);
-						return error;
-					}
-				}
-			}
+			continue;
 		}
 
-		if (!dde->anodenr)
-			continue;
-
-		for (ddnr = dde->anodenr; ddnr; ddnr = delnode.next)
-		{
+		for (ddnr = dde->anodenr; ddnr && remaining;
+		     ddnr = delnode.next, remaining--) {
 			error = ReadAnode(&delnode, ddnr, false);
 			if (SkipCheckReadError(error))
 				goto next_entry;
+			if (!error)
+				error = AnodeUsed(ddnr);
 			if (error) {
-				if (IsOperationalError(error)) {
-					free(ddblk.data);
-					return error;
-				}
-				break;
+				free(ddblk.data);
+				return error;
 			}
-			/* mark anodes as used */
-			if (ss.stage <= anodebitmap)
-				AnodeUsed(ddnr);
-
-			/* for dde only the anodes need to be checked */
-			// if (ss.stage == doubledel && isAnodeDouble(ddnr))
-			//	dde->anodenr = 0;
 		}
+
  next_entry:
 		;
 	}
