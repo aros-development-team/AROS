@@ -2418,6 +2418,8 @@ static error_t RepairFile(struct direntry *de, c_dirblock_t *parent)
 		for (bl = filenode.blocknr; bl < filenode.blocknr + filenode.clustersize; bl++)
 			if ((error = MainBlockUsed(bl)))
 				break;
+		if (error)
+			break;
 	}
 
 	if (error != e_none)
