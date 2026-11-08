@@ -2723,8 +2723,11 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 	canode_t linknode;
 	error_t error;
 	int type;
-	uint32 parent, checkpoint, distance = 0, power = 1;
+	uint32 parent, checkpoint, distance, power, length, stop;
 
+restart:
+	distance = 0;
+	power = 1;
 	/* check extra fields */
 	if ((error = GetExtraFields(&extra, de)))
 		return error;
@@ -2743,8 +2746,15 @@ static error_t RepairLinkChain(struct direntry *de, c_dirblock_t *dirblk)
 		if (aborting)
 			return e_aborted;
 		if (linknode.next && linknode.next == checkpoint) {
-			addfileerror("cyclic hardlink chain");
-			return UnresolvedObject();
+			if (mode != repair) {
+				addfileerror("cyclic hardlink chain");
+				return UnresolvedObject();
+			}
+			if ((error = ReadAnode(&linknode, extra.link, false)) ||
+			    (error = CheckAnodeChain(&linknode, &length, &stop)))
+				return LinkChainError(error);
+			redosyntax = true;
+			goto restart;
 		}
 		// check objectdir (clustersize) against actual objectdir
 		if (linknode.clustersize != parent)
