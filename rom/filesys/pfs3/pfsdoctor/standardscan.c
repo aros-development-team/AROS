@@ -2379,7 +2379,8 @@ static error_t RepairFile(struct direntry *de, c_dirblock_t *parent)
 		{
 			extra.virtualsize = 0;
 			extra.rollpointer = 0;
-			SetExtraFields(&extra, de, parent);
+			if ((error = SetExtraFields(&extra, de, parent)))
+				return error;
 			fixedfileerror("dangling rollover");
 		}
 
@@ -2541,7 +2542,8 @@ static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok)
 			{
 				fixedfileerror("invalid hardlink");
 				de->type = ST_LINKFILE;
-				volume.writeblock((cachedblock_t *)dirblok);
+				if ((error = volume.writeblock((cachedblock_t *)dirblok)))
+					return error;
 			}
 			break;
 
@@ -2550,7 +2552,8 @@ static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok)
 			{
 				fixedfileerror("invalid hardlink");
 				de->type = ST_LINKDIR;
-				volume.writeblock((cachedblock_t *)dirblok);
+				if ((error = volume.writeblock((cachedblock_t *)dirblok)))
+					return error;
 			}
 			break;
 	}
@@ -2590,7 +2593,8 @@ static error_t RepairRollover(struct direntry *de, c_dirblock_t *dirblok)
 		fixedfileerror("invalid rollover fields");
 		extra.virtualsize = 0;
 		extra.rollpointer = 0;
-		SetExtraFields(&extra, de, dirblok);
+		if ((error = SetExtraFields(&extra, de, dirblok)))
+			return error;
 	}
 
 	return RepairFile(de, dirblok);
