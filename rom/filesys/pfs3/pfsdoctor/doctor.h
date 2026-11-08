@@ -275,7 +275,8 @@ typedef enum {
 	e_syntax_error,
 	e_read_error,
 	e_write_error,
-	e_alloc_fail
+	e_alloc_fail,
+	e_keep_object		/* retained object; allocation may be unknown */
 } error_t;
 
 /**************************************
