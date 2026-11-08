@@ -72,6 +72,7 @@ struct
 	BOOL verbose;
 	BOOL unformat;
 	error_t incomplete;	/* first failure preventing a complete scan */
+	BOOL retained;		/* repair kept objects with unresolved allocation */
 	BOOL setupdone;		/* root and layout metadata are available */
 	BOOL readfailed;
 	uint32 badblock;		/* last unreadable metadata block in CHECK */
@@ -184,15 +185,15 @@ static bool SkipCheckReadError(error_t error)
 	return true;
 }
 
-/* A damaged object need not stop a read-only scan of unrelated objects.
+/* Keep uncertain objects without treating their unvisited allocation as free.
  * Never use this for device failures, allocation failures or user aborts. */
 static error_t UnresolvedObject(void)
 {
-	if (mode != check)
-		return e_fatal_error;
-	if (!ss.incomplete)
-		ss.incomplete = e_anode_error;
-	return e_anode_error;
+	if (mode == repair)
+		ss.retained = true;
+	else if (!ss.incomplete)
+		ss.incomplete = e_keep_object;
+	return e_keep_object;
 }
 
 static void ReportCheckReadError(error_t error, uint32 blocknr)
@@ -351,7 +352,7 @@ static error_t mainStandardScan(uint32 flags)
 
 	volume.status(0, "finishing up", 2);
 	volume.progress(0, 1);
-	error = exitStandardScan(e_none);
+	error = exitStandardScan(ss.retained ? e_keep_object : e_none);
 	volume.progress(0, 1);
 	return error;
 }
@@ -359,7 +360,7 @@ static error_t mainStandardScan(uint32 flags)
 static error_t exitStandardScan(error_t error)
 {
 	error_t write_error = UpdateCache();
-	if (error == e_none)
+	if (write_error)
 		error = write_error;
 
 	if (rbl)
@@ -377,7 +378,9 @@ static error_t exitStandardScan(error_t error)
 	KillMainBitmap();
 	ExitFullScan();
 
-	if (mode == check && ss.setupdone &&
+	if (error == e_keep_object && mode == repair && !aborting)
+		volume.showmsg("INCOMPLETE: unresolved objects retained; existing allocations preserved.\n");
+	else if (mode == check && ss.setupdone &&
 	    ss.incomplete && error == ss.incomplete && !aborting)
 		volume.showmsg("INCOMPLETE\n");
 	else if ((error != e_none) || aborting)
@@ -394,9 +397,35 @@ static error_t exitStandardScan(error_t error)
 }
 
 
-/* main loop: check the partition defined by the rootblock and
- * rext (rootblock extension)
- */
+/* An incomplete namespace can justify adding allocations, never freeing
+ * existing ones. Apply this before AllocBuildBlocks uses the generated map.
+ * Defer rebuilds while unvisited metadata might occupy their new blocks. */
+static error_t PreserveAllocations(void)
+{
+	rootblock_t *diskroot;
+	bitmapblock_t *bitmap;
+	uint32 i;
+	error_t error;
+
+	diskroot = AllocBufMem(volume.blocksize * rbl->rblkcluster);
+	if (!diskroot)
+		return e_out_of_memory;
+	error = ReadPFS3Metadata((uint8 *)diskroot, ROOTBLOCK + volume.firstblock,
+		volume.blocksize * rbl->rblkcluster, PFS3_METADATA_ROOT);
+	if (!error) {
+		bitmap = (bitmapblock_t *)(diskroot + 1);
+		if (bitmap->id != BMBLKID) {
+			adderror("reserved bitmap repair deferred: object allocation is unresolved");
+			error = e_keep_object;
+		} else
+			for (i = 0; i < volume.resbitmap->lwsize; i++)
+				volume.resbitmap->map[i] &= bitmap->bitmap[i];
+	}
+	FreeBufMem(diskroot);
+	return error;
+}
+
+/* Check the partition defined by the rootblock and rootblock extension. */
 static error_t ss_CheckDirTree(void)
 {
 	error_t error;
@@ -451,7 +480,7 @@ static error_t ss_CheckDirTree(void)
 
 	/* directory tree */
 	error = RepairDirTree();
-	if ((error && !SkipCheckReadError(error)) || aborting)
+	if ((error && error != e_keep_object && !SkipCheckReadError(error)) || aborting)
 		return error;
 	/* Deleted entries must yield to the live namespace, not claim its
 	 * anodes first and cause a live file to be removed. */
@@ -488,11 +517,19 @@ static error_t ss_CheckDirTree(void)
 			 */
 			if (IsBitmapValid(volume.resbitmap))
 			{
-				if ((error = AllocBuildBlocks()))
+				if (ss.retained && (error = PreserveAllocations()))
+					return error;
+				if (!ss.retained && (error = AllocBuildBlocks()))
 					return error;
 
+				/* Protect recovered backups already referenced on disk,
+				 * even when publishing new metadata must be deferred. */
 				if ((error = RepairReservedBitmap()) || aborting)
 					return error;
+				if (ss.retained && !IsMinListEmpty(&volume.buildblocks)) {
+					adderror("metadata rebuild deferred: object allocation is unresolved");
+					return e_keep_object;
+				}
 			}
 			else
 			{
@@ -556,8 +593,13 @@ static error_t ss_CheckDirTree(void)
      * the reserved bitmap is not valid because of invalid blocks,
      * possibly during non reserved bitmap phase!
 	 */
-	if (!IsMinListEmpty(&volume.buildblocks))
+	if (!IsMinListEmpty(&volume.buildblocks)) {
+		if (ss.retained) {
+			adderror("metadata rebuild deferred: object allocation is unresolved");
+			return e_keep_object;
+		}
 		ss.stage = resbitmap;
+	}
 
 	return e_none;
 }
@@ -1888,7 +1930,8 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 
 			default:
 			
-				KillReservedBitmap();
+				if (error != e_keep_object)
+					KillReservedBitmap();
 		}
 		
 		if ((error != e_none) || aborting)
@@ -2032,7 +2075,7 @@ static error_t RepairDirBlock(uint32 bloknr, uint32 anodenr, uint32 parent, bool
 		}
 		if ((error = RepairDirEntry(entry, &dirblk)))
 		{
-			if (SkipCheckReadError(error)) {
+			if (error == e_keep_object || SkipCheckReadError(error)) {
 				entry = NEXTENTRY(entry);
 				continue;
 			}
@@ -2460,7 +2503,7 @@ static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok)
 {
 	struct extrafields extra;
 	canode_t linknode;
-	error_t error;
+	error_t error, usederror;
 	int type;
 
 	stats.numhardlink++;
@@ -2492,7 +2535,7 @@ static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok)
      * just that it exists.
 	 */
 	if ((error = FindLinkTarget(linknode.clustersize, extra.link, &type, NULL)))
-		return error;
+		goto account;
 	switch (type)
 	{
 		case 0:
@@ -2523,14 +2566,13 @@ static error_t RepairHardLink(struct direntry *de, c_dirblock_t *dirblok)
 			break;
 	}
 
-	if (ss.stage == syntax &&
-		(error = CheckLinkMembership(linknode.clustersize, extra.link, de->anode)))
+	if (ss.stage == syntax)
+		error = CheckLinkMembership(linknode.clustersize, extra.link, de->anode);
+account:
+	if (error && error != e_keep_object)
 		return error;
-
-	if ((error = AnodeUsed(de->anode)))
-		return error;
-
-	return e_none;
+	usederror = AnodeUsed(de->anode);
+	return usederror ? usederror : error;
 }
 
 
@@ -3625,9 +3667,14 @@ static error_t RepairMainBitmap(void)
 			}
 		}
 
+		if (ss.retained && bmb.mode == build)
+			memset(bmb.data->bitmap, 0, LONGS_PER_BMB * sizeof(uint32));
+
 		// check block
 		for (i=0; i<INDEX_PER_BLOCK; i++, k++)
 		{
+			if (ss.retained && k < gbm->lwsize)
+				gbm->map[k] &= bmb.data->bitmap[i];
 			for (j=0; j<32; j++)
 			{
 				mask = 0x80000000 >> j;
@@ -3729,6 +3776,8 @@ static error_t RepairAnodeBitmap(void)
 		}
 
 		anodeused = !(gbm->map[i/32] & (0x80000000UL >> i%32));
+		if (ss.retained && !anodeused)
+			continue;
 		anodenr = (i/ANODES_PER_BLOCK << 16) + i%ANODES_PER_BLOCK;
 
 		error = CheckAnode(&anode, anodenr, false);
