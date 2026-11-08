@@ -1,0 +1,14 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+# Noto Emoji (monochrome), NotoEmoji[wght].ttf from Google Fonts, renamed
+# and otherwise unchanged. Emoji drawn in the text colour, for
+# unitext.library and its classes.
+
+#MM- fonts-truetype : fonts-truetype-notoemoji
+#MM- fonts-truetype-quick : fonts-truetype-notoemoji
+#MM- fonts-truetype-notoemoji : fonts-truetype-notoemoji-ttf
+
+%copy_files_q mmake=fonts-truetype-notoemoji-ttf files="NotoEmoji.ttf NotoEmoji-OFL.txt" \
+    dst=$(AROSDIR)/Fonts/TrueType
