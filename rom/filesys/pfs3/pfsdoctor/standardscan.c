@@ -3007,6 +3007,7 @@ error_t RepairAnodeBlock(uint32 *bloknr, uint32 seqnr)
 				oldbloknr = *bloknr;
 				if ((error = SearchBlock(ABLKID, seqnr, oldbloknr, 0, 0, 0, bloknr)))
 				{
+					*bloknr = oldbloknr;
 					free(ablk.data);
 					exitblock();
 					return error;
@@ -3057,10 +3058,6 @@ static error_t RepairBitmapTree(void)
 		blknr = rbl->idx.large.bitmapindex[i];
 		if (i < num)
 		{
-			/* force bitmapindexblock to be searched and created */
-			if (!blknr)
-				rbl->idx.large.bitmapindex[i] = rbl->lastreserved;
-
 			if ((error = RepairBitmapIndex(&rbl->idx.large.bitmapindex[i], i)) || aborting)
 				return error;
 			
@@ -3124,6 +3121,7 @@ error_t RepairBitmapBlock(uint32 *bloknr, uint32 seqnr)
 				oldbloknr = *bloknr;
 				if ((error = SearchBlock(BMBLKID, seqnr, oldbloknr, 0, 0, 0, bloknr)))
 				{
+					*bloknr = oldbloknr;
 					free(bmblk.data);
 					exitblock();
 					return error;
@@ -3137,6 +3135,7 @@ error_t RepairBitmapBlock(uint32 *bloknr, uint32 seqnr)
 				{
 					volume.showmsg("No replacement block found\n");
 					free (bmblk.data);
+					*bloknr = oldbloknr;
 					error = BuildBitmapBlock(&bmblk, seqnr);
 					exitblock();
 					if (error)
@@ -3181,7 +3180,7 @@ error_t RepairIndexBlock(uint16 bloktype, error_t (*repairchild)(uint32 *, uint3
 
 		/* read or build indexblock
 		 */
-		if ((error = GetRepairBlock((cachedblock_t *)&iblk, *bloknr)))
+		if (*bloknr && (error = GetRepairBlock((cachedblock_t *)&iblk, *bloknr)))
 		{
 			free (iblk.data);
 			exitblock();
@@ -3193,6 +3192,8 @@ error_t RepairIndexBlock(uint16 bloktype, error_t (*repairchild)(uint32 *, uint3
 		{
 			if (iblk.data->id != bloktype || iblk.data->seqnr != seqnr)
 			{
+				if (!*bloknr)
+					adderror("missing index block");
 				if (*bloknr)
 				{
 					sprintf(bericht,
@@ -3207,6 +3208,7 @@ error_t RepairIndexBlock(uint16 bloktype, error_t (*repairchild)(uint32 *, uint3
 					oldbloknr = *bloknr;
 					if ((error = SearchBlock(bloktype, seqnr, oldbloknr, 0, 0, 0, bloknr)))
 					{
+						*bloknr = oldbloknr;
 						free(iblk.data);
 						exitblock();
 						return error;
@@ -3222,6 +3224,7 @@ error_t RepairIndexBlock(uint16 bloktype, error_t (*repairchild)(uint32 *, uint3
 					{
 						volume.showmsg("No replacement block found\n");
 						free (iblk.data);
+						*bloknr = oldbloknr;
 						if ((error = BuildIndexBlock(&iblk, bloktype, seqnr)))
 						{
 							adderror("building new indexblock failed");
