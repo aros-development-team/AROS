@@ -227,6 +227,8 @@ static BOOL FileSizeCheck(ULONG low, ULONG high, ULONG numblocks)
 	low += volume.blocksize - 1;
 	if (low < oldlow)
 		high++;
+	if (high >> volume.blockshift)
+		return FALSE;
 	size = low >> volume.blockshift;
 	size |= high << (32 - volume.blockshift);
 	if (size == numblocks)
