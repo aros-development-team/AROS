@@ -94,17 +94,29 @@ static ULONG VC4_ModeRate(const struct DisplayMode *m)
            ? (ULONG)((UQUAD)m->dm_clock * 1000000 / (m->dm_htotal * m->dm_vtotal)) : 0;
 }
 
-static BOOL VC4_ModeBefore(const struct DisplayMode *a, const struct DisplayMode *b)
+static BOOL VC4_IsTiming(const struct DisplayMode *m, const struct vcgfx_timing *t)
+{
+    return t && (m->dm_clock == t->clock) && (m->dm_htotal == t->htotal)
+           && (m->dm_vtotal == t->vtotal);
+}
+
+/* The boot timing leads its size: BestModeIDA() keeps the first mode of a
+ * size, and any other rate there means a mode set at boot. */
+static BOOL VC4_ModeBefore(const struct DisplayMode *a, const struct DisplayMode *b,
+                           const struct vcgfx_timing *boot)
 {
     if (a->dm_hdisp != b->dm_hdisp)
         return a->dm_hdisp < b->dm_hdisp;
     if (a->dm_vdisp != b->dm_vdisp)
         return a->dm_vdisp < b->dm_vdisp;
+    if (VC4_IsTiming(a, boot) != VC4_IsTiming(b, boot))
+        return VC4_IsTiming(a, boot);
     return VC4_ModeRate(a) < VC4_ModeRate(b);
 }
 
-/* ScreenMode shows modes in the order they are given: by size, then rate. */
-static void VC4_SortModes(struct List *modelist)
+/* ScreenMode shows modes in the order they are given: by size, then rate
+ * after the boot timing. */
+static void VC4_SortModes(struct List *modelist, const struct vcgfx_timing *boot)
 {
     struct List sorted;
     struct DisplayMode *m, *pos;
@@ -113,7 +125,7 @@ static void VC4_SortModes(struct List *modelist)
     while ((m = (struct DisplayMode *)RemHead(modelist)) != NULL)
     {
         ForeachNode(&sorted, pos)
-            if (VC4_ModeBefore(m, pos))
+            if (VC4_ModeBefore(m, pos, boot))
                 break;
 
         if (!pos->dm_Node.ln_Succ)
@@ -274,7 +286,8 @@ int FNAME_SUPPORT(HDMI_SyncGen)(struct List *modelist, OOP_Class *cl)
                 hdmi_modecount++;
             }
         }
-        VC4_SortModes(modelist);
+        VC4_SortModes(modelist, hvs6 ? (xsd->vcsd_HVS6.h6_ModeOK ? &xsd->vcsd_HVS6.h6_BootTiming : NULL)
+                                     : &xsd->vcsd_HVS5M.m5_BootTiming);
         bug("[VideoCoreGfx] %s: %d HDMI mode(s)\n", hvs6 ? "BCM2712" : "BCM2711",
             hdmi_modecount);
         return hdmi_modecount;
