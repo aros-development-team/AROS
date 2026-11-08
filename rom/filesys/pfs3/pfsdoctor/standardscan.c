@@ -1786,12 +1786,30 @@ read_failed:
 	return error;
 }
 
+#ifdef __GNUC__
+static bool IsDirectoryAncestor(uint32) __attribute__((noinline));
+#endif
+static bool IsDirectoryAncestor(uint32 nr)
+{
+	struct dirstack *ancestor;
+	for (ancestor = currentobject ? currentobject->parent : NULL;
+	     ancestor; ancestor = ancestor->parent)
+		if (ancestor->anodenr == nr)
+			return true;
+	return false;
+}
+
 static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 {
 	uint32 mainanodenr, anodenr, parentanodenr, remaining, stop;
 	BOOL firstnode = TRUE;
 	canode_t dirnode;
 	error_t error = e_none, chainerror;
+
+	if (de && (!de->anode || IsDirectoryAncestor(de->anode))) {
+		addfileerror(de->anode ? "directory reference points to an ancestor" : "missing directory anode");
+		return e_remove;
+	}
 
 	stats.numdirs++;
 	if (de)
@@ -1812,8 +1830,6 @@ static error_t RepairDir(struct direntry *de, c_dirblock_t *parent)
 
 	parentanodenr = parent ? parent->data->anodenr : 0;
 	mainanodenr = de ? de->anode : ANODE_ROOTDIR;
-	if (!mainanodenr)
-		return e_none;
 	if ((error = ReadAnode(&dirnode, mainanodenr, true))) {
 		if (IsOperationalError(error))
 			return error;
@@ -1927,7 +1943,6 @@ static error_t CheckDirParent(c_dirblock_t *, uint32) __attribute__((noinline));
 #endif
 static error_t CheckDirParent(c_dirblock_t *dirblk, uint32 parent)
 {
-	struct dirstack *ancestor;
 	int type = 0;
 	bool complete;
 	error_t error;
@@ -1935,12 +1950,6 @@ static error_t CheckDirParent(c_dirblock_t *dirblk, uint32 parent)
 	if (dirblk->data->parent == parent)
 		return e_none;
 	addfileerror("invalid directory parent");
-	for (ancestor = currentobject ? currentobject->parent : NULL;
-	     ancestor; ancestor = ancestor->parent)
-		if (ancestor->anodenr == dirblk->data->anodenr) {
-			addfileerror("directory reference points to an ancestor");
-			return UnresolvedObject();
-		}
 	if (dirblk->data->anodenr != ANODE_ROOTDIR) {
 		error = FindInDir(dirblk->data->parent, dirblk->data->anodenr,
 			&type, NULL, &complete);
@@ -1950,8 +1959,7 @@ static error_t CheckDirParent(c_dirblock_t *dirblk, uint32 parent)
 			addfileerror("directory owner is ambiguous; contents retained");
 			return UnresolvedObject();
 		}
-	} else if (parent)
-		return UnresolvedObject();
+	}
 
 	dirblk->data->parent = parent;
 	/* The corrected copy is fully traversed in CHECK too. */
