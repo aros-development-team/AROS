@@ -78,13 +78,19 @@ extern "C" {
    contents stay); text longer than MaxLen is cut at a cluster boundary.
    Keys are decoded from the system's set (ENV:CHARSET). The clipboard gets
    a UTF8 chunk and a CHRS copy in the system's set; a paste takes the UTF8
-   chunk first. Text is drawn by unitext.library with the system's Unicode
-   fonts. Check MUIA_BetterString_UTF8Status. */
+   chunk first. A typed key or a paste replaces the selection whole or not
+   at all: a key that Accept, Reject or MaxLen refuses, or that finds no
+   memory, leaves the contents and the selection as they were. Text is
+   drawn by unitext.library with the system's Unicode fonts. Check
+   MUIA_BetterString_UTF8Status. */
 #define MUIA_BetterString_UTF8                  0xad001080UL
 /* [..G] LONG: why the UTF-8 mode cannot draw: 0 it can, 1 no
    unitext.library or freetype2.library, 2 no font for Unicode text opens,
    3 not enough memory. Valid after creation (a check with the system's
-   fonts) and again after MUIM_Setup, which fails when it is not 0. */
+   fonts) and again after MUIM_Setup, which fails when it is not 0. A
+   drawing that finds no memory sets 3, leaves the last drawing on screen
+   marked with a dotted pattern, and the next drawing that succeeds sets
+   0 again. */
 #define MUIA_BetterString_UTF8Status            0xad001081UL
 
 // methods

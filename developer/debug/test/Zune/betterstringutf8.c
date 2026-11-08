@@ -10,7 +10,14 @@
     UTF-8 contents kept as given, text that is not UTF-8 refused, positions
     moved to grapheme cluster boundaries, MaxLen cutting at a boundary,
     MUIM_BetterString_Insert, cursor keys and Backspace by clusters (key
-    events sent to the field), and the 8-bit field unchanged by any of it.
+    events sent to the field), a typed key replacing a selection whole or
+    not at all (Reject, MaxLen), a secret UTF-8 field drawn and hit by the
+    mouse, drawing and mouse hits with each of the class's allocations
+    failing in turn, and the 8-bit field unchanged by any of it.
+
+    The allocation failures come from AllocVec patched (SetFunction) for
+    this task only, and only for the n-th call from a chosen moment; the
+    patch is taken out again before the window closes.
     With CLIP it also copies and pastes through the clipboard (unit 0, whose
     contents it replaces) and checks the UTF8 chunk. Prints one line per
     check, then "PASS n" or "FAIL n of m"; the return code is 0 or 10. It
@@ -23,10 +30,12 @@
 #include <intuition/intuition.h>
 #include <devices/rawkeycodes.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/iffparse.h>
 #include <proto/utility.h>
+#include <aros/asmcall.h>
 #include <mui/BetterString_mcc.h>
 #include <clib/alib_protos.h>
 
@@ -43,6 +52,71 @@
 #define FAMILY  "\xf0\x9f\x91\xa9\xe2\x80\x8d\xf0\x9f\x91\xa7"    /* woman ZWJ girl */
 
 static int checks, failed;
+
+/* AllocVec failing for this task's n-th call from now (fail_in = n), all
+   other calls and tasks passing through */
+static APTR old_allocvec;
+static struct Task *me;
+static volatile LONG fail_in = -1, failures;
+
+AROS_UFH3(APTR, FailingAllocVec,
+    AROS_UFHA(IPTR, size, D0),
+    AROS_UFHA(ULONG, req, D1),
+    AROS_UFHA(struct ExecBase *, sysbase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    if(FindTask(NULL) == me && fail_in >= 0 && fail_in-- == 0)
+    {
+        failures++;
+        return NULL;
+    }
+    return AROS_UFC3(APTR, old_allocvec,
+        AROS_UFCA(IPTR, size, D0),
+        AROS_UFCA(ULONG, req, D1),
+        AROS_UFCA(struct ExecBase *, sysbase, A6));
+
+    AROS_USERFUNC_EXIT
+}
+
+static void patch(BOOL on)
+{
+    Forbid();
+    if(on)
+        old_allocvec = SetFunction((struct Library *)SysBase, -114 * LIB_VECTSIZE, (APTR)AROS_ASMSYMNAME(FailingAllocVec));
+    else
+        SetFunction((struct Library *)SysBase, -114 * LIB_VECTSIZE, old_allocvec);
+    Permit();
+}
+
+static LONG status_of(Object *o)
+{
+    IPTR st = 99;
+    get(o, MUIA_BetterString_UTF8Status, &st);
+    return (LONG)st;
+}
+
+static LONG selsize(Object *o)
+{
+    IPTR n = 0;
+    get(o, MUIA_BetterString_SelectSize, &n);
+    return (LONG)n;
+}
+
+/* A click at x pixels into the field's text area. */
+static void click(Object *o, LONG x, ULONG secs)
+{
+    struct IntuiMessage im;
+    memset(&im, 0, sizeof im);
+    im.Class = IDCMP_MOUSEBUTTONS;
+    im.Code = IECODE_LBUTTON;
+    im.MouseX = _mleft(o) + x;
+    im.MouseY = _mtop(o) + 1;
+    im.Seconds = secs;
+    DoMethod(o, MUIM_HandleEvent, (IPTR)&im, 0);
+    im.Code = IECODE_LBUTTON | IECODE_UP_PREFIX;
+    DoMethod(o, MUIM_HandleEvent, (IPTR)&im, 0);
+}
 
 static void check(int ok, const char *what)
 {
@@ -106,7 +180,7 @@ static LONG clip_utf8(char *buf, LONG max)
 
 int main(int argc, char **argv)
 {
-    Object *app, *win, *u8, *old, *limited;
+    Object *app, *win, *u8, *old, *limited, *secret;
     IPTR status = 99, open = 0;
     BOOL clip = argc > 1 && !strcmp(argv[1], "CLIP");
     char buf[256];
@@ -122,6 +196,9 @@ int main(int argc, char **argv)
                     MUIA_BetterString_UTF8, TRUE, MUIA_String_Contents, (IPTR)ZOLC, End),
                 Child, (IPTR)(limited = BetterStringObject, StringFrame,
                     MUIA_BetterString_UTF8, TRUE, MUIA_String_MaxLen, 7, End),
+                Child, (IPTR)(secret = BetterStringObject, StringFrame,
+                    MUIA_BetterString_UTF8, TRUE, MUIA_String_Secret, TRUE,
+                    MUIA_String_Contents, (IPTR)ZOLC, End),
                 Child, (IPTR)(old = BetterStringObject, StringFrame,
                     MUIA_String_Contents, (IPTR)"ab\xb1", End),
             End),
@@ -185,6 +262,86 @@ int main(int argc, char **argv)
     check(!strcmp(contents(u8), "a" FAMILY) && pos(u8) == 12, "Backspace removes e with its accent together");
     key(u8, RAWKEY_BACKSPACE);
     check(!strcmp(contents(u8), "a") && pos(u8) == 1, "Backspace removes the emoji sequence as one");
+
+    /* a typed key in place of a selection: whole or not at all */
+    printf("..   replacing a selection\n");
+    set(u8, MUIA_String_Reject, (IPTR)"q");
+    set(u8, MUIA_String_Contents, (IPTR)ZOLC);
+    set(win, MUIA_Window_ActiveObject, (IPTR)u8);
+    set(u8, MUIA_String_BufferPos, 2);
+    set(u8, MUIA_BetterString_SelectSize, 4);             /* z-dot and o-acute */
+    key(u8, RAWKEY_Q);
+    check(!strcmp(contents(u8), ZOLC) && selsize(u8) == 4,
+          "a key Reject refuses leaves the text and the selection as they were");
+    set(u8, MUIA_String_Reject, 0);
+    set(u8, MUIA_String_BufferPos, 2);
+    set(u8, MUIA_BetterString_SelectSize, 4);
+    key(u8, RAWKEY_W);
+    check(!strcmp(contents(u8), "Zaw\xc5\x82\xc4\x87") && pos(u8) == 3, "an allowed key replaces the selection");
+
+    set(win, MUIA_Window_ActiveObject, (IPTR)limited);
+    set(limited, MUIA_String_Contents, (IPTR)"ab\xc5\xbc\xc3\xb3");  /* 6 bytes: full */
+    set(limited, MUIA_String_BufferPos, 6);
+    key(limited, RAWKEY_W);
+    check(!strcmp(contents(limited), "ab\xc5\xbc\xc3\xb3"), "a key past MaxLen is refused");
+    set(limited, MUIA_String_BufferPos, 4);
+    set(limited, MUIA_BetterString_SelectSize, 2);         /* o-acute */
+    key(limited, RAWKEY_W);
+    check(!strcmp(contents(limited), "ab\xc5\xbcw"), "a key that fits once the selection goes replaces it");
+
+    /* a secret field: one '*' a cluster, the mouse hits clusters */
+    printf("..   secret field\n");
+    set(secret, MUIA_String_Contents, (IPTR)("a" FAMILY E_ACUTE));
+    set(win, MUIA_Window_ActiveObject, (IPTR)secret);
+    set(secret, MUIA_String_BufferPos, 0);
+    MUI_Redraw(secret, MADF_DRAWOBJECT);
+    check(status_of(secret) == 0, "a secret UTF-8 field draws");
+    click(secret, _mwidth(secret) - 1, 10);
+    check(pos(secret) == 15, "a click past the end of a secret field puts the cursor at the end");
+
+    /* each allocation of the drawing and of a mouse hit failing in turn */
+    printf("..   allocations failing\n");
+    me = FindTask(NULL);
+    patch(TRUE);
+    {
+        LONG k, marked = 0, kept = 0, tries = 0;
+        Object *f[2];
+        f[0] = secret; f[1] = u8;
+        set(u8, MUIA_String_Contents, (IPTR)ZOLC);
+        for(k = 0; k < 2; k++)
+        {
+            LONG n;
+            for(n = 0; n < 4; n++)
+            {
+                failures = 0;
+                fail_in = n;
+                MUI_Redraw(f[k], MADF_DRAWOBJECT);
+                fail_in = -1;
+                tries++;
+                if(failures && status_of(f[k]) == 3)
+                    marked++;
+                MUI_Redraw(f[k], MADF_DRAWOBJECT);
+                if(status_of(f[k]) != 0)
+                    marked = -100;
+            }
+        }
+        check(marked >= 3 && !strcmp(contents(u8), ZOLC) && !strcmp(contents(secret), "a" FAMILY E_ACUTE),
+              "a drawing without memory says so (status 3), keeps the text, and the next one draws (status 0)");
+        printf("..   %ld of %ld drawings failed and said so\n", (long)marked, (long)tries);
+        for(k = 0; k < 3; k++)
+        {
+            set(secret, MUIA_String_BufferPos, 0);
+            failures = 0;
+            fail_in = k;
+            click(secret, _mwidth(secret) - 1, 20 + 2 * k);
+            fail_in = -1;
+            if(failures && (pos(secret) == 0 || pos(secret) == 15))
+                kept++;
+        }
+        check(kept >= 2, "a mouse hit without memory leaves the cursor or finds the cluster, never crashes");
+    }
+    patch(FALSE);
+    Delay(2);                       /* a call another task is in leaves the patch */
 
     /* the 8-bit field: bytes as before */
     set(win, MUIA_Window_ActiveObject, (IPTR)old);

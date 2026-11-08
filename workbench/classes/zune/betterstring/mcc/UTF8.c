@@ -96,7 +96,12 @@ BOOL Utf8Setup(Object *obj, struct InstData *data)
   struct TextFont *tf = _font(obj);
 
   if(data->UniText != NULL)
+  {
+    // the system's set as it is now: a change of CHARSET is seen at the
+    // next window opening
+    zt_charset_refresh();
     data->Utf8Font = zt_open_for(tf, tf ? tf->tf_YSize : 13, NULL, 0, &err);
+  }
   if(data->Utf8Font == NULL)
   {
     data->Utf8Status = err;
@@ -262,22 +267,26 @@ void Utf8Free(char *p, BOOL fromLibrary)
 /* -------------------------------------------------------------- drawing */
 
 /* The text shown: the contents, or in secret mode one '*' a cluster. In
-   secret mode *map[k] is the content offset of the k-th shown byte. */
+   secret mode *map[k] is the content offset of the k-th shown byte, and
+   the text and the map are the caller's to free with FreeShown. NULL when
+   out of memory (nothing then to free). */
 static char *Shown(struct InstData *data, CONST_STRPTR contents, ULONG *n, UWORD **map)
 {
   ULONG len = strlen(contents), k = 0, i = 0;
   char *s;
   *map = NULL;
+  *n = 0;
   if(isFlagClear(data->Flags, FLG_Secret))
   {
     *n = len;
     return (char *)contents;
   }
-  if((s = AllocVec(len + 1, MEMF_ANY)) == NULL || (*map = AllocVec((len + 1) * sizeof(UWORD), MEMF_ANY)) == NULL)
+  if((s = AllocVec(len + 1, MEMF_ANY)) == NULL)
+    return NULL;
+  if((*map = AllocVec((len + 1) * sizeof(UWORD), MEMF_ANY)) == NULL)
   {
     FreeVec(s);
-    *n = 0;
-    return (char *)"";
+    return NULL;
   }
   while(i < len)
   {
@@ -289,6 +298,17 @@ static char *Shown(struct InstData *data, CONST_STRPTR contents, ULONG *n, UWORD
   s[k] = '\0';
   *n = k;
   return s;
+}
+
+/* Frees what Shown gave: the text only when it is its own (secret mode,
+   which is also when there is a map). */
+static void FreeShown(char *s, UWORD *map)
+{
+  if(map != NULL)
+  {
+    FreeVec(s);
+    FreeVec(map);
+  }
 }
 
 static ULONG ToShown(UWORD *map, ULONG n, ULONG pos)
@@ -350,7 +370,21 @@ VOID PrintStringUTF8(struct IClass *cl, Object *obj)
     contents = data->InactiveContents;
     showInactive = TRUE;
   }
-  s = Shown(data, contents, &n, &map);
+  // everything the drawing needs, before anything is cleared: when it
+  // cannot be had, the last drawing stays, marked as not current, and
+  // MUIA_BetterString_UTF8Status says why (ZT_ERR_MEMORY)
+  cov = NULL;
+  if((s = Shown(data, contents, &n, &map)) == NULL ||
+     zt_ready(data->Utf8Font, s, n, 0) == 0 ||
+     (n && (cov = AllocVec(w * h, MEMF_ANY | MEMF_CLEAR)) == NULL))
+  {
+    if(s != NULL)
+      FreeShown(s, map);
+    data->Utf8Status = ZT_ERR_MEMORY;
+    zt_stale(_rp(obj), _pens(obj)[MPEN_SHADOW], _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj));
+    return;
+  }
+  data->Utf8Status = ZT_OK;
   cur = ToShown(map, n, showInactive ? 0 : data->BufferPos);
   disp = ToShown(map, n, data->DisplayPos);
   cursor = isFlagSet(data->Flags, FLG_Active) && isFlagClear(data->Flags, FLG_NoInput) && !block;
@@ -408,9 +442,10 @@ VOID PrintStringUTF8(struct IClass *cl, Object *obj)
   // the text, shaped whole and drawn as coverage; the selection's columns
   // in the marked text pen
   base = (h - (zt_font_ascent(data->Utf8Font) + zt_font_descent(data->Utf8Font))) / 2 + zt_font_ascent(data->Utf8Font);
-  if(n && (cov = AllocVec(w * h, MEMF_ANY | MEMF_CLEAR)) != NULL)
+  if(cov != NULL)
   {
     LONG pen = showInactive ? MUIPEN(_pens(obj)[MPEN_SHADOW]) : textpen;
+    // a blit without the memory to blend draws with the pen, complete
     zt_draw(data->Utf8Font, s, n, 0, cov, w, h, w, offset - x0, base);
     if(block && be > disp)
     {
@@ -424,9 +459,7 @@ VOID PrintStringUTF8(struct IClass *cl, Object *obj)
     FreeVec(cov);
   }
 
-  if(s != (char *)contents)
-    FreeVec(s);
-  FreeVec(map);
+  FreeShown(s, map);
 
   BltBitMapRastPort(data->rport.BitMap, 0+XOFF, 0+YOFF, _rp(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj), 0xc0);
 
@@ -453,7 +486,13 @@ UWORD Utf8Hit(Object *obj, struct InstData *data, LONG x)
 
   if(data->Utf8Font == NULL)
     return data->BufferPos;
-  s = Shown(data, data->Contents, &n, &map);
+  // out of memory: the cursor stays where it is
+  if((s = Shown(data, data->Contents, &n, &map)) == NULL || zt_ready(data->Utf8Font, s, n, 0) == 0)
+  {
+    if(s != NULL)
+      FreeShown(s, map);
+    return data->BufferPos;
+  }
   disp = ToShown(map, n, data->DisplayPos);
   x0 = XAt(data, s, n, disp);
   if(data->Alignment != MUIV_String_Format_Left)
@@ -466,8 +505,6 @@ UWORD Utf8Hit(Object *obj, struct InstData *data, LONG x)
   if(hit < disp)
     hit = disp;
   hit = map != NULL ? map[hit] : hit;
-  if(s != data->Contents)
-    FreeVec(s);
-  FreeVec(map);
+  FreeShown(s, map);
   return (UWORD)hit;
 }

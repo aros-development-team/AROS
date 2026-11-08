@@ -271,6 +271,43 @@ void DeleteBlock(struct InstData *data)
   LEAVE();
 }
 
+/* UTF-8: text[0..k) in place of the selection, or at the cursor; the
+   whole change or none. The limit first (with cut, what fits to a cluster
+   boundary; without, the text is refused), then the memory, and only then
+   the selection goes. Returns the bytes put in, or -1 with the contents,
+   the selection and the cursor as they were. */
+static LONG Utf8Replace(struct InstData *data, CONST_STRPTR text, ULONG k, BOOL cut)
+{
+  ULONG len = strlen(data->Contents), at = data->BufferPos, bw = 0, rest;
+
+  if(BlockEnabled(data) == TRUE)
+  {
+    at = (data->BlockStart < data->BlockStop) ? data->BlockStart : data->BlockStop;
+    bw = abs(data->BlockStop-data->BlockStart);
+  }
+  rest = len - bw;
+  if(data->MaxLength != 0 && rest + k > (ULONG)data->MaxLength - 1)
+  {
+    ULONG room = (ULONG)data->MaxLength - 1 > rest ? (ULONG)data->MaxLength - 1 - rest : 0;
+
+    if(cut == FALSE)
+      return -1;
+    k = k > 0 ? Utf8Cut(text, k, room) : 0;
+    if(k == 0)
+      return -1;
+  }
+  if(k > bw && ExpandContentString(&data->Contents, k - bw) == FALSE)
+  {
+    E(DBF_ALWAYS, "content expansion by %ld bytes failed", k - bw);
+    return -1;
+  }
+  AddToUndo(data);
+  memmove(data->Contents+at+k, data->Contents+at+bw, len-at-bw+1);
+  memcpy(data->Contents+at, text, k);
+  data->BufferPos = at + k;
+  return (LONG)k;
+}
+
 static void CopyBlock(struct InstData *data)
 {
   ENTER();
@@ -321,14 +358,35 @@ static void CutBlock(struct InstData *data)
   LEAVE();
 }
 
-static void Paste(struct InstData *data)
+/* TRUE when pasted. In the UTF-8 mode FALSE when nothing was (the
+   clipboard empty, nothing fits, no memory): the contents and the
+   selection then stay. The 8-bit mode keeps its old behaviour. */
+static BOOL Paste(struct InstData *data)
 {
   STRPTR str;
   LONG length;
 
   ENTER();
 
-  if((IsUTF8(data) ? ClipboardToStringUTF8(&str, &length) : ClipboardToString(&str, &length)) == TRUE)
+  if(IsUTF8(data))
+  {
+    BOOL done = FALSE;
+
+    if(ClipboardToStringUTF8(&str, &length) == TRUE)
+    {
+      LONG put = Utf8Replace(data, str, length, TRUE);
+
+      // not all of it, or none, fitted
+      if(put < length)
+        DisplayBeep(NULL);
+      done = (put >= 0);
+      SharedPoolFree(str);
+    }
+    RETURN(done);
+    return done;
+  }
+
+  if(ClipboardToString(&str, &length) == TRUE)
   {
     // clear the selection
     DeleteBlock(data);
@@ -337,9 +395,6 @@ static void Paste(struct InstData *data)
     {
       DisplayBeep(NULL);
       length = data->MaxLength - 1 - strlen(data->Contents);
-      // UTF-8: what fits, to a cluster boundary
-      if(IsUTF8(data))
-        length = Utf8Cut(str, strlen(str), length);
     }
 
     if(ExpandContentString(&data->Contents, length) == TRUE)
@@ -356,7 +411,8 @@ static void Paste(struct InstData *data)
     SharedPoolFree(str);
   }
 
-  LEAVE();
+  RETURN(TRUE);
+  return TRUE;
 }
 
 static void UndoRedo(struct InstData *data)
@@ -642,9 +698,11 @@ IPTR mDoAction(struct IClass *cl, Object *obj, struct MUIP_BetterString_DoAction
 
     case MUIV_BetterString_DoAction_Paste:
     {
-      Paste(data);
-      clearFlag(data->Flags, FLG_BlockEnabled);
-      edited = TRUE;
+      if(Paste(data) == TRUE)
+      {
+        clearFlag(data->Flags, FLG_BlockEnabled);
+        edited = TRUE;
+      }
       result = TRUE;
     }
     break;
@@ -820,10 +878,12 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 
       case MUIKEY_PASTE:
       {
-        Paste(data);
-        clearFlag(data->Flags, FLG_BlockEnabled);
-        MUI_Redraw(obj, MADF_DRAWUPDATE);
-        TriggerNotify(cl, obj);
+        if(Paste(data) == TRUE)
+        {
+          clearFlag(data->Flags, FLG_BlockEnabled);
+          MUI_Redraw(obj, MADF_DRAWUPDATE);
+          TriggerNotify(cl, obj);
+        }
         result = MUI_EventHandlerRC_Eat;
       }
       break;
@@ -1058,27 +1118,21 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
                   RETURN(0);
                   return 0;
                 }
-                DeleteBlock(data);
-                if((data->MaxLength == 0 || (ULONG)data->MaxLength-1 >= strlen(data->Contents)+k) &&
-                   Utf8Allowed(data, utf8, k))
+                // Accept, Reject, the limit and the memory before the
+                // selection goes: a key that is refused changes nothing
+                if(Utf8Allowed(data, utf8, k) == FALSE || Utf8Replace(data, utf8, k, FALSE) < 0)
                 {
-                  if(ExpandContentString(&data->Contents, k) == TRUE)
-                  {
-                    memmove(data->Contents+data->BufferPos+k, data->Contents+data->BufferPos, strlen(data->Contents + data->BufferPos)+1);
-                    memcpy(data->Contents+data->BufferPos, utf8, k);
-                    // a combining mark joins the character before it
-                    data->BufferPos = Utf8Snap(data, data->BufferPos+k) == data->BufferPos+k ? data->BufferPos+k : Utf8Next(data, data->BufferPos);
-                    edited = TRUE;
-                  }
-                  else
-                  {
-                    E(DBF_ALWAYS, "content expansion by %ld bytes failed", k);
-                    DisplayBeep(NULL);
-                  }
+                  DisplayBeep(NULL);
+                  RETURN(MUI_EventHandlerRC_Eat);
+                  return MUI_EventHandlerRC_Eat;
                 }
                 else
                 {
-                  DisplayBeep(NULL);
+                  UWORD at = data->BufferPos - k;
+
+                  // a combining mark joins the character before it
+                  data->BufferPos = Utf8Snap(data, at+k) == at+k ? at+k : Utf8Next(data, at);
+                  edited = TRUE;
                 }
               }
               else
@@ -1188,7 +1242,12 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
                       break;
 
                       case 'v':
-                        Paste(data);
+                        // UTF-8: nothing pasted, the selection stays
+                        if(Paste(data) == FALSE)
+                        {
+                          RETURN(MUI_EventHandlerRC_Eat);
+                          return MUI_EventHandlerRC_Eat;
+                        }
                         edited = TRUE;
                       break;
 
