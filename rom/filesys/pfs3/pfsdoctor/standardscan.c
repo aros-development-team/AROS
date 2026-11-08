@@ -2116,34 +2116,13 @@ static error_t RecoverSizeHigh(struct direntry *, uint32 *) __attribute__((noinl
 #endif
 static error_t RecoverSizeHigh(struct direntry *de, uint32 *high)
 {
-	canode_t node;
-	uint32 nr = de->anode, checkpoint = nr, distance = 0, power = 1;
-	uint32 blocks = 0, lowblocks, difference;
+	uint32 blocks, length, lowblocks, difference;
 	error_t error;
 
-	while (nr) {
-		if (aborting)
-			return e_aborted;
-		if ((error = ReadAnode(&node, nr, false))) {
-			if (IsOperationalError(error))
-				return error;
-			goto uncertain;
-		}
-		if (node.clustersize) {
-			if (node.blocknr <= rbl->lastreserved || node.blocknr >= volume.disksize ||
-			    node.clustersize > volume.disksize - node.blocknr ||
-			    node.clustersize > volume.disksize - blocks)
-				goto uncertain;
-			blocks += node.clustersize;
-		}
-		if (node.next && node.next == checkpoint)
-			goto uncertain;
-		if (++distance == power) {
-			checkpoint = node.next;
-			distance = 0;
-			power = power < 0x80000000UL ? power * 2 : ~(uint32)0;
-		}
-		nr = node.next;
+	if ((error = CheckDataChain(de->anode, &blocks, &length, false))) {
+		if (IsOperationalError(error))
+			return error;
+		goto uncertain;
 	}
 	lowblocks = (de->fsize >> volume.blockshift) +
 		((de->fsize & (volume.blocksize - 1)) != 0);
@@ -2156,8 +2135,10 @@ static error_t RecoverSizeHigh(struct direntry *de, uint32 *high)
 	return e_none;
 
 uncertain:
-	addfileerror("cannot reconstruct file size; file retained");
-	return UnresolvedObject();
+	/* Let ordinary chain/size validation reject this object, without
+	 * preventing unrelated repairs on the volume. */
+	*high = 0;
+	return e_none;
 }
 
 /* The handler requires valid name/comment/extra-field packing, not merely
