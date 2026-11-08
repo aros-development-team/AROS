@@ -62,6 +62,10 @@ IPTR mSetBlock(struct InstData *data, struct MUIP_TextEditor_SetBlock *msg)
   else
     result = FALSE;
 
+  // UTF-8: a column inside a character moves back to its start
+  if(result == TRUE && data->utf8 == TRUE)
+    newblock.startx = Utf8Snap(newblock.startline->line.Contents, newblock.startline->line.Length, newblock.startx);
+
   // now we check&set the stop variables to their corresponding values
   if(msg->stopy == MUIV_TextEditor_SetBlock_Min)
     newblock.stopline = LineNode(data, 1);
@@ -85,6 +89,10 @@ IPTR mSetBlock(struct InstData *data, struct MUIP_TextEditor_SetBlock *msg)
   }
   else
     result = FALSE;
+
+  // UTF-8: a column inside a character moves back to its start
+  if(result == TRUE && data->utf8 == TRUE)
+    newblock.stopx = Utf8Snap(newblock.stopline->line.Contents, newblock.stopline->line.Length, newblock.stopx);
 
   // check if valid values had been specified for our start/stop values
   if(result == TRUE)

@@ -115,6 +115,13 @@ IPTR mMarkText(struct InstData *data, struct MUIP_TextEditor_MarkText *msg)
       data->blockinfo.stopx = (data->blockinfo.stopline->line.Length > msg->stop_crsr_x) ? msg->stop_crsr_x : data->blockinfo.stopline->line.Length-1;
       data->blockinfo.enabled = TRUE;
 
+      // UTF-8: columns inside a character move back to its start
+      if(data->utf8 == TRUE)
+      {
+        data->blockinfo.startx = Utf8Snap(data->blockinfo.startline->line.Contents, data->blockinfo.startline->line.Length, data->blockinfo.startx);
+        data->blockinfo.stopx = Utf8Snap(data->blockinfo.stopline->line.Contents, data->blockinfo.stopline->line.Length, data->blockinfo.stopx);
+      }
+
       data->actualline = data->blockinfo.stopline;
       data->CPos_X = data->blockinfo.stopx;
       ScrollIntoDisplay(data);
@@ -328,7 +335,7 @@ IPTR mInputTrigger(struct IClass *cl, Object *obj, UNUSED Msg msg)
         OffsetToLines(data, data->CPos_X, data->actualline, &pos);
         flow = FlowSpace(data, data->actualline->line.Flow, &data->actualline->line.Contents[pos.bytes]);
 
-        if(MouseX <= _mleft(obj)+flow+TextLengthNew(&data->tmprp, &data->actualline->line.Contents[pos.bytes], pos.extra-pos.bytes-1, data->TabSizePixels))
+        if(MouseX <= _mleft(obj)+flow+TextLengthNew(data, &data->tmprp, &data->actualline->line.Contents[pos.bytes], pos.extra-pos.bytes-1, data->TabSizePixels))
         {
           if(data->selectmode == 1)
           {
@@ -355,7 +362,7 @@ IPTR mInputTrigger(struct IClass *cl, Object *obj, UNUSED Msg msg)
         // if the line is a hard wrapped one we have to increase CPos_X by one
         if(data->actualline->line.Contents[data->CPos_X] > ' ')
         {
-          data->CPos_X++;
+          data->CPos_X += CharLenAt(data, data->actualline, data->CPos_X);
           MarkText(data, data->blockinfo.stopx, data->blockinfo.stopline, data->CPos_X, data->actualline);
         }
         else
@@ -410,6 +417,13 @@ ULONG InsertText(struct InstData *data, STRPTR text, BOOL moveCursor)
   LONG realx = 0;
 
   ENTER();
+
+  // UTF-8: text that is not UTF-8 is refused; nothing changes
+  if(data->utf8 == TRUE && (text == NULL || Utf8Valid((CONST_STRPTR)text, strlen((const char *)text)) == FALSE))
+  {
+    RETURN(FALSE);
+    return FALSE;
+  }
 
   if(ImportText(data, text, data->ImportHook, data->ImportWrap, &newlines) == TRUE)
   {

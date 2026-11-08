@@ -434,6 +434,14 @@ struct InstData
   enum CursorState currentCursorState;
 
   char **Keywords;
+
+  // MUIA_TextEditor_UTF8
+  BOOL            utf8;           // the mode; set at creation only
+  struct Library *UniText;        // unitext.library, in the UTF-8 mode only
+  struct zt_font *Utf8Font;       // faces for Utf8FontFor
+  struct TextFont *Utf8FontFor;   // the editor font they were opened for
+  LONG            Utf8Status;     // MUIA_TextEditor_UTF8Status
+  BOOL            Utf8NoCursor;   // PrintLine leaves the cursor out (blink off)
 };
 
 // AllocBitMap.c
@@ -621,9 +629,38 @@ BOOL Undo(struct InstData *);
 BOOL Redo(struct InstData *);
 
 // NewGfx.c
-LONG TextLengthNew(struct RastPort *rp, const char *string, ULONG count, LONG tabSizePixels);
-ULONG TextFitNew(struct RastPort *rp, const char *string, ULONG strLen, struct TextExtent *textExtent, const struct TextExtent *constrainingExtent, LONG strDirection, LONG constrainingBitWidth, LONG constrainingBitHeight, LONG tabSizePixels);
-void TextNew(struct RastPort *rp, const char *string, ULONG count, LONG tabSizePixels);
+LONG TextLengthNew(struct InstData *data, struct RastPort *rp, const char *string, ULONG count, LONG tabSizePixels);
+ULONG TextFitNew(struct InstData *data, struct RastPort *rp, const char *string, ULONG strLen, struct TextExtent *textExtent, const struct TextExtent *constrainingExtent, LONG strDirection, LONG constrainingBitWidth, LONG constrainingBitHeight, LONG tabSizePixels);
+void TextNew(struct InstData *data, struct RastPort *rp, const char *string, ULONG count, LONG tabSizePixels);
+
+// UTF8.c (MUIA_TextEditor_UTF8; nothing here runs in the 8-bit mode)
+struct zt_font;
+BOOL Utf8New(struct InstData *data);
+void Utf8Dispose(struct InstData *data);
+BOOL Utf8Setup(struct InstData *data);
+void Utf8Cleanup(struct InstData *data);
+struct zt_font *Utf8Font(struct InstData *data);
+LONG Utf8Next(CONST_STRPTR s, LONG len, LONG pos);
+LONG Utf8Prev(CONST_STRPTR s, LONG len, LONG pos);
+LONG Utf8Snap(CONST_STRPTR s, LONG len, LONG pos);
+LONG Utf8CharLen(CONST_STRPTR s, LONG len, LONG pos);
+LONG Utf8NextWord(CONST_STRPTR s, LONG len, LONG pos);
+LONG Utf8PrevWord(CONST_STRPTR s, LONG len, LONG pos);
+BOOL Utf8Valid(CONST_STRPTR s, ULONG n);
+void Utf8SnapCursor(struct InstData *data);
+ULONG Utf8Key(struct IntuiMessage *imsg, char *out, ULONG cap);
+LONG Utf8TextLength(struct InstData *data, struct RastPort *rp, CONST_STRPTR s, ULONG count, LONG tabSizePixels);
+ULONG Utf8TextFit(struct InstData *data, struct RastPort *rp, CONST_STRPTR s, ULONG strLen, struct TextExtent *te, LONG width, LONG tabSizePixels);
+void Utf8Text(struct InstData *data, struct RastPort *rp, CONST_STRPTR s, ULONG count, LONG tabSizePixels);
+char *Utf8LocalCopy(CONST_STRPTR s, ULONG n, ULONG *outn);
+char *Utf8FromLocal(CONST_STRPTR s, ULONG n, ULONG *outn);
+void Utf8Free(char *p);
+LONG Utf8LocalOffset(CONST_STRPTR local, LONG k);
+char *Utf8ForeignClip(void);
+
+// the bytes of the character at x of a line: its grapheme cluster in the
+// UTF-8 mode, else 1
+#define CharLenAt(d_, l_, x_) ((d_)->utf8 ? Utf8CharLen((l_)->line.Contents, (l_)->line.Length, (x_)) : 1)
 
 #if !defined(__amigaos4__) && !defined(__MORPHOS__) && !defined(__AROS__)
 // AllocVecPooled.c
@@ -739,6 +776,16 @@ enum
 #define ID_SBAR    MAKE_ID('S','B','A','R')
 #define ID_COLS    MAKE_ID('C','O','L','S')
 #define ID_STYL    MAKE_ID('S','T','Y','L')
+// UTF-8 mode: the line's text as UTF-8 before its CHRS copy, and its
+// colours and styles in UTF-8 byte columns (readers of CHRS skip them, so
+// their columns never meet the 8-bit copy)
+#define ID_UTF8    MAKE_ID('U','T','F','8')
+#define ID_UCOL    MAKE_ID('U','C','O','L')
+#define ID_USTY    MAKE_ID('U','S','T','Y')
+// ClientStartSession(): the session is for an object in the UTF-8 mode
+#define CLIPMODE_UTF8 0x10000000UL
+// ClientReadLine(): the line read is UTF-8 (IANA MIBenum of UTF-8)
+#define CLIPCSET_UTF8 106
 #define ID_CSET    MAKE_ID('C','S','E','T')
 
 #include "amiga-align.h"

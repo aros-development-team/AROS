@@ -40,6 +40,7 @@ FILES := library \
         StyleOperators \
         UndoFunctions \
         NewGfx \
+        UTF8 \
         Debug \
 	extrasrc/MoveList
 

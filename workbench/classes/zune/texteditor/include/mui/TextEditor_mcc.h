@@ -108,6 +108,27 @@ extern "C" {
 #define MUIA_TextEditor_Keywords              (TextEditor_Dummy + 0x40)
 #define MUIA_TextEditor_MatchedKeyword        (TextEditor_Dummy + 0x41)
 
+/* [I.G] BOOL: the text is UTF-8 (default FALSE: the system's 8-bit set, as
+   always). In this mode MUIA_TextEditor_Contents, MUIM_TextEditor_
+   InsertText, the import hooks' input and the exported text are UTF-8;
+   text given that is not UTF-8 is refused and the old contents stay.
+   MUIA_TextEditor_CursorX, block and export columns, and the columns of
+   LineStyle and LineColor arrays count bytes, as before, but every
+   position the class makes is a grapheme cluster boundary: the cursor,
+   Backspace, Delete, word moves and the mouse step over e with a
+   combining accent or an emoji sequence as one character. Keys are
+   decoded from the system's set (ENV:CHARSET). Copy writes a UTF8 chunk
+   for each line beside the CHRS copy in the system's set; a paste takes
+   UTF8 chunks first. Text is shaped and drawn by unitext.library. Bold
+   and underline are drawn; italic text is drawn upright. Case conversion
+   changes ASCII letters only. Check MUIA_TextEditor_UTF8Status. */
+#define MUIA_TextEditor_UTF8                  0xad0000c0UL
+/* [..G] LONG: why the UTF-8 mode cannot draw: 0 it can, 1 no
+   unitext.library or freetype2.library, 2 no font for Unicode text opens,
+   3 not enough memory. Valid after creation (a check with the system's
+   fonts) and after MUIM_Setup, which fails when it is not 0. */
+#define MUIA_TextEditor_UTF8Status            0xad0000c1UL
+
 #define MUIM_TextEditor_HandleError           (TextEditor_Dummy + 0x1f)
 #define MUIM_TextEditor_AddKeyBindings        (TextEditor_Dummy + 0x22)
 #define MUIM_TextEditor_ARexxCmd              (TextEditor_Dummy + 0x23)
