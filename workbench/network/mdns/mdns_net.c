@@ -24,166 +24,8 @@
 #include <netinet/in.h>
 #include <netinet/in_var.h>
 #include <arpa/inet.h>
-
 #include "mdnsd.h"
-
-struct found
-{
-    char    name[IFNAMSIZ + 1];
-    ULONG   index;
-    ULONG   addr;               /* 0xAABBCCDD == A.B.C.D */
-    struct in6_addr addr6;
-};
-
-static struct found *
-found_interface(struct found *out, LONG *count, LONG max, const char *name)
-{
-    LONG i;
-
-    for (i = 0; i < *count; i++) {
-        if (strncmp(out[i].name, name, IFNAMSIZ) == 0) {
-            return &out[i];
-        }
-    }
-    if (*count >= max) {
-        return NULL;
-    }
-    memset(&out[*count], 0, sizeof(out[*count]));
-    memcpy(out[*count].name, name, IFNAMSIZ);
-    return &out[(*count)++];
-}
-
-static BOOL
-usable_interface(struct Library *SocketBase, int sock, const char *name,
-    ULONG *index)
-{
-    struct ifreq ifr;
-
-    memset(&ifr, 0, sizeof(ifr));
-    memcpy(ifr.ifr_name, name, IFNAMSIZ);
-    if (IoctlSocket(sock, SIOCGIFFLAGS, (char *)&ifr) != 0 ||
-        (ifr.ifr_flags & (IFF_UP | IFF_MULTICAST | IFF_LOOPBACK)) !=
-            (IFF_UP | IFF_MULTICAST)) {
-        return FALSE;
-    }
-    memset(&ifr, 0, sizeof(ifr));
-    memcpy(ifr.ifr_name, name, IFNAMSIZ);
-    if (IoctlSocket(sock, SIOCGIFINDEX, (char *)&ifr) != 0 ||
-        ifr.ifr_index <= 0) {
-        return FALSE;
-    }
-    *index = (ULONG)ifr.ifr_index;
-    return TRUE;
-}
-
-/* DAD and address lifetime state belong to the address, not the interface.
- * Do not join or announce through an address until the stack says it is a
- * usable source, and stop using one that has become detached or deprecated. */
-static BOOL
-usable_address6(struct Library *SocketBase, int sock,
-    const struct in6_ifreq *address)
-{
-    struct in6_ifreq ifr;
-    int unusable = IN6_IFF_TENTATIVE | IN6_IFF_DUPLICATED |
-        IN6_IFF_DETACHED | IN6_IFF_DEPRECATED;
-
-    memset(&ifr, 0, sizeof(ifr));
-    memcpy(ifr.ifr_name, address->ifr_name, IFNAMSIZ);
-    ifr.ifr6_addr = address->ifr6_addr;
-    if (IoctlSocket(sock, SIOCGIFAFLAG_IN6, (char *)&ifr) != 0) {
-        return FALSE;
-    }
-    return (ifr.ifr_ifru.ifru_flags6 & unusable) == 0;
-}
-
-/* The interfaces mDNS can use now. Returns how many were written. */
-static LONG
-find_interfaces(struct Library *SocketBase, struct found *out, LONG max)
-{
-    char buf[2048];
-    struct ifconf ifc;
-    struct ifreq *ifr;
-    LONG count = 0;
-    int sock, sock6;
-
-    memset(out, 0, sizeof(*out) * max);
-
-    sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock >= 0) {
-        ifc.ifc_len = sizeof(buf);
-        ifc.ifc_buf = buf;
-    }
-    if (sock >= 0 && IoctlSocket(sock, SIOCGIFCONF, (char *)&ifc) == 0) {
-        struct ifreq *end;
-
-        ifr = ifc.ifc_req;
-        end = (struct ifreq *)&ifc.ifc_buf[ifc.ifc_len];
-        while (ifr < end && count < max) {
-            struct sockaddr *sa = &ifr->ifr_addr;
-
-            if (sa->sa_family == AF_INET) {
-                ULONG addr = (ULONG)ntohl((unsigned long)
-                    ((struct sockaddr_in *)sa)->sin_addr.s_addr);
-                ULONG index;
-
-                if (addr != 0 && usable_interface(SocketBase, sock,
-                        ifr->ifr_name, &index)) {
-                    struct found *item = found_interface(out, &count, max,
-                        ifr->ifr_name);
-
-                    if (item != NULL) {
-                        item->index = index;
-                        item->addr = addr;
-                    }
-                }
-            }
-            /* an entry is the name and an address of at least sockaddr's size */
-            if (sa->sa_len < sizeof(*sa)) {
-                ifr = (struct ifreq *)((char *)sa + sizeof(*sa));
-            } else {
-                ifr = (struct ifreq *)((char *)sa + sa->sa_len);
-            }
-        }
-    }
-    if (sock >= 0) {
-        CloseSocket(sock);
-    }
-
-    /* AROSTCP enumerates IPv6 addresses separately. Keep one link-local
-     * address for each link; it is the address usable with ff02::fb. */
-    sock6 = socket(AF_INET6, SOCK_DGRAM, 0);
-    if (sock6 >= 0) {
-        struct in6_ifreq req[32];
-        struct in6_ifconf ifc6;
-
-        memset(req, 0, sizeof(req));
-        ifc6.ifc6_buf = (char *)req;
-        ifc6.ifc6_len = sizeof(req);
-        if (IoctlSocket(sock6, SIOCGLIFADDR, (char *)&ifc6) == 0) {
-            LONG i, n;
-
-            n = ifc6.ifc6_len / (LONG)sizeof(req[0]);
-            for (i = 0; i < n; i++) {
-                ULONG index;
-                struct found *item;
-
-                if (!IN6_IS_ADDR_LINKLOCAL(&req[i].ifr6_addr.sin6_addr) ||
-                    !usable_address6(SocketBase, sock6, &req[i]) ||
-                    !usable_interface(SocketBase, sock6, req[i].ifr_name,
-                        &index)) {
-                    continue;
-                }
-                item = found_interface(out, &count, max, req[i].ifr_name);
-                if (item != NULL && IN6_IS_ADDR_UNSPECIFIED(&item->addr6)) {
-                    item->index = index;
-                    item->addr6 = req[i].ifr6_addr.sin6_addr;
-                }
-            }
-        }
-        CloseSocket(sock6);
-    }
-    return count;
-}
+#include "dnssd_link_aros.h"
 
 static LONG
 open_socket4(struct Library *SocketBase, const char *name, ULONG addr)
@@ -262,6 +104,77 @@ open_socket4(struct Library *SocketBase, const char *name, ULONG addr)
     return (LONG)sock;
 }
 
+static const struct dnssd_link_entry *active_link(
+    const struct MDNSDaemon *md, LONG slot)
+{
+    if (md == NULL || slot < 0 || slot >= md->md_IfCount)
+        return NULL;
+    return dnssd_link_inventory_find(&md->md_LinkInventory,
+                                     md->md_Ifs[slot].mi_Index);
+}
+
+static const struct dnssd_address_entry *first_address(
+    const struct MDNSDaemon *md, ULONG link, UWORD family)
+{
+    size_t i;
+
+    for (i = 0; i < md->md_LinkInventory.address_count; ++i) {
+        const struct dnssd_address_entry *address =
+            &md->md_LinkInventory.addresses[i];
+
+        if (address->value.interface_index == link &&
+            address->value.family == family &&
+            dnssd_link_address_usable(&md->md_LinkInventory, address))
+            return address;
+    }
+    return NULL;
+}
+
+ULONG
+mdnsNetAddress4(const struct MDNSDaemon *md, LONG slot)
+{
+    const struct dnssd_link_entry *link = active_link(md, slot);
+    const struct dnssd_address_entry *address;
+    ULONG network;
+
+    if (link == NULL)
+        return 0;
+    address = first_address(md, link->value.interface_index,
+                            DNSSD_ADDRESS_IPV4);
+    if (address == NULL)
+        return 0;
+    memcpy(&network, address->value.bytes, sizeof(network));
+    return (ULONG)ntohl((unsigned long)network);
+}
+
+BOOL
+mdnsNetAddress6(const struct MDNSDaemon *md, LONG slot,
+                struct in6_addr *result)
+{
+    const struct dnssd_link_entry *link = active_link(md, slot);
+    const struct dnssd_address_entry *address;
+
+    if (result == NULL)
+        return FALSE;
+    memset(result, 0, sizeof(*result));
+    if (link == NULL)
+        return FALSE;
+    address = first_address(md, link->value.interface_index,
+                            DNSSD_ADDRESS_IPV6);
+    if (address == NULL)
+        return FALSE;
+    memcpy(result, address->value.bytes, sizeof(*result));
+    return TRUE;
+}
+
+static BOOL
+has_address6(const struct MDNSDaemon *md, LONG slot)
+{
+    struct in6_addr address;
+
+    return mdnsNetAddress6(md, slot, &address);
+}
+
 static LONG
 open_socket6(struct Library *SocketBase, const struct MDNSDaemon *md)
 {
@@ -273,7 +186,7 @@ open_socket6(struct Library *SocketBase, const struct MDNSDaemon *md)
     LONG i;
 
     for (i = 0; i < md->md_IfCount; i++) {
-        if (!IN6_IS_ADDR_UNSPECIFIED(&md->md_Ifs[i].mi_Addr6)) {
+        if (has_address6(md, i)) {
             break;
         }
     }
@@ -317,7 +230,7 @@ open_socket6(struct Library *SocketBase, const struct MDNSDaemon *md)
     for (i = 0; i < md->md_IfCount; i++) {
         struct ipv6_mreq mreq;
 
-        if (IN6_IS_ADDR_UNSPECIFIED(&md->md_Ifs[i].mi_Addr6)) {
+        if (!has_address6(md, i)) {
             continue;
         }
         memset(&mreq, 0, sizeof(mreq));
@@ -355,7 +268,7 @@ set_primary(struct Library *SocketBase, struct MDNSDaemon *md)
     }
     md->md_HostAddr = 0;
     for (i = 0; i < md->md_IfCount && md->md_HostAddr == 0; i++) {
-        md->md_HostAddr = md->md_Ifs[i].mi_Addr;
+        md->md_HostAddr = mdnsNetAddress4(md, i);
     }
 
     {
@@ -411,90 +324,65 @@ mdnsNetNameHost(struct MDNSDaemon *md)
     md->md_HostName[len] = '\0';
 }
 
-/*
- * Brings the sockets in line with the interfaces the stack has now: one that
- * went away or changed its address loses its socket, a new one gets one.
- * Returns TRUE if anything changed.
- */
+static void close_sockets(struct Library *SocketBase, struct MDNSDaemon *md);
+
+/* Rebuild the derived socket set after a complete canonical snapshot changes. */
 BOOL
 mdnsNetRescan(struct MDNSDaemon *md)
 {
     struct Library *SocketBase;
-    struct found now[MDNS_IFS_MAX];
-    BOOL changed = FALSE;
-    LONG count, i, k;
+    uint32_t previous_revision;
+    size_t i;
+    int result;
 
     if (md == NULL || md->md_SocketBase == NULL) {
         return FALSE;
     }
     SocketBase = md->md_SocketBase;
-    count = find_interfaces(SocketBase, now, MDNS_IFS_MAX);
+    previous_revision = md->md_LinkInventory.revision;
+    result = dnssd_link_aros_reconcile(&md->md_LinkInventory, SocketBase,
+                                       MDNS_LINK_SNAPSHOT_MAX);
+    if (result != DNSSD_LINK_OK ||
+        md->md_LinkInventory.revision == previous_revision)
+        return FALSE;
 
-    for (i = 0; i < md->md_IfCount; ) {
-        for (k = 0; k < count; k++) {
-            if (now[k].index == md->md_Ifs[i].mi_Index &&
-                now[k].addr == md->md_Ifs[i].mi_Addr &&
-                memcmp(&now[k].addr6, &md->md_Ifs[i].mi_Addr6,
-                    sizeof(now[k].addr6)) == 0 &&
-                strcmp(now[k].name, md->md_Ifs[i].mi_Name) == 0) {
-                break;
-            }
-        }
-        if (k < count) {
-            now[k].index = 0;        /* kept */
-            i++;
-            continue;
-        }
-        if (md->md_Ifs[i].mi_Socket >= 0) {
-            CloseSocket((int)md->md_Ifs[i].mi_Socket);
-        }
-        md->md_Ifs[i] = md->md_Ifs[--md->md_IfCount];
-        changed = TRUE;
-    }
-    for (k = 0; k < count; k++) {
-        LONG sock = -1;
-        BOOL have6;
+    close_sockets(SocketBase, md);
+    for (i = 0; i < md->md_LinkInventory.link_count &&
+            md->md_IfCount < MDNS_IFS_MAX; ++i) {
+        const struct dnssd_link_entry *link = &md->md_LinkInventory.links[i];
+        struct MDNSInterface *active = &md->md_Ifs[md->md_IfCount];
+        char name[DNSSD_LINK_NAME_MAX + 1u];
+        ULONG address4;
 
-        if (now[k].index == 0 || md->md_IfCount >= MDNS_IFS_MAX) {
+        if (dnssd_link_usable_address_count(&md->md_LinkInventory,
+                link->value.interface_index) == 0u)
             continue;
+        memset(active, 0, sizeof(*active));
+        active->mi_Index = link->value.interface_index;
+        active->mi_Socket = -1;
+        ++md->md_IfCount;
+        address4 = mdnsNetAddress4(md, md->md_IfCount - 1);
+        if (address4 != 0u) {
+            memset(name, 0, sizeof(name));
+            memcpy(name, link->value.name, link->value.name_length);
+            active->mi_Socket = open_socket4(SocketBase, name, address4);
         }
-        if (now[k].addr != 0) {
-            sock = open_socket4(SocketBase, now[k].name, now[k].addr);
-        }
-        have6 = !IN6_IS_ADDR_UNSPECIFIED(&now[k].addr6);
-        if (sock < 0 && !have6) {
-            continue;       /* tried again at the next look */
-        }
-        mdnsTextCopy(md->md_Ifs[md->md_IfCount].mi_Name,
-            (LONG)sizeof(md->md_Ifs[0].mi_Name), now[k].name);
-        md->md_Ifs[md->md_IfCount].mi_Index = now[k].index;
-        md->md_Ifs[md->md_IfCount].mi_Addr = sock >= 0 ? now[k].addr : 0;
-        md->md_Ifs[md->md_IfCount].mi_Addr6 = now[k].addr6;
-        md->md_Ifs[md->md_IfCount].mi_Socket = sock;
-        md->md_IfCount++;
-        changed = TRUE;
+        if (active->mi_Socket < 0 && !has_address6(md, md->md_IfCount - 1))
+            --md->md_IfCount;
     }
-    if (changed) {
-        if (md->md_Socket6 >= 0) {
-            CloseSocket((int)md->md_Socket6);
+    md->md_Socket6 = open_socket6(SocketBase, md);
+    if (md->md_Socket6 < 0) {
+        LONG slot;
+
+        for (slot = 0; slot < md->md_IfCount; ) {
+            if (md->md_Ifs[slot].mi_Socket < 0)
+                md->md_Ifs[slot] = md->md_Ifs[--md->md_IfCount];
+            else
+                ++slot;
         }
-        md->md_Socket6 = open_socket6(SocketBase, md);
-        if (md->md_Socket6 < 0) {
-            /* Keep IPv4 service. IPv6-only links are retried at the next
-             * scan; dual-stack links temporarily stop publishing AAAA. */
-            for (i = 0; i < md->md_IfCount; ) {
-                if (md->md_Ifs[i].mi_Addr == 0) {
-                    md->md_Ifs[i] = md->md_Ifs[--md->md_IfCount];
-                } else {
-                    memset(&md->md_Ifs[i].mi_Addr6, 0,
-                        sizeof(md->md_Ifs[i].mi_Addr6));
-                    i++;
-                }
-            }
-        }
-        set_primary(SocketBase, md);
     }
-    return changed;
+    set_primary(SocketBase, md);
+    return TRUE;
 }
 
 
@@ -521,6 +409,8 @@ mdnsNetClose(struct MDNSDaemon *md)
         return;
     }
     close_sockets(md->md_SocketBase, md);
+    dnssd_link_inventory_reconcile(&md->md_LinkInventory, NULL, 0u,
+                                   NULL, 0u);
     md->md_Socket = -1;
     md->md_HostAddr = 0;
 }
@@ -529,15 +419,22 @@ mdnsNetClose(struct MDNSDaemon *md)
 BOOL
 mdnsNetIsOwn(struct MDNSDaemon *md, ULONG addr)
 {
-    LONG i;
+    size_t i;
+    ULONG link = 0u;
 
-    if (md->md_SendIf >= 0 && md->md_SendIf < md->md_IfCount) {
-        return md->md_Ifs[md->md_SendIf].mi_Addr == addr;
-    }
-    for (i = 0; i < md->md_IfCount; i++) {
-        if (md->md_Ifs[i].mi_Addr == addr) {
+    if (md->md_SendIf >= 0 && md->md_SendIf < md->md_IfCount)
+        link = md->md_Ifs[md->md_SendIf].mi_Index;
+    for (i = 0; i < md->md_LinkInventory.address_count; ++i) {
+        const struct dnssd_address_entry *address =
+            &md->md_LinkInventory.addresses[i];
+        ULONG network;
+
+        if (address->value.family != DNSSD_ADDRESS_IPV4 ||
+            (link != 0u && address->value.interface_index != link))
+            continue;
+        memcpy(&network, address->value.bytes, sizeof(network));
+        if ((ULONG)ntohl((unsigned long)network) == addr)
             return TRUE;
-        }
     }
     return FALSE;
 }
@@ -545,19 +442,19 @@ mdnsNetIsOwn(struct MDNSDaemon *md, ULONG addr)
 BOOL
 mdnsNetIsOwn6(struct MDNSDaemon *md, const struct in6_addr *addr)
 {
-    LONG i;
+    size_t i;
+    ULONG link = 0u;
 
-    if (md->md_SendIf >= 0 && md->md_SendIf < md->md_IfCount) {
-        return !IN6_IS_ADDR_UNSPECIFIED(
-                &md->md_Ifs[md->md_SendIf].mi_Addr6) &&
-            memcmp(&md->md_Ifs[md->md_SendIf].mi_Addr6, addr,
-                sizeof(*addr)) == 0;
-    }
-    for (i = 0; i < md->md_IfCount; i++) {
-        if (!IN6_IS_ADDR_UNSPECIFIED(&md->md_Ifs[i].mi_Addr6) &&
-            memcmp(&md->md_Ifs[i].mi_Addr6, addr, sizeof(*addr)) == 0) {
+    if (md->md_SendIf >= 0 && md->md_SendIf < md->md_IfCount)
+        link = md->md_Ifs[md->md_SendIf].mi_Index;
+    for (i = 0; i < md->md_LinkInventory.address_count; ++i) {
+        const struct dnssd_address_entry *address =
+            &md->md_LinkInventory.addresses[i];
+
+        if (address->value.family == DNSSD_ADDRESS_IPV6 &&
+            (link == 0u || address->value.interface_index == link) &&
+            memcmp(address->value.bytes, addr, sizeof(*addr)) == 0)
             return TRUE;
-        }
     }
     return FALSE;
 }
@@ -603,8 +500,7 @@ send_on6(struct Library *SocketBase, struct MDNSDaemon *md, LONG index,
     };
     struct sockaddr_in6 sin6;
 
-    if (md->md_Socket6 < 0 ||
-        IN6_IS_ADDR_UNSPECIFIED(&md->md_Ifs[index].mi_Addr6) ||
+    if (md->md_Socket6 < 0 || !has_address6(md, index) ||
         (!mdnsReplyIsUnicast(md) && md->md_SendFamily != 0 &&
          md->md_SendFamily != AF_INET6) ||
         (mdnsReplyIsUnicast(md) && md->md_ReplyFamily != AF_INET6)) {

@@ -258,6 +258,12 @@ main(void)
     md->md_SendIf = -1;
     md->md_NextHandle = 1;
     md->md_DaemonID = GetETaskID(FindTask(NULL));
+    if (dnssd_link_inventory_init(&md->md_LinkInventory,
+            md->md_Links, md->md_LinkScratch, MDNS_IFS_MAX,
+            md->md_Addresses, md->md_AddressScratch,
+            MDNS_ADDRESS_MAX) != DNSSD_LINK_OK) {
+        return RETURN_FAIL;
+    }
     NEWLIST(&md->md_Services);
     md->md_RxBuf = (UBYTE *)AllocMem(MDNS_MAX_PACKET, MEMF_CLEAR);
     md->md_TxBuf = (UBYTE *)AllocMem(MDNS_MAX_PACKET, MEMF_CLEAR);
