@@ -476,6 +476,12 @@ challenge ACK too, not a reset, and so does a segment whose ACK is older than SN
 the peer's largest window (section 5.2), whose data is dropped. Challenge ACKs are limited to 5 a
 second on each connection (section 7), not for all of them together.
 
+The ACK that answers a dropped segment - an ACK of data not yet sent, a segment outside the window
+or failing PAWS, one in TIME_WAIT - is limited the same way, 5 a second on each connection, with a
+count of its own (`tcp_ackwar_ok()`, as FreeBSD's `ack_war_cnt`): two ends out of step, one
+acknowledging data the other never sent and the other's ACKs below its window, otherwise answered
+each other at once and kept the stack busy for good (an ACK war).
+
 ---
 
 ## 6. Dual-stack IPv6 (TCP6 / UDP6)

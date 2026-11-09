@@ -886,6 +886,26 @@ tcp_challenge_ok(struct tcpcb *tp)
 }
 
 /*
+ * Whether an ACK for a dropped segment may go (dropafterack): at most
+ * TCP_ACKWAR_MAX a second on each connection, as FreeBSD's
+ * net.inet.tcp.ack_war_cnt (5 in its ack_war_timewindow, 1 s). Two ends out
+ * of step - one acknowledging data the other never sent, the other's ACKs
+ * below its window - would otherwise answer each other at once, for ever,
+ * and keep the stack busy.
+ */
+#define TCP_ACKWAR_MAX      5
+
+static int
+tcp_ackwar_ok(struct tcpcb *tp)
+{
+    if(tcp_now - tp->t_ackwar_time >= PR_SLOWHZ) {
+        tp->t_ackwar_time = tcp_now;
+        tp->t_ackwar_cnt = 0;
+    }
+    return tp->t_ackwar_cnt++ < TCP_ACKWAR_MAX;
+}
+
+/*
  * The IPv4 lookups do not know interfaces. When the socket they found is
  * bound to another interface than the one the segment came in by
  * (SO_BINDTODEVICE), or to one that went away (INP_BOUNDGONE), take a socket
@@ -2548,6 +2568,10 @@ dropafterack:
     D(bug("[AROSTCP:TCP] %s: dropafterack: flags=0x%02x\n", __func__, tiflags));
     if(tiflags & TH_RST)
         goto drop;
+    if(!tcp_ackwar_ok(tp)) {
+        tcpstat.tcps_rcvackwar++;
+        goto drop;
+    }
 #ifdef TCPDEBUG
     if(so->so_options & SO_DEBUG)
         tcp_trace(TA_DROP, ostate, tp, &tcp_saveti, 0);

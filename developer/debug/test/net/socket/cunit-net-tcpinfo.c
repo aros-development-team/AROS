@@ -612,6 +612,47 @@ void testTCPINFO_WINDOW_NO_SCALE(void)
     CloseSocket(s);
 }
 
+/* Two ends out of step do not answer each other's ACKs for ever: 100
+ * bytes made by hand with the client's numbers reach the server, which
+ * takes them and acknowledges data the client never sent; the client's
+ * ACK of its own state is below the server's window, and so on. Each side
+ * answering at once kept the stack busy for good (an ACK war); the ACKs
+ * for dropped segments are now at most 5 a second on a connection, and in
+ * a second the stack sends a few dozen ACKs at most. */
+void testTCPINFO_ACK_WAR(void)
+{
+    struct tcp_info ci, si;
+    struct sockaddr_in a;
+    socklen_t l = sizeof(a);
+    LONG old = 1, off = 0;
+    u_short cport, sport;
+    long a0, a1;
+    int c, s, r, i;
+
+    CU_ASSERT_EQUAL_FATAL(tcpctl(TCPCTL_DO_RFC1323, &old, &off), 0);
+    i = st_tcp_pair(AF_INET, &c, &s);
+    tcpctl(TCPCTL_DO_RFC1323, &off, &old);
+    CU_ASSERT_EQUAL_FATAL(i, 0);
+    getsockname(c, (struct sockaddr *)&a, &l);
+    cport = ntohs(a.sin_port);
+    l = sizeof(a);
+    getsockname(s, (struct sockaddr *)&a, &l);
+    sport = ntohs(a.sin_port);
+    CU_ASSERT_EQUAL(info(c, &ci, NULL), 0);
+    CU_ASSERT_EQUAL(info(s, &si, NULL), 0);
+    r = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
+    CU_ASSERT_FATAL(r >= 0);
+    a0 = sent_acks();
+    CU_ASSERT_EQUAL(inject(r, cport, sport, si.tcpi_rcv_nxt, ci.tcpi_rcv_nxt, 100), 120);
+    Delay(50);
+    a1 = sent_acks();
+    printf("\n    out of step for 1 s: %ld ACKs sent\n", a1 - a0);
+    CU_ASSERT(a1 - a0 > 0 && a1 - a0 < 40);
+    CloseSocket(r);
+    CloseSocket(c);
+    CloseSocket(s);
+}
+
 /* The accepted side of a connection has an RTT from the handshake (the
  * timestamp its SYN-ACK carried, echoed in the final ACK), before any
  * data; it used to have none until it sent some. */
@@ -768,6 +809,7 @@ int main(int argc, char **argv)
         !CU_add_test(p, "the accepted side has an RTT from the handshake", testTCPINFO_PASSIVE_RTT) ||
         !CU_add_test(p, "socket buffers grow unless the application sized them", testTCPINFO_AUTOSIZE) ||
         !CU_add_test(p, "with the ceilings at 0 no buffer grows", testTCPINFO_AUTOSIZE_OFF) ||
+        !CU_add_test(p, "two ends out of step do not answer each other for ever", testTCPINFO_ACK_WAR) ||
         !CU_add_test(p, "a listening socket reports LISTEN", testTCPINFO_LISTEN))
     {
         CU_cleanup_registry();

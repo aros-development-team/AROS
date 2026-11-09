@@ -298,6 +298,14 @@ struct tcpcb {
 	u_int	t_challenge_cnt;
 
 /*
+ * ACKs sent for segments dropped (dropafterack), counted as the challenge
+ * ACKs are, so that two ends out of step do not answer each other's ACKs
+ * for ever (an ACK war; FreeBSD's tcp_ack_war_check()).
+ */
+	u_long	t_ackwar_time;
+	u_int	t_ackwar_cnt;
+
+/*
  * What this connection adds to tcp_now in its TSval (RFC 7323 section 5.4).
  */
 	u_int32_t t_ts_offset;
@@ -497,6 +505,7 @@ struct	tcpstat {
 	u_long	tcps_sc_reset;		/* entries removed by RST */
 	u_long	tcps_sc_zonefail;	/* entry allocation failures */
 	u_long	tcps_sc_aborted;	/* completions aborted (listen full) */
+	u_long	tcps_rcvackwar;		/* ACKs for dropped segments not sent (rate) */
 };
 
 /*
