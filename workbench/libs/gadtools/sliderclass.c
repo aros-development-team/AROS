@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Internal GadTools slider class.
 */
@@ -124,16 +124,6 @@ IPTR GTSlider__OM_NEW(Class * cl, Object * o, struct opSet *msg)
 {
     struct DrawInfo     *dri;
     
-    struct TagItem      fitags[] =
-    {
-        {IA_Width       , 0UL           },
-        {IA_Height      , 0UL           },
-        {IA_Resolution  , 0UL           },
-        {IA_FrameType   , FRAME_BUTTON  },
-        {IA_EdgesOnly   , TRUE          },
-        {TAG_DONE                       }
-    };
-    
     EnterFunc(bug("Slider::New()\n"));
     
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
@@ -143,11 +133,11 @@ IPTR GTSlider__OM_NEW(Class * cl, Object * o, struct opSet *msg)
   
         dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, (IPTR) NULL, msg->ops_AttrList);
         
-        fitags[0].ti_Data = GetTagData(GA_Width, 0, msg->ops_AttrList) + BORDERPROPSPACINGX * 2;
-        fitags[1].ti_Data = GetTagData(GA_Height, 0, msg->ops_AttrList) + BORDERPROPSPACINGY * 2;
-        fitags[2].ti_Data = (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y;
-
-        data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
+        data->frame = gt_newframe(GadToolsBase,
+                                  GetTagData(GA_Width, 0, msg->ops_AttrList) + BORDERPROPSPACINGX * 2,
+                                  GetTagData(GA_Height, 0, msg->ops_AttrList) + BORDERPROPSPACINGY * 2,
+                                  (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y,
+                                  FRAME_BUTTON, IA_EdgesOnly);
         if (data->frame)
         {
             data->freedom=GetTagData(PGA_Freedom,FREEHORIZ,msg->ops_AttrList);

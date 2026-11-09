@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     GadTools gadget creation functions
 */
@@ -7,6 +7,7 @@
 /****************************************************************************************/
 
 #include <stdio.h>
+#include <string.h>
 #include <proto/exec.h>
 #include <exec/types.h>
 #include <exec/libraries.h>
@@ -37,12 +38,96 @@
 
 /****************************************************************************************/
 
+/* Number of entries of a tag array */
+#define NUMTAGS(t)  (sizeof(t) / sizeof(struct TagItem))
+
+/****************************************************************************************/
+
+/* NextTagItem() for the makexxx() functions. If the tag that was found is the
+   tag of one of the entries of tags[] selected by mask (bit n = tags[n]), its
+   data is stored there. The tag is returned as well, so that the caller can
+   handle the tags which need more than that. */
+static struct TagItem *gt_nexttag(struct GadToolsBase_intern *GadToolsBase,
+                                  struct TagItem **tstate,
+                                  struct TagItem *tags, ULONG mask)
+{
+    struct TagItem *tag = NextTagItem(tstate);
+
+    if (tag)
+    {
+        for (; mask; mask >>= 1, tags++)
+        {
+            if ((mask & 1) && (tags->ti_Tag == tag->ti_Tag))
+            {
+                tags->ti_Data = tag->ti_Data;
+                break;
+            }
+        }
+    }
+
+    return tag;
+}
+
+/****************************************************************************************/
+
+/* Create the gadget object and mark it as GadTools gadget */
+static struct Gadget *gt_newgadget(struct GadToolsBase_intern *GadToolsBase,
+                                   Class *cl, struct TagItem *tags)
+{
+    struct Gadget *obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
+
+    if (obj)
+    {
+        obj->GadgetType |= GTYP_GADTOOLS;
+    }
+    return obj;
+}
+
+/****************************************************************************************/
+
+/* Set a GA_TextAttr tag item. Be sure not to pass GA_TextAttr, NULL */
+static void gt_settattr(struct TagItem *tag, struct TextAttr *tattr)
+{
+    if (tattr)
+        tag->ti_Data = (IPTR)tattr;
+    else
+        tag->ti_Tag = TAG_IGNORE;
+}
+
+/****************************************************************************************/
+
+/* Get the bounding box of the gadget from the standard tags and shrink the
+   gadget itself by the given border.
+
+   There are always GA_Left, GA_Top, GA_Width and GA_Height tags, and they are
+   the first four, thanks to creategadgeta.c (and makelistview()) ! */
+static void gt_boundsinset(struct IBox *bbox, struct TagItem stdgadtags[],
+                           WORD dx, WORD dy)
+{
+    /* if there is a bounding box the label position
+       will be calculated based on this box and not
+       the gadget coords */
+
+    bbox->Left   = stdgadtags[TAG_Left].ti_Data;
+    bbox->Top    = stdgadtags[TAG_Top].ti_Data;
+    bbox->Width  = stdgadtags[TAG_Width].ti_Data;
+    bbox->Height = stdgadtags[TAG_Height].ti_Data;
+
+    stdgadtags[TAG_Left].ti_Data   += dx;
+    stdgadtags[TAG_Top].ti_Data    += dy;
+    stdgadtags[TAG_Width].ti_Data  -= dx * 2;
+    stdgadtags[TAG_Height].ti_Data -= dy * 2;
+}
+
+/****************************************************************************************/
+
 struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
                           struct TagItem stdgadtags[],
                           struct VisualInfo *vi,
-                          struct TagItem *taglist)
+                          struct TextAttr *tattr,
+                          struct TagItem *taglist,
+                          ULONG kind)
 {
-    struct Gadget *obj;
     struct TagItem tags[] =
     {
         {GA_Disabled    , FALSE         },
@@ -55,12 +140,7 @@ struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
     tags[1].ti_Data = GetTagData(GA_Immediate, FALSE, taglist);
     tags[3].ti_Data = (IPTR) stdgadtags;
 
-    obj = (struct Gadget *) NewObjectA(GadToolsBase->buttonclass, NULL, tags);
-    if (obj)
-    {
-        obj->GadgetType |= GTYP_GADTOOLS;
-    }
-    return obj;
+    return gt_newgadget(GadToolsBase, GadToolsBase->buttonclass, tags);
 }
 
 /****************************************************************************************/
@@ -68,9 +148,10 @@ struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
 struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
                             struct TagItem stdgadtags[],
                             struct VisualInfo *vi,
-                            struct TagItem *taglist)
+                            struct TextAttr *tattr,
+                            struct TagItem *taglist,
+                            ULONG kind)
 {
-    struct Gadget *obj;
     struct TagItem tags[] =
     {
         {GA_Disabled    , FALSE         },
@@ -89,13 +170,8 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
         stdgadtags[TAG_Height].ti_Data = CHECKBOX_HEIGHT;
     }
 
-    obj = (struct Gadget *) NewObjectA(GadToolsBase->checkboxclass, NULL, tags);
-    if (obj)
-    {
-        obj->GadgetType |= GTYP_GADTOOLS;
-    }
-
-    ReturnPtr("makecheckbox()", struct Gadget *, obj);
+    ReturnPtr("makecheckbox()", struct Gadget *,
+              gt_newgadget(GadToolsBase, GadToolsBase->checkboxclass, tags));
 }
 
 /****************************************************************************************/
@@ -104,9 +180,9 @@ struct Gadget *makecycle(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
                          struct TextAttr *tattr,
-                         struct TagItem *taglist)
+                         struct TagItem *taglist,
+                         ULONG kind)
 {
-    struct Gadget *obj;
     struct TagItem tags[] =
     {
         {GA_Disabled    , FALSE         }, /* 0 */
@@ -123,22 +199,12 @@ struct Gadget *makecycle(struct GadToolsBase_intern *GadToolsBase,
     tags[1].ti_Data = GetTagData(GTCY_Labels, FALSE, taglist);
     tags[2].ti_Data = GetTagData(GTCY_Active, 0, taglist);
 
-    /* Be sure not to pass GA_TextAttr, NULL */
-    if (tattr)
-        tags[4].ti_Data = (IPTR)tattr;
-    else
-        tags[4].ti_Tag = TAG_IGNORE;
+    gt_settattr(&tags[4], tattr);
 
     tags[5].ti_Data = (IPTR) stdgadtags;
 
-    obj = (struct Gadget *) NewObjectA(GadToolsBase->cycleclass, NULL, tags);
-
-    if (obj)
-    {
-        obj->GadgetType |= GTYP_GADTOOLS;
-    }
-
-    ReturnPtr("makecycle()", struct Gadget *, obj);
+    ReturnPtr("makecycle()", struct Gadget *,
+              gt_newgadget(GadToolsBase, GadToolsBase->cycleclass, tags));
 }
 
 /****************************************************************************************/
@@ -147,9 +213,9 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
                       struct TagItem stdgadtags[],
                       struct VisualInfo *vi,
                       struct TextAttr *tattr,
-                      struct TagItem *taglist)
+                      struct TagItem *taglist,
+                      ULONG kind)
 {
-    struct Gadget *obj;
     int labels = 0;
     STRPTR *labellist;
     struct TagItem *tag, tags[] =
@@ -188,11 +254,7 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
         break;
     }
 
-    /* Be sure not to pass GA_TextAttr, NULL */
-    if (tattr)
-        tags[6].ti_Data = (IPTR)tattr;
-    else
-        tags[6].ti_Tag = TAG_IGNORE;
+    gt_settattr(&tags[6], tattr);
 
     tags[7].ti_Data = (IPTR) stdgadtags;
 
@@ -229,208 +291,122 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
     while (labellist[labels])
         labels++;
 
-    obj = (struct Gadget *) NewObjectA(GadToolsBase->mxclass, NULL, tags);
-
-    if (obj)
-    {
-        obj->GadgetType |= GTYP_GADTOOLS;
-    }
-
-    return obj;
+    return gt_newgadget(GadToolsBase, GadToolsBase->mxclass, tags);
 }
 
 /****************************************************************************************/
 
-struct Gadget *makepalette(struct GadToolsBase_intern *GadToolsBase,
-                         struct TagItem stdgadtags[],
-                         struct VisualInfo *vi,
-                         const struct TagItem *taglist)
+static const struct TagItem palettetags[] =
 {
-    struct Gadget *obj = NULL;
+    {GA_RelVerify,          TRUE    }, /* 0 */
+    {GA_Disabled,           FALSE   }, /* 1 */
+    {GTPA_Depth,            1       }, /* 2 */
+    {GTPA_Color,            0       }, /* 3 */
+    {GTPA_ColorOffset,      0       }, /* 4 */
+    {GTPA_IndicatorWidth,   0       }, /* 5 */
+    {GTPA_IndicatorHeight,  0       }, /* 6 */
+    {GTPA_NumColors,        2       }, /* 7 */
+    {GTPA_ColorTable,       0       }, /* 8 */
+    {TAG_MORE,              (IPTR)NULL      }
+};
 
-    struct TagItem *tag, tags[] =
+struct Gadget *makepalette(struct GadToolsBase_intern *GadToolsBase,
+                           struct TagItem stdgadtags[],
+                           struct VisualInfo *vi,
+                           struct TextAttr *tattr,
+                           struct TagItem *taglist,
+                           ULONG kind)
+{
+    struct TagItem *tag, tags[NUMTAGS(palettetags)];
+
+    memcpy(tags, palettetags, sizeof(palettetags));
+
+    while ((tag = gt_nexttag(GadToolsBase, (struct TagItem **)&taglist, tags, 0x1fe)))
     {
-        {GA_RelVerify,          TRUE    }, /* 0 */
-        {GA_Disabled,           FALSE   }, /* 1 */
-        {GTPA_Depth,            1               }, /* 2 */
-        {GTPA_Color,            0               }, /* 3 */
-        {GTPA_ColorOffset,      0               }, /* 4 */
-        {GTPA_IndicatorWidth,   0       }, /* 5 */
-        {GTPA_IndicatorHeight,  0       }, /* 6 */
-        {GTPA_NumColors,        2               }, /* 7 */
-        {GTPA_ColorTable,       0               }, /* 8 */
-        {TAG_MORE,              (IPTR)NULL      }
-    };
-    
-    /* Could use GetTagData(), but this is faster */
-    while ((tag = NextTagItem((struct TagItem **)&taglist)))
-    {
-        IPTR tidata = tag->ti_Data;
-        
         /* Note: GTPA_NumColors overrides GTPA_Depth tag! */
-        
-        switch (tag->ti_Tag)
-        {
-        case GA_Disabled:               tags[1].ti_Data = tidata; break;
-        case GTPA_Depth:                tags[2].ti_Data = tidata; tags[7].ti_Data = 1L << tidata;break;
-        case GTPA_Color:                tags[3].ti_Data = tidata; break;
-        case GTPA_ColorOffset:          tags[4].ti_Data = tidata; break;
-        case GTPA_IndicatorWidth:       tags[5].ti_Data = tidata; break;
-        case GTPA_IndicatorHeight:      tags[6].ti_Data = tidata; break;
-        case GTPA_NumColors:            tags[7].ti_Data = tidata; break;
-        case GTPA_ColorTable:           tags[8].ti_Data = tidata; break;
-            
-        } /* switch() */
-        
+
+        if (tag->ti_Tag == GTPA_Depth)
+            tags[7].ti_Data = 1L << tag->ti_Data;
+
     } /* while (iterate taglist) */
 
     tags[9].ti_Data = (IPTR)stdgadtags;
 
-    obj = (struct Gadget *) NewObjectA(GadToolsBase->paletteclass, NULL, tags);
-
-    if (obj)
-    {
-        obj->GadgetType |= GTYP_GADTOOLS;
-    }
-
-    return obj;
+    return gt_newgadget(GadToolsBase, GadToolsBase->paletteclass, tags);
 }
 
 /****************************************************************************************/
+
+/* TEXT_KIND and NUMBER_KIND differ only in their tags */
+
+static const struct TagItem texttags[] =
+{
+    {GTTX_Text              , 0                     },
+    {GTTX_CopyText          , FALSE                 },
+    {GTTX_Clipped           , FALSE                 },
+    {GTTX_Border            , FALSE                 },
+    {GTTX_FrontPen          , TEXTPEN               },
+    {GTTX_BackPen           , BACKGROUNDPEN         },
+    {GTTX_Justification     , GTJ_LEFT              },
+    {GTA_Text_Format        , (IPTR)"%s"            },
+    {GA_TextAttr            , (IPTR)NULL            },
+    {GTA_GadgetKind         , TEXT_KIND             },
+    {TAG_MORE               , (IPTR) NULL           }
+};
+
+static const struct TagItem numbertags[] =
+{
+    {GTNM_Number            , 0             },
+    {GTNM_Format            , (IPTR)"%ld"   },
+    {GTNM_Clipped           , FALSE         },
+    {GTNM_Border            , FALSE         },
+    {GTNM_FrontPen          , TEXTPEN       },
+    {GTNM_BackPen           , BACKGROUNDPEN },
+    {GTNM_Justification     , GTJ_CENTER    },
+    {GTNM_MaxNumberLen      , 100           },
+    {GA_TextAttr            , (IPTR)NULL    },
+    {GTA_GadgetKind         , NUMBER_KIND   },
+    {TAG_MORE               , (IPTR) NULL   }
+};
 
 struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
-                         struct TagItem stdgadtags[],
-                         struct VisualInfo *vi,
-                         struct TextAttr *tattr,
-                         const struct TagItem *taglist)
+                        struct TagItem stdgadtags[],
+                        struct VisualInfo *vi,
+                        struct TextAttr *tattr,
+                        struct TagItem *taglist,
+                        ULONG kind)
 {
-    struct Gadget *obj = NULL;
     BOOL cliptag_found = FALSE;
-    
-    struct TagItem *tag, tags[] =
-    {
-        {GTTX_Text              , 0                     },
-        {GTTX_CopyText          , FALSE                 },
-        {GTTX_Clipped           , FALSE                 },
-        {GTTX_Border            , FALSE                 },
-        {GTTX_FrontPen          , TEXTPEN               },
-        {GTTX_BackPen           , BACKGROUNDPEN         },
-        {GTTX_Justification     , GTJ_LEFT              },
-        {GTA_Text_Format        , (IPTR)"%s"            },
-        {GA_TextAttr            , (IPTR)NULL            },
-        {GTA_GadgetKind         , TEXT_KIND             },
-        {TAG_MORE               , (IPTR) NULL           }
-    };
+    struct TagItem *tag, tags[NUMTAGS(texttags)];
+    ULONG mask = 0x7f;      /* GTTX_Text ... GTTX_Justification */
 
-    /* Could use GetTagData(), but this is faster */
-    while ((tag = NextTagItem((struct TagItem **)&taglist)))
+    if (kind == NUMBER_KIND)
     {
-        IPTR tidata = tag->ti_Data;
-        
-        switch (tag->ti_Tag)
-        {
-            case GTTX_Text:             tags[0].ti_Data = tidata; break;
-            case GTTX_CopyText:         tags[1].ti_Data = tidata; break;
-            case GTTX_Clipped:          tags[2].ti_Data = tidata; cliptag_found = TRUE;break;
-            case GTTX_Border:           tags[3].ti_Data = tidata; break;
-            case GTTX_FrontPen:         tags[4].ti_Data = tidata; break;
-            case GTTX_BackPen:          tags[5].ti_Data = tidata; break;
-            case GTTX_Justification:    tags[6].ti_Data = tidata; break;
-        }
-        
+        memcpy(tags, numbertags, sizeof(numbertags));
+        mask = 0xff;        /* GTNM_Number ... GTNM_MaxNumberLen */
+    }
+    else
+    {
+        memcpy(tags, texttags, sizeof(texttags));
+    }
+
+    while ((tag = gt_nexttag(GadToolsBase, (struct TagItem **)&taglist, tags, mask)))
+    {
+        if (tag->ti_Tag == GTTX_Clipped)    /* same as GTNM_Clipped */
+            cliptag_found = TRUE;
+
     } /* while (iterate taglist) */
 
-    /* if GTTX_Clipped was not specified then the default value is
-       the GTTX_Border value */
+    /* if GTTX_Clipped/GTNM_Clipped was not specified then the default
+       value is the GTTX_Border/GTNM_Border value */
     
     if (!cliptag_found) tags[2].ti_Data = tags[3].ti_Data;
     
-    /* Be sure not to pass GA_TextAttr, NULL */
-    if (tattr)
-        tags[8].ti_Data = (IPTR)tattr;
-    else
-        tags[8].ti_Tag = TAG_IGNORE;
+    gt_settattr(&tags[8], tattr);
     tags[10].ti_Data = (IPTR)stdgadtags;
 
-    obj = (struct Gadget *) NewObjectA(GadToolsBase->textclass, NULL, tags);
-
-    if (obj)
-    {
-        obj->GadgetType |= GTYP_GADTOOLS;
-    }
-
-    return (obj);
+    return gt_newgadget(GadToolsBase, GadToolsBase->textclass, tags);
 }
-
-/****************************************************************************************/
-
-struct Gadget *makenumber(struct GadToolsBase_intern *GadToolsBase,
-                         struct TagItem stdgadtags[],
-                         struct VisualInfo *vi,
-                         struct TextAttr *tattr,
-                         const struct TagItem *taglist)
-{
-    struct Gadget *obj = NULL;
-    BOOL cliptag_found = FALSE;
-    
-    struct TagItem *tag, tags[] =
-    {
-        {GTNM_Number            , 0             },
-        {GTNM_Format            , (IPTR)"%ld"   },
-        {GTNM_Clipped           , FALSE         },
-        {GTNM_Border            , FALSE         },
-        {GTNM_FrontPen          , TEXTPEN       },
-        {GTNM_BackPen           , BACKGROUNDPEN },
-        {GTNM_Justification     , GTJ_CENTER    },
-        {GTNM_MaxNumberLen      , 100           },
-        {GA_TextAttr            , (IPTR)NULL    },
-        {GTA_GadgetKind         , NUMBER_KIND   },
-        {TAG_MORE               , (IPTR) NULL   }
-    };
-    
-   
-    /* Could use GetTagData(), but this is faster */
-    while ((tag = NextTagItem((struct TagItem **)&taglist)))
-    {
-        IPTR tidata = tag->ti_Data;
-        
-        switch (tag->ti_Tag)
-        {
-            case GTNM_Number:           tags[0].ti_Data = tidata; break;
-            case GTNM_Format:           tags[1].ti_Data = tidata; break;
-            case GTNM_Clipped:          tags[2].ti_Data = tidata; cliptag_found = TRUE;break;
-            case GTNM_Border:           tags[3].ti_Data = tidata; break;
-            case GTNM_FrontPen:         tags[4].ti_Data = tidata; break;
-            case GTNM_BackPen:          tags[5].ti_Data = tidata; break;
-            case GTNM_Justification:    tags[6].ti_Data = tidata; break;
-            case GTNM_MaxNumberLen:     tags[7].ti_Data = tidata; break;
-        }
-        
-    } /* while (iterate taglist) */
-
-    /* if GTNM_Clipped was not specified then the default value is
-       the GTNM_Border value */
-    
-    if (!cliptag_found) tags[2].ti_Data = tags[3].ti_Data;
-
-    /* Be sure not to pass GA_TextAttr, NULL */
-    if (tattr)
-        tags[8].ti_Data = (IPTR)tattr;
-    else
-        tags[8].ti_Tag = TAG_IGNORE;
-        
-    tags[10].ti_Data = (IPTR)stdgadtags;
-
-    obj = (struct Gadget *) NewObjectA(GadToolsBase->textclass, NULL, tags);
-
-    if (obj)
-    {
-        obj->GadgetType |= GTYP_GADTOOLS;
-    }
-
-    return  (obj);
-}
-
 
 /****************************************************************************************/
 
@@ -443,79 +419,81 @@ const struct TagItem slider2level[] =
 
 /****************************************************************************************/
 
+static const struct TagItem slidertags[] =
+{
+    {GA_Disabled        , FALSE             },
+    {GA_RelVerify       , TRUE              },      /* Georg S.: was false */
+    {GA_Immediate       , TRUE              },      /* Georg S.: was false */
+    {GTSL_Min           , 0                 },
+    {GTSL_Max           , 15                },
+    {GTSL_Level         , 0                 },
+    {PGA_Freedom        , FREEHORIZ         },
+    {PGA_Borderless     , TRUE              },
+#ifdef __MORPHOS__
+    {PGA_NewLook        , FALSE             },
+#else
+    {PGA_NewLook        , TRUE              },
+#endif
+    {GA_Bounds          , (IPTR)NULL        },      /* 9: &bbox */
+    {GA_FollowMouse     , TRUE              },
+    {PGA_NotifyBehaviour, PG_BEHAVIOUR_NICE },
+    {PGA_RenderBehaviour, PG_BEHAVIOUR_NICE },
+    {TAG_MORE           , (IPTR)NULL        }
+};
+
+static const struct TagItem sliderleveltags[] =
+{
+     {GA_Left               , 0             },
+     {GA_Top                , 0             },
+     {GA_Width              , 0             },
+     {GA_Height             , 0             },
+     {GA_TextAttr           , (IPTR)NULL    },      /* 4: tattr */
+     {GTNM_Format           , (IPTR)NULL    },
+     {GTNM_Justification    , GTJ_LEFT      },
+     {GTA_Text_DispFunc     , (IPTR)NULL    },
+     {GA_Next               , (IPTR)NULL    },
+     {GA_DrawInfo           , (IPTR)NULL    },
+     {GTNM_Number           , 0             },
+     {GTA_GadgetKind        , SLIDER_KIND   },
+     {GA_Previous           , (IPTR)NULL    },
+     {GTA_Text_ParentGadget , 0             },
+     {TAG_DONE                              }
+};
+
 struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
-                         struct TagItem stdgadtags[],
-                         struct VisualInfo *vi,
-                         struct TextAttr *tattr,
-                         const struct TagItem *taglist)
+                          struct TagItem stdgadtags[],
+                          struct VisualInfo *vi,
+                          struct TextAttr *tattr,
+                          struct TagItem *taglist,
+                          ULONG kind)
 {
 
     struct TagItem *tag;
     struct IBox bbox;
     
-    struct TagItem stags[] =
-    {
-        {GA_Disabled        , FALSE             },
-        {GA_RelVerify       , TRUE              },      /* Georg S.: was false */
-        {GA_Immediate       , TRUE              },      /* Georg S.: was false */
-        {GTSL_Min           , 0                 },
-        {GTSL_Max           , 15                },
-        {GTSL_Level         , 0                 },
-        {PGA_Freedom        , FREEHORIZ         },
-        {PGA_Borderless     , TRUE              },
-#ifdef __MORPHOS__
-        {PGA_NewLook        , FALSE             },
-#else
-        {PGA_NewLook        , TRUE              },
-#endif
-        {GA_Bounds          , (IPTR)&bbox       },
-        {GA_FollowMouse     , TRUE              },
-        {PGA_NotifyBehaviour, PG_BEHAVIOUR_NICE },
-        {PGA_RenderBehaviour, PG_BEHAVIOUR_NICE },
-        {TAG_MORE           , (IPTR)NULL        }
-    };
-    
-    struct TagItem ltags[] =
-    {
-         {GA_Left               , 0             },
-         {GA_Top                , 0             },
-         {GA_Width              , 0             },
-         {GA_Height             , 0             },
-         {GA_TextAttr           , (IPTR)tattr   },
-         {GTNM_Format           , (IPTR)NULL    },
-         {GTNM_Justification    , GTJ_LEFT      },
-         {GTA_Text_DispFunc     , (IPTR)NULL    },
-         {GA_Next               , (IPTR)NULL    },
-         {GA_DrawInfo           , (IPTR)NULL    },
-         {GTNM_Number           , 0             },
-         {GTA_GadgetKind        , SLIDER_KIND   },
-         {GA_Previous           , (IPTR)NULL    },
-         {GTA_Text_ParentGadget , 0             },
-         {TAG_DONE                              }
-    };
+    struct TagItem stags[NUMTAGS(slidertags)];
+    struct TagItem ltags[NUMTAGS(sliderleveltags)];
+
     STRPTR lformat = NULL;
     WORD lmaxlen = 0;
     LONG lmaxpixellen = 0L;
     UBYTE lplace = PLACETEXT_LEFT;
-    WORD level = 0;
+    WORD level;
     
     struct Gadget *slidergad = NULL, *levelgad = NULL;
 
-    /* Parse tags */
-    while ((tag = NextTagItem((struct TagItem **)&taglist)))
+    memcpy(stags, slidertags, sizeof(slidertags));
+    stags[9].ti_Data = (IPTR)&bbox;
+    memcpy(ltags, sliderleveltags, sizeof(sliderleveltags));
+    ltags[4].ti_Data = (IPTR)tattr;
+
+    /* Parse tags. The slider tags GA_Disabled ... GTSL_Level are stored by gt_nexttag() */
+    while ((tag = gt_nexttag(GadToolsBase, (struct TagItem **)&taglist, stags, 0x3f)))
     {
         IPTR tidata = tag->ti_Data;
             
         switch (tag->ti_Tag)
         {
-        
-            /* Slider tags */
-            case GA_Disabled:   stags[0].ti_Data = tidata; break;
-            case GA_RelVerify:  stags[1].ti_Data = tidata; break;
-            case GA_Immediate:  stags[2].ti_Data = tidata; break;
-            case GTSL_Min:      stags[3].ti_Data = tidata; break;
-            case GTSL_Max:      stags[4].ti_Data = tidata; break;
-            case GTSL_Level:    level = stags[5].ti_Data = tidata; break;
             case PGA_Freedom:
                 if (tidata == LORIENT_HORIZ)
                     stags[6].ti_Data = FREEHORIZ;
@@ -534,32 +512,17 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
         }
             
     } /* while (iterate taglist) */
+
+    level = stags[5].ti_Data;
     
-    /* if there is a bounding box the label position
-       will be calculated based on this box and not
-       the gadget coords */
-
-    bbox.Left   = GetTagData(GA_Left, 0, stdgadtags);
-    bbox.Top    = GetTagData(GA_Top,  0, stdgadtags);
-    bbox.Width  = GetTagData(GA_Width, 0, stdgadtags);
-    bbox.Height = GetTagData(GA_Height, 0, stdgadtags);
-
-    /* There are always GA_Left, GA_Top, GA_Width and GA_Height tags
-       thanks to creategadgeta.c! */
-      
-    FindTagItem(GA_Left,stdgadtags)->ti_Data   += BORDERPROPSPACINGX;
-    FindTagItem(GA_Top,stdgadtags)->ti_Data    += BORDERPROPSPACINGY;
-    FindTagItem(GA_Width,stdgadtags)->ti_Data  -= BORDERPROPSPACINGX * 2;
-    FindTagItem(GA_Height,stdgadtags)->ti_Data -= BORDERPROPSPACINGY * 2;
+    gt_boundsinset(&bbox, stdgadtags, BORDERPROPSPACINGX, BORDERPROPSPACINGY);
 
     /* Create slider gadget */
     stags[13].ti_Data = (IPTR)stdgadtags;
-    slidergad = NewObjectA(GadToolsBase->sliderclass, NULL, stags);
+    slidergad = gt_newgadget(GadToolsBase, GadToolsBase->sliderclass, stags);
 
     if (!slidergad)
         return (NULL);
-
-    slidergad->GadgetType |= GTYP_GADTOOLS;
 
     if (lformat || lmaxlen || lmaxpixellen)
     {
@@ -637,16 +600,15 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
         ltags[8].ti_Data = (IPTR)slidergad;
         ltags[9].ti_Data = (IPTR)vi->vi_dri;
         ltags[10].ti_Data = (IPTR)level;
-        ltags[12].ti_Data = (IPTR)GetTagData(GA_Previous, 0, stdgadtags);
+        ltags[12].ti_Data = stdgadtags[TAG_Previous].ti_Data;
         ltags[13].ti_Data = (IPTR)slidergad;
 
-        levelgad = (struct Gadget *)NewObjectA(GadToolsBase->textclass, NULL, ltags);
+        levelgad = gt_newgadget(GadToolsBase, GadToolsBase->textclass, ltags);
         if (!levelgad)
         {
             DisposeObject((Object *)slidergad);
             return (NULL);
         }
-        levelgad->GadgetType |= GTYP_GADTOOLS;
         
         /* Set up a notification from the slider to the level */
         lntags[0].ti_Data = (IPTR)levelgad;
@@ -675,68 +637,84 @@ struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
 
 /****************************************************************************************/
 
+static const struct TagItem scrollertags[] =
+{
+    {GTSC_Top           , 0                 },
+    {GTSC_Total         , 0                 },
+    {GTSC_Visible       , 2                 },
+    {PGA_Freedom        , FREEHORIZ         },
+    {GA_Disabled        , FALSE             },
+    {GA_RelVerify       , TRUE              },
+    {GA_Immediate       , TRUE              },
+    {GTA_GadgetKind     , SCROLLER_KIND     },
+    {PGA_Borderless     , TRUE              },
+#ifdef __MORPHOS__
+    {PGA_NewLook        , FALSE             },
+#else
+    {PGA_NewLook        , TRUE              },
+#endif
+    {GA_Bounds          , (IPTR)NULL        },      /* 10: &bbox */
+    {GA_FollowMouse     , TRUE              },
+    {PGA_NotifyBehaviour, PG_BEHAVIOUR_NICE },
+    {PGA_RenderBehaviour, PG_BEHAVIOUR_NICE },
+    {TAG_MORE           , (IPTR)NULL        }
+};
+
+static const struct TagItem scrollerarrowtags[] =
+{
+    {GA_Left            , 0             },
+    {GA_Top             , 0             },
+    {GA_Width           , 0             },
+    {GA_Height          , 0             },
+    {GTA_Arrow_Type     , 0             },
+    {GA_DrawInfo        , (IPTR)NULL    },
+    {GA_Next            , (IPTR)NULL    },
+    {GTA_Arrow_Scroller , (IPTR)NULL    },
+    {GA_RelVerify       , TRUE          },
+    {GA_Immediate       , TRUE          },
+    {GA_ID              , 0             },
+    {GTA_GadgetKind     , 0             },          /* 11: arrowkind */
+    {GA_Previous        , (IPTR)NULL    },
+    {TAG_DONE                           }
+};
+
 struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
-                         struct TagItem stdgadtags[],
-                         struct VisualInfo *vi,
-                         const struct TagItem *taglist)
+                            struct TagItem stdgadtags[],
+                            struct VisualInfo *vi,
+                            struct TextAttr *tattr,
+                            struct TagItem *taglist,
+                            ULONG kind)
 {
     struct Gadget *scroller = NULL,
                   *arrow_dec = NULL,
                   *arrow_inc = NULL ;
     struct IBox bbox;
 
-    struct TagItem *tag, stags[] =
-    {
-        {GTSC_Top           , 0                 },
-        {GTSC_Total         , 0                 },
-        {GTSC_Visible       , 2                 },
-        {PGA_Freedom        , FREEHORIZ         },
-        {GA_Disabled        , FALSE             },
-        {GA_RelVerify       , TRUE              },
-        {GA_Immediate       , TRUE              },
-        {GTA_GadgetKind     , SCROLLER_KIND     },
-        {PGA_Borderless     , TRUE              },
-#ifdef __MORPHOS__
-        {PGA_NewLook        , FALSE             },
-#else
-        {PGA_NewLook        , TRUE              },
-#endif
-        {GA_Bounds          , (IPTR) &bbox      },
-        {GA_FollowMouse     , TRUE              },
-        {PGA_NotifyBehaviour, PG_BEHAVIOUR_NICE },
-        {PGA_RenderBehaviour, PG_BEHAVIOUR_NICE },
-        {TAG_MORE           , (IPTR)NULL        }
-    };
+    struct TagItem *tag, stags[NUMTAGS(scrollertags)];
     
-    struct TagItem *scr_dim_tagitem;
-    
- 
-    
-    UWORD freedom = stags[3].ti_Data; /* default */
+    UWORD freedom = FREEHORIZ; /* default */
     WORD arrowdim = 0 /* -1*/, arrowkind = SCROLLER_KIND;
-    ULONG scr_dim_tag;
     
     EnterFunc(bug("makescroller(stdgadtags=%p, vi=%p, taglist = %p)\n",
                 stdgadtags, vi, taglist));
-    /* Could use GetTagData(), but this is faster */
-    while ((tag = NextTagItem((struct TagItem **)&taglist)))
+
+    memcpy(stags, scrollertags, sizeof(scrollertags));
+    stags[10].ti_Data = (IPTR)&bbox;
+
+    /* GTSC_Top, GTSC_Total, GTSC_Visible, GA_Disabled, GA_RelVerify and
+       GA_Immediate are stored by gt_nexttag() */
+    while ((tag = gt_nexttag(GadToolsBase, (struct TagItem **)&taglist, stags, 0x77)))
     {
         IPTR tidata = tag->ti_Data;
         
         switch (tag->ti_Tag)
         {
-            case GTSC_Top:      stags[0].ti_Data = tidata; break;
-            case GTSC_Total:    stags[1].ti_Data = tidata; break;
-            case GTSC_Visible:  stags[2].ti_Data = tidata; break;
             case PGA_Freedom:
                 if (tidata == LORIENT_HORIZ)
                     freedom = stags[3].ti_Data = FREEHORIZ;
                 else
                     freedom = stags[3].ti_Data = FREEVERT;
                 break;
-            case GA_Disabled:   stags[4].ti_Data = tidata; break;
-            case GA_RelVerify:  stags[5].ti_Data = tidata; break;
-            case GA_Immediate:  stags[6].ti_Data = tidata; break;
 
             case GTSC_Arrows:   arrowdim = (WORD)tidata; break;
             case GTA_Scroller_ArrowKind: arrowkind = (WORD)tidata; break;
@@ -746,16 +724,9 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
         
     } /* while (iterate taglist) */
     
-    /* if there is a bounding box the label position
-       will be calculated based on this box and not
-       the gadget coords */
-
     DEBUG_CREATESCROLLER(bug("makescroller: arrowdim %ld\n", arrowdim));
-       
-    bbox.Left   = GetTagData(GA_Left, 0, stdgadtags);
-    bbox.Top    = GetTagData(GA_Top,  0, stdgadtags);
-    bbox.Width  = GetTagData(GA_Width, 0, stdgadtags);
-    bbox.Height = GetTagData(GA_Height, 0, stdgadtags);
+
+    gt_boundsinset(&bbox, stdgadtags, BORDERPROPSPACINGX, BORDERPROPSPACINGY);
 
     DEBUG_CREATESCROLLER(bug("makescroller: left %ld top %ld width %ld height %ld\n", bbox.Left, bbox.Top, bbox.Width, bbox.Height));
 
@@ -766,59 +737,23 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
     if (arrowdim == -1)
     {
         DEBUG_CREATESCROLLER(bug("makescroller: default arrowdim\n"));
-        if (freedom == FREEVERT)
-        {
-            arrowdim = GetTagData(GA_Width, 16, stdgadtags);
-            DEBUG_CREATESCROLLER(bug("makescroller: freevert arrowdim %ld\n", arrowdim));
-        } else {
-            arrowdim = GetTagData(GA_Height, 16, stdgadtags);
-            DEBUG_CREATESCROLLER(bug("makescroller: freehoriz arrowdim %ld\n", arrowdim));
-        }
+        arrowdim = (freedom == FREEVERT) ? bbox.Width : bbox.Height;
         DEBUG_CREATESCROLLER(bug("makescroller: arrowdim %ld\n", arrowdim));
     }
     
-    scr_dim_tag = ((freedom == FREEVERT) ? GA_Height : GA_Width);
-    
-    scr_dim_tagitem = FindTagItem(scr_dim_tag, stdgadtags);
-    scr_dim_tagitem->ti_Data -= 2 * arrowdim;
+    stdgadtags[(freedom == FREEVERT) ? TAG_Height : TAG_Width].ti_Data -= 2 * arrowdim;
 
-    /* There are always GA_Left, GA_Top, GA_Width and GA_Height tags
-       thanks to creategadgeta.c! */
-      
-    FindTagItem(GA_Left,stdgadtags)->ti_Data   += BORDERPROPSPACINGX;
-    FindTagItem(GA_Top,stdgadtags)->ti_Data    += BORDERPROPSPACINGY;
-    FindTagItem(GA_Width,stdgadtags)->ti_Data  -= BORDERPROPSPACINGX * 2;
-    FindTagItem(GA_Height,stdgadtags)->ti_Data -= BORDERPROPSPACINGY * 2;
-
-    scroller = (struct Gadget *) NewObjectA(GadToolsBase->scrollerclass, NULL, stags);
+    scroller = gt_newgadget(GadToolsBase, GadToolsBase->scrollerclass, stags);
 
     if (!scroller)
         return (NULL);
-
-    scroller->GadgetType |= GTYP_GADTOOLS;
 
     DEBUG_CREATESCROLLER(bug("makescroller: scroller gadget 0x%lx scroller Width %ld Height %ld\n",scroller,scroller->Width,scroller->Height));
     DEBUG_CREATESCROLLER(bug("makescroller: scroller nextgadget 0x%lx\n",scroller->NextGadget));
     
     if (arrowdim) /* Scroller has arrows ? */
     {
-        struct TagItem atags[] =
-        {
-            {GA_Left            , 0             },
-            {GA_Top             , 0             },
-            {GA_Width           , 0             },
-            {GA_Height          , 0             },
-            {GTA_Arrow_Type     , 0             },
-            {GA_DrawInfo        , (IPTR)NULL    },
-            {GA_Next            , (IPTR)NULL    },
-            {GTA_Arrow_Scroller , (IPTR)NULL    },
-            {GA_RelVerify       , TRUE          },
-            {GA_Immediate       , TRUE          },
-            {GA_ID              , 0             },
-            {GTA_GadgetKind     , arrowkind     },
-            {GA_Previous        , (IPTR)NULL    },
-            {TAG_DONE                           }
-        };
+        struct TagItem atags[NUMTAGS(scrollerarrowtags)];
         struct TagItem tellscrollertags[] =
         {
             {GTA_Scroller_Arrow1, 0             },
@@ -826,6 +761,9 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
             {TAG_DONE                           }
         };
         
+        memcpy(atags, scrollerarrowtags, sizeof(scrollerarrowtags));
+        atags[11].ti_Data = arrowkind;
+
         atags[5].ti_Data = (IPTR)vi->vi_dri;    /* Set GA_DrawInfo */
         atags[6].ti_Data = (IPTR)scroller;      /* Set GA_Previous */
         atags[7].ti_Data = (IPTR)scroller;      /* Set GTA_Arrow_Scroller */
@@ -842,31 +780,6 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
             atags[2].ti_Data = scroller->Width + BORDERPROPSPACINGX * 2;
             atags[3].ti_Data = arrowdim;
             atags[4].ti_Data = UPIMAGE;
-            
-            DEBUG_CREATESCROLLER(bug("makescroller: Width %ld Height %ld\n",atags[2].ti_Data,atags[3].ti_Data));
-
-            arrow_dec = NewObjectA(GadToolsBase->arrowclass, NULL, atags);
-            if (!arrow_dec)
-                goto failure;
-
-            arrow_dec->GadgetType |= GTYP_GADTOOLS;
-
-            DEBUG_CREATESCROLLER(bug("makescroller: arrow_dec gadget 0x%lx\n",arrow_dec));
-            DEBUG_CREATESCROLLER(bug("makescroller: arrow_dec nextgadget 0x%lx\n",arrow_dec->NextGadget));
-            
-            atags[1].ti_Data += arrowdim;
-            atags[4].ti_Data = DOWNIMAGE;
-            atags[6].ti_Data = (IPTR)arrow_dec;
-        
-            arrow_inc = NewObjectA(GadToolsBase->arrowclass, NULL, atags);
-            if (!arrow_inc)
-                goto failure;
-
-            arrow_inc->GadgetType |= GTYP_GADTOOLS;
-
-            DEBUG_CREATESCROLLER(bug("makescroller: arrow_inc gadget 0x%lx\n",arrow_inc));
-            DEBUG_CREATESCROLLER(bug("makescroller: arrow_inc nextgadget 0x%lx\n",arrow_inc->NextGadget));
-            
         }
         else
         {
@@ -877,30 +790,32 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
             atags[2].ti_Data = arrowdim;
             atags[3].ti_Data = scroller->Height + BORDERPROPSPACINGY * 2;
             atags[4].ti_Data = LEFTIMAGE;
+        }
 
-            DEBUG_CREATESCROLLER(bug("makescroller: Width %ld Height %ld\n",atags[3].ti_Data,atags[2].ti_Data));
-            
-            arrow_dec = NewObjectA(GadToolsBase->arrowclass, NULL, atags);
-            if (!arrow_dec)
-                goto failure;
+        arrow_dec = gt_newgadget(GadToolsBase, GadToolsBase->arrowclass, atags);
+        if (!arrow_dec)
+            goto failure;
 
-            arrow_dec->GadgetType |= GTYP_GADTOOLS;
+        DEBUG_CREATESCROLLER(bug("makescroller: arrow_dec gadget 0x%lx\n",arrow_dec));
 
-            DEBUG_CREATESCROLLER(bug("makescroller: arrow_dec gadget 0x%lx\n",arrow_dec));
-            
+        /* the second arrow follows the first one in the scroller's direction */
+        if (freedom == FREEVERT)
+        {
+            atags[1].ti_Data += arrowdim;
+            atags[4].ti_Data = DOWNIMAGE;
+        }
+        else
+        {
             atags[0].ti_Data += arrowdim;
             atags[4].ti_Data = RIGHTIMAGE;
-            atags[6].ti_Data = (IPTR)arrow_dec;
+        }
+        atags[6].ti_Data = (IPTR)arrow_dec;
 
-            arrow_inc = NewObjectA(GadToolsBase->arrowclass, NULL, atags);
-            if (!arrow_inc)
-                goto failure;
-                
-            arrow_inc->GadgetType |= GTYP_GADTOOLS;
+        arrow_inc = gt_newgadget(GadToolsBase, GadToolsBase->arrowclass, atags);
+        if (!arrow_inc)
+            goto failure;
 
-            DEBUG_CREATESCROLLER(bug("makescroller: arrow_inc gadget 0x%lx\n",arrow_inc));
-                
-        } /* if (scroller is FREEVERT or FREEHORIZ) */
+        DEBUG_CREATESCROLLER(bug("makescroller: arrow_inc gadget 0x%lx\n",arrow_inc));
         
         tellscrollertags[0].ti_Data = (IPTR)arrow_dec;
         tellscrollertags[1].ti_Data = (IPTR)arrow_inc;
@@ -929,171 +844,60 @@ failure:
 
 /****************************************************************************************/
 
+/* STRING_KIND and INTEGER_KIND differ only in three tags, one default and the kind */
+
+static const struct TagItem stringtags[] =
+{
+    {GA_Disabled            , FALSE                 }, /* 0 */
+    {GA_Immediate           , FALSE                 }, /* 1 */
+    {GA_RelVerify           , TRUE                  }, /* 2 */
+    {GA_TabCycle            , TRUE                  }, /* 3 */
+    {GTST_String            , (IPTR)NULL            }, /* 4 */
+    {GTST_MaxChars          , 64UL                  }, /* 5 */
+    {GTST_EditHook          , (IPTR)NULL            }, /* 6 */
+    {STRINGA_ExitHelp       , FALSE                 }, /* 7 */
+    {STRINGA_Justification  , GACT_STRINGLEFT       }, /* 8 */
+    {STRINGA_ReplaceMode    , FALSE                 }, /* 9 */
+    {GA_TextAttr            , (IPTR)NULL            }, /* 10 */
+    {GTA_GadgetKind         , STRING_KIND           }, /* 11 */
+    {GA_Bounds              , (IPTR)NULL            }, /* 12: &bbox */
+    {TAG_MORE               , (IPTR)NULL            }  /* 13 */
+};
+
 struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
-                         struct TagItem stdgadtags[],
-                         struct VisualInfo *vi,
-                         struct TextAttr *tattr,
-                         const struct TagItem *taglist)
+                          struct TagItem stdgadtags[],
+                          struct VisualInfo *vi,
+                          struct TextAttr *tattr,
+                          struct TagItem *taglist,
+                          ULONG kind)
 {
-    struct Gadget *obj = NULL;
     struct IBox bbox;
-    
-    struct TagItem *tag, tags[] =
-    {
-        {GA_Disabled            , FALSE                 }, /* 0 */
-        {GA_Immediate           , FALSE                 }, /* 1 */
-        {GA_RelVerify           , TRUE                  }, /* 2 */
-        {GA_TabCycle            , TRUE                  }, /* 3 */
-        {GTST_String            , (IPTR)NULL            }, /* 4 */
-        {GTST_MaxChars          , 64UL                  }, /* 5 */
-        {GTST_EditHook          , (IPTR)NULL            }, /* 6 */
-        {STRINGA_ExitHelp       , FALSE                 }, /* 7 */
-        {STRINGA_Justification  , GACT_STRINGLEFT       }, /* 8 */
-        {STRINGA_ReplaceMode    , FALSE                 }, /* 9 */
-        {GA_TextAttr            , (IPTR)NULL            }, /* 10 */
-        {GTA_GadgetKind         , STRING_KIND           }, /* 11 */
-        {GA_Bounds              , (IPTR)&bbox           }, /* 12 */
-        {TAG_MORE               , (IPTR)NULL            }  /* 13 */
-    };
-    
-   
-    /* Could use GetTagData(), but this is faster */
-    while ((tag = NextTagItem((struct TagItem **)&taglist)))
-    {
-        IPTR tidata = tag->ti_Data;
-        
-        switch (tag->ti_Tag)
-        {
-            case GA_Disabled:           tags[0].ti_Data = tidata; break;
-            case GA_Immediate:          tags[1].ti_Data = tidata; break;
-            case GA_RelVerify:          tags[2].ti_Data = tidata; break;
-            case GA_TabCycle:           tags[3].ti_Data = tidata; break;
-            case GTST_String:           tags[4].ti_Data = tidata; break;
-            case GTST_MaxChars:         tags[5].ti_Data = tidata; break;
-            case GTST_EditHook:         tags[6].ti_Data = tidata; break;
-            case STRINGA_ExitHelp:      tags[7].ti_Data = tidata; break;
-            case STRINGA_Justification: tags[8].ti_Data = tidata; break;
-            case STRINGA_ReplaceMode:   tags[9].ti_Data = tidata; break;
-        }
-        
-    } /* while (iterate taglist) */
-    
-    if (tattr) /* Text Attr supplied ? */
-        tags[10].ti_Data = (IPTR)tattr;
-    else
-        tags[10].ti_Tag = TAG_IGNORE; /* Don't pass GA_TextAttr, NULL */
-        
-    /* if there is a bounding box the label position
-       will be calculated based on this box and not
-       the gadget coords */
-       
-    bbox.Left   = GetTagData(GA_Left, 0, stdgadtags);
-    bbox.Top    = GetTagData(GA_Top,  0, stdgadtags);
-    bbox.Width  = GetTagData(GA_Width, 0, stdgadtags);
-    bbox.Height = GetTagData(GA_Height, 0, stdgadtags);
+    struct TagItem tags[NUMTAGS(stringtags)];
 
-    /* There are always GA_Left, GA_Top, GA_Width and GA_Height tags
-       thanks to creategadgeta.c! */
-      
-    FindTagItem(GA_Left,stdgadtags)->ti_Data   += BORDERSTRINGSPACINGX;
-    FindTagItem(GA_Top,stdgadtags)->ti_Data    += BORDERSTRINGSPACINGY;
-    FindTagItem(GA_Width,stdgadtags)->ti_Data  -= BORDERSTRINGSPACINGX * 2;
-    FindTagItem(GA_Height,stdgadtags)->ti_Data -= BORDERSTRINGSPACINGY * 2;
+    memcpy(tags, stringtags, sizeof(stringtags));
+    tags[12].ti_Data = (IPTR)&bbox;
+
+    if (kind == INTEGER_KIND)
+    {
+        tags[4].ti_Tag   = GTIN_Number;     /* default 0 */
+        tags[5].ti_Tag   = GTIN_MaxChars;
+        tags[5].ti_Data  = 10L;
+        /* GTIN_EditHook is the same tag as GTST_EditHook */
+        tags[11].ti_Data = INTEGER_KIND;
+    }
+
+    /* All tags (entries 0 to 9) are stored by gt_nexttag() */
+    while (gt_nexttag(GadToolsBase, (struct TagItem **)&taglist, tags, 0x3ff))
+        ;
+
+    gt_settattr(&tags[10], tattr);
+
+    gt_boundsinset(&bbox, stdgadtags, BORDERSTRINGSPACINGX, BORDERSTRINGSPACINGY);
 
     tags[13].ti_Data = (IPTR)stdgadtags;
 
-    obj = (struct Gadget *) NewObjectA(GadToolsBase->stringclass, NULL, tags);
-
-    if (obj)
-    {
-        obj->GadgetType |= GTYP_GADTOOLS;
-    }
-    return  (obj);
+    return gt_newgadget(GadToolsBase, GadToolsBase->stringclass, tags);
 }
-
-/****************************************************************************************/
-
-struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
-                         struct TagItem stdgadtags[],
-                         struct VisualInfo *vi,
-                         struct TextAttr *tattr,
-                         const struct TagItem *taglist)
-{
-    struct Gadget *obj = NULL;
-    struct IBox bbox;
-
-    struct TagItem *tag, tags[] =
-    {
-        {GA_Disabled            , FALSE                 }, /* 0 */
-        {GA_Immediate           , FALSE                 }, /* 1 */
-        {GA_RelVerify           , TRUE                  }, /* 2 */
-        {GA_TabCycle            , TRUE                  }, /* 3 */
-        {GTIN_Number            , 0L                    }, /* 4 */
-        {GTIN_MaxChars          , 10L                   }, /* 5 */
-        {GTIN_EditHook          , (IPTR)NULL            }, /* 6 */
-        {STRINGA_ExitHelp       , FALSE                 }, /* 7 */
-        {STRINGA_Justification  , GACT_STRINGLEFT       }, /* 8 */
-        {STRINGA_ReplaceMode    , FALSE                 }, /* 9 */
-        {GA_TextAttr            , (IPTR)NULL            }, /* 10 */
-        {GTA_GadgetKind         , INTEGER_KIND          }, /* 11 */
-        {GA_Bounds              , (IPTR)&bbox           }, /* 12 */
-        {TAG_MORE               , (IPTR)NULL            }  /* 13 */
-    };
-    
-   
-    /* Could use GetTagData(), but this is faster */
-    while ((tag = NextTagItem((struct TagItem **)&taglist)))
-    {
-        IPTR tidata = tag->ti_Data;
-        
-        switch (tag->ti_Tag)
-        {
-            case GA_Disabled:           tags[0].ti_Data = tidata; break;
-            case GA_Immediate:          tags[1].ti_Data = tidata; break;
-            case GA_RelVerify:          tags[2].ti_Data = tidata; break;
-            case GA_TabCycle:           tags[3].ti_Data = tidata; break;
-            case GTIN_Number:           tags[4].ti_Data = tidata; break;
-            case GTIN_MaxChars:         tags[5].ti_Data = tidata; break;
-            case GTIN_EditHook:         tags[6].ti_Data = tidata; break;
-            case STRINGA_ExitHelp:      tags[7].ti_Data = tidata; break;
-            case STRINGA_Justification: tags[8].ti_Data = tidata; break;
-            case STRINGA_ReplaceMode:   tags[9].ti_Data = tidata; break;
-        }
-        
-    } /* while (iterate taglist) */
-
-    if (tattr) /* Text Attr supplied ? */
-        tags[10].ti_Data = (IPTR)tattr;
-    else
-        tags[10].ti_Tag = TAG_IGNORE; /* Don't pass GA_TextAttr, NULL */
-
-    /* if there is a bounding box the label position
-       will be calculated based on this box and not
-       the gadget coords */
-       
-    bbox.Left   = GetTagData(GA_Left, 0, stdgadtags);
-    bbox.Top    = GetTagData(GA_Top,  0, stdgadtags);
-    bbox.Width  = GetTagData(GA_Width, 0, stdgadtags);
-    bbox.Height = GetTagData(GA_Height, 0, stdgadtags);
-
-    /* There are always GA_Left, GA_Top, GA_Width and GA_Height tags
-       thanks to creategadgeta.c! */
-      
-    FindTagItem(GA_Left,stdgadtags)->ti_Data   += BORDERSTRINGSPACINGX;
-    FindTagItem(GA_Top,stdgadtags)->ti_Data    += BORDERSTRINGSPACINGY;
-    FindTagItem(GA_Width,stdgadtags)->ti_Data  -= BORDERSTRINGSPACINGX * 2;
-    FindTagItem(GA_Height,stdgadtags)->ti_Data -= BORDERSTRINGSPACINGY * 2;
-
-    tags[13].ti_Data = (IPTR)stdgadtags;
-
-    obj = (struct Gadget *) NewObjectA(GadToolsBase->stringclass, NULL, tags);
-    if (obj)
-    {
-        obj->GadgetType |= GTYP_GADTOOLS;
-    }
-    return  (obj);
-}
-
 
 /****************************************************************************************/
 
@@ -1110,83 +914,79 @@ const struct TagItem scroller2lv[] =
 
 /****************************************************************************************/
 
-struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
-                         struct TagItem stdgadtags[],
-                         struct VisualInfo *vi,
-                         struct TextAttr *tattr,
-                         const struct TagItem *taglist)
+static const struct TagItem listviewtags[] =
 {
-    struct Gadget *lvgad = NULL, *showselgad = LV_SHOWSELECTED_NONE;
+    {GA_Disabled            , FALSE                 }, /* 0  */
+    {GTLV_Top               , 0L                    }, /* 1  */
+    {GTLV_MakeVisible       , 0L                    }, /* 2  */
+    {GTLV_Labels            , (IPTR)NULL            }, /* 3  */
+    {GTLV_Selected          , ~0L                   }, /* 4  */
+    {GTLV_ItemHeight        , 0L                    }, /* 5  */
+    {GTLV_CallBack          , (IPTR)NULL            }, /* 6  */
+    {GTLV_MaxPen            , 0L                    }, /* 7  */
+    {GTLV_ReadOnly          , 0L                    }, /* 8  */
+    {LAYOUTA_Spacing        , 0L                    }, /* 9  */
+    {GA_TextAttr            , (IPTR)NULL            }, /* 10 */
+    {GA_RelVerify           , TRUE                  }, /* 11 */
+    {GA_Bounds              , (IPTR)NULL            }, /* 12: &bbox */
+    {GTLV_ShowSelected      , (IPTR)LV_SHOWSELECTED_NONE }, /* 13 */
+    {TAG_MORE               , (IPTR)NULL            }  /* 14 */
+};
+
+static const struct TagItem lvscrollertags[] =
+{
+    /* The listview will initialize the scrollers top, visible & total,
+     ** in its GM_LAYOUT method
+     */
+    {GTSC_Arrows                        , 0                     },  /* 0: scroller_width */
+    {PGA_Freedom                        , LORIENT_VERT          },
+    {GTA_Scroller_ArrowKind             , LISTVIEW_KIND         },
+    {GTA_Scroller_ScrollerKind          , LISTVIEW_KIND         },
+    {TAG_DONE                                                   }
+};
+
+struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
+                            struct TagItem stdgadtags[],
+                            struct VisualInfo *vi,
+                            struct TextAttr *tattr,
+                            struct TagItem *taglist,
+                            ULONG kind)
+{
+    struct Gadget *lvgad = NULL, *showselgad;
     struct Gadget *scrollergad;
     struct IBox bbox;
 
 
     WORD scroller_width = 16; /* default */
     
-    struct TagItem *lv_width_tag, *lv_height_tag;
     WORD lv_width, lv_height;
 #if CORRECT_LISTVIEWHEIGHT
     WORD viewheight, totalitemheight = 0;
 #endif
     WORD ysize;
     
-    struct TagItem *tag, lvtags[] =
-    {
-        {GA_Disabled            , FALSE                 }, /* 0  */
-        {GTLV_Top               , 0L                    }, /* 1  */
-        {GTLV_MakeVisible       , 0L                    }, /* 2  */
-        {GTLV_Labels            , (IPTR)NULL            }, /* 3  */
-        {GTLV_Selected          , ~0L                   }, /* 4  */
-        {GTLV_ItemHeight        , 0L                    }, /* 5  */
-        {GTLV_CallBack          , (IPTR)NULL            }, /* 6  */
-        {GTLV_MaxPen            , 0L                    }, /* 7  */
-        {GTLV_ReadOnly          , 0L                    }, /* 8  */
-        {LAYOUTA_Spacing        , 0L                    }, /* 9  */
-        {GA_TextAttr            , (IPTR)NULL            }, /* 10 */
-        {GA_RelVerify           , TRUE                  }, /* 11 */
-        {GA_Bounds              , (IPTR)&bbox           }, /* 12 */
-        {GTLV_ShowSelected      , (IPTR)showselgad      }, /* 13 */
-        {TAG_MORE               , (IPTR)NULL            }  /* 14 */
-    };
+    struct TagItem *tag, lvtags[NUMTAGS(listviewtags)];
     
     EnterFunc(bug("makelistview()\n"));
     
-    /* Could use GetTagData(), but this is faster */
-    while ((tag = NextTagItem((struct TagItem **)&taglist)))
-    {
-        IPTR tidata = tag->ti_Data;
-        
-        switch (tag->ti_Tag)
-        {
-            case GA_Disabled:           lvtags[0].ti_Data = tidata; break;
-            case GTLV_Top:              lvtags[1].ti_Data = tidata; break;
-            case GTLV_MakeVisible:      lvtags[2].ti_Data = tidata; break;
-            case GTLV_Labels:           lvtags[3].ti_Data = tidata; break;
-            case GTLV_Selected:         lvtags[4].ti_Data = tidata; break;
-            case GTLV_ItemHeight:       lvtags[5].ti_Data = tidata; break;
-            case GTLV_CallBack:         lvtags[6].ti_Data = tidata; break;
-            case GTLV_MaxPen:           lvtags[7].ti_Data = tidata; break;
-            case GTLV_ReadOnly:         lvtags[8].ti_Data = tidata; break;
-            case LAYOUTA_Spacing:       lvtags[9].ti_Data = tidata; break;
+    memcpy(lvtags, listviewtags, sizeof(listviewtags));
+    lvtags[12].ti_Data = (IPTR)&bbox;
 
-            case GTLV_ShowSelected:
-                showselgad  = (struct Gadget *)tidata;
-                lvtags[13].ti_Data = (IPTR)showselgad;
-                break;
-                
-            case GTLV_ScrollWidth:      scroller_width = (UWORD)tidata;
-        }
+    /* GA_Disabled ... LAYOUTA_Spacing and GTLV_ShowSelected are stored by gt_nexttag() */
+    while ((tag = gt_nexttag(GadToolsBase, (struct TagItem **)&taglist, lvtags, 0x23ff)))
+    {
+        if (tag->ti_Tag == GTLV_ScrollWidth)
+            scroller_width = (UWORD)tag->ti_Data;
         
     } /* while (iterate taglist) */
+
+    showselgad = (struct Gadget *)lvtags[13].ti_Data;
 
     /* if there is a bounding box the label position
        will be calculated based on this box and not
        the gadget coords */
        
-    bbox.Left   = GetTagData(GA_Left, 0, stdgadtags);
-    bbox.Top    = GetTagData(GA_Top,  0, stdgadtags);
-    bbox.Width  = GetTagData(GA_Width, 0, stdgadtags);
-    bbox.Height = GetTagData(GA_Height, 0, stdgadtags);
+    gt_boundsinset(&bbox, stdgadtags, 0, 0);
 
     /* Callback supplied ? */
     if (!lvtags[6].ti_Data)
@@ -1214,12 +1014,8 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
 
     DEBUG_CREATELISTVIEW(bug("makelistview: item ysize %ld\n", ysize));
              
-    /* Find the dimension specific tags */
-    lv_width_tag  = FindTagItem(GA_Width,  stdgadtags);
-    lv_height_tag = FindTagItem(GA_Height, stdgadtags);
-    
-    lv_width  = (WORD)lv_width_tag->ti_Data;
-    lv_height = (WORD)lv_height_tag->ti_Data;
+    lv_width  = (WORD)stdgadtags[TAG_Width].ti_Data;
+    lv_height = (WORD)stdgadtags[TAG_Height].ti_Data;
     
         
     /* Adjust the listview width according to scroller width + some spacing */
@@ -1271,13 +1067,13 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
     
     D(bug("makelistview: Dimension passed to listview: w=%d, h=%d\n", lv_width, lv_height));
 
-    lv_width_tag->ti_Data  = (IPTR)lv_width;
-    lv_height_tag->ti_Data = (IPTR)lv_height;
+    stdgadtags[TAG_Width].ti_Data  = (IPTR)lv_width;
+    stdgadtags[TAG_Height].ti_Data = (IPTR)lv_height;
         
     lvtags[14].ti_Data = (IPTR)stdgadtags;
     
     D(bug("makelistview: Listview class opened\n"));
-    lvgad = (struct Gadget *)NewObjectA(GadToolsBase->listviewclass, NULL, lvtags);
+    lvgad = gt_newgadget(GadToolsBase, GadToolsBase->listviewclass, lvtags);
     if (lvgad)
     {
         struct TagItem scr_stdtags[] =
@@ -1293,20 +1089,11 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
             {TAG_DONE                   }
         };
         
-        struct TagItem scr_specialtags[] =
-        {
-            /* The listview will initialize the scrollers top, visible & total,
-             ** in its GM_LAYOUT method
-             */
-            {GTSC_Arrows                        , scroller_width        },
-            {PGA_Freedom                        , LORIENT_VERT          },
-            {GTA_Scroller_ArrowKind             , LISTVIEW_KIND         },
-            {GTA_Scroller_ScrollerKind          , LISTVIEW_KIND         },
-            {TAG_DONE                                                   }
-        };
+        struct TagItem scr_specialtags[NUMTAGS(lvscrollertags)];
 
-        lvgad->GadgetType |= GTYP_GADTOOLS;
-        
+        memcpy(scr_specialtags, lvscrollertags, sizeof(lvscrollertags));
+        scr_specialtags[0].ti_Data = scroller_width;
+
         D(bug("makelistview: Listview gadget created: %p\n", lvgad));
         D(bug("makelistview: scroller_width %ld\n",scroller_width));
 
@@ -1318,9 +1105,9 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
         scr_stdtags[4].ti_Data = (IPTR)lvgad;
         scr_stdtags[5].ti_Data = lvgad->GadgetID;
         scr_stdtags[6].ti_Data = (IPTR)vi->vi_dri;
-        scr_stdtags[7].ti_Data = (IPTR)GetTagData(GA_Previous, 0, stdgadtags);
+        scr_stdtags[7].ti_Data = stdgadtags[TAG_Previous].ti_Data;
         
-        scrollergad = makescroller(GadToolsBase, scr_stdtags, vi, scr_specialtags);
+        scrollergad = makescroller(GadToolsBase, scr_stdtags, vi, NULL, scr_specialtags, SCROLLER_KIND);
         if (scrollergad)
         {
             struct TagItem lvset_tags[] =
@@ -1371,10 +1158,11 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
 /****************************************************************************************/
 
 struct Gadget *makegeneric(struct GadToolsBase_intern *GadToolsBase,
-                          struct TagItem stdgadtags[],
-                          struct VisualInfo *vi,
-                          struct TextAttr *tattr,
-                          struct TagItem *taglist)
+                           struct TagItem stdgadtags[],
+                           struct VisualInfo *vi,
+                           struct TextAttr *tattr,
+                           struct TagItem *taglist,
+                           ULONG kind)
 {
     struct GT_GenericGadget *gad;
     struct Gadget           *prevgad;

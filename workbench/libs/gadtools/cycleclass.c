@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Internal GadTools cycle class.
 */
@@ -212,22 +212,13 @@ IPTR GTCycle__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
     if(rerender)
     {
-        struct gpRender rmsg;
         if(data->active > data->numlabels-1)
             data->active = 0;
 
         //kprintf("Rerendering\n");
 
-        rmsg.gpr_RPort = ObtainGIRPort(msg->ops_GInfo);
-        if(rmsg.gpr_RPort)
-        {
-            rmsg.MethodID = GM_RENDER;
-            rmsg.gpr_GInfo = msg->ops_GInfo;
-            rmsg.gpr_Redraw = GREDRAW_UPDATE;
-            DoMethodA(o, &rmsg);
-            ReleaseGIRPort(rmsg.gpr_RPort);
+        if (gt_render(GadToolsBase, o, msg->ops_GInfo, GREDRAW_UPDATE))
             result = FALSE;
-        }
     }
 
     return result;
@@ -289,13 +280,7 @@ IPTR GTCycle__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
     /* Draw disabled pattern */
     if (g->Flags & GFLG_DISABLED)
     {
-        DoDisabledPattern(msg->gpr_RPort,
-                          g->LeftEdge,
-                          g->TopEdge,
-                          g->LeftEdge + g->Width - 1,
-                          g->TopEdge + g->Height - 1,
-                          msg->gpr_GInfo->gi_DrInfo->dri_Pens[SHADOWPEN],
-                          GadToolsBase);
+        gt_disabledpattern(GadToolsBase, msg->gpr_RPort, g, msg->gpr_GInfo->gi_DrInfo);
     }
     
     if (msg->gpr_Redraw == GREDRAW_REDRAW)
@@ -320,23 +305,12 @@ IPTR GTCycle__GM_HITTEST(Class *cl, struct Gadget *g, struct gpHitTest *msg)
 
 IPTR GTCycle__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
-    struct RastPort     *rp;
     IPTR                retval;
     
     g->Flags |= GFLG_SELECTED;
     
-    rp = ObtainGIRPort(msg->gpi_GInfo);
-    if (rp)
+    if (gt_render(GadToolsBase, (Object *)g, msg->gpi_GInfo, GREDRAW_UPDATE))
     {
-        struct gpRender rmsg =
-        {
-            GM_RENDER,
-            msg->gpi_GInfo,
-            rp,
-            GREDRAW_UPDATE
-        };
-        DoMethodA((Object *)g, (Msg)&rmsg);
-        ReleaseGIRPort(rp);
         retval = GMR_MEACTIVE;
     }
     else
@@ -351,7 +325,6 @@ IPTR GTCycle__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 
 IPTR GTCycle__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
-    struct RastPort     *rp;
     struct CycleData    *data;
     IPTR                retval = GMR_MEACTIVE;
 
@@ -394,20 +367,7 @@ IPTR GTCycle__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
                 if (g->Flags & GFLG_SELECTED)
                 {
                     g->Flags &= ~GFLG_SELECTED;
-                    rp = ObtainGIRPort(msg->gpi_GInfo);
-                    if (rp)
-                    {
-                        struct gpRender rmsg =
-                        {
-                            GM_RENDER,
-                            msg->gpi_GInfo,
-                            rp,
-                            GREDRAW_UPDATE
-                        };
-                        
-                        DoMethodA((Object *)g, (Msg)&rmsg);
-                        ReleaseGIRPort(rp);
-                    }
+                    gt_render(GadToolsBase, (Object *)g, msg->gpi_GInfo, GREDRAW_UPDATE);
                 }
             }
             else
@@ -415,20 +375,7 @@ IPTR GTCycle__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
                 if (!(g->Flags & GFLG_SELECTED))
                 {
                     g->Flags |= GFLG_SELECTED;
-                    rp = ObtainGIRPort(msg->gpi_GInfo);
-                    if (rp)
-                    {
-                        struct gpRender rmsg =
-                        {
-                            GM_RENDER,
-                            msg->gpi_GInfo,
-                            rp,
-                            GREDRAW_UPDATE
-                        };
-                        
-                        DoMethodA((Object *)g, (Msg)&rmsg);
-                        ReleaseGIRPort(rp);
-                    }
+                    gt_render(GadToolsBase, (Object *)g, msg->gpi_GInfo, GREDRAW_UPDATE);
                 }
             }
         }
@@ -445,24 +392,9 @@ IPTR GTCycle__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 
 IPTR GTCycle__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *msg)
 {
-    struct RastPort *rp;
-
     g->Flags &= ~GFLG_SELECTED;
 
-    rp = ObtainGIRPort(msg->gpgi_GInfo);
-    if (rp)
-    {
-        struct gpRender rmsg =
-        {
-            GM_RENDER,
-            msg->gpgi_GInfo,
-            rp,
-            GREDRAW_UPDATE
-        };
-        
-        DoMethodA((Object *)g, (Msg)&rmsg);
-        ReleaseGIRPort(rp);
-    }
+    gt_render(GadToolsBase, (Object *)g, msg->gpgi_GInfo, GREDRAW_UPDATE);
     
     return 0;
 }

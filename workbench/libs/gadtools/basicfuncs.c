@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Basic help functions needed by gadtools.library.
 */
@@ -19,6 +19,9 @@
 #include <libraries/gadtools.h>
 #include <aros/debug.h>
 #include <intuition/gadgetclass.h>
+#include <intuition/cghooks.h>
+#include <intuition/imageclass.h>
+#include <proto/alib.h>
 
 #include "gadtools_intern.h"
 
@@ -327,6 +330,84 @@ void DoDisabledPattern(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
     
     SetAfPt (rp, NULL, 0);
     
+}
+
+/**********************************************************************************************/
+
+/* Send GM_RENDER to a gadget, with a rastport obtained from its GadgetInfo.
+   Returns FALSE if no rastport could be obtained (nothing was rendered). */
+BOOL gt_render(struct GadToolsBase_intern *GadToolsBase, Object *o,
+               struct GadgetInfo *gi, LONG redraw)
+{
+    struct gpRender rmsg;
+
+    rmsg.gpr_RPort = ObtainGIRPort(gi);
+    if (!rmsg.gpr_RPort)
+        return FALSE;
+
+    rmsg.MethodID   = GM_RENDER;
+    rmsg.gpr_GInfo  = gi;
+    rmsg.gpr_Redraw = redraw;
+    DoMethodA(o, (Msg)&rmsg);
+    ReleaseGIRPort(rmsg.gpr_RPort);
+
+    return TRUE;
+}
+
+/**********************************************************************************************/
+
+/* Create the frameiclass image of a gadget, with the attributes IA_Width,
+   IA_Height, IA_Resolution, IA_FrameType and, unless extratag is TAG_DONE,
+   { extratag, TRUE } (IA_EdgesOnly or IA_Recessed). */
+Object *gt_newframe(struct GadToolsBase_intern *GadToolsBase,
+                    IPTR width, IPTR height, IPTR resolution,
+                    IPTR frametype, Tag extratag)
+{
+    struct TagItem tags[6];
+
+    tags[0].ti_Tag  = IA_Width;
+    tags[0].ti_Data = width;
+    tags[1].ti_Tag  = IA_Height;
+    tags[1].ti_Data = height;
+    tags[2].ti_Tag  = IA_Resolution;
+    tags[2].ti_Data = resolution;
+    tags[3].ti_Tag  = IA_FrameType;
+    tags[3].ti_Data = frametype;
+    tags[4].ti_Tag  = extratag;
+    tags[4].ti_Data = TRUE;
+    tags[5].ti_Tag  = TAG_DONE;
+
+    return NewObjectA(NULL, FRAMEICLASS, tags);
+}
+
+/**********************************************************************************************/
+
+/* Set attributes of another gadget from inside a method: with SetGadgetAttrsA()
+   if there is a GadgetInfo (so that it can refresh itself), else with SetAttrsA() */
+void gt_setattrs(struct GadToolsBase_intern *GadToolsBase, Object *o,
+                 struct GadgetInfo *gi, struct TagItem *tags)
+{
+    if (gi)
+    {
+        SetGadgetAttrsA((struct Gadget *)o, gi->gi_Window, NULL, tags);
+    } else {
+        SetAttrsA(o, tags);
+    }
+}
+
+/**********************************************************************************************/
+
+/* Render the disabled pattern over the select box of a gadget */
+void gt_disabledpattern(struct GadToolsBase_intern *GadToolsBase, struct RastPort *rp,
+                        struct Gadget *gad, struct DrawInfo *dri)
+{
+    DoDisabledPattern(rp,
+                      gad->LeftEdge,
+                      gad->TopEdge,
+                      gad->LeftEdge + gad->Width - 1,
+                      gad->TopEdge + gad->Height - 1,
+                      dri->dri_Pens[SHADOWPEN],
+                      GadToolsBase);
 }
 
 /**********************************************************************************************/

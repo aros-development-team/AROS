@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
  
     Desc: Internal GadTools palette class.
 */
@@ -784,20 +784,9 @@ IPTR GTPalette__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
         
             if (clicked_color != data->pd_Color)
             {
-                struct gpRender rmsg;
-
                 data->pd_Color = clicked_color;
 
-                if ((rmsg.gpr_RPort = ObtainGIRPort(msg->gpi_GInfo)))
-                {
-
-                    rmsg.MethodID = GM_RENDER;
-                    rmsg.gpr_GInfo = msg->gpi_GInfo;
-                    rmsg.gpr_Redraw = GREDRAW_UPDATE;
-                    DoMethodA((Object *)g, &rmsg);
-
-                    ReleaseGIRPort(rmsg.gpr_RPort);
-                }
+                gt_render(GadToolsBase, (Object *)g, msg->gpi_GInfo, GREDRAW_UPDATE);
             }
     
             retval = GMR_MEACTIVE;
@@ -827,11 +816,6 @@ IPTR GTPalette__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
     
     if (ie->ie_Class == IECLASS_RAWMOUSE)
     {
-        struct gpRender rmsg;
-        rmsg.MethodID = GM_RENDER;
-        rmsg.gpr_GInfo = msg->gpi_GInfo;
-        rmsg.gpr_Redraw = GREDRAW_UPDATE;
-
         WORD x = msg->gpi_Mouse.X + data->pd_GadgetBox.Left;
         WORD y = msg->gpi_Mouse.Y + data->pd_GadgetBox.Top;
         
@@ -901,12 +885,7 @@ IPTR GTPalette__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
                    if (over_color != data->pd_Color)
                     {
                         data->pd_Color = over_color;
-                        if ((rmsg.gpr_RPort = ObtainGIRPort(msg->gpi_GInfo)))
-                        {
-                            DoMethodA(o, &rmsg);
-            
-                            ReleaseGIRPort(rmsg.gpr_RPort);
-                        }
+                        gt_render(GadToolsBase, o, msg->gpi_GInfo, GREDRAW_UPDATE);
 
                     } /* if (mouse is over a different color) */
                     
@@ -925,12 +904,7 @@ IPTR GTPalette__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
                 data->pd_Color = data->pd_ColorBackup;
                 D(bug("Right mouse pushed \n"));
 
-                if ((rmsg.gpr_RPort = ObtainGIRPort(msg->gpi_GInfo)))
-                {
-                    DoMethodA(o, &rmsg);
-
-                    ReleaseGIRPort(rmsg.gpr_RPort);
-                }
+                gt_render(GadToolsBase, o, msg->gpi_GInfo, GREDRAW_UPDATE);
 
                 retval = GMR_NOREUSE;
                 break;
@@ -960,20 +934,8 @@ IPTR GTPalette__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
         if (gi)
         {
-            struct gpRender rmsg;
-            rmsg.gpr_RPort = ObtainGIRPort(gi);
-
-            if (rmsg.gpr_RPort)
-            {
-                rmsg.MethodID = GM_RENDER;
-                rmsg.gpr_GInfo = gi;
-                rmsg.gpr_Redraw = FindTagItem(GA_Disabled, msg->ops_AttrList) ? GREDRAW_REDRAW : GREDRAW_UPDATE;
-                DoMethodA(o, &rmsg);
-
-                ReleaseGIRPort(rmsg.gpr_RPort);
-            
-            } /* if */
-            
+            gt_render(GadToolsBase, o, gi,
+                      FindTagItem(GA_Disabled, msg->ops_AttrList) ? GREDRAW_REDRAW : GREDRAW_UPDATE);
         } /* if */
             
     } /* if */

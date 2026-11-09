@@ -2,7 +2,7 @@
 #define GADTOOLS_INTERN_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal definitions for gadtools.library.
@@ -69,83 +69,30 @@ BOOL renderlabel(struct GadToolsBase_intern *GadToolsBase,
 		 struct Gadget *gad, struct RastPort *rport, LONG labelplace);
 void DoDisabledPattern(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
 		       WORD pen, struct GadToolsBase_intern *GadToolsBase);
+BOOL gt_render(struct GadToolsBase_intern *GadToolsBase, Object *o,
+	       struct GadgetInfo *gi, LONG redraw);
+Object *gt_newframe(struct GadToolsBase_intern *GadToolsBase,
+		    IPTR width, IPTR height, IPTR resolution,
+		    IPTR frametype, Tag extratag);
+void gt_setattrs(struct GadToolsBase_intern *GadToolsBase, Object *o,
+		 struct GadgetInfo *gi, struct TagItem *tags);
+void gt_disabledpattern(struct GadToolsBase_intern *GadToolsBase, struct RastPort *rp,
+			struct Gadget *gad, struct DrawInfo *dri);
 
 /****************************************************************************************/
 	       
-struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
-			  struct TagItem stdgadtags[],
-			  struct VisualInfo *vi,
-			  struct TagItem *taglist);
+/* All makexxx() functions have the same arguments, see gt_makefuncs[] in
+   creategadgeta.c. makestring() also makes INTEGER_KIND and maketext() also
+   makes NUMBER_KIND gadgets, depending on kind. */
+typedef struct Gadget *gt_makefunc(struct GadToolsBase_intern *GadToolsBase,
+				   struct TagItem stdgadtags[],
+				   struct VisualInfo *vi,
+				   struct TextAttr *tattr,
+				   struct TagItem *taglist,
+				   ULONG kind);
 
-struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
-			    struct TagItem stdgadtags[],
-			    struct VisualInfo *vi,
-			    struct TagItem *taglist);
-
-struct Gadget *makecycle(struct GadToolsBase_intern *GadToolsBase,
-                         struct TagItem stdgadtags[],
-                         struct VisualInfo *vi,
-		      	 struct TextAttr *tattr,
-                         struct TagItem *taglist);
-
-struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
-		      struct TagItem stdgadtags[],
-		      struct VisualInfo *vi,
-		      struct TextAttr *tattr,
-		      struct TagItem *taglist);
-
-struct Gadget *makepalette(struct GadToolsBase_intern *GadToolsBase,
-		      struct TagItem stdgadtags[],
-		      struct VisualInfo *vi,
-		      const struct TagItem *taglist);
-
-struct Gadget *maketext(struct GadToolsBase_intern *GadToolsBase,
-		      	struct TagItem stdgadtags[],
-		      	struct VisualInfo *vi,
-		      	struct TextAttr *tattr,
-		      	const struct TagItem *taglist);
-
-struct Gadget *makenumber(struct GadToolsBase_intern *GadToolsBase,
-		      	  struct TagItem stdgadtags[],
-		      	  struct VisualInfo *vi,
-		      	  struct TextAttr *tattr,
-		      	  const struct TagItem *taglist);
-
-
-struct Gadget *makeslider(struct GadToolsBase_intern *GadToolsBase,
-		      	  struct TagItem stdgadtags[],
-		      	  struct VisualInfo *vi,
-		      	  struct TextAttr *tattr,
-		      	  const struct TagItem *taglist);
-
-struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
-		      	  struct TagItem stdgadtags[],
-		      	  struct VisualInfo *vi,
-		      	  const struct TagItem *taglist);
-
-struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
-		      	  struct TagItem stdgadtags[],
-		      	  struct VisualInfo *vi,
-		      	  struct TextAttr *tattr,
-		      	  const struct TagItem *taglist);
-
-struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
-		      	  struct TagItem stdgadtags[],
-		      	  struct VisualInfo *vi,
-		      	  struct TextAttr *tattr,
-		      	  const struct TagItem *taglist);
-
-struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
-		      	  struct TagItem stdgadtags[],
-		      	  struct VisualInfo *vi,
-		      	  struct TextAttr *tattr,
-		      	  const struct TagItem *taglist);
-
-struct Gadget *makegeneric(struct GadToolsBase_intern *GadToolsBase,
-		      	  struct TagItem stdgadtags[],
-		      	  struct VisualInfo *vi,
-		      	  struct TextAttr *tattr,
-		      	  struct TagItem *taglist);
+gt_makefunc makebutton, makecheckbox, makecycle, makemx, makepalette, maketext,
+	    makeslider, makescroller, makestring, makelistview, makegeneric;
 
 /****************************************************************************************/
 		      	  
@@ -225,12 +172,6 @@ struct MenuItem * makemenuitem(struct NewMenu * newmenu,
 #endif
 void appendmenu(struct Menu * firstmenu,
                 struct Menu * lastmenu);
-
-void appenditem(struct Menu * curmenu,
-                struct MenuItem * item);
-
-void appendsubitem(struct MenuItem * curitem,
-                   struct MenuItem * subitem);
 
 void freeitems(struct MenuItem * mi, struct GadToolsBase_intern * GadToolsBase);
 

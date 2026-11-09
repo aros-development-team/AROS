@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Internal GadTools listview class.
 */
@@ -308,7 +308,6 @@ STATIC WORD ShownEntries(struct Gadget *g, struct LVData *data)
 
 STATIC VOID UpdateScroller(struct Gadget *g, struct LVData *data, struct GadgetInfo *gi, struct GadToolsBase_intern *GadToolsBase)
 {
-    D(ULONG Result;)
     struct TagItem scrtags[] =
     {
         {PGA_Top        , 0L    },
@@ -333,17 +332,7 @@ STATIC VOID UpdateScroller(struct Gadget *g, struct LVData *data, struct GadgetI
         {
             D(bug("UpdateScroller: no NumEntries\n"));
         }
-        if (gi)
-        {
-            D(bug("UpdateScroller: SetGadgetAttrs\n"));
-            D(Result = )SetGadgetAttrsA((struct Gadget *)data->ld_Scroller, gi->gi_Window, NULL, scrtags);
-        }
-        else
-        {
-            D(bug("UpdateScroller: SetAttrs (no gadgetinfo)\n"));
-            D(Result = )SetAttrsA(data->ld_Scroller, scrtags);
-        }
-        D(bug("UpdateScroller: Result 0x%lx\n",Result));
+        gt_setattrs(GadToolsBase, data->ld_Scroller, gi, scrtags);
     }
     else
     {
@@ -365,7 +354,6 @@ STATIC VOID ScrollEntries(struct Gadget *g, struct LVData *data, WORD old_top, W
     {
         UWORD           abs_steps;
         ULONG           redraw_type;
-        struct RastPort *rp;
         
         data->ld_ScrollEntries = new_top - old_top;
         abs_steps = abs(data->ld_ScrollEntries);
@@ -387,17 +375,7 @@ STATIC VOID ScrollEntries(struct Gadget *g, struct LVData *data, WORD old_top, W
         }
         
         
-        if ( (rp = ObtainGIRPort(gi)) )
-        {
-            struct gpRender rmsg;
-            rmsg.MethodID = GM_RENDER;
-            rmsg.gpr_GInfo = gi;
-            rmsg.gpr_RPort = rp;
-            rmsg.gpr_Redraw = redraw_type;
-            DoMethodA((Object *)g, &rmsg);
-
-            ReleaseGIRPort(rp);
-        }
+        gt_render(GadToolsBase, (Object *)g, gi, redraw_type);
         
     }
         
@@ -450,7 +428,6 @@ STATIC IPTR listview_set(Class *cl, struct Gadget *g,struct opSet *msg)
 
     struct TagItem      *tag, *tstate;
     struct LVData       *data = INST_DATA(cl, g);
-    struct RastPort     *rp;
     
     BOOL                update_scroller = FALSE;
     BOOL                scroll_entries = FALSE;
@@ -663,12 +640,7 @@ STATIC IPTR listview_set(Class *cl, struct Gadget *g,struct opSet *msg)
                     D(bug("Listview::Set: GA_Disabled\n"));
                     if (data->ld_Scroller)
                     {
-                        if (msg->ops_GInfo)
-                        {
-                            SetGadgetAttrsA((struct Gadget *)data->ld_Scroller, msg->ops_GInfo->gi_Window, 0, set_tags);
-                        } else {
-                            SetAttrsA(data->ld_Scroller, set_tags);
-                        }
+                        gt_setattrs(GadToolsBase, data->ld_Scroller, msg->ops_GInfo, set_tags);
                     }
                 }
                 refresh_all = TRUE;
@@ -702,17 +674,7 @@ STATIC IPTR listview_set(Class *cl, struct Gadget *g,struct opSet *msg)
     
     if (refresh_all && msg->ops_GInfo)
     {
-        if ((rp = ObtainGIRPort(msg->ops_GInfo)))
-        {
-            struct gpRender rmsg;
-            rmsg.MethodID = GM_RENDER;
-            rmsg.gpr_GInfo = msg->ops_GInfo;
-            rmsg.gpr_RPort = rp;
-            rmsg.gpr_Redraw = GREDRAW_REDRAW;
-            DoMethodA((Object *)g, &rmsg);
- 
-            ReleaseGIRPort(rp);
-        }
+        gt_render(GadToolsBase, (Object *)g, msg->ops_GInfo, GREDRAW_REDRAW);
     }
 
     ReturnInt ("Listview::Set", IPTR, retval);
@@ -740,18 +702,8 @@ struct Gadget *GTListView__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         struct LVData   *data = INST_DATA(cl, g);
         struct TextAttr *tattr;
         
-        struct TagItem  fitags[] =
-        {
-            {IA_Width           , 0UL           },
-            {IA_Height          , 0UL           },
-            {IA_Resolution      , 0UL           },
-            {IA_FrameType       , FRAME_BUTTON  },
-            {IA_EdgesOnly       , TRUE          },
-            {TAG_DONE                           }
-        };
-
-        /* Create a frame for the listview */
-        data->ld_Frame = NewObjectA(NULL, FRAMEICLASS, fitags);
+        /* Create a frame for the listview. Its size is set in GM_RENDER. */
+        data->ld_Frame = gt_newframe(GadToolsBase, 0, 0, 0, FRAME_BUTTON, IA_EdgesOnly);
         if (!data->ld_Frame)
         {
             CoerceMethod(cl, (Object *)g, OM_DISPOSE);
@@ -1153,12 +1105,7 @@ IPTR GTListView__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 
     if (g->Flags & GFLG_DISABLED)
     {
-        DoDisabledPattern(msg->gpr_RPort, g->LeftEdge,
-                                          g->TopEdge,
-                                          g->LeftEdge + g->Width - 1,
-                                          g->TopEdge + g->Height - 1,
-                                          msg->gpr_GInfo->gi_DrInfo->dri_Pens[SHADOWPEN],
-                                          GadToolsBase);
+        gt_disabledpattern(GadToolsBase, msg->gpr_RPort, g, msg->gpr_GInfo->gi_DrInfo);
     }
     
     data->ld_Flags &= ~LVFLG_FORCE_SELECT_STATE;

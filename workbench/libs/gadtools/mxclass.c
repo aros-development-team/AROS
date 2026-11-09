@@ -201,19 +201,8 @@ IPTR GTMX__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
     if ((retval) && ((msg->MethodID != OM_UPDATE) || (cl == OCLASS(o))))
     {
-        struct gpRender rmsg;
-
-        rmsg.gpr_RPort = ObtainGIRPort(msg->ops_GInfo);
-        if (rmsg.gpr_RPort)
-        {
-            rmsg.MethodID = GM_RENDER;
-            rmsg.gpr_GInfo = msg->ops_GInfo;
-            rmsg.gpr_Redraw = GREDRAW_REDRAW;
-
-            DoMethodA(o, &rmsg);
-            ReleaseGIRPort(rmsg.gpr_RPort);
+        if (gt_render(GadToolsBase, o, msg->ops_GInfo, GREDRAW_REDRAW))
             retval = FALSE;
-        }
     }
 
     return retval;
@@ -394,13 +383,7 @@ IPTR GTMX__GM_RENDER(Class *cl, struct ExtGadget *g, struct gpRender *msg)
 
     /* Draw disabled pattern */
     if (g->Flags & GFLG_DISABLED)
-        DoDisabledPattern(msg->gpr_RPort,
-                          g->LeftEdge,
-                          g->TopEdge,
-                          g->LeftEdge + g->Width - 1,
-                          g->TopEdge + g->Height - 1,
-                          data->dri->dri_Pens[SHADOWPEN],
-                          GadToolsBase);
+        gt_disabledpattern(GadToolsBase, msg->gpr_RPort, (struct Gadget *)g, data->dri);
 
     return TRUE;
 }
