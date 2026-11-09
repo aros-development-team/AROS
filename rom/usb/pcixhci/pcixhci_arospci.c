@@ -229,6 +229,7 @@ BOOL pciInit(struct PCIDevice *hd)
                 Remove(&hc->hc_Node);
 
                 if((hd->hd_USBXHCIControllerClass) && (root)) {
+                    OOP_Object *usbc;
                     struct TagItem usbc_tags[] = {
                         {aHidd_Name,                0               },
                         {aHidd_Producer,            hc->hc_VendID   },
@@ -245,7 +246,10 @@ BOOL pciInit(struct PCIDevice *hd)
                                 (hu->hu_UnitNo & ~PCIUSBUNIT_MASK));
                         usbc_tags[0].ti_Data = (IPTR)hc->hc_Node.ln_Name;
                         pciusbWarn("PCI", "Instantiating xHCI controller class for '%s'\n", hc->hc_Node.ln_Name);
-                        HW_AddDriver(root, hd->hd_USBXHCIControllerClass, usbc_tags);
+                        usbc = HW_AddDriver(root, hd->hd_USBXHCIControllerClass, usbc_tags);
+                        /* The controller object tells which PCI device it runs */
+                        if (usbc)
+                            HIDD_AddRelation(usbc, vHidd_Relation_Device, hc->hc_PCIDeviceObject, NULL);
                     }
                 }
                 hc->hc_Unit = hu;

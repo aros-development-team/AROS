@@ -252,6 +252,7 @@ BOOL pciInit(struct PCIDevice *hd)
                 Remove(&hc->hc_Node);
 
                 if ((usbContrClass) && (root)) {
+                    OOP_Object *usbc;
                     struct TagItem usbc_tags[] = {
                         {aHidd_Name,                0               },
                         {aHidd_HardwareName,        0               },
@@ -299,7 +300,10 @@ BOOL pciInit(struct PCIDevice *hd)
                         if(usbc_tags[1].ti_Data)
                             memcpy((char *)usbc_tags[1].ti_Data, hw_name, pos + 1);
 
-                        HW_AddDriver(root, usbContrClass, usbc_tags);
+                        usbc = HW_AddDriver(root, usbContrClass, usbc_tags);
+                        /* The controller object tells which PCI device it runs */
+                        if (usbc)
+                            HIDD_AddRelation(usbc, vHidd_Relation_Device, hc->hc_PCIDeviceObject, NULL);
                     }
                 }
                 hc->hc_Unit = hu;

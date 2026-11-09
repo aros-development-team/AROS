@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2023, The AROS Development Team. All rights reserved
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved
 
     Desc:
 */
@@ -141,6 +141,7 @@ static CONST_STRPTR const attrBaseIDs[] =
     IID_Hidd_Bus,
     IID_Hidd_ATABus,
     IID_Hidd_StorageUnit,
+    IID_Hidd,
     NULL
 };
 #endif

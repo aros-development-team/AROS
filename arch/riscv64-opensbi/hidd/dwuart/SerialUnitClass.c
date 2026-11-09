@@ -83,6 +83,7 @@ OOP_Object *DWSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
   {
       { aHidd_Name,            (IPTR)"serial.hidd"                 },
       { aHidd_HardwareName,    (IPTR)"DesignWare APB UART"         },
+      { TAG_IGNORE,            0                                   },
       { TAG_DONE,              0                                   }
   };
   struct HIDDSerialUnitData * data;
@@ -120,11 +121,18 @@ OOP_Object *DWSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
       ReturnPtr("SerialUnit::New()", OOP_Object *, NULL);
   }
 
+  /* The unit is the port the device tree describes at this node */
+  if (csd->ports[unitnum].path[0])
+  {
+      serunitTags[2].ti_Tag  = aHidd_DevicePath;
+      serunitTags[2].ti_Data = (IPTR)csd->ports[unitnum].path;
+  }
+
   /* Chain on the caller's tags, keeping ours rather than replacing one */
   if (msg->attrList)
   {
-      serunitTags[2].ti_Tag  = TAG_MORE;
-      serunitTags[2].ti_Data = (IPTR)msg->attrList;
+      serunitTags[3].ti_Tag  = TAG_MORE;
+      serunitTags[3].ti_Data = (IPTR)msg->attrList;
   }
   serunitNew.mID      = msg->mID;
   serunitNew.attrList = serunitTags;

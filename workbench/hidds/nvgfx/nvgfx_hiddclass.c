@@ -685,6 +685,10 @@ OOP_Object * METHOD(NVGfx, Root, New)
         if (o)
         {
             struct HIDDNVGfxData * gfxdata = OOP_INST_DATA(cl, o);
+
+            /* Tells which device this driver runs, see moHidd_AddRelation */
+            HIDD_AddRelation(o, vHidd_Relation_Device, (OOP_Object *)pdev->oopdev, NULL);
+
             /* Pass local information to class */
             gfxdata->selectedcrtcid = selectedcrtcid;
             gfxdata->selectedmode = NULL;

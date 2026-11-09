@@ -273,6 +273,8 @@ static int VIRTIO_Probe(struct VirtIOBase *VirtIOBase)
 #define VIRTIO_TAG_PROD 3
         {aHidd_DriverData,      0                               },
 #define VIRTIO_TAG_DATA 4
+        {aHW_Device,            0                               },
+#define VIRTIO_TAG_DEVICE 5
         {TAG_DONE,              0                               }
     };
 
@@ -301,6 +303,7 @@ static int VIRTIO_Probe(struct VirtIOBase *VirtIOBase)
         OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_VendorID,  &virtio_tags[VIRTIO_TAG_VEND].ti_Data);
         OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_ProductID, &virtio_tags[VIRTIO_TAG_PROD].ti_Data);
         virtio_tags[VIRTIO_TAG_DATA].ti_Data = (IPTR)dev;
+        virtio_tags[VIRTIO_TAG_DEVICE].ti_Data = (IPTR)dev->dev_Object;
         OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_Driver,    (IPTR *)&dev->dev_PCIDriverObject);
 
         HW_AddDriver(VirtIOBase->storageRoot, VirtIOBase->virtioClass, virtio_tags);

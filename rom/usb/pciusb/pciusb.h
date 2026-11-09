@@ -277,6 +277,7 @@ struct PCIDevice
     OOP_MethodID                hd_HiddPCIDeviceMB;
     OOP_MethodID                hd_HiddPCIDriverMB;
     OOP_MethodID                hd_HWBase;
+    OOP_MethodID                hd_HiddMB;
 #endif
 
     struct List                 hd_TempHCIList;
@@ -316,6 +317,8 @@ struct PCIDevice
 #define HiddPCIDriverBase               (base->hd_HiddPCIDriverMB)
 #undef HWBase
 #define HWBase                          (base->hd_HWBase)
+#undef HiddBase
+#define HiddBase                        (base->hd_HiddMB)
 #endif
 
 #if defined(USE_FAST_PCICFG)

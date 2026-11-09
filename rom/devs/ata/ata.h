@@ -128,6 +128,7 @@ struct ataBase
     OOP_AttrBase                busAttrBase;
     OOP_AttrBase                atabusAttrBase;
     OOP_AttrBase                sunitAttrBase;
+    OOP_AttrBase                hiddAttrBase;
 #endif
 #if defined(__OOP_NOMETHODBASES__)
     OOP_MethodID                hwMethodBase;
@@ -145,6 +146,8 @@ struct ataBase
 #undef HiddATABusAB
 #undef HiddATAUnitAB
 #undef HiddStorageUnitAB
+#undef HiddAttrBase
+#define HiddAttrBase                    (ATABase->hiddAttrBase)
 #define HWAttrBase                      (ATABase->hwAttrBase)
 #define HiddBusAB                       (ATABase->busAttrBase)
 #define HiddATABusAB                    (ATABase->atabusAttrBase)
