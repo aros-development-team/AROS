@@ -321,6 +321,7 @@ int timer;
         }
         tp->t_flagsext &= ~TF_TLP;          /* an RTO ends the probe's episode */
         tcp_rack_reset(tp);
+        tp->t_flagsext &= ~TF_UNDO;         /* an RTO is not undone here */
         D(bug("[AROSTCP:TCP] %s: REXMT timer fired: tp=0x%p state=%d "
               "rxtshift=%d snd_una=%lu snd_nxt=%lu snd_max=%lu\n",
               __func__, tp, tp->t_state, tp->t_rxtshift,

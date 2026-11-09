@@ -163,6 +163,7 @@ struct tcpcb {
 #define TF_ECN_SYN	0x0200		/* our SYN asked for ECN */
 #define TF_PTO		0x0400		/* TCPT_REXMT is the loss probe timeout (RFC 8985) */
 #define TF_TLP		0x0800		/* a loss probe is out, up to t_tlp_end */
+#define TF_UNDO		0x1000		/* the last recovery may prove needless (D-SACKs) */
 
 	struct	tcpiphdr *t_template;	/* skeletal packet for transmit */
 	struct	inpcb *t_inpcb;		/* back pointer to internet pcb */
@@ -330,6 +331,13 @@ struct tcpcb {
 	u_int32_t t_rack_rtt;		/* RACK.rtt (ms) */
 	u_int32_t t_rack_minrtt;	/* least RACK.rtt (ms; 0: none) */
 	tcp_seq	t_rack_lost;		/* the holes below it are lost */
+
+/* Undoing a needless recovery (RFC 3708 with D-SACK, as Linux): cwnd and
+ * ssthresh before it, and the bytes it retransmitted that no D-SACK has
+ * reported yet */
+	u_long	t_undo_cwnd;
+	u_long	t_undo_ssthresh;
+	long	t_undo_bytes;
 
 /* TUBA stuff */
 	caddr_t	t_tuba_pcb;		/* next level down pcb for TCP over z */

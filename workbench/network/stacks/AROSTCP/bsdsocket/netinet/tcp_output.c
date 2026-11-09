@@ -774,6 +774,8 @@ skip_sack:
         /* RACK (RFC 8985): when this data left (tcp_rack.c) */
         if(len > 0)
             tcp_rack_sent(tp, startseq, startseq + len, SEQ_LT(startseq, tp->snd_max));
+        if(len > 0 && SEQ_LT(startseq, tp->snd_max) && (tp->t_flagsext & TF_UNDO))
+            tp->t_undo_bytes += len;        /* retransmitted in a recovery */
 
         /*
          * PRR (RFC 6937): count every data byte transmitted during a

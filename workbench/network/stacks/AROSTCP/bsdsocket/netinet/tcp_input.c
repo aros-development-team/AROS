@@ -770,6 +770,31 @@ tcp_dsack_block(const struct tcpopt *to, tcp_seq ack, struct sackblk *b)
 }
 
 /*
+ * Undo a needless recovery (RFC 3708 section 3.2 with D-SACK, as Linux's
+ * tcp_try_undo_dsack()): once D-SACKs have reported every byte the
+ * recovery retransmitted, nothing had been lost - the segments were
+ * reordered or delayed - and cwnd and ssthresh go back to what they were
+ * before it; a recovery still running ends.
+ */
+static void
+tcp_undo_dsack(struct tcpcb *tp, const struct tcpopt *to, tcp_seq ack)
+{
+    struct sackblk b;
+
+    if(!(tp->t_flagsext & TF_UNDO) || !tcp_dsack_block(to, ack, &b))
+        return;
+    tp->t_undo_bytes -= (long)(b.end - b.start);
+    if(tp->t_undo_bytes > 0)
+        return;
+    tp->t_flagsext &= ~(TF_UNDO | TF_IN_FASTRECOV | TF_PRR);
+    if(tp->snd_cwnd < tp->t_undo_cwnd)
+        tp->snd_cwnd = tp->t_undo_cwnd;
+    if(tp->snd_ssthresh < tp->t_undo_ssthresh)
+        tp->snd_ssthresh = tp->t_undo_ssthresh;
+    tp->t_dupacks = 0;
+}
+
+/*
  * Loss recovery with SACK starts (RFC 6675 section 5): DupThresh duplicate
  * ACKs, or RACK finding a hole lost (tcp_rack.c), on any ACK. Retransmit
  * the first segment, then send as NextSeg() says, within cwnd - pipe, or
@@ -780,6 +805,10 @@ tcp_sack_enter(struct tcpcb *tp, u_long delivered)
 {
     u_long sent;
 
+    tp->t_undo_cwnd = tp->snd_cwnd;     /* for tcp_undo_dsack() */
+    tp->t_undo_ssthresh = tp->snd_ssthresh;
+    tp->t_undo_bytes = 0;
+    tp->t_flagsext |= TF_UNDO;
     CC_ON_LOSS(tp);
     tp->t_timer[TCPT_REXMT] = 0;
     tp->t_rtttime = 0;
@@ -1980,6 +2009,7 @@ close:
                     ti->ti_ack == tp->snd_una && ti->ti_len == 0 && !sacknew);
         if(SEQ_LEQ(ti->ti_ack, tp->snd_max))
             tcp_rack_ack(tp, &to, ti->ti_ack);
+        tcp_undo_dsack(tp, &to, ti->ti_ack);
 
         if(SEQ_LEQ(ti->ti_ack, tp->snd_una)) {
             /*

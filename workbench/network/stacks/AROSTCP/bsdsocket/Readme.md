@@ -320,6 +320,16 @@ is no reordering timer (section 6.2.6) - the tail loss probe or the RTO acts whe
 clock is in milliseconds, so a segment counts as lost only once more than RACK.rtt + reo_wnd has
 passed: the RTT and the elapsed time are each truncated.
 
+A recovery that D-SACKs show was needless is undone (RFC 3708 with D-SACK, as Linux's
+`tcp_try_undo_dsack()`): when every byte it retransmitted has come back reported as a duplicate,
+nothing was lost - segments were reordered or delayed - and `cwnd` and `ssthresh` return to their
+values before it; a recovery still running ends. An RTO is not undone this way.
+
+On the loss bench (`tests/tcp/loss_probe.py` in aros-matter, 1 MB, median of 5 runs, against the
+tail loss probe alone): random losses 1.29 -> 0.52 s, several holes in a window 0.72 -> 0.38 s, a
+lost retransmission 0.37 -> 0.19 s, reordering (a tenth of the segments 5 ms ahead) 0.58 -> 0.29 s
+with 27 -> 11 needless retransmissions.
+
 As a receiver, the SACK blocks of an ACK (`tcp_sack_rcvblocks()`, from the reassembly queue once
 `rcv_nxt` has moved) begin with the one that holds the segment just received, as RFC 2018
 section 4 requires, then the ones sent before, most recent first, as many as fit. None lies below
