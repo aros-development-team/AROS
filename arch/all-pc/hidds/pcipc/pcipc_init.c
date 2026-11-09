@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -14,6 +14,7 @@
 #include <exec/memory.h>
 #include <exec/lists.h>
 
+#include <hidd/hidd.h>
 #include <hidd/pci.h>
 
 #include <utility/utility.h>
@@ -45,6 +46,7 @@ static int PCIPC_Init(LIBBASETYPEPTR LIBBASE)
     D(bug("[PCIPC] %s: UtilityBase @ 0x%p\n", __func__, LIBBASE->psd.utilityBase);)
 
     LIBBASE->psd.hidd_PCIDeviceMB = OOP_GetMethodID(IID_Hidd_PCIDevice, 0);
+    LIBBASE->psd.hiddMB = OOP_GetMethodID(IID_Hidd, 0);
 
     D(bug("[PCIPC] %s: PCIDevice MB = %08x\n", __func__, LIBBASE->psd.hidd_PCIDeviceMB);)
 

@@ -1010,7 +1010,13 @@ void BusTaskCode(struct ataBase *ATABase, struct ata_Bus *bus)
 
         if (bus->ab_Dev[iter] > DEV_UNKNOWN)
         {
-            unitObj = OOP_NewObject(ATABase->unitClass, NULL, NULL);
+            struct TagItem unitAttrs[] =
+            {
+                {aHidd_Parent   , (IPTR)bus->ab_Object  },
+                {TAG_DONE       , 0                     }
+            };
+
+            unitObj = OOP_NewObject(ATABase->unitClass, NULL, unitAttrs);
             if (unitObj)
             {
                 unit = OOP_INST_DATA(ATABase->unitClass, unitObj);

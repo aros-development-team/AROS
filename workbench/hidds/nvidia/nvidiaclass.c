@@ -292,6 +292,9 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
 	_sd->nvobject = o;
 
+        /* Tells which device this driver runs, see moHidd_AddRelation */
+        HIDD_AddRelation(o, vHidd_Relation_Device, _sd->Device, NULL);
+
         _sd->nvdisplay = OOP_NewObject(_sd->nvdisplayclass, NULL, displaytags);
         if (_sd->nvdisplay)
         {

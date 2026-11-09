@@ -70,6 +70,7 @@ OOP_Object *DWSer__Hidd_Serial__NewUnit(OOP_Class *cl, OOP_Object *obj, struct p
     struct TagItem tags[] =
     {
         {aHidd_SerialUnit_Unit, unitnum},
+        {aHidd_Parent, (IPTR)obj       },
         {TAG_DONE                      }
     };
 

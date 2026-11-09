@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 
     Desc: PCI bus driver for ahci.device
 */
@@ -142,6 +142,8 @@ static int ahci_bus_Detect(struct AHCIBase *AHCIBase)
 #define AHCI_TAG_PROD 3
         {aHidd_DriverData       , 0                             },
 #define AHCI_TAG_DATA 4
+        {aHW_Device             , 0                             },
+#define AHCI_TAG_DEVICE 5
         {TAG_DONE               , 0                             }
     };
 
@@ -197,6 +199,7 @@ static int ahci_bus_Detect(struct AHCIBase *AHCIBase)
         ahci_tags[1].ti_Data = (IPTR)AllocVec(strlen(revbuf) + 16, MEMF_CLEAR);
         sprintf((char *)ahci_tags[1].ti_Data, "PCI %s Controller", dev->dev_revision);
         ahci_tags[AHCI_TAG_DATA].ti_Data = (IPTR)dev;
+        ahci_tags[AHCI_TAG_DEVICE].ti_Data = (IPTR)dev->dev_Object;
         HW_AddDriver(AHCIBase->storageRoot, AHCIBase->ahciClass, ahci_tags);
         ahciDebug("[AHCI:PCI] %s: AHCI Controller Object @ 0x%p\n", __func__, dev->dev_Controller);
         if (dev->dev_Controller)

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2025, The AROS Development Team.
+    Copyright (C) 2013-2026, The AROS Development Team.
 */
 
 #include <aros/debug.h>
@@ -57,6 +57,7 @@ static Object *property_menu, *expand_menu, *collapse_menu, *quit_menu;
 OOP_AttrBase HiddAttrBase;
 OOP_AttrBase HWAttrBase;
 
+OOP_MethodID HiddBase;
 OOP_MethodID HWBase;
 
 const struct OOP_ABDescr abd[] =
@@ -534,6 +535,7 @@ BOOL sysexplorer_init(void)
 {
     D(bug("[SysExplorer] Initialising..\n"));
 
+    HiddBase = OOP_GetMethodID(IID_Hidd, 0);
     HWBase = OOP_GetMethodID(IID_HW, 0);
 
     D(bug("[SysExplorer] Init complete\n"));

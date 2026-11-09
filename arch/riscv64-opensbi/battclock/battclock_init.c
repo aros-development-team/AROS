@@ -113,6 +113,13 @@ static BOOL BattClock_Discover(struct BattClockBase *BattClockBase)
     BattClockBase->bb_BusBase = base;
     BattClockBase->bb_Addr    = (UWORD)addr;
 
+    /* The node is the identity of the RTC, handed on to its i2c object */
+    BattClockBase->bb_Path[0] = 'd';
+    BattClockBase->bb_Path[1] = 't';
+    if (!FDT_GetPath(rtc, &BattClockBase->bb_Path[2],
+                     sizeof(BattClockBase->bb_Path) - 2))
+        BattClockBase->bb_Path[0] = 0;
+
 
     D(bug("[BattClock] %s at 0x%02x on the controller at %p\n",
           RTC_COMPATIBLE, (UWORD)addr, (APTR)(IPTR)base));

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Main class for HIDD.
 */
@@ -274,6 +274,8 @@ OOP_Object *HIDDCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         struct TagItem *list = msg->attrList;
         struct TagItem *tag;
 
+        NEWLIST(&hd->hd_Relations);
+
         /* Set defaults */
         hd->hd_Name    = (STRPTR)unknown;
         hd->hd_HWName  = (STRPTR)unknown;
@@ -289,6 +291,14 @@ OOP_Object *HIDDCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         while ((tag = NextTagItem(&list)))
         {
             ULONG idx;
+
+            if (tag->ti_Tag == aHW_Device)
+            {
+                /* The device the driver is created for. See aoHW_Device. */
+                if (tag->ti_Data)
+                    relation_Add(CSD(cl), o, vHidd_Relation_Device, (OOP_Object *)tag->ti_Data, NULL, NULL);
+                continue;
+            }
 
             Hidd_Switch(tag->ti_Tag, idx)
             {
@@ -336,6 +346,16 @@ OOP_Object *HIDDCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             case aoHidd_Active:
                 hd->hd_Active = tag->ti_Data;
                 break;
+
+            case aoHidd_DevicePath:
+                if (tag->ti_Data && !hd->hd_Path)
+                    relation_SetPath(CSD(cl), o, hd, (CONST_STRPTR)tag->ti_Data);
+                break;
+
+            case aoHidd_Parent:
+                if (tag->ti_Data)
+                    relation_Add(CSD(cl), o, vHidd_Relation_Parent, (OOP_Object *)tag->ti_Data, NULL, NULL);
+                break;
             }
         }
     }
@@ -347,6 +367,8 @@ OOP_Object *HIDDCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 VOID HIDDCl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct HIDDData *hd = OOP_INST_DATA(cl, o);
+
+    relation_Dispose(CSD(cl), o, hd);
 
     if (hd->hd_Name != (STRPTR)unknown)
         FreeVec(hd->hd_Name);
@@ -413,8 +435,20 @@ VOID HIDDCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             case aoHidd_ProducerName:
                 *msg->storage = (IPTR)hd->hd_ProducerName;
                 break;
+            case aoHidd_DevicePath:
+                *msg->storage = hd->hd_Path ? (IPTR)hd->hd_Path->pn_Node.ln_Name : 0;
+                break;
+            case aoHidd_Parent:
+                *msg->storage = (IPTR)relation_Find(CSD(cl), hd, vHidd_Relation_Parent, NULL);
+                break;
             default                 : OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);     break;
         }
+    } else if (msg->attrID == aHW_Device) {
+        /*
+         * Drivers which declare the device they operate as a relation
+         * do not need to implement this attribute themselves.
+         */
+        *msg->storage = (IPTR)relation_Find(CSD(cl), hd, vHidd_Relation_Device, NULL);
     } else {
         OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     }
