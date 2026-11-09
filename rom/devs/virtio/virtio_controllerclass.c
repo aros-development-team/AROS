@@ -171,24 +171,6 @@ VOID VirtIO__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     OOP_DoSuperMethod(cl, o, msg);
 }
 
-void VirtIO__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
-{
-    struct VirtIOBase *VirtIOBase = (struct VirtIOBase *)cl->UserData;
-    struct virtio_Controller *data = OOP_INST_DATA(cl, o);
-    ULONG idx;
-
-    HW_Switch(msg->attrID, idx) {
-    case aoHW_Device:
-        if (data->ac_dev)
-            *msg->storage = (IPTR)data->ac_dev->dev_Object;
-        return;
-    default:
-        break;
-    }
-
-    OOP_DoSuperMethod(cl, o, &msg->mID);
-}
-
 BOOL VirtIO__Hidd_StorageController__RemoveBus(OOP_Class *cl, OOP_Object *o,
                                                struct pHidd_StorageController_RemoveBus *Msg)
 {

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved
+    Copyright (C) 2020-2026, The AROS Development Team. All rights reserved
  */
 
 #include <proto/exec.h>
@@ -283,6 +283,8 @@ static int NVME_Probe(struct NVMEBase *NVMEBase)
 #define NVME_TAG_PROD 3
         {aHidd_DriverData,      0                               },
 #define NVME_TAG_DATA 4
+        {aHW_Device,            0                               },
+#define NVME_TAG_DEVICE 5
         {TAG_DONE,              0                               }
     };
 
@@ -315,6 +317,7 @@ static int NVME_Probe(struct NVMEBase *NVMEBase)
         OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_VendorID, &nvme_tags[NVME_TAG_VEND].ti_Data);
         OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_ProductID, &nvme_tags[NVME_TAG_PROD].ti_Data);
         nvme_tags[NVME_TAG_DATA].ti_Data = (IPTR)dev;
+        nvme_tags[NVME_TAG_DEVICE].ti_Data = (IPTR)dev->dev_Object;
         OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_Driver, (IPTR *) &dev->dev_PCIDriverObject);
         HW_AddDriver(NVMEBase->storageRoot, NVMEBase->nvmeClass, nvme_tags);
         D(
