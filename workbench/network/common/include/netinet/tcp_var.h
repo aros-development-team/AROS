@@ -290,6 +290,14 @@ struct tcpcb {
  */
 	tcp_seq	snd_highrxt;
 
+/*
+ * Receive buffer autosizing (SB_AUTOSIZE): what arrived in order since
+ * t_rfbuf_ts (tcp_ms(); 0: no period running).
+ */
+	u_int32_t t_rfbuf_ts;
+	u_long	t_rfbuf_cnt;
+	u_long	t_autobuf;		/* its share of tcp_autobuf_used (pool bytes) */
+
 /* TUBA stuff */
 	caddr_t	t_tuba_pcb;		/* next level down pcb for TCP over z */
 };
@@ -470,7 +478,9 @@ struct	tcpstat {
 #define	TCPCTL_ABC_L		15	/* slow start: at most L * SMSS per ACK (RFC 3465) */
 #define	TCPCTL_HYSTART		16	/* HyStart++ in the first slow start (RFC 9406) */
 #define	TCPCTL_MINMSS		17	/* the least MSS a connection takes */
-#define TCPCTL_MAXID		18
+#define	TCPCTL_SENDBUF_MAX	18	/* send buffer autosizing ceiling (0: off) */
+#define	TCPCTL_RECVBUF_MAX	19	/* receive buffer autosizing ceiling (0: off) */
+#define TCPCTL_MAXID		20
 
 #define TCPCTL_NAMES { \
 	{ 0, 0 }, \
@@ -491,6 +501,8 @@ struct	tcpstat {
 	{ "abc_l", CTLTYPE_INT }, \
 	{ "hystart", CTLTYPE_INT }, \
 	{ "minmss", CTLTYPE_INT }, \
+	{ "sendbuf_max", CTLTYPE_INT }, \
+	{ "recvbuf_max", CTLTYPE_INT }, \
 }
 
 #ifdef KERNEL
@@ -532,6 +544,9 @@ extern	int tcp_do_hystart;	/* HyStart++ (RFC 9406) */
 extern	int tcp_minmss;		/* the least MSS (TCP_MINMSS) */
 /* the least MSS a connection uses: tcp_minmss, never below 64 bytes */
 #define	TCP_MSS_FLOOR	(tcp_minmss > 64 ? tcp_minmss : 64)
+extern	u_long tcp_autosndbuf_max;	/* send buffer autosizing ceiling */
+extern	u_long tcp_autorcvbuf_max;	/* receive buffer autosizing ceiling */
+#define	TCP_AUTOSNDBUF_INC	(16 * 1024)	/* send buffer autosizing step */
 extern  u_short tcp_lastport;	/* last assigned port */
 extern	int tcp_do_sack;	/* enable SACK (RFC 2018) */
 extern	int tcp_do_newreno;	/* enable NewReno (RFC 3782) */
@@ -590,6 +605,11 @@ void	 tcp_rto_after_syn __P((struct tcpcb *));
 u_int32_t tcp_ms __P((void));
 u_long	 tcp_ss_incr __P((struct tcpcb *, u_int));
 void	 tcp_hystart_init __P((struct tcpcb *));
+int	 tcp_autobuf_grow __P((struct tcpcb *, struct sockbuf *, u_long, u_long));
+void	 tcp_autobuf_init __P((void));
+u_long	 tcp_autobuf_pool __P((void));
+u_long	 tcp_autobuf_one __P((void));
+int	 tcp_rscale __P((struct socket *));
 #endif /* KERNEL */
 
 #endif /* _NETINET_TCP_VAR_H_ */

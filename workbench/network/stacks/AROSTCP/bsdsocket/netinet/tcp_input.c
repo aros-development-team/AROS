@@ -126,6 +126,35 @@ struct inpcbinfo tcbinfo;
         (tp)->t_flags |= TF_DELACK; \
 } while (0)
 
+/*
+ * Receive buffer autosizing (as FreeBSD's tcp_autorcvbuf()): count what
+ * arrives in order; when, in half an RTT, more than 3/8 of the buffer has
+ * arrived (3/4 of it per RTT - the buffer is what limits the sender), the
+ * buffer doubles, up to tcp_autorcvbuf_max, while the cluster pool has
+ * room (tcp_autobuf_grow()). The window the next ACK advertises takes the
+ * new space.
+ */
+static void
+tcp_autorcvbuf(struct tcpcb *tp, struct socket *so, int len)
+{
+    u_int32_t now;
+
+    if(!(so->so_rcv.sb_flags & SB_AUTOSIZE) || tp->t_srtt == 0)
+        return;
+    now = tcp_ms();
+    if(tp->t_rfbuf_ts == 0) {
+        tp->t_rfbuf_ts = now ? now : 1;
+        tp->t_rfbuf_cnt = 0;
+    }
+    tp->t_rfbuf_cnt += len;
+    if(now - tp->t_rfbuf_ts < (u_int32_t)(tp->t_srtt >> TCP_RTT_SHIFT) / 2)
+        return;
+    if(tp->t_rfbuf_cnt > so->so_rcv.sb_hiwat / 8 * 3 &&
+            so->so_rcv.sb_hiwat < tcp_autorcvbuf_max)
+        (void)tcp_autobuf_grow(tp, &so->so_rcv, 2 * so->so_rcv.sb_hiwat, tcp_autorcvbuf_max);
+    tp->t_rfbuf_ts = 0;                 /* a new period with the next segment */
+}
+
 #define TCP_REASS(tp, ti, m, so, flags) { \
     if ((ti)->ti_seq == (tp)->rcv_nxt && \
         (tp)->t_segq == NULL && \
@@ -138,6 +167,7 @@ struct inpcbinfo tcbinfo;
         flags = (ti)->ti_flags & TH_FIN; \
         tcpstat.tcps_rcvpack++;\
         tcpstat.tcps_rcvbyte += (ti)->ti_len;\
+        tcp_autorcvbuf((tp), (so), (ti)->ti_len); \
         sbappend(&(so)->so_rcv, (m)); \
         sorwakeup(so); \
     } else { \
@@ -1257,6 +1287,7 @@ findpcb:
             tp->rcv_nxt += ti->ti_len;
             tcpstat.tcps_rcvpack++;
             tcpstat.tcps_rcvbyte += ti->ti_len;
+            tcp_autorcvbuf(tp, so, ti->ti_len);
             /*
              * Add data to socket buffer.
              */

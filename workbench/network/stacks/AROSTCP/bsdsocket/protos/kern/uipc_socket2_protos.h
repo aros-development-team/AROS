@@ -48,6 +48,10 @@ int soreserve(register struct socket * so,
 int sbreserve(struct sockbuf * sb,
               u_long cc);
 
+int sbreserve_max(struct sockbuf * sb,
+                  u_long cc,
+                  u_long max);
+
 void sbrelease(struct sockbuf * sb);
 
 void sbappend(struct sockbuf * sb,

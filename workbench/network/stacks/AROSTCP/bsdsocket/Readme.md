@@ -170,6 +170,36 @@ the stack aborts cleanly instead of running with no mbufs.
 > allocation and fail the operation with `ENOBUFS` rather than dereferencing `NULL` under memory
 > pressure. This invariant must be maintained by new code.
 
+**Socket buffers** default to 128 KB for TCP (`tcp_sendspace`/`tcp_recvspace`; 16 KB on m68k) and
+grow as a connection needs them, as in FreeBSD, unless the application sized them with `SO_SNDBUF`/
+`SO_RCVBUF` (`SB_AUTOSIZE`, inherited by accepted sockets): the send buffer by 16 KB when it is 7/8
+full, the windows would take all of it and the peer's window is larger (`tcp_output()`); the
+receive buffer doubles when more than 3/8 of it arrives in order in half an RTT (`tcp_input()`),
+and the window scale asked for at the handshake covers the ceiling (`tcp_rscale()`; with autosizing
+off, what the buffer alone needs). `SO_SNDBUF`/`SO_RCVBUF` stay bounded by `sb_max` (512 KB, 64 KB
+on m68k); autosizing has its own bound, its ceilings, `net.inet.tcp.sendbuf_max` and `recvbuf_max`
+(`sbreserve_max()`).
+
+Autosizing follows the memory the machine has, since the mbuf pool takes memory from the system as
+it needs it and keeps it while the stack runs, up to `mbconf.maxmem` (never below 4 MB, however
+little memory there is), so a buffer that grows is a lasting claim on system memory:
+- the ceilings are set when the stack starts from the memory free then (`AvailMem()`): **off (0)
+  below 16 MB free**, else 1/64 of it, at most 1 MB (`TCP_AUTOBUF_MINFREE`, `TCP_AUTOBUF_DIV`,
+  `TCP_AUTOBUF_MAX` in `tcp_subr.c`) and what the budget below gives one buffer (768 KB with the
+  4 MB pool); a ceiling no larger than the default buffer grows nothing;
+- what the pool may use is what it holds plus what it may still take without leaving less than
+  16 MB free, within `mbconf.maxmem`, with free memory read each time a buffer is to grow
+  (`tcp_autobuf_pool()`);
+- what autosizing has given all live connections stays within 3/8 of that, a byte of buffer
+  counting as two of the pool (`sb_mbmax`; a 1448-byte segment sits in a 2 KB cluster and an mbuf),
+  and goes back at `tcp_close()`; a buffer grows by what is left, if less than asked, and nothing
+  grows while half of what the pool may use is in clusters in use (`tcp_autobuf_grow()`). Without
+  such a budget, eight connections receiving at 100 ms grew while their buffers were empty, filled
+  them together and ran the pool out.
+
+The sysctls take 0 (off) up to what the budget gives one buffer (`tcp_autobuf_one()`). With the default buffers a connection moved
+128 KB per round trip (10 Mbit/s at 100 ms).
+
 **General allocations** (`kern_malloc.c`, the `MALLOC`/`bsd_malloc` family) come from a single Exec
 memory pool (`CreatePool(MEMF_PUBLIC, …)`) serialized by `malloc_semaphore`; these can also return
 `NULL` and are checked accordingly.

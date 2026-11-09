@@ -447,12 +447,10 @@ syncache_fill(struct syncache *sc, struct socket *lso, struct sc_key *k,
     sc->sc_lso = lso;
     sc->sc_rxmits = 0;
 
-    /* Our receive window scale, derived from the listen socket buffer. */
-    if (flags & SCF_WINSCALE) {
-        while (rscale < TCP_MAX_WINSHIFT &&
-                (TCP_MAXWIN << rscale) < (long)lso->so_rcv.sb_hiwat)
-            rscale++;
-    }
+    /* Our receive window scale, derived from the listen socket buffer
+     * (and what autosizing may grow it to). */
+    if (flags & SCF_WINSCALE)
+        rscale = tcp_rscale(lso);
     sc->sc_request_r_scale = rscale;
 
     win = sbspace(&lso->so_rcv);

@@ -462,9 +462,7 @@ struct mbuf *nam;
             in6_pcbdisconnect(inp);
             return ENOBUFS;
         }
-        while(tp->request_r_scale < TCP_MAX_WINSHIFT &&
-                (TCP_MAXWIN << tp->request_r_scale) < so->so_rcv.sb_hiwat)
-            tp->request_r_scale++;
+        tp->request_r_scale = tcp_rscale(so);
         soisconnecting(so);
         tcpstat.tcps_connattempt++;
         tp->t_state = TCPS_SYN_SENT;
@@ -519,9 +517,7 @@ struct mbuf *nam;
     }
 
     /* Compute window scaling to request.  */
-    while(tp->request_r_scale < TCP_MAX_WINSHIFT &&
-            (TCP_MAXWIN << tp->request_r_scale) < so->so_rcv.sb_hiwat)
-        tp->request_r_scale++;
+    tp->request_r_scale = tcp_rscale(so);
 
     soisconnecting(so);
     tcpstat.tcps_connattempt++;
@@ -802,6 +798,9 @@ struct socket *so;
         error = soreserve(so, tcp_sendspace, tcp_recvspace);
         if(error)
             return (error);
+        /* the defaults grow as needed, until SO_SNDBUF/SO_RCVBUF */
+        so->so_snd.sb_flags |= SB_AUTOSIZE;
+        so->so_rcv.sb_flags |= SB_AUTOSIZE;
     }
     error = in_pcballoc(so, &tcbinfo);
     if(error)
@@ -971,6 +970,20 @@ size_t newlen;
             error = EINVAL;
         if(error == 0)
             tcp_rexmit_min = v;
+        return (error);
+    }
+    case TCPCTL_SENDBUF_MAX:
+    case TCPCTL_RECVBUF_MAX: {      /* autosizing ceilings, bytes; 0: off */
+        u_long *p = name[0] == TCPCTL_SENDBUF_MAX ? &tcp_autosndbuf_max : &tcp_autorcvbuf_max;
+        int v = *p, error;
+
+        /* bounded by autosizing's budget (tcp_autobuf_grow()), not sb_max:
+         * at two bytes of the pool per byte, 3/8 of what the pool may use */
+        error = sysctl_int(oldp, oldlenp, newp, newlen, &v);
+        if(error == 0 && newp && (v < 0 || (u_long)v > tcp_autobuf_one()))
+            error = EINVAL;
+        if(error == 0)
+            *p = v;
         return (error);
     }
     case TCPCTL_KEEPIDLE:

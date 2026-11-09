@@ -181,6 +181,21 @@ again:
 
     len = MIN(so->so_snd.sb_cc, win) - off;
 
+    /*
+     * Send buffer autosizing (as FreeBSD): when the buffer, not the
+     * windows, is what holds the sender back - it is 7/8 full, the
+     * windows would take all of it, and the peer's window is larger -
+     * it grows by TCP_AUTOSNDBUF_INC, up to tcp_autosndbuf_max, while the
+     * cluster pool has room (tcp_autobuf_grow()).
+     */
+    if((so->so_snd.sb_flags & SB_AUTOSIZE) && tp->t_state == TCPS_ESTABLISHED &&
+            so->so_snd.sb_hiwat < tcp_autosndbuf_max &&
+            tp->snd_wnd / 4 * 5 >= so->so_snd.sb_hiwat &&
+            so->so_snd.sb_cc >= so->so_snd.sb_hiwat / 8 * 7 &&
+            win >= so->so_snd.sb_cc - off)
+        (void)tcp_autobuf_grow(tp, &so->so_snd, so->so_snd.sb_hiwat + TCP_AUTOSNDBUF_INC,
+                               tcp_autosndbuf_max);
+
     if((taop = tcp_gettaocache(tp->t_inpcb)) == NULL) {
         taop = &tao_noncached;
         bzero(taop, sizeof(*taop));

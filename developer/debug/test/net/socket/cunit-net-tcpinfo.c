@@ -629,6 +629,93 @@ void testTCPINFO_PASSIVE_RTT(void)
     CloseSocket(s);
 }
 
+static int bufsize(int s, int opt)
+{
+    int v = 0;
+    socklen_t l = sizeof(v);
+
+    getsockopt(s, SOL_SOCKET, opt, &v, &l);
+    return v;
+}
+
+/* Socket buffer autosizing: the ceilings follow the memory free when the
+ * stack started (off below 16 MB, 1/64 of it, at most 1 MB and what the
+ * budget gives one buffer) and refuse more than that budget; a default send buffer grows when it is
+ * what holds a bulk sender back, and one the application sized stays. */
+void testTCPINFO_AUTOSIZE(void)
+{
+    LONG snd = 0, rcv = 0, big = 64 * 1024 * 1024;
+    int c, s, c2, s2, v = 96 * 1024, n0, n1, r0, r1;
+    unsigned long avail = (unsigned long)AvailMem(MEMF_ANY);
+
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_SENDBUF_MAX, &snd, NULL), 0);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_RECVBUF_MAX, &rcv, NULL), 0);
+    printf("\n    %lu KB free: ceilings %ld, %ld\n", avail / 1024, (long)snd, (long)rcv);
+    CU_ASSERT(snd <= 1024 * 1024 && rcv <= 1024 * 1024);
+    CU_ASSERT(snd % (16 * 1024) == 0 && rcv % (16 * 1024) == 0);
+    CU_ASSERT_NOT_EQUAL(tcpctl(TCPCTL_SENDBUF_MAX, &snd, &big), 0);
+    if (snd <= 128 * 1024 || rcv <= 128 * 1024) {
+        printf("    autosizing off on this machine: nothing to grow\n");
+        return;
+    }
+
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    n0 = bufsize(c, SO_SNDBUF);
+    r0 = bufsize(s, SO_RCVBUF);
+    CU_ASSERT_EQUAL(st_oneway(c, s, 4 * 1024 * 1024), 0);
+    n1 = bufsize(c, SO_SNDBUF);
+    r1 = bufsize(s, SO_RCVBUF);
+    printf("    4 MB over the loopback: send buffer %d -> %d, receive buffer %d -> %d\n",
+           n0, n1, r0, r1);
+    CU_ASSERT(n1 > n0 && n1 <= snd);
+    CU_ASSERT(r1 >= r0 && r1 <= rcv);
+    CloseSocket(c);
+    CloseSocket(s);
+
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c2, &s2), 0);
+    CU_ASSERT_EQUAL(setsockopt(c2, SOL_SOCKET, SO_SNDBUF, &v, sizeof(v)), 0);
+    n0 = bufsize(c2, SO_SNDBUF);
+    CU_ASSERT_EQUAL(st_oneway(c2, s2, 4 * 1024 * 1024), 0);
+    n1 = bufsize(c2, SO_SNDBUF);
+    printf("    with SO_SNDBUF %d: %d -> %d\n", v, n0, n1);
+    CU_ASSERT_EQUAL(n1, n0);
+    CloseSocket(c2);
+    CloseSocket(s2);
+}
+
+/* With the ceilings at 0 nothing grows, and a new connection asks for the
+ * window scale its buffer alone needs, not the ceiling's. */
+void testTCPINFO_AUTOSIZE_OFF(void)
+{
+    struct tcp_info ti;
+    LONG snd = 0, rcv = 0, zero = 0;
+    int c, s;
+
+    CU_ASSERT_EQUAL_FATAL(tcpctl(TCPCTL_SENDBUF_MAX, &snd, &zero), 0);
+    CU_ASSERT_EQUAL_FATAL(tcpctl(TCPCTL_RECVBUF_MAX, &rcv, &zero), 0);
+    if (st_tcp_pair(AF_INET, &c, &s) == 0) {
+        int n0 = bufsize(c, SO_SNDBUF), r0 = bufsize(s, SO_RCVBUF), n1, r1, scale;
+
+        CU_ASSERT_EQUAL(info(c, &ti, NULL), 0);
+        CU_ASSERT_EQUAL(st_oneway(c, s, 4 * 1024 * 1024), 0);
+        n1 = bufsize(c, SO_SNDBUF);
+        r1 = bufsize(s, SO_RCVBUF);
+        printf("\n    ceilings 0, 4 MB over the loopback: send buffer %d -> %d, receive buffer %d -> %d, window scale %u\n",
+               n0, n1, r0, r1, (unsigned)ti.tcpi_rcv_wscale);
+        CU_ASSERT_EQUAL(n1, n0);
+        CU_ASSERT_EQUAL(r1, r0);
+        for (scale = 0; scale < 14 && (65535L << scale) < bufsize(c, SO_RCVBUF); scale++)
+            ;
+        CU_ASSERT_EQUAL(ti.tcpi_rcv_wscale, scale);
+        CloseSocket(c);
+        CloseSocket(s);
+    } else
+        CU_FAIL("no connection");
+    /* the ceilings the stack set take back */
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_SENDBUF_MAX, &zero, &snd), 0);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_RECVBUF_MAX, &zero, &rcv), 0);
+}
+
 /* A listening socket reports LISTEN. */
 void testTCPINFO_LISTEN(void)
 {
@@ -679,6 +766,8 @@ int main(int argc, char **argv)
         !CU_add_test(p, "a full reassembly queue takes the segment that fills its hole", testTCPINFO_REASS_FULL) ||
         !CU_add_test(p, "without window scaling the window offered is 65535, not its low bits", testTCPINFO_WINDOW_NO_SCALE) ||
         !CU_add_test(p, "the accepted side has an RTT from the handshake", testTCPINFO_PASSIVE_RTT) ||
+        !CU_add_test(p, "socket buffers grow unless the application sized them", testTCPINFO_AUTOSIZE) ||
+        !CU_add_test(p, "with the ceilings at 0 no buffer grows", testTCPINFO_AUTOSIZE_OFF) ||
         !CU_add_test(p, "a listening socket reports LISTEN", testTCPINFO_LISTEN))
     {
         CU_cleanup_registry();

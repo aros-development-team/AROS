@@ -231,6 +231,8 @@ int connstatus;
     so->so_pgid = head->so_pgid;
     so->so_eventmask = head->so_eventmask;
     (void) soreserve(so, head->so_snd.sb_hiwat, head->so_rcv.sb_hiwat);
+    so->so_snd.sb_flags |= head->so_snd.sb_flags & SB_AUTOSIZE;
+    so->so_rcv.sb_flags |= head->so_rcv.sb_flags & SB_AUTOSIZE;
     soqinsque(head, so, soqueue);
     if((*so->so_proto->pr_usrreq)(so, PRU_ATTACH,
                                   (struct mbuf *)0, (struct mbuf *)0, (struct mbuf *)0)) {
@@ -534,8 +536,22 @@ sbreserve(sb, cc)
 struct sockbuf *sb;
 u_long cc;
 {
+    return (sbreserve_max(sb, cc, sb_max));
+}
 
-    if(cc > sb_max * mbconf.mclbytes / (MSIZE + mbconf.mclbytes))
+/*
+ * sbreserve() under max in place of sb_max: TCP's buffer autosizing has
+ * its own bound (tcp_autobuf_grow()), so that sb_max, which SO_SNDBUF and
+ * SO_RCVBUF are checked against, need not be raised for every socket.
+ */
+int
+sbreserve_max(sb, cc, max)
+struct sockbuf *sb;
+u_long cc;
+u_long max;
+{
+
+    if(cc > max * mbconf.mclbytes / (MSIZE + mbconf.mclbytes))
         return (0);
     /*
      * Guard against a zero or absurdly small request. A misconfigured (or
@@ -547,7 +563,7 @@ u_long cc;
     if(cc < 2 * mbconf.mclbytes)
         cc = 2 * mbconf.mclbytes;
     sb->sb_hiwat = cc;
-    sb->sb_mbmax = MIN(cc * 2, sb_max);
+    sb->sb_mbmax = MIN(cc * 2, max);
     if(sb->sb_lowat > sb->sb_hiwat)
         sb->sb_lowat = sb->sb_hiwat;
     return (1);
