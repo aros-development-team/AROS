@@ -235,7 +235,10 @@ service_append(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
 {
     /* The address record names the interface it leaves on, unless the
      * service stands for another host. */
-    ULONG addr = rs->rs_Proxy ? rs->rs_HostAddr : md->md_Ifs[ifindex].mi_Addr;
+    ULONG addr = rs->rs_Proxy ? rs->rs_HostAddr :
+        mdnsNetAddress4(md, ifindex);
+    struct in6_addr address6;
+    BOOL have6 = !rs->rs_Proxy && mdnsNetAddress6(md, ifindex, &address6);
     /* The service's own three records live as long as its client said;
      * the address record is the host's, and other services' too. */
     ULONG ttl = reply_ttl(md, goodbye ? 0 :
@@ -287,12 +290,11 @@ service_append(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
             return FALSE;
         }
     }
-    if (!rs->rs_Proxy && withAddr && !goodbye &&
-        !IN6_IS_ADDR_UNSPECIFIED(&md->md_Ifs[ifindex].mi_Addr6)) {
+    if (have6 && withAddr && !goodbye) {
         char target[256];
 
         target_fqdn(md, rs, target, (LONG)sizeof(target));
-        mdnsAddr6Data(&md->md_Ifs[ifindex].mi_Addr6, data);
+        mdnsAddr6Data(&address6, data);
         if (mdnsAppendRecord(pkt, MDNS_RESPONSE_MAX, &pos, &ancount, target,
                 DNS_TYPE_AAAA, unique, reply_ttl(md, MDNS_TTL_HOST), data,
                 16) != 0) {

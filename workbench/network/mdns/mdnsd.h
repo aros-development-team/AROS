@@ -21,16 +21,17 @@
 
 #include "mdns_dns.h"
 #include "mdns_ipc.h"
+#include "dnssd_link.h"
 
-/* An interface mdnsd speaks on, with its own socket. */
-#define MDNS_IFS_MAX            8
+/* Bounded daemon policy; overflow is explicit and never publishes a partial
+ * canonical snapshot. The socket array is derived from md_LinkInventory. */
+#define MDNS_IFS_MAX            32
+#define MDNS_ADDRESS_MAX        256
+#define MDNS_LINK_SNAPSHOT_MAX  65536u
 
 struct MDNSInterface
 {
-    char    mi_Name[20];
     ULONG   mi_Index;           /* stack interface index: link identity */
-    ULONG   mi_Addr;            /* 0xAABBCCDD == A.B.C.D */
-    struct in6_addr mi_Addr6;   /* link-local address, network byte order */
     LONG    mi_Socket;          /* IPv4, or -1 */
 };
 
@@ -102,6 +103,11 @@ struct MDNSDaemon
     LONG                    md_Socket;      /* the first interface's, or -1:
                                              * "is there a link at all" */
     LONG                    md_Socket6;     /* shared IPv6 UDP socket, or -1 */
+    struct dnssd_link_inventory md_LinkInventory;
+    struct dnssd_link_entry md_Links[MDNS_IFS_MAX];
+    struct dnssd_link_entry md_LinkScratch[MDNS_IFS_MAX];
+    struct dnssd_address_entry md_Addresses[MDNS_ADDRESS_MAX];
+    struct dnssd_address_entry md_AddressScratch[MDNS_ADDRESS_MAX];
     struct MDNSInterface    md_Ifs[MDNS_IFS_MAX];
     LONG                    md_IfCount;
     LONG                    md_SendIf;      /* interface of the packet being
@@ -240,6 +246,9 @@ BOOL mdnsNetRescan(struct MDNSDaemon *md);
 void mdnsNetClose(struct MDNSDaemon *md);
 BOOL mdnsNetIsOwn(struct MDNSDaemon *md, ULONG addr);
 BOOL mdnsNetIsOwn6(struct MDNSDaemon *md, const struct in6_addr *addr);
+ULONG mdnsNetAddress4(const struct MDNSDaemon *md, LONG index);
+BOOL mdnsNetAddress6(const struct MDNSDaemon *md, LONG index,
+    struct in6_addr *address);
 BOOL mdnsNetSendOn(struct MDNSDaemon *md, LONG index, const UBYTE *pkt,
     LONG pktlen);
 void mdnsNetSendAll(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen);

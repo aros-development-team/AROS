@@ -99,22 +99,25 @@ host_send_probe(struct MDNSDaemon *md)
 
     mdnsHostFqdn(md, fqdn, (LONG)sizeof(fqdn));
     for (i = 0; i < md->md_IfCount; i++) {
+        struct in6_addr address6;
+        ULONG address4 = mdnsNetAddress4(md, i);
+
         nscount = 0;
         if (mdnsBuildQuery(pkt, (LONG)MDNS_MAX_PACKET, 0, fqdn, DNS_TYPE_ANY,
                 (UWORD)(DNS_CLASS_IN |
                     (md->md_HostStep == 0 ? DNS_QU_BIT : 0)), &pos) != 0) {
             return;
         }
-        if (md->md_Ifs[i].mi_Addr != 0) {
-            mdnsAddrData(md->md_Ifs[i].mi_Addr, addrdata);
+        if (address4 != 0) {
+            mdnsAddrData(address4, addrdata);
             if (mdnsAppendRecord(pkt, (LONG)MDNS_MAX_PACKET, &pos, &nscount,
                     fqdn, DNS_TYPE_A, DNS_CLASS_IN, MDNS_TTL_HOST,
                     addrdata, 4) != 0) {
                 return;
             }
         }
-        if (!IN6_IS_ADDR_UNSPECIFIED(&md->md_Ifs[i].mi_Addr6)) {
-            mdnsAddr6Data(&md->md_Ifs[i].mi_Addr6, addrdata);
+        if (mdnsNetAddress6(md, i, &address6)) {
+            mdnsAddr6Data(&address6, addrdata);
             if (mdnsAppendRecord(pkt, (LONG)MDNS_MAX_PACKET, &pos, &nscount,
                     fqdn, DNS_TYPE_AAAA, DNS_CLASS_IN, MDNS_TTL_HOST,
                     addrdata, 16) != 0) {
@@ -146,14 +149,17 @@ host_send_addr(struct MDNSDaemon *md, BOOL goodbye, UWORD qtype)
 
     mdnsHostFqdn(md, fqdn, (LONG)sizeof(fqdn));
     for (i = 0; i < md->md_IfCount; i++) {
+        struct in6_addr address6;
+        ULONG address4 = mdnsNetAddress4(md, i);
+
         if (md->md_SendIf >= 0 && i != md->md_SendIf) {
             continue;
         }
         pos = mdnsResponseBegin(md, pkt);
         ancount = 0;
         if ((qtype == DNS_TYPE_ANY || qtype == DNS_TYPE_A) &&
-            md->md_Ifs[i].mi_Addr != 0) {
-            mdnsAddrData(md->md_Ifs[i].mi_Addr, addrdata);
+            address4 != 0) {
+            mdnsAddrData(address4, addrdata);
             if (mdnsAppendRecord(pkt, (LONG)MDNS_MAX_PACKET, &pos, &ancount,
                     fqdn, DNS_TYPE_A,
                     (UWORD)(legacy ? DNS_CLASS_IN : DNS_CLASS_IN_FLUSH),
@@ -163,8 +169,8 @@ host_send_addr(struct MDNSDaemon *md, BOOL goodbye, UWORD qtype)
             }
         }
         if ((qtype == DNS_TYPE_ANY || qtype == DNS_TYPE_AAAA) &&
-            !IN6_IS_ADDR_UNSPECIFIED(&md->md_Ifs[i].mi_Addr6)) {
-            mdnsAddr6Data(&md->md_Ifs[i].mi_Addr6, addrdata);
+            mdnsNetAddress6(md, i, &address6)) {
+            mdnsAddr6Data(&address6, addrdata);
             if (mdnsAppendRecord(pkt, (LONG)MDNS_MAX_PACKET, &pos, &ancount,
                     fqdn, DNS_TYPE_AAAA,
                     (UWORD)(legacy ? DNS_CLASS_IN : DNS_CLASS_IN_FLUSH),
@@ -324,16 +330,23 @@ mdnsHostHandleProbe(struct MDNSDaemon *md, const struct MDNSRecord *theirs,
     }
     index = md->md_SendIf >= 0 ? md->md_SendIf : 0;
     mdnsHostFqdn(md, fqdn, (LONG)sizeof(fqdn));
-    if (md->md_Ifs[index].mi_Addr != 0) {
-        mine[mineCount].type = DNS_TYPE_A;
-        mine[mineCount].length = 4;
-        mdnsAddrData(md->md_Ifs[index].mi_Addr, mine[mineCount++].data);
+    {
+        ULONG address4 = mdnsNetAddress4(md, index);
+
+        if (address4 != 0) {
+            mine[mineCount].type = DNS_TYPE_A;
+            mine[mineCount].length = 4;
+            mdnsAddrData(address4, mine[mineCount++].data);
+        }
     }
-    if (!IN6_IS_ADDR_UNSPECIFIED(&md->md_Ifs[index].mi_Addr6)) {
-        mine[mineCount].type = DNS_TYPE_AAAA;
-        mine[mineCount].length = 16;
-        mdnsAddr6Data(&md->md_Ifs[index].mi_Addr6,
-            mine[mineCount++].data);
+    {
+        struct in6_addr address6;
+
+        if (mdnsNetAddress6(md, index, &address6)) {
+            mine[mineCount].type = DNS_TYPE_AAAA;
+            mine[mineCount].length = 16;
+            mdnsAddr6Data(&address6, mine[mineCount++].data);
+        }
     }
     for (i = 0; i < count; i++) {
         if (Stricmp(theirs[i].name, fqdn) == 0 &&

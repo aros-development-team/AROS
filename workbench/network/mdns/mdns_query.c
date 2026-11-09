@@ -13,7 +13,6 @@
 #include <netinet/in.h>
 
 #include "mdnsd.h"
-
 #define QUERY_SESSIONS 8
 #define QUERY_QUEUE 8
 
@@ -162,27 +161,29 @@ answer_own_host(struct MDNSDaemon *md, struct QuerySession *session)
     }
     for (i = 0; i < md->md_IfCount; i++) {
         struct MDNSRecordEvent event;
+        struct in6_addr address6;
+        ULONG address4 = mdnsNetAddress4(md, i);
 
         memset(&event, 0, sizeof(event));
         event.re_Code = MEVENT_RECORD;
-        event.re_Interface = htonl(md->md_Ifs[i].mi_Addr);
+        event.re_Interface = htonl(address4);
         event.re_InterfaceIndex = (UWORD)md->md_Ifs[i].mi_Index;
         event.re_TTL = MDNS_TTL_HOST;
         event.re_Class = DNS_CLASS_IN;
         mdnsTextCopy(event.re_Name, sizeof(event.re_Name), host);
         if ((session->type == DNS_TYPE_A || session->type == DNS_TYPE_ANY) &&
-            md->md_Ifs[i].mi_Addr != 0) {
+            address4 != 0) {
             event.re_Type = DNS_TYPE_A;
             event.re_DataLength = 4;
-            mdnsAddrData(md->md_Ifs[i].mi_Addr, event.re_Data);
+            mdnsAddrData(address4, event.re_Data);
             enqueue(session, &event);
         }
         if ((session->type == DNS_TYPE_AAAA ||
              session->type == DNS_TYPE_ANY) &&
-            !IN6_IS_ADDR_UNSPECIFIED(&md->md_Ifs[i].mi_Addr6)) {
+            mdnsNetAddress6(md, i, &address6)) {
             event.re_Type = DNS_TYPE_AAAA;
             event.re_DataLength = 16;
-            mdnsAddr6Data(&md->md_Ifs[i].mi_Addr6, event.re_Data);
+            mdnsAddr6Data(&address6, event.re_Data);
             enqueue(session, &event);
         }
     }
@@ -240,7 +241,7 @@ deliver_record(struct MDNSDaemon *md, const struct MDNSRecord *record,
         md->md_SendIf < 0) {
         return;
     }
-    link = md->md_Ifs[md->md_SendIf].mi_Addr;
+    link = mdnsNetAddress4(md, md->md_SendIf);
     linkIndex = (UWORD)md->md_Ifs[md->md_SendIf].mi_Index;
     for (i = 0; i < QUERY_SESSIONS; i++) {
         struct QuerySession *session = &state->sessions[i];

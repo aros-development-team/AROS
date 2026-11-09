@@ -526,7 +526,7 @@ static ULONG interface_address4(const struct MDNSDaemon *md, ULONG link)
 
     for (i = 0; i < md->md_IfCount; i++) {
         if (md->md_Ifs[i].mi_Index == link) {
-            return md->md_Ifs[i].mi_Addr;
+            return mdnsNetAddress4(md, i);
         }
     }
     return 0;
