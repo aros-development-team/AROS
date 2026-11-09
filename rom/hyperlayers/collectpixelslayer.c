@@ -130,7 +130,10 @@ static void _CollectLayerPixels(struct Layer *l, struct Region *_r, struct Hook 
 {
         AROS_LIBFUNC_INIT
 
-        LockLayers(l->LayerInfo);
+        /* The walk below ends with l NULL once it has passed the root layer */
+        struct Layer_Info *li = l->LayerInfo;
+
+        LockLayers(li);
         LockLayer(0,l);
         D(bug("%s: layer=%p,region=%p\n",
               __FUNCTION__,
@@ -186,11 +189,13 @@ static void _CollectLayerPixels(struct Layer *l, struct Region *_r, struct Hook 
                         }
                 }
 /* FIXME: Potential deadlock! */
-                if (l->back) {
-                        LockLayer(0,l->back);
+                if (l) {
+                        if (l->back) {
+                                LockLayer(0,l->back);
+                        }
+                        UnlockLayer(l);
+                        l = l->back;
                 }
-                UnlockLayer(l);
-                l = l->back;
         }
         if (l)
                 UnlockLayer(l);
@@ -227,7 +232,7 @@ static void _CollectLayerPixels(struct Layer *l, struct Region *_r, struct Hook 
         } else {
                 D(bug("Complete region handled! - Nothing to take from screen!\n"));
         }
-        UnlockLayers(l->LayerInfo);
+        UnlockLayers(li);
 
         AROS_LIBFUNC_EXIT
 }
