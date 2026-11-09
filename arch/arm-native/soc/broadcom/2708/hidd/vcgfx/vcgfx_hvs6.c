@@ -914,9 +914,9 @@ struct hvs6_ent
 };
 
 /*
- * YCbCr to RGB, from the matrix slots the planes' CTL2 select: slot 0
- * holds BT.601, slot 1 BT.709 or BT.2020, each in the range of the plane
- * that asked last. The C stepping multiplies Y, Cb, Cr by S2.22 factors
+ * YCbCr to RGB, from the two matrix slots the planes' CTL2 select. The
+ * planes of a list share them: two colour space and range pairs at most,
+ * a plane needing a third gets no place. The C stepping multiplies Y, Cb, Cr by S2.22 factors
  * and adds an offset in 8-bit units << 15 after; the D stepping subtracts
  * per-input offsets (12-bit units) first and multiplies by factors with
  * 1.0 = 0x2000, clamped to 0..0xfff.
@@ -941,14 +941,14 @@ static ULONG hvs6_q13(LONG q)
     return (ULONG)v & 0xffff;
 }
 
-/* Slot n: the bitmap's YCbCr conversion */
-static void hvs6_csc_write(ULONG n, const struct BitmapData *d)
+/* Slot n: the YCbCr conversion of a colour space and range */
+static void hvs6_csc_write(ULONG n, ULONG colorspace, ULONG colorrange)
 {
     struct vcgfx_yuvm m;
     LONG row[3][3];
     ULONG r, k;
 
-    vcgfx_yuv_matrix(d->colorspace, d->colorrange, &m);
+    vcgfx_yuv_matrix(colorspace, colorrange, &m);
     row[0][0] = m.ky; row[0][1] = 0;     row[0][2] = m.rcr;
     row[1][0] = m.ky; row[1][1] = m.gcb; row[1][2] = m.gcr;
     row[2][0] = m.ky; row[2][1] = m.bcb; row[2][2] = 0;
@@ -984,19 +984,52 @@ static void hvs6_csc_write(ULONG n, const struct BitmapData *d)
     }
 }
 
-/* The slot for a plane's matrix, loaded if it holds another. A plane of
- * another range already showing from the same slot takes this one too. */
-static ULONG hvs6_csc_slot(struct vc4_hvs6_state *st, const struct BitmapData *d)
+/* The matrices one list's planes use: a key per slot, 0 = free */
+struct hvs6_cscs
 {
-    ULONG n = (d->colorspace == vHidd_ColorSpace_BT601) ? 0 : 1;
-    ULONG key = 0x100 | ((ULONG)d->colorspace << 4) | d->colorrange;
+    ULONG key[2];
+    ULONG colorspace[2], colorrange[2];
+};
 
-    if (st->h6_CscKey[n] != key)
+/*
+ * A slot for a plane's matrix in the list being built: one with its
+ * matrix already, else a free one, the one loaded with it first. -1 when
+ * both hold other matrices: the plane gets none.
+ */
+static LONG hvs6_csc_slot(struct vc4_hvs6_state *st, struct hvs6_cscs *c, const struct BitmapData *d)
+{
+    ULONG key = 0x100 | ((ULONG)d->colorspace << 4) | d->colorrange;
+    LONG n, pref = (d->colorspace == vHidd_ColorSpace_BT601) ? 0 : 1;
+
+    for (n = 0; n < 2; n++)
+        if (c->key[n] == key)
+            return n;
+    if (!c->key[1 - pref] && (st->h6_CscKey[1 - pref] == key))
+        pref = 1 - pref;
+    else if (c->key[pref])
+        pref = 1 - pref;
+    if (c->key[pref])
+        return -1;
+
+    c->key[pref]        = key;
+    c->colorspace[pref] = d->colorspace;
+    c->colorrange[pref] = d->colorrange;
+    return pref;
+}
+
+/* Load what a list's planes need, before the list is shown */
+static void hvs6_csc_load(struct vc4_hvs6_state *st, const struct hvs6_cscs *c)
+{
+    ULONG n;
+
+    for (n = 0; n < 2; n++)
     {
-        hvs6_csc_write(n, d);
-        st->h6_CscKey[n] = key;
+        if (c->key[n] && (st->h6_CscKey[n] != c->key[n]))
+        {
+            hvs6_csc_write(n, c->colorspace[n], c->colorrange[n]);
+            st->h6_CscKey[n] = c->key[n];
+        }
     }
-    return n;
 }
 
 /* Line buffer for 4:2:0, PPF down both axes: the larger of the luma
@@ -1017,13 +1050,15 @@ static ULONG hvs6_yuv_lbm(ULONG sw, ULONG dw)
  */
 static LONG hvs6_yuv_ent(struct vc4_hvs6_state *st, struct vcgfx_plane *pl,
                          struct hvs6_ent *e, LONG l, LONG t, LONG r, LONG b,
-                         ULONG lbmsize, ULONG *lbm, ULONG *upm, ULONG *handle)
+                         ULONG lbmsize, ULONG *lbm, ULONG *upm, ULONG *handle,
+                         struct hvs6_cscs *cscs)
 {
     struct BitmapData *d = pl->pl_Data;
     ULONG planes = (pl->pl_Yuv == HVS_PXF_YUV420_3PLANE) ? 3 : 2;
     ULONG cbytes = (planes == 2) ? 2 : 1;
     ULONG sx = pl->pl_SrcX & ~1UL, sy = pl->pl_SrcY & ~1UL;
-    ULONG sw = pl->pl_SrcW, sh = pl->pl_SrcH, ssk, need, lsize, csize, i, slot;
+    ULONG sw = pl->pl_SrcW, sh = pl->pl_SrcH, ssk, need, lsize, csize, i;
+    LONG slot;
     UQUAD base = (UQUAD)(IPTR)d->VideoData;
 
     if (e->x < l)
@@ -1068,7 +1103,8 @@ static LONG hvs6_yuv_ent(struct vc4_hvs6_state *st, struct vcgfx_plane *pl,
     if ((*lbm + need > lbmsize)
         || (e->scaled && (!HVS6_PPF_FITS(sw, e->w) || !HVS6_PPF_FITS(sh, e->h)))
         || (*handle + planes > HVS6_PL_HANDLE_END)
-        || (*upm < st->h6_UpmFloor + lsize + (planes - 1) * csize))
+        || (*upm < st->h6_UpmFloor + lsize + (planes - 1) * csize)
+        || ((slot = hvs6_csc_slot(st, cscs, d)) < 0))
         return -1;
 
     e->yuv      = pl->pl_Yuv;
@@ -1079,7 +1115,6 @@ static LONG hvs6_yuv_ent(struct vc4_hvs6_state *st, struct vcgfx_plane *pl,
     e->phys     = base + sy * e->pitch + sx;
     e->cphys[0] = base + d->planeoff[0] + (sy / 2) * e->cpitch + (sx / 2) * cbytes;
     e->cphys[1] = base + d->planeoff[1] + (sy / 2) * e->cpitch + sx / 2;
-    slot        = hvs6_csc_slot(st, d);
     e->csc      = hvs6_is_c() ? HVS6_CTL2_CSC_C(slot) : HVS6_CTL2_CSC_D(slot);
 
     *upm -= lsize;
@@ -1180,7 +1215,8 @@ static void hvs6_put(ULONG ent, ULONG fb, const struct hvs6_ent *e)
  * UPM goes to the front screens first; a screen left without any is not
  * shown. Returns the number of scaled planes.
  */
-static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
+static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list,
+                               struct hvs6_cscs *cscs)
 {
     struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
     ULONG fb = hvs6_slot(st, HVS6_SLOT_FB);
@@ -1194,6 +1230,8 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
     ULONG handle = HVS6_PL_HANDLE, lbmsize = hvs6_rd(HVS6_LBM_SIZE), need;
     UQUAD phys;
     LONG x, y, j;
+
+    memset(cscs, 0, sizeof(*cscs));
 
     /* Front first: a screen that gets a plane hides what is behind it,
      * one that does not hides nothing */
@@ -1220,7 +1258,7 @@ static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list)
             LONG got;
 
             e->x = px[j]; e->y = py[j]; e->w = pw[j]; e->h = ph[j];
-            got = hvs6_yuv_ent(st, pl, e, 0, 0, out_w, limit[j], lbmsize, &lbm, &upm, &handle);
+            got = hvs6_yuv_ent(st, pl, e, 0, 0, out_w, limit[j], lbmsize, &lbm, &upm, &handle, cscs);
             if (got < 0)
                 pl->pl_Shown = FALSE;
             if (got <= 0)
@@ -1367,6 +1405,7 @@ static BOOL hvs6_scale_verify(struct vc4_hvs6_state *st, ULONG list)
 void vc4_hvs6_planes_commit(struct VideoCoreGfx_staticdata *xsd)
 {
     struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+    struct hvs6_cscs cscs;
     ULONG act, list = 0, i;
 
     if (!st->h6_Active || !hvs6_planes_lists(st))
@@ -1382,7 +1421,8 @@ void vc4_hvs6_planes_commit(struct VideoCoreGfx_staticdata *xsd)
             break;
     }
 
-    i = hvs6_build_planes(xsd, list);
+    i = hvs6_build_planes(xsd, list, &cscs);
+    hvs6_csc_load(st, &cscs);   /* only for a list that is shown */
     hvs6_wr(HVS6_CHAN(st->h6_Chan) + HVS6_DISPLIST, list);
     st->h6_PlLast = list;
 
@@ -1402,10 +1442,12 @@ void vc4_hvs6_planes_commit(struct VideoCoreGfx_staticdata *xsd)
 }
 
 /* Build a list without showing it, for pl_Shown; caller holds the
- * mailbox lock. It lands in a list no commit is reading. */
+ * mailbox lock. It lands in a list no commit is reading, and the matrix
+ * registers stay as the shown list needs them. */
 void vc4_hvs6_planes_try(struct VideoCoreGfx_staticdata *xsd)
 {
     struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+    struct hvs6_cscs cscs;
     ULONG act, list = 0, i;
 
     if (!st->h6_Active || !hvs6_planes_lists(st))
@@ -1420,5 +1462,5 @@ void vc4_hvs6_planes_try(struct VideoCoreGfx_staticdata *xsd)
         if ((list != act) && (list != st->h6_PlLast))
             break;
     }
-    hvs6_build_planes(xsd, list);
+    hvs6_build_planes(xsd, list, &cscs);
 }
