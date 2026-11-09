@@ -116,6 +116,12 @@
 		return camd_public_result(result);
 	}
 
+	if(!OwnEndpointObject(ENDPOINT_OWNED_SESSION,&handle,CamdBase)){
+		StopEndpointReceiver(&handle,CamdBase);
+		camd_registry_session_close(CB(CamdBase)->EndpointRegistry,handle);
+		return camd_public_result(CAMD_REGISTRY_NOMEM);
+	}
+
 	if(info!=NULL){
 		full.Size=sizeof(full);
 		full.Version=1;
@@ -129,7 +135,6 @@
 		info->Size=sizeof(full);
 	}
 	*session=handle;
-	OwnEndpointObject(ENDPOINT_OWNED_SESSION,session,CamdBase);
 
 	return camd_public_result(CAMD_REGISTRY_OK);
 

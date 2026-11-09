@@ -67,8 +67,12 @@
 	if(request==NULL || endpoint==NULL) return camd_public_result(CAMD_REGISTRY_INVALID);
 
 	result=PublishAppEndpoint(request,endpoint,id,CamdBase);
-	if(result==CAMD_REGISTRY_OK){
-		OwnEndpointObject(ENDPOINT_OWNED_PUBLISHER,endpoint,CamdBase);
+	if(result==CAMD_REGISTRY_OK &&
+	   !OwnEndpointObject(ENDPOINT_OWNED_PUBLISHER,endpoint,CamdBase)){
+		WithdrawAppEndpoint(endpoint,CamdBase);
+		endpoint->slot=0;
+		endpoint->generation=0;
+		result=CAMD_REGISTRY_NOMEM;
 	}
 
 	return camd_public_result(result);

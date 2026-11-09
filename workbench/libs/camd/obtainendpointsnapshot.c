@@ -71,7 +71,12 @@
 	}
 	if(count!=NULL) *count=(ULONG)camd_snapshot_endpoint_count(taken);
 	if(generation!=NULL) *generation=camd_snapshot_generation(taken);
-	OwnEndpointObject(ENDPOINT_OWNED_SNAPSHOT,snapshot,CamdBase);
+	if(!OwnEndpointObject(ENDPOINT_OWNED_SNAPSHOT,snapshot,CamdBase)){
+		RemoveEndpointSnapshot(snapshot,CamdBase);
+		snapshot->slot=0;
+		snapshot->generation=0;
+		return camd_public_result(CAMD_REGISTRY_NOMEM);
+	}
 
 	return camd_public_result(CAMD_REGISTRY_OK);
 

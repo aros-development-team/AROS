@@ -32,11 +32,15 @@ BOOL InitCamd(struct CamdBase *CamdBase){
 	InitSemaphore(&CB(CamdBase)->DriverScanSemaphore);
 	InitSemaphore(&CB(CamdBase)->NotifySemaphore);
 	InitSemaphore(&CB(CamdBase)->EndpointClientSemaphore);
-	InitSemaphore(&CB(CamdBase)->EndpointOwnerSemaphore);
-	NEWLIST((struct List *)&CB(CamdBase)->EndpointOpeners);
-	NEWLIST((struct List *)&CB(CamdBase)->EndpointOwned);
 	CB(CamdBase)->EndpointRegistry=camd_registry_create();
 	if(CB(CamdBase)->EndpointRegistry==NULL){
+		FreeMem(CB(CamdBase)->CLSemaphore,sizeof(struct SignalSemaphore));
+		CB(CamdBase)->CLSemaphore=NULL;
+		return FALSE;
+	}
+	if(!InitEndpointOwners(CamdBase)){
+		camd_registry_destroy(CB(CamdBase)->EndpointRegistry);
+		CB(CamdBase)->EndpointRegistry=NULL;
 		FreeMem(CB(CamdBase)->CLSemaphore,sizeof(struct SignalSemaphore));
 		CB(CamdBase)->CLSemaphore=NULL;
 		return FALSE;
@@ -84,6 +88,7 @@ fail:
 #ifndef __amigaos4__
 	StopDriverWatch();
 #endif
+	UninitEndpointOwners(CamdBase);
 	camd_identity_store_aros_destroy(CB(CamdBase)->EndpointIdentity);
 	CB(CamdBase)->EndpointIdentity=NULL;
 	camd_registry_destroy(CB(CamdBase)->EndpointRegistry);
@@ -107,6 +112,7 @@ void UninitCamd(struct CamdBase *CamdBase){
 #ifndef __amigaos4__
 	StopDriverWatch();
 #endif
+	UninitEndpointOwners(CamdBase);
 
 	if( ! IsListEmpty(&CB(CamdBase)->midiclusters)){
 		node=CB(CamdBase)->midiclusters.lh_Head;
@@ -143,7 +149,6 @@ void UninitCamd(struct CamdBase *CamdBase){
 		driver=temp2;
 	}
 	FreeEndpointSnapshots(CamdBase);
-	FreeEndpointOwners(CamdBase);
 	camd_identity_store_aros_destroy(CB(CamdBase)->EndpointIdentity);
 	CB(CamdBase)->EndpointIdentity=NULL;
 	camd_registry_destroy(CB(CamdBase)->EndpointRegistry);

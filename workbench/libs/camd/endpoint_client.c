@@ -73,6 +73,7 @@ BOOL EndpointClientsRemain(struct CamdBase *CamdBase)
     struct CamdBase_intern *base = CB(CamdBase);
     ULONG i;
 
+    ReapDeadEndpointOwners(CamdBase);
     for (i = 0; i < ENDPOINT_SNAPSHOTS; ++i) {
         if (base->EndpointSnapshots[i] != NULL)
             return TRUE;
@@ -113,10 +114,14 @@ static enum CAMDProviderResult queue_to_provider(
 static void receiver_arrived(struct EndpointReceiver *receiver,
                              enum CAMDNativeQueueResult result)
 {
+    struct CamdBase_intern *base = CB(receiver->camd_base);
+
     if (result != CAMD_NATIVE_QUEUE_OK)
         receiver->lost = TRUE;
-    if (receiver->signal != CAMD_SIGNAL_NONE)
+    ObtainSemaphoreShared(&base->EndpointSignalSemaphore);
+    if (receiver->signal != CAMD_SIGNAL_NONE && receiver->task != NULL)
         Signal(receiver->task, 1UL << receiver->signal);
+    ReleaseSemaphore(&base->EndpointSignalSemaphore);
 }
 
 /* The two sinks run in the port's receiver process. */
@@ -248,8 +253,11 @@ LONG StartEndpointReceiver(const struct CAMDHandleV1 *session, ULONG format,
         ReleaseSemaphore(&base->EndpointClientSemaphore);
         return CAMD_REGISTRY_NOMEM;
     }
+    ObtainSemaphore(&base->EndpointSignalSemaphore);
+    receiver->camd_base = CamdBase;
     receiver->task = FindTask(NULL);
     receiver->signal = signal;
+    ReleaseSemaphore(&base->EndpointSignalSemaphore);
     receiver->format = format;
     receiver->lost = FALSE;
     receiver->session = *session;
@@ -264,6 +272,10 @@ LONG StartEndpointReceiver(const struct CAMDHandleV1 *session, ULONG format,
     result = camd_registry_session_start_receive(base->EndpointRegistry,
                                                  *session, &sink);
     if (result != CAMD_REGISTRY_OK) {
+        ObtainSemaphore(&base->EndpointSignalSemaphore);
+        receiver->task = NULL;
+        receiver->signal = CAMD_SIGNAL_NONE;
+        ReleaseSemaphore(&base->EndpointSignalSemaphore);
         receiver->session.generation = 0;
         camd_native_queue_destroy(receiver->queue);
         receiver->queue = NULL;
@@ -285,6 +297,10 @@ void StopEndpointReceiver(const struct CAMDHandleV1 *session,
     receiver = find_receiver(session, CamdBase);
     if (receiver != NULL) {
         camd_registry_session_stop_receive(base->EndpointRegistry, *session);
+        ObtainSemaphore(&base->EndpointSignalSemaphore);
+        receiver->task = NULL;
+        receiver->signal = CAMD_SIGNAL_NONE;
+        ReleaseSemaphore(&base->EndpointSignalSemaphore);
         camd_native_queue_destroy(receiver->queue);
         receiver->queue = NULL;
         receiver->session.generation = 0;
@@ -358,9 +374,12 @@ LONG ReadEndpointReceiver(const struct CAMDHandleV1 *session,
 static void watcher_notify(void *context)
 {
     struct EndpointWatcher *watcher = context;
+    struct CamdBase_intern *base = CB(watcher->camd_base);
 
-    if (watcher->signal != CAMD_SIGNAL_NONE)
+    ObtainSemaphoreShared(&base->EndpointSignalSemaphore);
+    if (watcher->signal != CAMD_SIGNAL_NONE && watcher->task != NULL)
         Signal(watcher->task, 1UL << watcher->signal);
+    ReleaseSemaphore(&base->EndpointSignalSemaphore);
 }
 
 /* The calling task is the one that gets the signal. */
@@ -394,8 +413,11 @@ LONG StartEndpointWatcher(struct CAMDHandleV1 *handle, ULONG signal,
     if (result == CAMD_REGISTRY_OK) {
         if (++watcher->generation == 0)
             ++watcher->generation;
+        ObtainSemaphore(&base->EndpointSignalSemaphore);
+        watcher->camd_base = CamdBase;
         watcher->task = FindTask(NULL);
         watcher->signal = signal;
+        ReleaseSemaphore(&base->EndpointSignalSemaphore);
         camd_endpoint_watch_set_notify(watcher->watch, watcher_notify,
                                        watcher);
         handle->slot = i;
@@ -450,9 +472,45 @@ void EndEndpointWatcher(const struct CAMDHandleV1 *handle,
         /* Ending it takes the registry lock, so no notify is running or
          * comes afterwards. */
         camd_endpoint_watch_end(watcher->watch);
+        ObtainSemaphore(&base->EndpointSignalSemaphore);
+        watcher->task = NULL;
+        watcher->signal = CAMD_SIGNAL_NONE;
+        ReleaseSemaphore(&base->EndpointSignalSemaphore);
         watcher->watch = NULL;
     }
     ReleaseSemaphore(&base->EndpointClientSemaphore);
+}
+
+/* TNA_REMOVED runs before Exec removes the task. Take the same semaphore as
+ * every endpoint callback, so no callback can retain and use a stale task
+ * pointer after this function returns. The objects themselves are reaped in
+ * a private task because the notification hook must not wait. */
+void DisableEndpointTaskSignals(struct Task *task,
+                                struct CamdBase *CamdBase)
+{
+    struct CamdBase_intern *base = CB(CamdBase);
+    ULONG i;
+
+    ObtainSemaphore(&base->EndpointSignalSemaphore);
+    for (i = 0; i < ENDPOINT_RECEIVERS; ++i) {
+        if (base->EndpointReceivers[i].task == task) {
+            base->EndpointReceivers[i].task = NULL;
+            base->EndpointReceivers[i].signal = CAMD_SIGNAL_NONE;
+        }
+    }
+    for (i = 0; i < ENDPOINT_WATCHES; ++i) {
+        if (base->EndpointWatchers[i].task == task) {
+            base->EndpointWatchers[i].task = NULL;
+            base->EndpointWatchers[i].signal = CAMD_SIGNAL_NONE;
+        }
+    }
+    for (i = 0; i < ENDPOINT_PUBLISHERS; ++i) {
+        if (base->EndpointPublishers[i].task == task) {
+            base->EndpointPublishers[i].task = NULL;
+            base->EndpointPublishers[i].signal = CAMD_SIGNAL_NONE;
+        }
+    }
+    ReleaseSemaphore(&base->EndpointSignalSemaphore);
 }
 
 LONG ReadEndpointReceiverUMP(const struct CAMDHandleV1 *session,

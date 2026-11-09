@@ -21,9 +21,12 @@
 static void publisher_notify(void *context)
 {
     struct EndpointPublisher *publisher = context;
+    struct CamdBase_intern *base = CB(publisher->camd_base);
 
-    if (publisher->signal != CAMD_SIGNAL_NONE)
+    ObtainSemaphoreShared(&base->EndpointSignalSemaphore);
+    if (publisher->signal != CAMD_SIGNAL_NONE && publisher->task != NULL)
         Signal(publisher->task, 1UL << publisher->signal);
+    ReleaseSemaphore(&base->EndpointSignalSemaphore);
 }
 
 static uint32_t publisher_now(void *context)
@@ -56,6 +59,10 @@ static void reap_publishers(struct CamdBase *CamdBase)
             publisher->adapter = NULL;
         if (publisher->adapter == NULL &&
             camd_app_endpoint_destroy(publisher->app) == CAMD_PROVIDER_OK) {
+            ObtainSemaphore(&base->EndpointSignalSemaphore);
+            publisher->task = NULL;
+            publisher->signal = CAMD_SIGNAL_NONE;
+            ReleaseSemaphore(&base->EndpointSignalSemaphore);
             publisher->app = NULL;
             publisher->withdrawn = FALSE;
         }
@@ -320,8 +327,11 @@ LONG PublishAppEndpoint(const struct CAMDPublishRequestV1 *request,
         result = CAMD_REGISTRY_NOMEM;
         goto out;
     }
+    ObtainSemaphore(&base->EndpointSignalSemaphore);
+    publisher->camd_base = CamdBase;
     publisher->task = FindTask(NULL);
     publisher->signal = request->Signal;
+    ReleaseSemaphore(&base->EndpointSignalSemaphore);
     publisher->withdrawn = FALSE;
     if (++publisher->generation == 0)
         ++publisher->generation;
@@ -382,6 +392,10 @@ void WithdrawAppEndpoint(const struct CAMDHandleV1 *handle,
     ObtainSemaphore(&base->EndpointClientSemaphore);
     publisher = find_publisher(handle, CamdBase);
     if (publisher != NULL) {
+        ObtainSemaphore(&base->EndpointSignalSemaphore);
+        publisher->task = NULL;
+        publisher->signal = CAMD_SIGNAL_NONE;
+        ReleaseSemaphore(&base->EndpointSignalSemaphore);
         DeleteEndpointProjection(publisher->projection);
         publisher->projection = NULL;
         camd_app_endpoint_detach(publisher->app);

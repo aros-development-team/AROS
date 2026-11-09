@@ -39,8 +39,7 @@ static int ExpungeCamd(struct CamdBase *CamdBase)
    close of the library. */
 static int OpenCamd(struct CamdBase *CamdBase)
 {
-    TaskOpenedCamd(CamdBase);
-    return TRUE;
+    return TaskOpenedCamd(CamdBase);
 }
 
 static int CloseCamd(struct CamdBase *CamdBase)

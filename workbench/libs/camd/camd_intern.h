@@ -292,6 +292,7 @@ struct EndpointPublisher{
 	struct CAMDLegacyDriverAdapter *adapter;
 	ULONG generation;
 	BOOL withdrawn;
+	struct CamdBase *camd_base;
 	struct Task *task;
 	ULONG signal;			// signal number, or CAMD_SIGNAL_NONE
 };
@@ -300,6 +301,7 @@ struct EndpointPublisher{
 struct EndpointWatcher{
 	struct CAMDEndpointWatch *watch;	// NULL while the slot is free
 	ULONG generation;
+	struct CamdBase *camd_base;
 	struct Task *task;
 	ULONG signal;			// signal number, or CAMD_SIGNAL_NONE
 };
@@ -308,6 +310,7 @@ struct EndpointWatcher{
 struct EndpointReceiver{
 	struct CAMDHandleV1 session;	// generation 0 while the slot is free
 	struct CAMDNativeEventQueue *queue;
+	struct CamdBase *camd_base;
 	struct Task *task;
 	ULONG signal;			// signal number, or CAMD_SIGNAL_NONE
 	ULONG format;			// CAMD_DATA_FORMAT_MIDI1 or _UMP
@@ -374,8 +377,14 @@ struct CamdBase_intern{
        it made, so that they go when it closes the library for the last
        time. Under EndpointOwnerSemaphore, taken last. */
     struct SignalSemaphore EndpointOwnerSemaphore;
+    struct SignalSemaphore EndpointSignalSemaphore;
     struct MinList EndpointOpeners;
     struct MinList EndpointOwned;
+#ifndef __amigaos4__
+    struct Library *EndpointTaskResource;
+    struct Hook EndpointTaskHook;
+    struct Task *EndpointOwnerReaper;
+#endif
 
 
 };
@@ -611,12 +620,16 @@ LONG ForgetStoredIdentity(const struct CAMDEndpointIDV1 *id,
 /* Copies a record a caller hands in. See TakeEndpointRecord(). */
 BOOL TakeEndpointRecord(const APTR given,APTR record,ULONG size,ULONG least);
 
-void OwnEndpointObject(ULONG kind,const struct CAMDHandleV1 *handle,
+BOOL OwnEndpointObject(ULONG kind,const struct CAMDHandleV1 *handle,
 	struct CamdBase *CamdBase);
 void DisownEndpointObject(ULONG kind,const struct CAMDHandleV1 *handle,
 	struct CamdBase *CamdBase);
-void TaskOpenedCamd(struct CamdBase *CamdBase);
+BOOL TaskOpenedCamd(struct CamdBase *CamdBase);
 void TaskClosedCamd(struct CamdBase *CamdBase);
+BOOL InitEndpointOwners(struct CamdBase *CamdBase);
+void UninitEndpointOwners(struct CamdBase *CamdBase);
+void ReapDeadEndpointOwners(struct CamdBase *CamdBase);
+void DisableEndpointTaskSignals(struct Task *task,struct CamdBase *CamdBase);
 void FreeEndpointOwners(struct CamdBase *CamdBase);
 struct CAMDGroupInfoV1;
 struct CAMDFunctionBlockInfoV1;

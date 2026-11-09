@@ -63,8 +63,12 @@
 	watch->generation=0;
 
 	result=StartEndpointWatcher(watch,signal,generation,CamdBase);
-	if(result==CAMD_REGISTRY_OK){
-		OwnEndpointObject(ENDPOINT_OWNED_WATCH,watch,CamdBase);
+	if(result==CAMD_REGISTRY_OK &&
+	   !OwnEndpointObject(ENDPOINT_OWNED_WATCH,watch,CamdBase)){
+		EndEndpointWatcher(watch,CamdBase);
+		watch->slot=0;
+		watch->generation=0;
+		result=CAMD_REGISTRY_NOMEM;
 	}
 
 	return camd_public_result(result);

@@ -4,12 +4,18 @@
  * A session, snapshot, watch or published endpoint belongs to the task that
  * made it. When that task closes camd.library for the last time, what it
  * left behind is released as if it had done so itself: its signals stop and
- * the library can go. A task that ends without closing the library is not
- * seen here; its objects stay and keep the library loaded.
+ * the library can go. task.resource marks objects whose task is being
+ * removed; a private CAMD task releases them outside the notification hook.
  */
 
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <exec/memory.h>
+#ifndef __amigaos4__
+#include <proto/task.h>
+#include <resources/task.h>
+#include <aros/asmcall.h>
+#endif
 
 #include "camd_intern.h"
 #include "endpoint_registry.h"
@@ -18,6 +24,7 @@ struct EndpointOpener {
     struct MinNode node;
     struct Task *task;
     ULONG count;
+    BOOL dead;
 };
 
 struct EndpointOwned {
@@ -25,6 +32,7 @@ struct EndpointOwned {
     struct Task *task;
     ULONG kind;
     struct CAMDHandleV1 handle;
+    BOOL dead;
 };
 
 #define FOR_NODES(list, pointer, type) \
@@ -32,22 +40,23 @@ struct EndpointOwned {
          (pointer)->node.mln_Succ != NULL; \
          (pointer) = (type *)(pointer)->node.mln_Succ)
 
-/* Without memory the object simply has no owner and is not cleaned up. */
-void OwnEndpointObject(ULONG kind, const struct CAMDHandleV1 *handle,
+BOOL OwnEndpointObject(ULONG kind, const struct CAMDHandleV1 *handle,
                        struct CamdBase *CamdBase)
 {
     struct CamdBase_intern *base = CB(CamdBase);
     struct EndpointOwned *owned;
 
+    ReapDeadEndpointOwners(CamdBase);
     owned = AllocMem(sizeof(*owned), MEMF_ANY | MEMF_CLEAR);
     if (owned == NULL)
-        return;
+        return FALSE;
     owned->task = FindTask(NULL);
     owned->kind = kind;
     owned->handle = *handle;
     ObtainSemaphore(&base->EndpointOwnerSemaphore);
     AddTail((struct List *)&base->EndpointOwned, (struct Node *)owned);
     ReleaseSemaphore(&base->EndpointOwnerSemaphore);
+    return TRUE;
 }
 
 /* The object is gone, whoever released it. */
@@ -72,7 +81,7 @@ void DisownEndpointObject(ULONG kind, const struct CAMDHandleV1 *handle,
         FreeMem(found, sizeof(*found));
 }
 
-void TaskOpenedCamd(struct CamdBase *CamdBase)
+BOOL TaskOpenedCamd(struct CamdBase *CamdBase)
 {
     struct CamdBase_intern *base = CB(CamdBase);
     struct Task *task = FindTask(NULL);
@@ -96,6 +105,7 @@ void TaskOpenedCamd(struct CamdBase *CamdBase)
     if (found != NULL)
         ++found->count;
     ReleaseSemaphore(&base->EndpointOwnerSemaphore);
+    return found != NULL;
 }
 
 static void release_owned(const struct EndpointOwned *owned,
@@ -119,6 +129,68 @@ static void release_owned(const struct EndpointOwned *owned,
     }
 }
 
+static void release_matching(struct Task *task, BOOL dead_only,
+                             struct CamdBase *CamdBase)
+{
+    static const ULONG order[] = {
+        ENDPOINT_OWNED_SESSION,
+        ENDPOINT_OWNED_SNAPSHOT,
+        ENDPOINT_OWNED_WATCH,
+        ENDPOINT_OWNED_PUBLISHER
+    };
+    struct CamdBase_intern *base = CB(CamdBase);
+    struct EndpointOwned *owned;
+    ULONG index;
+
+    for (index = 0; index < sizeof(order) / sizeof(order[0]); ++index) {
+        for (;;) {
+            struct EndpointOwned taken;
+            BOOL any = FALSE;
+
+            ObtainSemaphore(&base->EndpointOwnerSemaphore);
+            FOR_NODES(&base->EndpointOwned, owned, struct EndpointOwned) {
+                if ((task == NULL || owned->task == task) &&
+                    owned->kind == order[index] &&
+                    (!dead_only || owned->dead)) {
+                    taken = *owned;
+                    Remove((struct Node *)owned);
+                    FreeMem(owned, sizeof(*owned));
+                    any = TRUE;
+                    break;
+                }
+            }
+            ReleaseSemaphore(&base->EndpointOwnerSemaphore);
+            if (!any)
+                break;
+            release_owned(&taken, CamdBase);
+        }
+    }
+}
+
+void ReapDeadEndpointOwners(struct CamdBase *CamdBase)
+{
+    struct CamdBase_intern *base = CB(CamdBase);
+    struct EndpointOpener *opener;
+
+    for (;;) {
+        struct EndpointOpener *dead = NULL;
+
+        ObtainSemaphore(&base->EndpointOwnerSemaphore);
+        FOR_NODES(&base->EndpointOpeners, opener, struct EndpointOpener) {
+            if (opener->dead) {
+                dead = opener;
+                Remove((struct Node *)dead);
+                break;
+            }
+        }
+        ReleaseSemaphore(&base->EndpointOwnerSemaphore);
+        if (dead == NULL)
+            break;
+        FreeMem(dead, sizeof(*dead));
+    }
+    release_matching(NULL, TRUE, CamdBase);
+}
+
 /* The calling task closes the library. On its last close, what it still
  * owns is released: sessions first, since they pin what it published. */
 void TaskClosedCamd(struct CamdBase *CamdBase)
@@ -126,8 +198,6 @@ void TaskClosedCamd(struct CamdBase *CamdBase)
     struct CamdBase_intern *base = CB(CamdBase);
     struct Task *task = FindTask(NULL);
     struct EndpointOpener *opener, *found = NULL;
-    struct EndpointOwned *owned;
-    ULONG kind;
     BOOL last = FALSE;
 
     ObtainSemaphore(&base->EndpointOwnerSemaphore);
@@ -145,31 +215,114 @@ void TaskClosedCamd(struct CamdBase *CamdBase)
     ReleaseSemaphore(&base->EndpointOwnerSemaphore);
     if (!last)
         return;
+    release_matching(task, FALSE, CamdBase);
+}
 
-    for (kind = ENDPOINT_OWNED_SNAPSHOT; kind <= ENDPOINT_OWNED_PUBLISHER;
-         ++kind) {
-        for (;;) {
-            struct EndpointOwned taken;
-            BOOL any = FALSE;
+#ifndef __amigaos4__
+AROS_UFH3(static IPTR, endpoint_task_notify,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(struct Task *, caller, A2),
+    AROS_UFHA(struct TaskNotifyMsg *, message, A1))
+{
+    AROS_USERFUNC_INIT
 
-            /* One at a time and outside the semaphore: releasing takes
-             * other locks and comes back through DisownEndpointObject(). */
-            ObtainSemaphore(&base->EndpointOwnerSemaphore);
-            FOR_NODES(&base->EndpointOwned, owned, struct EndpointOwned) {
-                if (owned->task == task && owned->kind == kind) {
-                    taken = *owned;
-                    Remove((struct Node *)owned);
-                    FreeMem(owned, sizeof(*owned));
-                    any = TRUE;
-                    break;
-                }
-            }
-            ReleaseSemaphore(&base->EndpointOwnerSemaphore);
-            if (!any)
-                break;
-            release_owned(&taken, CamdBase);
-        }
+    struct CamdBase *CamdBase = hook->h_Data;
+    struct CamdBase_intern *base = CB(CamdBase);
+    struct EndpointOpener *opener;
+    struct EndpointOwned *owned;
+
+    (void)caller;
+    if (message->tnm_Action != TNA_REMOVED)
+        return 0;
+
+    ObtainSemaphore(&base->EndpointOwnerSemaphore);
+    FOR_NODES(&base->EndpointOpeners, opener, struct EndpointOpener)
+        if (opener->task == message->tnm_Task)
+            opener->dead = TRUE;
+    FOR_NODES(&base->EndpointOwned, owned, struct EndpointOwned)
+        if (owned->task == message->tnm_Task)
+            owned->dead = TRUE;
+    ReleaseSemaphore(&base->EndpointOwnerSemaphore);
+
+    DisableEndpointTaskSignals(message->tnm_Task, CamdBase);
+    if (base->EndpointOwnerReaper != NULL)
+        Signal(base->EndpointOwnerReaper, SIGBREAKF_CTRL_E);
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
+static void endpoint_owner_reaper(void)
+{
+    struct CamdBase *CamdBase = FindTask(NULL)->tc_UserData;
+    struct CamdBase_intern *base = CB(CamdBase);
+    ULONG signals;
+
+    do {
+        signals = Wait(SIGBREAKF_CTRL_E | SIGBREAKF_CTRL_F);
+        ReapDeadEndpointOwners(CamdBase);
+    } while ((signals & SIGBREAKF_CTRL_F) == 0);
+
+    Forbid();
+    base->EndpointOwnerReaper = NULL;
+    Permit();
+}
+#endif
+
+BOOL InitEndpointOwners(struct CamdBase *CamdBase)
+{
+    struct CamdBase_intern *base = CB(CamdBase);
+
+    InitSemaphore(&base->EndpointOwnerSemaphore);
+    InitSemaphore(&base->EndpointSignalSemaphore);
+    NEWLIST((struct List *)&base->EndpointOpeners);
+    NEWLIST((struct List *)&base->EndpointOwned);
+#ifndef __amigaos4__
+    base->EndpointOwnerReaper = NewCreateTask(
+        TASKTAG_PC, (IPTR)endpoint_owner_reaper,
+        TASKTAG_NAME, (IPTR)"camd endpoint owner reaper",
+        TASKTAG_STACKSIZE, 32768,
+        TASKTAG_USERDATA, (IPTR)CamdBase,
+        TAG_DONE);
+    if (base->EndpointOwnerReaper == NULL)
+        return FALSE;
+    base->EndpointTaskResource = OpenResource("task.resource");
+    if (base->EndpointTaskResource != NULL) {
+        struct Library *TaskResBase = base->EndpointTaskResource;
+        base->EndpointTaskHook.h_Entry = (HOOKFUNC)endpoint_task_notify;
+        base->EndpointTaskHook.h_SubEntry = NULL;
+        base->EndpointTaskHook.h_Data = CamdBase;
+        if (AddTaskNotifyHook(&base->EndpointTaskHook))
+            return TRUE;
+        base->EndpointTaskResource = NULL;
     }
+    Signal(base->EndpointOwnerReaper, SIGBREAKF_CTRL_F);
+    while (base->EndpointOwnerReaper != NULL)
+        Delay(1);
+    return FALSE;
+#else
+    return TRUE;
+#endif
+}
+
+void UninitEndpointOwners(struct CamdBase *CamdBase)
+{
+    struct CamdBase_intern *base = CB(CamdBase);
+
+#ifndef __amigaos4__
+    if (base->EndpointTaskResource != NULL) {
+        struct Library *TaskResBase = base->EndpointTaskResource;
+        RemTaskNotifyHook(&base->EndpointTaskHook);
+        base->EndpointTaskResource = NULL;
+    }
+    if (base->EndpointOwnerReaper != NULL) {
+        Signal(base->EndpointOwnerReaper, SIGBREAKF_CTRL_F);
+        while (base->EndpointOwnerReaper != NULL)
+            Delay(1);
+    }
+#endif
+    ReapDeadEndpointOwners(CamdBase);
+    FreeEndpointOwners(CamdBase);
 }
 
 /* CAMD must be expunging. */
