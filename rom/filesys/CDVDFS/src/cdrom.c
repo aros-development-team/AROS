@@ -653,6 +653,8 @@ int Test_Unit_Ready(CDROM *p_cd)
     return TRUE;
 }
 
+#ifndef AROS_KERNEL
+/* only used by the stand-alone test program */
 int Mode_Select
         (
                 CDROM *p_cd,
@@ -695,7 +697,13 @@ int Inquire (CDROM *p_cd, t_inquiry_data *p_data)
     CopyMem(buf, p_data, sizeof (*p_data));
     return 1;
 }
+#endif /* !AROS_KERNEL */
 
+/* t_toc_data is packed: fetch the unaligned address field in one place */
+CDVDFS_SHARED uint32_t TOC_Address(const t_toc_data *p_toc)
+{
+    return p_toc->address;
+}
 
 t_toc_data *Read_TOC
         (
@@ -831,7 +839,7 @@ int Data_Tracks(CDROM *p_cd, uint32_t** p_buf)
     {
         if ((99 >= toc[i].track_number) &&
             (0  != (toc[i].flags & 4)))
-            (*p_buf)[j++] = toc[i].address;
+            (*p_buf)[j++] = TOC_Address(&toc[i]);
     }
 
     return cnt;
@@ -879,7 +887,7 @@ int Start_Play_Audio(CDROM *p_cd)
         if ((99 >= toc[i].track_number) &&
             (0  == (toc[i].flags & 4)))
         {
-            start=toc[i].address;
+            start=TOC_Address(&toc[i]);
             break;
         }
     }
@@ -899,7 +907,7 @@ int Start_Play_Audio(CDROM *p_cd)
             (0  != (toc[i].flags & 4)))
             break;
     }
-    end=toc[i].address;
+    end=TOC_Address(&toc[i]);
 
     /*
      * fill up request and send

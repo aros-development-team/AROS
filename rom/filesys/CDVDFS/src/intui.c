@@ -100,41 +100,24 @@ void Init_Intui(struct CDVDBase *global) {
         {
                 global->g_xpos = NO_ICON_POSITION;
                 global->g_ypos = NO_ICON_POSITION;
-                global->g_disk_object_image.LeftEdge = 0;
-                global->g_disk_object_image.TopEdge = 0;
                 global->g_disk_object_image.Width = 47;
                 global->g_disk_object_image.Height = 36;
                 global->g_disk_object_image.Depth = 3;
                 global->g_disk_object_image.ImageData = (APTR)g_image_data;
                 global->g_disk_object_image.PlanePick = 0xff;
-                global->g_disk_object_image.PlaneOnOff = 0x00;
-                global->g_disk_object_image.NextImage = NULL;
 
                 global->g_disk_object.do_Magic = WB_DISKMAGIC;
                 global->g_disk_object.do_Version = WB_DISKVERSION;
-                global->g_disk_object.do_Gadget.NextGadget = NULL;
-                global->g_disk_object.do_Gadget.LeftEdge = 0;
-                global->g_disk_object.do_Gadget.TopEdge = 0;
                 global->g_disk_object.do_Gadget.Width = 47;
                 global->g_disk_object.do_Gadget.Height = 37;
                 global->g_disk_object.do_Gadget.Flags = GADGIMAGE | GADGHCOMP;
                 global->g_disk_object.do_Gadget.Activation = RELVERIFY | GADGIMMEDIATE;
                 global->g_disk_object.do_Gadget.GadgetType = BOOLGADGET;
                 global->g_disk_object.do_Gadget.GadgetRender = &global->g_disk_object_image;
-                global->g_disk_object.do_Gadget.SelectRender = NULL;
-                global->g_disk_object.do_Gadget.GadgetText = NULL;
-                global->g_disk_object.do_Gadget.MutualExclude = 0;
-                global->g_disk_object.do_Gadget.SpecialInfo = NULL;
-                global->g_disk_object.do_Gadget.GadgetID = 0;
-                global->g_disk_object.do_Gadget.UserData = NULL;
-                global->g_disk_object.do_Type = 0;
                 global->g_disk_object.do_DefaultTool = "";
                 global->g_disk_object.do_ToolTypes = global->g_tool_types;
                 global->g_disk_object.do_CurrentX = NO_ICON_POSITION;
                 global->g_disk_object.do_CurrentY = NO_ICON_POSITION;
-                global->g_disk_object.do_DrawerData = NULL;
-                global->g_disk_object.do_ToolWindow = NULL;
-                global->g_disk_object.do_StackSize = 0;
                 global->g_user_disk_object = &global->g_disk_object;
         }
         else
@@ -144,10 +127,6 @@ void Init_Intui(struct CDVDBase *global) {
                 if (name)
                         global->g_iconname = name;
         }
-
-        global->g_app_port = NULL;
-        global->g_app_sigbit = 0;
-        global->g_app_icon = NULL;
 }
 
 void Close_Intui(struct CDVDBase *global) {

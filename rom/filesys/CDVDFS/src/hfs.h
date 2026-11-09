@@ -169,7 +169,6 @@ typedef struct leaf_record_pos {
   t_leaf_record		leaf_rec;
 } t_leaf_record_pos;
 
-t_ushort HFS_Get16(const void *data);
 t_ulong HFS_Get32(const void *data);
 void HFS_Decode_Node(const t_uchar *p, t_node_descr *node);
 t_bool HFS_Record_Bounds(const t_uchar *node, int record, int *start, int *end);
