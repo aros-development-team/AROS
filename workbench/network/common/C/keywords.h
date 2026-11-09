@@ -80,3 +80,5 @@
 	{"inet6", K_INET6},
 #define	K_SHOW	41
 	{"show", K_SHOW},
+#define	K_PREFIXLEN	42
+	{"prefixlen", K_PREFIXLEN},
