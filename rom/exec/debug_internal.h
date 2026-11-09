@@ -3,7 +3,6 @@
 
 void    InternalDebug(void *);
 char    GetK(struct ExecBase *SysBase);
-UQUAD   GetQ(char *);
 ULONG   GetL(char *);
 UWORD   GetW(char *);
 UBYTE   GetB(char *);
@@ -11,6 +10,7 @@ int     get_irq_list(char *buf);
 char   *NextWord(char *);
 
 #if __WORDSIZE == 64
+UQUAD   GetQ(char *);
 #define GetA (APTR)GetQ
 #else
 #define GetA (APTR)GetL

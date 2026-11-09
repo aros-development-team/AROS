@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Sets up the ExecBase a bit. (Mostly clearing).
 */
@@ -111,6 +111,35 @@ void SetSysBaseChkSum(void)
      SysBase->ChkBase=~(IPTR)SysBase;
      SysBase->ChkSum = 0;
      SysBase->ChkSum = GetSysBaseChkSum(SysBase) ^ 0xffff;
+}
+
+/*
+ * Find an option in the kernel command line, ignoring the case of the
+ * command line. 'opt' is given in lower case. Option names are plain ASCII,
+ * so only A-Z are folded. Returns the place where the option starts, or NULL.
+ */
+static char *findOpt(const char *args, const char *opt)
+{
+    for (; *args; args++)
+    {
+        const char *a = args, *o = opt;
+
+        for (;;)
+        {
+            char c = *a++;
+
+            if (!*o)
+                return (char *)args;
+
+            if (c >= 'A' && c <= 'Z')
+                c += 'a' - 'A';
+
+            if (c != *o++)
+                break;
+        }
+    }
+
+    return NULL;
 }
 
 static APTR allocmem(struct MemHeader *mh, ULONG size, ULONG attributes)
@@ -335,23 +364,25 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
          * We store mungwall setting in private flags because it must not be
          * switched at runtime (or hard crash will happen).
          */
-        opts = strcasestr(args, "mungwall");
+        opts = findOpt(args, "mungwall");
         if (opts)
             PrivExecBase(SysBase)->IntFlags = EXECF_MungWall;
 
-        opts = strcasestr(args, "stacksnoop");
+        opts = findOpt(args, "stacksnoop");
         if (opts)
             PrivExecBase(SysBase)->IntFlags = EXECF_StackSnoop;
 
+#ifndef NO_RUNTIME_DEBUG
         /*
          * Parse system runtime debug flags.
          * These are public. In future they will be editable by prefs program.
          * However in order to be able to turn them on during early startup,
          * we apply them also here.
          */
-        opts = strcasestr(args, "sysdebug=");
+        opts = findOpt(args, "sysdebug=");
         if (opts)
             SysBase->ex_DebugFlags = ParseFlags(&opts[9], ExecFlagNames);
+#endif
     }
 
     SetSysBaseChkSum();

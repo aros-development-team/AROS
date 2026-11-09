@@ -437,6 +437,24 @@ static ULONG memAlerts[] =
     AN_FreeTwice                /* MM_OVERLAP */
 };
 
+/* Post the alert for a MemHeader or MemChunk that failed validation */
+static void validateAlert(struct MemHeader *mh, struct MemChunk *mc, struct MemChunk *mcPrev,
+                          UBYTE op, APTR addr, IPTR size,
+                          struct TraceLocation *tp, struct ExecBase *SysBase)
+{
+    struct MMContext alertData;
+
+    alertData.mh     = mh;
+    alertData.mc     = mc;
+    alertData.mcPrev = mcPrev;
+    alertData.func   = tp->function;
+    alertData.addr   = addr;
+    alertData.size   = size;
+    alertData.op     = op;
+
+    Exec_ExtAlert(memAlerts[op], tp->caller, tp->stack, AT_MEMORY, &alertData, SysBase);
+}
+
 /*
  * MemHeader validation routine. Rules are:
  *
@@ -464,21 +482,9 @@ static BOOL validateHeader(struct MemHeader *mh, UBYTE op, APTR addr, IPTR size,
          ((IPTR)addr > upper ||
           size > upper - (IPTR)addr)))
     {
+        /* TraceLocation is not supplied by PrepareExecBase(). Fail silently. */
         if (tp)
-        {
-            /* TraceLocation is not supplied by PrepareExecBase(). Fail silently. */
-            struct MMContext alertData;
-
-            alertData.mh     = mh;
-            alertData.mc     = NULL;
-            alertData.mcPrev = NULL;
-            alertData.func   = tp->function;
-            alertData.addr   = addr;
-            alertData.size   = size;
-            alertData.op     = op;
-
-            Exec_ExtAlert(memAlerts[op], tp->caller, tp->stack, AT_MEMORY, &alertData, SysBase);
-        }
+            validateAlert(mh, NULL, NULL, op, addr, size, tp, SysBase);
 
         /*
          * Theoretically during very early boot we can fail to post an alert (no KernelBase yet).
@@ -520,19 +526,7 @@ static inline BOOL validateChunk(struct MemChunk *p2, struct MemChunk *p1, struc
                    next > upper || sizeof(*p2) > upper - next)))
     {
         if (tp)
-        {
-            struct MMContext alertData;
-
-            alertData.mh     = mh;
-            alertData.mc     = p2;
-            alertData.mcPrev = (p1 == (struct MemChunk *)&mh->mh_First) ? NULL : p1;
-            alertData.func   = tp->function;
-            alertData.addr   = addr;
-            alertData.size   = size;
-            alertData.op     = op;
-
-            Exec_ExtAlert(memAlerts[op], tp->caller, tp->stack, AT_MEMORY, &alertData, SysBase);
-        }
+            validateAlert(mh, p2, (p1 == (struct MemChunk *)&mh->mh_First) ? NULL : p1, op, addr, size, tp, SysBase);
         return FALSE;
     }
 
@@ -750,6 +744,22 @@ stdalloc_done:
     }
 }
 
+#if !defined(NO_CONSISTENCY_CHECKS)
+/* stdDealloc() found the block to be freed overlapping a free chunk */
+static void reportOverlap(const char *text, struct MemChunk *mc, IPTR byteSize, APTR memoryBlock,
+                          struct MemHeader *freeList, struct TraceLocation *tp, struct ExecBase *SysBase)
+{
+    bug("[MM] Chunk allocator error\n");
+    bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
+    bug(text, mc, mc->mc_Bytes);
+    bug("[MM] %s() called from 0x%p by '%s'\n",
+        tp ? tp->function : "?", tp ? tp->caller : NULL,
+        FindTask(NULL)->tc_Node.ln_Name);
+
+    Alert(AN_FreeTwice);
+}
+#endif
+
 /*
  * Free 'byteSize' bytes starting at 'memoryBlock' belonging to MemHeader 'freeList'
  * MemHeaderAllocatorCtx
@@ -861,14 +871,7 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
                 */
                 if (p4>(UBYTE *)p2)
                 {
-                    bug("[MM] Chunk allocator error\n");
-                    bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
-                    bug("[MM] Block overlaps (1) with chunk 0x%p (%u bytes)\n", p2, p2->mc_Bytes);
-                    bug("[MM] %s() called from 0x%p by '%s'\n",
-                        tp ? tp->function : "?", tp ? tp->caller : NULL,
-                        FindTask(NULL)->tc_Node.ln_Name);
-
-                    Alert(AN_FreeTwice);
+                    reportOverlap("[MM] Block overlaps (1) with chunk 0x%p (%u bytes)\n", p2, byteSize, memoryBlock, freeList, tp, SysBase);
                     goto stddealloc_done;
                 }
 #endif
@@ -889,14 +892,7 @@ void stdDealloc(struct MemHeader *freeList, struct MemHeaderAllocatorCtx *mhac, 
             /* Check if they overlap. */
             if ((UBYTE *)p1 + p1->mc_Bytes > (UBYTE *)p3)
             {
-                bug("[MM] Chunk allocator error\n");
-                bug("[MM] Attempt to free %u bytes at 0x%p from MemHeader 0x%p\n", byteSize, memoryBlock, freeList);
-                bug("[MM] Block overlaps (2) with chunk 0x%p (%u bytes)\n", p1, p1->mc_Bytes);
-                bug("[MM] %s() called from 0x%p by '%s'\n",
-                    tp ? tp->function : "?", tp ? tp->caller : NULL,
-                    FindTask(NULL)->tc_Node.ln_Name);
-
-                Alert(AN_FreeTwice);
+                reportOverlap("[MM] Block overlaps (2) with chunk 0x%p (%u bytes)\n", p1, byteSize, memoryBlock, freeList, tp, SysBase);
                 goto stddealloc_done;
             }
 #endif

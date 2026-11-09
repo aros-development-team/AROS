@@ -477,3 +477,17 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
     return FALSE;
 #endif
 }
+
+/* The varargs NewRawDoFmt() used throughout exec, see exec_util.h */
+STRPTR Exec_NewRawDoFmt(struct ExecBase *SysBase, CONST_STRPTR FormatString,
+                        VOID_FUNC PutChProc, APTR PutChData, ...)
+{
+    STRPTR retval;
+    va_list args;
+
+    va_start(args, PutChData);
+    retval = VNewRawDoFmt(FormatString, PutChProc, PutChData, args);
+    va_end(args);
+
+    return retval;
+}
