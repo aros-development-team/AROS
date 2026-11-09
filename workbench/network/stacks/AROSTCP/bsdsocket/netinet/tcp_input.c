@@ -259,19 +259,28 @@ struct mbuf *m;
     m->m_pkthdr.header = (caddr_t)ti;
 
     /*
-     * If the queue already holds the maximum number of segments,
-     * refuse the incoming one rather than letting an out-of-order
-     * stream grow it without limit.  The sender will retransmit once
+     * If the queue already holds the maximum number of segments - a
+     * receive window of full-sized ones (of at least the default MSS: a
+     * peer that offers a tiny MSS would otherwise have thousands of
+     * segments queued, each in a 2 KB cluster), at least
+     * TCP_REASS_MAXQLEN - refuse the incoming one rather than letting
+     * an out-of-order stream grow it without limit.  The sender will retransmit once
      * the gap is filled.  Count the whole queue (not just up to the
      * insertion point) so a stream of ever-decreasing sequence
-     * numbers cannot slip past the bound.
+     * numbers cannot slip past the bound.  The segment that fills the
+     * gap (at rcv_nxt) is always taken, as FreeBSD's tcp_reass() does:
+     * refused, the queue would never drain and the connection would
+     * stall for good.
      */
-    qlen = 0;
-    for(q = tp->t_segq; q; q = q->m_nextpkt)
-        qlen++;
-    if(qlen >= TCP_REASS_MAXQLEN) {
-        m_freem(m);
-        return (0);
+    if(ti->ti_seq != tp->rcv_nxt) {
+        qlen = 0;
+        for(q = tp->t_segq; q; q = q->m_nextpkt)
+            qlen++;
+        if(qlen >= MAX(TCP_REASS_MAXQLEN,
+                       so->so_rcv.sb_hiwat / MAX(tp->t_maxseg, tcp_mssdflt))) {
+            m_freem(m);
+            return (0);
+        }
     }
 
     /*

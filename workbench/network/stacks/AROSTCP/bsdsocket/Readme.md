@@ -272,6 +272,12 @@ As a receiver, the SACK blocks of an ACK (`tcp_sack_rcvblocks()`, from the reass
 section 4 requires, then the ones sent before, most recent first, as many as fit. None lies below
 the cumulative ACK, where a sender would take it for a D-SACK (RFC 2883).
 
+Segments that arrive out of order wait on the reassembly queue (`tcp_reass()`), not charged to the
+socket buffer: up to a receive buffer's worth of full-sized segments, at least 100, a window the
+peer may send - counted in segments of at least the default MSS (`tcp_mssdflt`), so that a peer that
+offers a tiny MSS cannot have thousands queued, each holding a 2 KB cluster. The segment at `rcv_nxt` is always taken, as in FreeBSD: refused once the queue was
+full, it left the queue never to drain and the connection stalled for good.
+
 Without SACK, loss recovery is NewReno (RFC 6582). A partial ACK in fast recovery resends the
 first unacknowledged segment with `cwnd` covering the bytes it acknowledges plus that segment
 (snd_una has not advanced yet), deflates `cwnd`, and is then processed like any ACK, so `snd_una`
