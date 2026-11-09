@@ -188,7 +188,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 { aHidd_Display_GfxHidd,  (IPTR)self         },
                 { aHidd_Display_ModeTags, (IPTR)vc_modearray },
                 { aHidd_Display_DecodeVectors,
-                  XSD(cl)->vcsd_IsBCM2711 ? (IPTR)&vcgfx_decode_vectors : 0 },
+                  vcgfx_has_hevc(XSD(cl)) ? (IPTR)&vcgfx_decode_vectors : 0 },
                 { aHidd_Display_DecodeDataSize, vcgfx_decode_datasize },
                 { TAG_DONE,               0                  }
             };

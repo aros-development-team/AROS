@@ -322,8 +322,8 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
     else if (data->dectgt && IS_BM_ATTR(msg->attrID, idx) && (idx == aoHidd_BitMap_Scanout))
     {
-        /* A decode target: SAND128 buffers a plane scans out */
-        *msg->storage = TRUE;
+        /* A decode target: SAND128 buffers, where a plane scans them out */
+        *msg->storage = vcgfx_sand_scanout(XSD(cl));
     }
 #endif
     else

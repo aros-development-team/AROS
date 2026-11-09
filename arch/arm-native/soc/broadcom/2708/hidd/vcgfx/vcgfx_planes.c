@@ -311,6 +311,12 @@ BOOL vcgfx_yuv_ok(struct VideoCoreGfx_staticdata *xsd, ULONG videofmt)
         && vcgfx_planes_supported(xsd);
 }
 
+/* SAND128 decode targets: HVS5 only for now */
+BOOL vcgfx_sand_scanout(struct VideoCoreGfx_staticdata *xsd)
+{
+    return (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5) && vcgfx_planes_supported(xsd);
+}
+
 /* num/den in Q22, rounded; num and den positive */
 static LONG q22(QUAD num, QUAD den)
 {
@@ -711,6 +717,7 @@ BOOL vcgfx_planes_commit(struct VideoCoreGfx_staticdata *xsd,
 
         data = (OOP_OCLASS(st->BitMap) == offcl) ? OOP_INST_DATA(offcl, st->BitMap) : NULL;
         if (!data || (!data->scan[0].sb_Pixels && !data->dectgt)
+            || (data->dectgt && !vcgfx_sand_scanout(xsd))
             || ((st->AlphaMode != vHidd_CompAlpha_None)
                 && ((st->AlphaMode != vHidd_CompAlpha_PerPixel)
                     || data->videofmt || (vcgfx_px_bpp(data->pxflags) != 4)))

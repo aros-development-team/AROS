@@ -646,8 +646,8 @@ ULONG MNAME_DISPLAY(QueryDecode)(OOP_Class *cl, OOP_Object *o, struct pHidd_Disp
             || (msg->height < HEVC_MIN_SIZE) || (msg->height > HEVC_MAX_SIZE)))
         return 0;
 
-    /* The HVS5 planes scan SAND128 out */
-    flags = DCF_DECODE | (vcgfx_planes_supported(xsd) ? DCF_SCANOUT : 0);
+    /* Planes that scan SAND128 out; elsewhere LockBuffer reads it back */
+    flags = DCF_DECODE | (vcgfx_sand_scanout(xsd) ? DCF_SCANOUT : 0);
     if (msg->caps)
     {
         msg->caps->Flags         = flags;

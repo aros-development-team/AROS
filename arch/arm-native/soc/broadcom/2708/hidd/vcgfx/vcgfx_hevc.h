@@ -16,10 +16,13 @@
 #include <exec/types.h>
 #include "vcgfx_vadec.h"
 
-/* Register block, Pi 4: the 64 KB decoder and the 4 KB interrupt control */
+/* Register blocks, the 64 KB decoder and the 4 KB interrupt control. The
+ * Pi 5's IOMMU2 is off at hand-over: the block takes physical addresses. */
 #define HEVC_BCM2711_REGS       0xFEB00000
 #define HEVC_BCM2711_INTC       0xFEB10000
-#define HEVC_BCM2711_IRQ        (32 + 98)
+#define HEVC_BCM2712_REGS       0x1000800000ULL
+#define HEVC_BCM2712_INTC       0x1000840000ULL
+#define HEVC_IRQ                (32 + 98)       /* GIC SPI 98 on both */
 #define HEVC_FW_CLOCK_ID        11
 
 /* Phase 1 */

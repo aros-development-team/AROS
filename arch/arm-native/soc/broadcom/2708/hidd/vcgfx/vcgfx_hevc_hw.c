@@ -372,14 +372,14 @@ static void hevc_task(struct vcgfx_hevc *h)
         DeleteMsgPort(port);
 }
 
-/* Bring the block up on first use. Pi 4 only for now. */
+/* Bring the block up on first use: Pi 4 and Pi 5 */
 struct vcgfx_hevc *vcgfx_hevc_open(struct VideoCoreGfx_staticdata *xsd)
 {
     struct vcgfx_hevc *h;
     ULONG v;
 
     ObtainSemaphore(&xsd->vcsd_ScanoutLock);
-    if (hevc_tried || !xsd->vcsd_IsBCM2711)
+    if (hevc_tried || !vcgfx_has_hevc(xsd))
     {
         ReleaseSemaphore(&xsd->vcsd_ScanoutLock);
         return hevc_dev;
@@ -390,8 +390,8 @@ struct vcgfx_hevc *vcgfx_hevc_open(struct VideoCoreGfx_staticdata *xsd)
     if (!h)
         goto out;
     h->xsd = xsd;
-    h->regs = (UBYTE *)HEVC_BCM2711_REGS;
-    h->intc = (UBYTE *)HEVC_BCM2711_INTC;
+    h->regs = (UBYTE *)(IPTR)(xsd->vcsd_IsBCM2711 ? HEVC_BCM2711_REGS : HEVC_BCM2712_REGS);
+    h->intc = (UBYTE *)(IPTR)(xsd->vcsd_IsBCM2711 ? HEVC_BCM2711_INTC : HEVC_BCM2712_INTC);
     InitSemaphore(&h->lock);
     NEWLIST((struct List *)&h->queue);
     NEWLIST((struct List *)&h->waiters);
@@ -425,7 +425,7 @@ struct vcgfx_hevc *vcgfx_hevc_open(struct VideoCoreGfx_staticdata *xsd)
         goto out;
     }
 
-    h->irq = KrnAddIRQHandler(HEVC_BCM2711_IRQ, hevc_irq, h, NULL);
+    h->irq = KrnAddIRQHandler(HEVC_IRQ, hevc_irq, h, NULL);
     if (!h->irq)
     {
         /* The task stays, idle: nothing ever queues to it */
