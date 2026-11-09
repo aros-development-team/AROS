@@ -73,7 +73,7 @@ AROS_UFH3(void, pciEnumerator,
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Sub, &sub);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &intline);
 
-    devid = (bus << 16) | dev;
+    devid = (bus << 16) | (dev << 8) | sub;
 
     pciusbDebug("PCI", "Found PCI device 0x%lx of type %ld, Intline=%ld\n", devid, hcitype, intline);
 
