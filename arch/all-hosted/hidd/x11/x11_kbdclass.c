@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: X11 hidd handling keypresses.
 */
@@ -58,6 +58,35 @@ static struct OOP_ABDescr attrbases[] =
 /* Kbd Hidd methods ...                                                                 */
 /****************************************************************************************/
 
+/*****i x11gfx/X11Kbd__Root__New
+    NAME
+        OOP_Object *X11Kbd__Root__New(
+
+    SYNOPSIS
+        OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+
+    FUNCTION
+        Create the X11 keyboard HIDD instance. Reject creation
+        if an instance is already registered.
+
+    INPUTS
+        cl - X11 keyboard HIDD class.
+        o - Object passed to the superclass constructor.
+        msg - Root.New message with an input interrupt callback tag.
+
+    RESULT
+        The initialized object, or NULL if an instance already
+        exists, the callback is missing, or superclass creation fails.
+
+    NOTES
+        Callback data and key state are initialized before the
+        instance is recorded under the class semaphore.
+
+        The existing-instance check and registration occur in
+        separate critical sections. Concurrent construction is not
+        serialized by this function.
+
+*****************************************************************************/
 OOP_Object * X11Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL                has_kbd_hidd = FALSE;
@@ -128,6 +157,22 @@ OOP_Object * X11Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
 /****************************************************************************************/
 
+/*****i x11gfx/X11Kbd__Root__Dispose
+    NAME
+        VOID X11Kbd__Root__Dispose(
+
+    SYNOPSIS
+        OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+
+    FUNCTION
+        Cancel this backend's tracked keys, clear the current
+        keyboard instance, and delegate disposal to the superclass.
+
+    NOTES
+        Cancellation and instance updates take the class semaphore
+        exclusively.
+
+*****************************************************************************/
 VOID X11Kbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     D(bug("[X11:Kbd] %s()\n", __func__));
@@ -146,6 +191,22 @@ VOID X11Kbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
  * These helpers run under xsd->sema, including disposal. Only this backend's
  * contributions are released; the shared keyboard device is not reset.
  */
+/*****i x11gfx/x11kbd_emit
+    NAME
+        static VOID x11kbd_emit(
+
+    SYNOPSIS
+        struct x11kbd_data *data, int code)
+
+    FUNCTION
+        Send a mapped raw-key event to the registered callback.
+        Negative event codes are ignored.
+
+    NOTES
+        The caller supplies initialized callback state and holds
+        the keyboard synchronization required by this backend.
+
+*****************************************************************************/
 static VOID x11kbd_emit(struct x11kbd_data *data, int code)
 {
     if (code >= 0)
@@ -157,6 +218,22 @@ static VOID x11kbd_emit(struct x11kbd_data *data, int code)
     }
 }
 
+/*****i x11gfx/x11kbd_release
+    NAME
+        static VOID x11kbd_release(
+
+    SYNOPSIS
+        struct x11kbd_data *data, unsigned int key)
+
+    FUNCTION
+        Clear the F12 flag for an X11 keycode, release its tracked
+        raw key and emit a release event if one is mapped.
+
+    NOTES
+        The keycode must be within the 256-entry key-state array.
+        The caller holds the keyboard synchronization.
+
+*****************************************************************************/
 static VOID x11kbd_release(struct x11kbd_data *data, unsigned int key)
 {
     if (data->f12[key])
@@ -167,6 +244,22 @@ static VOID x11kbd_release(struct x11kbd_data *data, unsigned int key)
     x11kbd_emit(data, x11_key_release(&data->keys, key));
 }
 
+/*****i x11gfx/x11kbd_cancel
+    NAME
+        static VOID x11kbd_cancel(
+
+    SYNOPSIS
+        struct x11kbd_data *data)
+
+    FUNCTION
+        Release all tracked raw keys and clear active and
+        pending-keymap state.
+
+    NOTES
+        Used on focus loss and during keyboard HIDD disposal.
+        The caller holds the required semaphore.
+
+*****************************************************************************/
 static VOID x11kbd_cancel(struct x11kbd_data *data)
 {
     unsigned int key;
@@ -176,6 +269,28 @@ static VOID x11kbd_cancel(struct x11kbd_data *data)
     data->await_keymap = FALSE;
 }
 
+/*****i x11gfx/X11Kbd__Hidd_Kbd_X11__HandleEvent
+    NAME
+        VOID X11Kbd__Hidd_Kbd_X11__HandleEvent(
+
+    SYNOPSIS
+        OOP_Class *cl, OOP_Object *o,
+        struct pHidd_Kbd_X11_HandleEvent *msg)
+
+    FUNCTION
+        Translate X11 key and focus events into HIDD raw-key
+        events. Release tracked keys on FocusOut. On FocusIn, use
+        the next KeymapNotify snapshot to reconcile held modifiers.
+
+    INPUTS
+        msg - Message containing an X11 event pointer.
+
+    NOTES
+        Duplicate presses are suppressed. The backend tracks F12
+        and raises SIGINT for the F12 and Q host shortcut. Disposal
+        and table replacement use the shared semaphore exclusively.
+
+*****************************************************************************/
 VOID X11Kbd__Hidd_Kbd_X11__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_X11_HandleEvent *msg)
 {
     struct x11kbd_data *data = OOP_INST_DATA(cl, o);
@@ -262,6 +377,23 @@ VOID X11Kbd__Hidd_Kbd_X11__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHid
 
 /****************************************************************************************/
 
+/*****i x11gfx/lookup_keytable
+    NAME
+        WORD lookup_keytable(
+
+    SYNOPSIS
+        KeySym *ks, const struct _keytable *keytable)
+
+    FUNCTION
+        Find an X11 KeySym in a sentinel-terminated key table.
+
+    RESULT
+        Mapped HIDD raw-key code, or -1 if no entry matches.
+
+    NOTES
+        The supplied table must end with a hiddcode value of -1.
+
+*****************************************************************************/
 WORD lookup_keytable(KeySym *ks, const struct _keytable *keytable)
 {
     short t;
@@ -280,6 +412,27 @@ WORD lookup_keytable(KeySym *ks, const struct _keytable *keytable)
 
 /****************************************************************************************/
 
+/*****i x11gfx/xkey2hidd
+    NAME
+        WORD xkey2hidd(
+
+    SYNOPSIS
+        XKeyEvent *xk, struct x11_staticdata *xsd)
+
+    FUNCTION
+        Translate an X11 key event into a HIDD raw-key code.
+        Prefer an installed keycode table; otherwise use the
+        configured and built-in KeySym translation tables.
+
+    RESULT
+        Mapped raw-key code, or -1 when unmapped.
+
+    NOTES
+        In installed-table mode, keycodes outside 256 entries and
+        stored values of 0xFF map to -1. The KeySym fallback clears
+        the event state before querying XLookupString.
+
+*****************************************************************************/
 WORD xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
 {
     XKeyEvent lookup = *xk;
@@ -322,7 +475,7 @@ WORD xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
 
 /****************************************************************************************/
 
-/*****************************************************************************
+/*****i x11gfx/x11kdb_LoadkeyTable
     NAME
         void x11kdb_LoadkeyTable(
 
@@ -387,6 +540,20 @@ AROS_LH1(void , x11kdb_LoadkeyTable,
 
 /****************************************************************************************/
 
+/*****i x11gfx/kbd_init
+    NAME
+        static int kbd_init(
+
+    SYNOPSIS
+        LIBBASETYPEPTR LIBBASE)
+
+    FUNCTION
+        Obtain the Hidd_Input attribute base at library startup.
+
+    RESULT
+        Returns the result of OOP_ObtainAttrBases().
+
+*****************************************************************************/
 static int kbd_init(LIBBASETYPEPTR LIBBASE)
 {
 
@@ -395,6 +562,20 @@ static int kbd_init(LIBBASETYPEPTR LIBBASE)
 
 /****************************************************************************************/
 
+/*****i x11gfx/kbd_expunge
+    NAME
+        static int kbd_expunge(
+
+    SYNOPSIS
+        LIBBASETYPEPTR LIBBASE)
+
+    FUNCTION
+        Release the HIDD attribute base on library expunge.
+
+    RESULT
+        TRUE.
+
+*****************************************************************************/
 static int kbd_expunge(LIBBASETYPEPTR LIBBASE)
 {
     OOP_ReleaseAttrBases(attrbases);

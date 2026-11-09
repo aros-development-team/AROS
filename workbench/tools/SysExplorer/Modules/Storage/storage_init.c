@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2019, The AROS Development Team.
+    Copyright (C) 2018-2026, The AROS Development Team.
 */
 
 #include <aros/debug.h>
@@ -92,7 +92,7 @@ static int storageenum_init(struct SysexpStorageBase *StorageBase)
 
 ADD2INITLIB(storageenum_init, 10);
 
-/*****************************************************************************
+/*****i storage/ModuleInit
     NAME
         void ModuleInit(
 
