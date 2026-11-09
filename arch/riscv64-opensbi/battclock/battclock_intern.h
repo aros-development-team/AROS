@@ -30,6 +30,7 @@ struct BattClockBase
     APTR                    bb_Bus;
     UQUAD                   bb_BusBase; /* the controller's own registers */
     UWORD                   bb_Addr;    /* the RTC's slave address        */
+    char                    bb_Path[96]; /* "dt" and the RTC node's path  */
 
     /*
      * The i2c HIDD objects, made on first use rather than at init -

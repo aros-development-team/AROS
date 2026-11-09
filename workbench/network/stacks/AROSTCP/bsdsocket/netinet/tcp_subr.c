@@ -666,6 +666,7 @@ struct inpcb *inp;
     /* Initialize congestion control algorithm */
     tp->t_cc_algo = tcp_cc_default;
     CC_INIT(tp);
+    tcp_hystart_init(tp);
     inp->inp_ip.ip_ttl = ip_defttl;
     inp->inp_ppcb = (caddr_t)tp;
     return (tp);

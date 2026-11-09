@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
 #include <aros/debug.h>
 
+#include <hidd/hidd.h>
 #include <hidd/input.h>
 #include <hidd/mouse.h>
 #include <oop/oop.h>
@@ -81,6 +82,12 @@ OOP_Object *DriverData__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         if (drvnode->drv) {
             struct mouse_staticdata *csd = CSD(cl);
             IPTR val = FALSE;
+
+            /*
+             * The subsystem base class sees only this proxy. Give the driver
+             * the relation to its subsystem it would have got from there.
+             */
+            HIDD_AddRelation(drvnode->drv, vHidd_Relation_Parent, csd->hwObject, NULL);
 
             OOP_GetAttr(drvnode->drv, aHidd_Mouse_Extended, &val);
             if (val) {

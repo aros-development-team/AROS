@@ -580,6 +580,12 @@ struct pci_dev *amdgpu_aros_findcard(void)
     return found_pdev;
 }
 
+/* The pci.hidd object of the card, for the hidd to declare as its device */
+void *amdgpu_aros_pcidevice(void)
+{
+    return found_pdev ? found_pdev->oopdev : NULL;
+}
+
 int amdgpu_aros_init_probe(struct pci_dev *pdev)
 {
     struct probe_start ps;

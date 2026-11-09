@@ -33,6 +33,9 @@
 
 #include LC_LIBDEFS_FILE
 
+/* drm-aros/drm_drv.c */
+void *amdgpu_aros_pcidevice(void);
+
 #if (DEBUG)
 #define DINFO(x)                x
 #else
@@ -270,6 +273,9 @@ OOP_Object *Amdgpu__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         DINFO(bug("[Amdgpu] %s: object @ 0x%p\n", __func__, o);)
 
         XSD(cl)->amdgpuhidd = o;
+
+        /* Tells which device this driver runs, see moHidd_AddRelation */
+        HIDD_AddRelation(o, vHidd_Relation_Device, (OOP_Object *)amdgpu_aros_pcidevice(), NULL);
         XSD(cl)->mouse.shape = NULL;
         XSD(cl)->hwCursor = XSD(cl)->kms.cursor_ok;
 

@@ -540,6 +540,19 @@ OOP_Object *METHOD(INTELG45, Root, New)
         gfxdata->i2cobj = i2cBus;
         sd->GMAObject = o;
 
+        /* Tells which device this driver runs, see moHidd_AddRelation */
+        HIDD_AddRelation(o, vHidd_Relation_Device, sd->PCIDevice, NULL);
+        if (i2cBus)
+        {
+            struct TagItem ddctags[] =
+            {
+                { tHidd_Relation_Label, (IPTR)"DDC" },
+                { TAG_DONE,             0           }
+            };
+
+            HIDD_AddRelation(o, vHidd_Relation_Uses, i2cBus, ddctags);
+        }
+
         /* Create the display object and its mode enumerator */
         {
             struct TagItem displaytags[] = {

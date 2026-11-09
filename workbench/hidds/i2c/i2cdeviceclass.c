@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 
     Desc: PCI device class
 */
@@ -228,6 +228,10 @@ OOP_Object *METHOD(I2CDev, Root, New)
         if (driver && address)
         {
             IPTR val;
+
+            /* The device sits on the bus its driver operates */
+            HIDD_AddRelation(o, vHidd_Relation_Parent, driver, NULL);
+
             if (dev->AcknTimeout == -1)
             {
                 OOP_GetAttr(driver, aHidd_I2C_AcknTimeout, &val);

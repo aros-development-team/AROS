@@ -43,6 +43,7 @@ struct class_static_data
 
     OOP_AttrBase                hwAttrBase;
 
+    OOP_MethodID                hiddMethodBase;
     OOP_MethodID                hwMethodBase;
     OOP_MethodID                hiddSCMethodBase;
 };
@@ -61,6 +62,8 @@ struct HiddStorageIntBase
 #undef HWAttrBase
 #define HWAttrBase 	                (CSD(cl)->hwAttrBase)
 
+#undef HiddBase
+#define HiddBase                        (CSD(cl)->hiddMethodBase)
 #undef HWBase
 #define HWBase                          (CSD(cl)->hwMethodBase)
 #undef HiddStorageControllerBase

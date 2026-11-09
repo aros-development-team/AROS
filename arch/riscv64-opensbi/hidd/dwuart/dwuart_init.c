@@ -136,6 +136,16 @@ static void dwuart_discover(struct class_static_data *csd)
             if (ints && len >= sizeof(ULONG))
                 port->irq = (ULONG)FDT_ReadCells(ints, 1);
 
+            /*
+             * The node is the identity of the port. The unit object
+             * made for it carries this, so that it can be found from
+             * whatever else refers to the node.
+             */
+            port->path[0] = 'd';
+            port->path[1] = 't';
+            if (!FDT_GetPath(node, &port->path[2], sizeof(port->path) - 2))
+                port->path[0] = 0;
+
             D(bug("[Serial:DW] %s: %s @ 0x%p+0x%p shift %u width %u"
                   " clk %u irq %u\n", __func__, FDT_NodeName(node),
                   port->base, port->size, port->regshift, port->regwidth,

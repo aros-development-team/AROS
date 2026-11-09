@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -42,6 +42,7 @@ static int MouseHidd_InitClass(struct mousebase *LIBBASE)
         return FALSE;
 
     LIBBASE->csd.hwMethodBase   = OOP_GetMethodID(IID_HW, 0);
+    LIBBASE->csd.hiddMethodBase = OOP_GetMethodID(IID_Hidd, 0);
 
     OOP_Object *root = OOP_NewObject(NULL, CLID_HW_Root, NULL);
     if (HW_AddDriver(root, LIBBASE->csd.hwClass, NULL))

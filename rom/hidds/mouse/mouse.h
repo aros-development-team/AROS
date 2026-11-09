@@ -29,6 +29,7 @@ struct mouse_staticdata
     OOP_AttrBase           hiddMouseAB;
     OOP_AttrBase           hwAttrBase;
     OOP_MethodID           hwMethodBase;
+    OOP_MethodID           hiddMethodBase;
     OOP_Class             *mouseClass;
     OOP_Class             *dataClass;
     OOP_Class             *hwClass;
@@ -52,11 +53,13 @@ struct mousebase
 #undef HiddMouseAB
 #undef HWAttrBase
 #undef HWBase
+#undef HiddBase
 #define HiddInputAB (CSD(cl)->hiddInputAB)
 #define HWInputAB (CSD(cl)->hwInputAB)
 #define HiddMouseAB (CSD(cl)->hiddMouseAB)
 #define HWAttrBase  (CSD(cl)->hwAttrBase)
 #define HWBase      (CSD(cl)->hwMethodBase)
+#define HiddBase    (CSD(cl)->hiddMethodBase)
 
 /* Private interface of our private MouseInput_DriverData class */
 #define IID_DriverData "hidd.mouse.driverdata"
