@@ -600,6 +600,9 @@ tcp_sack_lostbound(struct tcpcb *tp)
     u_long above = 0;
     int i;
 
+    if(tcp_rack_on(tp))                 /* RACK: by time (tcp_rack.c) */
+        return SEQ_GT(tp->t_rack_lost, tp->snd_una) ? tp->t_rack_lost : tp->snd_una;
+
     for(i = tp->t_num_sack_blks - 1; i >= 0; i--) {
         above += tp->t_sack_blks[i].end - tp->t_sack_blks[i].start;
         if(above > (u_long)(tcprexmtthresh - 1) * tp->t_maxseg)
@@ -745,6 +748,56 @@ tcp_sack_recover(struct tcpcb *tp, u_long delivered)
     tp->snd_cwnd = tp->snd_max - tp->snd_una;
     if(tp->snd_cwnd < tp->t_maxseg)
         tp->snd_cwnd = tp->t_maxseg;
+}
+
+/*
+ * A D-SACK (RFC 2883 section 4): the first SACK block of an ACK reports a
+ * segment that arrived twice when it lies below the cumulative ACK or
+ * within the second block. 1, and the block in *b if b.
+ */
+int
+tcp_dsack_block(const struct tcpopt *to, tcp_seq ack, struct sackblk *b)
+{
+    if(!(to->to_flag & TOF_SACK) || to->to_nsacks < 1)
+        return 0;
+    if(!SEQ_LEQ(to->to_sacks[0].end, ack) &&
+            !(to->to_nsacks > 1 && SEQ_GEQ(to->to_sacks[0].start, to->to_sacks[1].start) &&
+              SEQ_LEQ(to->to_sacks[0].end, to->to_sacks[1].end)))
+        return 0;
+    if(b)
+        *b = to->to_sacks[0];
+    return 1;
+}
+
+/*
+ * Loss recovery with SACK starts (RFC 6675 section 5): DupThresh duplicate
+ * ACKs, or RACK finding a hole lost (tcp_rack.c), on any ACK. Retransmit
+ * the first segment, then send as NextSeg() says, within cwnd - pipe, or
+ * what PRR (RFC 6937) allows when it is on.
+ */
+static void
+tcp_sack_enter(struct tcpcb *tp, u_long delivered)
+{
+    u_long sent;
+
+    CC_ON_LOSS(tp);
+    tp->t_timer[TCPT_REXMT] = 0;
+    tp->t_rtttime = 0;
+    tp->snd_recover = tp->snd_max;      /* recovery until this is acknowledged */
+    tp->t_flagsext |= TF_IN_FASTRECOV;
+    tp->snd_highrxt = tp->snd_una;
+    if(tcp_do_prr) {
+        tp->t_flagsext |= TF_PRR;
+        tp->snd_prr_out = 0;
+        tp->snd_prr_delivered = 0;
+        tp->snd_prr_recover_fs = tp->snd_max - tp->snd_una;
+    }
+    sent = tcp_sack_send(tp, tp->snd_una, tp->t_maxseg);
+    if(sent) {
+        tp->snd_highrxt = tp->snd_una + sent;
+        tcpstat.tcps_sack_rexmits++;
+    }
+    tcp_sack_recover(tp, delivered);
 }
 
 /*
@@ -1276,6 +1329,7 @@ findpcb:
                  */
                 ++tcpstat.tcps_predack;
                 tcp_tlp_ack(tp, &to, ti->ti_ack, 0);
+                tcp_rack_ack(tp, &to, ti->ti_ack);
                 tcp_ack_rtt(tp, &to, ti->ti_ack);
                 acked = ti->ti_ack - tp->snd_una;
                 tcpstat.tcps_rcvackpack++;
@@ -1431,6 +1485,8 @@ findpcb:
             /* Enable SACK if both sides agree */
             if(!(to.to_flag & TOF_SACK_PERMITTED))
                 tp->t_flags &= ~TF_SACK_PERMIT;
+            else if(tp->t_flags & TF_SACK_PERMIT)
+                tcp_rack_attach(tp);
             /*
              * ECN negotiation (RFC 3168 section 6.1.1): if our SYN asked
              * with ECE+CWR and the SYN-ACK has ECE without CWR, ECN is
@@ -1922,6 +1978,8 @@ close:
         }
         tcp_tlp_ack(tp, &to, ti->ti_ack,
                     ti->ti_ack == tp->snd_una && ti->ti_len == 0 && !sacknew);
+        if(SEQ_LEQ(ti->ti_ack, tp->snd_max))
+            tcp_rack_ack(tp, &to, ti->ti_ack);
 
         if(SEQ_LEQ(ti->ti_ack, tp->snd_una)) {
             /*
@@ -1964,8 +2022,15 @@ close:
                 if(tp->t_timer[TCPT_REXMT] == 0 ||
                         ti->ti_ack != tp->snd_una)
                     tp->t_dupacks = 0;
-                else if(++tp->t_dupacks == tcprexmtthresh &&
+                else if((tcp_rack_on(tp) ?
+                         (++tp->t_dupacks, SEQ_GT(tp->t_rack_lost, tp->snd_una)) :
+                         ++tp->t_dupacks == tcprexmtthresh) &&
                         !(tp->t_flagsext & TF_IN_FASTRECOV)) {
+                    if(tp->t_flags & TF_SACK_PERMIT) {
+                        tcp_sack_enter(tp, tp->snd_sacked > osacked ?
+                                       tp->snd_sacked - osacked : 0);
+                        goto drop;
+                    }
                     CC_ON_LOSS(tp);
                     tp->t_timer[TCPT_REXMT] = 0;
                     tp->t_rtttime = 0;
@@ -1976,31 +2041,7 @@ close:
                      */
                     tp->snd_recover = tp->snd_max;
                     tp->t_flagsext |= TF_IN_FASTRECOV;
-                    if(tp->t_flags & TF_SACK_PERMIT) {
-                        /*
-                         * With SACK (RFC 6675 section 5): retransmit
-                         * the first segment, then send as NextSeg()
-                         * says, within cwnd - pipe, or what PRR (RFC
-                         * 6937) allows when it is on.
-                         */
-                        u_long sent;
-
-                        tp->snd_highrxt = tp->snd_una;
-                        if(tcp_do_prr) {
-                            tp->t_flagsext |= TF_PRR;
-                            tp->snd_prr_out = 0;
-                            tp->snd_prr_delivered = 0;
-                            tp->snd_prr_recover_fs =
-                                tp->snd_max - tp->snd_una;
-                        }
-                        sent = tcp_sack_send(tp, tp->snd_una, tp->t_maxseg);
-                        if(sent) {
-                            tp->snd_highrxt = tp->snd_una + sent;
-                            tcpstat.tcps_sack_rexmits++;
-                        }
-                        tcp_sack_recover(tp, tp->snd_sacked > osacked ?
-                                     tp->snd_sacked - osacked : 0);
-                    } else {
+                    {
                         /*
                          * Without SACK: retransmit snd_una, then
                          * inflate cwnd by the segments the receiver
@@ -2214,6 +2255,12 @@ process_ACK:
             long delivered = (long)acked + (long)tp->snd_sacked - (long)osacked;
 
             tcp_sack_recover(tp, delivered > 0 ? (u_long)delivered : 0);
+        } else if(tcp_rack_on(tp) && !(tp->t_flagsext & TF_IN_FASTRECOV) &&
+                  SEQ_GT(tp->t_rack_lost, tp->snd_una)) {
+            /* RACK found a hole lost: recovery starts on this ACK */
+            long delivered = (long)acked + (long)tp->snd_sacked - (long)osacked;
+
+            tcp_sack_enter(tp, delivered > 0 ? (u_long)delivered : 0);
         }
 
         switch(tp->t_state) {

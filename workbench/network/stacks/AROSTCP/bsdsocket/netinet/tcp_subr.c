@@ -559,6 +559,7 @@ tcp_init()
     tcbinfo.hashbase = phashinit(TCBHASHSIZE, M_PCB, &tcbinfo.hashsize);
     syncache_init();
     tcp_autobuf_init();
+    tcp_rack_init();
     if(max_protohdr < sizeof(struct tcpiphdr))
         max_protohdr = sizeof(struct tcpiphdr);
     if(max_linkhdr + sizeof(struct tcpiphdr) > MHLEN)
@@ -942,6 +943,7 @@ register struct tcpcb *tp;
         tp->t_segq = nq;
         m_freem(q);
     }
+    tcp_rack_detach(tp);                /* RACK's map, if any */
     if(tp->t_template)
         (void) m_free(dtom(tp->t_template));
     tcp_autobuf_used -= tp->t_autobuf;  /* autosizing's budget back */

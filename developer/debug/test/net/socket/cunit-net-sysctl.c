@@ -169,6 +169,15 @@ void testSYSCTL_TLP(void)
     CU_ASSERT_EQUAL(tcpctl(TCPCTL_TLP, &v, &n), EINVAL);
 }
 
+/* RACK loss detection (RFC 8985 section 6): on; 0 or 1. */
+void testSYSCTL_RACK(void)
+{
+    LONG v = -1, n = 2;
+
+    knob(TCPCTL_RACK, 1);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_RACK, &v, &n), EINVAL);
+}
+
 /* The initial retransmission timeout, s: 1 (RFC 6298 section 2.1). */
 void testSYSCTL_RTTDFLT(void)
 {
@@ -219,6 +228,7 @@ int main(void)
         !CU_add_test(p, "net.inet.tcp.hystart", testSYSCTL_HYSTART) ||
         !CU_add_test(p, "net.inet.tcp.minmss", testSYSCTL_MINMSS) ||
         !CU_add_test(p, "net.inet.tcp.tlp", testSYSCTL_TLP) ||
+        !CU_add_test(p, "net.inet.tcp.rack", testSYSCTL_RACK) ||
         !CU_add_test(p, "an unknown leaf is refused", testSYSCTL_UNKNOWN))
     {
         CU_cleanup_registry();

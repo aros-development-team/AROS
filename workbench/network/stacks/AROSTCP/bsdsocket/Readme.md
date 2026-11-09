@@ -300,6 +300,26 @@ bench (random, several holes in a window, a lost retransmission, reordering) it 
 difference either way. A partial ACK is one more ACK in recovery. `snd_cwnd` stays at
 what is in flight until the recovery ends, at `ssthresh`.
 
+With SACK, what is lost is decided by time, by **RACK** (RFC 8985 section 6, `tcp_rack.c`; sysctl
+`net.inet.tcp.rack`, on), not by DupThresh: a segment is lost when one sent after it has been
+delivered and more than RACK.rtt + reo_wnd has passed since it was sent. reo_wnd, the reordering
+tolerated, is min_RTT / 4 (at most SRTT), times a multiplier each D-SACK grows; 0 before any
+reordering is seen, in recovery or with DupThresh segments SACKed. The send buffer is a byte stream,
+so the send times are kept in a map of their own (`t_xmap`: ranges of sequence space, the time each
+was last sent and whether as a retransmission), filled by `tcp_output()` and split at the
+cumulative ACK and the scoreboard's edges. The map is allocated when a connection negotiates SACK
+(`tcp_rack_attach()`, freed by `tcp_close()`), so connections without SACK do not carry it; its
+length is chosen when the stack starts from the memory free then, the same for every CPU: one
+12-byte entry per 256 KB free, 16 to 64 (16 with 4 MB free or less, 64 from 16 MB); a full map
+merges its oldest entries. A connection whose map cannot be allocated, or set up while RACK was
+off, runs with DupThresh. RACK.xmit_ts takes a retransmission only when the
+timestamp echoed is its own (Karn). Its result is the bound below which holes are lost, which
+`IsLost()`/`NextSeg()`/`SetPipe()` use, and recovery starts on any ACK that finds one, not only the
+third duplicate; a retransmission found lost is sent again. A loss is found on the next ACK: there
+is no reordering timer (section 6.2.6) - the tail loss probe or the RTO acts when no ACK comes. The
+clock is in milliseconds, so a segment counts as lost only once more than RACK.rtt + reo_wnd has
+passed: the RTT and the elapsed time are each truncated.
+
 As a receiver, the SACK blocks of an ACK (`tcp_sack_rcvblocks()`, from the reassembly queue once
 `rcv_nxt` has moved) begin with the one that holds the segment just received, as RFC 2018
 section 4 requires, then the ones sent before, most recent first, as many as fit. None lies below

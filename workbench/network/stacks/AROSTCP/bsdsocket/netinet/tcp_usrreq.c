@@ -972,6 +972,16 @@ size_t newlen;
             tcp_rexmit_min = v;
         return (error);
     }
+    case TCPCTL_RACK: {
+        int v = tcp_do_rack, error;
+
+        error = sysctl_int(oldp, oldlenp, newp, newlen, &v);
+        if(error == 0 && (v < 0 || v > 1))
+            error = EINVAL;
+        if(error == 0)
+            tcp_do_rack = v;
+        return (error);
+    }
     case TCPCTL_TLP: {
         int v = tcp_do_tlp, error;
 
