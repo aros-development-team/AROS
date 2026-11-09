@@ -29,6 +29,7 @@
 
 #include <signal.h>
 #include <sys/time.h>
+#include <time.h>
 #include <string.h>
 
 #undef timeval
@@ -58,13 +59,48 @@
  */
 int atoi(const char *nptr);
 
+/* The host's monotonic clock, in microseconds. */
+static UQUAD HostNow(struct TimerBase *TimerBase)
+{
+    struct timespec ts;
+
+    TimerBase->tb_Platform.clock_gettime(CLOCK_MONOTONIC, &ts);
+    AROS_HOST_BARRIER
+    return (UQUAD)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+}
+
 /* Handle periodic timer and drive exec VBlank */
 static void TimerTick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 {
-    /* Increment EClock value and process microhz requests */
-    ADDTIME(&TimerBase->tb_CurrentTime, &TimerBase->tb_Platform.tb_VBlankTime);
-    ADDTIME(&TimerBase->tb_Elapsed, &TimerBase->tb_Platform.tb_VBlankTime);
-    TimerBase->tb_ticks_total++;
+    /*
+     * Advance the clocks by the time that went by. A fixed period per
+     * SIGALRM lost time for good: the host does not queue a signal that is
+     * already pending, so ticks that came while AROS was not running (the
+     * host did not schedule it, or interrupts were off) were one, and the
+     * uptime and system time fell behind - by over a second at a time.
+     * The host's monotonic clock counts all of it. Without clock_gettime()
+     * a tick is still the period.
+     */
+    if (TimerBase->tb_Platform.clock_gettime)
+    {
+        UQUAD now = HostNow(TimerBase);
+        UQUAD d = now - TimerBase->tb_Platform.tb_HostLast;
+        struct timeval delta;
+
+        TimerBase->tb_Platform.tb_HostLast = now;
+        delta.tv_secs  = d / 1000000;
+        delta.tv_micro = d % 1000000;
+        ADDTIME(&TimerBase->tb_CurrentTime, &delta);
+        ADDTIME(&TimerBase->tb_Elapsed, &delta);
+        TimerBase->tb_Platform.tb_HostElapsed += d;
+        TimerBase->tb_ticks_total = TimerBase->tb_Platform.tb_HostElapsed * TimerBase->tb_eclock_rate / 1000000;
+    }
+    else
+    {
+        ADDTIME(&TimerBase->tb_CurrentTime, &TimerBase->tb_Platform.tb_VBlankTime);
+        ADDTIME(&TimerBase->tb_Elapsed, &TimerBase->tb_Platform.tb_VBlankTime);
+        TimerBase->tb_ticks_total++;
+    }
 
     handleMicroHZ(TimerBase, SysBase);
 
@@ -98,6 +134,8 @@ static int Timer_Init(struct TimerBase *TimerBase)
     TimerBase->tb_Platform.setitimer = HostLib_GetPointer(TimerBase->tb_Platform.libcHandle, "setitimer", NULL);
     if (!TimerBase->tb_Platform.setitimer)
         return FALSE;
+    /* optional: without it a tick counts as its period */
+    TimerBase->tb_Platform.clock_gettime = HostLib_GetPointer(TimerBase->tb_Platform.libcHandle, "clock_gettime", NULL);
 
     /* Install timer IRQ handler */
     TimerBase->tb_TimerIRQHandle = KrnAddIRQHandler(SIGALRM, TimerTick, TimerBase, SysBase);
@@ -141,6 +179,8 @@ static int Timer_Init(struct TimerBase *TimerBase)
     TimerBase->tb_Platform.tb_VBlankTime.tv_micro = 1000000 / TimerBase->tb_eclock_rate;
 
     /* Start up our system timer. */
+    if (TimerBase->tb_Platform.clock_gettime)
+        TimerBase->tb_Platform.tb_HostLast = HostNow(TimerBase);
     interval.it_interval.tv_sec  = interval.it_value.tv_sec  = 0;
     interval.it_interval.tv_usec = interval.it_value.tv_usec = TimerBase->tb_Platform.tb_VBlankTime.tv_micro;
 
