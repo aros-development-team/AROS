@@ -20,7 +20,7 @@
 const struct showReqStruct 
 {
         const char* text;
-        enum showReqType type;
+        UBYTE type;             /* enum showReqType */
 } texts[] =
         {
                 {NULL, Req_Cancel },

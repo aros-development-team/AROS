@@ -150,45 +150,29 @@ LONG afsSecCheckProperty(struct AFSBase *afsbase, struct Volume *volume, struct 
     return ERROR_WRITE_PROTECTED;
 }
 
-/* Access check on a named object (ERROR_OBJECT_NOT_FOUND if it does not exist) */
-LONG afsSecCheckName(struct AFSBase *afsbase, struct AfsHandle *dirah, CONST_STRPTR name, LONG access)
-{
-    struct BlockCache *bb;
-    ULONG block;
-    SIPTR error = 0;
-
-    if (!afsbase->ab_SecActive)
-        return 0;
-    if (!(bb = findBlock(afsbase, dirah, name, &block, &error)))
-        return error ? error : ERROR_OBJECT_NOT_FOUND;
-    return afsSecCheckBlock(afsbase, dirah->volume, bb, access);
-}
-
-/* Access check on the directory that will hold 'name' */
-LONG afsSecCheckParent(struct AFSBase *afsbase, struct AfsHandle *dirah, CONST_STRPTR name, LONG access)
+/*
+ * Access check on a named object (ERROR_OBJECT_NOT_FOUND if it does not
+ * exist), on the directory that will hold 'name' (AFS_SECNAMED_PARENT),
+ * or property check on a named object (AFS_SECNAMED_PROPERTY).
+ */
+LONG afsSecCheckNamed(struct AFSBase *afsbase, struct AfsHandle *dirah, CONST_STRPTR name, LONG access)
 {
     struct BlockCache *bb;
     UBYTE fname[34];
-    SIPTR error = 0;
-
-    if (!afsbase->ab_SecActive)
-        return 0;
-    if (!(bb = getDirBlockBuffer(afsbase, dirah, name, fname, &error)))
-        return error ? error : ERROR_OBJECT_NOT_FOUND;
-    return afsSecCheckBlock(afsbase, dirah->volume, bb, access);
-}
-
-LONG afsSecCheckNameProperty(struct AFSBase *afsbase, struct AfsHandle *dirah, CONST_STRPTR name)
-{
-    struct BlockCache *bb;
     ULONG block;
     SIPTR error = 0;
 
     if (!afsbase->ab_SecActive)
         return 0;
-    if (!(bb = findBlock(afsbase, dirah, name, &block, &error)))
+    if (access & AFS_SECNAMED_PARENT)
+        bb = getDirBlockBuffer(afsbase, dirah, name, fname, &error);
+    else
+        bb = findBlock(afsbase, dirah, name, &block, &error);
+    if (!bb)
         return error ? error : ERROR_OBJECT_NOT_FOUND;
-    return afsSecCheckProperty(afsbase, dirah->volume, bb);
+    if (access & AFS_SECNAMED_PROPERTY)
+        return afsSecCheckProperty(afsbase, dirah->volume, bb);
+    return afsSecCheckBlock(afsbase, dirah->volume, bb, access & ~AFS_SECNAMED_PARENT);
 }
 
 /* Owner word for a newly created object */

@@ -12,6 +12,17 @@
 #include "os_unix_support.h"
 #endif
 
+/*
+ * Storage class for static helpers shared by several code paths. On m68k
+ * the handler lives in the Kickstart ROM, so keep one out of line copy;
+ * elsewhere inline them into every caller as the open coded original was.
+ */
+#if defined(__mc68000__)
+#define AFS_SHARED static __attribute__((noinline))
+#else
+#define AFS_SHARED static inline __attribute__((always_inline))
+#endif
+
 struct BlockCache;
 struct Volume;
 
@@ -22,7 +33,6 @@ LONG readDisk(struct AFSBase *, struct Volume *, ULONG, ULONG, APTR);
 LONG writeDisk(struct AFSBase *, struct Volume *, ULONG, ULONG, APTR);
 UBYTE diskPresent(struct AFSBase *, struct IOHandle *);
 BOOL diskWritable(struct AFSBase *, struct IOHandle *);
-ULONG sectorSize(struct AFSBase *, struct IOHandle *);
 BOOL flush(struct AFSBase *, struct Volume *);
 #ifdef __AROS__
 LONG prepareMediumCache(struct AFSBase *, struct Volume *);

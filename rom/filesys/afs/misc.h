@@ -2,7 +2,7 @@
 #define MISC_H
 
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,6 +10,7 @@
 #include "volumes.h"
 
 ULONG writeHeader(struct AFSBase *, struct Volume *, struct BlockCache *);
+void putStamp(ULONG *dest, const struct DateStamp *ds);
 LONG getDiskInfo(struct Volume *, struct InfoData *);
 LONG inhibit(struct AFSBase *, struct Volume *, ULONG forbid);
 LONG format(struct AFSBase *, struct Volume *, CONST_STRPTR, ULONG);

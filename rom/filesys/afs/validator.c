@@ -251,42 +251,43 @@ LONG check_block_range(DiskStructure *ds, ULONG num)
  */
 ValidationResult start_superblock(DiskStructure *ds)
 {
+        struct Volume *vol = ds->vol;
         ValidationResult res;
-        struct BlockCache *root = getBlock(ds->afs, ds->vol, ds->vol->rootblock);
+        struct BlockCache *root = getBlock(ds->afs, vol, vol->rootblock);
 
         if (root == NULL)
                 return vr_ReadError;
         /* Keep the on-disk bitmap invalid throughout repair. */
-        root->buffer[BLK_BITMAP_VALID_FLAG(ds->vol)] = 0;
+        root->buffer[BLK_BITMAP_VALID_FLAG(vol)] = 0;
         verify_checksum(ds, root->buffer);
-        if (!writeBlock(ds->afs, ds->vol, root, -1) || !flush(ds->afs, ds->vol))
+        if (!writeBlock(ds->afs, vol, root, -1) || !flush(ds->afs, vol))
                 return vr_WriteError;
 
-        res = collect_directory_blocks(ds, ds->vol->rootblock);
+        res = collect_directory_blocks(ds, vol->rootblock);
         if (res != vr_OK)
                 return res;
         /* Persist tree repairs before publishing their rebuilt allocation map. */
-        if (!flush(ds->afs, ds->vol))
+        if (!flush(ds->afs, vol))
                 return vr_WriteError;
         res = record_bitmap(ds);
         if (res != vr_OK)
                 return res;
-        if (!flush(ds->afs, ds->vol))
+        if (!flush(ds->afs, vol))
                 return vr_WriteError;
 
-        root = getBlock(ds->afs, ds->vol, ds->vol->rootblock);
+        root = getBlock(ds->afs, vol, vol->rootblock);
         if (root == NULL)
                 return vr_ReadError;
-        root->buffer[BLK_BITMAP_VALID_FLAG(ds->vol)] = ~0;
+        root->buffer[BLK_BITMAP_VALID_FLAG(vol)] = ~0;
         verify_checksum(ds, root->buffer);
-        if (!writeBlock(ds->afs, ds->vol, root, -1) || !flush(ds->afs, ds->vol))
+        if (!writeBlock(ds->afs, vol, root, -1) || !flush(ds->afs, vol))
         {
                 /* Do not leave a valid flag queued for a later timer retry. */
-                root = getBlock(ds->afs, ds->vol, ds->vol->rootblock);
+                root = getBlock(ds->afs, vol, vol->rootblock);
                 if (root != NULL)
                 {
-                        root->buffer[BLK_BITMAP_VALID_FLAG(ds->vol)] = 0;
-                        writeBlockDeferred(ds->afs, ds->vol, root, BLK_CHECKSUM);
+                        root->buffer[BLK_BITMAP_VALID_FLAG(vol)] = 0;
+                        writeBlockDeferred(ds->afs, vol, root, BLK_CHECKSUM);
                 }
                 return vr_WriteError;
         }
@@ -407,9 +408,10 @@ ValidationResult check_block(DiskStructure* ds, struct BlockCache* block)
 
 ValidationResult collect_bitmap(DiskStructure* ds, struct BlockCache* block)
 {
-        ULONG strt=BLK_BITMAP_POINTERS_START(ds->vol),
-                        stop=BLK_BITMAP_POINTERS_END(ds->vol),
-                        ext =BLK_BITMAP_EXTENSION(ds->vol),
+        struct Volume *vol = ds->vol;
+        ULONG strt=BLK_BITMAP_POINTERS_START(vol),
+                        stop=BLK_BITMAP_POINTERS_END(vol),
+                        ext =BLK_BITMAP_EXTENSION(vol),
                         i, blk;
 
         ULONG* mem = block->buffer;
@@ -464,13 +466,13 @@ ValidationResult collect_bitmap(DiskStructure* ds, struct BlockCache* block)
                         if (bm_mark_block(ds, blk) != st_OK)
                                 return vr_BlockUsedTwice;
 
-                        block = getBlock(ds->afs, ds->vol, blk);
+                        block = getBlock(ds->afs, vol, blk);
                         if (block == NULL)
                                 return vr_ReadError;
                         mem = block->buffer;
                         strt = 0;
-                        stop = ds->vol->SizeBlock-2;
-                        ext  = ds->vol->SizeBlock-1;
+                        stop = vol->SizeBlock-2;
+                        ext  = vol->SizeBlock-1;
                 }
         }
         while (blk != 0);
@@ -480,6 +482,7 @@ ValidationResult collect_bitmap(DiskStructure* ds, struct BlockCache* block)
 
 ValidationResult collect_file_extensions(DiskStructure* ds, struct BlockCache* block)
 {
+        struct Volume *vol = ds->vol;
         ULONG i, blk, clr=0;
         ULONG* mem = block->buffer;
 
@@ -487,7 +490,7 @@ ValidationResult collect_file_extensions(DiskStructure* ds, struct BlockCache* b
 
         do
         {
-                for (i=BLK_TABLE_END(ds->vol); i>=BLK_TABLE_START; --i)
+                for (i=BLK_TABLE_END(vol); i>=BLK_TABLE_START; --i)
                 {
                         if (clr != 0)
                         {
@@ -543,26 +546,26 @@ ValidationResult collect_file_extensions(DiskStructure* ds, struct BlockCache* b
                 /*
                  * collect bitmap extension blocks
                  */
-                if ((blk = OS_BE2LONG(mem[BLK_EXTENSION(ds->vol)])) != 0)
+                if ((blk = OS_BE2LONG(mem[BLK_EXTENSION(vol)])) != 0)
                 {
                         D(bug("[afs validate] Following to next file extension block at %08lx\n", blk));
                         if (0 == check_block_range(ds, blk))
                         {
                                 D(bug("[afs validate] Extension block outside range. truncating file\n"));
-                                mem[BLK_EXTENSION(ds->vol)] = 0;
+                                mem[BLK_EXTENSION(vol)] = 0;
                                 block->flags |= BCF_WRITE;
                                 blk = 0;
                         }
                         else if (bm_mark_block(ds, blk) != st_OK)
                         {
                                 D(bug("[afs validate] Bitmap block already marked as used. truncating file\n"));
-                                mem[BLK_EXTENSION(ds->vol)] = 0;
+                                mem[BLK_EXTENSION(vol)] = 0;
                                 block->flags |= BCF_WRITE;
                                 blk = 0;
                         }
                         else
                         {
-                                block = getBlock(ds->afs, ds->vol, blk);
+                                block = getBlock(ds->afs, vol, blk);
                                 if (block == NULL)
                                         return vr_ReadError;
                                 mem = block->buffer;
@@ -585,6 +588,7 @@ ValidationResult collect_file_extensions(DiskStructure* ds, struct BlockCache* b
  */
 ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
 {
+        struct Volume *vol = ds->vol;
         struct BlockCache *bc;
         LONG entry_type;
         LONG primary_type;
@@ -603,7 +607,7 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
         /*
          * we don't set block usage flags: we will re-read the block anyways.
          */
-        bc = getBlock(ds->afs, ds->vol, blk);
+        bc = getBlock(ds->afs, vol, blk);
 
         /*
          * initial block analysis
@@ -615,7 +619,7 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
         /*
          * collect types
          */
-        entry_type = OS_BE2LONG(bc->buffer[BLK_SECONDARY_TYPE(ds->vol)]);
+        entry_type = OS_BE2LONG(bc->buffer[BLK_SECONDARY_TYPE(vol)]);
         primary_type = OS_BE2LONG(bc->buffer[BLK_PRIMARY_TYPE]);
 
         switch (primary_type) {
@@ -660,7 +664,7 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
                         return id;
 
                 /* The valid flag is committed only after record_bitmap succeeds. */
-                bc = getBlock(ds->afs, ds->vol, blk);
+                bc = getBlock(ds->afs, vol, blk);
                 if (bc == NULL)
                         return vr_ReadError;
         }
@@ -681,15 +685,15 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
                  * two trees, one kept for compatibility (which is not kept btw as dostype is different), and the other
                  * for 'faster directory listing', but not always in sync
                  */
-                if (bc->buffer[BLK_EXTENSION(ds->vol)] != 0)
+                if (bc->buffer[BLK_EXTENSION(vol)] != 0)
                 {
                         D(bug("[afs validate]: clearing dircache pointer\n"));
-                        bc->buffer[BLK_EXTENSION(ds->vol)] = 0;
+                        bc->buffer[BLK_EXTENSION(vol)] = 0;
                         verify_checksum(ds, bc->buffer);
                         bc->flags |= BCF_WRITE;
                 }
 
-                for (i=BLK_TABLE_START; i<=BLK_TABLE_END(ds->vol); i++)
+                for (i=BLK_TABLE_START; i<=BLK_TABLE_END(vol); i++)
                 {
                         id = OS_BE2LONG(bc->buffer[i]);
                         if (id != 0)
@@ -707,7 +711,7 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
                                  * restore current block
                                  * this will work well if the modified block gets marked as BCF_WRITE
                                  */
-                                bc = getBlock(ds->afs, ds->vol, blk);
+                                bc = getBlock(ds->afs, vol, blk);
                                 if (bc == NULL)
                                         return vr_ReadError;
 
@@ -738,13 +742,13 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
                 id = collect_file_extensions(ds, bc);
                 if (id != vr_OK)
                         return id;
-                bc = getBlock(ds->afs, ds->vol, blk);
+                bc = getBlock(ds->afs, vol, blk);
                 if (bc == NULL)
                         return vr_ReadError;
-                id = OS_BE2LONG(bc->buffer[BLK_BYTE_SIZE(ds->vol)]);
-                if (id > (ds->file_blocks * ds->vol->SizeBlock << 2))
+                id = OS_BE2LONG(bc->buffer[BLK_BYTE_SIZE(vol)]);
+                if (id > (ds->file_blocks * vol->SizeBlock << 2))
                 {
-                        bc->buffer[BLK_BYTE_SIZE(ds->vol)] = OS_LONG2BE(ds->file_blocks * ds->vol->SizeBlock << 2);
+                        bc->buffer[BLK_BYTE_SIZE(vol)] = OS_LONG2BE(ds->file_blocks * vol->SizeBlock << 2);
                         verify_checksum(ds, bc->buffer);
                         bc->flags |= BCF_WRITE;
                 }
@@ -753,7 +757,7 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
         /*
          * finally, move on to next file in this hash chain. IF next file suffers anything, remove it and following files from hash chain.
          */
-        id = OS_BE2LONG(bc->buffer[BLK_HASHCHAIN(ds->vol)]);
+        id = OS_BE2LONG(bc->buffer[BLK_HASHCHAIN(vol)]);
         if (id != 0)
         {
                 D(bug("[afs validate]: collecting other items in this chain\n"));
@@ -778,10 +782,10 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
                 if (id != 0)
                 {
                         D(bug("[afs validate]: removing faulty chain\n"));
-                        bc = getBlock(ds->afs, ds->vol, blk);
+                        bc = getBlock(ds->afs, vol, blk);
                         if (bc == NULL)
                                 return vr_ReadError;
-                        bc->buffer[BLK_HASHCHAIN(ds->vol)] = 0;
+                        bc->buffer[BLK_HASHCHAIN(vol)] = 0;
                         verify_checksum(ds, bc->buffer);
                         bc->flags |= BCF_WRITE;
                 }
@@ -826,15 +830,16 @@ static BOOL invalidateBitmapCache(DiskStructure *ds, BOOL invalidate)
 
 ValidationResult record_bitmap(DiskStructure *ds)
 {
-        ULONG bmap_blk_bytes = (ds->vol->SizeBlock-1)<<2;
-        ULONG batchblocks = BM_RECORDBATCHBYTES / BLOCK_SIZE(ds->vol);
+        struct Volume *vol = ds->vol;
+        ULONG bmap_blk_bytes = (vol->SizeBlock-1)<<2;
+        ULONG batchblocks = BM_RECORDBATCHBYTES / BLOCK_SIZE(vol);
         UBYTE *buf = NULL;
         ULONG i;
 
         if (!invalidateBitmapCache(ds, FALSE))
                 return vr_NoAccess;
         if (batchblocks > 1)
-                buf = AllocVec(batchblocks * BLOCK_SIZE(ds->vol), MEMF_PUBLIC);
+                buf = AllocVec(batchblocks * BLOCK_SIZE(vol), MEMF_PUBLIC);
         if (buf == NULL)
         {
                 /* no memory for batching - write through the cache, one block at a time */
@@ -843,14 +848,14 @@ ValidationResult record_bitmap(DiskStructure *ds)
 
                 for (i=0; i<ds->bm_lastblk; i++)
                 {
-                        bc = getBlock(ds->afs, ds->vol, ds->bm_blocks[i]);
+                        bc = getBlock(ds->afs, vol, ds->bm_blocks[i]);
                         if (bc == NULL)
                                 return vr_ReadError;
                         mem = bc->buffer;
 
                         CopyMemQuick(&((char*)ds->bitmap)[i*bmap_blk_bytes], &mem[1], bmap_blk_bytes);
                         verify_bm_checksum(ds, mem);
-                        if (!writeBlock(ds->afs, ds->vol, bc, -1))
+                        if (!writeBlock(ds->afs, vol, bc, -1))
                                 return vr_WriteError;
                 }
                 return vr_OK;
@@ -874,13 +879,13 @@ ValidationResult record_bitmap(DiskStructure *ds)
 
                 for (n = 0; n < runlen; n++)
                 {
-                        ULONG *mem = (ULONG *)(buf + n * BLOCK_SIZE(ds->vol));
+                        ULONG *mem = (ULONG *)(buf + n * BLOCK_SIZE(vol));
 
                         mem[0] = 0;
                         CopyMemQuick(&((char*)ds->bitmap)[(i + n) * bmap_blk_bytes], &mem[1], bmap_blk_bytes);
                         verify_bm_checksum(ds, mem);
                 }
-                if (writeDisk(ds->afs, ds->vol, ds->bm_blocks[i], runlen, buf) != 0)
+                if (writeDisk(ds->afs, vol, ds->bm_blocks[i], runlen, buf) != 0)
                 {
                         FreeVec(buf);
                         return vr_WriteError;
@@ -980,12 +985,6 @@ void bm_add_bitmap_block(DiskStructure *ds, ULONG blk)
 {
         ds->bm_blocks[ds->bm_lastblk] = blk;
         ds->bm_lastblk++;
-}
-
-void bm_add_bitmap_extension_block(DiskStructure *ds, ULONG blk)
-{
-        ds->bme_blocks[ds->bme_lastblk] = blk;
-        ds->bme_lastblk++;
 }
 
 

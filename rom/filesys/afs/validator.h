@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -130,7 +130,6 @@ BitmapResult bm_mark_block(DiskStructure *ds, ULONG block);
  * 
  */
 void bm_add_bitmap_block(DiskStructure *ds, ULONG blk);
-void bm_add_bitmap_extension_block(DiskStructure *ds, ULONG blk);
 
 #endif /* __AROS__ */
 #endif /* VALIDATOR_H */

@@ -101,11 +101,6 @@ BOOL diskWritable(struct AFSBase *afsbase, struct IOHandle *ioh)
         return ioh->fh ? 1 : 0;
 }
 
-ULONG sectorSize(struct AFSBase *afsbase, struct IOHandle *ioh)
-{
-        return 512;
-}
-
 void check64BitSupport(struct AFSBase *afsbase, struct Volume *volume) {
        /*
          * This is a NOP, since we just access the image as a block device
