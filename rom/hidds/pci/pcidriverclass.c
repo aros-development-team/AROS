@@ -23,11 +23,47 @@
 
 OOP_Object *PCIDrv__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    struct DrvInstData *instance = (struct DrvInstData *)OOP_INST_DATA(cl, o);
+    struct pci_staticdata *psd = &BASE(cl->UserData)->psd;
+    struct DrvInstData *instance;
+    char path[] = "pci/ssss";
+    struct TagItem tags[] =
+    {
+        { aHidd_DevicePath  , (IPTR)path            },
+        { TAG_MORE          , (IPTR)msg->attrList   }
+    };
+    struct pRoot_New new_msg =
+    {
+        .mID      = msg->mID,
+        .attrList = tags
+    };
+    ULONG segment;
+    int i;
 
-    instance->DirectBus = GetTagData(aHidd_PCIDriver_DirectBus, TRUE, msg->attrList);
-    instance->IOBase = GetTagData(aHidd_PCIDriver_IOBase, 0, msg->attrList);
+    /*
+     * Every hardware driver has a bus numbering of its own. Its number is
+     * the first part of the device path of everything found on its bus,
+     * and on its own it is the identity of the driver object.
+     */
+    Forbid();
+    segment = psd->segments++;
+    Permit();
+
+    for (i = 0; i < 4; i++)
+        path[4 + i] = "0123456789abcdef"[(segment >> ((3 - i) * 4)) & 0xf];
+
+    /* A driver which knows better can name itself */
+    if (FindTagItem(aHidd_DevicePath, msg->attrList))
+        tags[0].ti_Tag = TAG_IGNORE;
+
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &new_msg.mID);
+    if (o)
+    {
+        instance = (struct DrvInstData *)OOP_INST_DATA(cl, o);
+
+        instance->DirectBus = GetTagData(aHidd_PCIDriver_DirectBus, TRUE, msg->attrList);
+        instance->IOBase = GetTagData(aHidd_PCIDriver_IOBase, 0, msg->attrList);
+        instance->segment = segment;
+    }
 
     return o;
 }
