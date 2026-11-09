@@ -13,6 +13,13 @@
 #define _PUSH(sp, val) *--sp = (IPTR)(val)
 #define M68K_TASK_FRAME_SIZE 66
 
+/* The argument tags are handled as a range below */
+_Static_assert(TASKTAG_ARG2 == TASKTAG_ARG1 + 1 && TASKTAG_ARG3 == TASKTAG_ARG1 + 2 &&
+               TASKTAG_ARG4 == TASKTAG_ARG1 + 3 && TASKTAG_ARG5 == TASKTAG_ARG1 + 4 &&
+               TASKTAG_ARG6 == TASKTAG_ARG1 + 5 && TASKTAG_ARG7 == TASKTAG_ARG1 + 6 &&
+               TASKTAG_ARG8 == TASKTAG_ARG1 + 7,
+               "TASKTAG_ARG1 to TASKTAG_ARG8 must be consecutive");
+
 BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
                     const struct TagItem *tagList, struct ExecBase *SysBase)
 {
@@ -41,19 +48,16 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
         case TAG_DONE:
             tagList = NULL;
             break;
-#define HANDLEARG(x) \
-        case TASKTAG_ARG ## x: \
-            args[x - 1] = (IPTR)tagList->ti_Data; \
-            if (x > numargs) numargs = x; \
+        default:
+            /* TASKTAG_ARG1 to TASKTAG_ARG8 are consecutive tags */
+            if (tagList->ti_Tag >= TASKTAG_ARG1 && tagList->ti_Tag <= TASKTAG_ARG8) {
+                WORD arg = tagList->ti_Tag - TASKTAG_ARG1;
+
+                args[arg] = (IPTR)tagList->ti_Data;
+                if (arg >= numargs)
+                    numargs = arg + 1;
+            }
             break;
-        HANDLEARG(1)
-        HANDLEARG(2)
-        HANDLEARG(3)
-        HANDLEARG(4)
-        HANDLEARG(5)
-        HANDLEARG(6)
-        HANDLEARG(7)
-        HANDLEARG(8)
         }
         if (tagList)
             tagList++;

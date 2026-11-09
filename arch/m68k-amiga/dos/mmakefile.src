@@ -13,6 +13,8 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/dos
 USER_CPPFLAGS := -DUSE_EXEC_DEBUG -D__DOS_NOLIBBASE__ -D__DOS_NOLIBINLINE__
+# SysBase is the absolute address 4 in the ROM link (see rom/dos/mmakefile.src)
+USER_CFLAGS := -Wa,--defsym,SysBase=4
 
 %build_archspecific mainmmake=kernel-dos maindir=rom/dos \
     arch=amiga-m68k modname=dos files=bootconsole

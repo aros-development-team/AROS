@@ -11,6 +11,7 @@
 #include <oop/oop.h>
 
 #include "graphics_intern.h"
+#include "amigagfx_intern.h"
 #include "gfxfuncsupport.h"
 
 #include <hidd/amigavideo.h>
@@ -155,7 +156,7 @@
 
     if (gfxhidd) {
         if (sprite->num) {
-            OOP_MethodID HiddAmigaGfxBase = OOP_GetMethodID(IID_Hidd_AmigaGfx, 0);
+            OOP_MethodID HiddAmigaGfxBase = gfx_AmigaGfxBase(GfxBase);
             HIDD_AMIGAGFX_SetSpritePos(gfxhidd, sprite->x, sprite->y, sprite->num);
         } else if (display)
             HIDD_Display_SetCursorPos(display, sprite->x, sprite->y);

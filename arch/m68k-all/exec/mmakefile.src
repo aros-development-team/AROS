@@ -17,7 +17,7 @@ PRIV_EXEC_INCLUDES = \
     $(TARGET_KERNEL_INCLUDES) \
     -I$(SRCDIR)/rom/kernel
 
-FILES=offsets getcc preparecontext \
+FILES=getcc preparecontext \
       cachecleare cacheclearu cachepostdma cachepredma \
       cachecontrol setfunction copymem alert_cpu addmemlist
 

@@ -13,6 +13,7 @@
 #include <proto/utility.h>
 
 #include "graphics_intern.h"
+#include "amigagfx_intern.h"
 #include "gfxfuncsupport.h"
 
 #include <interface/Hidd_AmigaGfx.h>
@@ -89,7 +90,7 @@
         }
         else
         {
-            OOP_MethodID HiddAmigaGfxBase = OOP_GetMethodID(IID_Hidd_AmigaGfx, 0);
+            OOP_MethodID HiddAmigaGfxBase = gfx_AmigaGfxBase(GfxBase);
             res = HIDD_AMIGAGFX_SetSpriteShape(mdd->display_gfxhidd, bitmap, 0, 0, newsprite->es_SimpleSprite.num);
             if (res)
                 HIDD_AMIGAGFX_SetSpriteVisible(mdd->display_gfxhidd, TRUE, newsprite->es_SimpleSprite.num);
