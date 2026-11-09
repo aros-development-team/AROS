@@ -33,6 +33,430 @@
 #define DFSN(x)
 #define DPSD(x)
 
+/****** Configdata.mui/MUIC_Configdata ************
+*
+*   NAME
+*       MUIC_Configdata
+*
+*   SUPERCLASS
+*       Dataspace.mui
+*
+*   DESCRIPTION
+*       Store Zune preferences by configuration ID, using compiled defaults
+*       for missing records. Numeric records hold four-byte big-endian ULONGs;
+*       strings include the terminating zero. Typed getters do not check the
+*       stored record size or type.
+*
+*       Construction tries ENV:zune/<base>.prefs, then ENVARC:zune/<base>.prefs
+*       when an application base is available. Only if neither succeeds does
+*       it try the corresponding global.prefs files. Local and global files
+*       are alternatives, not layers.
+*
+*       Dataspace owns copied records. GetString returns borrowed pointers;
+*       the private ZunePrefsNew view is not generally refreshed by setters
+*       or subsequent Load operations. Supply a live Application for
+*       notification handling and retain it through disposal.
+*
+*   NOTES
+*       Save and Load are synchronous. Save replaces the file without atomic
+*       rollback and always returns zero. Load may return TRUE for partial
+*       or malformed records, after discarding existing records.
+*       Window-position methods trust record lengths and temporarily swap
+*       bytes in place; concurrent access is not safe without serialization.
+*       Public-screen descriptors are borrowed and may expire after reload.
+*
+*/
+/****** Configdata.mui/MUIA_Configdata_Application ************
+*
+*   NAME
+*       MUIA_Configdata_Application
+*
+*   FUNCTION
+*       Associate Configdata with the Application used for notifications and
+*       window positions.
+*
+*   INPUTS
+*       Initialize only, borrowed live Application object pointer. Default NULL
+*       in storage, but notification setup is not NULL-safe.
+*
+*   NOTES
+*       Borrowed Application pointer. Used to register/remove the filesystem
+*       notification handler and access window positions; keep it alive until
+*       Configdata is disposed. No local setter/getter.
+*
+*/
+/****** Configdata.mui/MUIA_Configdata_ApplicationBase ************
+*
+*   NAME
+*       MUIA_Configdata_ApplicationBase
+*
+*   FUNCTION
+*       Choose the application preference-file base name.
+*
+*   INPUTS
+*       Initialize only, borrowed CONST_STRPTR, not an object pointer despite
+*       the header annotation. Default NULL.
+*
+*   NOTES
+*       The explicit name takes precedence over MUIA_Application_Base. Paths use a
+*       255-byte buffer and may be truncated. The name is borrowed, not copied; no
+*       local setter/getter.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_GetString ************
+*
+*   NAME
+*       MUIM_Configdata_GetString
+*
+*   SYNOPSIS
+*       CONST_STRPTR value = (CONST_STRPTR)DoMethod(obj,
+*       MUIM_Configdata_GetString, id);
+*
+*   FUNCTION
+*       Find a stored string or its builtin fallback.
+*
+*   INPUTS
+*       id - ULONG configuration ID whose record is a terminated string.
+*
+*   RESULT
+*       Borrowed CONST_STRPTR, or NULL if no stored record or builtin
+*       string/image/frame default exists.
+*
+*   NOTES
+*       Search stored records before string, image and frame defaults. The pointer
+*       is borrowed and unvalidated; copy it before replacing records, loading
+*       preferences or disposing Configdata. Unknown IDs return NULL.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_GetULong ************
+*
+*   NAME
+*       MUIM_Configdata_GetULong
+*
+*   SYNOPSIS
+*       ULONG value = (ULONG)DoMethod(obj, MUIM_Configdata_GetULong, id);
+*
+*   FUNCTION
+*       Read a numeric preference in host byte order.
+*
+*   INPUTS
+*       id - ULONG ID whose stored record contains at least four bytes of
+*       big-endian numeric data.
+*
+*   RESULT
+*       Stored value converted to host order; otherwise builtin numeric default,
+*       otherwise zero. Zero does not distinguish missing from stored zero.
+*
+*   NOTES
+*       Stored values are interpreted as four-byte big-endian ULONGs without
+*       size/type checks. The numeric default (or zero) is returned when no record
+*       exists.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_SetULong ************
+*
+*   NAME
+*       MUIM_Configdata_SetULong
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_SetULong, id, val);
+*
+*   FUNCTION
+*       Store a four-byte numeric preference or remove a redundant default.
+*
+*   INPUTS
+*       id - Valid nonzero numeric configuration ID.
+*       val - ULONG in host byte order.
+*
+*   RESULT
+*       Always zero, including successful storage, removal and allocation
+*       failure.
+*
+*   NOTES
+*       Remove a record matching the compiled numeric default; otherwise store
+*       four big-endian bytes. The private preference view is not refreshed. Check
+*       stored values separately if failure matters.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_SetImspec ************
+*
+*   NAME
+*       MUIM_Configdata_SetImspec
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_SetImspec, id, imspec);
+*
+*   FUNCTION
+*       Store a imspec string in the preference Dataspace.
+*
+*   INPUTS
+*       id - Valid nonzero configuration ID for this representation.
+*       imspec - Borrowed terminated CONST_STRPTR for the call, with NULL
+*       handled as described below.
+*
+*   RESULT
+*       Always zero; storage/removal success is not reported.
+*
+*   NOTES
+*       NULL, empty and strings starting with '6' are ignored. Matching image or
+*       string defaults remove the record; other strings are copied without format
+*       validation. Source storage must not alias the record being replaced.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_SetFramespec ************
+*
+*   NAME
+*       MUIM_Configdata_SetFramespec
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_SetFramespec, id,
+*       framespec);
+*
+*   FUNCTION
+*       Store a framespec string in the preference Dataspace.
+*
+*   INPUTS
+*       id - Valid nonzero configuration ID for this representation.
+*       framespec - Borrowed terminated CONST_STRPTR for the call, with NULL
+*       handled as described below.
+*
+*   RESULT
+*       Always zero; storage/removal success is not reported.
+*
+*   NOTES
+*       NULL and empty strings are ignored. Matching frame defaults remove the
+*       record; other strings are copied without parsing or private-frame refresh.
+*       Source storage must not alias the replaced record.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_SetPenspec ************
+*
+*   NAME
+*       MUIM_Configdata_SetPenspec
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_SetPenspec, id, penspec);
+*
+*   FUNCTION
+*       Store a penspec string in the preference Dataspace.
+*
+*   INPUTS
+*       id - Valid nonzero configuration ID for this representation.
+*       penspec - Borrowed terminated CONST_STRPTR for the call, with NULL
+*       handled as described below.
+*
+*   RESULT
+*       Always zero; storage/removal success is not reported.
+*
+*   NOTES
+*       NULL and empty strings are ignored. Matching string defaults remove the
+*       record; other strings are copied. The private pen view is not refreshed;
+*       source storage must not alias the replaced record.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_SetFont ************
+*
+*   NAME
+*       MUIM_Configdata_SetFont
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_SetFont, id, font);
+*
+*   FUNCTION
+*       Store a font string in the preference Dataspace.
+*
+*   INPUTS
+*       id - Valid nonzero configuration ID for this representation.
+*       font - Borrowed terminated CONST_STRPTR for the call, with NULL handled
+*       as described below.
+*
+*   RESULT
+*       Always zero; storage/removal success is not reported.
+*
+*   NOTES
+*       NULL or empty strings remove the record; nonempty strings are copied
+*       without checking font availability. The private font view is not
+*       refreshed. Source storage must not alias the replaced record.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_SetString ************
+*
+*   NAME
+*       MUIM_Configdata_SetString
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_SetString, id, string);
+*
+*   FUNCTION
+*       Store a string and synchronize recognized private string fields.
+*
+*   INPUTS
+*       id - Valid nonzero string configuration ID.
+*       string - Non-NULL terminated CONST_STRPTR, readable for the call.
+*
+*   RESULT
+*       Always zero; allocation, removal or parse success is not reported.
+*
+*   NOTES
+*       Matching string defaults remove the record. Other strings are copied, then
+*       recognized private fields are synchronized; keyboard specifications use
+*       ParseIX, but errors are not returned. NULL and self-aliasing replacement
+*       pointers are unsafe.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_Save ************
+*
+*   NAME
+*       MUIM_Configdata_Save
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_Save, filename);
+*
+*   FUNCTION
+*       Write the current preference Dataspace to a file.
+*
+*   INPUTS
+*       obj - Live Configdata; associated Application must remain valid.
+*       filename - Non-NULL terminated path, readable for the call.
+*
+*   RESULT
+*       Always zero. It is not a success/failure indicator.
+*
+*   NOTES
+*       Captures Application window positions, then writes PREF/PRHD/MUIC directly
+*       to MODE_NEWFILE, creating the parent directory once if needed. Writes are
+*       not fully checked and no atomic replacement or rollback is provided;
+*       verify the file when persistence matters.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_Load ************
+*
+*   NAME
+*       MUIM_Configdata_Load
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_Load, filename);
+*
+*   FUNCTION
+*       Replace Dataspace contents with preference records from an IFF file.
+*
+*   INPUTS
+*       obj - Live Configdata with no retained record pointers in use.
+*       filename - Non-NULL terminated path, readable for the call.
+*
+*   RESULT
+*       FALSE if IFF allocation, file opening or OpenIFF fails. Otherwise TRUE,
+*       regardless of later parsing, record-reading or completeness.
+*
+*   NOTES
+*       After successful OpenIFF, clears existing records and reads MUIC chunks
+*       without checking all read/parse results. TRUE can mean partial or
+*       malformed data; old records cannot be restored. Reloads screen descriptors
+*       but does not rebuild private preferences, invalidating borrowed pointers.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_GetWindowPos ************
+*
+*   NAME
+*       MUIM_Configdata_GetWindowPos
+*
+*   SYNOPSIS
+*       IPTR record = DoMethod(obj, MUIM_Configdata_GetWindowPos);
+*
+*   FUNCTION
+*       Copy the stored window-position record into the associated Application.
+*
+*   INPUTS
+*       obj - Live Configdata. No payload argument is read by this
+*       implementation. The stored record must be valid for the Application
+*       window-position layout and capacity.
+*
+*   RESULT
+*       Borrowed pointer to the stored record, or zero when absent. With no
+*       Application, returns the record without copying.
+*
+*   NOTES
+*       Reads MUICFG_WindowPos and copies it to the Application if present.
+*       Temporarily swaps the stored record on little-endian targets. Record size
+*       is not validated; use only valid native data with serialized access.
+*       Returned storage is borrowed.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_SetWindowPos ************
+*
+*   NAME
+*       MUIM_Configdata_SetWindowPos
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_SetWindowPos);
+*
+*   FUNCTION
+*       Capture the Application window-position record in Dataspace.
+*
+*   INPUTS
+*       obj - Live Configdata with a valid associated Application, or no
+*       Application for a no-op. No payload argument is read.
+*
+*   RESULT
+*       Always zero; Dataspace copy success is ignored.
+*
+*   NOTES
+*       Copies the associated Application position record into Dataspace and
+*       temporarily swaps source bytes on little-endian targets. Pointer/size
+*       validity and storage success are unchecked. Save calls this method.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_GetPubScrnDesc ************
+*
+*   NAME
+*       MUIM_Configdata_GetPubScrnDesc
+*
+*   SYNOPSIS
+*       IPTR descriptor = DoMethod(obj, MUIM_Configdata_GetPubScrnDesc, name);
+*
+*   FUNCTION
+*       Find a loaded public-screen descriptor by exact name.
+*
+*   INPUTS
+*       name - Non-NULL terminated CONST_STRPTR, readable for the call.
+*
+*   RESULT
+*       Borrowed MUI_PubScreenDesc pointer for a case-sensitive match, otherwise
+*       NULL. Missing muiscreen.library yields NULL.
+*
+*   NOTES
+*       Looks up the name case-sensitively under a shared lock, released before
+*       return. The pointer is borrowed and may become invalid on reload/disposal;
+*       callers must synchronize concurrent access.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_LoadPubScreens ************
+*
+*   NAME
+*       MUIM_Configdata_LoadPubScreens
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_LoadPubScreens);
+*
+*   FUNCTION
+*       Reload public-screen descriptors from env:Zune/PublicScreens.iff.
+*
+*   INPUTS
+*       obj - Live Configdata; no payload argument is used. Requires
+*       muiscreen.library for actual loading.
+*
+*   RESULT
+*       Always TRUE, including missing library, missing file and an empty
+*       descriptor list.
+*
+*   NOTES
+*       Replaces the descriptor list from env:Zune/PublicScreens.iff when
+*       muiscreen.library is available; old pointers become invalid. Missing files
+*       leave an empty list. Allocation errors are not reported; notification-port
+*       messages are not drained or replied to.
+*
+*/
+
 extern struct Library *MUIMasterBase;
 
 struct MUI_ConfigdataData
@@ -47,11 +471,19 @@ struct MUI_ConfigdataData
     struct List                 pubscreens;
 };
 
+/*
+ * Return borrowed stored/default string or NULL; requires a valid object and
+ * ID.
+ */
 static inline CONST_STRPTR GetConfigString(Object *obj, ULONG id)
 {
     return (CONST_STRPTR) DoMethod(obj, MUIM_Configdata_GetString, id);
 }
 
+/*
+ * Return host-order stored/default ULONG (or zero); stored record must contain
+ * four valid bytes.
+ */
 static inline ULONG GetConfigULong(Object *obj, ULONG id)
 {
     return (ULONG) DoMethod(obj, MUIM_Configdata_GetULong, id);
@@ -117,6 +549,10 @@ const static struct spec_cfg DefImspecValues[] =
 };
 
 /* called by Configdata_New */
+/*
+ * Initialize private image slots from borrowed stored/default specs; pointers
+ * follow Dataspace lifetime.
+ */
 static void init_imspecs(Object *obj, struct MUI_ConfigdataData *data)
 {
     int i;
@@ -162,6 +598,10 @@ const static struct spec_cfg DefFramespecValues[] =
 };
 
 /* called by Configdata_New */
+/*
+ * Parse stored/default frame specifications into private frame state; requires
+ * initialized Dataspace.
+ */
 static void init_framespecs(Object *obj, struct MUI_ConfigdataData *data)
 {
     int i;
@@ -291,6 +731,10 @@ const static struct def_strval DefStrValues[] = {
     {0, 0},
 };
 
+/*
+ * Store borrowed keyboard specification and ParseIX validity in private
+ * preferences.
+ */
 static inline void Configdata__SetKey(ZuneKeySpec *key, CONST_STRPTR val)
 {
     if ((key->readable_hotkey = val) != NULL)
@@ -302,6 +746,10 @@ static inline void Configdata__SetKey(ZuneKeySpec *key, CONST_STRPTR val)
 }
 
 /* Always assign a !persistent! string stored in dataspace (or default) to ZunePrefsNew fields */
+/*
+ * Synchronize recognized private string and key fields from
+ * Dataspace/defaults; other IDs are ignored.
+ */
 static void Configdata_SynchronizeString(Object *obj, ULONG id)
 {
     struct MUI_ConfigdataData *data = INST_DATA(OCLASS(obj), obj);
@@ -538,6 +986,11 @@ static void Configdata_SynchronizeString(Object *obj, ULONG id)
  Load global (and maybe application-specific) prefs files into the dataspace,
  then fill the prefs struct with dataspace or default values
 **************************************************************************/
+/*
+ * Initialize Dataspace, load local or global preferences and register
+ * Application notifications. Application/base are borrowed; notification
+ * errors do not fail construction.
+ */
 IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ConfigdataData *data;
@@ -775,6 +1228,10 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Under exclusive lock free all cached public-screen descriptors and list
+ * nodes.
+ */
 static void Configdata__DisposeDescriptors(struct MUI_ConfigdataData *data)
 {
     struct Node *psNode, *tmp;
@@ -793,6 +1250,10 @@ static void Configdata__DisposeDescriptors(struct MUI_ConfigdataData *data)
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
+/*
+ * Release notification handler/port and cached descriptors before superclass
+ * disposal. Application must remain live.
+ */
 IPTR Configdata__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
@@ -812,6 +1273,10 @@ IPTR Configdata__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
+/*
+ * Return borrowed private ZunePrefsNew pointer after synchronizing window
+ * positions; no ownership transfer.
+ */
 IPTR Configdata__OM_GET(struct IClass *cl, Object *obj,
     struct opGet *msg)
 {
@@ -835,6 +1300,10 @@ IPTR Configdata__OM_GET(struct IClass *cl, Object *obj,
 #endif
 
 #if (!AROS_BIG_ENDIAN)
+/*
+ * Swap each window-position record and count in place on little-endian
+ * targets. Trusts record bounds; requires serialized valid data.
+ */
 static LONG windowpos_swapbytes(IPTR data, LONG size)
 {
     LONG items;
@@ -861,6 +1330,10 @@ static LONG windowpos_swapbytes(IPTR data, LONG size)
 }
 #endif
 
+/*
+ * Return borrowed stored window positions, copying to Application with
+ * temporary byte swap when present.
+ */
 static IPTR Configdata_GetWindowPos(struct IClass *cl, Object *obj,
     struct MUIP_Configdata_GetString *msg)
 {
@@ -881,6 +1354,10 @@ static IPTR Configdata_GetWindowPos(struct IClass *cl, Object *obj,
     return s;
 }
 
+/*
+ * Capture Application window positions in Dataspace, temporarily swapping
+ * source bytes. Caller must provide valid Application data.
+ */
 static IPTR Configdata_SetWindowPos(struct IClass *cl, Object *obj,
     struct MUIP_Configdata_GetString *msg)
 {
@@ -914,6 +1391,10 @@ static IPTR Configdata_SetWindowPos(struct IClass *cl, Object *obj,
  Check if string is found in dataspace, then if not found, search each
  builtin array
 **************************************************************************/
+/*
+ * Return borrowed string from Dataspace or compiled string/image/frame
+ * defaults; no size/type check.
+ */
 IPTR Configdata__MUIM_GetString(struct IClass *cl, Object *obj,
     struct MUIP_Configdata_GetString *msg)
 {
@@ -952,6 +1433,10 @@ IPTR Configdata__MUIM_GetString(struct IClass *cl, Object *obj,
  search in builtin array first, to not not have in dataspace the default
  value (would be redundant)
 **************************************************************************/
+/*
+ * Ignore NULL/empty/leading '6' input; remove matching defaults or copy string
+ * into Dataspace. Returns zero; no private-view update.
+ */
 IPTR Configdata__MUIM_SetImspec(struct IClass *cl, Object *obj,
     struct MUIP_Configdata_SetImspec *msg)
 {
@@ -994,6 +1479,10 @@ IPTR Configdata__MUIM_SetImspec(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Configdata_SetFramespec
 **************************************************************************/
+/*
+ * Ignore NULL/empty input; remove matching frame default or copy string.
+ * Returns zero; no private-view update.
+ */
 IPTR Configdata__MUIM_SetFramespec(struct IClass *cl, Object *obj,
     struct MUIP_Configdata_SetFramespec *msg)
 {
@@ -1027,6 +1516,10 @@ IPTR Configdata__MUIM_SetFramespec(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Configdata_SetPenspec
 **************************************************************************/
+/*
+ * Ignore NULL/empty input; remove matching string default or copy string.
+ * Returns zero; no private-view update.
+ */
 IPTR Configdata__MUIM_SetPenspec(struct IClass *cl, Object *obj,
     struct MUIP_Configdata_SetPenspec *msg)
 {
@@ -1053,6 +1546,10 @@ IPTR Configdata__MUIM_SetPenspec(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Configdata_SetFont
 **************************************************************************/
+/*
+ * Remove record for NULL/empty font; otherwise copy font string. Returns zero;
+ * no private-view update.
+ */
 IPTR Configdata__MUIM_SetFont(struct IClass *cl, Object *obj,
     struct MUIP_Configdata_SetFont *msg)
 {
@@ -1072,6 +1569,10 @@ IPTR Configdata__MUIM_SetFont(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Configdata_SetString
 **************************************************************************/
+/*
+ * Remove default-matching string or copy it, then synchronize recognized
+ * private fields. NULL/self-aliasing source is unsafe.
+ */
 IPTR Configdata__MUIM_SetString(struct IClass *cl, Object *obj,
     struct MUIP_Configdata_SetString *msg)
 {
@@ -1099,6 +1600,10 @@ IPTR Configdata__MUIM_SetString(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Configdata_GetULong
 **************************************************************************/
+/*
+ * Return stored big-endian ULONG converted to host order, compiled default or
+ * zero. No record size/type check.
+ */
 IPTR Configdata__MUIM_GetULong(struct IClass *cl, Object *obj,
     struct MUIP_Configdata_GetULong *msg)
 {
@@ -1125,6 +1630,10 @@ IPTR Configdata__MUIM_GetULong(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Configdata_SetULong
 **************************************************************************/
+/*
+ * Remove numeric-default record or store four big-endian bytes; ignore storage
+ * failures and return zero.
+ */
 IPTR Configdata__MUIM_SetULong(struct IClass *cl, Object *obj,
     struct MUIP_Configdata_SetULong *msg)
 {
@@ -1156,6 +1665,10 @@ IPTR Configdata__MUIM_SetULong(struct IClass *cl, Object *obj,
 /**************************************************************************
  SavePrefsHeader: Write a PRHD chunk
 **************************************************************************/
+/*
+ * Write PRHD chunk; nonzero byte count is accepted without verifying an
+ * exact-length write.
+ */
 static int SavePrefsHeader(struct IFFHandle *iff)
 {
     if (!PushChunk(iff, 0, MAKE_ID('P', 'R', 'H', 'D'), IFFSIZE_UNKNOWN))
@@ -1176,6 +1689,10 @@ static int SavePrefsHeader(struct IFFHandle *iff)
 /**************************************************************************
  MUIM_Configdata_Save
 **************************************************************************/
+/*
+ * Replace preference file synchronously, writing PREF/PRHD/MUIC after window
+ * capture. Return zero regardless of write failures; no rollback.
+ */
 IPTR Configdata__MUIM_Save(struct IClass *cl, Object *obj,
     struct MUIP_Configdata_Save *msg)
 {
@@ -1236,6 +1753,10 @@ IPTR Configdata__MUIM_Save(struct IClass *cl, Object *obj,
  MUIM_Configdata_Load
  Get the content of the file into the object.
 **************************************************************************/
+/*
+ * After successful OpenIFF clear Dataspace and parse records; subsequent
+ * read/parse errors are ignored and TRUE is returned.
+ */
 IPTR Configdata__MUIM_Load(struct IClass *cl, Object *obj,
     struct MUIP_Configdata_Load *msg)
 {
@@ -1291,6 +1812,10 @@ IPTR Configdata__MUIM_Load(struct IClass *cl, Object *obj,
     return res;
 }
 
+/*
+ * Return borrowed case-sensitive public-screen descriptor under shared lock;
+ * pointer is unprotected after return.
+ */
 static IPTR Configdata_GetPubScrnDesc(struct IClass *cl, Object *obj,
     struct MUIP_Configdata_GetPubScrnDesc *msg)
 {
@@ -1313,6 +1838,10 @@ static IPTR Configdata_GetPubScrnDesc(struct IClass *cl, Object *obj,
     return (IPTR)desc;
 }
 
+/*
+ * Replace cached public-screen descriptors under exclusive lock; missing
+ * file/library yields TRUE; existing pointers expire.
+ */
 static IPTR Configdata_LoadPubScreens(struct IClass *cl, Object *obj,
     Msg msg)
 {
@@ -1345,6 +1874,10 @@ static IPTR Configdata_LoadPubScreens(struct IClass *cl, Object *obj,
 
 /*
  * The class dispatcher
+ */
+/*
+ * Dispatch Configdata methods and pass unhandled methods to Dataspace
+ * superclass.
  */
 BOOPSI_DISPATCHER(IPTR, Configdata_Dispatcher, cl, obj, msg)
 {
