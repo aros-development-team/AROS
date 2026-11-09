@@ -5,12 +5,14 @@ include $(SRCDIR)/config/aros.cfg
 USER_CFLAGS := $(CFLAGS_GNU99) -Wall -Wextra -Werror
 USER_INCLUDES := -I$(SRCDIR)/workbench/network/mdns
 
-#MM- test : test-dnssd-model test-dnssd-link
-#MM- test-quick : test-dnssd-model test-dnssd-link
+#MM- test : test-dnssd-model test-dnssd-link test-dnssd-link-aros
+#MM- test-quick : test-dnssd-model test-dnssd-link test-dnssd-link-aros
 #MM test-dnssd-model : includes linklibs
 #MM test-dnssd-model-quick : test-dnssd-model
 #MM test-dnssd-link : includes linklibs
 #MM test-dnssd-link-quick : test-dnssd-link
+#MM test-dnssd-link-aros : includes linklibs
+#MM test-dnssd-link-aros-quick : test-dnssd-link-aros
 
 %build_prog mmake=test-dnssd-model \
     progname=dnssdmodeltest \
@@ -20,6 +22,13 @@ USER_INCLUDES := -I$(SRCDIR)/workbench/network/mdns
 %build_prog mmake=test-dnssd-link \
     progname=dnssdlinktest \
     files="dnssd_link_test $(SRCDIR)/workbench/network/mdns/dnssd_link" \
+    targetdir=$(AROS_TESTS)/dnssd
+
+%build_prog mmake=test-dnssd-link-aros \
+    progname=dnssdlinkarostest \
+    files="dnssd_link_aros_test \
+        $(SRCDIR)/workbench/network/mdns/dnssd_link \
+        $(SRCDIR)/workbench/network/mdns/dnssd_link_aros" \
     targetdir=$(AROS_TESTS)/dnssd
 
 %common
