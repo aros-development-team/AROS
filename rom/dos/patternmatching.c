@@ -46,6 +46,7 @@ static struct markerarray *marker_next(struct markerarray *macur)
         if(macur->next == NULL)
             return NULL;
         macur->next->prev = macur;
+        macur->next->next = NULL;
     }
     return macur->next;
 }
