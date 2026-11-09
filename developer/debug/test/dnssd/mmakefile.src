@@ -1,0 +1,18 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS := $(CFLAGS_GNU99) -Wall -Wextra -Werror
+USER_INCLUDES := -I$(SRCDIR)/workbench/network/mdns
+
+#MM- test : test-dnssd-model
+#MM- test-quick : test-dnssd-model
+#MM test-dnssd-model : includes linklibs
+#MM test-dnssd-model-quick : test-dnssd-model
+
+%build_prog mmake=test-dnssd-model \
+    progname=dnssdmodeltest \
+    files="dnssd_model_test $(SRCDIR)/workbench/network/mdns/dnssd_model" \
+    targetdir=$(AROS_TESTS)/dnssd
+
+%common
