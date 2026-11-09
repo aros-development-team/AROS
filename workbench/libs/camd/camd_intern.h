@@ -118,6 +118,7 @@ struct MyMidiCluster{
 };
 
 struct CAMDAppEndpoint;
+struct CAMDUMPDriverBackend;
 
 struct DriverData{
 	struct Node outnode;								// Used for the outcluster's receiverlist
@@ -224,6 +225,8 @@ struct Drivers{
 	/* Private endpoint publication of the ports; NULL when not published. */
 	struct CAMDLegacyDriverOutputBackend *EndpointBackend;
 	struct CAMDLegacyDriverAdapter *EndpointAdapter;
+	struct CAMDUMPDriverBackend *EndpointUMPBackend;
+	APTR EndpointUMPHost;
 };
 
 
