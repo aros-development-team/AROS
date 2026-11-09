@@ -155,6 +155,35 @@ tcp_autorcvbuf(struct tcpcb *tp, struct socket *so, int len)
     tp->t_rfbuf_ts = 0;                 /* a new period with the next segment */
 }
 
+/*
+ * The ACKs after a loss probe (RFC 8985 section 7.4, as Linux's
+ * tcp_process_tlp_ack()). The probe sent the last segment again; once an
+ * ACK reaches its end:
+ * - a D-SACK for it (the first SACK block below the ACK, RFC 2883) or a
+ *   duplicate ACK with nothing new: both copies arrived, there was no loss;
+ * - an ACK beyond it with neither: the probe repaired a loss, and the
+ *   congestion window is reduced once, as for an ECN echo (no recovery).
+ * An ACK that only reaches the probe's end waits for the next (the D-SACK
+ * of a probe that was not needed may come in the ACK after).
+ */
+static void
+tcp_tlp_ack(struct tcpcb *tp, const struct tcpopt *to, tcp_seq ack, int dup)
+{
+    if(!(tp->t_flagsext & TF_TLP) || SEQ_LT(ack, tp->t_tlp_end))
+        return;
+    if(((to->to_flag & TOF_SACK) && to->to_nsacks > 0 &&
+            SEQ_LEQ(to->to_sacks[0].end, ack) &&
+            SEQ_GT(to->to_sacks[0].end, tp->t_tlp_end - tp->t_maxseg)) || dup) {
+        tp->t_flagsext &= ~TF_TLP;          /* no loss */
+        return;
+    }
+    if(SEQ_GT(ack, tp->t_tlp_end)) {
+        tp->t_flagsext &= ~TF_TLP;
+        if(!(tp->t_flagsext & TF_IN_FASTRECOV))
+            CC_ON_ECN(tp);                  /* the probe repaired a loss */
+    }
+}
+
 #define TCP_REASS(tp, ti, m, so, flags) { \
     if ((ti)->ti_seq == (tp)->rcv_nxt && \
         (tp)->t_segq == NULL && \
@@ -1246,6 +1275,7 @@ findpcb:
                  * this is a pure ack for outstanding data.
                  */
                 ++tcpstat.tcps_predack;
+                tcp_tlp_ack(tp, &to, ti->ti_ack, 0);
                 tcp_ack_rtt(tp, &to, ti->ti_ack);
                 acked = ti->ti_ack - tp->snd_una;
                 tcpstat.tcps_rcvackpack++;
@@ -1266,8 +1296,10 @@ findpcb:
                  */
                 if(tp->snd_una == tp->snd_max)
                     tp->t_timer[TCPT_REXMT] = 0;
-                else if(tp->t_timer[TCPT_PERSIST] == 0)
+                else if(tp->t_timer[TCPT_PERSIST] == 0) {
                     tp->t_timer[TCPT_REXMT] = TCPT_REXMT_ARM(tp);
+                    tcp_tlp_arm(tp);
+                }
 
                 if(so->so_snd.sb_flags & SB_NOTIFY)
                     sowwakeup(so);
@@ -1888,6 +1920,8 @@ close:
             tcp_sack_update(tp, &to);
             sacknew = tp->snd_sacked > osacked;
         }
+        tcp_tlp_ack(tp, &to, ti->ti_ack,
+                    ti->ti_ack == tp->snd_una && ti->ti_len == 0 && !sacknew);
 
         if(SEQ_LEQ(ti->ti_ack, tp->snd_una)) {
             /*
@@ -2123,8 +2157,10 @@ process_ACK:
         if(ti->ti_ack == tp->snd_max) {
             tp->t_timer[TCPT_REXMT] = 0;
             needoutput = 1;
-        } else if(tp->t_timer[TCPT_PERSIST] == 0)
+        } else if(tp->t_timer[TCPT_PERSIST] == 0) {
             tp->t_timer[TCPT_REXMT] = TCPT_REXMT_ARM(tp);
+            tcp_tlp_arm(tp);
+        }
 
         /*
          * If no data (only SYN) was ACK'd,

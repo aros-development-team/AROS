@@ -316,6 +316,18 @@ first unacknowledged segment with `cwnd` covering the bytes it acknowledges plus
 (snd_una has not advanced yet), deflates `cwnd`, and is then processed like any ACK, so `snd_una`
 advances and the retransmit timer runs again, as in FreeBSD's `tcp_newreno_partial_ack()`.
 
+A loss at the end of a flight - the last segments of a reply - brings no duplicate ACKs. With SACK,
+a **tail loss probe** (RFC 8985 section 7, `tcp_tlp_arm()`/`tcp_tlp_send()` in `tcp_timer.c`)
+finds it before the RTO: a connection with data in flight, not in loss recovery and with no probe
+out arms a probe timeout when the RTO is armed, 2 * SRTT (plus 200 ms, the worst delayed ACK, with
+one segment in flight), never later than the RTO, whose first expiry it then takes. The last
+segment goes again whatever cwnd says. An ACK beyond the probe with no D-SACK for it means the
+probe repaired a loss, and cwnd is reduced once, as for an ECN echo; a D-SACK or a duplicate ACK
+means both copies arrived (`tcp_tlp_ack()`, as Linux's `tcp_process_tlp_ack()`). An RTO ends the
+episode. Sysctl `net.inet.tcp.tlp` (on). On the bench (`tests/tcp/tail_probe.py` in aros-matter,
+bursts of 10 KB losing their last segment, 20 ms RTT) a tail comes back after 134 ms instead of
+208 ms (the RTO), and the connection does not fall back to one segment.
+
 ### 5.2 SYN cache and SYN cookies
 
 `tcp_syncache.c` holds half-open connections in a hash table rather than as real sockets on the

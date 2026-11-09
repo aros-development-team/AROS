@@ -146,6 +146,8 @@ struct tcpcb {
 #define TF_PMTUD_BH	0x0080		/* MSS lowered: path MTU black hole suspected */
 #define TF_PMTUD_NODF	0x0100		/* IPv4: DF off after a black hole */
 #define TF_ECN_SYN	0x0200		/* our SYN asked for ECN */
+#define TF_PTO		0x0400		/* TCPT_REXMT is the loss probe timeout (RFC 8985) */
+#define TF_TLP		0x0800		/* a loss probe is out, up to t_tlp_end */
 
 	struct	tcpiphdr *t_template;	/* skeletal packet for transmit */
 	struct	inpcb *t_inpcb;		/* back pointer to internet pcb */
@@ -297,6 +299,9 @@ struct tcpcb {
 	u_int32_t t_rfbuf_ts;
 	u_long	t_rfbuf_cnt;
 	u_long	t_autobuf;		/* its share of tcp_autobuf_used (pool bytes) */
+
+/* Tail Loss Probe (RFC 8985 section 7): where the probe's data ends */
+	tcp_seq	t_tlp_end;
 
 /* TUBA stuff */
 	caddr_t	t_tuba_pcb;		/* next level down pcb for TCP over z */
@@ -480,7 +485,8 @@ struct	tcpstat {
 #define	TCPCTL_MINMSS		17	/* the least MSS a connection takes */
 #define	TCPCTL_SENDBUF_MAX	18	/* send buffer autosizing ceiling (0: off) */
 #define	TCPCTL_RECVBUF_MAX	19	/* receive buffer autosizing ceiling (0: off) */
-#define TCPCTL_MAXID		20
+#define	TCPCTL_TLP		20	/* tail loss probe (RFC 8985 section 7) */
+#define TCPCTL_MAXID		21
 
 #define TCPCTL_NAMES { \
 	{ 0, 0 }, \
@@ -503,6 +509,7 @@ struct	tcpstat {
 	{ "minmss", CTLTYPE_INT }, \
 	{ "sendbuf_max", CTLTYPE_INT }, \
 	{ "recvbuf_max", CTLTYPE_INT }, \
+	{ "tlp", CTLTYPE_INT }, \
 }
 
 #ifdef KERNEL
@@ -544,6 +551,7 @@ extern	int tcp_do_hystart;	/* HyStart++ (RFC 9406) */
 extern	int tcp_minmss;		/* the least MSS (TCP_MINMSS) */
 /* the least MSS a connection uses: tcp_minmss, never below 64 bytes */
 #define	TCP_MSS_FLOOR	(tcp_minmss > 64 ? tcp_minmss : 64)
+extern	int tcp_do_tlp;		/* tail loss probe (RFC 8985) */
 extern	u_long tcp_autosndbuf_max;	/* send buffer autosizing ceiling */
 extern	u_long tcp_autorcvbuf_max;	/* receive buffer autosizing ceiling */
 #define	TCP_AUTOSNDBUF_INC	(16 * 1024)	/* send buffer autosizing step */
@@ -609,6 +617,7 @@ int	 tcp_autobuf_grow __P((struct tcpcb *, struct sockbuf *, u_long, u_long));
 void	 tcp_autobuf_init __P((void));
 u_long	 tcp_autobuf_pool __P((void));
 u_long	 tcp_autobuf_one __P((void));
+void	 tcp_tlp_arm __P((struct tcpcb *));
 int	 tcp_rscale __P((struct socket *));
 #endif /* KERNEL */
 
