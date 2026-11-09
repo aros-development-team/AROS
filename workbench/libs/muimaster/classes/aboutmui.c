@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -27,6 +27,84 @@
 #else
 #   define USE_INTERNAL_IMAGE 1
 #endif
+
+/****** Aboutmui.mui/MUIC_Aboutmui ************
+*
+*   NAME
+*       MUIC_Aboutmui
+*
+*   SUPERCLASS
+*       Window.mui
+*
+*   DESCRIPTION
+*       Create the Zune information window. The constructor supplies the title
+*       About Zune and a vertical group containing centered, framed localized
+*       information text. The external-class branch also supplies a framed 100
+*       by 100 Bodychunk image from static data; the builtin branch omits that
+*       image.
+*       The information text is formatted with the compilation date into a
+*       shared static 100-byte buffer using snprintf. Long localized results are
+*       truncated to fit. It describes this implementation, not
+*       application-specific metadata or a runtime build query. The constructor
+*       provides these defaults before passing caller tags to Window.
+*       A non-NULL MUIA_Aboutmui_Application constructor tag adds the window to
+*       that Application and installs a self-notification that sets Window_Open
+*       FALSE when Window_CloseRequest becomes TRUE. Without the tag, neither
+*       action is performed. The window is not explicitly opened by this class;
+*       manage opening through inherited Window behavior after application
+*       membership is established.
+*
+*   METHODS
+*       Only construction is overridden. Other methods and attributes delegate
+*       to Window. Successful creation returns the window object; superclass
+*       failure returns NULL. The subsequent application-add and notification
+*       results are ignored, so a non-NULL result does not independently confirm
+*       either operation succeeded.
+*       With successful membership, normal Application ownership and disposal
+*       apply. Remove the window from its Application before disposing it
+*       independently. The class does not own or dispose the Application itself.
+*       Closing through the installed notification changes Window_Open; it does
+*       not remove or dispose the window.
+*
+*   NOTES
+*       The class has no local application setter/getter, application-switching
+*       operation, update method or event loop. Its constructor uses shared
+*       formatting storage; it provides no serialization for concurrent or
+*       reentrant construction.
+*
+*/
+/****** Aboutmui.mui/MUIA_Aboutmui_Application ************
+*
+*   NAME
+*       MUIA_Aboutmui_Application
+*
+*   FUNCTION
+*       Associate the new information window with an Application and install
+*       automatic close handling.
+*
+*   INPUTS
+*       Initialize only, Object * pointing to a live Application; default NULL.
+*       Borrowed pointer, not a copied object or ownership transfer of the
+*       Application.
+*
+*   NOTES
+*       After superclass creation, the constructor reads its original tags and
+*       stores the last occurrence. With a non-NULL pointer, it calls
+*       OM_ADDMEMBER on that Application and installs a notification on the
+*       window itself: Window_CloseRequest TRUE sets Window_Open FALSE. Both
+*       return values are ignored.
+*       The Application must be valid for the call and remain valid while it
+*       owns the window. Successful addition transfers window lifetime
+*       management to the normal Application membership rules. Do not add the
+*       same window to another Application while it remains a member; remove it
+*       before independent disposal.
+*       NULL performs neither addition nor installation of the close
+*       notification. Manually adding such a window later does not retroactively
+*       install this class's close handling. No local OM_SET or OM_GET handler
+*       implements later changes or queries of this attribute. Supplying this
+*       tag does not explicitly open the window.
+*
+*/
 
 extern struct Library *MUIMasterBase;
 
@@ -887,20 +965,15 @@ static const UBYTE body[] =
 #define IMAGE
 #endif /* !USE_INTERNAL_IMAGE */
 
-/****** Aboutmui.mui/MUIA_Aboutmui_Application *******************************
-*
-*   NAME
-*       MUIA_Aboutmui_Application -- (V11) [I..], Object *
-*
-*   FUNCTION
-*       The application object that the About window belongs to. If
-*       specified, the window will automatically be added to the application,
-*       and will be closed when the user clicks on its close gadget.
-*
-******************************************************************************
-*
-*/
 
+/*
+ * Format localized compile-date text in shared 100-byte static storage,
+ * construct Window with owned child hierarchy and optional static image.
+ * Return zero on superclass failure. Last Application tag wins; non-NULL
+ * adds window and installs close notification without checking results.
+ * Requires live Application and serialized construction; successful
+ * membership controls window disposal.
+ */
 IPTR Aboutmui__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Aboutmui_DATA   *data;
@@ -955,6 +1028,13 @@ IPTR Aboutmui__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 #if ZUNE_BUILTIN_ABOUTMUI
+/*
+ * Dispatch construction to Aboutmui__OM_NEW and all other ABI-correct
+ * messages to Window, returning its result. Requires live instance except
+ * construction; no local application setter/getter or lifecycle overrides.
+ * Application membership and owned child disposal follow
+ * superclass/application contracts.
+ */
 BOOPSI_DISPATCHER(IPTR, Aboutmui_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
