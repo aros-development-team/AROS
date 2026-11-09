@@ -3,7 +3,7 @@
 */
 
 /****************************************************************************************/
-/* Compile the out-of-line m68k GetDriverData() here, see graphics_inline.h */
+/* Compile the out-of-line m68k helpers of graphics_inline.h here */
 #define GFX_GETDRIVERDATA_IMPL
 
 #include <aros/debug.h>
@@ -96,7 +96,7 @@ static HIDDT_Pixel pen_pixel_for(struct RastPort *rp, struct BitMap *bm, HIDDT_P
     return pix;
 }
 
-static HIDDT_Pixel argb_pixel_for(OOP_Object *bm_obj, ULONG argb, struct GfxBase *GfxBase)
+HIDDT_Pixel argb_pixel_for(OOP_Object *bm_obj, ULONG argb, struct GfxBase *GfxBase)
 {
     HIDDT_Color col;
 
@@ -162,28 +162,45 @@ HIDDT_PixelLUT *alpha_pixtab_lut(OOP_Object *dstbm_obj, struct RastPort *rp, HID
     return store;
 }
 
-static ULONG CallRenderFunc(struct RastPort *rp, RENDERFUNC render_func, APTR funcdata, WORD srcx, WORD srcy,
-                            struct BitMap *bm, OOP_Object *gc, struct Rectangle *rect, BOOL do_update,
-                            struct GfxBase *GfxBase)
+/* What stays the same for every piece of one render operation */
+struct render_call {
+    struct RastPort *rp;            /* NULL: no pen remapping (outside a superbitmap layer) */
+    RENDERFUNC       render_func;
+    APTR             funcdata;
+    OOP_Object      *gc;
+    struct GfxBase  *GfxBase;
+    BOOL             do_update;
+    BOOL             get_special_info;
+};
+
+static ULONG CallRenderFunc(struct render_call *rc, WORD srcx, WORD srcy,
+                            struct BitMap *bm, struct Rectangle *rect)
 {
-    OOP_Object *bm_obj = OBTAIN_HIDD_BM(bm);
+    struct GfxBase *GfxBase = rc->GfxBase;
+    OOP_Object *gc = rc->gc;
+    OOP_Object *bm_obj;
     HIDDT_Pixel saved[2];
     BOOL remapped;
     ULONG pixwritten;
 
+    if(rc->get_special_info) {
+        RSI(rc->funcdata)->curbm = bm;
+    }
+
+    bm_obj = OBTAIN_HIDD_BM(bm);
     if(!bm_obj)
         return 0;
 
-    remapped = remap_gc_pens(rp, bm, bm_obj, gc, saved, GfxBase);
+    remapped = remap_gc_pens(rc->rp, bm, bm_obj, gc, saved, GfxBase);
 
-    pixwritten = render_func(funcdata, srcx, srcy, bm_obj, gc, rect, GfxBase);
+    pixwritten = rc->render_func(rc->funcdata, srcx, srcy, bm_obj, gc, rect, GfxBase);
 
     if(remapped) {
         GC_FG(gc) = saved[0];
         GC_BG(gc) = saved[1];
     }
 
-    if(do_update)
+    if(rc->do_update)
         update_bitmap(bm, bm_obj, rect->MinX, rect->MinY,
                       rect->MaxX - rect->MinX + 1, rect->MaxY - rect->MinY + 1,
                       GfxBase);
@@ -212,10 +229,9 @@ ULONG do_render_func(struct RastPort *rp, Point *src, struct Rectangle *rr,
  * are rendered at superbitmap coordinates (rastport coordinates).
  */
 static ULONG render_outside_super(struct Layer *L, struct Rectangle *torender, struct Rectangle *rpclip,
-                                  RENDERFUNC render_func, APTR funcdata, WORD srcx, WORD srcy,
-                                  OOP_Object *gc, BOOL do_update, BOOL get_special_info,
-                                  struct GfxBase *GfxBase)
+                                  struct render_call *rc, WORD srcx, WORD srcy)
 {
+    struct GfxBase *GfxBase = rc->GfxBase;
     struct Rectangle parts[4];
     ULONG pixwritten = 0, n = 0, i;
     LONG  sbw = GetBitMapAttr(L->SuperBitMap, BMA_WIDTH);
@@ -273,11 +289,7 @@ static ULONG render_outside_super(struct Layer *L, struct Rectangle *torender, s
         xoffset = (sb.MinX - L->Scroll_X + L->bounds.MinX) - torender->MinX;
         yoffset = (sb.MinY - L->Scroll_Y + L->bounds.MinY) - torender->MinY;
 
-        if(get_special_info) {
-            RSI(funcdata)->curbm = L->SuperBitMap;
-        }
-        pixwritten += CallRenderFunc(NULL, render_func, funcdata, srcx + xoffset, srcy + yoffset,
-                                     L->SuperBitMap, gc, &sb, do_update, GfxBase);
+        pixwritten += CallRenderFunc(rc, srcx + xoffset, srcy + yoffset, L->SuperBitMap, &sb);
     }
 
     return pixwritten;
@@ -294,8 +306,17 @@ ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
     BOOL                 have_rp_cliprectangle;
     WORD                 srcx, srcy;
     LONG                 pixwritten = 0;
+    struct render_call   rc;
 
     if((rr->MaxX < rr->MinX) || (rr->MaxY < rr->MinY)) return 0;
+
+    rc.rp               = rp;
+    rc.render_func      = render_func;
+    rc.funcdata         = funcdata;
+    rc.gc               = gc;
+    rc.GfxBase          = GfxBase;
+    rc.do_update        = do_update;
+    rc.get_special_info = get_special_info;
 
     if(NULL != src) {
         srcx = src->x;
@@ -317,12 +338,7 @@ ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
         srcx += (torender.MinX - rr->MinX);
         srcy += (torender.MinY - rr->MinY);
 
-        if(get_special_info) {
-            RSI(funcdata)->curbm = rp->BitMap;
-        }
-
-        pixwritten = CallRenderFunc(rp, render_func, funcdata, srcx, srcy,
-                                    bm, gc, &torender, do_update, GfxBase);
+        pixwritten = CallRenderFunc(&rc, srcx, srcy, bm, &torender);
     } else {
         struct ClipRect *CR;
         WORD xrel;
@@ -359,12 +375,7 @@ ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
                     yoffset = intersect.MinY - torender.MinY;
 
                     if(NULL == CR->lobs) {
-                        if(get_special_info) {
-                            RSI(funcdata)->curbm = bm;
-                        }
-
-                        pixwritten += CallRenderFunc(rp, render_func, funcdata, srcx + xoffset, srcy + yoffset,
-                                                     bm, gc, &intersect, do_update, GfxBase);
+                        pixwritten += CallRenderFunc(&rc, srcx + xoffset, srcy + yoffset, bm, &intersect);
                     } else {
                         /* Render into offscreen cliprect bitmap */
                         if(L->Flags & LAYERSIMPLE)
@@ -373,28 +384,19 @@ ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
                             /* Render into the superbitmap. RastPort coordinates are
                                superbitmap coordinates; the layer shows the superbitmap
                                from (Scroll_X, Scroll_Y). */
-                            if(get_special_info) {
-                                RSI(funcdata)->curbm = L->SuperBitMap;
-                            }
                             intersect.MinX = intersect.MinX - L->bounds.MinX + L->Scroll_X;
                             intersect.MinY = intersect.MinY - L->bounds.MinY + L->Scroll_Y;
                             intersect.MaxX = intersect.MaxX - L->bounds.MinX + L->Scroll_X;
                             intersect.MaxY = intersect.MaxY - L->bounds.MinY + L->Scroll_Y;
-                            pixwritten += CallRenderFunc(rp, render_func, funcdata, srcx + xoffset, srcy + yoffset,
-                                                         L->SuperBitMap, gc, &intersect, do_update, GfxBase);
+                            pixwritten += CallRenderFunc(&rc, srcx + xoffset, srcy + yoffset, L->SuperBitMap, &intersect);
                         } else {
-
-                            if(get_special_info) {
-                                RSI(funcdata)->curbm = CR->BitMap;
-                            }
 
                             intersect.MinX = intersect.MinX - CR->bounds.MinX + CR_BMOFFX(CR);
                             intersect.MinY = intersect.MinY - CR->bounds.MinY + CR_BMOFFY(CR);
                             intersect.MaxX = intersect.MaxX - CR->bounds.MinX + CR_BMOFFX(CR);
                             intersect.MaxY = intersect.MaxY - CR->bounds.MinY + CR_BMOFFY(CR);
 
-                            pixwritten += CallRenderFunc(rp, render_func, funcdata, srcx + xoffset, srcy + yoffset,
-                                                         CR->BitMap, gc, &intersect, do_update, GfxBase);
+                            pixwritten += CallRenderFunc(&rc, srcx + xoffset, srcy + yoffset, CR->BitMap, &intersect);
                         }
 
                     } /* if (CR->lobs == NULL) */
@@ -406,9 +408,9 @@ ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
         } /* for (each cliprect in the layer) */
 
         if(L->Flags & LAYERSUPER) {
+            rc.rp = NULL;
             pixwritten += render_outside_super(L, &torender, have_rp_cliprectangle ? &rp_clip_rectangle : NULL,
-                                               render_func, funcdata, srcx, srcy, gc, do_update,
-                                               get_special_info, GfxBase);
+                                               &rc, srcx, srcy);
         }
 
         UnlockLayerRom(L);
@@ -921,6 +923,7 @@ struct wp8_render_data {
     ULONG           modulo;
     HIDDT_PixelLUT *pixlut;
     struct RastPort *rp;
+    WORD            transparent;    /* pen left out, or -1 for none */
 };
 
 static ULONG wp8_render(APTR wp8r_data, WORD srcx, WORD srcy, OOP_Object *dstbm_obj,
@@ -929,25 +932,54 @@ static ULONG wp8_render(APTR wp8r_data, WORD srcx, WORD srcy, OOP_Object *dstbm_
     struct wp8_render_data *wp8rd = wp8r_data;
     WORD                    width  = rect->MaxX - rect->MinX + 1;
     WORD                    height = rect->MaxY - rect->MinY + 1;
-    HIDDT_PixelLUT          lut;
+    UBYTE                  *pixels = wp8rd->array + CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, wp8rd->modulo);
+    HIDDT_PixelLUT          lut, *uselut;
 
-    HIDD_BM_PutImageLUT(dstbm_obj, dst_gc,
-                        wp8rd->array + CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, wp8rd->modulo), wp8rd->modulo,
-                        rect->MinX, rect->MinY, width, height,
-                        alpha_pixtab_lut(dstbm_obj, wp8rd->rp, wp8rd->pixlut, &lut, GfxBase));
+    uselut = alpha_pixtab_lut(dstbm_obj, wp8rd->rp, wp8rd->pixlut, &lut, GfxBase);
+
+    if(wp8rd->transparent < 0)
+        HIDD_BM_PutImageLUT(dstbm_obj, dst_gc, pixels, wp8rd->modulo,
+                            rect->MinX, rect->MinY, width, height, uselut);
+    else
+        HIDD_BM_PutTranspImageLUT(dstbm_obj, dst_gc, pixels, wp8rd->modulo,
+                                  rect->MinX, rect->MinY, width, height, uselut,
+                                  wp8rd->transparent);
 
     return width * height;
 }
 
 /****************************************************************************************/
 
-LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
-                    WORD xstart, WORD ystart, WORD xstop, WORD ystop,
-                    HIDDT_PixelLUT *pixlut, BOOL do_update, struct GfxBase *GfxBase)
+static LONG write_pixels_8_common(struct RastPort *rp, UBYTE *array, ULONG modulo,
+                                  WORD xstart, WORD ystart, WORD xstop, WORD ystop,
+                                  HIDDT_PixelLUT *pixlut, WORD transparent,
+                                  BOOL do_update, struct GfxBase *GfxBase)
 {
     struct wp8_render_data wp8rd;
     struct Rectangle rr;
     OOP_Object *gc;
+
+    gc = GetDriverData(rp, GfxBase);
+    GC_DRMD(gc) = vHidd_GC_DrawMode_Copy;
+
+    wp8rd.modulo      = modulo;
+    wp8rd.array       = array;
+    wp8rd.pixlut      = pixlut;
+    wp8rd.rp          = rp;
+    wp8rd.transparent = transparent;
+
+    rr.MinX = xstart;
+    rr.MinY = ystart;
+    rr.MaxX = xstop;
+    rr.MaxY = ystop;
+
+    return do_render_with_gc(rp, NULL, &rr, wp8_render, &wp8rd, gc, do_update, FALSE, GfxBase);
+}
+
+LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
+                    WORD xstart, WORD ystart, WORD xstop, WORD ystop,
+                    HIDDT_PixelLUT *pixlut, BOOL do_update, struct GfxBase *GfxBase)
+{
     HIDDT_PixelLUT bm_lut;
 
     /* If we haven't got a LUT, we obtain it from the bitmap */
@@ -964,48 +996,10 @@ LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
 #endif
     }
 
-    gc = GetDriverData(rp, GfxBase);
-    GC_DRMD(gc) = vHidd_GC_DrawMode_Copy;
-
-    wp8rd.modulo = modulo;
-    wp8rd.array  = array;
-    wp8rd.pixlut = pixlut;
-    wp8rd.rp     = rp;
-
-    rr.MinX = xstart;
-    rr.MinY = ystart;
-    rr.MaxX = xstop;
-    rr.MaxY = ystop;
-
-    return do_render_with_gc(rp, NULL, &rr, wp8_render, &wp8rd, gc, do_update, FALSE, GfxBase);
+    return write_pixels_8_common(rp, array, modulo, xstart, ystart, xstop, ystop,
+                                 pixlut, -1, do_update, GfxBase);
 }
 
-/****************************************************************************************/
-
-struct wtp8_render_data {
-    UBYTE          *array;
-    ULONG           modulo;
-    HIDDT_PixelLUT *pixlut;
-    UBYTE           transparent;
-    struct RastPort *rp;
-};
-
-static ULONG wtp8_render(APTR wtp8r_data, WORD srcx, WORD srcy, OOP_Object *dstbm_obj,
-                         OOP_Object *dst_gc, struct Rectangle *rect, struct GfxBase *GfxBase)
-{
-    struct wtp8_render_data *wtp8rd = wtp8r_data;
-    WORD                     width  = rect->MaxX - rect->MinX + 1;
-    WORD                     height = rect->MaxY - rect->MinY + 1;
-    HIDDT_PixelLUT           lut;
-
-    HIDD_BM_PutTranspImageLUT(dstbm_obj, dst_gc,
-                              wtp8rd->array + CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, wtp8rd->modulo), wtp8rd->modulo,
-                              rect->MinX, rect->MinY, width, height,
-                              alpha_pixtab_lut(dstbm_obj, wtp8rd->rp, wtp8rd->pixlut, &lut, GfxBase),
-                              wtp8rd->transparent);
-
-    return width * height;
-}
 /****************************************************************************************/
 
 LONG write_transp_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
@@ -1013,25 +1007,8 @@ LONG write_transp_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
                            HIDDT_PixelLUT *pixlut, UBYTE transparent,
                            BOOL do_update, struct GfxBase *GfxBase)
 {
-    struct wtp8_render_data wtp8rd;
-    struct Rectangle rr;
-    OOP_Object *gc;
-
-    gc = GetDriverData(rp, GfxBase);
-    GC_DRMD(gc) = vHidd_GC_DrawMode_Copy;
-
-    wtp8rd.modulo       = modulo;
-    wtp8rd.array        = array;
-    wtp8rd.pixlut       = pixlut;
-    wtp8rd.transparent  = transparent;
-    wtp8rd.rp           = rp;
-
-    rr.MinX = xstart;
-    rr.MinY = ystart;
-    rr.MaxX = xstop;
-    rr.MaxY = ystop;
-
-    return do_render_with_gc(rp, NULL, &rr, wtp8_render, &wtp8rd, gc, do_update, FALSE, GfxBase);
+    return write_pixels_8_common(rp, array, modulo, xstart, ystart, xstop, ystop,
+                                 pixlut, transparent, do_update, GfxBase);
 }
 
 /****************************************************************************************/

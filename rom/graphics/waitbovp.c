@@ -47,7 +47,7 @@
     AROS_LIBFUNC_INIT
 
     /* TODO: Write graphics/WaitBOVP() */
-    aros_print_not_implemented("WaitBOVP");
+    gfx_NotImplemented("WaitBOVP", GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* WaitBOVP */

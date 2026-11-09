@@ -65,20 +65,11 @@
     if(!R1->RegionRectangle            ||
             !overlap(R1->bounds, R2->bounds)) {
         /* R2 is not empty, but there's nothing to clear. Make a plain copy. */
-        if(_CopyRegionRectangles(R2, R3, GfxBase))
-            return R3;
-    } else {
-        /* Some other case, do the complete algorighm */
-        if(_DoOperationBandBand(_ClearBandBand,
-                                MinX(R1), MinX(R2), MinY(R1), MinY(R2),
-                                R1->RegionRectangle, R2->RegionRectangle, &R3->RegionRectangle, &R3->bounds, GfxBase)) {
-            _TranslateRegionRectangles(R3->RegionRectangle, -MinX(R3), -MinY(R3));
-            return R3;
-        }
+        return _CopyRegionND(R2, R3, GfxBase);
     }
 
-    DisposeRegion(R3);
-    return NULL;
+    /* Some other case, do the complete algorighm */
+    return _RegionOpND(_ClearBandBand, R1, R2, R3, GfxBase);
 
     AROS_LIBFUNC_EXIT
 }

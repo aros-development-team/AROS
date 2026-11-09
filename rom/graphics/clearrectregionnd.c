@@ -63,45 +63,19 @@
             IS_RECT_EVIL(Rect)           ||
             !overlap(*Rect, Reg->bounds)) {
         /* Nothing to clear. Make a plain copy. */
-        if(!_CopyRegionRectangles(Reg, Res, GfxBase)) {
-            DisposeRegion(Res);
-            Res = NULL;
-        }
+        return _CopyRegionND(Reg, Res, GfxBase);
     }
-
     else if(Rect->MinX > MinX(Reg) || Rect->MinY > MinY(Reg) ||
             Rect->MaxX < MaxX(Reg) || Rect->MaxY < MaxY(Reg)) {
         /* Partial overlapping detected. Do the complete algorithm. */
+        struct Region R;
         struct RegionRectangle rr;
 
-        rr.bounds = *Rect;
-        rr.Next   = NULL;
-        rr.Prev   = NULL;
-
-        if
-        (
-            _DoOperationBandBand
-            (
-                _ClearBandBand,
-                0,
-                MinX(Reg),
-                0,
-                MinY(Reg),
-                &rr,
-                Reg->RegionRectangle,
-                &Res->RegionRectangle,
-                &Res->bounds,
-                GfxBase
-            )
-        ) {
-            _TranslateRegionRectangles(Res->RegionRectangle, -MinX(Res), -MinY(Res));
-        } else {
-            DisposeRegion(Res);
-            Res = NULL;
-        }
+        _RectToRegion(Rect, &R, &rr);
+        return _RegionOpND(_ClearBandBand, &R, Reg, Res, GfxBase);
     }
-    /* If neither of two cases above were true, we've removed everything (Rect completely covers Reg). Return empty Res. */
 
+    /* If neither of two cases above were true, we've removed everything (Rect completely covers Reg). Return empty Res. */
     return Res;
 
     AROS_LIBFUNC_EXIT

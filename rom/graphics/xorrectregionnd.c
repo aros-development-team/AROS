@@ -61,13 +61,7 @@
 
     if(IS_RECT_EVIL(Rect)) {
         /* Empty rectangle. Just make a plain copy of Reg. */
-        struct Region *ret = NewRegion();
-
-        if(_CopyRegionRectangles(Reg, ret, GfxBase))
-            return ret;
-
-        DisposeRegion(ret);
-        return NULL;
+        return _CopyRegionND(Reg, NewRegion(), GfxBase);
     }
 
     InitRegion(&R);

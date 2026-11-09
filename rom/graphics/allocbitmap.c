@@ -24,7 +24,10 @@
 #define SET_BM_TAG(tags, idx, tag, val) \
     SET_TAG(tags, idx, aHidd_BitMap_ ## tag, val)
 
-static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
+/* Kept in bytes: every standard pixel format number fits */
+_Static_assert(num_Hidd_AllPf <= 256, "cyber2hidd_pixfmt[] entries are UBYTE");
+
+static const UBYTE cyber2hidd_pixfmt[] = {
     vHidd_StdPixFmt_LUT8,
     vHidd_StdPixFmt_RGB15,
     vHidd_StdPixFmt_BGR15,
@@ -44,7 +47,14 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
 /* The same pixel layout: pixel values mean the same in both */
 static BOOL same_pixel_layout(OOP_Object *pf1, OOP_Object *pf2, struct GfxBase *GfxBase)
 {
+    static const UBYTE layout_attrs[] = {
+        aoHidd_PixFmt_ColorModel, aoHidd_PixFmt_BytesPerPixel,
+        aoHidd_PixFmt_RedMask, aoHidd_PixFmt_GreenMask,
+        aoHidd_PixFmt_BlueMask, aoHidd_PixFmt_AlphaMask,
+        aoHidd_PixFmt_SwapPixelBytes
+    };
     IPTR a, b;
+    ULONG i;
 
     if (pf1 == pf2)
         return TRUE;
@@ -56,12 +66,15 @@ static BOOL same_pixel_layout(OOP_Object *pf1, OOP_Object *pf2, struct GfxBase *
     if (a != vHidd_StdPixFmt_Unknown)
         return TRUE;
 
-#define SAME_ATTR(attr) (OOP_GetAttr(pf1, attr, &a), OOP_GetAttr(pf2, attr, &b), a == b)
-    return SAME_ATTR(aHidd_PixFmt_ColorModel) && SAME_ATTR(aHidd_PixFmt_BytesPerPixel) &&
-           SAME_ATTR(aHidd_PixFmt_RedMask) && SAME_ATTR(aHidd_PixFmt_GreenMask) &&
-           SAME_ATTR(aHidd_PixFmt_BlueMask) && SAME_ATTR(aHidd_PixFmt_AlphaMask) &&
-           SAME_ATTR(aHidd_PixFmt_SwapPixelBytes);
-#undef SAME_ATTR
+    /* Compared in this order, up to the first difference */
+    for (i = 0; i < sizeof(layout_attrs); i++)
+    {
+        OOP_GetAttr(pf1, HiddPixFmtAttrBase + layout_attrs[i], &a);
+        OOP_GetAttr(pf2, HiddPixFmtAttrBase + layout_attrs[i], &b);
+        if (a != b)
+            return FALSE;
+    }
+    return TRUE;
 }
 
 /*

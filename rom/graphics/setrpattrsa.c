@@ -142,17 +142,10 @@
             if(rp->BitMap && IS_HIDD_BM(rp->BitMap)) {
                 /* Map ARGB8888 color value to bitmap's format */
                 HIDDT_GC_Intern *_gc = GCINT(&((rp)->longreserved[1]));
-                HIDDT_Color col;
                 HIDDT_Pixel pixval;
                 ULONG rgb = (ULONG)tag->ti_Data;
 
-                /* HIDDT_ColComp are 16 Bit */
-                col.alpha   = (HIDDT_ColComp)((rgb >> 16) & 0x0000FF00);
-                col.red     = (HIDDT_ColComp)((rgb >> 8) & 0x0000FF00);
-                col.green   = (HIDDT_ColComp)(rgb & 0x0000FF00);
-                col.blue    = (HIDDT_ColComp)((rgb << 8) & 0x0000FF00);
-
-                pixval = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
+                pixval = argb_pixel_for(HIDD_BM_OBJ(rp->BitMap), rgb, GfxBase);
 
                 if(tag->ti_Tag == RPTAG_FgColor)
                     _gc->fg = pixval;

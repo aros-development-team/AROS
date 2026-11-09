@@ -58,27 +58,7 @@
         R2->RegionRectangle             &&
         overlap(R1->bounds, R2->bounds)
     ) {
-        if
-        (
-            _DoOperationBandBand
-            (
-                _AndBandBand,
-                MinX(R1),
-                MinX(R2),
-                MinY(R1),
-                MinY(R2),
-                R1->RegionRectangle,
-                R2->RegionRectangle,
-                &R3->RegionRectangle,
-                &R3->bounds,
-                GfxBase
-            )
-        ) {
-            _TranslateRegionRectangles(R3->RegionRectangle, -MinX(R3), -MinY(R3));
-        } else {
-            DisposeRegion(R3);
-            R3 = NULL;
-        }
+        return _RegionOpND(_AndBandBand, R1, R2, R3, GfxBase);
     }
 
     return R3;

@@ -63,25 +63,11 @@
 
     if(Reg->RegionRectangle) {
         /* Region is not empty. Do the complete algorithm. */
-        struct Region Res;
+        struct Region R;
         struct RegionRectangle rr;
 
-        InitRegion(&Res);
-
-        rr.bounds = *Rect;
-        rr.Next   = NULL;
-        rr.Prev   = NULL;
-
-        if(_DoOperationBandBand(_OrBandBand,
-                                MinX(Reg), 0, MinY(Reg), 0,
-                                Reg->RegionRectangle, &rr, &Res.RegionRectangle, &Res.bounds, GfxBase)) {
-            ClearRegion(Reg);
-
-            *Reg = Res;
-            _TranslateRegionRectangles(Res.RegionRectangle, -MinX(&Res), -MinY(&Res));
-
-            return TRUE;
-        }
+        _RectToRegion(Rect, &R, &rr);
+        return _RegionOpInPlace(_OrBandBand, Reg, &R, Reg, GfxBase);
     } else {
         /* Optimized version for empty destination Region. Just add a single rectangle. */
         struct RegionRectangle *rr = _NewRegionRectangle(&Reg->RegionRectangle, GfxBase);

@@ -52,7 +52,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Region Res;
+    struct Region R;
     struct RegionRectangle rr;
 
     /* If the rectangle and the region don't overlap just return */
@@ -68,41 +68,13 @@
         Rect->MaxY >= MaxY(Reg)
     ) {
         ClearRegion(Reg);
-        return TRUE;
-    }
-
-    InitRegion(&Res);
-
-    rr.bounds = *Rect;
-    rr.Next   = NULL;
-    rr.Prev   = NULL;
-
-    if
-    (
-        _DoOperationBandBand
-        (
-            _ClearBandBand,
-            0,
-            MinX(Reg),
-            0,
-            MinY(Reg),
-            &rr,
-            Reg->RegionRectangle,
-            &Res.RegionRectangle,
-            &Res.bounds,
-            GfxBase
-        )
-    ) {
-        ClearRegion(Reg);
-
-        *Reg = Res;
-
-        _TranslateRegionRectangles(Res.RegionRectangle, -MinX(&Res), -MinY(&Res));
 
         return TRUE;
     }
 
-    return FALSE;
+    _RectToRegion(Rect, &R, &rr);
+
+    return _RegionOpInPlace(_ClearBandBand, &R, Reg, Reg, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* ClearRectRegion */

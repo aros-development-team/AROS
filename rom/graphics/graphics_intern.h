@@ -400,6 +400,9 @@ extern BOOL pattern_pen(struct RastPort *rp
                         , ULONG *pixval_ptr
                         , struct GfxBase *GfxBase);
 
+/* The "not implemented" report of the functions that are still stubs (graphics_misc.c) */
+void gfx_NotImplemented(CONST_STRPTR name, struct GfxBase *GfxBase);
+
 /* function for area opeartions */
 BOOL areafillpolygon(struct RastPort   *rp,
                      struct Rectangle *bounds,

@@ -49,35 +49,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Region *R3 = NewRegion();
-
-    if(R3) {
-        if
-        (
-            _DoOperationBandBand
-            (
-                _OrBandBand,
-                MinX(R1),
-                MinX(R2),
-                MinY(R1),
-                MinY(R2),
-                R1->RegionRectangle,
-                R2->RegionRectangle,
-                &R3->RegionRectangle,
-                &R3->bounds,
-                GfxBase
-            )
-        ) {
-
-            _TranslateRegionRectangles(R3->RegionRectangle, -MinX(R3), -MinY(R3));
-
-            return R3;
-        }
-
-        DisposeRegion(R3);
-    }
-
-    return NULL;
+    return _RegionOpND(_OrBandBand, R1, R2, NewRegion(), GfxBase);
 
     AROS_LIBFUNC_EXIT
 }

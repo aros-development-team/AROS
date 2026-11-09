@@ -128,6 +128,9 @@ static LONG count_planar_planes(const struct BitMap *bitmap, ULONG depth, UBYTE 
 {
     AROS_LIBFUNC_INIT
     LONG planecnt;
+    ULONG wSrc, wDest;
+    ULONG x;
+    ULONG depth;
     struct gfxdisplay_data *planar_driver = NULL;
 
     FIX_GFXCOORD(xSrc);
@@ -164,74 +167,71 @@ static LONG count_planar_planes(const struct BitMap *bitmap, ULONG depth, UBYTE 
     if(planar_driver == (struct gfxdisplay_data *)CDD(GfxBase))
         planar_driver = NULL;
 
+    wSrc  = GetBitMapAttr(srcBitMap, BMA_WIDTH);
+    wDest = GetBitMapAttr(destBitMap, BMA_WIDTH);
+
+    /* Clip all blits */
+
+    depth = GetBitMapAttr(srcBitMap, BMA_DEPTH);
+    x     = GetBitMapAttr(destBitMap, BMA_DEPTH);
+
+    if(x < depth) depth = x;
+
+    /* Clip X and Y */
+    if(xSrc < 0) {
+        xDest += -xSrc;
+        xSize -= -xSrc;
+        xSrc = 0;
+    }
+
+    if(ySrc < 0) {
+        yDest += -ySrc;
+        ySize -= -ySrc;
+        ySrc = 0;
+    }
+
+    /* A negative destination is not clipped by the checks below (unsigned
+       compares) and the chunky blitters do not clip: rows/columns would land
+       in front of the destination buffer. */
+    if(xDest < 0) {
+        xSrc += -xDest;
+        xSize -= -xDest;
+        xDest = 0;
+    }
+
+    if(yDest < 0) {
+        ySrc += -yDest;
+        ySize -= -yDest;
+        yDest = 0;
+    }
+
+    /* Clip width and height for source and dest */
+    if(ySrc + ySize > srcBitMap->Rows) {
+        ySize = srcBitMap->Rows - ySrc;
+    }
+
+    if(yDest + ySize > destBitMap->Rows) {
+        ySize = destBitMap->Rows - yDest;
+    }
+
+    if((ULONG)(xSrc + xSize) >= wSrc) {
+        xSize = wSrc - xSrc;
+    }
+
+    if((ULONG)(xDest + xSize) >= wDest) {
+        xSize = wDest - xDest;
+    }
+
+    /* If the size is illegal or we need not copy anything, return */
+    if(ySize <= 0 || xSize <= 0 || !mask) return 0;
+
     if(IS_HIDD_BM(srcBitMap) || IS_HIDD_BM(destBitMap) || planar_driver) {
-        ULONG wSrc, wDest;
-        ULONG x;
-        ULONG depth;
         LONG planar_planes = 8;
         BOOL planar = !IS_HIDD_BM(srcBitMap) && !IS_HIDD_BM(destBitMap);
         struct gfxdisplay_data *driver, *dst_driver;
         OOP_Object *tmp_gc;
 
         EnterFunc(bug("driver_BltBitMap()\n"));
-
-        wSrc  = GetBitMapAttr(srcBitMap, BMA_WIDTH);
-        wDest = GetBitMapAttr(destBitMap, BMA_WIDTH);
-
-        /* Clip all blits */
-
-        depth = GetBitMapAttr(srcBitMap, BMA_DEPTH);
-        x     = GetBitMapAttr(destBitMap, BMA_DEPTH);
-
-        if(x < depth) depth = x;
-
-        /* Clip X and Y */
-        if(xSrc < 0) {
-            xDest += -xSrc;
-            xSize -= -xSrc;
-            xSrc = 0;
-        }
-
-        if(ySrc < 0) {
-            yDest += -ySrc;
-            ySize -= -ySrc;
-            ySrc = 0;
-        }
-
-        /* A negative destination is not clipped by the checks below (unsigned
-           compares) and the chunky blitters do not clip: rows/columns would land
-           in front of the destination buffer. */
-        if(xDest < 0) {
-            xSrc += -xDest;
-            xSize -= -xDest;
-            xDest = 0;
-        }
-
-        if(yDest < 0) {
-            ySrc += -yDest;
-            ySize -= -yDest;
-            yDest = 0;
-        }
-
-        /* Clip width and height for source and dest */
-        if(ySrc + ySize > srcBitMap->Rows) {
-            ySize = srcBitMap->Rows - ySrc;
-        }
-
-        if(yDest + ySize > destBitMap->Rows) {
-            ySize = destBitMap->Rows - yDest;
-        }
-
-        if((ULONG)(xSrc + xSize) >= wSrc) {
-            xSize = wSrc - xSrc;
-        }
-
-        if((ULONG)(xDest + xSize) >= wDest) {
-            xSize = wDest - xDest;
-        }
-
-        /* If the size is illegal or we need not copy anything, return */
-        if(ySize <= 0 || xSize <= 0 || !mask) return 0;
 
         /* A driver can also handle ordinary planar bitmaps. Count the same
          * selected, writable planes as the software path below, including
@@ -307,68 +307,10 @@ static LONG count_planar_planes(const struct BitMap *bitmap, ULONG depth, UBYTE 
         }
 
     } else {
-        ULONG wSrc, wDest;
-        ULONG x, y, plane;
-        ULONG depth;
+        ULONG y, plane;
         PLANEPTR src, dest, temp;
 
-        wSrc  = GetBitMapAttr(srcBitMap, BMA_WIDTH);
-        wDest = GetBitMapAttr(destBitMap, BMA_WIDTH);
         temp = NULL;
-
-        depth = GetBitMapAttr(srcBitMap, BMA_DEPTH);
-        x     = GetBitMapAttr(destBitMap, BMA_DEPTH);
-        if(x < depth)
-            depth = x;
-
-        /* Clip X and Y */
-        if(xSrc < 0) {
-            xDest += -xSrc;
-            xSize -= -xSrc;
-            xSrc = 0;
-        }
-
-        if(ySrc < 0) {
-            yDest += -ySrc;
-            ySize -= -ySrc;
-            ySrc = 0;
-        }
-
-        /* A negative destination is not clipped by the checks below (unsigned
-           compares) and the chunky blitters do not clip: rows/columns would land
-           in front of the destination buffer. */
-        if(xDest < 0) {
-            xSrc += -xDest;
-            xSize -= -xDest;
-            xDest = 0;
-        }
-
-        if(yDest < 0) {
-            ySrc += -yDest;
-            ySize -= -yDest;
-            yDest = 0;
-        }
-
-        /* Clip width and height for source and dest */
-        if(ySrc + ySize > srcBitMap->Rows) {
-            ySize = srcBitMap->Rows - ySrc;
-        }
-
-        if(yDest + ySize > destBitMap->Rows) {
-            ySize = destBitMap->Rows - yDest;
-        }
-
-        if((ULONG)(xSrc + xSize) >= wSrc) {
-            xSize = wSrc - xSrc;
-        }
-
-        if((ULONG)(xDest + xSize) >= wDest) {
-            xSize = wDest - xDest;
-        }
-
-        /* If the size is illegal or we need not copy anything, return */
-        if(ySize <= 0 || xSize <= 0 || !mask)
-            return 0;
 
         planecnt = count_planar_planes(destBitMap, depth, mask);
 

@@ -52,8 +52,6 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Region R3;
-
     if(!R1->RegionRectangle) {
         /* First region is empty, second left intact */
         return TRUE;
@@ -65,34 +63,7 @@
     }
 
     /* Do the complete slow thing here */
-    InitRegion(&R3);
-
-    if
-    (
-        _DoOperationBandBand
-        (
-            _OrBandBand,
-            MinX(R1),
-            MinX(R2),
-            MinY(R1),
-            MinY(R2),
-            R1->RegionRectangle,
-            R2->RegionRectangle,
-            &R3.RegionRectangle,
-            &R3.bounds,
-            GfxBase
-        )
-    ) {
-        ClearRegion(R2);
-
-        *R2 = R3;
-
-        _TranslateRegionRectangles(R3.RegionRectangle, -MinX(&R3), -MinY(&R3));
-
-        return TRUE;
-    }
-
-    return FALSE;
+    return _RegionOpInPlace(_OrBandBand, R1, R2, R2, GfxBase);
 
     AROS_LIBFUNC_EXIT
 }
