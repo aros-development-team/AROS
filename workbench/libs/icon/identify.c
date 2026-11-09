@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -175,34 +175,99 @@ struct DiskObject *GetFSDeviceIcon(char *FS, const char *Dev, const char *DevCla
     return NULL;
 }
 
-BOOL IsDiscDevice(char *dev, int devlen)
+/* TRUE if dev starts with the letters of prefix (given in upper case), ignoring case */
+static BOOL DevPrefix(const char *dev, const char *prefix)
 {
-    if (((dev[0] & ~0x20) == 'C') &&
-         ((dev[1] & ~0x20) == 'D'))
-        return TRUE;
-    else if (((dev[0] & ~0x20) == 'D') &&
-         ((dev[1] & ~0x20) == 'V') &&
-         ((dev[2] & ~0x20) == 'D'))
-        return TRUE;
-    return FALSE;
+    while (*prefix)
+    {
+        if ((*dev++ & ~0x20) != *prefix++)
+            return FALSE;
+    }
+    return TRUE;
 }
 
-struct DiskObject *GetDiscIcon(char *device, ULONG fsid, const struct TagItem *tags, struct IconBase *IconBase)
+BOOL IsDiscDevice(char *dev, int devlen)
+{
+    return DevPrefix(dev, "CD") || DevPrefix(dev, "DVD");
+}
+
+/*
+ * The default icon of a device is looked up as "<filesystem><class>",
+ * "<filesystem><device>disk", "<device>disk" and "<class>" in turn, see
+ * GetFSDeviceIcon(). The filesystem part comes from the disk type; which
+ * types are recognised depends on the class of the device.
+ */
+#define FSC_DISC        (1 << 0)
+#define FSC_FLOPPY      (1 << 1)
+#define FSC_HARDDISK    (1 << 2)
+#define FSC_ALL         (FSC_DISC | FSC_FLOPPY | FSC_HARDDISK)
+#define FSC_DISK        (FSC_FLOPPY | FSC_HARDDISK)
+
+struct FSClassName
+{
+    ULONG fsc_ID;
+    UBYTE fsc_Name;             /* index into fsclassnames[] */
+    UBYTE fsc_Classes;          /* FSC_ flags of the device classes this applies to */
+};
+
+static const char fsclassnames[][5] = { "NDOS", "Busy", "Kick", "PFS", "FAT", "SFS", "FFS" };
+
+static const struct FSClassName fsclasstable[] =
+{
+    { ID_UNREADABLE_DISK,       0, FSC_ALL      },
+    { ID_NOT_REALLY_DOS,        0, FSC_ALL      },
+    { ID_BUSY_DISK,             1, FSC_ALL      },
+    { ID_KICKSTART_DISK,        2, FSC_FLOPPY   },
+    { ID_PFS_DISK,              3, FSC_DISK     },
+    { ID_PFS2_DISK,             3, FSC_DISK     },
+    { ID_PFS3_DISK,             3, FSC_DISK     },
+    { ID_PFS2_SCSI_DISK,        3, FSC_DISK     },
+    { ID_PFS3_SCSI_DISK,        3, FSC_DISK     },
+    { ID_PFS2_muFS_DISK,        3, FSC_DISK     },
+    { ID_FLOPPY_PFS_DISK,       3, FSC_FLOPPY   },
+    { ID_NTFS_DISK,             4, FSC_HARDDISK },
+    { ID_MSDOS_DISK,            4, FSC_DISK     },
+    { ID_FAT12_DISK,            4, FSC_DISK     },
+    { ID_FAT16_DISK,            4, FSC_DISK     },
+    { ID_FAT32_DISK,            4, FSC_DISK     },
+    { ID_SFS_BE_DISK,           5, FSC_DISK     },
+    { ID_SFS_LE_DISK,           5, FSC_DISK     },
+    { ID_muFS_DISK,             6, FSC_DISK     },
+    { ID_DOS_muFS_DISK,         6, FSC_DISK     },
+    { ID_FFS_muFS_DISK,         6, FSC_DISK     },
+    { ID_INTER_DOS_muFS_DISK,   6, FSC_DISK     },
+    { ID_INTER_FFS_muFS_DISK,   6, FSC_DISK     },
+    { ID_FASTDIR_DOS_muFS_DISK, 6, FSC_DISK     },
+    { ID_FASTDIR_FFS_muFS_DISK, 6, FSC_DISK     },
+    { ID_AFS0_DISK,             6, FSC_DISK     },
+    { ID_AFS1_DISK,             6, FSC_DISK     },
+    { ID_AFS_muFS_DISK,         6, FSC_DISK     },
+    { ID_FFS_DISK,              6, FSC_DISK     },
+    { ID_INTER_DOS_DISK,        6, FSC_DISK     },
+    { ID_INTER_FFS_DISK,        6, FSC_DISK     },
+    { ID_FASTDIR_DOS_DISK,      6, FSC_DISK     },
+    { ID_FASTDIR_FFS_DISK,      6, FSC_DISK     },
+};
+
+static struct DiskObject *GetClassDeviceIcon(char *device, ULONG fsid, ULONG devclass, const char *classname,
+                                             const struct TagItem *tags, struct IconBase *IconBase)
 {
     char *fsstr = NULL;
+    ULONG i;
 
     if (fsid)
-        switch(fsid)
+    {
+        for (i = 0; i < sizeof(fsclasstable) / sizeof(fsclasstable[0]); i++)
         {
-        case ID_UNREADABLE_DISK:
-        case ID_NOT_REALLY_DOS:
-            fsstr = "NDOS";
-            break;
-        case ID_BUSY_DISK:
-            fsstr = "Busy";
-            break;
+            if (fsclasstable[i].fsc_ID == fsid)
+            {
+                if (fsclasstable[i].fsc_Classes & devclass)
+                    fsstr = (char *)fsclassnames[fsclasstable[i].fsc_Name];
+                break;
+            }
         }
-    return GetFSDeviceIcon(fsstr, device, str_CDROM, tags, IconBase);
+    }
+    return GetFSDeviceIcon(fsstr, device, classname, tags, IconBase);
 }
 
 BOOL IsFloppyDevice(char *dev)
@@ -211,63 +276,6 @@ BOOL IsFloppyDevice(char *dev)
         if ((dev[0] == 'F') || (dev[1] == 'F'))
             return TRUE;
     return FALSE;
-}
-
-struct DiskObject *GetFloppydiskIcon(char *device, ULONG fsid, const struct TagItem *tags, struct IconBase *IconBase)
-{
-    char *fsstr = NULL;
-
-    if (fsid)
-        switch(fsid)
-        {
-        case ID_UNREADABLE_DISK:
-        case ID_NOT_REALLY_DOS:
-            fsstr = "NDOS";
-            break;
-        case ID_BUSY_DISK:
-            fsstr = "Busy";
-            break;
-        case ID_KICKSTART_DISK:
-            fsstr = "Kick";
-            break;
-        case ID_PFS_DISK:
-        case ID_PFS2_DISK:
-        case ID_PFS3_DISK:
-        case ID_PFS2_SCSI_DISK:
-        case ID_PFS3_SCSI_DISK:
-        case ID_PFS2_muFS_DISK:
-        case ID_FLOPPY_PFS_DISK:
-            fsstr = "PFS";
-            break;
-        case ID_MSDOS_DISK:
-        case ID_FAT12_DISK:
-        case ID_FAT16_DISK:
-        case ID_FAT32_DISK:
-            fsstr = "FAT";
-            break;
-        case ID_SFS_BE_DISK:
-        case ID_SFS_LE_DISK:
-            fsstr = "SFS";
-            break;
-        case ID_muFS_DISK:
-        case ID_DOS_muFS_DISK:
-        case ID_FFS_muFS_DISK:
-        case ID_INTER_DOS_muFS_DISK:
-        case ID_INTER_FFS_muFS_DISK:
-        case ID_FASTDIR_DOS_muFS_DISK:
-        case ID_FASTDIR_FFS_muFS_DISK:
-        case ID_AFS0_DISK:
-        case ID_AFS1_DISK:
-        case ID_AFS_muFS_DISK:
-        case ID_FFS_DISK:
-        case ID_INTER_DOS_DISK:
-        case ID_INTER_FFS_DISK:
-        case ID_FASTDIR_DOS_DISK:
-        case ID_FASTDIR_FFS_DISK:
-            fsstr = "FFS";
-            break;
-        }
-    return GetFSDeviceIcon(fsstr, device, str_Disk, tags, IconBase);
 }
 
 BOOL IsHarddiskDevice(char *dev, int devlen)
@@ -280,78 +288,17 @@ BOOL IsHarddiskDevice(char *dev, int devlen)
             if ((dev[0] == 'H') || (dev[1] == 'H'))
                 return TRUE;
         }
-        else if (((dev[0] & ~0x20) == 'E') &&
-         ((dev[1] & ~0x20) == 'M') &&
-         ((dev[2] & ~0x20) == 'U'))
+        else if (DevPrefix(dev, "EMU"))
             return TRUE;
     }
     // try to match an ATAxPx or NVMExPx type name.
-    if (((dev[0] & ~0x20) == 'A') &&
-         ((dev[1] & ~0x20) == 'T') &&
-         ((dev[2] & ~0x20) == 'A') &&
+    if (DevPrefix(dev, "ATA") &&
          (((dev[4] & ~0x20) == 'P') || ((dev[5] & ~0x20) == 'P')))
         return TRUE;
-    if (((dev[0] & ~0x20) == 'N') &&
-         ((dev[1] & ~0x20) == 'V') &&
-         ((dev[2] & ~0x20) == 'M') &&
-         ((dev[3] & ~0x20) == 'E') &&
+    if (DevPrefix(dev, "NVME") &&
          (((dev[5] & ~0x20) == 'P') || ((dev[6] & ~0x20) == 'P')))
         return TRUE;
     return FALSE;
-}
-
-struct DiskObject *GetHarddiskIcon(char *device, ULONG fsid, const struct TagItem *tags, struct IconBase *IconBase)
-{
-    char *fsstr = NULL;
-
-    if (fsid)
-        switch(fsid)
-        {
-        case ID_UNREADABLE_DISK:
-        case ID_NOT_REALLY_DOS:
-            fsstr = "NDOS";
-            break;
-        case ID_BUSY_DISK:
-            fsstr = "Busy";
-            break;
-        case ID_PFS_DISK:
-        case ID_PFS2_DISK:
-        case ID_PFS3_DISK:
-        case ID_PFS2_SCSI_DISK:
-        case ID_PFS3_SCSI_DISK:
-        case ID_PFS2_muFS_DISK:
-            fsstr = "PFS";
-            break;
-        case ID_NTFS_DISK:
-        case ID_MSDOS_DISK:
-        case ID_FAT12_DISK:
-        case ID_FAT16_DISK:
-        case ID_FAT32_DISK:
-            fsstr = "FAT";
-            break;
-        case ID_SFS_BE_DISK:
-        case ID_SFS_LE_DISK:
-            fsstr = "SFS";
-            break;
-        case ID_muFS_DISK:
-        case ID_DOS_muFS_DISK:
-        case ID_FFS_muFS_DISK:
-        case ID_INTER_DOS_muFS_DISK:
-        case ID_INTER_FFS_muFS_DISK:
-        case ID_FASTDIR_DOS_muFS_DISK:
-        case ID_FASTDIR_FFS_muFS_DISK:
-        case ID_AFS0_DISK:
-        case ID_AFS1_DISK:
-        case ID_AFS_muFS_DISK:
-        case ID_FFS_DISK:
-        case ID_INTER_DOS_DISK:
-        case ID_INTER_FFS_DISK:
-        case ID_FASTDIR_DOS_DISK:
-        case ID_FASTDIR_FFS_DISK:
-            fsstr = "FFS";
-            break;
-        }
-    return GetFSDeviceIcon(fsstr, device, str_Harddisk, tags, IconBase);
 }
 
 BOOL IsUSBDevice(char *dev, int devlen)
@@ -362,9 +309,7 @@ BOOL IsUSBDevice(char *dev, int devlen)
             if ((dev[0] == 'D') && (dev[1] == 'U'))
                 return TRUE;
     }
-    if (((dev[0] & ~0x20) == 'U') &&
-         ((dev[1] & ~0x20) == 'S') &&
-         ((dev[2] & ~0x20) == 'B'))
+    if (DevPrefix(dev, "USB"))
         return TRUE;
     return FALSE;
 }
@@ -377,31 +322,42 @@ struct DiskObject *__GetDeviceIcon_WB
     int devnamelen;
     if ((devnamelen = strlen(name)) < 5)
     {
-        if (((name[0] & ~0x20) == 'R') &&
-             ((name[1] & ~0x20) == 'A') &&
-             ((name[2] & ~0x20) == 'M') &&
+        if (DevPrefix(name, "RAM") &&
              (name[3] == ':'))
             return GetDefaultIconFromName("RAM", tags);
-        if (((name[0] & ~0x20) == 'R') &&
-             ((name[1] & ~0x20) == 'A') &&
-             ((name[2] & ~0x20) == 'D'))
+        if (DevPrefix(name, "RAD"))
             return GetDefaultIconFromName("RAD", tags);
-        if (((name[0] & ~0x20) == 'H') &&
-             ((name[1] & ~0x20) == 'O') &&
-             ((name[2] & ~0x20) == 'M') &&
-             ((name[3] & ~0x20) == 'E'))
+        if (DevPrefix(name, "HOME"))
             return GetDefaultIconFromName("Home", tags);
         else if (IsFloppyDevice(name))
-            return GetFloppydiskIcon(name, fsid, tags, IconBase);
+            return GetClassDeviceIcon(name, fsid, FSC_FLOPPY, str_Disk, tags, IconBase);
     }
     if (IsUSBDevice(name, devnamelen))
         return GetDefaultIconFromName("USB", tags);
     else if (IsDiscDevice(name, devnamelen))
-        return GetDiscIcon(name, fsid, tags, IconBase);
+        return GetClassDeviceIcon(name, fsid, FSC_DISC, str_CDROM, tags, IconBase);
     else if (IsHarddiskDevice(name, devnamelen))
-        return GetHarddiskIcon(name, fsid, tags, IconBase);
+        return GetClassDeviceIcon(name, fsid, FSC_HARDDISK, str_Harddisk, tags, IconBase);
 
     return GetDefaultIconFromName("UnknownDevice", tags);
+}
+
+/* The generic icon of a type if there is no icon yet, with the type forced */
+static struct DiskObject *TypedDefaultIcon(struct DiskObject *icon, LONG type,
+                                           const struct TagItem *tags, struct IconBase *IconBase)
+{
+    if (icon == NULL)
+    {
+        icon = GetDefaultIconFromType(type, tags);
+    }
+
+    if (icon != NULL)
+    {
+        /* Force the icon type */
+        icon->do_Type = type;
+    }
+
+    return icon;
 }
 
 struct DiskObject *__FindDefaultIcon_WB
@@ -433,16 +389,7 @@ struct DiskObject *__FindDefaultIcon_WB
         }
         
         /* Fall back to generic disk icon */
-        if (icon == NULL)
-        {
-            icon = GetDefaultIconFromType(WBDISK, iim->iim_Tags);
-        }
-        
-        if (icon != NULL)
-        {
-            /* Force the icon type */
-            icon->do_Type = WBDISK;
-        }
+        icon = TypedDefaultIcon(icon, WBDISK, iim->iim_Tags, IconBase);
     }
     else if (iim->iim_FIB->fib_DirEntryType > 0)
     {
@@ -482,16 +429,7 @@ struct DiskObject *__FindDefaultIcon_WB
         }
         
         /* Fall back to generic drawer icon */
-        if (icon == NULL)
-        {
-            icon = GetDefaultIconFromType(WBDRAWER, iim->iim_Tags);
-        }
-        
-        if (icon != NULL)
-        {
-            /* Force the icon type */
-            icon->do_Type = WBDRAWER;
-        }
+        icon = TypedDefaultIcon(icon, WBDRAWER, iim->iim_Tags, IconBase);
     }
     else
     {
@@ -515,13 +453,7 @@ struct DiskObject *__FindDefaultIcon_WB
                 )
                 {
                     /* It's an executable file -----------------------------*/
-                    icon = GetDefaultIconFromType(WBTOOL, iim->iim_Tags);
-                    
-                    if (icon != NULL)
-                    {
-                        /* Force the icon type */
-                        icon->do_Type = WBTOOL;
-                    }
+                    icon = TypedDefaultIcon(NULL, WBTOOL, iim->iim_Tags, IconBase);
                 }
                 else
                 {
@@ -531,19 +463,28 @@ struct DiskObject *__FindDefaultIcon_WB
                     /* Fall back to generic filetype group icon */
                     if (icon == NULL)
                     {
-                        STRPTR name = NULL;
-                        
-                        switch (dth->dth_GroupID)
+                        static const struct { ULONG gid; CONST_STRPTR name; } groupnames[] =
                         {
-                            case GID_SYSTEM:     name = "System";     break;
-                            case GID_TEXT:       name = "Text";       break;
-                            case GID_DOCUMENT:   name = "Document";   break;
-                            case GID_SOUND:      name = "Sound";      break;
-                            case GID_INSTRUMENT: name = "Instrument"; break;
-                            case GID_MUSIC:      name = "Music";      break;
-                            case GID_PICTURE:    name = "Picture";    break;
-                            case GID_ANIMATION:  name = "Animation";  break;
-                            case GID_MOVIE:      name = "Movie";      break;
+                            { GID_SYSTEM,     "System"     },
+                            { GID_TEXT,       "Text"       },
+                            { GID_DOCUMENT,   "Document"   },
+                            { GID_SOUND,      "Sound"      },
+                            { GID_INSTRUMENT, "Instrument" },
+                            { GID_MUSIC,      "Music"      },
+                            { GID_PICTURE,    "Picture"    },
+                            { GID_ANIMATION,  "Animation"  },
+                            { GID_MOVIE,      "Movie"      },
+                        };
+                        CONST_STRPTR name = NULL;
+                        ULONG g;
+
+                        for (g = 0; g < sizeof(groupnames) / sizeof(groupnames[0]); g++)
+                        {
+                            if (groupnames[g].gid == dth->dth_GroupID)
+                            {
+                                name = groupnames[g].name;
+                                break;
+                            }
                         }
                         
                         if (name != NULL)
@@ -553,16 +494,7 @@ struct DiskObject *__FindDefaultIcon_WB
                     }
                     
                     /* Fall back to generic project icon */
-                    if (icon == NULL)
-                    {
-                        icon = GetDefaultIconFromType(WBPROJECT, iim->iim_Tags);
-                    }
-                    
-                    if (icon != NULL)
-                    {
-                        /* Force the icon type */
-                        icon->do_Type = WBPROJECT;
-                    }
+                    icon = TypedDefaultIcon(icon, WBPROJECT, iim->iim_Tags, IconBase);
                 }
                 
                 ReleaseDataType(dt);
@@ -572,28 +504,10 @@ struct DiskObject *__FindDefaultIcon_WB
         if (icon == NULL)
         {
             /* Fallback to a more primitive identification -----------------*/
-            if ((iim->iim_FIB->fib_Protection & FIBF_EXECUTE) == 0)
-            {
-                /* It's an executable files --------------------------------*/
-                icon = GetDefaultIconFromType(WBTOOL, iim->iim_Tags);
-                
-                if (icon != NULL)
-                {
-                    /* Force the icon type */
-                    icon->do_Type = WBTOOL;
-                }
-            }
-            else
-            {
-                /* It's a project file of some kind ------------------------*/
-                icon = GetDefaultIconFromType(WBPROJECT, iim->iim_Tags);
-                
-                if (icon != NULL)
-                {
-                    /* Force the icon type */
-                    icon->do_Type = WBPROJECT;
-                }
-            }
+            /* Executable files are tools, the others projects of some kind */
+            icon = TypedDefaultIcon(NULL,
+                ((iim->iim_FIB->fib_Protection & FIBF_EXECUTE) == 0) ? WBTOOL : WBPROJECT,
+                iim->iim_Tags, IconBase);
         }
     }
     

@@ -20,6 +20,16 @@
 
 /****************************************************************************************/
 
+/*
+ * iffparse.library is opened on demand. ReadIcon35() and WriteIcon35() do
+ * that once, before anything else, and give up if it cannot be opened; all
+ * other iffparse calls in this file are only reached after that and use the
+ * library base directly.
+ */
+#undef IFFParseBase
+#define IFFParseBase        (IconBase->ib_IFFParseBase)
+#define DemandIFFParseBase  DemandOpenLibrary((struct Library **)&IconBase->ib_IFFParseBase, "iffparse.library", IFFParseBase_version)
+
 #define ID_ICON MAKE_ID('I','C','O','N')
 #define ID_FACE MAKE_ID('F','A','C','E')
 #define ID_IMAG MAKE_ID('I','M','A','G')
@@ -121,7 +131,8 @@ static LONG MyMemStreamHandler(struct Hook *hook, struct IFFHandle * iff, struct
 
 /****************************************************************************************/
 
-static char *Decode35(UBYTE *buffer, UBYTE *outbuffer, LONG numbytes, LONG bits, LONG entries)
+/* Returns FALSE if the data could not be decoded completely */
+static BOOL Decode35(UBYTE *buffer, UBYTE *outbuffer, LONG numbytes, LONG bits, LONG entries)
 {
     int cop = 0, loop = 0, numbits = 0, mask, curentry = 0;
     ULONG bitbuf = 0;
@@ -169,49 +180,33 @@ static char *Decode35(UBYTE *buffer, UBYTE *outbuffer, LONG numbytes, LONG bits,
         numbits -= bits;
     }
     
-    return curentry != entries ? "error decoding new icon data" : 0;
+    return curentry == entries;
 }
 
 /****************************************************************************************/
 
-VOID MakeMask35(UBYTE *imgdata, UBYTE *imgmask, UBYTE transpcolor, LONG imagew, LONG imageh)
+#if defined(ICON_ZLIB_STORED) && !DEBUG
+/*
+ * zlib uses these two as the allocator of a stream that does not bring its
+ * own. In this configuration nothing else of zlib's zutil.c is needed
+ * (deflate is not linked, and zError() only appears in debug output), so
+ * they are provided here. The memory comes from exec, cleared, exactly as
+ * with the malloc()/free() pair below.
+ */
+voidpf zcalloc(voidpf opaque, unsigned items, unsigned size);
+void zcfree(voidpf opaque, voidpf ptr);
+
+voidpf zcalloc(voidpf opaque, unsigned items, unsigned size)
 {
-    UBYTE *src, *dst;
-    WORD x, y, bpr, mask;
-
-    memset(imgmask, 0xFF, RASSIZE(imagew, imageh));
-
-    bpr = ((imagew + 15) & ~15) / 8;
-    src = imgdata;
-    dst = imgmask;
-
-    for(y = 0; y < imageh; y++)
-    {
-        UBYTE *dstx = dst;
-
-        mask = 0x80;
-
-        for(x = 0; x < imagew; x++)
-        {
-            if (*(src++) == transpcolor)
-            {
-                *dstx &= ~mask;
-            }
-
-            mask >>= 1;
-            if (!mask)
-            {
-                mask = 0x80;
-                dstx++;
-            }
-        }
-        dst += bpr;
-        
-    }
-    
+    return AllocVec(items * size, MEMF_PUBLIC | MEMF_CLEAR);
 }
 
-/****************************************************************************************/
+void zcfree(voidpf opaque, voidpf ptr)
+{
+    FreeVec(ptr);
+}
+#else
+/* zlib's zcalloc()/zcfree() allocate through these */
 void *malloc(size_t size)
 {
     return AllocVec(size, MEMF_PUBLIC | MEMF_CLEAR);
@@ -221,6 +216,51 @@ void free(void *ptr)
 {
     FreeVec(ptr);
 }
+#endif
+
+/****************************************************************************************/
+
+/*
+ * Decompress a zlib stream that is completely in memory into a buffer that
+ * can hold all of the result. This is zlib's uncompress() without the
+ * feeding of buffers larger than 4GB in pieces: the ARGB data of an icon is
+ * limited to 4096 x 4096 pixels. Results and error codes are those of
+ * uncompress().
+ */
+STATIC int UncompressARGB(Bytef *dest, uLongf *destLen, const Bytef *source, uLong sourceLen)
+{
+    z_stream stream;
+    int err;
+
+    stream.next_in = (z_const Bytef *)source;
+    stream.avail_in = sourceLen;
+    stream.zalloc = (alloc_func)0;
+    stream.zfree = (free_func)0;
+    stream.opaque = (voidpf)0;
+
+    stream.next_out = dest;
+    stream.avail_out = *destLen;
+    *destLen = 0;
+
+    err = inflateInit(&stream);
+    if (err != Z_OK) return err;
+
+    do {
+        err = inflate(&stream, Z_NO_FLUSH);
+    } while (err == Z_OK);
+
+    *destLen = stream.total_out;
+
+    inflateEnd(&stream);
+
+    return err == Z_STREAM_END ? Z_OK :
+           err == Z_NEED_DICT ? Z_DATA_ERROR :
+           err == Z_BUF_ERROR && stream.avail_out ? Z_DATA_ERROR :
+           err;
+}
+
+/****************************************************************************************/
+
 
 STATIC BOOL ReadARGB35(struct DiskObject *icon, struct IFFHandle *iff, struct FileFaceChunk *fc,
                         LONG chunksize, UBYTE **argbptr,
@@ -254,7 +294,7 @@ STATIC BOOL ReadARGB35(struct DiskObject *icon, struct IFFHandle *iff, struct Fi
     /* OS3.5 spec: zsize is the actual compressed payload size (ULONG BE at offset 4) */
     zsize = AROS_BE2LONG(*((ULONG *)(src + 4)));
     if (zsize == 0 || zsize > (ULONG)chunksize - 10) goto fail;
-    err = uncompress(argb, &size, src + 10, zsize);
+    err = UncompressARGB(argb, &size, src + 10, zsize);
     if (err != Z_OK || size != (uLongf)((ULONG)imagew * (ULONG)imageh * 4)) {
         D(bug("%s: Decompress failed: %s (err=%d size=%ld expected=%ld)\n", __func__, zError(err), err, (long)size, (long)((ULONG)imagew * (ULONG)imageh * 4)));
         goto fail;
@@ -354,11 +394,8 @@ STATIC BOOL ReadImage35(struct DiskObject *icon, struct IFFHandle *iff, struct F
         }
         else
         {
-            CONST_STRPTR err;
-            
-            err = Decode35(src, (UBYTE *)imgpal, palsize, 8, 3 * numcols);
-            if (err) {
-                D(bug("[%s] Palette decode error: %s\n", __func__, err));
+            if (!Decode35(src, (UBYTE *)imgpal, palsize, 8, 3 * numcols)) {
+                D(bug("[%s] Palette decode error\n", __func__));
                 imgpal = NULL;
             }
 
@@ -415,12 +452,14 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
     struct IFFHandle        *iff;
     struct Hook              iffhook;
     struct FileFaceChunk     fc = { 0 };
-    struct FileImageChunk    ic1, ic2;
-    UBYTE                   *argb1data = NULL, *argb2data = NULL;
-    UBYTE                   *img1data = NULL, *img2data = NULL;
-    struct ColorRegister    *img1pal = NULL, *img2pal = NULL;
-    BOOL  have_face = FALSE, have_imag1 = FALSE, have_imag2 = FALSE;
-    BOOL                     have_argb1 = FALSE, have_argb2 = FALSE;
+    /* Index 0: image 1, index 1: image 2 */
+    struct FileImageChunk    ic[2];
+    UBYTE                   *argbdata[2] = { NULL, NULL };
+    UBYTE                   *imgdata[2] = { NULL, NULL };
+    struct ColorRegister    *imgpal[2] = { NULL, NULL };
+    BOOL                     have_face = FALSE;
+    BOOL                     have_imag[2] = { FALSE, FALSE };
+    BOOL                     have_argb[2] = { FALSE, FALSE };
     int have_png = 0;
     LONG here, extrasize;
     APTR data;
@@ -442,7 +481,7 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
         return TRUE;
     }
 
-    if (IFFParseBase == NULL)
+    if (DemandIFFParseBase == NULL)
         return FALSE;
     
     data = AllocMemIcon(&icon->ni_DiskObject, extrasize, MEMF_PUBLIC,
@@ -497,40 +536,24 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
                     }
                     else if (have_face && (cn->cn_ID == ID_IMAG) && (cn->cn_Size >= sizeof(struct FileImageChunk)))
                     {
+                        /* Once image 1 has been read, any further one is image 2 */
+                        int n = have_imag[0] ? 1 : 0;
+
                         D(bug("ReadIcon35. Found IMAG chunk\n"));
-                        if (ReadChunkBytes(iff, (have_imag1 ? &ic2 : &ic1), sizeof(ic1)) == sizeof(ic1))
+                        if (ReadChunkBytes(iff, &ic[n], sizeof(ic[n])) == sizeof(ic[n]))
                         {
-                            if (have_imag1)
+                            if (ReadImage35(&icon->ni_DiskObject, iff, &fc, &ic[n], &imgdata[n], &imgpal[n], IconBase))
                             {
-                                if (ReadImage35(&icon->ni_DiskObject, iff, &fc, &ic2, &img2data, &img2pal, IconBase))
-                                {
-                                    have_imag2 = TRUE;
-                                }
+                                have_imag[n] = TRUE;
                             }
-                            else
-                            {
-                                if (ReadImage35(&icon->ni_DiskObject, iff, &fc, &ic1, &img1data, &img1pal, IconBase))
-                                {
-                                    have_imag1 = TRUE;
-                                }
-                            }
-                            
                         }
                     } else if (cn->cn_ID == ID_ARGB) {
+                        int n = have_argb[0] ? 1 : 0;
+
                         D(bug("ReadIcon35. Found ARGB chunk\n"));
-                        if (have_argb1)
+                        if (ReadARGB35(&icon->ni_DiskObject, iff, &fc, cn->cn_Size, &argbdata[n], IconBase))
                         {
-                            if (ReadARGB35(&icon->ni_DiskObject, iff, &fc, cn->cn_Size, &argb2data, IconBase))
-                            {
-                                have_argb2 = TRUE;
-                            }
-                        }
-                        else
-                        {
-                            if (ReadARGB35(&icon->ni_DiskObject, iff, &fc, cn->cn_Size, &argb1data, IconBase))
-                            {
-                                have_argb1 = TRUE;
-                            }
+                            have_argb[n] = TRUE;
                         }
                     } else if (cn->cn_ID == ID_png) {
                         if (have_png < 2) {
@@ -560,7 +583,7 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
      * if it also contains image data.
      */
     if (have_face) {
-        if (have_argb1 || have_argb2 || have_imag1 || have_imag2) {
+        if (have_argb[0] || have_argb[1] || have_imag[0] || have_imag[1]) {
             icon->ni_Face.Width  = fc.Width + 1;
             icon->ni_Face.Height = fc.Height + 1;
         }
@@ -568,43 +591,43 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
         icon->ni_Face.Aspect = fc.Aspect;
     }
 
-    if (have_argb1)
+    if (have_argb[0])
     {
-        icon->ni_Image[0].ARGB = (APTR)argb1data;
+        icon->ni_Image[0].ARGB = (APTR)argbdata[0];
     }
 
-    if (have_argb2)
+    if (have_argb[1])
     {
-        icon->ni_Image[1].ARGB = (APTR)argb2data;
+        icon->ni_Image[1].ARGB = (APTR)argbdata[1];
     }
 
-    if (have_imag1)
+    if (have_imag[0])
     {
-        icon->ni_Image[0].ImageData         = img1data;
-        icon->ni_Image[0].Palette           = img1pal;
-        icon->ni_Image[0].Pens              = ic1.NumColors + 1;
-        icon->ni_Image[0].TransparentColor  = ic1.TransparentColor;
+        icon->ni_Image[0].ImageData         = imgdata[0];
+        icon->ni_Image[0].Palette           = imgpal[0];
+        icon->ni_Image[0].Pens              = ic[0].NumColors + 1;
+        icon->ni_Image[0].TransparentColor  = ic[0].TransparentColor;
 
         if (icon->ni_Image[0].Pens < 1 || icon->ni_Image[0].Pens > 256)
             return FALSE;
         
-        if (have_imag2)
+        if (have_imag[1])
         {
-            icon->ni_Image[1].ImageData         = img2data;
-            icon->ni_Image[1].TransparentColor  = ic2.TransparentColor;
+            icon->ni_Image[1].ImageData         = imgdata[1];
+            icon->ni_Image[1].TransparentColor  = ic[1].TransparentColor;
             
-            if (img2pal)
+            if (imgpal[1])
             {
-                icon->ni_Image[1].Palette       = img2pal;
-                icon->ni_Image[1].Pens          = ic2.NumColors + 1;
+                icon->ni_Image[1].Palette       = imgpal[1];
+                icon->ni_Image[1].Pens          = ic[1].NumColors + 1;
                 if (icon->ni_Image[1].Pens < 1 || icon->ni_Image[0].Pens > 256)
                     return FALSE;
         
             }
             else
             {
-                icon->ni_Image[1].Palette       = img1pal;
-                icon->ni_Image[1].Pens          = ic1.NumColors + 1;
+                icon->ni_Image[1].Palette       = imgpal[0];
+                icon->ni_Image[1].Pens          = ic[0].NumColors + 1;
             }
         }
     }
@@ -902,10 +925,11 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
     struct Hook              iffhook;
     struct FileFaceChunk     fc;
     BOOL                     ok = FALSE;
+    int                      n;
     
     D(bug("WriteIcon35\n"));
     
-    if (IFFParseBase == NULL)
+    if (DemandIFFParseBase == NULL)
     {
         D(bug("%s: IFFParseBase is NULL\n", __func__));
         return FALSE;
@@ -1043,18 +1067,15 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
                        
                 } /* if (!PushChunk(iff, ID_ICON, ID_FACE, sizeof(struct FileFaceChunk))) */
 
-                if (icon->ni_Extra.PNG[0].Size &&
-                    !PushChunk(iff, ID_ICON, ID_png, IFFSIZE_UNKNOWN)) {
-                    WriteChunkBytes(iff, icon->ni_Extra.Data + icon->ni_Extra.PNG[0].Offset, icon->ni_Extra.PNG[0].Size);
+                /* The PNG images of image 1 and 2, as they were read */
+                for (n = 0; n < 2; n++)
+                {
+                    if (icon->ni_Extra.PNG[n].Size &&
+                        !PushChunk(iff, ID_ICON, ID_png, IFFSIZE_UNKNOWN)) {
+                        WriteChunkBytes(iff, icon->ni_Extra.Data + icon->ni_Extra.PNG[n].Offset, icon->ni_Extra.PNG[n].Size);
 
-                    PopChunk(iff);
-                }
-
-                if (icon->ni_Extra.PNG[1].Size &&
-                    !PushChunk(iff, ID_ICON, ID_png, IFFSIZE_UNKNOWN)) {
-                    WriteChunkBytes(iff, icon->ni_Extra.Data + icon->ni_Extra.PNG[1].Offset, icon->ni_Extra.PNG[1].Size);
-
-                    PopChunk(iff);
+                        PopChunk(iff);
+                    }
                 }
                 
                 PopChunk(iff);

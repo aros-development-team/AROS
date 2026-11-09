@@ -237,7 +237,6 @@ UBYTE * WriteValue     (LONG, UBYTE *);
 BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook, void *stream, struct IconBase *IconBase);
 BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook, void *stream, struct IconBase *IconBase);
 VOID FreeIcon35(struct NativeIcon *icon, struct IconBase *IconBase);
-VOID MakeMask35(UBYTE *imgdata, UBYTE *imgmask, UBYTE transpcolor, LONG imagew, LONG imageh);
 
 BOOL ReadIconNI(struct NativeIcon *icon, struct Hook *streamhook, void *stream, struct IconBase *IconBase);
 BOOL WriteIconNI(struct NativeIcon *icon, struct Hook *streamhook, void *stream, struct IconBase *IconBase);

@@ -326,7 +326,7 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct TagItem *tags, st
 {
     struct NativeIcon *ni;
     struct DiskObject *itmp, *oldicon = NULL;
-    BOOL success;
+    BOOL success, aos;
     LONG error = 0;
 
     D(bug("[%s] icon=%p\n", __func__, icon));
@@ -353,12 +353,14 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct TagItem *tags, st
                                TAG_END);
 
     ni = GetNativeIcon(itmp, IconBase);
+    /* The duplicate's extra data does not change below */
+    aos = is_aos(ni);
 
     if (GetTagData(ICONPUTA_DropPlanarIconImage, FALSE, tags)) {
         itmp->do_Gadget.Flags &= ~(GFLG_GADGIMAGE | GFLG_GADGHIMAGE);
         itmp->do_Gadget.GadgetRender = NULL;
         itmp->do_Gadget.SelectRender = NULL;
-    } else if (is_aos(ni)) {
+    } else if (aos) {
         if (itmp->do_Gadget.GadgetRender == NULL) {
             SetIoErr(ERROR_OBJECT_WRONG_TYPE);
             return FALSE;
@@ -380,11 +382,11 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct TagItem *tags, st
         }
     }
 
-    if (is_aos(ni) && GetTagData(ICONPUTA_OptimizeImageSpace, FALSE, tags)) {
+    if (aos && GetTagData(ICONPUTA_OptimizeImageSpace, FALSE, tags)) {
         /* TODO: Compress the palette for the icon */
     }
 
-    if (is_aos(ni) && GetTagData(ICONPUTA_PreserveOldIconImages, TRUE, tags)) {
+    if (aos && GetTagData(ICONPUTA_PreserveOldIconImages, TRUE, tags)) {
         oldicon = ReadIcon(file);
         Seek(file, 0, OFFSET_BEGINNING);
         if (oldicon) {
@@ -393,7 +395,7 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct TagItem *tags, st
         }
     }
 
-    if (is_png(ni))
+    if (!aos)
     {
         D(bug("[%s] Write as PNG\n", __func__));
         success = WriteIconPNG(file, itmp, IconBase);

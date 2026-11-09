@@ -158,8 +158,21 @@ USER_CPPFLAGS := $(LIBZ_CPPFLAGS) -DNO_STRERROR -DNDEBUG
 # cannot afford (and their link scripts reject the DYNAMIC_CRC_TABLE bss).
 USER_CPPFLAGS := $(LIBZ_CPPFLAGS) -DNO_STRERROR -DNDEBUG -DNO_GZIP
 
+LIBZ_NOGZIP_FILES := $(addprefix $(ARCHSRCDIR)/,$(FILES))
+
+# Kickstart builds take inflate.c through inflate_nogzip.c, which leaves out
+# the inflate entry points that compress()/uncompress() consumers never reach
+# (inflateSync(), inflateCopy(), the dictionary and gzip header functions...).
+# Only this link library is built that way: z1.library and z.static above
+# always carry the complete inflate.c.
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+ifneq ($(filter inflate,$(FILES)),)
+LIBZ_NOGZIP_FILES := $(addprefix $(ARCHSRCDIR)/,$(filter-out inflate,$(FILES))) inflate_nogzip
+endif
+endif
+
 %build_linklib mmake=linklibs-z-nogzip-static libname=z-nogzip.static \
-    files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" \
+    files="$(LIBZ_NOGZIP_FILES)" \
     objdir=$(GENDIR)/$(CURDIR)/static-nogzip
 
 INCLUDE_FILES := zlib.h chromeconf.h

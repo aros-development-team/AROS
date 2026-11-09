@@ -68,12 +68,6 @@ AROS_UFP3S(ULONG, ProcessDefaultTool,
     AROS_UFPA(struct SDData *, data, A1)
 );
 
-AROS_UFP3S(ULONG, ProcessToolWindow,
-    AROS_UFPA(struct Hook *,   hook, A0),
-    AROS_UFPA(struct Hook *,   streamhook, A2),
-    AROS_UFPA(struct SDData *, data, A1)
-);
-
 AROS_UFP3S(ULONG, ProcessToolTypes,
     AROS_UFPA(struct Hook *,   hook, A0),
     AROS_UFPA(struct Hook *,   streamhook, A2),
@@ -92,11 +86,10 @@ AROS_UFP3S(ULONG, ProcessIcon35,
     AROS_UFPA(struct SDData *, data, A1)
 );
 
-AROS_UFP3S(ULONG, ProcessIconNI,
-    AROS_UFPA(struct Hook *,   hook, A0),
-    AROS_UFPA(struct Hook *,   streamhook, A2),
-    AROS_UFPA(struct SDData *, data, A1)
-);
+/* h_Data of the hooks for the string fields of the DiskObject:
+   offset of the STRPTR in the DiskObject and the RSS_ flag to set when read */
+#define ICONSTR(field, rss)     ((APTR)((offsetof(struct DiskObject, field) << 8) | (rss)))
+_Static_assert(RSS_DEFAULTTOOL_READ <= 0xff && RSS_TOOLWINDOW_READ <= 0xff, "ICONSTR() keeps the flag in the low byte");
 
 const struct Hook
 ProcessCheckFileTypeHook =
@@ -125,11 +118,11 @@ ProcessFlagPtrHook =
 },
 ProcessDefaultToolHook =
 {
-    { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessDefaultTool), NULL, NULL
+    { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessDefaultTool), NULL, ICONSTR(do_DefaultTool, RSS_DEFAULTTOOL_READ)
 },
 ProcessToolWindowHook =
 {
-    { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessToolWindow), NULL, NULL
+    { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessDefaultTool), NULL, ICONSTR(do_ToolWindow, RSS_TOOLWINDOW_READ)
 },
 ProcessToolTypesHook =
 {
@@ -138,10 +131,6 @@ ProcessToolTypesHook =
 ProcessIcon35Hook =
 {
     { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessIcon35), NULL, NULL
-},
-ProcessIconNIHook =
-{
-    { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessIconNI), NULL, NULL
 };
 
 /****************************************************************************************/
@@ -234,7 +223,6 @@ const IPTR IconDesc[] =
     SDM_SPECIAL(0,&ProcessToolWindowHook),
     SDM_SPECIAL(0,&ProcessNewDrawerDataHook),
     SDM_SPECIAL(0,&ProcessIcon35Hook),
-    SDM_SPECIAL(0,&ProcessIconNIHook),
     SDM_END
 };
 
@@ -722,14 +710,17 @@ AROS_UFH3S(ULONG, ProcessDefaultTool,
 {
     AROS_USERFUNC_INIT
 
+    /* Reads or writes do_DefaultTool or do_ToolWindow, see ICONSTR() */
     STRPTR str;
     struct DiskObject *icon = DO(data->sdd_Dest);
+    IPTR desc = (IPTR)hook->h_Data;
+    STRPTR *field = (STRPTR *)((UBYTE *)icon + (desc >> 8));
 
 #if 0
 kprintf ("ProcessDefaultTool\n");
 #endif
 
-    if (icon->do_DefaultTool)
+    if (*field)
     {
         switch (data->sdd_Mode)
         {
@@ -739,12 +730,12 @@ kprintf ("ProcessDefaultTool\n");
             if (!str)
                 return FALSE;
 
-            icon->do_DefaultTool = str;
-            NATIVEICON(data->sdd_Dest)->ni_ReadStruct_State |= RSS_DEFAULTTOOL_READ;
+            *field = str;
+            NATIVEICON(data->sdd_Dest)->ni_ReadStruct_State |= desc & 0xff;
             break;
 
         case SDV_SPECIALMODE_WRITE: {
-            str = icon->do_DefaultTool;
+            str = *field;
 
             WriteIconString (streamhook, (BPTR) data->sdd_Stream, str);
 
@@ -759,54 +750,6 @@ kprintf ("ProcessDefaultTool\n");
 
     AROS_USERFUNC_EXIT
 } /* ProcessDefaultTool */
-
-/****************************************************************************************/
-
-AROS_UFH3S(ULONG, ProcessToolWindow,
-    AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(struct Hook *,   streamhook, A2),
-    AROS_UFHA(struct SDData *, data, A1)
-)
-{
-    AROS_USERFUNC_INIT
-
-    STRPTR str;
-    struct DiskObject *icon = DO(data->sdd_Dest);
-
-#if 0
-kprintf ("ProcessToolWindow\n");
-#endif
-
-    if (icon->do_ToolWindow)
-    {
-        switch (data->sdd_Mode)
-        {
-        case SDV_SPECIALMODE_READ:
-            str = ReadIconString (icon, streamhook, (BPTR)data->sdd_Stream);
-
-            if (!str)
-                return FALSE;
-
-            icon->do_ToolWindow = str;
-            NATIVEICON(data->sdd_Dest)->ni_ReadStruct_State |= RSS_TOOLWINDOW_READ;
-            break;
-
-        case SDV_SPECIALMODE_WRITE: {
-            str = icon->do_ToolWindow;
-
-            WriteIconString (streamhook, (BPTR)data->sdd_Stream, str);
-
-            break; }
-
-        case SDV_SPECIALMODE_FREE:
-            break;
-        }
-    }
-
-    return TRUE;
-
-    AROS_USERFUNC_EXIT
-} /* ProcessToolWindow */
 
 /****************************************************************************************/
 
@@ -976,15 +919,15 @@ AROS_UFH3S(ULONG, ProcessIcon35,
 #if 0
 kprintf ("ProcessIcon35\n");
 #endif
+
+    /* The OS3.5 and the NewIcons extensions of the icon file */
     
     switch (data->sdd_Mode)
     {
         case SDV_SPECIALMODE_READ:
             ReadIcon35(NATIVEICON(DO(data->sdd_Dest)), streamhook, data->sdd_Stream, IconBase);
-            break;
-
-        case SDV_SPECIALMODE_FREE:
-            FreeIcon35(NATIVEICON(DO(data->sdd_Dest)), IconBase);
+            /* NewIcons imagery is only used by an icon without OS3.5 imagery */
+            ReadIconNI(NATIVEICON(DO(data->sdd_Dest)), streamhook, data->sdd_Stream, IconBase);
             break;
 
         case SDV_SPECIALMODE_WRITE:
@@ -999,41 +942,3 @@ kprintf ("ProcessIcon35\n");
 } /* ProcessIcon35 */
 
 /****************************************************************************************/
-
-AROS_UFH3S(ULONG, ProcessIconNI,
-    AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(struct Hook *,   streamhook, A2),
-    AROS_UFHA(struct SDData *, data, A1)
-)
-{
-    AROS_USERFUNC_INIT
-    
-    IPTR retval = TRUE;
-
-#if 0
-kprintf ("ProcessIconNI\n");
-#endif
-    
-    switch (data->sdd_Mode)
-    {
-        case SDV_SPECIALMODE_READ:
-            ReadIconNI(NATIVEICON(DO(data->sdd_Dest)), streamhook, data->sdd_Stream, IconBase);
-            break;
-
-        case SDV_SPECIALMODE_FREE:
-            FreeIconNI(NATIVEICON(DO(data->sdd_Dest)), IconBase);
-            break;
-
-        case SDV_SPECIALMODE_WRITE:
-            retval = WriteIconNI(NATIVEICON(DO(data->sdd_Dest)), streamhook, data->sdd_Stream, IconBase);
-            break;
-
-    }
-    
-    return retval;
-    
-    AROS_USERFUNC_EXIT
-} /* ProcessIconNI */
-
-/****************************************************************************************/
-

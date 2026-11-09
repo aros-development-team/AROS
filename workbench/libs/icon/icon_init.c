@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
 */
 
@@ -23,10 +23,32 @@ const LONG IFFParseBase_version = 39,
 
 /****************************************************************************************/
 
+/* Offsets of the library bases in the IconBase, in the order they are closed.
+ * The last four are the required libraries, opened last to first. */
+#define IBOFF(field)    offsetof(struct IconBase, field)
+
+static const UWORD libbases[] =
+{
+    IBOFF(ib_CyberGfxBase), IBOFF(ib_DataTypesBase), IBOFF(ib_IFFParseBase), IBOFF(ib_WorkbenchBase),
+    IBOFF(ib_IntuitionBase), IBOFF(ib_GfxBase), IBOFF(ib_DOSBase), IBOFF(ib_UtilityBase)
+};
+#define NUM_LIBBASES    8
+#define FIRST_REQUIRED  4
+
+static const char * const libnames[] =
+{
+    "intuition.library", "graphics.library", "dos.library", "utility.library"
+};
+
+_Static_assert(sizeof(libbases) / sizeof(libbases[0]) == NUM_LIBBASES &&
+               sizeof(libnames) / sizeof(libnames[0]) == NUM_LIBBASES - FIRST_REQUIRED,
+               "one name per required library");
+
+#define LIBPTR(base, n) (*(struct Library **)((UBYTE *)(base) + libbases[n]))
+
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR lh)
 {
     LONG i;
-    struct IconBase *IconBase;
 
     LB(lh)->dsh.h_Entry = (void *)AROS_ASMSYMNAME(dosstreamhook);
     LB(lh)->dsh.h_Data  = lh;
@@ -50,42 +72,31 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR lh)
     LB(lh)->ib_NewIconsSupport      = TRUE;
     LB(lh)->ib_ColorIconSupport     = TRUE;
 
-    IconBase = LB(lh);
-    
-    UtilityBase = OpenLibrary("utility.library", 0);
-    if (UtilityBase != NULL) {
-        DOSBase = OpenLibrary("dos.library", 0);
-        if (DOSBase != NULL) {
-            GfxBase = OpenLibrary("graphics.library", GfxBase_version);
-            if (GfxBase != NULL) {
-                IntuitionBase = OpenLibrary("intuition.library", 0);
-                if (IntuitionBase != NULL) {
-                    /* Optional libraries are loaded dynamically if needed */
-                    return TRUE;
-                }
-                CloseLibrary(GfxBase);
-            }
-            CloseLibrary(DOSBase);
+    for (i = NUM_LIBBASES - 1; i >= FIRST_REQUIRED; i--)
+    {
+        if ((LIBPTR(lh, i) = OpenLibrary(libnames[i - FIRST_REQUIRED],
+                (i == FIRST_REQUIRED + 1) ? GfxBase_version : 0)) == NULL)
+        {
+            /* Close the ones opened so far, latest first */
+            while (++i < NUM_LIBBASES)
+                CloseLibrary(LIBPTR(lh, i));
+            return FALSE;
         }
-        CloseLibrary(UtilityBase);
     }
 
-    return FALSE;
+    /* Optional libraries are loaded dynamically if needed */
+    return TRUE;
 }
 
 static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 {
-    /* Drop optional libraries */
-    if (LIBBASE->ib_CyberGfxBase)  CloseLibrary(LIBBASE->ib_CyberGfxBase);
-    if (LIBBASE->ib_DataTypesBase) CloseLibrary(LIBBASE->ib_DataTypesBase);
-    if (LIBBASE->ib_IFFParseBase)  CloseLibrary(LIBBASE->ib_IFFParseBase);
-    if (LIBBASE->ib_WorkbenchBase) CloseLibrary(LIBBASE->ib_WorkbenchBase);
+    LONG i;
 
-    /* Drop the rest */
-    if (IntuitionBase) CloseLibrary(IntuitionBase);
-    if (GfxBase)       CloseLibrary(GfxBase);
-    if (DOSBase)       CloseLibrary(DOSBase);
-    if (UtilityBase)   CloseLibrary(UtilityBase);
+    /* Drop optional libraries, then the rest */
+    for (i = 0; i < NUM_LIBBASES; i++)
+    {
+        if (LIBPTR(LIBBASE, i)) CloseLibrary(LIBPTR(LIBBASE, i));
+    }
     
     return TRUE;
 }
