@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2011, Thore Böckelmann. All rights reserved.
-    Copyright (C) 2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 2012-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -31,17 +31,220 @@
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #endif
 
+/****** Pixmap.mui/MUIC_Pixmap ************
+*
+*   NAME
+*       MUIC_Pixmap
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       Displays caller-supplied CLUT8, RGB24 or ARGB32 pixels, optionally
+*       RLE- or BZip2-compressed. The object borrows Data and CLUT; keep both
+*       valid while in use. Dimensions, format and buffer lengths must agree.
+*       The picture is drawn without scaling.
+*
+*   NOTES
+*       Decompression is synchronous. Setup does not propagate decode or
+*       palette-resource allocation failures; successful Setup does not prove
+*       a drawable image. On palette screens the object prepares mapped pens
+*       and, for ARGB32, a binary transparency mask. Only direct ARGB32 drawing
+*       applies global Alpha. Use the usual Setup/Cleanup lifecycle.
+*       Changing Data can incorrectly free a previously borrowed raw buffer.
+*       Format, dimensions and CLUT changes do not refresh cached image or
+*       palette-screen resources. Recreate the object for a new image contract.
+*       Neither RLE bounds nor calculated allocation sizes are fully validated;
+*       use valid, trusted image data.
+*
+*/
+/****** Pixmap.mui/MUIA_Pixmap_Data ************
+*
+*   NAME
+*       MUIA_Pixmap_Data
+*
+*   FUNCTION
+*       Specify packed pixel bytes or a compressed byte stream.
+*
+*   INPUTS
+*       Initialize, set, get: borrowed APTR; default NULL.
+*
+*   NOTES
+*       Raw pixels use contiguous rows without padding (1, 3 or 4 bytes per
+*       pixel according to Format). Compressed input must match CompressedSize
+*       and the declared uncompressed dimensions. Neither input is copied.
+*       Replacing aliased raw Data can free caller-owned memory; recreate the
+*       object to replace the image safely. Failed decoding can leave changed
+*       attributes in place. Get returns the stored pointer without ownership.
+*
+*/
+/****** Pixmap.mui/MUIA_Pixmap_Format ************
+*
+*   NAME
+*       MUIA_Pixmap_Format
+*
+*   FUNCTION
+*       Select the pixel format.
+*
+*   INPUTS
+*       Initialize, set, get: ULONG; default ARGB32 (2).
+*       CLUT8 (0): one palette index per pixel; RGB24 (1): RGB bytes;
+*       ARGB32 (2): alpha, red, green, blue bytes.
+*
+*   NOTES
+*       Rows have no separate stride. Direct CLUT8 needs a valid CLUT.
+*       Changing Format does not invalidate cached pixels or regenerate
+*       palette-screen resources; recreate the object instead.
+*
+*/
+/****** Pixmap.mui/MUIA_Pixmap_Width ************
+*
+*   NAME
+*       MUIA_Pixmap_Width
+*
+*   FUNCTION
+*       Specify the image width in pixels.
+*
+*   INPUTS
+*       Initialize, set, get: LONG; default 0. Supply a positive dimension.
+*
+*   NOTES
+*       Controls packed-row width and contributes to all AskMinMax sizes.
+*       No scaling or source-length validation is performed. Set does not
+*       resize cached buffers or refresh palette resources; recreate the object
+*       when changing dimensions. Ensure allocation sizes remain representable.
+*
+*/
+/****** Pixmap.mui/MUIA_Pixmap_Height ************
+*
+*   NAME
+*       MUIA_Pixmap_Height
+*
+*   FUNCTION
+*       Specify the image height in pixels.
+*
+*   INPUTS
+*       Initialize, set, get: LONG; default 0. Supply a positive dimension.
+*
+*   NOTES
+*       Contributes to all AskMinMax sizes. No scaling or source-length
+*       validation is performed. Set does not resize cached buffers or refresh
+*       palette resources; recreate the object when changing dimensions.
+*       Ensure allocation sizes remain representable.
+*
+*/
+/****** Pixmap.mui/MUIA_Pixmap_CLUT ************
+*
+*   NAME
+*       MUIA_Pixmap_CLUT
+*
+*   FUNCTION
+*       Specify the color table for indexed pixels and palette conversion.
+*
+*   INPUTS
+*       Initialize, set, get: borrowed pointer to 256 ULONG XRGB entries;
+*       default NULL (red bits 16-23, green 8-15, blue 0-7).
+*
+*   NOTES
+*       A NULL table selects the built-in palette only for palette-screen
+*       conversion. Direct CLUT8 drawing requires a supplied table. No copy
+*       or ownership transfer occurs. Set does not rebuild pens or converted
+*       bitmaps; recreate the object to change the palette safely.
+*
+*/
+/****** Pixmap.mui/MUIA_Pixmap_Alpha ************
+*
+*   NAME
+*       MUIA_Pixmap_Alpha
+*
+*   FUNCTION
+*       Apply global opacity to direct ARGB32 drawing.
+*
+*   INPUTS
+*       Initialize, set, get: ULONG; default 0xffffffff.
+*
+*   NOTES
+*       WritePixelArrayAlpha uses the top byte (0xff keeps source alpha, 0 hides it).
+*       Other direct formats and palette-screen drawing ignore this setting;
+*       ARGB32 palette masks use source alpha with a threshold of 128.
+*       Set does not recompute Setup-time buffering/fill choices.
+*
+*/
+/****** Pixmap.mui/MUIA_Pixmap_Compression ************
+*
+*   NAME
+*       MUIA_Pixmap_Compression
+*
+*   FUNCTION
+*       Select compression of Data.
+*
+*   INPUTS
+*       Initialize, set, get: ULONG; None (0, default), RLE (1), BZip2 (2).
+*
+*   NOTES
+*       Decoding uses CompressedSize and the uncompressed size implied by
+*       Format and dimensions. A zero CompressedSize bypasses decoding even
+*       when compression is selected. RLE does not fully validate bounds;
+*       BZip2 accepts exact-sized output without requiring end-of-stream.
+*       Failed Set can leave updated fields. Recreate for a different image.
+*
+*/
+/****** Pixmap.mui/MUIA_Pixmap_CompressedSize ************
+*
+*   NAME
+*       MUIA_Pixmap_CompressedSize
+*
+*   FUNCTION
+*       Specify the compressed input length in bytes.
+*
+*   INPUTS
+*       Initialize, set, get: ULONG; default 0.
+*
+*   NOTES
+*       Supply the complete compressed length for RLE or BZip2. Zero makes
+*       the decoder treat Data as uncompressed; it is not the expanded size.
+*       A failed decode does not restore previously stored attributes.
+*
+*/
+/****** Pixmap.mui/MUIA_Pixmap_UncompressedData ************
+*
+*   NAME
+*       MUIA_Pixmap_UncompressedData
+*
+*   FUNCTION
+*       Retrieve raw image bytes, decompressing synchronously if required.
+*
+*   INPUTS
+*       Get: APTR; may be NULL even when the getter returns TRUE.
+*
+*   NOTES
+*       The returned pointer is borrowed: raw input aliases Data, while
+*       decoded input normally points to object-owned storage. Never free it;
+*       do not retain decoded storage across image changes or Dispose.
+*       Cached data is not revalidated after Format or dimension changes.
+*
+*/
+
 // workaround for missing Zune functionality
+/*
+ * Compatibility stub: always returns FALSE.
+ */
 static BOOL _isfloating(Object *obj)
 {
     return FALSE;
 }
 
+/*
+ * Compatibility stub: always returns FALSE.
+ */
 static BOOL _isdisabled(Object *obj)
 {
     return FALSE;
 }
 
+/*
+ * Compatibility stub: no disabled-pattern rendering.
+ */
 static void MUIP_DrawDisablePattern(struct MUI_RenderInfo *mri, LONG left,
     LONG top, LONG width, LONG height)
 {
@@ -49,16 +252,25 @@ static void MUIP_DrawDisablePattern(struct MUI_RenderInfo *mri, LONG left,
 
 
 // libbz2_nostdio needs this
+/*
+ * BZip2 allocator callback; releases AllocVec storage with FreeVec.
+ */
 void free(void *memory)
 {
     FreeVec(memory);
 }
 
+/*
+ * BZip2 allocator callback; returns AllocVec storage or NULL.
+ */
 void *malloc(size_t size)
 {
     return AllocVec(size, MEMF_ANY);
 }
 
+/*
+ * Reports a BZip2 internal error via bug; no recovery.
+ */
 void bz_internal_error(int errcode)
 {
     bug("[Pixmap.mui/bz_internal_error] errcode %d\n", errcode);
@@ -136,6 +348,10 @@ const ULONG defaultColorMap[256] = {
 
 ///
 
+/*
+ * Initialize image properties and borrowed pointers; no decode or input
+ * validation.
+ */
 IPTR Pixmap__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TagItem *tag, *tags;
@@ -190,6 +406,10 @@ IPTR Pixmap__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 
+/*
+ * Release separately decoded storage; replacing Data first can misidentify
+ * a raw alias as owned.
+ */
 static void FreeImage(struct IClass *cl, Object *obj)
 {
     struct Pixmap_DATA *data = INST_DATA(cl, obj);
@@ -202,6 +422,10 @@ static void FreeImage(struct IClass *cl, Object *obj)
     }
 }
 
+/*
+ * Release decoded storage, then delegate to Area; palette resources require
+ * Cleanup.
+ */
 IPTR Pixmap__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     FreeImage(cl, obj);
@@ -211,6 +435,10 @@ IPTR Pixmap__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 
 #define RAWIDTH(w) ((((UWORD)(w))+15)>>3 & 0xFFFE)
 
+/*
+ * Prepare nearest-color indexed pixels and ARGB binary mask; partial
+ * allocation failures are not reported.
+ */
 static void DitherImage(struct IClass *cl, Object *obj)
 {
     struct Pixmap_DATA *data = INST_DATA(cl, obj);
@@ -357,6 +585,10 @@ static void DitherImage(struct IClass *cl, Object *obj)
 }
 
 
+/*
+ * Decode to allocated output; input and output bounds are not fully
+ * validated.
+ */
 static BOOL DecompressRLE(struct IClass *cl, Object *obj,
     ULONG uncompressedSize)
 {
@@ -404,6 +636,10 @@ static BOOL DecompressRLE(struct IClass *cl, Object *obj,
 }
 
 
+/*
+ * Decode to allocated output; accepted byte count does not prove stream
+ * exhaustion.
+ */
 static BOOL DecompressBZip2(struct IClass *cl, Object *obj,
     ULONG uncompressedSize)
 {
@@ -450,6 +686,9 @@ static BOOL DecompressBZip2(struct IClass *cl, Object *obj,
 }
 
 
+/*
+ * Return cached data or decode synchronously; a raw stream may alias Data.
+ */
 static BOOL DecompressImage(struct IClass *cl, Object *obj)
 {
     struct Pixmap_DATA *data = INST_DATA(cl, obj);
@@ -517,6 +756,10 @@ static BOOL DecompressImage(struct IClass *cl, Object *obj)
 }
 
 
+/*
+ * Attempt decode, then Area Setup; conversion/allocation errors are not
+ * propagated.
+ */
 IPTR Pixmap__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
@@ -585,6 +828,9 @@ IPTR Pixmap__MUIM_Setup(struct IClass *cl, Object *obj,
 }
 
 
+/*
+ * Release palette-screen image, mask, bitmap and pens.
+ */
 IPTR Pixmap__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Pixmap_DATA *data = INST_DATA(cl, obj);
@@ -623,6 +869,10 @@ IPTR Pixmap__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 }
 
 
+/*
+ * Add image width and height to inherited minimum, default and maximum
+ * sizes.
+ */
 IPTR Pixmap__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     struct MUIP_AskMinMax *msg)
 {
@@ -641,6 +891,10 @@ IPTR Pixmap__MUIM_AskMinMax(struct IClass *cl, Object *obj,
 }
 
 
+/*
+ * Draw an assumed-valid source rectangle through palette or direct pixel
+ * paths; no bounds checking.
+ */
 static void DrawPixmapSection(struct IClass *cl, Object *obj, LONG sx,
     LONG sy, LONG sw, LONG sh, struct MUI_RenderInfo *mri, LONG dx, LONG dy)
 {
@@ -694,6 +948,9 @@ static void DrawPixmapSection(struct IClass *cl, Object *obj, LONG sx,
     }
 }
 
+/*
+ * Draw the non-scaled upper-left image region on full redraw only.
+ */
 IPTR Pixmap__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
@@ -722,6 +979,10 @@ IPTR Pixmap__MUIM_Draw(struct IClass *cl, Object *obj,
 }
 
 
+/*
+ * Store fields; selected setters decode and redraw without restoring state
+ * on failure.
+ */
 IPTR Pixmap__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Pixmap_DATA *data = INST_DATA(cl, obj);
@@ -791,6 +1052,10 @@ IPTR Pixmap__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 
+/*
+ * Return stored attributes; raw getter may allocate/decode yet reports TRUE
+ * for NULL data.
+ */
 IPTR Pixmap__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Pixmap_DATA *data = INST_DATA(cl, obj);
@@ -840,6 +1105,10 @@ IPTR Pixmap__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 
 
+/*
+ * Apply constructor-captured offsets after Area layout; negative values use
+ * parent far edge.
+ */
 IPTR Pixmap__MUIM_Layout(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Pixmap_DATA *data = INST_DATA(cl, obj);
@@ -861,6 +1130,10 @@ IPTR Pixmap__MUIM_Layout(struct IClass *cl, Object *obj, Msg msg)
 }
 
 
+/*
+ * Private method: decode and draw assumed-valid rectangle; returns zero
+ * even on success.
+ */
 IPTR Pixmap__MUIM_Pixmap_DrawSection(struct IClass *cl, Object *obj,
     struct MUIP_Pixmap_DrawSection *msg)
 {
@@ -877,6 +1150,10 @@ IPTR Pixmap__MUIM_Pixmap_DrawSection(struct IClass *cl, Object *obj,
 
 
 #if ZUNE_BUILTIN_PIXMAP
+/*
+ * Conditional built-in dispatch: existing handler syntax/instance-data-name
+ * mismatches remain unmodified.
+ */
 BOOPSI_DISPATCHER(IPTR, Pixmap_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
