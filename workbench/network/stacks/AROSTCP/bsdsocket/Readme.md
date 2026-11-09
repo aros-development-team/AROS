@@ -307,8 +307,8 @@ computed without the key; Linux uses SipHash for the same values.
 
 ### 5.3 Timers
 
-`tcp_timer.c` runs the fast (`PR_FASTHZ`, nominally 50 ms; timer.device's `UNIT_VBLANK` makes it
-about 60) and slow (500 ms) timers driven from the daemon: retransmit (with exponential backoff),
+`tcp_timer.c` runs the fast (`PR_FASTHZ`, 50 ms) and slow (500 ms) timers driven from the daemon,
+on timer.device's `UNIT_MICROHZ` (`UNIT_VBLANK` rounded the fast one to 60 ms on a 50 Hz display): retransmit (with exponential backoff),
 persist, keepalive, 2MSL/TIME-WAIT, and delayed-ACK. An ACK waits for a second in-order full-sized segment, never a
 third (`TCP_DELAY_ACK()`, RFC 1122 section 4.2.3.2, RFC 5681 section 4.2, as FreeBSD's
 `DELAY_ACK()`); 4.4BSD delayed every segment, and on the tap a bulk transfer got one ACK every
@@ -334,7 +334,7 @@ each timeout. Before the first sample it is `net.inet.tcp.rttdflt`, 1 s (section
 6 s), and 3 s once a connection is established with no sample after its SYN or SYN-ACK was
 retransmitted (section 5.7); the SYN cache resends a SYN-ACK after 1, 2, 4 and 8 s. The
 retransmission timer is a deadline (`t_rexmt_at`) checked on every fast tick, so it fires within
-one after the RTO, never before. On the bench (`tests/tcp/rto_probe.py` in aros-matter) the RTO
+50 ms after the RTO, never before. On the bench (`tests/tcp/rto_probe.py` in aros-matter) the RTO
 after a lost tail is 0.20-0.24 s at an RTT of 0.4 ms, 0.26 s at 200 ms and 0.56 s at 500 ms, where
 the 500 ms clock gave 1.2-2.4 s.
 

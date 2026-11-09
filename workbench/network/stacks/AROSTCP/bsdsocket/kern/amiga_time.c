@@ -110,7 +110,14 @@ timer_init(void)
         timerIORequest = (struct timerequest *)
                          CreateIORequest(timerport, sizeof(struct timerequest));
         if(timerIORequest != NULL) {
-            error = OpenDevice(TIMERNAME, UNIT_VBLANK,
+            /*
+             * UNIT_MICROHZ: the protocol timeouts run at their periods.
+             * UNIT_VBLANK rounded them to the vertical blank, so the 50 ms
+             * fast timeout (PR_FASTHZ) was 60 ms on a 50 Hz display, 55 to
+             * 70 under load, and the delayed ACKs and the retransmission
+             * deadlines with it.
+             */
+            error = OpenDevice(TIMERNAME, UNIT_MICROHZ,
                                (struct IORequest *)timerIORequest, 0);
             if(error == 0) {
                 /*
