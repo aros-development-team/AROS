@@ -113,19 +113,26 @@ static const struct dnssd_link_entry *active_link(
                                      md->md_Ifs[slot].mi_Index);
 }
 
-static const struct dnssd_address_entry *first_address(
-    const struct MDNSDaemon *md, ULONG link, UWORD family)
+const struct dnssd_address_entry *
+mdnsNetAddressAt(const struct MDNSDaemon *md, LONG slot, UWORD family,
+                 size_t ordinal)
 {
+    const struct dnssd_link_entry *link = active_link(md, slot);
     size_t i;
 
+    if (link == NULL)
+        return NULL;
     for (i = 0; i < md->md_LinkInventory.address_count; ++i) {
         const struct dnssd_address_entry *address =
             &md->md_LinkInventory.addresses[i];
 
-        if (address->value.interface_index == link &&
+        if (address->value.interface_index == link->value.interface_index &&
             address->value.family == family &&
-            dnssd_link_address_usable(&md->md_LinkInventory, address))
-            return address;
+            dnssd_link_address_usable(&md->md_LinkInventory, address)) {
+            if (ordinal == 0u)
+                return address;
+            --ordinal;
+        }
     }
     return NULL;
 }
@@ -133,14 +140,10 @@ static const struct dnssd_address_entry *first_address(
 ULONG
 mdnsNetAddress4(const struct MDNSDaemon *md, LONG slot)
 {
-    const struct dnssd_link_entry *link = active_link(md, slot);
     const struct dnssd_address_entry *address;
     ULONG network;
 
-    if (link == NULL)
-        return 0;
-    address = first_address(md, link->value.interface_index,
-                            DNSSD_ADDRESS_IPV4);
+    address = mdnsNetAddressAt(md, slot, DNSSD_ADDRESS_IPV4, 0u);
     if (address == NULL)
         return 0;
     memcpy(&network, address->value.bytes, sizeof(network));
@@ -151,16 +154,12 @@ BOOL
 mdnsNetAddress6(const struct MDNSDaemon *md, LONG slot,
                 struct in6_addr *result)
 {
-    const struct dnssd_link_entry *link = active_link(md, slot);
     const struct dnssd_address_entry *address;
 
     if (result == NULL)
         return FALSE;
     memset(result, 0, sizeof(*result));
-    if (link == NULL)
-        return FALSE;
-    address = first_address(md, link->value.interface_index,
-                            DNSSD_ADDRESS_IPV6);
+    address = mdnsNetAddressAt(md, slot, DNSSD_ADDRESS_IPV6, 0u);
     if (address == NULL)
         return FALSE;
     memcpy(result, address->value.bytes, sizeof(*result));

@@ -161,8 +161,12 @@ answer_own_host(struct MDNSDaemon *md, struct QuerySession *session)
     }
     for (i = 0; i < md->md_IfCount; i++) {
         struct MDNSRecordEvent event;
-        struct in6_addr address6;
         ULONG address4 = mdnsNetAddress4(md, i);
+        static const UWORD families[2] = {
+            DNSSD_ADDRESS_IPV4, DNSSD_ADDRESS_IPV6
+        };
+        static const UWORD types[2] = { DNS_TYPE_A, DNS_TYPE_AAAA };
+        size_t family;
 
         memset(&event, 0, sizeof(event));
         event.re_Code = MEVENT_RECORD;
@@ -171,20 +175,24 @@ answer_own_host(struct MDNSDaemon *md, struct QuerySession *session)
         event.re_TTL = MDNS_TTL_HOST;
         event.re_Class = DNS_CLASS_IN;
         mdnsTextCopy(event.re_Name, sizeof(event.re_Name), host);
-        if ((session->type == DNS_TYPE_A || session->type == DNS_TYPE_ANY) &&
-            address4 != 0) {
-            event.re_Type = DNS_TYPE_A;
-            event.re_DataLength = 4;
-            mdnsAddrData(address4, event.re_Data);
-            enqueue(session, &event);
-        }
-        if ((session->type == DNS_TYPE_AAAA ||
-             session->type == DNS_TYPE_ANY) &&
-            mdnsNetAddress6(md, i, &address6)) {
-            event.re_Type = DNS_TYPE_AAAA;
-            event.re_DataLength = 16;
-            mdnsAddr6Data(&address6, event.re_Data);
-            enqueue(session, &event);
+        for (family = 0u; family < 2u; ++family) {
+            size_t ordinal;
+
+            if (session->type != DNS_TYPE_ANY &&
+                session->type != types[family])
+                continue;
+            for (ordinal = 0u; ; ++ordinal) {
+                const struct dnssd_address_entry *address =
+                    mdnsNetAddressAt(md, i, families[family], ordinal);
+
+                if (address == NULL)
+                    break;
+                event.re_Type = types[family];
+                event.re_DataLength = address->value.length;
+                memcpy(event.re_Data, address->value.bytes,
+                    address->value.length);
+                enqueue(session, &event);
+            }
         }
     }
 }

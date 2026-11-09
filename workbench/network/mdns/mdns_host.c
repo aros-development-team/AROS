@@ -84,6 +84,37 @@ mdnsResponseBegin(struct MDNSDaemon *md, UBYTE *pkt)
     return (LONG)sizeof(struct MDNSHeader);
 }
 
+static BOOL
+append_addresses(struct MDNSDaemon *md, LONG index, UBYTE *pkt, LONG max,
+    LONG *pos, UWORD *count, const char *owner, UWORD qtype, UWORD rclass,
+    ULONG ttl)
+{
+    static const UWORD families[2] = {
+        DNSSD_ADDRESS_IPV4, DNSSD_ADDRESS_IPV6
+    };
+    static const UWORD types[2] = { DNS_TYPE_A, DNS_TYPE_AAAA };
+    size_t family;
+
+    for (family = 0; family < 2u; ++family) {
+        size_t ordinal;
+
+        if (qtype != DNS_TYPE_ANY && qtype != types[family])
+            continue;
+        for (ordinal = 0u; ; ++ordinal) {
+            const struct dnssd_address_entry *address =
+                mdnsNetAddressAt(md, index, families[family], ordinal);
+
+            if (address == NULL)
+                break;
+            if (mdnsAppendRecord(pkt, max, pos, count, owner, types[family],
+                    rclass, ttl, address->value.bytes,
+                    address->value.length) != 0)
+                return FALSE;
+        }
+    }
+    return TRUE;
+}
+
 /* Asks every link whether anyone has the name, with the address record this
  * host would publish there in the authority section (RFC 6762 section
  * 8.1). The first probe asks for a unicast answer. */
@@ -93,37 +124,21 @@ host_send_probe(struct MDNSDaemon *md)
     UBYTE *pkt = md->md_TxBuf;
     struct MDNSHeader *hdr = (struct MDNSHeader *)pkt;
     char fqdn[256];
-    UBYTE addrdata[16];
     LONG pos, i;
     UWORD nscount;
 
     mdnsHostFqdn(md, fqdn, (LONG)sizeof(fqdn));
     for (i = 0; i < md->md_IfCount; i++) {
-        struct in6_addr address6;
-        ULONG address4 = mdnsNetAddress4(md, i);
-
         nscount = 0;
         if (mdnsBuildQuery(pkt, (LONG)MDNS_MAX_PACKET, 0, fqdn, DNS_TYPE_ANY,
                 (UWORD)(DNS_CLASS_IN |
                     (md->md_HostStep == 0 ? DNS_QU_BIT : 0)), &pos) != 0) {
             return;
         }
-        if (address4 != 0) {
-            mdnsAddrData(address4, addrdata);
-            if (mdnsAppendRecord(pkt, (LONG)MDNS_MAX_PACKET, &pos, &nscount,
-                    fqdn, DNS_TYPE_A, DNS_CLASS_IN, MDNS_TTL_HOST,
-                    addrdata, 4) != 0) {
-                return;
-            }
-        }
-        if (mdnsNetAddress6(md, i, &address6)) {
-            mdnsAddr6Data(&address6, addrdata);
-            if (mdnsAppendRecord(pkt, (LONG)MDNS_MAX_PACKET, &pos, &nscount,
-                    fqdn, DNS_TYPE_AAAA, DNS_CLASS_IN, MDNS_TTL_HOST,
-                    addrdata, 16) != 0) {
-                return;
-            }
-        }
+        if (!append_addresses(md, i, pkt, (LONG)MDNS_MAX_PACKET, &pos,
+                &nscount, fqdn, DNS_TYPE_ANY, DNS_CLASS_IN,
+                MDNS_TTL_HOST))
+            return;
         hdr->nscount = htons(nscount);
         mdnsNetSendOn(md, i, pkt, pos);
     }
@@ -143,42 +158,21 @@ host_send_addr(struct MDNSDaemon *md, BOOL goodbye, UWORD qtype)
     struct MDNSHeader *hdr = (struct MDNSHeader *)pkt;
     BOOL legacy = mdnsReplyIsUnicast(md) && md->md_ReplyLegacy;
     char fqdn[256];
-    UBYTE addrdata[16];
     LONG pos, i;
     UWORD ancount;
 
     mdnsHostFqdn(md, fqdn, (LONG)sizeof(fqdn));
     for (i = 0; i < md->md_IfCount; i++) {
-        struct in6_addr address6;
-        ULONG address4 = mdnsNetAddress4(md, i);
-
         if (md->md_SendIf >= 0 && i != md->md_SendIf) {
             continue;
         }
         pos = mdnsResponseBegin(md, pkt);
         ancount = 0;
-        if ((qtype == DNS_TYPE_ANY || qtype == DNS_TYPE_A) &&
-            address4 != 0) {
-            mdnsAddrData(address4, addrdata);
-            if (mdnsAppendRecord(pkt, (LONG)MDNS_MAX_PACKET, &pos, &ancount,
-                    fqdn, DNS_TYPE_A,
-                    (UWORD)(legacy ? DNS_CLASS_IN : DNS_CLASS_IN_FLUSH),
-                    goodbye ? 0 : (legacy ? 10 : MDNS_TTL_HOST), addrdata,
-                    4) != 0) {
-                continue;
-            }
-        }
-        if ((qtype == DNS_TYPE_ANY || qtype == DNS_TYPE_AAAA) &&
-            mdnsNetAddress6(md, i, &address6)) {
-            mdnsAddr6Data(&address6, addrdata);
-            if (mdnsAppendRecord(pkt, (LONG)MDNS_MAX_PACKET, &pos, &ancount,
-                    fqdn, DNS_TYPE_AAAA,
-                    (UWORD)(legacy ? DNS_CLASS_IN : DNS_CLASS_IN_FLUSH),
-                    goodbye ? 0 : (legacy ? 10 : MDNS_TTL_HOST), addrdata,
-                    16) != 0) {
-                continue;
-            }
-        }
+        if (!append_addresses(md, i, pkt, (LONG)MDNS_MAX_PACKET, &pos,
+                &ancount, fqdn, qtype,
+                (UWORD)(legacy ? DNS_CLASS_IN : DNS_CLASS_IN_FLUSH),
+                goodbye ? 0 : (legacy ? 10 : MDNS_TTL_HOST)))
+            continue;
         if (ancount == 0) {
             continue;
         }
@@ -320,7 +314,7 @@ mdnsHostHandleProbe(struct MDNSDaemon *md, const struct MDNSRecord *theirs,
         UWORD type;
         UWORD length;
         UBYTE data[16];
-    } mine[2], other[MDNS_PROPOSED_MAX];
+    } mine[MDNS_ADDRESS_MAX], other[MDNS_PROPOSED_MAX];
     char fqdn[256];
     LONG i, j, index, mineCount = 0, otherCount = 0, difference = 0;
 
@@ -330,22 +324,22 @@ mdnsHostHandleProbe(struct MDNSDaemon *md, const struct MDNSRecord *theirs,
     }
     index = md->md_SendIf >= 0 ? md->md_SendIf : 0;
     mdnsHostFqdn(md, fqdn, (LONG)sizeof(fqdn));
-    {
-        ULONG address4 = mdnsNetAddress4(md, index);
+    for (i = 0; i < 2; ++i) {
+        UWORD family = i == 0 ? DNSSD_ADDRESS_IPV4 : DNSSD_ADDRESS_IPV6;
+        UWORD type = i == 0 ? DNS_TYPE_A : DNS_TYPE_AAAA;
+        size_t ordinal;
 
-        if (address4 != 0) {
-            mine[mineCount].type = DNS_TYPE_A;
-            mine[mineCount].length = 4;
-            mdnsAddrData(address4, mine[mineCount++].data);
-        }
-    }
-    {
-        struct in6_addr address6;
+        for (ordinal = 0u; mineCount < MDNS_ADDRESS_MAX; ++ordinal) {
+            const struct dnssd_address_entry *address =
+                mdnsNetAddressAt(md, index, family, ordinal);
 
-        if (mdnsNetAddress6(md, index, &address6)) {
-            mine[mineCount].type = DNS_TYPE_AAAA;
-            mine[mineCount].length = 16;
-            mdnsAddr6Data(&address6, mine[mineCount++].data);
+            if (address == NULL)
+                break;
+            mine[mineCount].type = type;
+            mine[mineCount].length = address->value.length;
+            memcpy(mine[mineCount].data, address->value.bytes,
+                address->value.length);
+            ++mineCount;
         }
     }
     for (i = 0; i < count; i++) {
