@@ -127,8 +127,58 @@ static int send_ra(int i, const char *prefix, u_int32_t valid)
 }
 
 /* The interface index of the on-link route the table has for dst, via
- * RTM_GET; 0 when it has none (or one through a router). */
+ * RTM_GET; 0 when it has none (or one through a router, unless via). */
+static unsigned route_ifindex_via(const char *dst, int via);
+
 static unsigned route_ifindex(const char *dst)
+{
+    return route_ifindex_via(dst, 0);
+}
+
+/* RTM_ADD/RTM_DELETE of dst/plen through the link-local router gw on the
+ * link zone (its sin6_scope_id). 0 or -1. */
+static int gw_route(int type, const char *dst, int plen, const char *gw, unsigned zone)
+{
+    long buf[512 / sizeof(long)];
+    struct rt_msghdr *h = (struct rt_msghdr *)buf;
+    struct sockaddr_in6 *sa;
+    char *p;
+    int s, i, r;
+
+    s = socket(PF_ROUTE, SOCK_RAW, 0);
+    if (s < 0)
+        return -1;
+    bzero(buf, sizeof(buf));
+    h->rtm_version = RTM_VERSION;
+    h->rtm_type = type;
+    h->rtm_flags = RTF_UP | RTF_GATEWAY | RTF_STATIC;
+    h->rtm_addrs = RTA_DST | RTA_GATEWAY | RTA_NETMASK;
+    h->rtm_seq = 1;
+    p = (char *)(h + 1);
+    sa = (struct sockaddr_in6 *)p;
+    sa->sin6_len = sizeof(*sa);
+    sa->sin6_family = AF_INET6;
+    inet_pton(AF_INET6, (char *)dst, &sa->sin6_addr);
+    p += ROUNDUP(sizeof(*sa));
+    sa = (struct sockaddr_in6 *)p;
+    sa->sin6_len = sizeof(*sa);
+    sa->sin6_family = AF_INET6;
+    inet_pton(AF_INET6, (char *)gw, &sa->sin6_addr);
+    sa->sin6_scope_id = zone;
+    p += ROUNDUP(sizeof(*sa));
+    sa = (struct sockaddr_in6 *)p;
+    sa->sin6_len = sizeof(*sa);
+    sa->sin6_family = AF_INET6;
+    for (i = 0; i < plen / 8; i++)
+        sa->sin6_addr.s6_addr[i] = 0xff;
+    p += ROUNDUP(sizeof(*sa));
+    h->rtm_msglen = p - (char *)buf;
+    r = send(s, (char *)buf, h->rtm_msglen, 0);
+    CloseSocket(s);
+    return r < 0 ? -1 : 0;
+}
+
+static unsigned route_ifindex_via(const char *dst, int via)
 {
     static int seq;
     long buf[512 / sizeof(long)];
@@ -160,7 +210,7 @@ static unsigned route_ifindex(const char *dst)
             break;
     }
     CloseSocket(s);
-    if (n <= 0 || h->rtm_errno != 0 || (h->rtm_flags & RTF_GATEWAY) ||
+    if (n <= 0 || h->rtm_errno != 0 || (!via && (h->rtm_flags & RTF_GATEWAY)) ||
             !(h->rtm_addrs & RTA_IFP))
         return 0;
     p = (char *)(h + 1);
@@ -237,6 +287,29 @@ void testPREFIX6IF_SECOND_LINK(void)
     forget(P3);
 }
 
+/* A route through a router on a link, named by its zone (fe80::...%IF),
+ * goes by that link - not by whichever interface's fe80::/64 the router's
+ * address matches first, which sent the traffic of a route through a router
+ * of the second link out by the first, to another neighbour. */
+void testPREFIX6IF_GATEWAY_ZONE(void)
+{
+    static const char *net[2] = { "2001:db8:4d54:60::", "2001:db8:4d54:61::" };
+    static const char *dst[2] = { "2001:db8:4d54:60::1", "2001:db8:4d54:61::1" };
+    int i;
+
+    NEED_IF();
+    for (i = 0; i < 2; i++) {
+        unsigned got;
+
+        CU_ASSERT_EQUAL(gw_route(RTM_ADD, net[i], 64, "fe80::4d54:9", ifindex[i]), 0);
+        got = route_ifindex_via(dst[i], 1);
+        printf("\n    through fe80::4d54:9%%%s: interface %u (want %u)", ifname[i], got, ifindex[i]);
+        CU_ASSERT_EQUAL(got, ifindex[i]);
+        gw_route(RTM_DELETE, net[i], 64, "fe80::4d54:9", ifindex[i]);
+    }
+    printf("\n");
+}
+
 int main(int argc, char **argv)
 {
     CU_pSuite p;
@@ -267,7 +340,8 @@ int main(int argc, char **argv)
     if (p == NULL ||
         !CU_add_test(p, "a prefix of the second link is on-link there", testPREFIX6IF_SECOND_LINK) ||
         !CU_add_test(p, "the lifetime on one link does not end it on the other", testPREFIX6IF_LIFETIMES_APART) ||
-        !CU_add_test(p, "the route goes to the link where it is still on-link", testPREFIX6IF_HANDOVER))
+        !CU_add_test(p, "the route goes to the link where it is still on-link", testPREFIX6IF_HANDOVER) ||
+        !CU_add_test(p, "a route through a router goes by the router's zone", testPREFIX6IF_GATEWAY_ZONE))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

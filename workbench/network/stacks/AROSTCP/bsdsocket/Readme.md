@@ -793,7 +793,10 @@ With more than one interface, link-local (`fe80::/64`) and multicast IPv6 output
 single shared `fe80::/64` route: the egress link is taken from the one the caller names — a
 `sin6_scope_id` on the destination, an `IPV6_PKTINFO` ancillary interface index, or the interface the
 chosen source address lives on — so a link-local send leaves the correct link on a multi-homed host.
-`HOST` database entries may also carry an IPv6 address.
+`HOST` database entries may also carry an IPv6 address. A route through a link-local router takes
+the interface the router's zone names (`ifa_ifwithroute()`: `route add -inet6 2001:db8::/64
+fe80::1%eth1` goes by eth1), not the one whose `fe80::/64` the address matches first; with no zone,
+that one is still taken.
 
 A link-scope address (`fe80::/10`, `ff01::/16`, `ff02::/16`) names a link only together with its zone
 (RFC 4007), the interface index in `sin6_scope_id`; the zone is never embedded in the address. A
