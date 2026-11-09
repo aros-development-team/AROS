@@ -143,6 +143,23 @@ void testSYSCTL_HYSTART(void)
     CU_ASSERT_EQUAL(tcpctl(TCPCTL_HYSTART, &v, &n), EINVAL);
 }
 
+/* The least MSS a connection uses, bytes: 216 (TCP_MINMSS, FreeBSD's);
+ * 0 (the floor of 64) to 1460. */
+void testSYSCTL_MINMSS(void)
+{
+    LONG v = -1, n = 1461;
+
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_MINMSS, &v, NULL), 0);
+    CU_ASSERT_EQUAL(v, 216);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_MINMSS, &v, &n), EINVAL);
+    n = 0;
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_MINMSS, &v, &n), 0);
+    n = 216;
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_MINMSS, &v, &n), 0);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_MINMSS, &v, NULL), 0);
+    CU_ASSERT_EQUAL(v, 216);
+}
+
 /* The initial retransmission timeout, s: 1 (RFC 6298 section 2.1). */
 void testSYSCTL_RTTDFLT(void)
 {
@@ -191,6 +208,7 @@ int main(void)
         !CU_add_test(p, "net.inet.tcp.rttdflt", testSYSCTL_RTTDFLT) ||
         !CU_add_test(p, "net.inet.tcp.abc_l", testSYSCTL_ABC_L) ||
         !CU_add_test(p, "net.inet.tcp.hystart", testSYSCTL_HYSTART) ||
+        !CU_add_test(p, "net.inet.tcp.minmss", testSYSCTL_MINMSS) ||
         !CU_add_test(p, "an unknown leaf is refused", testSYSCTL_UNKNOWN))
     {
         CU_cleanup_registry();

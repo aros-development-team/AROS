@@ -272,6 +272,12 @@ As a receiver, the SACK blocks of an ACK (`tcp_sack_rcvblocks()`, from the reass
 section 4 requires, then the ones sent before, most recent first, as many as fit. None lies below
 the cumulative ACK, where a sender would take it for a D-SACK (RFC 2883).
 
+Segments that arrive out of order wait on the reassembly queue (`tcp_reass()`), not charged to the
+socket buffer: up to a receive buffer's worth of full-sized segments, at least 100, a window the
+peer may send - counted in segments of at least the default MSS (`tcp_mssdflt`), so that a peer that
+offers a tiny MSS cannot have thousands queued, each holding a 2 KB cluster. The segment at `rcv_nxt` is always taken, as in FreeBSD: refused once the queue was
+full, it left the queue never to drain and the connection stalled for good.
+
 Without SACK, loss recovery is NewReno (RFC 6582). A partial ACK in fast recovery resends the
 first unacknowledged segment with `cwnd` covering the bytes it acknowledges plus that segment
 (snd_una has not advanced yet), deflates `cwnd`, and is then processed like any ACK, so `snd_una`
@@ -364,7 +370,11 @@ the answer goes in a cluster; a shorter buffer gets its start.
 ### 5.4 Options in the SYN
 
 A connection asks for the MSS (§6, segment size, for IPv6), window scale and timestamps
-(RFC 7323, `tcp_do_rfc1323`) and SACK (RFC 2018, `tcp_do_sack`). ECN (RFC 3168, `tcp_do_ecn`,
+(RFC 7323, `tcp_do_rfc1323`) and SACK (RFC 2018, `tcp_do_sack`). The MSS a connection uses is never
+below `tcp_minmss` (`TCP_MINMSS`, 216 bytes, FreeBSD's; sysctl `net.inet.tcp.minmss`, 0 leaves the
+old floor of 64), whatever the peer's MSS option, a route's MTU or an ICMP "too big" says
+(`tcp_mss()`, `tcp_setmtu()`); over IPv4 the segments then go without DF. A peer offering a tiny MSS
+could otherwise have a connection send, and queue for reassembly, thousands of tiny segments. ECN (RFC 3168, `tcp_do_ecn`,
 sysctl `net.inet.tcp.ecn`) has three modes: 0 off, 1 ask for it in the SYN and accept it, 2 accept
 it when the peer asks (the default, as Linux, FreeBSD and Windows). In mode 1 a SYN resent twice
 goes without ECE and CWR (section 6.1.1.1), and only a SYN-ACK to a SYN that asked turns it on

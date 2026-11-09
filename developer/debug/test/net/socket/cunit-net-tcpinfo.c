@@ -191,7 +191,9 @@ void testTCPINFO_HYSTART_NO_EXIT(void)
 
 /* Set the ssthresh metric of the loopback host route (127.0.0.1 or ::1):
  * RTM_CHANGE with RTV_SSTHRESH; 0 or errno. */
-static int loopback_ssthresh(int family, u_long bytes)
+/* RTM_CHANGE of a metric of the loopback route of family: RTV_SSTHRESH or
+ * RTV_MTU, to value (0 clears it). 0 or the errno. */
+static int loopback_metric(int family, u_long which, u_long value)
 {
     long buf[512 / sizeof(long)];
     struct rt_msghdr *h = (struct rt_msghdr *)buf;
@@ -207,8 +209,11 @@ static int loopback_ssthresh(int family, u_long bytes)
     h->rtm_flags = RTF_HOST;
     h->rtm_addrs = RTA_DST;
     h->rtm_seq = 1;
-    h->rtm_inits = RTV_SSTHRESH;
-    h->rtm_rmx.rmx_ssthresh = bytes;
+    h->rtm_inits = which;
+    if (which == RTV_MTU)
+        h->rtm_rmx.rmx_mtu = value;
+    else
+        h->rtm_rmx.rmx_ssthresh = value;
     memcpy(h + 1, &ss, len);
     ((struct sockaddr *)(h + 1))->sa_len = len;
     h->rtm_msglen = sizeof(*h) + RT_ROUNDUP(len);
@@ -216,6 +221,11 @@ static int loopback_ssthresh(int family, u_long bytes)
         r = Errno();
     CloseSocket(s);
     return r;
+}
+
+static int loopback_ssthresh(int family, u_long bytes)
+{
+    return loopback_metric(family, RTV_SSTHRESH, bytes);
 }
 
 /* A route's ssthresh (RTV_SSTHRESH) is where a new connection over it
@@ -236,6 +246,32 @@ static void route_ssthresh(int family)
 }
 
 void testTCPINFO_ROUTE_SSTHRESH4(void) { route_ssthresh(AF_INET); }
+
+/* A connection never uses an MSS below net.inet.tcp.minmss (TCP_MINMSS,
+ * 216): over a route with an MTU of 128 - 88 bytes of segment, as a peer
+ * offering a tiny MSS would ask - both ends use 216 (less the timestamp
+ * option); they used 88 less it. */
+void testTCPINFO_MSS_FLOOR(void)
+{
+    struct tcp_info ci, si;
+    LONG floor = 0;
+    int c, s;
+
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_MINMSS, &floor, NULL), 0);
+    CU_ASSERT_EQUAL(floor, TCP_MINMSS);
+    floor = TCP_MINMSS;
+    CU_ASSERT_EQUAL_FATAL(loopback_metric(AF_INET, RTV_MTU, 128), 0);
+    CU_ASSERT_EQUAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL(info(c, &ci, NULL), 0);
+    CU_ASSERT_EQUAL(info(s, &si, NULL), 0);
+    printf("\n    route MTU 128, minmss %ld: MSS %lu and %lu\n", (long)floor,
+           (unsigned long)ci.tcpi_snd_mss, (unsigned long)si.tcpi_snd_mss);
+    CU_ASSERT(ci.tcpi_snd_mss + 12 >= (u_long)floor);
+    CU_ASSERT(si.tcpi_snd_mss + 12 >= (u_long)floor);
+    CloseSocket(c);
+    CloseSocket(s);
+    loopback_metric(AF_INET, RTV_MTU, 0);
+}
 void testTCPINFO_ROUTE_SSTHRESH6(void) { route_ssthresh(AF_INET6); }
 
 /* Data sent and read moves the sequence numbers by its length on both
@@ -355,6 +391,101 @@ void testTCPINFO_SHORT(void)
     CloseSocket(s);
 }
 
+/* One segment of the client's connection, made by hand and sent through a
+ * raw socket over the loopback: SEQ, ACK, LEN bytes of data, no options;
+ * the TCP checksum over the IPv4 pseudo-header (127.0.0.1 both ways, the
+ * source the raw socket's output takes there). */
+static int inject(int r, u_short sport, u_short dport, u_long seq, u_long ack, int len)
+{
+    u_char pkt[20 + 100], ph[12];
+    struct sockaddr_in to;
+    u_long sum = 0;
+    int i;
+
+    memset(pkt, 0, sizeof(pkt));
+    pkt[0] = sport >> 8; pkt[1] = sport;
+    pkt[2] = dport >> 8; pkt[3] = dport;
+    pkt[4] = seq >> 24; pkt[5] = seq >> 16; pkt[6] = seq >> 8; pkt[7] = seq;
+    pkt[8] = ack >> 24; pkt[9] = ack >> 16; pkt[10] = ack >> 8; pkt[11] = ack;
+    pkt[12] = 5 << 4;                   /* data offset: no options */
+    pkt[13] = 0x10;                     /* ACK */
+    pkt[14] = 0xff; pkt[15] = 0xff;     /* window */
+    for (i = 0; i < len; i++)
+        pkt[20 + i] = 'r';
+    ph[0] = 127; ph[1] = 0; ph[2] = 0; ph[3] = 1;
+    memcpy(ph + 4, ph, 4);
+    ph[8] = 0; ph[9] = IPPROTO_TCP; ph[10] = (20 + len) >> 8; ph[11] = (20 + len) & 0xff;
+    for (i = 0; i < 12; i += 2)
+        sum += (ph[i] << 8) | ph[i + 1];
+    for (i = 0; i < 20 + len; i += 2)
+        sum += (pkt[i] << 8) | (i + 1 < 20 + len ? pkt[i + 1] : 0);
+    while (sum >> 16)
+        sum = (sum & 0xffff) + (sum >> 16);
+    sum = ~sum & 0xffff;
+    pkt[16] = sum >> 8; pkt[17] = sum;
+    memset(&to, 0, sizeof(to));
+    to.sin_len = sizeof(to);
+    to.sin_family = AF_INET;
+    to.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    return sendto(r, pkt, 20 + len, 0, (struct sockaddr *)&to, sizeof(to));
+}
+
+/* The segment that fills the hole in front of a full reassembly queue is
+ * taken: 110 segments of 100 bytes arrive out of order, made by hand with
+ * the client's numbers (more than the 100 the queue holds), then the
+ * client sends those 11100 bytes for real, the hole first; the receiver
+ * reads them all. It used to refuse every segment once the queue was full,
+ * the one at rcv_nxt too, and the connection never moved again. The client
+ * sends the data itself, all in its initial window, so that nothing is
+ * acknowledged before the client has sent it (else each side answers the
+ * other's ACKs for ever). The connection is opened without RFC 7323's
+ * options, which the hand-made segments do not carry. */
+void testTCPINFO_REASS_FULL(void)
+{
+    struct tcp_info ci, si;
+    struct sockaddr_in a;
+    socklen_t l = sizeof(a);
+    LONG old = 1, off = 0;
+    u_short cport, sport;
+    static char buf[111 * 100];
+    int c, s, r, i, got = 0, on = 1, sent = 0;
+
+    CU_ASSERT_EQUAL_FATAL(tcpctl(TCPCTL_DO_RFC1323, &old, &off), 0);
+    i = st_tcp_pair(AF_INET, &c, &s);
+    tcpctl(TCPCTL_DO_RFC1323, &off, &old);
+    CU_ASSERT_EQUAL_FATAL(i, 0);
+    getsockname(c, (struct sockaddr *)&a, &l);
+    cport = ntohs(a.sin_port);
+    l = sizeof(a);
+    getsockname(s, (struct sockaddr *)&a, &l);
+    sport = ntohs(a.sin_port);
+    CU_ASSERT_EQUAL(info(c, &ci, NULL), 0);
+    CU_ASSERT_EQUAL(info(s, &si, NULL), 0);
+    CU_ASSERT_EQUAL(si.tcpi_rcv_nxt, ci.tcpi_snd_nxt);
+    r = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
+    CU_ASSERT_FATAL(r >= 0);
+    for (i = 1; i <= 110; i++)
+        sent += inject(r, cport, sport, si.tcpi_rcv_nxt + i * 100, ci.tcpi_rcv_nxt, 100) == 120;
+    Delay(5);
+    memset(buf, 'r', sizeof(buf));
+    CU_ASSERT_EQUAL(send(c, buf, sizeof(buf), 0), sizeof(buf));
+    IoctlSocket(s, FIONBIO, (char *)&on);
+    for (i = 0; i < 100 && got < (int)sizeof(buf); i++) {     /* up to 2 s */
+        int n;
+
+        while ((n = recv(s, buf, sizeof(buf), 0)) > 0)
+            got += n;
+        Delay(1);
+    }
+    printf("\n    110 segments out of order (%d sent), then %d bytes from the client: %d read\n",
+           sent, (int)sizeof(buf), got);
+    CU_ASSERT_EQUAL(sent, 110);
+    CU_ASSERT_EQUAL(got, sizeof(buf));
+    CloseSocket(r);
+    CloseSocket(c);
+    CloseSocket(s);
+}
+
 /* A listening socket reports LISTEN. */
 void testTCPINFO_LISTEN(void)
 {
@@ -395,10 +526,12 @@ int main(int argc, char **argv)
         !CU_add_test(p, "HyStart++ does not end slow start without a delay", testTCPINFO_HYSTART_NO_EXIT) ||
         !CU_add_test(p, "a route's ssthresh reaches a new connection (IPv4)", testTCPINFO_ROUTE_SSTHRESH4) ||
         !CU_add_test(p, "a route's ssthresh reaches a new connection (IPv6)", testTCPINFO_ROUTE_SSTHRESH6) ||
+        !CU_add_test(p, "the MSS never goes below net.inet.tcp.minmss", testTCPINFO_MSS_FLOOR) ||
         !CU_add_test(p, "data moves the sequence numbers", testTCPINFO_SEQUENCE) ||
         !CU_add_test(p, "over the loopback the RTO is the floor", testTCPINFO_RTO_FLOOR) ||
         !CU_add_test(p, "an unanswered SYN backs off from 1 s", testTCPINFO_SYN_BACKOFF) ||
         !CU_add_test(p, "a short buffer gets the start", testTCPINFO_SHORT) ||
+        !CU_add_test(p, "a full reassembly queue takes the segment that fills its hole", testTCPINFO_REASS_FULL) ||
         !CU_add_test(p, "a listening socket reports LISTEN", testTCPINFO_LISTEN))
     {
         CU_cleanup_registry();

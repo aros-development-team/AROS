@@ -259,19 +259,28 @@ struct mbuf *m;
     m->m_pkthdr.header = (caddr_t)ti;
 
     /*
-     * If the queue already holds the maximum number of segments,
-     * refuse the incoming one rather than letting an out-of-order
-     * stream grow it without limit.  The sender will retransmit once
+     * If the queue already holds the maximum number of segments - a
+     * receive window of full-sized ones (of at least the default MSS: a
+     * peer that offers a tiny MSS would otherwise have thousands of
+     * segments queued, each in a 2 KB cluster), at least
+     * TCP_REASS_MAXQLEN - refuse the incoming one rather than letting
+     * an out-of-order stream grow it without limit.  The sender will retransmit once
      * the gap is filled.  Count the whole queue (not just up to the
      * insertion point) so a stream of ever-decreasing sequence
-     * numbers cannot slip past the bound.
+     * numbers cannot slip past the bound.  The segment that fills the
+     * gap (at rcv_nxt) is always taken, as FreeBSD's tcp_reass() does:
+     * refused, the queue would never drain and the connection would
+     * stall for good.
      */
-    qlen = 0;
-    for(q = tp->t_segq; q; q = q->m_nextpkt)
-        qlen++;
-    if(qlen >= TCP_REASS_MAXQLEN) {
-        m_freem(m);
-        return (0);
+    if(ti->ti_seq != tp->rcv_nxt) {
+        qlen = 0;
+        for(q = tp->t_segq; q; q = q->m_nextpkt)
+            qlen++;
+        if(qlen >= MAX(TCP_REASS_MAXQLEN,
+                       so->so_rcv.sb_hiwat / MAX(tp->t_maxseg, tcp_mssdflt))) {
+            m_freem(m);
+            return (0);
+        }
     }
 
     /*
@@ -2786,7 +2795,7 @@ int offer;
         /* still never more than the peer said it takes */
         mss = mssdflt;
         if(offer > 0)
-            mss = MIN(mss, MAX(offer, 64));
+            mss = MIN(mss, MAX(offer, TCP_MSS_FLOOR));
         tp->t_maxopd = tp->t_maxseg = mss;
         return;
     }
@@ -2819,9 +2828,11 @@ int offer;
          * Sanity check: make sure that maxopd will be large
          * enough to allow some data on segments even is the
          * all the option space is used (40bytes).  Otherwise
-         * funny things may happen in tcp_output.
+         * funny things may happen in tcp_output.  And never
+         * below tcp_minmss (TCP_MINMSS), so that a peer cannot
+         * have us send tiny segments.
          */
-        offer = MAX(offer, 64);
+        offer = MAX(offer, TCP_MSS_FLOOR);
     taop->tao_mssopt = offer;
 
 #ifdef RTV_MTU	/* if route characteristics exist ... */
@@ -2861,6 +2872,13 @@ int offer;
             mss = MIN(mss, mssdflt);
     }
     mss = MIN(mss, offer);
+    if(mss < TCP_MSS_FLOOR) {
+        /* a route's MTU below the floor: the floor, and over IPv4 no DF,
+         * as tcp_setmtu() does for path MTU discovery */
+        mss = TCP_MSS_FLOOR;
+        if(!isipv6)
+            tp->t_flagsext |= TF_PMTUD_NODF;
+    }
     /*
      * maxopd stores the maximum length of data AND options
      * in a segment; maxseg is the amount of data in a normal

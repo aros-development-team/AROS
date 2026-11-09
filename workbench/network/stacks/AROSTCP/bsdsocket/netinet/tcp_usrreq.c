@@ -636,7 +636,10 @@ struct mbuf **mp;
             break;
 
         case TCP_MAXSEG:
-            if(m && (i = *mtod(m, int *)) > 0 && i <= tp->t_maxseg)
+            /* as FreeBSD: not above the MSS in use, nor (with the
+             * room for options) below tcp_minmss */
+            if(m && (i = *mtod(m, int *)) > 0 && i <= tp->t_maxseg &&
+                    i + TCP_MAXOLEN >= TCP_MSS_FLOOR)
                 tp->t_maxseg = i;
             else
                 error = EINVAL;
@@ -948,6 +951,16 @@ size_t newlen;
             error = EINVAL;
         if(error == 0)
             tcp_do_hystart = v;
+        return (error);
+    }
+    case TCPCTL_MINMSS: {           /* the least MSS, bytes; 0: 64 */
+        int v = tcp_minmss, error;
+
+        error = sysctl_int(oldp, oldlenp, newp, newlen, &v);
+        if(error == 0 && (v < 0 || v > 1460))
+            error = EINVAL;
+        if(error == 0)
+            tcp_minmss = v;
         return (error);
     }
     case TCPCTL_REXMIT_MIN: {       /* the least RTO, ms */

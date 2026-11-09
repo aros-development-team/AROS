@@ -381,6 +381,12 @@ int 	tcp_rttdflt = TCPTV_RTOBASE;	/* initial RTO, s (net.inet.tcp.rttdflt) */
  * RFC 6298 section 2.4 says it SHOULD be at least 1 s; FreeBSD and Linux use
  * about 200 ms, and so does this stack. */
 int	tcp_rexmit_min = TCPTV_REXMTMIN_MS;
+/* The least MSS a connection uses, whatever the peer offers, a route's MTU
+ * or an ICMP "too big" says (TCP_MINMSS; net.inet.tcp.minmss, 0: 64 bytes):
+ * a peer offering a tiny MSS would otherwise have the connection send - and
+ * queue for reassembly - thousands of tiny segments, each in an mbuf or a
+ * cluster (FreeBSD's tcp_minmss). */
+int	tcp_minmss = TCP_MINMSS;
 int	tcp_do_rfc1323 = 1;
 int	tcp_do_rfc1644 = 0;	/* T/TCP (RFC 1644) - off: Historic, RFC 6247 */
 int	tcp_do_sack = 1;	/* enable SACK (RFC 2018) */
@@ -980,8 +986,15 @@ tcp_setmtu(struct tcpcb *tp, u_int32_t mtu)
               rt->rt_ifp ? rt->rt_ifp->if_mtu : 0;
     }
     mss = (int)mtu - hdrs;
+    if(mss < TCP_MSS_FLOOR) {
+        /* never below the floor: over IPv4 the segments go without DF and
+         * are fragmented on the way, as FreeBSD's tcp_mtudisc() */
+        mss = TCP_MSS_FLOOR;
+        if(hdrs == (int)sizeof(struct tcpiphdr))
+            tp->t_flagsext |= TF_PMTUD_NODF;
+    }
 
-    if(mss <= 0 || mss >= tp->t_maxopd)
+    if(mss >= tp->t_maxopd)
         return 0;
     tp->t_maxopd = mss;
     if((tp->t_flags & (TF_REQ_TSTMP | TF_NOOPT)) == TF_REQ_TSTMP &&
