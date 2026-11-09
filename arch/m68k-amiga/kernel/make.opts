@@ -1,0 +1,7 @@
+# amiga-m68k creates its memory headers with krnCreateMemHeader() and
+# krnCreateROMHeader() only, so the TLSF allocator is not built
+KERNEL_ALLOCATOR_FILES :=
+
+# exec's runtime debug log is compiled out on this target (see
+# rom/exec/mmakefile.src), so ex_DebugFlags is never set
+USER_CPPFLAGS += -DNO_RUNTIME_DEBUG

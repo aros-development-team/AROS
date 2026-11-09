@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2020, The AROS Development Team. All rights reserved
+    Copyright (C) 2011-2026, The AROS Development Team. All rights reserved
 
     Desc: Simple HD_SCSICMD emulator.
 */
@@ -163,6 +163,7 @@ BYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
     UBYTE sense[32];
     UWORD senselen;
     UBYTE err, status;
+    UBYTE key = 0, asc = 0;
  
     /* bug("SCSIEMU CMD=%02x\n", cmdbuf[0]); */
     err = 0;
@@ -177,47 +178,33 @@ BYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
         break;
 
         case 0x08: /* READ (6) */
-        offset = ((cmdbuf[1] & 31) << 16) | (cmdbuf[2] << 8) | cmdbuf[3];
-        len = cmdbuf[4];
-        if (!len)
-            len = 256;
-        err = scsi_read32(unit, cmd->scsi_Data, offset, len, &scsi_len);
-        break;
-        case 0x28: /* READ (10) */
-        offset = rl(cmdbuf + 2);
-        len = rl(cmdbuf + 7 - 2) & 0xffff;
-        err = scsi_read32(unit, cmd->scsi_Data, offset, len, &scsi_len);
-        break;
-        case 0xa8: /* READ (12) */
-        offset = rl(cmdbuf + 2);
-        len = rl(cmdbuf + 6);
-        err = scsi_read32(unit, cmd->scsi_Data, offset, len, &scsi_len);
-        break;
         case 0x0a: /* WRITE (6) */
-        offset = ((cmdbuf[1] & 31) << 16) | (cmdbuf[2] << 8) | cmdbuf[3];
-        len = cmdbuf[4];
-        if (!len)
-            len = 256;
-        err = scsi_write32(unit, cmd->scsi_Data, offset, len, &scsi_len);
-        break;
+        case 0x28: /* READ (10) */
         case 0x2a: /* WRITE (10) */
-        offset = rl(cmdbuf + 2);
-        len = rl(cmdbuf + 7 - 2) & 0xffff;
-        err = scsi_write32(unit, cmd->scsi_Data, offset, len, &scsi_len);
-        break;
+        case 0xa8: /* READ (12) */
         case 0xaa: /* WRITE (12) */
-        offset = rl(cmdbuf + 2);
-        len = rl(cmdbuf + 6);
-        err = scsi_write32(unit, cmd->scsi_Data, offset, len, &scsi_len);
+        if (cmdbuf[0] < 0x20) {
+            offset = ((cmdbuf[1] & 31) << 16) | (cmdbuf[2] << 8) | cmdbuf[3];
+            len = cmdbuf[4];
+            if (!len)
+                len = 256;
+        } else {
+            offset = rl(cmdbuf + 2);
+            if (cmdbuf[0] < 0x80)
+                len = rl(cmdbuf + 7 - 2) & 0xffff;
+            else
+                len = rl(cmdbuf + 6);
+        }
+        /* bit 1 of the operation code tells WRITE from READ in all three sizes */
+        if (cmdbuf[0] & 0x02)
+            err = scsi_write32(unit, cmd->scsi_Data, offset, len, &scsi_len);
+        else
+            err = scsi_read32(unit, cmd->scsi_Data, offset, len, &scsi_len);
         break;
 
         case 0x37: /* READ DEFECT DATA */
-        status = 2;
-        senselen = 32;
-        SetMem(sense, 0, senselen);
-        sense[0] = 0x70;
-        sense[2] = 0x00;
-        sense[12] = 0x1c;
+        key = 0; /* NO SENSE */
+        asc = 0x1c; /* DEFECT LIST NOT FOUND */
         break;
 
         case 0x12: /* INQUIRY */
@@ -240,13 +227,18 @@ BYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
     }
     
     if (err == 0xff) {
+        key = 5; /* ILLEGAL REQUEST */
+        asc = 0x24; /* ILLEGAL FIELD IN CDB */
+        err = TDERR_NotSpecified;
+    }
+    /* a non zero additional sense code means CHECK CONDITION with sense data */
+    if (asc) {
         status = 2; /* CHECK CONDITION */
         senselen = 32;
         SetMem(sense, 0, senselen);
         sense[0] = 0x70;
-        sense[2] = 5; /* ILLEGAL REQUEST */
-        sense[12] = 0x24; /* ILLEGAL FIELD IN CDB */
-        err = TDERR_NotSpecified;
+        sense[2] = key;
+        sense[12] = asc;
     }
     
     if (senselen && scsi_sense_len) {

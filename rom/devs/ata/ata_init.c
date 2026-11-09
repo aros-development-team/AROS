@@ -244,9 +244,7 @@ static int ATA_init(struct ataBase *ATABase)
     if (OOP_ObtainAttrBasesArray(&ATABase->unitAttrBase, attrBaseIDs))
     {
         bug("[ATA--] %s: Failed to obtain AttrBases!\n", __func__);
-        DeletePool(ATABase->ata_MemPool);
-        CloseLibrary(ATABase->ata_UtilityBase);
-        return FALSE;
+        goto fail_pool;
     }
     D(
       bug("[ATA--] %s: HiddBusAB %x @ 0x%p\n", __func__, HiddBusAB, &HiddBusAB);
@@ -261,12 +259,7 @@ static int ATA_init(struct ataBase *ATABase)
         bug("[ATA--] %s:     %s = %p\n", __func__, methBaseIDs[0], (APTR)(IPTR)ATABase->hwMethodBase);
         bug("[ATA--] %s:     %s = %p\n", __func__, methBaseIDs[1], (APTR)(IPTR)ATABase->busMethodBase);
         bug("[ATA--] %s:     %s = %p\n", __func__, methBaseIDs[2], (APTR)(IPTR)ATABase->HiddSCMethodBase);
-#if defined(__OOP_NOATTRBASES__)
-         OOP_ReleaseAttrBasesArray(&ATABase->unitAttrBase, attrBaseIDs);
-#endif
-        DeletePool(ATABase->ata_MemPool);
-        CloseLibrary(ATABase->ata_UtilityBase);
-        return FALSE;
+        goto fail_attrs;
     }
 #endif
 
@@ -282,8 +275,14 @@ static int ATA_init(struct ataBase *ATABase)
 
         return TRUE;
     }
+
+    /* failure: undo the steps above in reverse order */
+#if defined(__OOP_NOMETHODBASES__)
+fail_attrs:
+#endif
 #if defined(__OOP_NOATTRBASES__)
-     OOP_ReleaseAttrBasesArray(&ATABase->unitAttrBase, attrBaseIDs);
+    OOP_ReleaseAttrBasesArray(&ATABase->unitAttrBase, attrBaseIDs);
+fail_pool:
 #endif
     DeletePool(ATABase->ata_MemPool);
     CloseLibrary(ATABase->ata_UtilityBase);

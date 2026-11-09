@@ -233,6 +233,9 @@ struct ata_Bus
 
 /*
    DriveIdent structure as returned by ATA_IDENTIFY_[DEVICE|ATAPI]
+
+   Every field starts on a word boundary and the block is always allocated
+   word aligned, which the alignment attribute tells the compiler.
    */
 struct DriveIdent {
    UWORD       id_General;             // 0
@@ -308,7 +311,11 @@ struct DriveIdent {
    UWORD       pad15[47];              // 170 - 216
    UWORD       id_NominalMediaRotationRate; // 217
    UWORD       pad16[38];              // 218 - 255
-} __attribute__((packed));
+} __attribute__((packed, aligned(2)));
+
+/* The block is addressed by word number in places; it must stay 256 words */
+_Static_assert(sizeof(struct DriveIdent) == 256 * sizeof(UWORD),
+               "struct DriveIdent must match the 512 byte IDENTIFY block");
 
 typedef struct
 {
