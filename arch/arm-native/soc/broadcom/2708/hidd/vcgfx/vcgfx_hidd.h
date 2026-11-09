@@ -347,6 +347,15 @@ static inline BOOL vcgfx_scanout_rgb(struct VideoCoreGfx_staticdata *xsd, ULONG 
 
 /* vcgfx_planes.c */
 BOOL    vcgfx_planes_supported(struct VideoCoreGfx_staticdata *xsd);
+
+/* The HEVC block: BCM2711 and BCM2712 */
+static inline BOOL vcgfx_has_hevc(struct VideoCoreGfx_staticdata *xsd)
+{
+    return xsd->vcsd_IsBCM2711 || (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6);
+}
+
+/* Planes that scan its SAND128 output out */
+BOOL    vcgfx_sand_scanout(struct VideoCoreGfx_staticdata *xsd);
 LONG    vcgfx_plane_occlude(LONG px, LONG py, ULONG pw, ULONG ph,
                             LONG left, LONG top, LONG right, LONG bottom);
 BOOL    vcgfx_scanout_ok(struct VideoCoreGfx_staticdata *xsd);
