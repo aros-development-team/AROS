@@ -191,7 +191,9 @@ void testTCPINFO_HYSTART_NO_EXIT(void)
 
 /* Set the ssthresh metric of the loopback host route (127.0.0.1 or ::1):
  * RTM_CHANGE with RTV_SSTHRESH; 0 or errno. */
-static int loopback_ssthresh(int family, u_long bytes)
+/* RTM_CHANGE of a metric of the loopback route of family: RTV_SSTHRESH or
+ * RTV_MTU, to value (0 clears it). 0 or the errno. */
+static int loopback_metric(int family, u_long which, u_long value)
 {
     long buf[512 / sizeof(long)];
     struct rt_msghdr *h = (struct rt_msghdr *)buf;
@@ -207,8 +209,11 @@ static int loopback_ssthresh(int family, u_long bytes)
     h->rtm_flags = RTF_HOST;
     h->rtm_addrs = RTA_DST;
     h->rtm_seq = 1;
-    h->rtm_inits = RTV_SSTHRESH;
-    h->rtm_rmx.rmx_ssthresh = bytes;
+    h->rtm_inits = which;
+    if (which == RTV_MTU)
+        h->rtm_rmx.rmx_mtu = value;
+    else
+        h->rtm_rmx.rmx_ssthresh = value;
     memcpy(h + 1, &ss, len);
     ((struct sockaddr *)(h + 1))->sa_len = len;
     h->rtm_msglen = sizeof(*h) + RT_ROUNDUP(len);
@@ -216,6 +221,11 @@ static int loopback_ssthresh(int family, u_long bytes)
         r = Errno();
     CloseSocket(s);
     return r;
+}
+
+static int loopback_ssthresh(int family, u_long bytes)
+{
+    return loopback_metric(family, RTV_SSTHRESH, bytes);
 }
 
 /* A route's ssthresh (RTV_SSTHRESH) is where a new connection over it
@@ -236,6 +246,32 @@ static void route_ssthresh(int family)
 }
 
 void testTCPINFO_ROUTE_SSTHRESH4(void) { route_ssthresh(AF_INET); }
+
+/* A connection never uses an MSS below net.inet.tcp.minmss (TCP_MINMSS,
+ * 216): over a route with an MTU of 128 - 88 bytes of segment, as a peer
+ * offering a tiny MSS would ask - both ends use 216 (less the timestamp
+ * option); they used 88 less it. */
+void testTCPINFO_MSS_FLOOR(void)
+{
+    struct tcp_info ci, si;
+    LONG floor = 0;
+    int c, s;
+
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_MINMSS, &floor, NULL), 0);
+    CU_ASSERT_EQUAL(floor, TCP_MINMSS);
+    floor = TCP_MINMSS;
+    CU_ASSERT_EQUAL_FATAL(loopback_metric(AF_INET, RTV_MTU, 128), 0);
+    CU_ASSERT_EQUAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL(info(c, &ci, NULL), 0);
+    CU_ASSERT_EQUAL(info(s, &si, NULL), 0);
+    printf("\n    route MTU 128, minmss %ld: MSS %lu and %lu\n", (long)floor,
+           (unsigned long)ci.tcpi_snd_mss, (unsigned long)si.tcpi_snd_mss);
+    CU_ASSERT(ci.tcpi_snd_mss + 12 >= (u_long)floor);
+    CU_ASSERT(si.tcpi_snd_mss + 12 >= (u_long)floor);
+    CloseSocket(c);
+    CloseSocket(s);
+    loopback_metric(AF_INET, RTV_MTU, 0);
+}
 void testTCPINFO_ROUTE_SSTHRESH6(void) { route_ssthresh(AF_INET6); }
 
 /* Data sent and read moves the sequence numbers by its length on both
@@ -490,6 +526,7 @@ int main(int argc, char **argv)
         !CU_add_test(p, "HyStart++ does not end slow start without a delay", testTCPINFO_HYSTART_NO_EXIT) ||
         !CU_add_test(p, "a route's ssthresh reaches a new connection (IPv4)", testTCPINFO_ROUTE_SSTHRESH4) ||
         !CU_add_test(p, "a route's ssthresh reaches a new connection (IPv6)", testTCPINFO_ROUTE_SSTHRESH6) ||
+        !CU_add_test(p, "the MSS never goes below net.inet.tcp.minmss", testTCPINFO_MSS_FLOOR) ||
         !CU_add_test(p, "data moves the sequence numbers", testTCPINFO_SEQUENCE) ||
         !CU_add_test(p, "over the loopback the RTO is the floor", testTCPINFO_RTO_FLOOR) ||
         !CU_add_test(p, "an unanswered SYN backs off from 1 s", testTCPINFO_SYN_BACKOFF) ||

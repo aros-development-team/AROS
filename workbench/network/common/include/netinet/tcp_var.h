@@ -469,7 +469,8 @@ struct	tcpstat {
 #define	TCPCTL_REXMIT_MIN	14	/* minimum retransmission timeout (ms) */
 #define	TCPCTL_ABC_L		15	/* slow start: at most L * SMSS per ACK (RFC 3465) */
 #define	TCPCTL_HYSTART		16	/* HyStart++ in the first slow start (RFC 9406) */
-#define TCPCTL_MAXID		17
+#define	TCPCTL_MINMSS		17	/* the least MSS a connection takes */
+#define TCPCTL_MAXID		18
 
 #define TCPCTL_NAMES { \
 	{ 0, 0 }, \
@@ -489,6 +490,7 @@ struct	tcpstat {
 	{ "rexmit_min", CTLTYPE_INT }, \
 	{ "abc_l", CTLTYPE_INT }, \
 	{ "hystart", CTLTYPE_INT }, \
+	{ "minmss", CTLTYPE_INT }, \
 }
 
 #ifdef KERNEL
@@ -527,6 +529,9 @@ extern	int tcp_rttdflt;	/* initial retransmission timeout (s) */
 extern	int tcp_rexmit_min;	/* minimum retransmission timeout (ms) */
 extern	int tcp_abc_l;		/* slow start byte counting limit (RFC 3465) */
 extern	int tcp_do_hystart;	/* HyStart++ (RFC 9406) */
+extern	int tcp_minmss;		/* the least MSS (TCP_MINMSS) */
+/* the least MSS a connection uses: tcp_minmss, never below 64 bytes */
+#define	TCP_MSS_FLOOR	(tcp_minmss > 64 ? tcp_minmss : 64)
 extern  u_short tcp_lastport;	/* last assigned port */
 extern	int tcp_do_sack;	/* enable SACK (RFC 2018) */
 extern	int tcp_do_newreno;	/* enable NewReno (RFC 3782) */

@@ -370,7 +370,11 @@ the answer goes in a cluster; a shorter buffer gets its start.
 ### 5.4 Options in the SYN
 
 A connection asks for the MSS (§6, segment size, for IPv6), window scale and timestamps
-(RFC 7323, `tcp_do_rfc1323`) and SACK (RFC 2018, `tcp_do_sack`). ECN (RFC 3168, `tcp_do_ecn`,
+(RFC 7323, `tcp_do_rfc1323`) and SACK (RFC 2018, `tcp_do_sack`). The MSS a connection uses is never
+below `tcp_minmss` (`TCP_MINMSS`, 216 bytes, FreeBSD's; sysctl `net.inet.tcp.minmss`, 0 leaves the
+old floor of 64), whatever the peer's MSS option, a route's MTU or an ICMP "too big" says
+(`tcp_mss()`, `tcp_setmtu()`); over IPv4 the segments then go without DF. A peer offering a tiny MSS
+could otherwise have a connection send, and queue for reassembly, thousands of tiny segments. ECN (RFC 3168, `tcp_do_ecn`,
 sysctl `net.inet.tcp.ecn`) has three modes: 0 off, 1 ask for it in the SYN and accept it, 2 accept
 it when the peer asks (the default, as Linux, FreeBSD and Windows). In mode 1 a SYN resent twice
 goes without ECE and CWR (section 6.1.1.1), and only a SYN-ACK to a SYN that asked turns it on

@@ -2795,7 +2795,7 @@ int offer;
         /* still never more than the peer said it takes */
         mss = mssdflt;
         if(offer > 0)
-            mss = MIN(mss, MAX(offer, 64));
+            mss = MIN(mss, MAX(offer, TCP_MSS_FLOOR));
         tp->t_maxopd = tp->t_maxseg = mss;
         return;
     }
@@ -2828,9 +2828,11 @@ int offer;
          * Sanity check: make sure that maxopd will be large
          * enough to allow some data on segments even is the
          * all the option space is used (40bytes).  Otherwise
-         * funny things may happen in tcp_output.
+         * funny things may happen in tcp_output.  And never
+         * below tcp_minmss (TCP_MINMSS), so that a peer cannot
+         * have us send tiny segments.
          */
-        offer = MAX(offer, 64);
+        offer = MAX(offer, TCP_MSS_FLOOR);
     taop->tao_mssopt = offer;
 
 #ifdef RTV_MTU	/* if route characteristics exist ... */
@@ -2870,6 +2872,13 @@ int offer;
             mss = MIN(mss, mssdflt);
     }
     mss = MIN(mss, offer);
+    if(mss < TCP_MSS_FLOOR) {
+        /* a route's MTU below the floor: the floor, and over IPv4 no DF,
+         * as tcp_setmtu() does for path MTU discovery */
+        mss = TCP_MSS_FLOOR;
+        if(!isipv6)
+            tp->t_flagsext |= TF_PMTUD_NODF;
+    }
     /*
      * maxopd stores the maximum length of data AND options
      * in a segment; maxseg is the amount of data in a normal
