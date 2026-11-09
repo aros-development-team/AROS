@@ -234,6 +234,93 @@ void testRAW6_NO_IPV6_HEADER(void)
     CloseSocket(s);
 }
 
+/* IPV6_CHECKSUM (RFC 3542 section 3.1): -1 by default; an even offset or
+ * -1; not on an ICMPv6 socket, which reads 2; a number of its own (it was
+ * IPV6_V6ONLY's). */
+void testRAW6_CHECKSUM_OPTION(void)
+{
+    int s = socket(AF_INET6, SOCK_RAW, PROTO_EXP), i = icmp6_socket(), v = 0;
+    socklen_t l = sizeof(v);
+
+    CU_ASSERT_FATAL(s >= 0 && i >= 0);
+    CU_ASSERT_NOT_EQUAL(IPV6_CHECKSUM, IPV6_V6ONLY);
+    CU_ASSERT_EQUAL(getsockopt(s, IPPROTO_IPV6, IPV6_CHECKSUM, &v, &l), 0);
+    CU_ASSERT_EQUAL(v, -1);
+    v = 4;
+    CU_ASSERT_EQUAL(setsockopt(s, IPPROTO_IPV6, IPV6_CHECKSUM, &v, sizeof(v)), 0);
+    v = 0;
+    l = sizeof(v);
+    CU_ASSERT_EQUAL(getsockopt(s, IPPROTO_IPV6, IPV6_CHECKSUM, &v, &l), 0);
+    CU_ASSERT_EQUAL(v, 4);
+    v = 3;
+    CU_ASSERT_NOT_EQUAL(setsockopt(s, IPPROTO_IPV6, IPV6_CHECKSUM, &v, sizeof(v)), 0);
+    v = -2;
+    CU_ASSERT_NOT_EQUAL(setsockopt(s, IPPROTO_IPV6, IPV6_CHECKSUM, &v, sizeof(v)), 0);
+    v = -1;
+    CU_ASSERT_EQUAL(setsockopt(s, IPPROTO_IPV6, IPV6_CHECKSUM, &v, sizeof(v)), 0);
+    v = 2;
+    CU_ASSERT_NOT_EQUAL(setsockopt(i, IPPROTO_IPV6, IPV6_CHECKSUM, &v, sizeof(v)), 0);
+    v = 0;
+    l = sizeof(v);
+    CU_ASSERT_EQUAL(getsockopt(i, IPPROTO_IPV6, IPV6_CHECKSUM, &v, &l), 0);
+    CU_ASSERT_EQUAL(v, 2);
+    CloseSocket(s);
+    CloseSocket(i);
+}
+
+/* The one's complement sum, over the IPv6 pseudo-header (::1 both ways,
+ * PROTO_EXP) and the data, of a datagram whose checksum is right: 0xffff. */
+static unsigned rawsum(const unsigned char *d, int n)
+{
+    unsigned long sum = 1 + 1;          /* ::1 as source and destination */
+    int k;
+
+    sum += n + PROTO_EXP;
+    for (k = 0; k < n; k += 2)
+        sum += (d[k] << 8) | (k + 1 < n ? d[k + 1] : 0);
+    while (sum >> 16)
+        sum = (sum & 0xffff) + (sum >> 16);
+    return (unsigned)sum;
+}
+
+/* With IPV6_CHECKSUM the kernel fills the checksum in on output and checks
+ * it on input: a socket that set it receives the datagram whole, its sum
+ * right; one sent with a wrong checksum (by a socket without the option)
+ * does not reach it, and does reach a socket without the option. */
+void testRAW6_CHECKSUM_IO(void)
+{
+    int r = socket(AF_INET6, SOCK_RAW, PROTO_EXP), plain = socket(AF_INET6, SOCK_RAW, PROTO_EXP);
+    int s = socket(AF_INET6, SOCK_RAW, PROTO_EXP), off = 4, n;
+    unsigned char out[12] = { 'c', 'k', 's', 'm', 0, 0, 1, 2, 3, 4, 5, 6 }, in[64];
+    struct sockaddr_in6 d;
+
+    CU_ASSERT_FATAL(r >= 0 && plain >= 0 && s >= 0);
+    sa6(&d, "::1");
+    CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IPV6, IPV6_CHECKSUM, &off, sizeof(off)), 0);
+    CU_ASSERT_EQUAL(setsockopt(s, IPPROTO_IPV6, IPV6_CHECKSUM, &off, sizeof(off)), 0);
+    CU_ASSERT_EQUAL(sendto(s, out, sizeof(out), 0, (struct sockaddr *)&d, sizeof(d)), sizeof(out));
+    CU_ASSERT(sock_wait(r, 0, 2) > 0);
+    n = recv(r, in, sizeof(in), 0);
+    CU_ASSERT_EQUAL(n, sizeof(out));
+    printf("\n    checksum filled in: 0x%02x%02x, sum 0x%04x\n", in[4], in[5], rawsum(in, n));
+    CU_ASSERT(in[4] != 0 || in[5] != 0);
+    CU_ASSERT_EQUAL(rawsum(in, n), 0xffff);
+    while (sock_wait(plain, 0, 0) > 0 && recv(plain, in, sizeof(in), 0) > 0)
+        ;
+    /* a wrong checksum, from a socket that does not compute it */
+    off = -1;
+    CU_ASSERT_EQUAL(setsockopt(s, IPPROTO_IPV6, IPV6_CHECKSUM, &off, sizeof(off)), 0);
+    out[4] = 0x12;
+    out[5] = 0x34;
+    CU_ASSERT_EQUAL(sendto(s, out, sizeof(out), 0, (struct sockaddr *)&d, sizeof(d)), sizeof(out));
+    CU_ASSERT(sock_wait(plain, 0, 2) > 0);
+    CU_ASSERT_EQUAL(recv(plain, in, sizeof(in), 0), sizeof(out));
+    CU_ASSERT_EQUAL(sock_wait(r, 0, 1), 0);
+    CloseSocket(r);
+    CloseSocket(plain);
+    CloseSocket(s);
+}
+
 /* IPV6_RECVHOPLIMIT gives the hop limit the packet came with. */
 void testRAW6_RECVHOPLIMIT(void)
 {
@@ -367,6 +454,8 @@ int main(int argc, char **argv)
         !CU_add_test(p, "an ICMPv6 socket sees Echo Request and Reply", testRAW6_ECHO_REQUEST_AND_REPLY) ||
         !CU_add_test(p, "ICMP6_FILTER keeps blocked types away", testRAW6_FILTER) ||
         !CU_add_test(p, "data arrives without the IPv6 header", testRAW6_NO_IPV6_HEADER) ||
+        !CU_add_test(p, "IPV6_CHECKSUM takes even offsets, not on ICMPv6", testRAW6_CHECKSUM_OPTION) ||
+        !CU_add_test(p, "IPV6_CHECKSUM: filled in on output, checked on input", testRAW6_CHECKSUM_IO) ||
         !CU_add_test(p, "IPV6_RECVHOPLIMIT gives the hop limit", testRAW6_RECVHOPLIMIT) ||
         !CU_add_test(p, "IPV6_MULTICAST_HOPS applies on the wire", testRAW6_MULTICAST_HOPS) ||
         !CU_add_test(p, "multicast hop limit defaults to 1", testRAW6_MULTICAST_DEFAULT_HOPS) ||

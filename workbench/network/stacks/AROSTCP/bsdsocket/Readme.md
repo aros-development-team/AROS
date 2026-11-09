@@ -479,7 +479,11 @@ is bound for good. An `IPV6_PKTINFO` source that is not a usable address of ours
   (`icmp6_echo_copy()`), because `m_copym()` shares clusters. On output the kernel computes the ICMPv6
   checksum; `IPV6_PKTINFO` and `IPV6_HOPLIMIT` may come as ancillary data, and the hop limit is
   `IPV6_HOPLIMIT`, else `IPV6_MULTICAST_HOPS` (default 1) or `IPV6_UNICAST_HOPS`, else the system
-  default. `IPV6_CHECKSUM` for other protocols is not implemented (its number is `IPV6_V6ONLY`'s).
+  default. For other protocols `IPV6_CHECKSUM` (RFC 3542 section 3.1; number 7, Linux's - it was 26,
+`IPV6_V6ONLY`'s) gives the offset of a 16-bit checksum over the data and the pseudo-header that the
+kernel fills in on output (`m_copyback()`) and checks on input, where a socket that set it does not
+get a datagram whose checksum is wrong; -1 (default) is none, an odd offset is refused, and an
+ICMPv6 socket cannot set it (it reads 2).
 - **Control messages.** Protocols build each one with `sbcreatecontrol()` (`kern/uipc_socket2.c`,
   4.4BSD-Lite): one `cmsghdr` per mbuf, `cmsg_len` = `CMSG_LEN(size)` and the mbuf `CMSG_SPACE(size)`
   long. On LP64 `CMSG_DATA()` starts past padding after the 12-byte header, which a length of

@@ -429,6 +429,7 @@ void m_freem(struct mbuf * m);
 struct mbuf * m_prepend(struct mbuf * m, int len, int canwait);
 struct mbuf * m_copym(struct mbuf * m, int off0, int len, int wait);
 void m_copydata(struct mbuf * m, int off, int len, caddr_t cp);
+void m_copyback(struct mbuf * m0, int off, int len, caddr_t cp);	/* net/rtsock.c */
 void m_cat(struct mbuf * m, struct mbuf * n);
 void m_adj(struct mbuf * mp, int req_len);
 struct mbuf * m_pullup(struct mbuf * n, int len);
