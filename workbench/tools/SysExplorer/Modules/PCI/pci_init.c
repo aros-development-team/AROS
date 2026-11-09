@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, The AROS Development Team.
+    Copyright (C) 2020-2026, The AROS Development Team.
 */
 
 #include <aros/debug.h>
@@ -80,7 +80,7 @@ static int pcienum_init(struct SysexpPCIBase *PciBase)
 
 ADD2INITLIB(pcienum_init, 10);
 
-/*****************************************************************************
+/*****i pci/ModuleInit
     NAME
         void ModuleInit(
 

@@ -76,7 +76,7 @@ static int gfxenum_init(struct SysexpGfxBase *GfxBase)
 
 ADD2INITLIB(gfxenum_init, 10);
 
-/*****************************************************************************
+/*****i gfx/ModuleInit
     NAME
         void ModuleInit(
 
