@@ -54,6 +54,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-srcaddr6 \
     cunit-net-sysctl \
     cunit-net-tcp \
+    cunit-net-tcpinfo \
     cunit-net-tcpmss6 \
     cunit-net-tcpsyn6 \
     cunit-net-timestamp \

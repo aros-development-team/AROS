@@ -90,7 +90,7 @@
 #define	TCPTV_MSL	( 30*PR_SLOWHZ)		/* max seg lifetime (hah!) */
 #define	TCPTV_SRTTBASE	0			/* base roundtrip time;
 						   if 0, no idea yet */
-#define	TCPTV_SRTTDFLT	(  3*PR_SLOWHZ)		/* assumed RTT if no info */
+#define	TCPTV_RTOBASE	1			/* initial RTO, seconds (RFC 6298 2.1) */
 
 #define	TCPTV_PERSMIN	(  5*PR_SLOWHZ)		/* retransmit persistance */
 #define	TCPTV_PERSMAX	( 60*PR_SLOWHZ)		/* maximum persist interval */
@@ -100,8 +100,21 @@
 #define	TCPTV_KEEPINTVL	( 75*PR_SLOWHZ)		/* default probe interval */
 #define	TCPTV_KEEPCNT	8			/* max probes before drop */
 
-#define	TCPTV_MIN	(  1*PR_SLOWHZ)		/* minimum allowable value */
-#define	TCPTV_REXMTMAX	( 64*PR_SLOWHZ)		/* max allowable REXMT value */
+/*
+ * The retransmission timer is a deadline in milliseconds (t_rexmt_at, on
+ * tcp_ms()), checked on every fast timeout (PR_FASTHZ, nominally 50 ms;
+ * timer.device's UNIT_VBLANK makes it a little longer): it fires within a
+ * fast tick after the RTO, never before. t_timer[TCPT_REXMT] only says it
+ * is set; the other timers count slow ticks.
+ */
+#define	TCP_FASTHZ_MS	(1000 / PR_FASTHZ)	/* 50 ms */
+#define	TCP_SLOWHZ_MS	(1000 / PR_SLOWHZ)	/* 500 ms */
+#define	TCP_MS_TO_STICKS(ms)	(((ms) + TCP_SLOWHZ_MS - 1) / TCP_SLOWHZ_MS)
+/* t_timer[TCPT_REXMT] = TCPT_REXMT_ARM(tp): set it to t_rxtcur from now */
+#define	TCPT_REXMT_ARM(tp)	((tp)->t_rexmt_at = tcp_ms() + (u_int32_t)(tp)->t_rxtcur, 1)
+#define	TCPTV_REXMTMIN_MS	200		/* default tcp_rexmit_min, as FreeBSD's */
+#define	TCPTV_REXMTMAX_MS	64000		/* max allowable REXMT value */
+#define	TCPTV_RTOSYN_MS		3000		/* RTO once a SYN timed out (6298 5.7) */
 
 #define TCPTV_TWTRUNC	8			/* RTO factor to truncate TW */
 

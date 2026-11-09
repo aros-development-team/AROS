@@ -90,7 +90,8 @@ struct tcpcb {
 	short	t_state;		/* state of this connection */
 	short	t_timer[TCPT_NTIMERS];	/* tcp timers */
 	short	t_rxtshift;		/* log(2) of rexmt exp. backoff */
-	short	t_rxtcur;		/* current retransmit value */
+	int	t_rxtcur;		/* current retransmit value (ms) */
+	u_int32_t t_rexmt_at;		/* when TCPT_REXMT fires (tcp_ms()) */
 	short	t_dupacks;		/* consecutive dup acks recd */
 	u_short	t_maxseg;		/* maximum segment size */
 	u_short	t_maxopd;		/* mss plus options */
@@ -172,11 +173,11 @@ struct tcpcb {
  * "Variance" is actually smoothed difference.
  */
 	short	t_idle;			/* inactivity time */
-	short	t_rtt;			/* round trip time */
+	u_int32_t t_rtttime;		/* when t_rtseq was sent (tcp_ms()); 0: none */
 	tcp_seq	t_rtseq;		/* sequence number being timed */
-	short	t_srtt;			/* smoothed round-trip time */
-	short	t_rttvar;		/* variance in round-trip time */
-	u_short	t_rttmin;		/* minimum rtt allowed */
+	int	t_srtt;			/* smoothed round-trip time (ms, scaled) */
+	int	t_rttvar;		/* variance in round-trip time (ms, scaled) */
+	int	t_rttmin;		/* minimum retransmit value (ms) */
 	u_long	max_sndwnd;		/* largest window peer has offered */
 
 /* out-of-band data */
@@ -313,34 +314,26 @@ struct rmxp_tao {
 #define	sototcpcb(so)	(intotcpcb(sotoinpcb(so)))
 
 /*
- * The smoothed round-trip time and estimated variance
- * are stored as fixed point numbers scaled by the values below.
- * For convenience, these scales are also used in smoothing the average
- * (smoothed = (1/scale)sample + ((scale-1)/scale)smoothed).
- * With these scales, srtt has 3 bits to the right of the binary point,
- * and thus an "ALPHA" of 0.875.  rttvar has 2 bits to the right of the
- * binary point, and is smoothed with an ALPHA of 0.75.
+ * The smoothed round-trip time and estimated variance are kept in
+ * milliseconds (tcp_ms()), as fixed point numbers scaled by the values
+ * below, as in FreeBSD: srtt with 5 bits to the right of the binary
+ * point, rttvar with 4. The gains are RFC 6298's, alpha 1/8 and beta 1/4
+ * (TCP_DELTA_SHIFT is the precision kept for the difference).
  */
-#define	TCP_RTT_SCALE		8	/* multiplier for srtt; 3 bits frac. */
-#define	TCP_RTT_SHIFT		3	/* shift for srtt; 3 bits frac. */
-#define	TCP_RTTVAR_SCALE	4	/* multiplier for rttvar; 2 bits */
-#define	TCP_RTTVAR_SHIFT	2	/* shift for rttvar; 2 bits */
+#define	TCP_RTT_SCALE		32	/* multiplier for srtt; 5 bits frac. */
+#define	TCP_RTT_SHIFT		5	/* shift for srtt; 5 bits frac. */
+#define	TCP_RTTVAR_SCALE	16	/* multiplier for rttvar; 4 bits */
+#define	TCP_RTTVAR_SHIFT	4	/* shift for rttvar; 4 bits */
+#define	TCP_DELTA_SHIFT		2	/* see tcp_xmit_timer() */
 
 /*
- * The initial retransmission should happen at rtt + 4 * rttvar.
- * Because of the way we do the smoothing, srtt and rttvar
- * will each average +1/2 tick of bias.  When we compute
- * the retransmit timer, we want 1/2 tick of rounding and
- * 1 extra tick because of +-1/2 tick uncertainty in the
- * firing of the timer.  The bias will give us exactly the
- * 1.5 tick we need.  But, because the bias is
- * statistical, we have to test that we don't drop below
- * the minimum feasible timer (which is 2 ticks).
- * This macro assumes that the value of TCP_RTTVAR_SCALE
- * is the same as the multiplier for rttvar.
+ * The retransmission timeout, RFC 6298 section 2.3: SRTT + max(G,
+ * 4 * RTTVAR), G the timer's granularity (TCP_FASTHZ_MS; the timer runs on
+ * the fast timeout). The caller bounds it (t_rttmin, TCPTV_REXMTMAX_MS).
  */
 #define	TCP_REXMTVAL(tp) \
-	(((tp)->t_srtt >> TCP_RTT_SHIFT) + (tp)->t_rttvar)
+	(((tp)->t_srtt >> TCP_RTT_SHIFT) + \
+	 MAX(TCP_FASTHZ_MS, (tp)->t_rttvar >> (TCP_RTTVAR_SHIFT - 2)))
 
 /* XXX
  * We want to avoid doing m_pullup on incoming packets but that
@@ -450,7 +443,8 @@ struct	tcpstat {
 #define	TCPCTL_PMTUD_BLACKHOLE	11	/* path MTU black-hole detection */
 #define	TCPCTL_ECN		12	/* ECN: 0 off, 1 ask and accept, 2 accept */
 #define	TCPCTL_PRR		13	/* proportional rate reduction (RFC 6937) */
-#define TCPCTL_MAXID		14
+#define	TCPCTL_REXMIT_MIN	14	/* minimum retransmission timeout (ms) */
+#define TCPCTL_MAXID		15
 
 #define TCPCTL_NAMES { \
 	{ 0, 0 }, \
@@ -467,6 +461,7 @@ struct	tcpstat {
 	{ "pmtud_blackhole", CTLTYPE_INT }, \
 	{ "ecn", CTLTYPE_INT }, \
 	{ "prr", CTLTYPE_INT }, \
+	{ "rexmit_min", CTLTYPE_INT }, \
 }
 
 #ifdef KERNEL
@@ -501,7 +496,8 @@ extern	int tcp_do_pmtud;		/* IPv4 path MTU discovery */
 extern	int tcp_do_pmtud_blackhole;	/* black-hole detection */
 extern	int tcp_mssdflt;	/* XXX */
 extern	u_long tcp_now;		/* for RFC 1323 timestamps */
-extern	int tcp_rttdflt;	/* XXX */
+extern	int tcp_rttdflt;	/* initial retransmission timeout (s) */
+extern	int tcp_rexmit_min;	/* minimum retransmission timeout (ms) */
 extern  u_short tcp_lastport;	/* last assigned port */
 extern	int tcp_do_sack;	/* enable SACK (RFC 2018) */
 extern	int tcp_do_newreno;	/* enable NewReno (RFC 3782) */
@@ -556,6 +552,8 @@ struct tcpcb *
 int	 tcp_usrreq __P((struct socket *,
 	    int, struct mbuf *, struct mbuf *, struct mbuf *));
 void	 tcp_xmit_timer __P((struct tcpcb *, int));
+void	 tcp_rto_after_syn __P((struct tcpcb *));
+u_int32_t tcp_ms __P((void));
 #endif /* KERNEL */
 
 #endif /* _NETINET_TCP_VAR_H_ */
