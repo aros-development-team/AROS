@@ -10,7 +10,7 @@
 
     SYNOPSIS
 
-        UNIT/K/N, NAME/K, FORMAT/K, WAIT/K/N, SAVE/S
+        UNIT/K/N, NAME/K, FORMAT/K, WAIT/K/N, SAVE/S, PREFS/S, TO/K, URI/K
 
     LOCATION
 
@@ -21,10 +21,18 @@
         Finds the network printers on the local link (DNS-SD over multicast
         DNS, RFC 6762 and 6763) and lists them: IPP printers (_ipp._tcp) and
         those that take a raw job on a socket (_pdl-datastream._tcp).
+        Each IPP printer is asked about itself (Get-Printer-Attributes): its
+        make and model, state, the paper it has loaded and its supplies.
 
         With UNIT, sets ipp.device's unit to a printer found: the one whose
         name contains NAME, or the only one there is. The unit's settings go
-        to ENV:IPP/Unit<n>, and with SAVE also to ENVARC:.
+        to ENV:IPP/Unit<n>, and with SAVE also to ENVARC:. With PREFS as
+        well, printer.device prints through that unit: its preferences
+        (SYS/printer.prefs) get printspool.device unit n as their device,
+        the rest of them as they were, and printspool.device sends unit n's
+        jobs to ipp.device unit n (PrintSpool/Unit<n>) in the background. A document the printer reads itself,
+        such as a PDF, can go to the unit without printer.device through
+        IPP0: (Mount IPP0:, from SYS:Storage/DOSDrivers).
 
     INPUTS
 
@@ -34,11 +42,21 @@
                    the default lets the printer tell.
         WAIT    -- seconds to listen for answers (default 3).
         SAVE    -- keep the unit's settings over a reboot.
+        PREFS   -- with UNIT, point printer.device at the unit.
+        TO      -- also write what was found to this file for programs, one
+                   block of Key=value lines per printer.
+        URI     -- ask this one IPP printer (ipp://host[:port]/path) instead
+                   of looking for printers.
 
     EXAMPLE
 
         FindPrinters
         FindPrinters UNIT 0 NAME Dell FORMAT application/postscript SAVE
+        FindPrinters UNIT 0 NAME HP PREFS SAVE
+        FindPrinters URI ipp://192.168.0.63/ipp/print UNIT 0 PREFS
+        FindPrinters UNIT 0 NAME Dell SAVE
+        Mount IPP0:
+        Copy report.pdf TO IPP0:
 
 ******************************************************************************/
 
@@ -46,46 +64,27 @@
 #include <dos/dos.h>
 #include <dos/rdargs.h>
 #include <devices/timer.h>
+#include <devices/printer.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/timer.h>
 #include <proto/bsdsocket.h>
 
-#include <sys/socket.h>
-#include <sys/time.h>
-#include <sys/ioctl.h>
-#include <net/if.h>
-#include <netinet/in.h>
+#include <prefs/printertxt.h>
 
 #include <string.h>
 
-const TEXT version[] = "$VER: FindPrinters 1.1 (5.11.2026)";
+#include "dnssd.h"
+#include "fp_ipp.h"
+#include "fp_prefs.h"
 
-#define TEMPLATE "UNIT/K/N,NAME/K,FORMAT/K,WAIT/K/N,SAVE/S"
-enum { ARG_UNIT, ARG_NAME, ARG_FORMAT, ARG_WAIT, ARG_SAVE, ARG_COUNT };
+const TEXT version[] = "$VER: FindPrinters 1.2 (7.11.2026)";
 
-#define MDNS_PORT       5353
-#define TYPE_A          1
-#define TYPE_PTR        12
-#define TYPE_TXT        16
-#define TYPE_SRV        33
-#define MAX_RECORDS     96
+#define TEMPLATE "UNIT/K/N,NAME/K,FORMAT/K,WAIT/K/N,SAVE/S,PREFS/S,TO/K,URI/K"
+enum { ARG_UNIT, ARG_NAME, ARG_FORMAT, ARG_WAIT, ARG_SAVE, ARG_PREFS, ARG_TO, ARG_URI, ARG_COUNT };
+
 #define MAX_PRINTERS    32
-#define NAME_MAX        256
-#define TXT_MAX         1300    /* a TXT record as large as one mDNS packet carries (RFC 6763 6.2) */
-
-static const char *services[] = { "_ipp._tcp.local", "_pdl-datastream._tcp.local" };
-
-struct Record {
-    UWORD r_Type;
-    char r_Name[NAME_MAX];
-    char r_Target[NAME_MAX];            /* PTR, SRV: the name pointed to */
-    UWORD r_Port;                       /* SRV */
-    ULONG r_Addr;                       /* A, network order */
-    UBYTE r_Txt[TXT_MAX];               /* TXT as sent: length-prefixed strings */
-    UWORD r_TxtLen;
-};
 
 struct Printer {
     char p_Name[NAME_MAX];              /* the instance's first label */
@@ -93,391 +92,87 @@ struct Printer {
     char p_Formats[TXT_MAX];
     char p_UUID[64];
     BOOL p_IPP;
+    BOOL p_HaveInfo;
+    struct PrinterInfo p_Info;
 };
 
-static struct Record records[MAX_RECORDS];
-static LONG nrecords;
 static struct Printer printers[MAX_PRINTERS];
 static LONG nprinters;
 struct Library *SocketBase;
 struct Device *TimerBase;
 
-/* ------------------------------------------------------------------ DNS wire format */
-
-static LONG putName(UBYTE *p, const char *name)
-{
-    UBYTE *start = p;
-
-    while (*name) {
-        const char *dot = strchr(name, '.');
-        LONG n = dot ? dot - name : (LONG)strlen(name);
-        *p++ = n;
-        memcpy(p, name, n);
-        p += n;
-        name += n;
-        if (*name == '.')
-            name++;
-    }
-    *p++ = 0;
-    return p - start;
-}
-
-/* A possibly compressed name at off in pkt; returns the offset after it in the record, or -1. */
-static LONG getName(const UBYTE *pkt, LONG len, LONG off, char *out)
-{
-    LONG end = -1, n = 0, hops = 0;
-
-    for (;;) {
-        UBYTE l;
-        if (off >= len)
-            return -1;
-        l = pkt[off];
-        if ((l & 0xc0) == 0xc0) {
-            if (off + 1 >= len || ++hops > 16)
-                return -1;
-            if (end < 0)
-                end = off + 2;
-            off = ((l & 0x3f) << 8) | pkt[off + 1];
-            continue;
-        }
-        if (l == 0)
-            break;
-        if (off + 1 + l > len || n + l + 2 > NAME_MAX)
-            return -1;
-        if (n)
-            out[n++] = '.';
-        memcpy(out + n, pkt + off + 1, l);
-        n += l;
-        off += 1 + l;
-    }
-    out[n] = 0;
-    return end >= 0 ? end : off + 1;
-}
-
-static UWORD get16(const UBYTE *p) { return (p[0] << 8) | p[1]; }
-
-static void addRecord(struct Record *r)
-{
-    LONG i;
-
-    for (i = 0; i < nrecords; i++) {
-        struct Record *o = &records[i];
-        if (o->r_Type == r->r_Type && strcasecmp(o->r_Name, r->r_Name) == 0
-            && (r->r_Type != TYPE_PTR || strcasecmp(o->r_Target, r->r_Target) == 0)) {
-            *o = *r;
-            return;
-        }
-    }
-    if (nrecords < MAX_RECORDS)
-        records[nrecords++] = *r;
-}
-
-static void parsePacket(const UBYTE *pkt, LONG len)
-{
-    LONG off = 12, i, count;
-    struct Record r;
-
-    if (len < 12 || !(get16(pkt + 2) & 0x8000))
-        return;
-    for (i = get16(pkt + 4); i > 0; i--) {
-        char skip[NAME_MAX];
-        if ((off = getName(pkt, len, off, skip)) < 0)
-            return;
-        off += 4;
-    }
-    count = get16(pkt + 6) + get16(pkt + 8) + get16(pkt + 10);
-    for (i = 0; i < count; i++) {
-        UWORD type, rdlen;
-        memset(&r, 0, sizeof(r));
-        if ((off = getName(pkt, len, off, r.r_Name)) < 0 || off + 10 > len)
-            return;
-        type = get16(pkt + off);
-        rdlen = get16(pkt + off + 8);
-        off += 10;
-        if (off + rdlen > len)
-            return;
-        r.r_Type = type;
-        if (type == TYPE_PTR && getName(pkt, len, off, r.r_Target) >= 0)
-            addRecord(&r);
-        else if (type == TYPE_SRV && rdlen > 6 && getName(pkt, len, off + 6, r.r_Target) >= 0) {
-            r.r_Port = get16(pkt + off + 4);
-            addRecord(&r);
-        } else if (type == TYPE_A && rdlen == 4) {
-            memcpy(&r.r_Addr, pkt + off, 4);
-            addRecord(&r);
-        } else if (type == TYPE_TXT && rdlen <= TXT_MAX) {
-            memcpy(r.r_Txt, pkt + off, rdlen);
-            r.r_TxtLen = rdlen;
-            addRecord(&r);
-        }
-        off += rdlen;
-    }
-}
-
-static struct Record *findRecord(UWORD type, const char *name)
-{
-    LONG i;
-
-    for (i = 0; i < nrecords; i++)
-        if (records[i].r_Type == type && strcasecmp(records[i].r_Name, name) == 0)
-            return &records[i];
-    return NULL;
-}
-
-/* The value of key in a TXT record ("" when absent). */
-static void txtValue(struct Record *t, const char *key, char *out, LONG max)
-{
-    LONG off = 0, kl = strlen(key);
-
-    out[0] = 0;
-    while (t && off < t->r_TxtLen) {
-        UBYTE l = t->r_Txt[off];
-        const char *s = (const char *)t->r_Txt + off + 1;
-        if (off + 1 + l > t->r_TxtLen)
-            return;
-        if (l > kl && strncasecmp(s, key, kl) == 0 && s[kl] == '=') {
-            LONG n = l - kl - 1;
-            if (n >= max)
-                n = max - 1;
-            memcpy(out, s + kl + 1, n);
-            out[n] = 0;
-            return;
-        }
-        off += 1 + l;
-    }
-}
-
-/* ------------------------------------------------------------------ the link */
-
-/* The addresses of the interfaces that are up, the loopback left out. */
-static LONG interfaceAddresses(LONG fd, struct in_addr *out, LONG max)
-{
-    char buf[1024];
-    struct ifconf ifc;
-    LONG off = 0, n = 0;
-
-    ifc.ifc_len = sizeof(buf);
-    ifc.ifc_buf = buf;
-    if (IoctlSocket(fd, SIOCGIFCONF, (char *)&ifc) < 0)
-        return 0;
-    while (off + (LONG)sizeof(struct ifreq) <= ifc.ifc_len && n < max) {
-        struct ifreq *ifr = (struct ifreq *)(buf + off), flags;
-        struct sockaddr_in *sin = (struct sockaddr_in *)&ifr->ifr_addr;
-        LONG sl = ifr->ifr_addr.sa_len;
-        off += IFNAMSIZ + (sl > (LONG)sizeof(struct sockaddr) ? sl : (LONG)sizeof(struct sockaddr));
-        if (ifr->ifr_addr.sa_family != AF_INET || sin->sin_addr.s_addr == 0)
-            continue;
-        strcpy(flags.ifr_name, ifr->ifr_name);
-        if (IoctlSocket(fd, SIOCGIFFLAGS, (char *)&flags) < 0
-            || (flags.ifr_flags & (IFF_UP | IFF_LOOPBACK)) != IFF_UP)
-            continue;
-        out[n++] = sin->sin_addr;
-    }
-    return n;
-}
-
-/* One query to the mDNS group from an ordinary port: responders answer this asker directly
-   (RFC 6762 section 6.7), so FindPrinters needs neither port 5353 nor a group membership.
-   It goes out of every interface that is up, which needs no route to the group. */
-static BOOL sendQuery(LONG fd, const char **names, const UWORD *types, LONG n)
-{
-    UBYTE pkt[1500];
-    LONG len = 12, i, nif, sent = 0;
-    struct sockaddr_in to;
-    struct in_addr ifs[8];
-
-    memset(pkt, 0, 12);
-    pkt[0] = 0x46;                      /* an ID: legacy unicast answers repeat it */
-    pkt[1] = 0x50;
-    pkt[5] = n;
-    for (i = 0; i < n && len < (LONG)sizeof(pkt) - NAME_MAX - 4; i++) {
-        len += putName(pkt + len, names[i]);
-        pkt[len++] = 0;
-        pkt[len++] = types[i];
-        pkt[len++] = 0;
-        pkt[len++] = 1;                 /* class IN */
-    }
-    memset(&to, 0, sizeof(to));
-    to.sin_family = AF_INET;
-    to.sin_port = htons(MDNS_PORT);
-    to.sin_addr.s_addr = htonl(0xe00000fb);  /* 224.0.0.251 */
-    nif = interfaceAddresses(fd, ifs, 8);
-    if (nif == 0)
-        return sendto(fd, pkt, len, 0, (struct sockaddr *)&to, sizeof(to)) >= 0;
-    for (i = 0; i < nif; i++) {
-        setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IF, &ifs[i], sizeof(ifs[i]));
-        if (sendto(fd, pkt, len, 0, (struct sockaddr *)&to, sizeof(to)) >= 0)
-            sent++;
-    }
-    return sent > 0;
-}
-
-/* Takes in answers for ms milliseconds. */
-static void gather(LONG fd, LONG ms)
-{
-    UBYTE pkt[9000];
-    struct timeval tv, now, end;
-    fd_set set;
-
-    GetSysTime(&end);
-    tv.tv_secs = ms / 1000;
-    tv.tv_micro = (ms % 1000) * 1000;
-    AddTime(&end, &tv);
-    for (;;) {
-        ULONG sigs = SIGBREAKF_CTRL_C;
-        LONG n;
-        GetSysTime(&now);
-        if (CmpTime(&now, &end) <= 0)
-            return;
-        tv = end;
-        SubTime(&tv, &now);
-        FD_ZERO(&set);
-        FD_SET(fd, &set);
-        n = WaitSelect(fd + 1, &set, NULL, NULL, &tv, &sigs);
-        if (sigs & SIGBREAKF_CTRL_C)
-            return;
-        if (n <= 0)
-            return;
-        n = recv(fd, pkt, sizeof(pkt), 0);
-        if (n > 0)
-            parsePacket(pkt, n);
-    }
-}
-
-/* Asks for what the first answers left out: SRV and TXT of instances, A of their hosts. */
-static void askMissing(LONG fd)
-{
-    const char *names[16];
-    UWORD types[16];
-    LONG n = 0, i;
-
-    for (i = 0; i < nrecords && n < 14; i++) {
-        struct Record *ptr = &records[i];
-        struct Record *srv;
-        if (ptr->r_Type != TYPE_PTR)
-            continue;
-        if (!(srv = findRecord(TYPE_SRV, ptr->r_Target))) {
-            names[n] = ptr->r_Target;
-            types[n++] = TYPE_SRV;
-        } else if (!findRecord(TYPE_A, srv->r_Target)) {
-            names[n] = srv->r_Target;
-            types[n++] = TYPE_A;
-        }
-        if (!findRecord(TYPE_TXT, ptr->r_Target)) {
-            names[n] = ptr->r_Target;
-            types[n++] = TYPE_TXT;
-        }
-    }
-    if (n) {
-        sendQuery(fd, names, types, n);
-        gather(fd, 1500);
-    }
-}
-
-static void appendNumber(char *s, ULONG v)
-{
-    char d[12];
-    LONG i = 0;
-
-    do {
-        d[i++] = '0' + v % 10;
-        v /= 10;
-    } while (v);
-    s += strlen(s);
-    while (i)
-        *s++ = d[--i];
-    *s = 0;
-}
-
-static void addressText(ULONG addr, char *out)
-{
-    const UBYTE *b = (const UBYTE *)&addr;
-    LONG i;
-
-    out[0] = 0;
-    for (i = 0; i < 4; i++) {
-        if (i)
-            strcat(out, ".");
-        appendNumber(out, b[i]);
-    }
-}
-
-/* Printers from the records: one per instance name, IPP when it has it. */
-static void collect(void)
-{
-    LONG pass, i, j;
-
-    for (pass = 0; pass < 2; pass++) {
-        for (i = 0; i < nrecords; i++) {
-            struct Record *ptr = &records[i], *srv, *a, *txt;
-            struct Printer *p;
-            char inst[NAME_MAX], host[32], rp[NAME_MAX], *dot;
-            if (ptr->r_Type != TYPE_PTR || strcasecmp(ptr->r_Name, services[pass]) != 0)
-                continue;
-            if (!(srv = findRecord(TYPE_SRV, ptr->r_Target)) || !(a = findRecord(TYPE_A, srv->r_Target)))
-                continue;
-            strcpy(inst, ptr->r_Target);
-            if ((dot = strstr(inst, services[pass]) ) && dot > inst)
-                dot[-1] = 0;
-            for (j = 0; j < nprinters && strcmp(printers[j].p_Name, inst) != 0; j++)
-                ;
-            if (j < nprinters || nprinters == MAX_PRINTERS)
-                continue;
-            txt = findRecord(TYPE_TXT, ptr->r_Target);
-            addressText(a->r_Addr, host);
-            txtValue(txt, "rp", rp, sizeof(rp));
-            if (pass == 0 && strlen(host) + strlen(rp) + 14 > NAME_MAX)   /* ipp://host:port/rp */
-                continue;
-            p = &printers[nprinters++];
-            memset(p, 0, sizeof(*p));
-            strcpy(p->p_Name, inst);
-            p->p_IPP = pass == 0;
-            if (p->p_IPP) {
-                strcpy(p->p_URI, "ipp://");
-                strcat(p->p_URI, host);
-                strcat(p->p_URI, ":");
-                appendNumber(p->p_URI, srv->r_Port);
-                strcat(p->p_URI, "/");
-                strcat(p->p_URI, rp);
-            } else {
-                strcpy(p->p_URI, "socket://");
-                strcat(p->p_URI, host);
-                strcat(p->p_URI, ":");
-                appendNumber(p->p_URI, srv->r_Port);
-            }
-            txtValue(txt, "pdl", p->p_Formats, sizeof(p->p_Formats));
-            txtValue(txt, "UUID", p->p_UUID, sizeof(p->p_UUID));
-        }
-    }
-}
-
 /* ------------------------------------------------------------------ settings */
 
-static BOOL writeUnit(const char *dir, LONG unit, struct Printer *p, const char *format)
+/* ipp.device unit: the printer, its name and ID, and the document format (empty: the printer tells) */
+static LONG setUnit(LONG unit, struct Printer *p, const char *format, BOOL save)
 {
-    char path[48];
-    BPTR fh, lock;
+    struct TagItem tags[] = {
+        { PDA_URI,    (IPTR)p->p_URI },
+        { PDA_Name,   (IPTR)p->p_Name },
+        { PDA_UUID,   (IPTR)p->p_UUID },
+        { PDA_Format, (IPTR)(format ? format : "") },
+        { PDA_Save,   save },
+        { TAG_DONE,   0 }
+    };
 
-    strcpy(path, dir);
-    strcat(path, "IPP");
-    if ((lock = Lock(path, SHARED_LOCK)))
-        UnLock(lock);
-    else if ((lock = CreateDir(path)))
-        UnLock(lock);
-    strcat(path, "/Unit");
-    appendNumber(path, unit);
-    if (!(fh = Open(path, MODE_NEWFILE)))
+    return Dest_Set("ipp.device", unit, tags);
+}
+
+static void showInfo(struct Printer *p)
+{
+    struct PrinterInfo *pi = &p->p_Info;
+    LONG i;
+
+    if (!p->p_HaveInfo)
+        return;
+    if (pi->pi_Model[0])
+        Printf("   model: %s\n", pi->pi_Model);
+    if (pi->pi_State[0])
+        Printf("   state: %s\n", pi->pi_State);
+    if (pi->pi_Reasons[0] && strcmp(pi->pi_Reasons, "none") != 0)
+        Printf("   attention: %s\n", pi->pi_Reasons);
+    if (pi->pi_Message[0])
+        Printf("   message: %s\n", pi->pi_Message);
+    if (pi->pi_Paper[0])
+        Printf("   paper: %s\n", pi->pi_Paper);
+    for (i = 0; i < pi->pi_NumSupplies; i++)
+        if (pi->pi_Level[i] >= 0)
+            Printf("   %s: %ld%%\n", pi->pi_Supply[i], (long)pi->pi_Level[i]);
+}
+
+/* The TO file: a block of Key=value lines per printer, a blank line between. */
+static BOOL writeList(const char *to)
+{
+    BPTR fh;
+    LONG i, j;
+
+    if (!(fh = Open(to, MODE_NEWFILE)))
         return FALSE;
-    FPuts(fh, "URI="); FPuts(fh, p->p_URI); FPuts(fh, "\n");
-    FPuts(fh, "NAME="); FPuts(fh, p->p_Name); FPuts(fh, "\n");
-    if (format && *format) {
-        FPuts(fh, "FORMAT="); FPuts(fh, format); FPuts(fh, "\n");
-    }
-    if (p->p_UUID[0]) {
-        FPuts(fh, "UUID="); FPuts(fh, p->p_UUID); FPuts(fh, "\n");
-    }
-    if (p->p_Formats[0]) {
-        FPuts(fh, "FORMATS="); FPuts(fh, p->p_Formats); FPuts(fh, "\n");
+    for (i = 0; i < nprinters; i++) {
+        struct Printer *p = &printers[i];
+        struct PrinterInfo *pi = &p->p_Info;
+
+        if (i)
+            FPuts(fh, "\n");
+        FPrintf(fh, "Printer=%s\nURI=%s\n", p->p_Name, p->p_URI);
+        if (p->p_Formats[0])
+            FPrintf(fh, "Formats=%s\n", p->p_Formats);
+        if (p->p_UUID[0])
+            FPrintf(fh, "UUID=%s\n", p->p_UUID);
+        if (!p->p_HaveInfo)
+            continue;
+        if (pi->pi_Model[0])
+            FPrintf(fh, "Model=%s\n", pi->pi_Model);
+        if (pi->pi_State[0])
+            FPrintf(fh, "State=%s\n", pi->pi_State);
+        if (pi->pi_Reasons[0])
+            FPrintf(fh, "Reasons=%s\n", pi->pi_Reasons);
+        if (pi->pi_Message[0])
+            FPrintf(fh, "Message=%s\n", pi->pi_Message);
+        if (pi->pi_Paper[0])
+            FPrintf(fh, "Paper=%s\n", pi->pi_Paper);
+        for (j = 0; j < pi->pi_NumSupplies; j++)
+            FPrintf(fh, "Supply=%ld;%s;%s\n", (long)pi->pi_Level[j], pi->pi_Colour[j], pi->pi_Supply[j]);
     }
     Close(fh);
     return TRUE;
@@ -499,8 +194,7 @@ int main(void)
     struct RDArgs *rda;
     struct MsgPort *port;
     struct timerequest *tr = NULL;
-    LONG fd, wait = 3, i, rc = RETURN_OK;
-    UWORD ptrs[2] = { TYPE_PTR, TYPE_PTR };
+    LONG wait = 3, i, rc = RETURN_OK;
 
     if (!(rda = ReadArgs(TEMPLATE, args, NULL))) {
         PrintFault(IoErr(), "FindPrinters");
@@ -528,33 +222,76 @@ int main(void)
         FreeArgs(rda);
         return RETURN_FAIL;
     }
-    fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (fd < 0) {
-        PutStr("FindPrinters: no socket\n");
-        rc = RETURN_FAIL;
-    } else if (!sendQuery(fd, services, ptrs, 2)) {
-        Printf("FindPrinters: cannot send to the multicast group (error %ld): is an interface up?\n", (long)Errno());
-        CloseSocket(fd);
-        rc = RETURN_FAIL;
-    } else {
-        gather(fd, wait * 1000);
-        askMissing(fd);
-        CloseSocket(fd);
-        collect();
+    if (args[ARG_URI]) {
+        /* One printer, asked directly. */
+        struct Printer *p = &printers[0];
+        const char *uri = (const char *)args[ARG_URI];
 
+        if (strncmp(uri, "ipp://", 6) != 0 || strlen(uri) >= sizeof(p->p_URI)) {
+            PutStr("FindPrinters: URI is ipp://host[:port]/path\n");
+            rc = RETURN_ERROR;
+        } else {
+            memset(p, 0, sizeof(*p));
+            strcpy(p->p_URI, uri);
+            strcpy(p->p_Name, uri);
+            p->p_IPP = TRUE;
+            nprinters = 1;
+        }
+    } else {
+        static struct DNSSDPrinter found[MAX_PRINTERS];
+        LONG n, error;
+
+        if ((n = DNSSD_FindPrinters(SocketBase, TimerBase, wait * 1000, found, MAX_PRINTERS, &error)) < 0) {
+            Printf("FindPrinters: cannot send to the multicast group (error %ld): is an interface up?\n", (long)error);
+            rc = RETURN_FAIL;
+        }
+        for (i = 0; i < n; i++) {
+            struct Printer *p = &printers[nprinters++];
+
+            memset(p, 0, sizeof(*p));
+            strcpy(p->p_Name, found[i].dp_Name);
+            strcpy(p->p_URI, found[i].dp_URI);
+            strcpy(p->p_Formats, found[i].dp_Formats);
+            strcpy(p->p_UUID, found[i].dp_UUID);
+            p->p_IPP = found[i].dp_IPP;
+        }
+    }
+
+    if (rc == RETURN_OK) {
         if (nprinters == 0)
             PutStr("No network printers found.\n");
         for (i = 0; i < nprinters; i++) {
-            Printf("%ld  %s\n   %s\n", (long)i + 1, printers[i].p_Name, printers[i].p_URI);
-            if (printers[i].p_Formats[0])
-                Printf("   formats: %s\n", printers[i].p_Formats);
+            struct Printer *p = &printers[i];
+
+            if (p->p_IPP)
+                p->p_HaveInfo = IPP_GetInfo(p->p_URI, &p->p_Info);
+            /* a printer asked by URI has no DNS-SD record to name its formats */
+            if (p->p_HaveInfo && !p->p_Formats[0])
+                strncpy(p->p_Formats, p->p_Info.pi_Formats, sizeof(p->p_Formats) - 1);
+            if (args[ARG_URI] && p->p_HaveInfo && p->p_Info.pi_Model[0])
+                strncpy(p->p_Name, p->p_Info.pi_Model, sizeof(p->p_Name) - 1);
+            if (args[ARG_URI] && !p->p_HaveInfo) {
+                Printf("FindPrinters: %s does not answer\n", p->p_URI);
+                rc = RETURN_WARN;
+            }
+            Printf("%ld  %s\n   %s\n", (long)i + 1, p->p_Name, p->p_URI);
+            if (p->p_Formats[0])
+                Printf("   formats: %s\n", p->p_Formats);
+            showInfo(p);
+        }
+        if (args[ARG_TO] && !writeList((const char *)args[ARG_TO])) {
+            PrintFault(IoErr(), "FindPrinters");
+            rc = RETURN_ERROR;
         }
 
-        if (args[ARG_UNIT]) {
+        if (args[ARG_PREFS] && !args[ARG_UNIT]) {
+            PutStr("FindPrinters: PREFS needs UNIT\n");
+            rc = RETURN_ERROR;
+        } else if (args[ARG_UNIT]) {
             LONG unit = *(LONG *)args[ARG_UNIT];
             const char *name = (const char *)args[ARG_NAME];
             struct Printer *pick = NULL;
-            LONG matches = 0;
+            LONG matches = 0, error;
             for (i = 0; i < nprinters; i++)
                 if (!name || contains(printers[i].p_Name, name)) {
                     if (!pick || (printers[i].p_IPP && !pick->p_IPP))
@@ -570,12 +307,29 @@ int main(void)
             } else if (!name && nprinters > 1 && matches > 1) {
                 PutStr("FindPrinters: several printers; name one with NAME\n");
                 rc = RETURN_WARN;
-            } else if (!writeUnit("ENV:", unit, pick, (const char *)args[ARG_FORMAT])
-                       || (args[ARG_SAVE] && !writeUnit("ENVARC:", unit, pick, (const char *)args[ARG_FORMAT]))) {
-                PrintFault(IoErr(), "FindPrinters");
+            } else if ((error = setUnit(unit, pick, (const char *)args[ARG_FORMAT], args[ARG_SAVE] != 0)) != 0) {
+                if (IoErr() != 0)
+                    PrintFault(IoErr(), "FindPrinters: ipp.device");
+                else
+                    Printf("FindPrinters: ipp.device unit %ld refused the printer (error %ld)\n", (long)unit, (long)error);
                 rc = RETURN_ERROR;
-            } else
+            } else {
+                char driver[DRIVERNAMESIZE + 1];
+
                 Printf("ipp.device unit %ld: %s\n", (long)unit, pick->p_Name);
+                if (args[ARG_PREFS]) {
+                    if (!Prefs_UseIPP(unit, args[ARG_SAVE] != 0, driver, sizeof(driver))) {
+                        PrintFault(IoErr(), "FindPrinters");
+                        rc = RETURN_ERROR;
+                    } else {
+                        Printf("printer.device: prints with the %s driver through printspool.device unit %ld to ipp.device unit %ld\n",
+                            driver, (long)unit, (long)unit);
+                        if (strcasecmp(driver, "PostScript") == 0 && pick->p_Formats[0]
+                            && !contains(pick->p_Formats, "postscript"))
+                            PutStr("FindPrinters: the printer does not list PostScript; choose a driver for it in Printer preferences\n");
+                    }
+                }
+            }
         }
     }
     CloseLibrary(SocketBase);

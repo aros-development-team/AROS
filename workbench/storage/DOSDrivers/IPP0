@@ -1,0 +1,14 @@
+/* IPP0: -- a network printer as a stream, without printer.device.
+ *
+ * Whatever is copied to IPP0: goes to the printer ipp.device unit 0 is set
+ * to (C:FindPrinters UNIT 0), as one job per file: for documents the printer
+ * reads itself, such as PDF or PostScript. Printing through a printer driver
+ * goes through PRT: instead.
+ */
+
+EHandler = port-handler
+Priority = 5
+GlobVec  = -1
+Device   = ipp.device
+Unit     = 0
+Flags    = 0

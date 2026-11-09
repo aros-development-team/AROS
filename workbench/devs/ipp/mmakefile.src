@@ -11,12 +11,12 @@ USER_LDFLAGS := -static
 
 %build_module mmake=workbench-devs-ipp \
   modname=ipp modtype=device \
-  files="ipp ipp_config ipp_net"
+  files="ipp ipp_config ipp_net ipp_resolve dnssd"
 
 #MM workbench-devs-ipp-findprinters : network-includes-copy
 
 %build_prog mmake=workbench-devs-ipp-findprinters \
   progname=FindPrinters targetdir=$(AROS_C) \
-  files=findprinters
+  files="findprinters dnssd fp_ipp fp_prefs"
 
 %common

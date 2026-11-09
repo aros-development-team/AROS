@@ -7,10 +7,14 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <dos/var.h>
+#include <exec/memory.h>
 
 #include <string.h>
 
 #include "ipp_intern.h"
+
+#define TXT_LINE_MAX    1400    /* FORMATS= carries a whole TXT pdl list */
+#define TXT_FILE_MAX    4096
 
 void IPP_AppendNumber(char *s, ULONG n)
 {
@@ -44,6 +48,7 @@ static void copyValue(char *to, const char *from, ULONG max)
    URI=ipp://192.168.0.63:631/ipp/print   (or socket://host[:9100])
    FORMAT=application/postscript           (optional)
    NAME=Dell Color MFP E525w               (optional)
+   UUID=...                                (optional: finds the printer again when it moves)
    Other keys are kept for the tools and ignored here. */
 BOOL IPP_ReadConfig(struct IPPBase *IPPBase, ULONG unit, struct IPPConfig *ic)
 {
@@ -63,8 +68,11 @@ BOOL IPP_ReadConfig(struct IPPBase *IPPBase, ULONG unit, struct IPPConfig *ic)
             copyValue(ic->ic_Format, line + 7, sizeof(ic->ic_Format));
         else if (strncmp(line, "NAME=", 5) == 0)
             copyValue(ic->ic_Name, line + 5, sizeof(ic->ic_Name));
+        else if (strncmp(line, "UUID=", 5) == 0)
+            copyValue(ic->ic_UUID, line + 5, sizeof(ic->ic_UUID));
     }
     Close(fh);
+    ic->ic_HasFormat = ic->ic_Format[0] != 0;
     if (ic->ic_Format[0] == 0)
         strcpy(ic->ic_Format, "application/octet-stream");
     D(bug("[ipp] unit %lu: %s (%s)\n", (unsigned long)unit, ic->ic_URI, ic->ic_Format));
@@ -125,4 +133,66 @@ void IPP_SetStatus(struct IPPBase *IPPBase, struct IPPUnit *iu, const char *text
     if (lock != BNULL)
         UnLock(lock);
     SetVar("IPP/Status", line, -1, GVF_GLOBAL_ONLY);
+}
+
+/* Changes keys of the unit's settings, keeping the other lines: in ENV:, and in
+   ENVARC: when save says so (IPP_SAVE always, IPP_SAVE_IF_THERE only when the unit
+   was saved there). An empty value removes its key. */
+BOOL IPP_UpdateConfig(struct IPPBase *IPPBase, ULONG unit, const struct IPPKey *keys, LONG nkeys, LONG save)
+{
+    static const char *dirs[] = { "ENV:IPP", "ENVARC:IPP" };
+    char path[32], *text, *line;
+    LONG d, len, k;
+    BOOL ok = TRUE;
+    BPTR fh, lock;
+
+    /* not on the stack: the device runs on its opener's */
+    if (!(text = AllocVec(TXT_FILE_MAX + TXT_LINE_MAX, MEMF_ANY)))
+        return FALSE;
+    line = text + TXT_FILE_MAX;
+    for (d = 0; d < 2; d++) {
+        strcpy(path, dirs[d]);
+        strcat(path, "/Unit");
+        IPP_AppendNumber(path, unit);
+        text[0] = 0;
+        len = 0;
+        if ((fh = Open(path, MODE_OLDFILE)) != BNULL) {
+            while (FGets(fh, line, TXT_LINE_MAX)) {
+                LONG n = strlen(line);
+                BOOL replaced = FALSE;
+                for (k = 0; k < nkeys; k++)
+                    if (strncmp(line, keys[k].ik_Key, strlen(keys[k].ik_Key)) == 0)
+                        replaced = TRUE;
+                if (replaced || len + n + 2 > TXT_FILE_MAX)
+                    continue;
+                strcpy(text + len, line);
+                len += n;
+                if (text[len - 1] != '\n') {
+                    text[len++] = '\n';
+                    text[len] = 0;
+                }
+            }
+            Close(fh);
+        } else if (d == 1 && save != IPP_SAVE)
+            continue;
+        if (d == 1 && save == IPP_NOSAVE)
+            continue;
+        for (k = 0; k < nkeys; k++)
+            if (keys[k].ik_Value[0] && len + strlen(keys[k].ik_Key) + strlen(keys[k].ik_Value) + 2 < TXT_FILE_MAX) {
+                strcpy(text + len, keys[k].ik_Key);
+                strcat(text + len, keys[k].ik_Value);
+                strcat(text + len, "\n");
+                len += strlen(text + len);
+            }
+        if ((lock = Lock(dirs[d], SHARED_LOCK)) || (lock = CreateDir(dirs[d])))
+            UnLock(lock);
+        if ((fh = Open(path, MODE_NEWFILE)) != BNULL) {
+            if (Write(fh, text, len) != len)
+                ok = FALSE;
+            Close(fh);
+        } else
+            ok = FALSE;
+    }
+    FreeVec(text);
+    return ok;
 }

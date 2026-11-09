@@ -19,6 +19,8 @@ struct IPPConfig {
     char ic_URI[IPP_URI_MAX];           /* ipp://host[:port]/path or socket://host[:port] */
     char ic_Format[IPP_TEXT_MAX];       /* document-format; application/octet-stream when unset */
     char ic_Name[IPP_TEXT_MAX];         /* what the printer calls itself */
+    char ic_UUID[64];                   /* the printer's own, which stays when its address changes */
+    BOOL ic_HasFormat;                  /* FORMAT= was there: ic_Format is not the default */
 };
 
 /* Where a URI points. */
@@ -52,6 +54,10 @@ struct IPPBase {
     struct IPPUnit ib_Unit[IPP_UNITS];
     ULONG ib_NextJob;
     struct Library *ib_DOSBase;
+    struct SignalSemaphore ib_ResolveLock;  /* one DNS-SD query at a time (dnssd.c) */
+    struct IPPSettingsUnit {            /* opened with PRDOF_SETTINGS: no job */
+        ULONG is_Number;
+    } ib_Settings[IPP_UNITS];
 };
 
 #define DOSBase IPPBase->ib_DOSBase
@@ -61,6 +67,17 @@ BOOL IPP_ReadConfig(struct IPPBase *IPPBase, ULONG unit, struct IPPConfig *ic);
 BOOL IPP_ParseURI(const char *uri, struct IPPTarget *t);
 void IPP_AppendNumber(char *s, ULONG n);
 void IPP_SetStatus(struct IPPBase *IPPBase, struct IPPUnit *iu, const char *text);
+struct IPPKey {
+    const char *ik_Key;                 /* "URI=" */
+    const char *ik_Value;
+};
+#define IPP_NOSAVE          0
+#define IPP_SAVE            1
+#define IPP_SAVE_IF_THERE   2
+BOOL IPP_UpdateConfig(struct IPPBase *IPPBase, ULONG unit, const struct IPPKey *keys, LONG nkeys, LONG save);
+
+/* ipp_resolve.c */
+BOOL IPP_Resolve(struct IPPBase *IPPBase, struct IPPUnit *iu);
 
 /* ipp_net.c */
 BOOL IPP_BeginJob(struct IPPBase *IPPBase, struct IPPUnit *iu, ULONG id);
