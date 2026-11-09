@@ -445,7 +445,12 @@ OOP_Object *Display__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         }
 
         if (data->gfxhidd)
+        {
             OOP_GetAttr(data->gfxhidd, aHidd_Gfx_FrameBufferType, &fbtype);
+
+            /* The display can be reached from its driver, and the other way round, as a relation */
+            HIDD_AddRelation(o, vHidd_Relation_Parent, data->gfxhidd, NULL);
+        }
         data->fbmode = fbtype;
 
         /*

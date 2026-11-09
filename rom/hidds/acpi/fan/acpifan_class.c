@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -191,10 +191,12 @@ OOP_Object *ACPIFan__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
     D(bug("[ACPI:Fan] %s()\n", __func__));
 
+    char devicePath[5 + 128];
     struct TagItem new_tags[] =
     {
         { aHidd_Name,                   (IPTR)"acpifan.hidd" },
         { aHidd_HardwareName,           (IPTR)acpiFan_str       },
+        { TAG_IGNORE,                   0                       },
         { TAG_DONE,                     0                       }
     };
     acpiNewFanMsg.mID      = msg->mID,
@@ -202,8 +204,21 @@ OOP_Object *ACPIFan__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
     if (msg->attrList)
     {
-        new_tags[2].ti_Tag  = TAG_MORE;
-        new_tags[2].ti_Data = (IPTR)msg->attrList;
+        new_tags[3].ti_Tag  = TAG_MORE;
+        new_tags[3].ti_Data = (IPTR)msg->attrList;
+    }
+
+    /* The namespace path tells other components which device this is */
+    if (acpiHandle)
+    {
+        ACPI_BUFFER pathBuffer = { sizeof(devicePath) - 5, &devicePath[5] };
+
+        if (ACPI_SUCCESS(AcpiGetName(acpiHandle, ACPI_FULL_PATHNAME, &pathBuffer)))
+        {
+            CopyMem("acpi/", devicePath, 5);
+            new_tags[2].ti_Tag  = aHidd_DevicePath;
+            new_tags[2].ti_Data = (IPTR)devicePath;
+        }
     }
 
     D(bug("[ACPI:Fan] %s: ACPI Handle @ 0x%p\n", __func__, acpiHandle));

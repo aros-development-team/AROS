@@ -47,9 +47,28 @@ fdt_node_t FDT_Root(void);
  */
 fdt_node_t FDT_NextNode(fdt_node_t node);
 
+/*
+ * Walk one level of the tree. FDT_FirstChild() returns the first node
+ * directly inside the given one, FDT_NextSibling() the next node with
+ * the same parent; both return FDT_NONE when there is none.
+ *
+ *     for (c = FDT_FirstChild(node); c != FDT_NONE; c = FDT_NextSibling(c))
+ */
+fdt_node_t FDT_FirstChild(fdt_node_t node);
+fdt_node_t FDT_NextSibling(fdt_node_t node);
+
 /* The node's name, without the unit address ("serial", not
    "serial@20300000"). NULL if the node does not exist. */
 CONST_STRPTR FDT_NodeName(fdt_node_t node);
+
+/*
+ * The node's full path from the root, unit addresses included
+ * ("/soc/serial@20300000"). This names the node uniquely, and is what
+ * a driver puts behind "dt" to make the aHidd_DevicePath of the
+ * hardware it found there. Returns FALSE if the node does not exist or
+ * the buffer is too small.
+ */
+BOOL FDT_GetPath(fdt_node_t node, STRPTR buf, ULONG size);
 
 /*
  * Does this node's "compatible" list contain the given string? The
