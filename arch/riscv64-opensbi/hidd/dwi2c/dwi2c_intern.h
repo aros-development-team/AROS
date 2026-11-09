@@ -156,6 +156,8 @@ struct dwi2c_ctrl
     ULONG                   txDepth;
     ULONG                   lastFail;   /* why the last transfer failed */
     char                    name[12];
+    /* "dt" and the path of the node: the aHidd_DevicePath of the bus */
+    char                    path[96];
 };
 
 struct dwi2c_staticdata

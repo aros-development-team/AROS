@@ -80,6 +80,7 @@ struct pcidt_intmap
 
 struct pcidt_bridge
 {
+    fdt_node_t          node;           /* FDT_NONE when found through ACPI */
     IPTR                cfgBase;        /* ECAM window, or DWC viewport */
     IPTR                cfgSize;
     IPTR                dbiBase;        /* DesignWare register block   */
@@ -155,6 +156,26 @@ struct pcidt_bridge
     ULONG               msiVectors;
 };
 
+/*
+ * Where the firmware describes something on a bridge: a node of the
+ * device tree, or one of the ACPI namespace. The objects made for the
+ * bridge and for its devices name these as their firmware nodes (see
+ * PCIDT_DeclareFirmwareNodes()).
+ */
+struct pcidt_fwnode
+{
+    struct MinNode      node;
+    APTR                acpi;           /* ACPI_HANDLE, NULL for a tree node */
+    fdt_node_t          dt;
+    UBYTE               bridge;         /* index into psd->bridges */
+    UBYTE               bus, dev, sub;
+};
+
+/* In dev: the node describes the bridge itself */
+#define PCIDT_FWNODE_HOST   0xff
+/* In sub: the node stands for every function of the device */
+#define PCIDT_FWNODE_ANYSUB 0xff
+
 struct pcidt_staticdata
 {
     struct Library      *OOPBase;
@@ -167,6 +188,9 @@ struct pcidt_staticdata
     OOP_AttrBase         hidd_PCIDeviceAB;
 
     OOP_MethodID         hidd_PCIDeviceMB;
+    OOP_MethodID         hiddMB;
+
+    struct MinList       fwNodes;       /* struct pcidt_fwnode */
 
     OOP_Class           *pcidtDriverClass;
     OOP_Class           *pcidtDeviceClass;
@@ -205,7 +229,9 @@ struct PCIDTDeviceData
 #undef HiddAttrBase
 #undef HiddPCIDeviceAttrBase
 #undef HiddPCIDeviceBase
+#undef HiddBase
 
+#define HiddBase                (PSD(cl)->hiddMB)
 #define HiddPCIDriverAttrBase   (PSD(cl)->hiddPCIDriverAB)
 #define HiddAttrBase            (PSD(cl)->hiddAB)
 #define HiddPCIDeviceAttrBase   (PSD(cl)->hidd_PCIDeviceAB)
@@ -246,6 +272,20 @@ BOOL  PCIDT_MapAt(struct pcidt_staticdata *psd, IPTR va, IPTR pa, IPTR size);
  * gets here, and one without ACPI tables finds nothing.
  */
 ULONG PCIDT_DiscoverACPI(struct pcidt_staticdata *psd);
+
+/*
+ * The firmware's description of the bridges and of what sits on them.
+ * PCIDT_ScanACPINodes() collects the ACPI side of it for every bridge
+ * the MCFG table knows, however the bridge was found; PCIDT_ACPIPath()
+ * gives the full name of a node it recorded.
+ */
+void  PCIDT_RecordFirmwareNode(struct pcidt_staticdata *psd, APTR acpi,
+                               fdt_node_t dt, ULONG bridge, UBYTE bus,
+                               UBYTE dev, UBYTE sub);
+void  PCIDT_ScanACPINodes(struct pcidt_staticdata *psd);
+BOOL  PCIDT_ACPIPath(APTR handle, STRPTR buf, ULONG size);
+void  PCIDT_DeclareFirmwareNodes(OOP_Class *cl, OOP_Object *o, ULONG bridge,
+                                 UBYTE bus, UBYTE dev, UBYTE sub);
 
 /* Config access, shared by the driver class methods */
 ULONG PCIDT_ReadConfig(struct pcidt_bridge *b, UBYTE bus, UBYTE dev,

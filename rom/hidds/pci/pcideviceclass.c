@@ -75,42 +75,42 @@ static void setLong(OOP_Class *cl, OOP_Object *o, ULONG reg, ULONG value)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
     
-    HIDD_PCIDriver_WriteConfigLong(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, reg, value);
+    HIDD_PCIDriver_WriteConfigLong(dev->driver, o, dev->bus, dev->dev, dev->sub, reg, value);
 }
 
 static void setWord(OOP_Class *cl, OOP_Object *o, ULONG reg, UWORD value)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
-    HIDD_PCIDriver_WriteConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, reg, value);
+    HIDD_PCIDriver_WriteConfigWord(dev->driver, o, dev->bus, dev->dev, dev->sub, reg, value);
 }
 
 static void setByte(OOP_Class *cl, OOP_Object *o, ULONG reg, UBYTE value)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
-    HIDD_PCIDriver_WriteConfigByte(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, reg, value);
+    HIDD_PCIDriver_WriteConfigByte(dev->driver, o, dev->bus, dev->dev, dev->sub, reg, value);
 }
 
 static ULONG getLong(OOP_Class *cl, OOP_Object *o, ULONG reg)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
-    return HIDD_PCIDriver_ReadConfigLong(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, reg);
+    return HIDD_PCIDriver_ReadConfigLong(dev->driver, o, dev->bus, dev->dev, dev->sub, reg);
 }
 
 static UWORD getWord(OOP_Class *cl, OOP_Object *o, ULONG reg)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
-    return HIDD_PCIDriver_ReadConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, reg);
+    return HIDD_PCIDriver_ReadConfigWord(dev->driver, o, dev->bus, dev->dev, dev->sub, reg);
 }
 
 static UBYTE getByte(OOP_Class *cl, OOP_Object *o, ULONG reg)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
-    return HIDD_PCIDriver_ReadConfigByte(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, reg);
+    return HIDD_PCIDriver_ReadConfigByte(dev->driver, o, dev->bus, dev->dev, dev->sub, reg);
 }
 
 /* Returns offset of capability area in config area or 0 if capability is not present */
@@ -172,12 +172,12 @@ void PCIDev__Hidd_PCIDevice__SetMSIEnabled(OOP_Class *cl, OOP_Object *o, struct 
     {
         tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
         UWORD msiflags;
-        msiflags = HIDD_PCIDriver_ReadConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsi + PCIMSI_FLAGS);
+        msiflags = HIDD_PCIDriver_ReadConfigWord(dev->driver, o, dev->bus, dev->dev, dev->sub, capmsi + PCIMSI_FLAGS);
         msiflags &= ~PCIMSIF_ENABLE;
         if (msg->val)
             msiflags |= PCIMSIF_ENABLE;
         D(bug("[PCIDevice] %s: MSI flags = %04x\n", __func__, msiflags);)
-        HIDD_PCIDriver_WriteConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsi + PCIMSI_FLAGS, msiflags);
+        HIDD_PCIDriver_WriteConfigWord(dev->driver, o, dev->bus, dev->dev, dev->sub, capmsi + PCIMSI_FLAGS, msiflags);
     }
 }
 
@@ -189,10 +189,10 @@ void PCIDev__Hidd_PCIDevice__ClearAndSetMSIXFlags(OOP_Class *cl, OOP_Object *o, 
     {
         tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
         UWORD msixflags;
-        msixflags = HIDD_PCIDriver_ReadConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsix + PCIMSIX_FLAGS);
+        msixflags = HIDD_PCIDriver_ReadConfigWord(dev->driver, o, dev->bus, dev->dev, dev->sub, capmsix + PCIMSIX_FLAGS);
         msixflags &= ~msg->clear;
         msixflags |= msg->set;
-        HIDD_PCIDriver_WriteConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsix + PCIMSIX_FLAGS, msixflags);
+        HIDD_PCIDriver_WriteConfigWord(dev->driver, o, dev->bus, dev->dev, dev->sub, capmsix + PCIMSIX_FLAGS, msixflags);
     }
 }
 
@@ -1237,6 +1237,16 @@ void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     {
         switch(idx)
         {
+            case aoHidd_Producer:
+                handled = TRUE;
+                *msg->storage = dev->VendorID;
+                break;
+
+            case aoHidd_Product:
+                handled = TRUE;
+                *msg->storage = dev->ProductID;
+                break;
+
             case aoHidd_HardwareName:
                 {
                     UWORD subclass = HIDD_PCIDevice_ReadConfigWord(o, PCIBR_SUBCLASS);

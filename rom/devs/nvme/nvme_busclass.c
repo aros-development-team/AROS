@@ -498,6 +498,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
             struct TagItem attrs[] = {
                 {aHidd_Name,                        (IPTR)GM_UNIQUENAME(LibName)    },
                 {aHidd_DriverData,                  (IPTR)data->ab_Dev              },
+                {aHidd_Parent,                      (IPTR)o                         },
                 {aHidd_StorageUnit_Number,          nn                              },
                 {aHidd_StorageUnit_Model,           (IPTR)data->ab_DevName          },
                 {aHidd_StorageUnit_Serial,          (IPTR)data->ab_DevSer           },

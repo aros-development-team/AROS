@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -65,7 +65,7 @@ static int init_hiddclass(LIBBASETYPEPTR lh)
     if (!csd->cs_UtilityBase)
         return FALSE;
 
-    csd->MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096);
+    csd->MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED, 8192, 4096);
     if (!csd->MemPool)
         return FALSE;
         

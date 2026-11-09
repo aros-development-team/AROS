@@ -38,6 +38,7 @@ static CONST_STRPTR const GM_UNIQUENAME(MethBaseIDs)[] = {
     IID_Hidd_PCIDevice,
     IID_Hidd_PCIDriver,
     IID_HW,
+    IID_Hidd,
     NULL
 };
 #endif

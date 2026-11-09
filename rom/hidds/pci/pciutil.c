@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: PCI utility functions
 */
@@ -76,17 +76,17 @@ IPTR sizePCIBaseReg(OOP_Object *driver, struct pci_staticdata *psd, struct Devic
      * Sizing writes all-ones to the BAR, so turn decoding off meanwhile,
      * as Linux does. Host bridges are left alone.
      */
-    cmd = HIDD_PCIDriver_ReadConfigWord(driver, (OOP_Object *)device, bus, dev, func, PCICS_COMMAND);
+    cmd = HIDD_PCIDriver_ReadConfigWord(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_COMMAND);
     if (device->Class == 0x06 && device->SubClass == 0x00)
         cmd = 0;
     if (cmd & (PCICMF_IODECODE | PCICMF_MEMDECODE))
-        HIDD_PCIDriver_WriteConfigWord(driver, (OOP_Object *)device, bus, dev, func, PCICS_COMMAND,
+        HIDD_PCIDriver_WriteConfigWord(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_COMMAND,
             cmd & ~(PCICMF_IODECODE | PCICMF_MEMDECODE));
 
-    bak = HIDD_PCIDriver_ReadConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + (basenum << 2));
-    HIDD_PCIDriver_WriteConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + (basenum << 2), ~0);
-    sz = HIDD_PCIDriver_ReadConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + (basenum << 2));
-    HIDD_PCIDriver_WriteConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + (basenum << 2), bak);
+    bak = HIDD_PCIDriver_ReadConfigLong(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_BAR0 + (basenum << 2));
+    HIDD_PCIDriver_WriteConfigLong(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_BAR0 + (basenum << 2), ~0);
+    sz = HIDD_PCIDriver_ReadConfigLong(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_BAR0 + (basenum << 2));
+    HIDD_PCIDriver_WriteConfigLong(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_BAR0 + (basenum << 2), bak);
 
     /* A 64-bit memory BAR keeps the upper half of its size mask in the next slot */
     is64 = ((bak & PCIBAR_MASK_TYPE) == PCIBAR_TYPE_MMAP) &&
@@ -94,14 +94,14 @@ IPTR sizePCIBaseReg(OOP_Object *driver, struct pci_staticdata *psd, struct Devic
            (basenum + 1 < (device->isBridge ? 2 : 6));
     if (is64)
     {
-        bakhi = HIDD_PCIDriver_ReadConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + ((basenum + 1) << 2));
-        HIDD_PCIDriver_WriteConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + ((basenum + 1) << 2), ~0);
-        szhi = HIDD_PCIDriver_ReadConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + ((basenum + 1) << 2));
-        HIDD_PCIDriver_WriteConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + ((basenum + 1) << 2), bakhi);
+        bakhi = HIDD_PCIDriver_ReadConfigLong(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_BAR0 + ((basenum + 1) << 2));
+        HIDD_PCIDriver_WriteConfigLong(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_BAR0 + ((basenum + 1) << 2), ~0);
+        szhi = HIDD_PCIDriver_ReadConfigLong(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_BAR0 + ((basenum + 1) << 2));
+        HIDD_PCIDriver_WriteConfigLong(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_BAR0 + ((basenum + 1) << 2), bakhi);
     }
 
     if (cmd & (PCICMF_IODECODE | PCICMF_MEMDECODE))
-        HIDD_PCIDriver_WriteConfigWord(driver, (OOP_Object *)device, bus, dev, func, PCICS_COMMAND, cmd);
+        HIDD_PCIDriver_WriteConfigWord(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_COMMAND, cmd);
 
     if ((sz & PCIBAR_MASK_TYPE) == PCIBAR_TYPE_IO)
     {

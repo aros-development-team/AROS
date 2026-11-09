@@ -20,9 +20,12 @@
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <aros/macros.h>
+#include <hidd/hidd.h>
 #include <hidd/pci.h>
 #include <hardware/pci.h>
 #include <utility/tagitem.h>
+
+#include <string.h>
 
 #include <fdt.h>
 
@@ -671,6 +674,7 @@ static ULONG pcidt_discover(struct pcidt_staticdata *psd)
             b = &psd->bridges[psd->bridgeCount];
             b->access = pcidt_known[i].access;
             b->index = psd->bridgeCount;
+            b->node = node;
 
             /*
              * A DesignWare node names its windows: "dbi" is the
@@ -803,6 +807,109 @@ static ULONG pcidt_discover(struct pcidt_staticdata *psd)
     return psd->bridgeCount;
 }
 
+/*
+ * What the firmware says about a bridge and its devices.
+ *
+ * Nothing but the driver knows that the object it made for a bridge and
+ * a node of the device tree (or of the ACPI namespace) are the same
+ * piece of hardware, so the objects say so themselves: each gets a
+ * vHidd_Relation_Firmware relation to the path of every node that
+ * describes it. The nodes are collected once, before the bridges are
+ * registered.
+ */
+void PCIDT_RecordFirmwareNode(struct pcidt_staticdata *psd, APTR acpi,
+                              fdt_node_t dt, ULONG bridge, UBYTE bus,
+                              UBYTE dev, UBYTE sub)
+{
+    struct pcidt_fwnode *fn = AllocVec(sizeof(struct pcidt_fwnode), MEMF_ANY);
+
+    if (fn)
+    {
+        fn->acpi = acpi;
+        fn->dt = dt;
+        fn->bridge = bridge;
+        fn->bus = bus;
+        fn->dev = dev;
+        fn->sub = sub;
+        ADDTAIL(&psd->fwNodes, &fn->node);
+    }
+}
+
+/*
+ * The nodes below a bridge's own are devices on its bus. Their "reg"
+ * starts with the configuration address, as the PCI bus binding lays it
+ * out: bus in bits 16-23, device in 11-15, function in 8-10. A node
+ * that declares three address cells of its own is a PCI-PCI bridge
+ * with the next bus inside it.
+ */
+static void pcidt_scannodes(struct pcidt_staticdata *psd, ULONG bridge,
+                            fdt_node_t parent)
+{
+    fdt_node_t child;
+
+    if (FDT_GetPropU32(parent, "#address-cells", 0) != 3)
+        return;
+
+    for (child = FDT_FirstChild(parent); child != FDT_NONE;
+         child = FDT_NextSibling(child))
+    {
+        ULONG len = 0;
+        const ULONG *reg = FDT_GetProp(child, "reg", &len);
+
+        if (reg && len >= 3 * sizeof(ULONG))
+        {
+            ULONG hi = (ULONG)FDT_ReadCells(reg, 1);
+
+            PCIDT_RecordFirmwareNode(psd, NULL, child, bridge,
+                                     (hi >> 16) & 0xff, (hi >> 11) & 0x1f,
+                                     (hi >> 8) & 0x07);
+            pcidt_scannodes(psd, bridge, child);
+        }
+    }
+}
+
+void PCIDT_DeclareFirmwareNodes(OOP_Class *cl, OOP_Object *o, ULONG bridge,
+                                UBYTE bus, UBYTE dev, UBYTE sub)
+{
+    struct pcidt_fwnode *fn;
+
+    ForeachNode(&PSD(cl)->fwNodes, fn)
+    {
+        char path[160];
+        BOOL ok;
+
+        if (fn->bridge != bridge || fn->dev != dev)
+            continue;
+        if (dev != PCIDT_FWNODE_HOST &&
+            (fn->bus != bus ||
+             (fn->sub != sub && fn->sub != PCIDT_FWNODE_ANYSUB)))
+            continue;
+
+        if (fn->acpi)
+        {
+            strcpy(path, "acpi/");
+            ok = PCIDT_ACPIPath(fn->acpi, &path[5], sizeof(path) - 5);
+        }
+        else
+        {
+            strcpy(path, "dt");
+            ok = FDT_GetPath(fn->dt, &path[2], sizeof(path) - 2);
+        }
+
+        if (ok)
+        {
+            struct TagItem tags[] =
+            {
+                { tHidd_Relation_Path,  (IPTR)path  },
+                { TAG_DONE,             0           }
+            };
+
+            HIDD_AddRelation(o, vHidd_Relation_Firmware, NULL, tags);
+        }
+        /* Carry on, there can be more than one node for an address */
+    }
+}
+
 OOP_Object *PCIDT__Root__New(OOP_Class *cl, OOP_Object *o,
                              struct pRoot_New *msg)
 {
@@ -822,7 +929,12 @@ OOP_Object *PCIDT__Root__New(OOP_Class *cl, OOP_Object *o,
          * so there is no way to be handed the bridge directly.
          */
         if (psd->bridgeNext < psd->bridgeCount)
+        {
             data->bridge = psd->bridges[psd->bridgeNext++];
+
+            PCIDT_DeclareFirmwareNodes(cl, busObj, data->bridge.index, 0,
+                                       PCIDT_FWNODE_HOST, 0);
+        }
 
         D(bug("[PCIDT:Driver] %s: bus object @ 0x%p, cfg @ %p\n",
               __func__, busObj, data->bridge.cfgBase);)
@@ -1508,6 +1620,22 @@ static int PCIDT_InitClass(LIBBASETYPEPTR LIBBASE)
         D(bug("[PCIDT:Driver] %s: no host bridges described\n", __func__);)
         return FALSE;
     }
+
+    /*
+     * Note where the firmware describes each bridge and the devices on
+     * it. A machine can carry a tree and ACPI tables at once, so the
+     * namespace is looked at whichever of them the bridges came from.
+     */
+    for (i = 0; i < psd->bridgeCount; i++)
+    {
+        if (psd->bridges[i].node != FDT_NONE)
+        {
+            PCIDT_RecordFirmwareNode(psd, NULL, psd->bridges[i].node, i, 0,
+                                     PCIDT_FWNODE_HOST, 0);
+            pcidt_scannodes(psd, i, psd->bridges[i].node);
+        }
+    }
+    PCIDT_ScanACPINodes(psd);
 
     pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
     if (!pci)

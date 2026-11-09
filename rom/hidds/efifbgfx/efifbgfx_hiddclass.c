@@ -14,6 +14,7 @@
 #include <exec/memory.h>
 #include <hidd/hidd.h>
 #include <hidd/gfx.h>
+#include <hidd/pci.h>
 #include <oop/oop.h>
 #include <clib/alib_protos.h>
 #include <string.h>
@@ -35,6 +36,92 @@ AROS_INTH1(ResetHandler, struct HWData *, hwdata)
     return FALSE;
 
     AROS_INTFUNC_EXIT
+}
+
+/*
+ * The framebuffer is memory of whatever display hardware the firmware
+ * drove. Where that is a PCI device it is the one with the framebuffer
+ * inside one of its regions, and the driver names it as the device it
+ * operates. A native driver for the same hardware names the same device,
+ * so the two are easy to tell as rivals, and whoever looks at this driver
+ * finds what is really behind it.
+ */
+struct EFIFBGfxDeviceSearch
+{
+    OOP_AttrBase    pciDeviceAB;
+    IPTR            framebuffer;
+    OOP_Object      *device;
+};
+
+AROS_UFH3(static void, EFIFBGfx_MatchDevice,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(OOP_Object *, device, A2),
+    AROS_UFHA(APTR, unused, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct EFIFBGfxDeviceSearch *search = hook->h_Data;
+    OOP_AttrBase HiddPCIDeviceAttrBase = search->pciDeviceAB;
+    OOP_Object *driver = NULL;
+    ULONG i;
+
+    if (search->device)
+        return;
+
+    OOP_GetAttr(device, aHidd_PCIDevice_Driver, (IPTR *)&driver);
+    if (!driver)
+        return;
+
+    for (i = 0; i < 6; i++)
+    {
+        IPTR base = 0, size = 0;
+
+        /* Base, size and type of the regions follow each other */
+        OOP_GetAttr(device, aHidd_PCIDevice_Base0 + i * 3, &base);
+        OOP_GetAttr(device, aHidd_PCIDevice_Size0 + i * 3, &size);
+        if (!base || !size)
+            continue;
+
+        /* The framebuffer is known by the address the CPU reaches it at */
+        base = (IPTR)HIDD_PCIDriver_PCItoCPU(driver, (APTR)base);
+        if ((search->framebuffer >= base) && (search->framebuffer - base < size))
+        {
+            search->device = device;
+            break;
+        }
+    }
+
+    AROS_USERFUNC_EXIT
+}
+
+static void EFIFBGfx_DeclareDevice(OOP_Class *cl, OOP_Object *o)
+{
+    OOP_Object *pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
+
+    if (pci)
+    {
+        struct EFIFBGfxDeviceSearch search =
+        {
+            OOP_ObtainAttrBase(IID_Hidd_PCIDevice),
+            (IPTR)XSD(cl)->data.framebuffer,
+            NULL
+        };
+        struct Hook hook =
+        {
+            .h_Entry = (HOOKFUNC)EFIFBGfx_MatchDevice,
+            .h_Data  = &search
+        };
+
+        if (search.pciDeviceAB)
+        {
+            HIDD_PCI_EnumDevices(pci, &hook, NULL);
+            if (search.device)
+                HIDD_AddRelation(o, vHidd_Relation_Device, search.device, NULL);
+
+            OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
+        }
+        OOP_DisposeObject(pci);
+    }
 }
 
 OOP_Object *EFIFBGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
@@ -82,6 +169,8 @@ OOP_Object *EFIFBGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
             data->ResetInterrupt.is_Code = (VOID_FUNC)ResetHandler;
             data->ResetInterrupt.is_Data = &XSD(cl)->data;
             AddResetCallback(&data->ResetInterrupt);
+
+            EFIFBGfx_DeclareDevice(cl, o);
         }
         else
         {

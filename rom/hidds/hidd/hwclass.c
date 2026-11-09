@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -28,6 +28,10 @@
         A hardware subsystem is typically a class of devices, e. g. keyboards, mice, etc.
         The hwclass stores information about existing driver instances, for enumeration by client
         applications.
+
+        The hwclass is a subclass of hiddclass. A subsystem object thus has relations like any
+        other HIDD object, and every driver object added to it is given a vHidd_Relation_Parent
+        relation to it (see moHidd_AddRelation).
 
         A typical hardware subsystem class should be implemented as a singleton to simplify
         handling.
@@ -83,6 +87,42 @@
     BUGS
 
     SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+/*****************************************************************************************
+
+    NAME
+        aoHW_Device
+
+    SYNOPSIS
+        [I.G], OOP_Object *
+
+    LOCATION
+        hiddclass
+
+    FUNCTION
+        The object representing the device a driver object operates, for
+        example the CLID_Hidd_PCIDevice object of a PCI card.
+
+        This attribute applies to driver objects, not to subsystems. It is
+        implemented by hiddclass, as the vHidd_Relation_Device relation of the
+        object: supplying it on creation declares that relation, and reading it
+        returns the first object the driver has such a relation with.
+
+    NOTES
+        The device object has to be a HIDD object. A driver which operates
+        hardware that is not represented by an object can name it by its
+        device path instead, using moHidd_AddRelation.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHidd_AddRelation, moHidd_FindRelated
 
     INTERNALS
 
@@ -195,7 +235,10 @@ OOP_Object *HW__HW__AddDriver(OOP_Class *cl, OOP_Object *o,
                     ObtainSemaphore(&data->driver_lock);
                     ADDTAIL(&data->drivers, dn);
                     ReleaseSemaphore(&data->driver_lock);
-                    
+
+                    /* Lets the driver, if it is a HIDD object, find its way back to us */
+                    relation_Add(CSD(cl), dn->driverObject, vHidd_Relation_Parent, o, NULL, NULL);
+
                     return dn->driverObject;
                 }
                 else

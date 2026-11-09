@@ -199,6 +199,7 @@ BOOL Hidd_VirtIOBus_Start(OOP_Object *o, struct VirtIOBase *VirtIOBase)
         struct TagItem attrs[] = {
             {aHidd_Name,                        (IPTR)GM_UNIQUENAME(LibName)    },
             {aHidd_DriverData,                  (IPTR)dev                       },
+            {aHidd_Parent,                      (IPTR)o                         },
             {aHidd_StorageUnit_Number,          0                               },
             {aHidd_StorageUnit_Model,           (IPTR)data->ab_DevName          },
             {aHidd_StorageUnit_Serial,          (IPTR)data->ab_DevSer           },

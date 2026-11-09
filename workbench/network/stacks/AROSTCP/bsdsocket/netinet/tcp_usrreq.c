@@ -930,6 +930,26 @@ size_t newlen;
             tcp_rttdflt = v;
         return (error);
     }
+    case TCPCTL_ABC_L: {            /* slow start, L * SMSS per ACK at most */
+        int v = tcp_abc_l, error;
+
+        error = sysctl_int(oldp, oldlenp, newp, newlen, &v);
+        if(error == 0 && (v < 1 || v > 16))
+            error = EINVAL;
+        if(error == 0)
+            tcp_abc_l = v;
+        return (error);
+    }
+    case TCPCTL_HYSTART: {
+        int v = tcp_do_hystart, error;
+
+        error = sysctl_int(oldp, oldlenp, newp, newlen, &v);
+        if(error == 0 && (v < 0 || v > 1))
+            error = EINVAL;
+        if(error == 0)
+            tcp_do_hystart = v;
+        return (error);
+    }
     case TCPCTL_REXMIT_MIN: {       /* the least RTO, ms */
         int v = tcp_rexmit_min, error;
 

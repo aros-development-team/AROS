@@ -643,6 +643,9 @@ OOP_Object *METHOD(ATI, Root, New)
 
         sd->AtiObject = o;
 
+        /* Tells which device this driver runs, see moHidd_AddRelation */
+        HIDD_AddRelation(o, vHidd_Relation_Device, sd->PCIDevice, NULL);
+
         sd->AtiDisplay = OOP_NewObject(sd->AtiDisplayClass, NULL, displaytags);
         if (sd->AtiDisplay)
         {
