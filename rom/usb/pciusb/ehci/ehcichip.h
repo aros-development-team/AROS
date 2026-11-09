@@ -28,6 +28,7 @@ struct EhciPTDPrivate
     APTR                        ptd_BounceBuffer;
     ULONG           ptd_NextPhys;
     UWORD           ptd_PktCount;
+    UWORD           ptd_MfStep;
     UWORD           ptd_PktLength[8];
 };
 
