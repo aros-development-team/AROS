@@ -35,6 +35,7 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-drivers :          \
 #MM    workbench-hidds-vmwaresvga \
+#MM    workbench-hidds-amdgpu     \
 #MM    workbench-hidds-radeon	  \
 #MM    devs-monitors-intelgma     \
 #MM    workbench-hidds-nvgfx
