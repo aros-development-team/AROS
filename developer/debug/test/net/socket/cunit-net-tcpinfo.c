@@ -612,6 +612,23 @@ void testTCPINFO_WINDOW_NO_SCALE(void)
     CloseSocket(s);
 }
 
+/* The accepted side of a connection has an RTT from the handshake (the
+ * timestamp its SYN-ACK carried, echoed in the final ACK), before any
+ * data; it used to have none until it sent some. */
+void testTCPINFO_PASSIVE_RTT(void)
+{
+    struct tcp_info ti;
+    int c, s;
+
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL(info(s, &ti, NULL), 0);
+    printf("\n    accepted side: rtt %lu us, rto %lu us\n",
+           (unsigned long)ti.tcpi_rtt, (unsigned long)ti.tcpi_rto);
+    CU_ASSERT(ti.tcpi_rtt > 0);
+    CloseSocket(c);
+    CloseSocket(s);
+}
+
 /* A listening socket reports LISTEN. */
 void testTCPINFO_LISTEN(void)
 {
@@ -661,6 +678,7 @@ int main(int argc, char **argv)
         !CU_add_test(p, "a short buffer gets the start", testTCPINFO_SHORT) ||
         !CU_add_test(p, "a full reassembly queue takes the segment that fills its hole", testTCPINFO_REASS_FULL) ||
         !CU_add_test(p, "without window scaling the window offered is 65535, not its low bits", testTCPINFO_WINDOW_NO_SCALE) ||
+        !CU_add_test(p, "the accepted side has an RTT from the handshake", testTCPINFO_PASSIVE_RTT) ||
         !CU_add_test(p, "a listening socket reports LISTEN", testTCPINFO_LISTEN))
     {
         CU_cleanup_registry();

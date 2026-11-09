@@ -329,7 +329,9 @@ section 5.4), a keyed hash of its addresses and ports with a key that is not the
 TSval tells neither the time since the stack started nor how two connections relate; the SYN cache
 keeps it (`sc_tsoff`) for the connection it makes. An ACK that takes `snd_una` forward gives an RTT
 sample from the timestamp it echoes, or else from the segment being timed (`t_rtttime`, its send
-time; never a retransmitted one: Karn), the SYN's included. `tcp_xmit_timer()` keeps SRTT and RTTVAR
+time; never a retransmitted one: Karn), the SYN's included. A connection the SYN cache makes takes its
+first sample from the final ACK of the handshake, which echoes its SYN-ACK's timestamp (as FreeBSD):
+one that only receives would otherwise have none. `tcp_xmit_timer()` keeps SRTT and RTTVAR
 as RFC 6298 section 2 and FreeBSD do (scaled by 32 and 16), and the RTO is `SRTT + max(G, 4 *
 RTTVAR)`, G the fast tick, between `net.inet.tcp.rexmit_min` (200 ms; RFC 6298 section 2.4 says it
 SHOULD be 1 s, FreeBSD and Linux use about 200 ms, and so does this stack) and 64 s, doubled on

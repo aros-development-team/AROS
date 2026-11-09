@@ -1101,6 +1101,12 @@ findpcb:
                     inp = (struct inpcb *)so->so_pcb;
                     tp = intotcpcb(inp);
                     tiwin = ti->ti_win << tp->snd_scale;
+                    /* the handshake's RTT, from the timestamp our SYN-ACK
+                     * carried (as FreeBSD's tcp_input()): else the
+                     * connection has none until it sends data */
+                    if(optp)
+                        tcp_dooptions(tp, optp, optlen, ti, &to);
+                    tcp_ack_rtt(tp, &to, ti->ti_ack);
                     goto step6;
                 case 0:
                     goto dropwithreset;
