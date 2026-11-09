@@ -1156,29 +1156,32 @@ static ULONG charmapcon_walk_selection(char *bufpos,
         if (cur->text)
         {
             /* empty lines may not have text ptrs */
-            ULONG from = 0, len;
+            ULONG from = 0, to = cur->size, len;
 
             if (cur == first)
             {
                 if (cur == last)
                 {
                     from = MIN(minx, maxx);
-                    len = abs(maxx - minx);
+                    to = MAX(minx, maxx);
                 }
                 else
                 {
                     from = minx;
-                    len = cur->size - minx;
                 }
             }
             else if (cur == last)
             {
-                len = maxx;
+                to = maxx;
             }
-            else
-            {
-                len = cur->size;
-            }
+
+            /* The selection is in screen cells, and those may lie past the
+             * end of the text a line holds */
+            if (to > cur->size)
+                to = cur->size;
+            if (from > to)
+                from = to;
+            len = to - from;
 
             if (bufpos)
             {
