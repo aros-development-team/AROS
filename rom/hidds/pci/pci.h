@@ -2,7 +2,7 @@
 #define _PCI_H
 
 /*
-    Copyright © 2004-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -28,6 +28,7 @@
 struct DrvInstData {
     BOOL                        DirectBus;
     IPTR                        IOBase;
+    ULONG                       segment;        /* Accessed directly by PCI subsystem class */
 };
 
 typedef struct DeviceData {
@@ -68,7 +69,8 @@ typedef struct DeviceData {
 
 struct pci_staticdata {
     struct SignalSemaphore      dev_lock;
-    struct MinList              devices;        /* List of devices */
+    struct MinList              devices;        /* List of devices (their tDeviceData) */
+    ULONG                       segments;       /* Number of hardware drivers created so far */
 
     APTR                        kernelBase;
     struct Library              *oopBase;
@@ -99,6 +101,18 @@ OOP_Class *init_pcideviceclass(struct pci_staticdata *);
 void free_pcideviceclass(struct pci_staticdata *, OOP_Class *cl);
 
 #define BASE(lib)               ((struct pcibase*)(lib))
+
+/*
+ * The device list links the instance data of the device objects.
+ * These convert between an entry of the list and its object.
+ */
+#define PCIDEV_DATA(psd, obj)   ((tDeviceData *)OOP_INST_DATA((psd)->pciDeviceClass, obj))
+#define PCIDEV_OBJECT(psd, dev) ((OOP_Object *)((UBYTE *)(dev) - (psd)->pciDeviceClass->InstOffset))
+
+#define ForeachDevice(psd, dev, obj)                                        \
+    for (dev = (tDeviceData *)(psd)->devices.mlh_Head;                      \
+         dev->node.mln_Succ && ((obj = PCIDEV_OBJECT(psd, dev)), TRUE);     \
+         dev = (tDeviceData *)dev->node.mln_Succ)
 
 #define PSD(cl)                 (&BASE(cl->UserData)->psd)
 

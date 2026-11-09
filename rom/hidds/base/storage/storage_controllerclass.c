@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -108,6 +108,9 @@ OOP_Object *StorageController__Hidd_StorageController__AddBus(OOP_Class *cl, OOP
                 ObtainSemaphore(&data->scd_BusLock);
                 ADDTAIL(&data->scd_Buses, bn);
                 ReleaseSemaphore(&data->scd_BusLock);
+
+                /* Lets the bus find its controller */
+                HIDD_AddRelation(bus, vHidd_Relation_Parent, o, NULL);
 
                 D(bug("[Storage:Controller] Hidd_StorageController__AddBus: returning 0x%p\n", bus);)
                 return bus;

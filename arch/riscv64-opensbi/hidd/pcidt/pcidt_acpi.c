@@ -350,6 +350,7 @@ ULONG PCIDT_DiscoverACPI(struct pcidt_staticdata *psd)
         /* MCFG describes flat ECAM windows and nothing else */
         b->access   = PCIDT_ACCESS_ECAM;
         b->index    = psd->bridgeCount;
+        b->node     = FDT_NONE;
         b->cfgBase  = (IPTR)alloc->Address;
         b->busStart = alloc->StartBusNumber;
         b->busEnd   = alloc->EndBusNumber;
@@ -390,4 +391,174 @@ ULONG PCIDT_DiscoverACPI(struct pcidt_staticdata *psd)
     CloseLibrary(ACPICABase);
 
     return psd->bridgeCount;
+}
+
+/*
+ * Where the namespace describes the bridges and the devices on them.
+ *
+ * This is kept apart from the discovery above. That only runs on a
+ * machine without a device tree, but firmware which hands over both
+ * still describes the same bridges here, and the objects made for them
+ * should say so either way. A bridge is matched to its namespace node
+ * through MCFG: the entry with the bridge's ECAM window names the
+ * segment and the buses, and the host bridge node with that _SEG and a
+ * _BBN among those buses is the one.
+ */
+struct pcidt_scanargs
+{
+    struct pcidt_staticdata *psd;
+    struct pcidt_bridge     *bridge;
+    ULONG                    segment;
+};
+
+static ULONG pcidt_acpi_integer(ACPI_HANDLE handle, char *name, ULONG def)
+{
+    ACPI_BUFFER buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+
+    if (ACPI_SUCCESS(AcpiEvaluateObject(handle, name, NULL, &buffer)) &&
+        buffer.Pointer)
+    {
+        ACPI_OBJECT *obj = (ACPI_OBJECT *)buffer.Pointer;
+
+        if (obj->Type == ACPI_TYPE_INTEGER)
+            def = (ULONG)obj->Integer.Value;
+        FreeVec(buffer.Pointer);
+    }
+
+    return def;
+}
+
+/* A device's _ADR is its device number above its function number */
+static void pcidt_acpi_scanbus(struct pcidt_staticdata *psd,
+                               struct pcidt_bridge *b, ACPI_HANDLE parent,
+                               UBYTE bus)
+{
+    ACPI_HANDLE child = NULL;
+
+    while (AcpiGetNextObject(ACPI_TYPE_DEVICE, parent, child, &child) == AE_OK)
+    {
+        ACPI_DEVICE_INFO *info;
+
+        if (ACPI_SUCCESS(AcpiGetObjectInfo(child, &info)))
+        {
+            if (info->Valid & ACPI_VALID_ADR)
+            {
+                UBYTE dev = (info->Address >> 16) & 0xff;
+                UWORD sub = info->Address & 0xffff;
+
+                PCIDT_RecordFirmwareNode(psd, child, FDT_NONE, b->index, bus,
+                    dev, (sub == 0xffff) ? PCIDT_FWNODE_ANYSUB : sub);
+
+                if (sub == 0xffff)
+                    sub = 0;
+
+                /* Carry on behind PCI-PCI bridges */
+                if (bus >= b->busStart && bus <= b->busEnd && dev < 32 &&
+                    sub < 8 &&
+                    (PCIDT_ReadConfig(b, bus, dev, sub, 0x08) >> 16) == 0x0604)
+                {
+                    /* Primary, secondary and subordinate bus share a long */
+                    UBYTE secbus = (PCIDT_ReadConfig(b, bus, dev, sub, 0x18)
+                                        >> 8) & 0xff;
+
+                    if (secbus > bus)
+                        pcidt_acpi_scanbus(psd, b, child, secbus);
+                }
+            }
+            FreeVec(info);
+        }
+    }
+}
+
+static ACPI_STATUS pcidt_acpi_scanhost(ACPI_HANDLE handle, ULONG nesting,
+                                       void *context, void **retval)
+{
+    struct pcidt_scanargs *a = (struct pcidt_scanargs *)context;
+    struct pcidt_fwnode *fn;
+    ULONG bus;
+
+    /* A host bridge is reported once for every ID it matches */
+    ForeachNode(&a->psd->fwNodes, fn)
+    {
+        if (fn->acpi == handle)
+            return AE_OK;
+    }
+
+    if (pcidt_acpi_integer(handle, "_SEG", 0) != a->segment)
+        return AE_OK;
+
+    bus = pcidt_acpi_integer(handle, "_BBN", 0);
+    if (bus < a->bridge->busStart || bus > a->bridge->busEnd)
+        return AE_OK;
+
+    PCIDT_RecordFirmwareNode(a->psd, handle, FDT_NONE, a->bridge->index, 0,
+                             PCIDT_FWNODE_HOST, 0);
+    pcidt_acpi_scanbus(a->psd, a->bridge, handle, bus);
+
+    return AE_OK;
+}
+
+void PCIDT_ScanACPINodes(struct pcidt_staticdata *psd)
+{
+    ACPI_TABLE_MCFG *mcfg = NULL;
+    ACPI_MCFG_ALLOCATION *alloc;
+    struct pcidt_fwnode *fn;
+    BOOL found = FALSE;
+    IPTR offset;
+
+    ACPICABase = OpenLibrary("acpica.library", 0);
+    if (!ACPICABase)
+        return;
+
+    if (ACPI_SUCCESS(AcpiGetTable(ACPI_SIG_MCFG, 1,
+                                  (ACPI_TABLE_HEADER **)&mcfg)) && mcfg)
+    {
+        for (offset = sizeof(ACPI_TABLE_MCFG);
+             (offset + sizeof(ACPI_MCFG_ALLOCATION)) <= mcfg->Header.Length;
+             offset += sizeof(ACPI_MCFG_ALLOCATION))
+        {
+            ULONG i;
+
+            alloc = ACPI_ADD_PTR(ACPI_MCFG_ALLOCATION, mcfg, offset);
+
+            for (i = 0; i < psd->bridgeCount; i++)
+            {
+                struct pcidt_bridge *b = &psd->bridges[i];
+
+                if (b->access == PCIDT_ACCESS_ECAM &&
+                    b->cfgBase == (IPTR)alloc->Address)
+                {
+                    struct pcidt_scanargs args = { psd, b, alloc->PciSegment };
+
+                    AcpiGetDevices("PNP0A03", pcidt_acpi_scanhost, &args, NULL);
+                    AcpiGetDevices("PNP0A08", pcidt_acpi_scanhost, &args, NULL);
+                }
+            }
+        }
+    }
+
+    /* The handles are of no use without the library that issued them */
+    ForeachNode(&psd->fwNodes, fn)
+    {
+        if (fn->acpi)
+        {
+            found = TRUE;
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        CloseLibrary(ACPICABase);
+        ACPICABase = NULL;
+    }
+}
+
+BOOL PCIDT_ACPIPath(APTR handle, STRPTR buf, ULONG size)
+{
+    ACPI_BUFFER buffer = { size, buf };
+
+    return ACPICABase &&
+           ACPI_SUCCESS(AcpiGetName((ACPI_HANDLE)handle, ACPI_FULL_PATHNAME,
+                                    &buffer));
 }

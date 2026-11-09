@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2025, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2026, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -994,6 +994,7 @@ err:
                 struct TagItem unitAttrs[] =
                 {
                     {aHidd_DriverData   , 0 },
+                    {aHidd_Parent       , 0 },
                     {TAG_DONE           , 0 }
                 };
                 OOP_Object *unitObj;
@@ -1003,6 +1004,7 @@ err:
                 {
                     ahciDebug("[AHCI] %s: attaching unit to bus @ 0x%p\n", __func__, ap->ap_Object);
                     unitAttrs[0].ti_Data = (IPTR)OOP_INST_DATA(AHCIBase->busClass, ap->ap_Object);
+                    unitAttrs[1].ti_Data = (IPTR)ap->ap_Object;
                 }
 
                 at->at_probe = ATA_PROBE_GOOD;

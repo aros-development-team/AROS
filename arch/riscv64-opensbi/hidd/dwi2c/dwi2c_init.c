@@ -175,6 +175,16 @@ static BOOL dwi2c_add(struct dwi2c_staticdata *psd, fdt_node_t node)
     ctrl->name[4] = '\0';
 
     /*
+     * The node is the identity of the controller. The bus object made
+     * for it carries this, so that it can be found from whatever else
+     * refers to the node.
+     */
+    ctrl->path[0] = 'd';
+    ctrl->path[1] = 't';
+    if (!FDT_GetPath(node, &ctrl->path[2], sizeof(ctrl->path) - 2))
+        ctrl->path[0] = '\0';
+
+    /*
      * The boot page tables cover RAM and nothing else, so the register
      * block has to be mapped before it can be touched at all.
      */

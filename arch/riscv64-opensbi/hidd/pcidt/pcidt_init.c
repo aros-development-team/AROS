@@ -43,6 +43,8 @@ static int PCIDT_Init(LIBBASETYPEPTR LIBBASE)
     }
 
     LIBBASE->psd.hidd_PCIDeviceMB = OOP_GetMethodID(IID_Hidd_PCIDevice, 0);
+    LIBBASE->psd.hiddMB = OOP_GetMethodID(IID_Hidd, 0);
+    NEWLIST(&LIBBASE->psd.fwNodes);
 
     D(bug("[PCIDT] %s: PCIDevice method base = %08x\n", __func__,
           LIBBASE->psd.hidd_PCIDeviceMB);)

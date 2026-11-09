@@ -1,0 +1,14 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- test : test-hidd-relation
+#MM- test-quick : test-hidd-relation-quick
+
+#MM test-hidd-relation : includes linklibs
+
+%build_prog mmake=test-hidd-relation \
+    files=relation targetdir=$(AROS_TESTS)/hidds \
+    progname=relation
+
+%common

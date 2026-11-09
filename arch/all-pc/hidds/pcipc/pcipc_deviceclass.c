@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2026, The AROS Development Team. All rights reserved.
 
     Desc: i386/x86_64 native PCI device support routines.
 */
@@ -16,6 +16,7 @@
 #include <exec/types.h>
 #include <utility/tagitem.h>
 #include <oop/oop.h>
+#include <hidd/hidd.h>
 #include <hidd/pci.h>
 #include <hardware/pci.h>
 
@@ -27,6 +28,41 @@
 #include "pcipc.h"
 
 #define DMSI(x)
+
+/*
+ * If the firmware describes the device, declare its nodes in the ACPI
+ * namespace as relations of the device object. That is where to look for
+ * the methods and the power, thermal and other resources tied to the device,
+ * and it is the device path objects created for these resources refer to.
+ * The driver object does the same with the host bridges, asking for
+ * PCIPC_ACPINODE_HOST.
+ */
+void PCIPC_DeclareFirmwareNodes(OOP_Class *cl, OOP_Object *o, UBYTE bus, UBYTE dev, UBYTE sub)
+{
+    struct PCIPCACPINode *an;
+
+    ForeachNode(&PSD(cl)->pcipc_acpiNodes, an)
+    {
+        if ((an->dev == dev) && ((dev == PCIPC_ACPINODE_HOST) ||
+            ((an->bus == bus) && ((an->sub == sub) || (an->sub == 0xff)))))
+        {
+            char path[5 + 128] = "acpi/";
+            ACPI_BUFFER buffer = { sizeof(path) - 5, &path[5] };
+
+            if (ACPI_SUCCESS(AcpiGetName(an->handle, ACPI_FULL_PATHNAME, &buffer)))
+            {
+                struct TagItem tags[] =
+                {
+                    { tHidd_Relation_Path, (IPTR)path },
+                    { TAG_DONE,            0          }
+                };
+
+                HIDD_AddRelation(o, vHidd_Relation_Firmware, NULL, tags);
+            }
+            /* Carry on, there can be more than one node for an address */
+        }
+    }
+}
 
 OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -127,6 +163,10 @@ OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
             }
         }
     }
+
+    if (deviceObj)
+        PCIPC_DeclareFirmwareNodes(cl, deviceObj, deviceBus, deviceDev, deviceSub);
+
     return deviceObj;
 }
 

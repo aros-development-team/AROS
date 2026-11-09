@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -32,23 +32,4 @@ OOP_Object *PCIATACtrllr__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
             data->ctrllrDevice.ref_Device = (APTR)GetTagData(aHW_Device, 0, msg->attrList);
     }
     return o;
-}
-
-void PCIATACtrllr__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
-{
-    struct atapciBase *base = cl->UserData;
-    struct PCIATACtrllrData *data = OOP_INST_DATA(cl, o);
-    ULONG idx;
-
-    HW_Switch(msg->attrID, idx)
-    {
-        case aoHW_Device:
-            {
-                *msg->storage = (IPTR)data->ctrllrDevice.ref_Device;
-            }
-            return;
-        default:
-            break;
-    }
-    OOP_DoSuperMethod(cl, o, &msg->mID);
 }

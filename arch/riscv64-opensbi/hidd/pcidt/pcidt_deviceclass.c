@@ -11,6 +11,7 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 
+#include <hidd/hidd.h>
 #include <hidd/pci.h>
 #include <utility/tagitem.h>
 
@@ -97,6 +98,8 @@ OOP_Object *PCIDTDev__Root__New(OOP_Class *cl, OOP_Object *o,
 
         D(bug("[PCIDT:Device] %s: %02x:%02x.%x config @ 0x%p\n", __func__,
               bus, dev, sub, mmconfig);)
+
+        PCIDT_DeclareFirmwareNodes(cl, deviceObj, data->bridge, bus, dev, sub);
     }
 
     return deviceObj;

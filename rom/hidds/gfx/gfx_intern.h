@@ -340,7 +340,7 @@ struct HiddBMHistogramData
 };
 
 #define NUM_ATTRBASES   14
-#define NUM_METHODBASES 9
+#define NUM_METHODBASES 10
 
 struct class_static_data
 {
@@ -414,6 +414,7 @@ struct class_static_data
 #undef HiddColorMapBase
 #undef HWBase
 #undef HiddCompositorBase
+#undef HiddBase
 #define HiddBitMapBase	    (csd->methodBases[0])
 #define HiddBMHistogramBase (csd->methodBases[1])
 #define HiddGfxBase	    (csd->methodBases[2])
@@ -423,6 +424,7 @@ struct class_static_data
 #define HiddColorMapBase    (csd->methodBases[6])
 #define HWBase              (csd->methodBases[7])
 #define HiddCompositorBase  (csd->methodBases[8])
+#define HiddBase            (csd->methodBases[9])
 
 /* Library base */
 

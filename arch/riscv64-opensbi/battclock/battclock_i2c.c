@@ -15,6 +15,7 @@
 #include <proto/oop.h>
 
 #include <oop/oop.h>
+#include <hidd/hidd.h>
 #include <hidd/i2c.h>
 #include <hidd/dwi2c.h>
 
@@ -23,7 +24,8 @@
 /* proto/oop.h reaches oop.library through a variable of this name */
 struct Library *OOPBase = NULL;
 
-/* and the attribute macros of the two interfaces through these */
+/* and the attribute macros of the interfaces through these */
+OOP_AttrBase HiddAttrBase = 0;
 OOP_AttrBase HiddI2CDeviceAttrBase = 0;
 OOP_AttrBase HiddI2CDWAttrBase = 0;
 
@@ -58,7 +60,7 @@ static void BattClock_I2CForget(struct BattClockBase *BattClockBase)
 static OOP_Object *BattClock_I2CDevice(struct BattClockBase *BattClockBase)
 {
     struct pHidd_I2C_ProbeAddress probe;
-    struct TagItem devTags[4];
+    struct TagItem devTags[5];
     UWORD address;
 
     if (BattClockBase->bb_I2CDev)
@@ -119,8 +121,11 @@ static OOP_Object *BattClock_I2CDevice(struct BattClockBase *BattClockBase)
     devTags[1].ti_Data = (IPTR)address;
     devTags[2].ti_Tag  = aHidd_I2CDevice_Name;
     devTags[2].ti_Data = (IPTR)"RTC";
-    devTags[3].ti_Tag  = TAG_DONE;
-    devTags[3].ti_Data = 0;
+    /* The object is the part the device tree describes at this node */
+    devTags[3].ti_Tag  = BattClockBase->bb_Path[0] ? aHidd_DevicePath : TAG_IGNORE;
+    devTags[3].ti_Data = (IPTR)BattClockBase->bb_Path;
+    devTags[4].ti_Tag  = TAG_DONE;
+    devTags[4].ti_Data = 0;
 
     BattClockBase->bb_I2CDev =
         OOP_NewObject(NULL, (STRPTR)CLID_Hidd_I2CDevice, devTags);
@@ -164,12 +169,14 @@ BOOL BattClock_I2COpen(struct BattClockBase *BattClockBase)
         return FALSE;
     }
 
+    if (!HiddAttrBase)
+        HiddAttrBase = OOP_ObtainAttrBase(IID_Hidd);
     if (!HiddI2CDeviceAttrBase)
         HiddI2CDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_I2CDevice);
     if (!HiddI2CDWAttrBase)
         HiddI2CDWAttrBase = OOP_ObtainAttrBase(IID_Hidd_I2C_DW);
 
-    if (!HiddI2CDeviceAttrBase || !HiddI2CDWAttrBase)
+    if (!HiddAttrBase || !HiddI2CDeviceAttrBase || !HiddI2CDWAttrBase)
     {
         D(bug("[BattClock] ObtainAttrBase failed\n"));
         CloseLibrary(drv);

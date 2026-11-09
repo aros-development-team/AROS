@@ -2635,16 +2635,20 @@ register struct mbuf *m;
 static void
 tcp_ack_rtt(struct tcpcb *tp, const struct tcpopt *to, tcp_seq ack)
 {
-    if((to->to_flag & TOF_TS) && to->to_tsecr != 0) {
-        int rtt = (int)(tcp_ms() + tp->t_ts_offset - to->to_tsecr);
+    int rtt = -1;
 
-        if(rtt >= 0 && rtt <= TCPTV_REXMTMAX_MS) {
-            tcp_xmit_timer(tp, rtt);
-            return;
-        }
+    if((to->to_flag & TOF_TS) && to->to_tsecr != 0) {
+        rtt = (int)(tcp_ms() + tp->t_ts_offset - to->to_tsecr);
+        if(rtt > TCPTV_REXMTMAX_MS)
+            rtt = -1;
     }
-    if(tp->t_rtttime && SEQ_GT(ack, tp->t_rtseq))
-        tcp_xmit_timer(tp, (int)(tcp_ms() - tp->t_rtttime));
+    if(rtt < 0 && tp->t_rtttime && SEQ_GT(ack, tp->t_rtseq))
+        rtt = (int)(tcp_ms() - tp->t_rtttime);
+    /* HyStart++ (RFC 9406) takes this ACK's sample, in the congestion
+     * control's on_ack() right after */
+    tp->t_hystart.curr_rtt = rtt >= 0 ? (u_int32_t)MAX(rtt, 1) : 0;
+    if(rtt >= 0)
+        tcp_xmit_timer(tp, rtt);
 }
 
 /*
