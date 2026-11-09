@@ -697,8 +697,9 @@ static int wpa_driver_sana2_set_associd(void *priv, u16 aid)
 		{{S2INFO_AssocID, aid},
 		{TAG_END, 0}};
 
-	eloop_register_timeout(NULL_INTERVAL, 0, wpa_driver_sana2_stay_alive,
-			       drv->ctx, drv);
+	if (!drv->hard_mac)
+		eloop_register_timeout(NULL_INTERVAL, 0,
+				       wpa_driver_sana2_stay_alive, drv->ctx, drv);
 
 	request->ios2_Req.io_Command = S2_SETOPTIONS;
 	request->ios2_Data = tag_list;
@@ -830,10 +831,13 @@ static void wpa_driver_sana2_event_handler(int sig, void *sig_ctx)
 
 				DeletePool(pool);
 
-				/* Start periodic sending of null-data frames */
-				eloop_register_timeout(NULL_INTERVAL, 0,
-					wpa_driver_sana2_stay_alive,
-					drv->ctx, drv);
+				/* Start periodic sending of null-data frames.
+				 * Hard-MAC firmware keeps the link alive
+				 * itself; there these go out as data frames. */
+				if (!drv->hard_mac)
+					eloop_register_timeout(NULL_INTERVAL, 0,
+						wpa_driver_sana2_stay_alive,
+						drv->ctx, drv);
 			}
 
 			if (events & S2EVENT_DISCONNECT) {
