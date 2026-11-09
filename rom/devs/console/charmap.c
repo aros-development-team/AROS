@@ -21,7 +21,7 @@ struct charmap_line *charmap_dispose_line(struct charmap_line *line)
         if (line->capacity)
         {
             if (line->text)
-                FreeMem(line->text, line->capacity * 4);
+                FreeMem(line->text, line->capacity * CHARMAP_PLANES);
         }
         FreeMem(line, sizeof(struct charmap_line));
     }
@@ -60,25 +60,24 @@ struct charmap_line *charmap_newline(struct charmap_line *next,
 
 VOID charmap_resize(struct ConsoleBase *ConsoleDevice, struct charmap_line *line, ULONG newsize)
 {
-    char *text = line->text;
-    BYTE *fgpen = line->fgpen;
-    BYTE *bgpen = line->bgpen;
-    BYTE *flags = line->flags;
+    UBYTE *old[CHARMAP_PLANES];
     ULONG size = line->size;
     ULONG capacity = line->capacity;
+    LONG i;
 
     if (newsize && newsize <= capacity)
     {
         if (newsize > size)
         {
-            SetMem(line->text + size, 0, newsize - size);
-            SetMem(line->fgpen + size, 0, newsize - size);
-            SetMem(line->bgpen + size, 0, newsize - size);
-            SetMem(line->flags + size, 0, newsize - size);
+            for (i = 0; i < CHARMAP_PLANES; i++)
+                SetMem(line->plane[i] + size, 0, newsize - size);
         }
         line->size = newsize;
         return;
     }
+
+    for (i = 0; i < CHARMAP_PLANES; i++)
+        old[i] = line->plane[i];
 
     if (newsize)
     {
@@ -96,40 +95,35 @@ VOID charmap_resize(struct ConsoleBase *ConsoleDevice, struct charmap_line *line
         if (newcapacity > 0xffff)
             newcapacity = 0xffff;
 
-        buffer = AllocMem(newcapacity * 4, MEMF_ANY);
+        buffer = AllocMem(newcapacity * CHARMAP_PLANES, MEMF_ANY);
         if (!buffer)
             return;
 
-        line->text = (char *)buffer;
-        line->fgpen = (BYTE *)(buffer + newcapacity);
-        line->bgpen = (BYTE *)(buffer + newcapacity * 2);
-        line->flags = (BYTE *)(buffer + newcapacity * 3);
-        SetMem(line->text, 0, newsize);
-        SetMem(line->fgpen, 0, newsize);
-        SetMem(line->bgpen, 0, newsize);
-        SetMem(line->flags, 0, newsize);
+        /* The arrays follow each other in the one allocation */
+        for (i = 0; i < CHARMAP_PLANES; i++)
+        {
+            line->plane[i] = buffer;
+            SetMem(buffer, 0, newsize);
+            buffer += newcapacity;
+        }
         line->size = newsize;
         line->capacity = newcapacity;
     }
     else
     {
-        line->text = 0;
-        line->fgpen = 0;
-        line->bgpen = 0;
-        line->flags = 0;
+        for (i = 0; i < CHARMAP_PLANES; i++)
+            line->plane[i] = 0;
         line->size = 0;
         line->capacity = 0;
     }
 
-    if (text && line->text)
-        memcpy(line->text, text, size);
-    if (fgpen && line->fgpen)
-        memcpy(line->fgpen, fgpen, size);
-    if (bgpen && line->bgpen)
-        memcpy(line->bgpen, bgpen, size);
-    if (flags && line->flags)
-        memcpy(line->flags, flags, size);
+    for (i = 0; i < CHARMAP_PLANES; i++)
+    {
+        if (old[i] && line->plane[i])
+            memcpy(line->plane[i], old[i], size);
+    }
 
-    if (text)
-        FreeMem(text, capacity * 4);
+    /* text is the start of the old allocation */
+    if (old[0])
+        FreeMem(old[0], capacity * CHARMAP_PLANES);
 }

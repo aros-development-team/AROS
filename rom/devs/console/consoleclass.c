@@ -22,8 +22,6 @@
 #include "consoleif.h"
 #include "console_gcc.h"
 
-VOID normalizecoords(Object *o, WORD *x_ptr, WORD *y_ptr);
-
 /*
    Base class for the classes handling standard, charmap and snipmap
    consoles. This is a whitebox base class (like GADGETCLASS), which means subclasses
@@ -55,7 +53,7 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
         ReturnPtr("Console::New", Object *, NULL);
     }
 
-    o = (Object *) DoSuperMethodA(cl, o, (Msg) msg);
+    o = (Object *) Console_Super(cl, o, (Msg) msg);
     if (o)
     {
         struct ConUnit *unit;
@@ -105,20 +103,16 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
         unit->cu_YRExtant =
             unit->cu_YROrigin + (unit->cu_YRSize * (unit->cu_YMax + 1) - 1);
 
-        unit->cu_XCP = DEF_CHAR_XMIN;
-        unit->cu_YCP = DEF_CHAR_YMIN;
-
-        unit->cu_XCCP = DEF_CHAR_XMIN;
-        unit->cu_YCCP = DEF_CHAR_YMIN;
+        /* The character and cursor positions start at DEF_CHAR_XMIN and
+           DEF_CHAR_YMIN, which the SetMem() above has set */
+        _Static_assert(DEF_CHAR_XMIN == 0 && DEF_CHAR_YMIN == 0,
+            "a cleared unit must be at the default cursor position");
 
         for (i = 0; i < MAXTABS - 1; i++)
         {
             unit->cu_TabStops[i] = i * 8;
         }
         unit->cu_TabStops[i] = (UWORD) - 1;
-
-        ICU(o)->conFlags = 0UL;
-        ICU(o)->numStoredChars = 0;
 
         NEWLIST(&ICU(o)->pasteData);
 
@@ -301,6 +295,20 @@ static VOID console_down(Class *cl, Object *o, struct P_Console_Down *msg)
 /***************************
 **  Console::DoCommand()  **
 ***************************/
+
+/* The text style bits that the SGR parameters 1 to 8 set, and the ones
+   that the parameters 22 to 28 clear */
+static const UBYTE sgr_set[8] =
+{
+    CON_TXTFLAGS_BOLD, 0, CON_TXTFLAGS_ITALIC, CON_TXTFLAGS_UNDERLINED,
+    0, 0, CON_TXTFLAGS_REVERSED, CON_TXTFLAGS_CONCEALED
+};
+static const UBYTE sgr_reset[7] =
+{
+    CON_TXTFLAGS_BOLD, CON_TXTFLAGS_ITALIC, CON_TXTFLAGS_UNDERLINED,
+    0, 0, CON_TXTFLAGS_REVERSED, CON_TXTFLAGS_CONCEALED
+};
+
 static VOID console_docommand(Class *cl, Object *o,
     struct P_Console_DoCommand *msg)
 {
@@ -349,100 +357,45 @@ static VOID console_docommand(Class *cl, Object *o,
                 param = msg->Params[i];
                 D(bug("param%d=%d\n", i, param));
 
-                switch (param)
+                if (param == 0)
                 {
-                case 0:
                     Console_GetColorPen(o, 0, &CU(o)->cu_BgPen);
                     Console_GetColorPen(o, 1, &CU(o)->cu_FgPen);
                     CU(o)->cu_TxFlags = 0;
-                    break;
-                case 1:
-                    CU(o)->cu_TxFlags |= CON_TXTFLAGS_BOLD;
-                    break;
-                case 2:
-                    /* Set "faint" */
-                    break;
-                case 3:
-                    CU(o)->cu_TxFlags |= CON_TXTFLAGS_ITALIC;
-                    break;
-                case 4:
-                    CU(o)->cu_TxFlags |= CON_TXTFLAGS_UNDERLINED;
-                    break;
-                case 7:
-                    CU(o)->cu_TxFlags |= CON_TXTFLAGS_REVERSED;
-                    break;
-                case 8:
-                    CU(o)->cu_TxFlags |= CON_TXTFLAGS_CONCEALED;
-                    break;
-                case 22:
-                    CU(o)->cu_TxFlags &= ~CON_TXTFLAGS_BOLD;
-                    break;
-                case 23:
-                    CU(o)->cu_TxFlags &= ~CON_TXTFLAGS_ITALIC;
-                    break;
-                case 24:
-                    CU(o)->cu_TxFlags &= ~CON_TXTFLAGS_UNDERLINED;
-                    break;
-                case 27:
-                    CU(o)->cu_TxFlags &= ~CON_TXTFLAGS_REVERSED;
-                    break;
-                case 28:
-                    CU(o)->cu_TxFlags &= ~CON_TXTFLAGS_CONCEALED;
-                    break;
-                case 30:
-                case 31:
-                case 32:
-                case 33:
-                case 34:
-                case 35:
-                case 36:
-                case 37:
-                    Console_GetColorPen(o, param - 30, &CU(o)->cu_FgPen);
-                    break;
-                case 39:
-                    Console_GetColorPen(o, 1, &CU(o)->cu_FgPen);
-                    break;
+                }
+                else if (param <= 8)
+                {
+                    /* 1 bold, 3 italic, 4 underlined, 7 reversed,
+                       8 concealed; 2 ("faint") is not supported */
+                    CU(o)->cu_TxFlags |= sgr_set[param - 1];
+                }
+                else if (param >= 22 && param <= 28)
+                {
+                    /* 22 not bold, 23 not italic, 24 not underlined,
+                       27 not reversed, 28 not concealed */
+                    CU(o)->cu_TxFlags &= ~sgr_reset[param - 22];
+                }
+                else if (param >= 30 && param <= 49)
+                {
+                    /* 30-37 foreground colour, 39 default foreground,
+                       40-47 background colour, 49 default background;
+                       38 and 48 are not supported */
+                    BOOL bg = param >= 40;
+                    UWORD color = (UWORD)param - (bg ? 40 : 30);
 
-                case 40:
-                case 41:
-                case 42:
-                case 43:
-                case 44:
-                case 45:
-                case 46:
-                case 47:
-                    Console_GetColorPen(o, param - 40, &CU(o)->cu_BgPen);
-                    break;
-
-                case 49:
-                    Console_GetColorPen(o, 0, &CU(o)->cu_BgPen);
-                    break;
-                } /* switch(param) */
+                    if (color == 9)
+                        color = bg ? 0 : 1;
+                    if (color != 8)
+                        Console_GetColorPen(o, color,
+                            bg ? &CU(o)->cu_BgPen : &CU(o)->cu_FgPen);
+                }
             } /* for(i = 0; i < msg->NumParams; i++) */
         }
         break;
 
     case C_SET_RAWEVENTS:
-        D(bug("Set Raw Events\n"));
-        {
-            UBYTE i;
-            IPTR param;
-
-            for (i = 0; i < msg->NumParams; i++)
-            {
-                param = msg->Params[i];
-
-                if (param <= IECLASS_MAX)
-                {
-                    SET_RAWEVENT(o, param);
-                }
-
-            } /* for(i = 0; i < msg->NumParams; i++) */
-        }
-        break;
-
     case C_RESET_RAWEVENTS:
-        D(bug("Set Raw Events\n"));
+        D(bug("Set/Reset Raw Events\n"));
         {
             UBYTE i;
             IPTR param;
@@ -453,7 +406,10 @@ static VOID console_docommand(Class *cl, Object *o,
 
                 if (param <= IECLASS_MAX)
                 {
-                    RESET_RAWEVENT(o, param);
+                    if (msg->Command == C_SET_RAWEVENTS)
+                        SET_RAWEVENT(o, param);
+                    else
+                        RESET_RAWEVENT(o, param);
                 }
 
             } /* for(i = 0; i < msg->NumParams; i++) */
@@ -483,7 +439,12 @@ static VOID console_getdefaultparams(Class *cl, Object *o,
     case C_DELETE_LINE:
     case C_SET_TOP_OFFSET:
     case C_SET_PAGE_LENGTH:
-    case C_SET_LINE_LENGTH:
+/* FIXME: Autodocs state commands in between here, has params RKRM: Devs saye the do not */
+    case C_CURSOR_HTAB:
+    case C_DELETE_CHAR:
+    case C_SCROLL_UP:
+    case C_SCROLL_DOWN:
+    case C_CURSOR_BACKTAB:
         msg->Params[0] = 1;
         break;
     case C_CURSOR_POS:
@@ -491,20 +452,8 @@ static VOID console_getdefaultparams(Class *cl, Object *o,
         msg->Params[1] = XCCP + 1;
         break;
 
-/* FIXME: Autodocs state commands in between here, has params RKRM: Devs saye the do not */
-    case C_CURSOR_HTAB:
-    case C_DELETE_CHAR:
-    case C_SCROLL_UP:
-    case C_SCROLL_DOWN:
-        msg->Params[0] = 1;
-        break;
-
     case C_CURSOR_TAB_CTRL:
         msg->Params[0] = 0;     /* set tab */
-        break;
-
-    case C_CURSOR_BACKTAB:
-        msg->Params[0] = 1;
         break;
 
     case C_SELECT_GRAPHIC_RENDITION:
@@ -623,7 +572,7 @@ AROS_UFH3S(IPTR, dispatch_consoleclass,
         break;
 
     default:
-        retval = DoSuperMethodA(cl, o, msg);
+        retval = Console_Super(cl, o, msg);
         break;
     }
     return (retval);
@@ -631,65 +580,6 @@ AROS_UFH3S(IPTR, dispatch_consoleclass,
     AROS_USERFUNC_EXIT
 }
 
-
-/************************
-**  normalizecoords()  **
-************************/
-
-/* Normalizes "out of window" coords, so that they
-   fit into the window
-*/
-
-#define ABS(a) (((a) < 0) ? -(a) : (a))
-
-
-#undef ConsoleDevice
-#define ConsoleDevice ((struct ConsoleBase *)OCLASS(o)->cl_UserData)
-
-/* FIXME: Currently dead code */
-VOID normalizecoords(Object *o, WORD *x_ptr, WORD *y_ptr)
-{
-    EnterFunc(bug("normalizecoords(o=%p, x=%d, y=%d)\n",
-            o, *x_ptr, *y_ptr));
-
-    if (*x_ptr > CU(o)->cu_XMax)        /* charpos too far to the right */
-    {
-        D(bug("Pos right of window\n"));
-        /* Increase y */
-        Console_Down(o, *x_ptr / CHAR_XMAX(o));
-
-        /* Normalize x */
-        *x_ptr = *x_ptr % (CHAR_XMAX(o) - CHAR_XMIN(o));
-    }
-    else if (*x_ptr < CHAR_XMIN(o))
-    {
-        D(bug("Pos left of window\n"));
-
-        /* Decrease y */
-        Console_Up(o, ABS(*x_ptr) / CHAR_XMAX(o) - CHAR_XMIN(o));
-
-        /* Normalize Z */
-        *x_ptr = *x_ptr % (CHAR_XMAX(o) - CHAR_XMIN(o));
-    }
-
-    if (*y_ptr > CHAR_YMAX(o))  /* pos below window bounds */
-    {
-
-        *y_ptr = CHAR_YMAX(o);
-    }
-    else if (*y_ptr < CHAR_YMIN(o))  /* pos above window bounds */
-    {
-        UBYTE scroll_param = CHAR_YMIN(o) - *y_ptr;
-
-        D(bug("Pos above window\n"));
-
-        Console_DoCommand(o, C_SCROLL_DOWN, 1, &scroll_param);
-
-        *y_ptr = CHAR_YMIN(o);
-    }
-
-    ReturnVoid("normalizecoords");
-}
 
 
 #undef ConsoleDevice

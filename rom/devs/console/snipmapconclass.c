@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Code for CONU_SNIPMAP console units.
 */
@@ -51,31 +51,6 @@ static Object *snipmapcon_new(Class *cl, Object *o, struct opSet *msg)
     ReturnPtr("SnipMapCon::New", Object *, o);
 }
 
-/***********  SnipMapCon::Dispose()  **************************/
-
-static VOID snipmapcon_dispose(Class *cl, Object *o, Msg msg)
-{
-    DoSuperMethodA(cl, o, msg);
-}
-
-static VOID snipmapcon_copy(Class *cl, Object *o, Msg msg)
-{
-    /* FIXME: This really should happen here, but currently,
-       charmapcon contains the selection code, and it's hard to
-       extract.
-     */
-    DoSuperMethodA(cl, o, (Msg) msg);
-
-    /* FIXME: Handle ConClip here */
-    /*
-       if conclip running {
-       ObtainSemaphore(&ConsoleDevice->copyBufferLock);
-       .. create SGWork and send message to ConClip
-       ReleaseSemaphore(&ConsoleDevice->copyBufferLock);
-       }
-     */
-}
-
 static VOID snipmapcon_paste(Class *cl, Object *o, Msg msg)
 {
     /* if conclip is running, insert <CSI> "0 v" and we're done.
@@ -96,23 +71,6 @@ static VOID snipmapcon_paste(Class *cl, Object *o, Msg msg)
     ReleaseSemaphore(&ConsoleDevice->copyBufferLock);
 }
 
-static VOID snipmapcon_docommand(Class *cl, Object *o,
-    struct P_Console_DoCommand *msg)
-{
-    EnterFunc(IPTR *params = msg->Params);
-    EnterFunc(bug
-        ("SnipMapCon::DoCommand(o=%p, cmd=%d, params=%p) x=%d, y=%d, ymax=%d\n",
-            o, msg->Command, params, XCP, YCP, CHAR_YMAX(o)));
-
-    switch (msg->Command)
-    {
-    default:
-        DoSuperMethodA(cl, o, (Msg) msg);
-        break;
-    }
-    ReturnVoid("SnipMapCon::DoCommand");
-}
-
 AROS_UFH3S(IPTR, dispatch_snipmapconclass,
     AROS_UFHA(Class *, cl, A0),
     AROS_UFHA(Object *, o, A2), AROS_UFHA(Msg, msg, A1))
@@ -127,17 +85,9 @@ AROS_UFH3S(IPTR, dispatch_snipmapconclass,
         retval = (IPTR) snipmapcon_new(cl, o, (struct opSet *)msg);
         break;
 
-    case OM_DISPOSE:
-        snipmapcon_dispose(cl, o, msg);
-        break;
-
-    case M_Console_DoCommand:
-        snipmapcon_docommand(cl, o, (struct P_Console_DoCommand *)msg);
-        break;
-
-    case M_Console_Copy:
-        snipmapcon_copy(cl, o, msg);
-        break;
+    /* OM_DISPOSE, M_Console_DoCommand and M_Console_Copy need nothing done
+       here (the selection code still lives in charmapcon) and go to the
+       superclass with all other methods */
 
     case M_Console_Paste:
         snipmapcon_paste(cl, o, msg);
