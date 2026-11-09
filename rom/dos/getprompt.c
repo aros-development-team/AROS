@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Get the current prompt.
 */
@@ -55,9 +55,6 @@
 
     struct Process *me = (struct Process *)FindTask(NULL);
     struct CommandLineInterface *cli = BADDR(me->pr_CLI);
-    STRPTR cname;
-    ULONG clen;
-    BOOL ret = DOSTRUE;
 
     ASSERT_VALID_PROCESS(me);
 
@@ -69,17 +66,6 @@
         return DOSFALSE;
     }
 
-    cname = AROS_BSTR_ADDR(cli->cli_Prompt);
-    clen = (ULONG)AROS_BSTR_strlen(cli->cli_Prompt);
-    if (clen >= (len-1))
-    {
-        clen = len-1;
-        me->pr_Result2 = ERROR_LINE_TOO_LONG;
-        ret = DOSFALSE;
-    }
-    CopyMem(cname, buf, clen);
-    buf[clen] = '\0';
-
-    return ret;
+    return internal_GetCliString(me, cli->cli_Prompt, buf, len);
     AROS_LIBFUNC_EXIT
 } /* GetPrompt */

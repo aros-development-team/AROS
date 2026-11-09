@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Lock the directory a file is located in
 */
@@ -49,7 +49,7 @@
 
     struct FileHandle *handle = BADDR(fh);
     D(bug("[ParentOfFH] fh=%x\n", handle));
-    return (BPTR)dopacket1(DOSBase, NULL, handle->fh_Type, ACTION_PARENT_FH, handle->fh_Arg1);
+    return (BPTR)dopacket1n(DOSBase, handle->fh_Type, ACTION_PARENT_FH, handle->fh_Arg1);
 
     AROS_LIBFUNC_EXIT
   

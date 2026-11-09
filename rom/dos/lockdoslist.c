@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
 #include <aros/debug.h>
 #include <proto/exec.h>
+#include <stddef.h>
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -49,6 +50,7 @@
     AROS_LIBFUNC_INIT
 
     struct DosInfo *di = BADDR(DOSBase->dl_Root->rn_Info);
+    int i;
 
     D(bug("LockDosList: flags = $%lx\n", flags));
 
@@ -57,28 +59,15 @@
         (flags & ~(LDF_READ|LDF_WRITE|LDF_DEVICES|LDF_VOLUMES|LDF_ASSIGNS|LDF_ENTRY|LDF_DELETE)))
         return NULL;
 
-    if (flags & LDF_ALL)
+    for (i = 0; i < 3; i++)
     {
-        if (flags & LDF_WRITE)
-            ObtainSemaphore(&di->di_DevLock);
-        else
-            ObtainSemaphoreShared(&di->di_DevLock);
-    }
-
-    if (flags & LDF_ENTRY)
-    {
-        if (flags & LDF_WRITE)
-            ObtainSemaphore(&di->di_EntryLock);
-        else
-            ObtainSemaphoreShared(&di->di_EntryLock);
-    }
-
-    if (flags & LDF_DELETE)
-    {
-        if (flags & LDF_WRITE)
-            ObtainSemaphore(&di->di_DeleteLock);
-        else
-            ObtainSemaphoreShared(&di->di_DeleteLock);
+        if (flags & Dos_ListLockFlags[i])
+        {
+            if (flags & LDF_WRITE)
+                ObtainSemaphore(&(&di->di_DevLock)[i]);
+            else
+                ObtainSemaphoreShared(&(&di->di_DevLock)[i]);
+        }
     }
 
 /* This strange thing came from MorphOS.
@@ -88,3 +77,12 @@
 
     AROS_LIBFUNC_EXIT
 } /* LockDosList */
+
+const UBYTE Dos_ListLockFlags[3] = { LDF_ALL, LDF_ENTRY, LDF_DELETE };
+
+/* LockDosList(), UnLockDosList() and AttemptLockDosList() reach the three
+ * semaphores as an array starting at di_DevLock */
+typedef char Dos_ListLocksAdjacent[
+    (offsetof(struct DosInfo, di_EntryLock) == offsetof(struct DosInfo, di_DevLock) + sizeof(struct SignalSemaphore) &&
+     offsetof(struct DosInfo, di_DeleteLock) == offsetof(struct DosInfo, di_DevLock) + 2 * sizeof(struct SignalSemaphore))
+    ? 1 : -1];

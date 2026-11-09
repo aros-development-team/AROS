@@ -1,10 +1,24 @@
 /*
-    Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: DeleteVar() - Deletes a local or environmental variable.
 */
 #include "dos_intern.h"
 #include <proto/exec.h>
+
+#include <proto/dos.h>
+/* Delete the file of a global variable if it exists; FALSE if it does not */
+static BOOL deletevar_file(CONST_STRPTR path, struct DosLibrary *DOSBase)
+{
+    BPTR filelock;
+
+    if((filelock = Lock(path, EXCLUSIVE_LOCK)))
+    {
+        UnLock(filelock);
+        return DeleteFile(path);
+    }
+    return FALSE;
+}
 
 /*****************************************************************************
 
@@ -89,16 +103,11 @@
          given in the variable
       */
       UBYTE filebuffer[256] = "ENV:";
-      BPTR filelock;
       BOOL delMemory = FALSE, delDisk = FALSE;
 
       AddPart(filebuffer, name, 256);
 
-      if((filelock = Lock(filebuffer, EXCLUSIVE_LOCK)))
-      {
-        UnLock(filelock);
-        delMemory = DeleteFile(filebuffer);
-      }
+      delMemory = deletevar_file(filebuffer, DOSBase);
 
       if(flags & GVF_SAVE_VAR)
       {
@@ -106,11 +115,7 @@
         AddPart(filebuffer, "ENVARC:", 256);
         AddPart(filebuffer, name, 256);
 
-        if((filelock = Lock(filebuffer, EXCLUSIVE_LOCK)))
-        {
-          UnLock(filelock);
-          delDisk = DeleteFile(filebuffer);
-        }
+        delDisk = deletevar_file(filebuffer, DOSBase);
       }
       else delDisk = TRUE;
       

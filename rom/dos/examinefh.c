@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: dos.library function ExamineFH().
 */
@@ -49,7 +49,7 @@
     BOOL ret;
 
     D(bug("[ExamineFH] handle=%x fib=%x\n", handle, fib));
-    ret = dopacket2(DOSBase, NULL, handle->fh_Type, ACTION_EXAMINE_FH,
+    ret = dopacket2n(DOSBase, handle->fh_Type, ACTION_EXAMINE_FH,
         handle->fh_Arg1, MKBADDR(fib));
     if (ret) {
         fixfib(fib);

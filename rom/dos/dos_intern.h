@@ -107,6 +107,10 @@ struct vfp
 /* Softlink handling */
 STRPTR ResolveSoftlink(BPTR cur, struct DevProc *dvp, CONST_STRPTR name, struct DosLibrary *DOSBase);
 LONG RootDir(struct DevProc *dvp, struct DosLibrary *DOSBase);
+/* Retry an operation that ran into a soft link on the link's target (lock.c) */
+typedef LONG (*SoftlinkFunc)(CONST_STRPTR name, LONG accessMode, APTR handle, LONG soft_nesting, struct DosLibrary *DOSBase);
+LONG FollowSoftlink(BPTR cur, struct DevProc *dvp, CONST_STRPTR name, SoftlinkFunc func,
+    LONG accessMode, APTR handle, LONG soft_nesting, struct DosLibrary *DOSBase);
 
 /* Packet I/O */
 struct DosPacket *allocdospacket(void);
@@ -117,12 +121,21 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort);
 void internal_ReplyPkt(struct DosPacket *dp, struct MsgPort *replyPort, SIPTR res1, LONG res2);
 SIPTR handleNIL(LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3);
 
-#define dopacket5(base, res2, port, action, arg1, arg2, arg3, arg4, arg5) dopacket(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), (SIPTR)(arg3), (SIPTR)(arg4), (SIPTR)(arg5), 0, 0)
-#define dopacket4(base, res2, port, action, arg1, arg2, arg3, arg4)       dopacket(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), (SIPTR)(arg3), (SIPTR)(arg4), 0, 0, 0)
-#define dopacket3(base, res2, port, action, arg1, arg2, arg3)             dopacket(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), (SIPTR)(arg3), 0, 0, 0, 0)
-#define dopacket2(base, res2, port, action, arg1, arg2)                   dopacket(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), 0, 0, 0, 0, 0)
-#define dopacket1(base, res2, port, action, arg1)                         dopacket(res2, port, action, (SIPTR)(arg1), 0, 0, 0, 0, 0, 0)
-#define dopacket0(base, res2, port, action)                               dopacket(res2, port, action, 0, 0, 0, 0, 0, 0, 0)
+/* dopacket() with arg6 and arg7 zero, which is all that C callers need */
+SIPTR dopacket5f(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4, SIPTR arg5);
+/* dopacket() without res2 and with arg3 to arg7 zero */
+SIPTR dopacket2f(struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2);
+
+#define dopacket5(base, res2, port, action, arg1, arg2, arg3, arg4, arg5) dopacket5f(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), (SIPTR)(arg3), (SIPTR)(arg4), (SIPTR)(arg5))
+#define dopacket4(base, res2, port, action, arg1, arg2, arg3, arg4)       dopacket5f(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), (SIPTR)(arg3), (SIPTR)(arg4), 0)
+#define dopacket3(base, res2, port, action, arg1, arg2, arg3)             dopacket5f(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), (SIPTR)(arg3), 0, 0)
+#define dopacket2(base, res2, port, action, arg1, arg2)                   dopacket5f(res2, port, action, (SIPTR)(arg1), (SIPTR)(arg2), 0, 0, 0)
+#define dopacket1(base, res2, port, action, arg1)                         dopacket5f(res2, port, action, (SIPTR)(arg1), 0, 0, 0, 0)
+#define dopacket0(base, res2, port, action)                               dopacket5f(res2, port, action, 0, 0, 0, 0, 0)
+/* The same for callers that do not want res2 */
+#define dopacket2n(base, port, action, arg1, arg2)                        dopacket2f(port, action, (SIPTR)(arg1), (SIPTR)(arg2))
+#define dopacket1n(base, port, action, arg1)                              dopacket2f(port, action, (SIPTR)(arg1), 0)
+#define dopacket0n(base, port, action)                                    dopacket2f(port, action, 0, 0)
 
 #ifdef __mc68000
 extern void BCPL_Fixup(struct Process *me);
@@ -143,6 +156,9 @@ BOOL __dos_IsBootable(struct DosLibrary *DOSBase, BPTR Lock);
 /* Cli dependent SetProgramName() for use in CreateNewProc() */
 BOOL internal_SetProgramName(struct CommandLineInterface *cli,
     CONST_STRPTR name, struct DosLibrary *DOSBase);
+/* Store a C string in / fetch one from a BSTR field of the CLI structure */
+BOOL internal_SetCliString(BSTR dest, CONST_STRPTR name);
+BOOL internal_GetCliString(struct Process *me, BSTR src, STRPTR buf, LONG len);
 /* Duplicate a cli_CommandDir BPTR list */
 BPTR internal_CopyPath(BPTR boldpath, struct DosLibrary * DOSBase);
 
@@ -191,18 +207,15 @@ struct markerarray
     struct marker marker[128];
 };
 
+/* Used by patternMatch() only; marker_next() is in patternmatching.c */
 #define PUSH(t,p,s)                                                     \
 {                                                                       \
     if(macnt==128)                                                      \
     {                                                                   \
-        if(macur->next==NULL)                                           \
-        {                                                               \
-            macur->next=AllocMem(sizeof(struct markerarray),MEMF_ANY);  \
-            if(macur->next==NULL)                                       \
-                ERROR(ERROR_NO_FREE_STORE);                             \
-            macur->next->prev=macur;                                    \
-        }                                                               \
-        macur=macur->next;                                              \
+        struct markerarray *manext = marker_next(macur);                \
+        if(manext==NULL)                                                \
+            ERROR(ERROR_NO_FREE_STORE);                                 \
+        macur=manext;                                                   \
         macnt=0;                                                        \
     }                                                                   \
     macur->marker[macnt].type=(t);                                      \
@@ -327,16 +340,29 @@ struct PacketHelperStruct
 BOOL getpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR, struct PacketHelperStruct*);
 BOOL getdevpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR devname, CONST_STRPTR name, struct PacketHelperStruct *phs);
 void freepacketinfo(struct DosLibrary *DOSBase, struct PacketHelperStruct*);
+/* Send a packet about the object 'name' to its handler (packethelper.c) */
+SIPTR pathpacket(struct DosLibrary *DOSBase, CONST_STRPTR name, LONG action, BOOL lead, SIPTR a, SIPTR b);
+
+/* The LockDosList() flags for di_DevLock, di_EntryLock and di_DeleteLock,
+ * in that order (lockdoslist.c) */
+extern const UBYTE Dos_ListLockFlags[3];
+
+/* Assign helpers (assignlock.c, assignlate.c): install 'newdl' in place of
+ * any assign called 'name', or create and install an assign of 'type' that
+ * holds a copy of 'path' */
+BOOL assign_path(CONST_STRPTR name, CONST_STRPTR path, LONG type, struct DosLibrary *DOSBase);
 
 #ifndef __SRCFILENAME__
 #define __SRCFILENAME__ __FILE__
 #endif /* !__SRCFILENAME__ */
 
+/* Reports a damaged FileLock on the debug output (unlock.c) */
+void dos_BogusFileLock(struct FileLock *fl, const char *func, const char *file, int line);
+
 #define ASSERT_VALID_FILELOCK(lock) do { \
         struct FileLock *fl = BADDR(lock); \
         if (fl && fl->fl_Access != SHARED_LOCK && fl->fl_Access != EXCLUSIVE_LOCK) { \
-            bug("%s() bogus FileLock! '%s' %p %d %s/%s/%d\n", \
-                __func__, FindTask(NULL)->tc_Node.ln_Name, fl, fl->fl_Access, __SRCFILENAME__,__FUNCTION__,__LINE__); \
+            dos_BogusFileLock(fl, __func__, __SRCFILENAME__, __LINE__); \
         } \
     } while (0);
 

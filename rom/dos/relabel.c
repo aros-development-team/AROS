@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -51,7 +51,7 @@
     if (!getdevpacketinfo(DOSBase, drive, newname, &phs))
         return DOSFALSE;
  
-    status = dopacket1(DOSBase, NULL, phs.port, ACTION_RENAME_DISK, phs.name);
+    status = dopacket1n(DOSBase, phs.port, ACTION_RENAME_DISK, phs.name);
 
     freepacketinfo(DOSBase, &phs);
     

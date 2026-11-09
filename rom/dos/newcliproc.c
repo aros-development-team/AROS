@@ -54,6 +54,26 @@ static void SetWindowPtrFromConsole(struct Process *me, BPTR fh, APTR DOSBase)
         (unsigned long)id.id_DiskType, (APTR)id.id_VolumeNode, me->pr_WindowPtr));
 }
 
+/* A stream for a shell that was given none: the console, or else NIL: */
+static BPTR open_default_output(APTR DOSBase)
+{
+    if (GetConsoleTask())
+        return internal_OpenConsoleOutput(DOSBase);
+
+    return Open("NIL:", MODE_NEWFILE);
+}
+
+/* Make this process the owner of an interactive stream and line buffer it */
+static BOOL claim_interactive(BPTR fh, struct Process *me, APTR DOSBase)
+{
+    if (!IsInteractive(fh))
+        return FALSE;
+
+    fs_ChangeSignal(fh, me, DOSBase);
+    SetVBuf(fh, NULL, BUF_LINE, -1);
+    return TRUE;
+}
+
 ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
 {
     ULONG flags = 0;
@@ -199,13 +219,7 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
 
     if (!cos) {
         D(bug("%s: No StandardOutput provided. Synthesize one.\n", __func__));
-        if (GetConsoleTask()) {
-            D(bug("%s: StandardOutput based on current console\n", __func__));
-            cos = internal_OpenConsoleOutput(DOSBase);
-        } else {
-            D(bug("%s: StandardOutput is NIL:\n", __func__));
-            cos = Open("NIL:", MODE_NEWFILE);
-        }
+        cos = open_default_output(DOSBase);
         if (cos == BNULL) {
             SetIoErr((SIPTR)me);
             goto exit;
@@ -215,13 +229,7 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
 
     if (!ces) {
         D(bug("%s: No StandardError provided. Synthesize one.\n", __func__));
-        if (GetConsoleTask()) {
-            D(bug("%s: StandardError based on current console\n", __func__));
-            ces = internal_OpenConsoleOutput(DOSBase);
-        } else {
-            D(bug("%s: StandardError is NIL:\n", __func__));
-            ces = Open("NIL:", MODE_NEWFILE);
-        }
+        ces = open_default_output(DOSBase);
         if (ces == BNULL) {
             SetIoErr((SIPTR)me);
             goto exit;
@@ -242,25 +250,12 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
     /* Compatibility with Amiga Shells which are not aware of cli_StandardError */
     me->pr_CES = cli->cli_StandardError;
 
-    if (IsInteractive(cli->cli_StandardInput)) {
-        D(bug("%s: cli_StandardInput is interactive\n", __func__));
-        fs_ChangeSignal(cli->cli_StandardInput, me, DOSBase);
-        SetVBuf(cli->cli_StandardInput, NULL, BUF_LINE, -1);
+    if (claim_interactive(cli->cli_StandardInput, me, DOSBase)) {
         SetWindowPtrFromConsole(me, cli->cli_StandardInput, DOSBase);
         inter_in = TRUE;
     }
-    if (IsInteractive(cli->cli_StandardOutput)) {
-        D(bug("%s: cli_StandardOutput is interactive\n", __func__));
-        fs_ChangeSignal(cli->cli_StandardOutput, me, DOSBase);
-        SetVBuf(cli->cli_StandardOutput, NULL, BUF_LINE, -1);
-        inter_out = TRUE;
-    }
-    if (IsInteractive(cli->cli_StandardError)) {
-        D(bug("%s: cli_StandardError is interactive\n", __func__));
-        fs_ChangeSignal(cli->cli_StandardError, me, DOSBase);
-        SetVBuf(cli->cli_StandardError, NULL, BUF_LINE, -1);
-        inter_err = TRUE;
-    }
+    inter_out = claim_interactive(cli->cli_StandardOutput, me, DOSBase);
+    inter_err = claim_interactive(cli->cli_StandardError, me, DOSBase);
 
     if (oldcli) {
         D(bug("%s: Using old CLI %p\n", __func__, oldcli));

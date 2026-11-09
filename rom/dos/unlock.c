@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -58,7 +58,14 @@
     if(lock == BNULL)
         return 0;
 
-    return dopacket1(DOSBase, NULL, fl->fl_Task, ACTION_FREE_LOCK, lock) != 0;
+    return dopacket1n(DOSBase, fl->fl_Task, ACTION_FREE_LOCK, lock) != 0;
 
     AROS_LIBFUNC_EXIT
 } /* UnLock */
+
+/* The report of ASSERT_VALID_FILELOCK() (dos_intern.h) */
+void dos_BogusFileLock(struct FileLock *fl, const char *func, const char *file, int line)
+{
+    bug("%s() bogus FileLock! '%s' %p %d %s/%s/%d\n",
+        func, FindTask(NULL)->tc_Node.ln_Name, fl, fl->fl_Access, file, func, line);
+}

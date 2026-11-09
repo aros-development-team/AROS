@@ -344,39 +344,59 @@
          * the creation and destruction of pr_CIS/pr_COS/pr_CES. CreateNewProc
          * logic is not used in such case.
          */
-        struct TagItem proctags[] =
+        /* The tags below as offsets from NP_Dummy; all data defaults to 0
+           (BNULL / FALSE), the others are filled in afterwards.
+           NP_TAGID() fails to compile if a tag does not fit the byte. */
+#define NP_TAGID(tag) ((tag) - NP_Dummy + 0 * sizeof(char[((tag) - NP_Dummy) <= 255 ? 1 : -1]))
+        static const UBYTE proctag_ids[] =
         {
-            { NP_Priority   , me->pr_Task.tc_Node.ln_Pri    }, /* 0  */
-            { NP_Name       , (IPTR)shellName               }, /* 1  */
-            { NP_Input      , (IPTR)BNULL                   }, /* 2  */
-            { NP_Output     , (IPTR)BNULL                   }, /* 3  */
-            { NP_Error      , (IPTR)BNULL                   }, /* 4  */
-            { NP_CloseInput , FALSE                         }, /* 5  */
-            { NP_CloseOutput, FALSE                         }, /* 6  */
-            { NP_CloseError , FALSE                         }, /* 7  */
-            { NP_Cli        , ((cliType == CLI_NEWCLI) || (cliType == CLI_ASYSTEM))
-                                      ?  TRUE : FALSE       }, /* 8  */
-            { NP_WindowPtr  , isAsynch ? (IPTR)NULL :
-                              (IPTR)me->pr_WindowPtr        }, /* 9  */
-            { NP_Seglist    , (IPTR)shellseg                }, /* 10 */
-            { NP_FreeSeglist, FALSE                         }, /* 11 */
-            { NP_Synchronous, FALSE                         }, /* 12 */
-            { NP_Entry      , (IPTR)entry                   }, /* 13 */
-            { NP_CurrentDir , (IPTR)BNULL                   }, /* 14 */
-            /* A synchronous command retains its caller's console even
-             * when its input stream is non-interactive. */
-            { NP_ConsoleTask, GetTagData(NP_ConsoleTask,
-                              isAsynch ? (IPTR)BNULL :
-                              (IPTR)me->pr_ConsoleTask, tags) }, /* 15 */
+            NP_TAGID(NP_Priority),     /* 0  */
+            NP_TAGID(NP_Name),         /* 1  */
+            NP_TAGID(NP_Input),        /* 2  */
+            NP_TAGID(NP_Output),       /* 3  */
+            NP_TAGID(NP_Error),        /* 4  */
+            NP_TAGID(NP_CloseInput),   /* 5  */
+            NP_TAGID(NP_CloseOutput),  /* 6  */
+            NP_TAGID(NP_CloseError),   /* 7  */
+            NP_TAGID(NP_Cli),          /* 8  */
+            NP_TAGID(NP_WindowPtr),    /* 9  */
+            NP_TAGID(NP_Seglist),      /* 10 */
+            NP_TAGID(NP_FreeSeglist),  /* 11 */
+            NP_TAGID(NP_Synchronous),  /* 12 */
+            NP_TAGID(NP_Entry),        /* 13 */
+            NP_TAGID(NP_CurrentDir),   /* 14 */
+            NP_TAGID(NP_ConsoleTask),  /* 15 */
 #ifdef __mc68000
-            /* Shell-seg itself peaks below 2 KB during CD32 boot. Commands
-             * retain the conservative 8 KB m68k process default. */
-            { NP_StackSize  , 4096                          }, /* 16 */
+            NP_TAGID(NP_StackSize),    /* 16 */
 #endif
-            { TAG_END       , 0                             }  /* 17 */
         };
+#define NUM_PROCTAGS (sizeof(proctag_ids))
+        struct TagItem proctags[NUM_PROCTAGS + 1];
+        ULONG pi;
 
-        Tag filterList[] =
+        for (pi = 0; pi < NUM_PROCTAGS; pi++)
+        {
+            proctags[pi].ti_Tag  = NP_Dummy + proctag_ids[pi];
+            proctags[pi].ti_Data = 0;
+        }
+        proctags[0].ti_Data  = me->pr_Task.tc_Node.ln_Pri;
+        proctags[1].ti_Data  = (IPTR)shellName;
+        proctags[8].ti_Data  = ((cliType == CLI_NEWCLI) || (cliType == CLI_ASYSTEM)) ? TRUE : FALSE;
+        proctags[9].ti_Data  = isAsynch ? (IPTR)NULL : (IPTR)me->pr_WindowPtr;
+        proctags[10].ti_Data = (IPTR)shellseg;
+        proctags[13].ti_Data = (IPTR)entry;
+        /* A synchronous command retains its caller's console even
+         * when its input stream is non-interactive. */
+        proctags[15].ti_Data = GetTagData(NP_ConsoleTask,
+                               isAsynch ? (IPTR)BNULL :
+                               (IPTR)me->pr_ConsoleTask, tags);
+#ifdef __mc68000
+        /* Shell-seg itself peaks below 2 KB during CD32 boot. Commands
+         * retain the conservative 8 KB m68k process default. */
+        proctags[16].ti_Data = 4096;
+#endif
+
+        static const Tag filterList[] =
         {
             NP_Seglist,
             NP_FreeSeglist,
@@ -397,11 +417,11 @@
         struct DosPacket *dp;
         BPTR currdir = BNULL;
 
-        FilterTagItems(newtags, filterList, TAGFILTER_NOT);
+        FilterTagItems(newtags, (Tag *)filterList, TAGFILTER_NOT);
         currdir = (BPTR)GetTagData(NP_CurrentDir, (IPTR)BNULL, newtags);
 
-        proctags[sizeof(proctags)/(sizeof(proctags[0])) - 1].ti_Tag  = TAG_MORE;
-        proctags[sizeof(proctags)/(sizeof(proctags[0])) - 1].ti_Data = (IPTR)newtags;
+        proctags[NUM_PROCTAGS].ti_Tag  = TAG_MORE;
+        proctags[NUM_PROCTAGS].ti_Data = (IPTR)newtags;
 
         dp = AllocDosObject(DOS_STDPKT, NULL);
         if (dp) {
@@ -471,7 +491,7 @@
                 if (!isAsynch && IsInteractive(sis)) {
                     fh = BADDR(sis);
 
-                    if (dopacket(&oldSignal, fh->fh_Type, ACTION_CHANGE_SIGNAL, (SIPTR)fh->fh_Arg1, (SIPTR)&cliproc->pr_MsgPort, 0, 0, 0, 0, 0) == DOSFALSE)
+                    if (dopacket5f(&oldSignal, fh->fh_Type, ACTION_CHANGE_SIGNAL, (SIPTR)fh->fh_Arg1, (SIPTR)&cliproc->pr_MsgPort, 0, 0, 0) == DOSFALSE)
                         oldSignal = 0;
                 }
 

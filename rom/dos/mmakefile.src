@@ -25,6 +25,13 @@ USER_LDFLAGS := -static
 ifeq ($(AROS_TARGET_CPU),m68k)
 DOS_CPPFLAGS   += -D__DOS_NOLIBINLINE__ 
 endif
+# The amiga-m68k ROM link defines SysBase as the absolute address 4. Tell
+# the assembler as well, so that the module's objects reach it with a short
+# absolute reference instead of a relocated 32-bit one. dos_CFLAGS is only
+# used for the module's own objects, not for the link libraries built here.
+ifeq ($(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU),amiga-m68k)
+dos_CFLAGS     += -Wa,--defsym,SysBase=4
+endif
 ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
 OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
 endif

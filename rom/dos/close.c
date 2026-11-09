@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -69,7 +69,7 @@
     if(fh->fh_Flags & FHF_WRITE)
         ret = Flush(file);
 
-    ret = dopacket1(DOSBase, NULL, fh->fh_Type, ACTION_END, fh->fh_Arg1);
+    ret = dopacket1n(DOSBase, fh->fh_Type, ACTION_END, fh->fh_Arg1);
 
     /* Free the filehandle which was allocated in Open(), CreateDir()
        and such. */

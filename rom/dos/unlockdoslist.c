@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -43,17 +43,15 @@
     AROS_LIBFUNC_INIT
 
     struct DosInfo *di = BADDR(DOSBase->dl_Root->rn_Info);
+    int i;
 
     D(bug("UnLockDosList: flags = $%lx\n", flags));
 
-    if (flags & LDF_ALL)
-        ReleaseSemaphore(&di->di_DevLock);
-
-    if (flags & LDF_ENTRY)
-        ReleaseSemaphore(&di->di_EntryLock);
-
-    if (flags & LDF_DELETE)
-        ReleaseSemaphore(&di->di_DeleteLock);
+    for (i = 0; i < 3; i++)
+    {
+        if (flags & Dos_ListLockFlags[i])
+            ReleaseSemaphore(&(&di->di_DevLock)[i]);
+    }
 
 /* This came from MorphOS. Left for reference.
     Permit(); */

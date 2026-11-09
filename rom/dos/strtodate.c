@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Converts a string into a date
 */
@@ -16,7 +16,7 @@
         ret name (arg)
 #    define AROS_LHA(type,name,reg) type name
 
-const ULONG Dos_DayTable[]=
+const UWORD Dos_DayTable[]=
 {
     0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335
 };

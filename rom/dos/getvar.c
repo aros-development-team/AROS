@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: GetVar - Return the value of a local or global variable.
 */
@@ -12,7 +12,51 @@
 
 #include "dos_intern.h"
 
+#include <dos/var.h>
+
 static LONG getvar_from(const char *name, const char *volume, STRPTR buffer, LONG size, LONG flags, struct DosLibrary *DOSBase);
+
+/* Terminate the 'i' bytes of a value in 'buffer' (of 'size' bytes) the way
+ * 'flags' ask for. Returns the length to report. */
+static LONG getvar_terminate(STRPTR buffer, LONG i, LONG size, LONG flags)
+{
+    /* were we supposed to stop after the first "\n"?
+       = No GVF_BINARY_VAR and no GVF_DONT_NULL_TERM
+    */
+    if (0 == (flags & GVF_BINARY_VAR))
+    {
+        int j = 0;
+
+        while ((buffer[j] != '\n') && (j < i))
+        {
+            j++;
+        }
+
+        if (j == size)
+        {
+            j = size - 1;
+        }
+
+        buffer[j]= 0x0; /* mark end of string */
+        size = j;
+    }
+    else if (0 == (flags & GVF_DONT_NULL_TERM))
+    {
+        if (i == size)
+        {
+            i = size - 1;
+        }
+
+        buffer[i] = 0x0; /* mark end of string */
+        size = i;
+    }
+    else
+    {
+        size = i;
+    }
+
+    return size;
+}
 
 /*****************************************************************************
 
@@ -124,41 +168,8 @@ static LONG getvar_from(const char *name, const char *volume, STRPTR buffer, LON
                 i = (size < lv->lv_Len) ? size : lv->lv_Len;
                 CopyMem(lv->lv_Value, buffer, i);
                 
-                /* were we supposed to stop after the first "\n"?
-                   = No GVF_BINARY_VAR and no GVF_DONT_NULL_TERM
-                */
-                if (0 == (flags & GVF_BINARY_VAR))
-                {
-                    int j = 0;
+                size = getvar_terminate(buffer, i, size, flags);
 
-                    while ((buffer[j] != '\n') && (j < i))
-                    {
-                        j++;
-                    }
-                    
-                    if (j == size)
-                    {
-                        j = size - 1;
-                    }
-
-                    buffer[j]= 0x0; /* mark end of string */
-                    size = j;
-                }
-                else if (0 == (flags & GVF_DONT_NULL_TERM))
-                {
-                    if (i == size)
-                    {
-                        i = size - 1;
-                    }
-                    
-                    buffer[i] = 0x0; /* mark end of string */
-                    size = i;
-                }
-                else
-                {
-                    size = i;
-                }
-                
                 SetIoErr(lv->lv_Len);
                 D(bug("GetVar: return %d\n", size));
 
@@ -235,40 +246,7 @@ static LONG getvar_from(const char *name, const char *volume, STRPTR buffer, LON
         i = Read(file, buffer, size);
         Close(file);
 
-        /* were we supposed to stop after the first "\n"?
-           = No GVF_BINARY_VAR and no GVF_DONT_NULL_TERM */
-        if (0 == (flags & GVF_BINARY_VAR))
-        {
-            int j = 0;
-            /* lets search for the first '\n' (if any) in the
-             * string and replace it by '\0'. */
-            while ((buffer[j] != '\n') && (j < i))
-            {
-                j++;
-            }
-    
-            if (j == size)
-            {
-                j = size - 1;
-            }
-
-            buffer[j]= '\0'; /* mark end of string */
-            size = j;
-        }
-        else if (0 == (flags & GVF_DONT_NULL_TERM))
-        {
-            if (i == size)
-            {
-                i = size - 1;
-            }
-
-            buffer[i] = 0x0; /* mark end of string */
-            size = i;
-        }
-        else
-        {
-            size = i;
-        }
+        size = getvar_terminate(buffer, i, size, flags);
 
         SetIoErr(fSize);
         D(bug("GetVar: return %d\n", size));

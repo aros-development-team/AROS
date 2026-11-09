@@ -46,9 +46,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    LONG status = 0;
-    struct PacketHelperStruct phs;
 
     D(bug("[SetProtection] '%s':%x\n", name, protect));
 
@@ -56,12 +53,7 @@
     if (SECURITY_ACTIVE)
         protect = secLimitProtection(name, protect);
 
-    if (getpacketinfo(DOSBase, name, &phs)) {
-        status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_PROTECT, BNULL, phs.lock, phs.name, protect);
-        freepacketinfo(DOSBase, &phs);
-    }
- 
-    return status;
+    return pathpacket(DOSBase, name, ACTION_SET_PROTECT, TRUE, protect, 0);
 
     AROS_LIBFUNC_EXIT
 } /* SetProtection */

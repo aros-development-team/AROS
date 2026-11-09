@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -13,6 +13,31 @@
 #include <proto/utility.h>
 #include <exec/lists.h>
 #include <string.h>
+
+#include <proto/dos.h>
+/* Write the value of a global variable to the file 'path' */
+static BOOL setvar_write(CONST_STRPTR path, CONST_STRPTR buffer, LONG size, struct DosLibrary *DOSBase)
+{
+    BPTR file = Open(path, MODE_NEWFILE);
+
+    if (file == BNULL)
+        return FALSE;
+
+    /* Write the data to the file */
+    /* size = -1 means that the value is a null-terminated
+       string */
+    if (-1 == size)
+    {
+        Write(file, buffer, strlen(buffer));
+    }
+    else
+    {
+        Write(file, buffer, size);
+    }
+
+    Close(file);
+    return TRUE;
+}
 
 /*****************************************************************************
 
@@ -208,28 +233,8 @@
             AddPart(nameBuffer, name, 384);
             
             /* Just try and open the file */
-            file = Open(nameBuffer, MODE_NEWFILE);
-
-            if (file != BNULL)
-            {
-                /* Write the data to the file */
-                /* size = -1 means that the value is a null-terminated
-                   string */
-                if (-1 == size)
-                {
-                    Write(file, buffer, strlen(buffer));
-                }
-                else
-                {
-                    Write(file, buffer, size);
-                }
-                
-                Close(file);
-            }
-            else
-            {
+            if (!setvar_write(nameBuffer, buffer, size, DOSBase))
                 return DOSFALSE;
-            }
 
             /* Let's see whether we're supposed to make a copy of this to
              * envarc also...
@@ -239,26 +244,9 @@
                 CopyMem("ENVARC:", nameBuffer, 8);
                 AddPart(nameBuffer, name, 384);
 
-                file = Open(nameBuffer, MODE_NEWFILE);
-
-                if (file != BNULL)
-                {
-                    /* Write the data to the file */
-                    /* size = -1 means that the value is a null-terminated
-                       string */
-                    if (-1 == size)
-                    {
-                        Write(file, buffer, strlen(buffer));
-                    }
-                    else
-                    {
-                        Write(file, buffer, size);
-                    }
-
-                    Close(file);
-                }
+                setvar_write(nameBuffer, buffer, size, DOSBase);
             }
-            
+
             /* We created both, bye bye */
             return DOSTRUE;
         } /* try a global variable */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Convert a DateTime struct into strings.
 */
@@ -17,7 +17,7 @@
 #define AROS_LHA(type,name,reg) type name
 #endif
 
-const ULONG Dos_DayTable[]=
+const UWORD Dos_DayTable[]=
 {
     0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335
 };
@@ -38,6 +38,14 @@ const char *const Dos_SubstDateTable[]=
 {
     "Future", "Tomorrow", "Today", "Yesterday"
 };
+
+/* Write the last two decimal digits of 'value', return the end of the text */
+static STRPTR put2digits(STRPTR buf, LONG value)
+{
+    *buf++ = value/10%10+'0';
+    *buf++ = value%10+'0';
+    return buf;
+}
 
 /*****************************************************************************
 
@@ -275,8 +283,7 @@ const char *const Dos_SubstDateTable[]=
                 switch(*fstring)
                 {
                 case 'y':
-                    *buf++ = year/10%10+'0';
-                    *buf++ = year%10+'0';
+                    buf = put2digits(buf, year);
                     break;
                 case 'm':
                     name=Dos_MonthTable[month-1];
@@ -284,12 +291,10 @@ const char *const Dos_SubstDateTable[]=
                         *buf++=*name++;
                     break;
                 case 'M':
-                    *buf++=month/10%10+'0';
-                    *buf++=month%10+'0';
+                    buf = put2digits(buf, month);
                     break;
                 case 'd':
-                    *buf++=days/10%10+'0';
-                    *buf++=days%10+'0';
+                    buf = put2digits(buf, days);
                     break;
                 default:
                     *buf++=*fstring;
@@ -306,15 +311,12 @@ const char *const Dos_SubstDateTable[]=
     if(datetime->dat_StrTime!=NULL)
     {
         /* Build time string */
-        datetime->dat_StrTime[0] = mins/(10*60)+'0';
-        datetime->dat_StrTime[1] = mins/60%10+'0';
-        datetime->dat_StrTime[2] = ':';
-        datetime->dat_StrTime[3] = mins/10%6+'0';
-        datetime->dat_StrTime[4] = mins%10+'0';
-        datetime->dat_StrTime[5] = ':';
-        datetime->dat_StrTime[6] = tick/(10*TICKS_PER_SECOND)+'0';
-        datetime->dat_StrTime[7] = tick/TICKS_PER_SECOND%10+'0';
-        datetime->dat_StrTime[8] = 0;
+        buf = put2digits(datetime->dat_StrTime, mins/60);
+        *buf++ = ':';
+        buf = put2digits(buf, mins%60);
+        *buf++ = ':';
+        buf = put2digits(buf, tick/TICKS_PER_SECOND);
+        *buf = 0;
     }
 
     /* All done. Return OK. */

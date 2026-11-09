@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -55,7 +55,7 @@
     struct FileLock *fl = (struct FileLock *)BADDR(lock);
     LONG status;
 
-    status = dopacket2(DOSBase, NULL, fl ? fl->fl_Task : GetFileSysTask(), ACTION_INFO, lock, MKBADDR(parameterBlock));
+    status = dopacket2n(DOSBase, fl ? fl->fl_Task : GetFileSysTask(), ACTION_INFO, lock, MKBADDR(parameterBlock));
     return status;
 
     AROS_LIBFUNC_EXIT

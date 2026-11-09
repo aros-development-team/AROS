@@ -52,7 +52,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    return dopacket(NULL, port, action, arg1, arg2, arg3, arg4, arg5, 0, 0);
+    return dopacket5f(NULL, port, action, arg1, arg2, arg3, arg4, arg5);
 
     AROS_LIBFUNC_EXIT
 }
@@ -148,4 +148,14 @@ SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR
 
     freedospacket(dp);
     return res;
+}
+
+SIPTR dopacket5f(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2, SIPTR arg3, SIPTR arg4, SIPTR arg5)
+{
+    return dopacket(res2, port, action, arg1, arg2, arg3, arg4, arg5, 0, 0);
+}
+
+SIPTR dopacket2f(struct MsgPort *port, LONG action, SIPTR arg1, SIPTR arg2)
+{
+    return dopacket(NULL, port, action, arg1, arg2, 0, 0, 0, 0, 0);
 }

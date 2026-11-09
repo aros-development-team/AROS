@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -50,7 +50,7 @@
 
     struct FileLock *fl = BADDR(lock);
     D(bug("[ParentDir] lock=%x\n", lock));
-    return (BPTR)dopacket1(DOSBase, NULL, fl->fl_Task, ACTION_PARENT, lock);
+    return (BPTR)dopacket1n(DOSBase, fl->fl_Task, ACTION_PARENT, lock);
  
     AROS_LIBFUNC_EXIT
 } /* ParentDir */

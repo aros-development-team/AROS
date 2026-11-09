@@ -71,7 +71,7 @@
     ASSERT_VALID_FILELOCK(lock);
 
     D(bug("[ExNext] lock=%x fib=%x\n", fl, fileInfoBlock));
-    ret = dopacket2(DOSBase, NULL, fl ? fl->fl_Task : GetFileSysTask(), ACTION_EXAMINE_NEXT, lock, MKBADDR(fileInfoBlock));
+    ret = dopacket2n(DOSBase, fl ? fl->fl_Task : GetFileSysTask(), ACTION_EXAMINE_NEXT, lock, MKBADDR(fileInfoBlock));
     if (ret) {
         fixfib(fileInfoBlock);
         D(bug("[ExNext] '%s'\n", fileInfoBlock->fib_FileName));

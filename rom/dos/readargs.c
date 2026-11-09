@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -12,6 +12,7 @@
 #include <dos/rdargs.h>
 #include <dos/dosextens.h>
 #include <proto/utility.h>
+#include <proto/dos.h>
 
 #include "dos_intern.h"
 
@@ -33,22 +34,44 @@
  * where it "ungets" non-terminator (' ','=','\t','\n')
  * characters at the end of a non-\n terminated buffer.
  */
-#define READITEM(buff, bufflen, cs) \
-    ({ \
-        LONG ret, ri_CurChr = cs->CS_CurChr; \
-        ret = ReadItem(buff, bufflen, cs); \
-        if ((ret == ITEM_UNQUOTED) && \
-        ((cs->CS_CurChr+1) == cs->CS_Length)) \
-        { \
-            if ((cs->CS_CurChr == ri_CurChr) || \
-                ((cs->CS_Buffer[cs->CS_CurChr-1] != '=') && \
-                (cs->CS_Buffer[cs->CS_CurChr-1] != '\t'))) \
-                cs->CS_CurChr++; \
-            else \
-                cs->CS_CurChr--; \
-        } \
-        ret; \
-    })
+static LONG readitem_fixed(STRPTR buff, LONG bufflen, struct CSource *cs, struct DosLibrary *DOSBase)
+{
+    LONG ret, ri_CurChr = cs->CS_CurChr;
+
+    ret = ReadItem(buff, bufflen, cs);
+    if ((ret == ITEM_UNQUOTED) &&
+        ((cs->CS_CurChr+1) == cs->CS_Length))
+    {
+        if ((cs->CS_CurChr == ri_CurChr) ||
+            ((cs->CS_Buffer[cs->CS_CurChr-1] != '=') &&
+            (cs->CS_Buffer[cs->CS_CurChr-1] != '\t')))
+            cs->CS_CurChr++;
+        else
+            cs->CS_CurChr--;
+    }
+    return ret;
+}
+#define READITEM(buff, bufflen, cs) readitem_fixed(buff, bufflen, cs, DOSBase)
+
+/* Get a larger /M vector; the old one stays valid if this fails */
+static STRPTR *grow_multvec(STRPTR *multvec, ULONG multnum, ULONG multmax)
+{
+    STRPTR *newmult = (STRPTR *) AllocVec(multmax * sizeof(char *), MEMF_ANY);
+
+    if (newmult != NULL)
+    {
+        CopyMemQuick((ULONG *) multvec, (ULONG *) newmult,
+                     multnum * sizeof(char *));
+        FreeVec(multvec);
+    }
+    return newmult;
+}
+
+/* Print "<text>: " and flush; TRUE if that failed */
+static BOOL put_prompt(BPTR output, CONST_STRPTR text, struct DosLibrary *DOSBase)
+{
+    return (FPuts(output, text) || FPuts(output, ": ") || !Flush(output)) ? TRUE : FALSE;
+}
 
 /* Returns 0 if this is not a '?' line, otherwise
  * returns the length between the '?' and the '\n'
@@ -333,12 +356,7 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
             D(bug("[ReadArgs] rdargs=0x%p\n", rdargs));
             D(if (rdargs) bug ("[ReadArds] rdargs->RDA_ExtHelp=0x%p\n", rdargs->RDA_ExtHelp);)
 
-            if (FPuts(output, template) || FPuts(output, ": "))
-            {
-                ERROR(me->pr_Result2);
-            }
-
-            if (!Flush(output))
+            if (put_prompt(output, template, DOSBase))
             {
                 ERROR(me->pr_Result2);
             }
@@ -422,17 +440,8 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
 
                     memsize = isize -= delthis;
 
-                    if(rdargs->RDA_ExtHelp != NULL)
-                    {
-                        if (FPuts(output, rdargs->RDA_ExtHelp) || FPuts(output, ": "))
-                            ERROR(me->pr_Result2);
-                    }
-                    else if (FPuts(output, template) || FPuts(output, ": "))
-                    {
-                        ERROR(me->pr_Result2);
-                    }
-
-                    if (!Flush(output))
+                    if (put_prompt(output, rdargs->RDA_ExtHelp != NULL ?
+                                   (CONST_STRPTR)rdargs->RDA_ExtHelp : template, DOSBase))
                     {
                         ERROR(me->pr_Result2);
                     }
@@ -668,17 +677,11 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
                 /* Buffer too small. Get a new one. */
                 multmax += 16;
 
-                newmult = (STRPTR *) AllocVec(multmax * sizeof(char *),
-                                        MEMF_ANY);
+                newmult = grow_multvec(multvec, multnum, multmax);
                 if (newmult == NULL)
                 {
                     ERROR(ERROR_NO_FREE_STORE);
                 }
-
-                CopyMemQuick((ULONG *) multvec, (ULONG *) newmult,
-                             multnum * sizeof(char *));
-
-                FreeVec(multvec);
 
                 multvec = newmult;
             }
@@ -762,18 +765,11 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
                 {
                     multmax += 16;
 
-                    newmult = (STRPTR *) AllocVec(multmax * sizeof(STRPTR),
-                                            MEMF_ANY);
-
+                    newmult = grow_multvec(multvec, multnum, multmax);
                     if (newmult == NULL)
                     {
                         ERROR(ERROR_NO_FREE_STORE);
                     }
-
-                    CopyMemQuick((ULONG *) multvec, (ULONG *) newmult,
-                                 multnum * sizeof(char *));
-
-                    FreeVec(multvec);
 
                     multvec = newmult;
                 }
@@ -818,18 +814,11 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
                     if (multnum * 2 > multmax)
                     {
                         multmax = multnum * 2;
-                        newmult = (STRPTR *) AllocVec(multmax * sizeof(STRPTR),
-                                                MEMF_ANY);
-
+                        newmult = grow_multvec(multvec, multnum, multmax);
                         if (newmult == NULL)
                         {
                             ERROR(ERROR_NO_FREE_STORE);
                         }
-
-                        CopyMemQuick((ULONG *) multvec, (ULONG *) newmult,
-                            multnum * sizeof(char *));
-
-                        FreeVec(multvec);
 
                         multvec = newmult;
                     }

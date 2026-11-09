@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: dos.library function DupLock()
 */
@@ -51,7 +51,7 @@
 
     if (lock == BNULL)
         return BNULL;
-    ret = (BPTR)dopacket1(DOSBase, NULL, fl->fl_Task, ACTION_COPY_DIR, lock);
+    ret = (BPTR)dopacket1n(DOSBase, fl->fl_Task, ACTION_COPY_DIR, lock);
     D(bug("[DupLock] %x -> %x\n", fl, BADDR(ret)));
     return ret;
 

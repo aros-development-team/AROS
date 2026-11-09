@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -171,7 +171,7 @@
             if (arg1 == (IPTR)NULL)
                 return DOSTRUE;
             msgport = ((struct FileHandle *) BADDR(arg1))->fh_Type;
-            dl = (struct DeviceList*)BADDR(dopacket1(DOSBase, NULL, msgport, ACTION_CURRENT_VOLUME, ((struct FileHandle *) BADDR(arg1))->fh_Arg1));
+            dl = (struct DeviceList*)BADDR(dopacket1n(DOSBase, msgport, ACTION_CURRENT_VOLUME, ((struct FileHandle *) BADDR(arg1))->fh_Arg1));
             if (dl)
                 volname =  AROS_BSTR_ADDR(dl->dl_Name);
             break;
@@ -192,7 +192,7 @@
             } else {
                 msgport = device;
             }
-            if (dopacket2(DOSBase, NULL, msgport, ACTION_EXAMINE_OBJECT, arg1, (SIPTR)MKBADDR(fib))) {
+            if (dopacket2n(DOSBase, msgport, ACTION_EXAMINE_OBJECT, arg1, (SIPTR)MKBADDR(fib))) {
                 fixfib(fib);
                 strncpy(buf, fib->fib_FileName, sizeof (buf) - 1);
                 buf[sizeof(buf) - 1] = 0;

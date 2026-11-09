@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Format a device.
 */
@@ -57,7 +57,7 @@
     if (!getdevpacketinfo(DOSBase, devicename, volumename, &phs))
         return DOSFALSE;
  
-    status = dopacket2(DOSBase, NULL, phs.port, ACTION_FORMAT, phs.name, (IPTR)dostype);
+    status = dopacket2n(DOSBase, phs.port, ACTION_FORMAT, phs.name, (IPTR)dostype);
 
     freepacketinfo(DOSBase, &phs);
     

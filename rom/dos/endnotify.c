@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -61,7 +61,7 @@
      * If nr_Handler still points to IOFS device, packet I/O emulator will take care about
      * this.
      */
-    dopacket1(DOSBase, NULL, notify->nr_Handler, ACTION_REMOVE_NOTIFY, (SIPTR)notify);
+    dopacket1n(DOSBase, notify->nr_Handler, ACTION_REMOVE_NOTIFY, (SIPTR)notify);
 
     /* free fullname if it was built in StartNotify() */
     if (notify->nr_FullName != notify->nr_Name)

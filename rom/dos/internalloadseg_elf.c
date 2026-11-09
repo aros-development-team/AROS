@@ -281,16 +281,26 @@ static int __attribute__ ((noinline)) load_hunk
 
         nameext = strrchr(strtab + sh->name, '.');
         if (nameext) {
-            if (strcmp(nameext, ".MEMF_CHIP")==0) {
-                memflags |= MEMF_CHIP;
-            } else if (strcmp(nameext, ".MEMF_LOCAL")==0) {
-                memflags |= MEMF_LOCAL;
-            } else if (strcmp(nameext, ".MEMF_KICK")==0) {
-                memflags |= MEMF_KICK;
-            } else if (strcmp(nameext, ".MEMF_FAST")==0) {
-                memflags |= MEMF_FAST;
-            } else if (strcmp(nameext, ".MEMF_PUBLIC")==0) {
-                memflags |= MEMF_PUBLIC;
+            /* Section name suffixes that choose the kind of memory */
+            static const struct
+            {
+                const char *suffix;
+                UWORD       memflag;
+            } memsuffixes[] =
+            {
+                { ".MEMF_CHIP",   MEMF_CHIP   },
+                { ".MEMF_LOCAL",  MEMF_LOCAL  },
+                { ".MEMF_KICK",   MEMF_KICK   },
+                { ".MEMF_FAST",   MEMF_FAST   },
+                { ".MEMF_PUBLIC", MEMF_PUBLIC },
+            };
+            int n;
+
+            for (n = 0; n < sizeof(memsuffixes) / sizeof(memsuffixes[0]); n++) {
+                if (strcmp(nameext, memsuffixes[n].suffix)==0) {
+                    memflags |= memsuffixes[n].memflag;
+                    break;
+                }
             }
         }
     }

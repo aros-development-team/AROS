@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Set the owner of a file.
 */
@@ -47,17 +47,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct PacketHelperStruct phs;
-    LONG status = DOSFALSE;
-
     D(bug("[SetOwner] '%s' %x\n", name, owner_info));
 
-    if (getpacketinfo(DOSBase, name, &phs)) {
-        status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_OWNER, (IPTR)NULL, phs.lock, phs.name, (IPTR)owner_info);
-        freepacketinfo(DOSBase, &phs);
-    }
-
-    return status;
+    return pathpacket(DOSBase, name, ACTION_SET_OWNER, TRUE, (SIPTR)owner_info, 0);
 
     AROS_LIBFUNC_EXIT
 } /* SetOwner */

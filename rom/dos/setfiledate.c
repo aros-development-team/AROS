@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Change the date of a file.
 */
@@ -51,17 +51,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct PacketHelperStruct phs;
-    LONG status = DOSFALSE;
-
     D(bug("[SetFileDate] '%s' %x\n", name, date));
 
-    if (getpacketinfo(DOSBase, name, &phs)) {
-        status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_DATE, (IPTR)NULL, phs.lock, phs.name, (IPTR)date);
-        freepacketinfo(DOSBase, &phs);
-    }
-
-    return status;
+    return pathpacket(DOSBase, name, ACTION_SET_DATE, TRUE, (SIPTR)date, 0);
 
     AROS_LIBFUNC_EXIT
 } /* SetFileDate */
