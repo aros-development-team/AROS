@@ -246,6 +246,8 @@ BOOL mdnsNetRescan(struct MDNSDaemon *md);
 void mdnsNetClose(struct MDNSDaemon *md);
 BOOL mdnsNetIsOwn(struct MDNSDaemon *md, ULONG addr);
 BOOL mdnsNetIsOwn6(struct MDNSDaemon *md, const struct in6_addr *addr);
+const struct dnssd_address_entry *mdnsNetAddressAt(
+    const struct MDNSDaemon *md, LONG index, UWORD family, size_t ordinal);
 ULONG mdnsNetAddress4(const struct MDNSDaemon *md, LONG index);
 BOOL mdnsNetAddress6(const struct MDNSDaemon *md, LONG index,
     struct in6_addr *address);

@@ -233,12 +233,6 @@ service_append(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
     BOOL goodbye, LONG ifindex, UBYTE *pkt, LONG *posp, UWORD *ancountp,
     BOOL withAddr)
 {
-    /* The address record names the interface it leaves on, unless the
-     * service stands for another host. */
-    ULONG addr = rs->rs_Proxy ? rs->rs_HostAddr :
-        mdnsNetAddress4(md, ifindex);
-    struct in6_addr address6;
-    BOOL have6 = !rs->rs_Proxy && mdnsNetAddress6(md, ifindex, &address6);
     /* The service's own three records live as long as its client said;
      * the address record is the host's, and other services' too. */
     ULONG ttl = reply_ttl(md, goodbye ? 0 :
@@ -279,26 +273,41 @@ service_append(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
 
     /* The address of the SRV record's host, so that whoever receives this
      * need not ask for it. */
-    if (addr != 0 && withAddr && (!goodbye || rs->rs_Proxy)) {
+    if (rs->rs_Proxy && rs->rs_HostAddr != 0 && withAddr) {
         char target[256];
 
         target_fqdn(md, rs, target, (LONG)sizeof(target));
-        mdnsAddrData(addr, data);
+        mdnsAddrData(rs->rs_HostAddr, data);
         if (mdnsAppendRecord(pkt, MDNS_RESPONSE_MAX, &pos, &ancount, target,
                 DNS_TYPE_A, unique,
                 reply_ttl(md, goodbye ? 0 : MDNS_TTL_HOST), data, 4) != 0) {
             return FALSE;
         }
     }
-    if (have6 && withAddr && !goodbye) {
+    if (!rs->rs_Proxy && withAddr && !goodbye) {
+        static const UWORD families[2] = {
+            DNSSD_ADDRESS_IPV4, DNSSD_ADDRESS_IPV6
+        };
+        static const UWORD types[2] = { DNS_TYPE_A, DNS_TYPE_AAAA };
         char target[256];
+        size_t family;
 
         target_fqdn(md, rs, target, (LONG)sizeof(target));
-        mdnsAddr6Data(&address6, data);
-        if (mdnsAppendRecord(pkt, MDNS_RESPONSE_MAX, &pos, &ancount, target,
-                DNS_TYPE_AAAA, unique, reply_ttl(md, MDNS_TTL_HOST), data,
-                16) != 0) {
-            return FALSE;
+        for (family = 0u; family < 2u; ++family) {
+            size_t ordinal;
+
+            for (ordinal = 0u; ; ++ordinal) {
+                const struct dnssd_address_entry *address =
+                    mdnsNetAddressAt(md, ifindex, families[family], ordinal);
+
+                if (address == NULL)
+                    break;
+                if (mdnsAppendRecord(pkt, MDNS_RESPONSE_MAX, &pos, &ancount,
+                        target, types[family], unique,
+                        reply_ttl(md, MDNS_TTL_HOST), address->value.bytes,
+                        address->value.length) != 0)
+                    return FALSE;
+            }
         }
     }
 
