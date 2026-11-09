@@ -227,42 +227,6 @@ BOOL DrawLine(struct p96gfx_carddata *cid, struct RenderInfo *ri,
 #endif
 }
 
-BOOL BlitRect(struct p96gfx_carddata *cid, struct RenderInfo *ri,
-    WORD sx, WORD sy, WORD dx, WORD dy, WORD w, WORD h, UBYTE mask, ULONG rgbformat)
-{
-    if (cid->CardBase) {
-        AROS_CALL10(BOOL, __cardFunc(cid, PSSO_BoardInfo_BlitRect),
-            AROS_LCA(APTR, cid->boardinfo, A0),
-            AROS_LCA(APTR, ri, A1),
-            AROS_LCA(WORD, sx, D0),
-            AROS_LCA(WORD, sy, D1),
-            AROS_LCA(WORD, dx, D2),
-            AROS_LCA(WORD, dy, D3),
-            AROS_LCA(WORD, w, D4),
-            AROS_LCA(WORD, h, D5),
-            AROS_LCA(UBYTE, mask, D6),
-            AROS_LCA(ULONG, rgbformat, D7),
-            struct Library*, cid->CardBase);
-        return gw (cid->boardinfo + PSSO_BoardInfo_AROSFlag);
-    }
-#if (0)
-    else
-        return P96_LC10(BOOL, cid->p96romvector, 28,
-            AROS_LCA(APTR, cid->boardinfo, A0),
-            AROS_LCA(APTR, ri, A1),
-            AROS_LCA(WORD, sx, D0),
-            AROS_LCA(WORD, sy, D1),
-            AROS_LCA(WORD, dx, D2),
-            AROS_LCA(WORD, dy, D3),
-            AROS_LCA(WORD, w, D4),
-            AROS_LCA(WORD, h, D5),
-            AROS_LCA(UBYTE, mask, D6),
-            AROS_LCA(ULONG, rgbformat, D7));
-#else
-    return FALSE;
-#endif
-}
-
 BOOL FillRect(struct p96gfx_carddata *cid, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, ULONG pen, UBYTE mask, ULONG rgbformat)
 {
     if (cid->CardBase) {

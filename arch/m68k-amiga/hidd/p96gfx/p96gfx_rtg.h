@@ -418,10 +418,12 @@ struct P96GfxBitMapData;
 extern const UBYTE modetable[16];
 
 WORD P96GFXRTG__GetDepth (ULONG rgbformat);
-ULONG P96GFXRTG__GetFormat(struct p96gfx_staticdata *csd, struct p96gfx_carddata *cid, OOP_Object *);
-void P96GFXRTG__MakeRenderInfo(struct p96gfx_staticdata *csd, struct p96gfx_carddata *cid, struct RenderInfo*, struct P96GfxBitMapData*);
+ULONG P96GFXRTG__GetFormat(struct p96gfx_staticdata *csd, OOP_Object *);
+void P96GFXRTG__MakeRenderInfo(struct RenderInfo*, struct P96GfxBitMapData*);
 struct ModeInfo *P96GFXRTG__GetModeInfo(struct p96gfx_staticdata *csd, struct p96gfx_carddata *cid, OOP_Object *sync, OOP_Object *pixfmt, struct ModeInfo *modeinfo);
 void P96GFXRTG__Init(APTR boardinfo);
+
+void P96GFXBitmap__WaitBlit(struct p96gfx_staticdata *csd, struct p96gfx_carddata *cid);
 
 /* Card functions */
 BOOL FindCard(struct p96gfx_carddata *cid);
@@ -442,8 +444,6 @@ SetFeatureAttrs
 /* Card Render Operation Stubs .. */
 BOOL DrawLine(struct p96gfx_carddata *cid, struct RenderInfo *ri,
     struct Line *line, UBYTE mask, ULONG rgbformat);
-BOOL BlitRect(struct p96gfx_carddata *cid, struct RenderInfo *ri,
-    WORD sx, WORD sy, WORD dx, WORD dy, WORD w, WORD h, UBYTE mask, ULONG rgbformat);
 BOOL FillRect(struct p96gfx_carddata *cid, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, ULONG pen, UBYTE mask, ULONG rgbformat);
 BOOL InvertRect(struct p96gfx_carddata *cid, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, UBYTE mask, ULONG rgbformat);
 BOOL BlitRectNoMaskComplete(struct p96gfx_carddata *cid, struct RenderInfo *risrc, struct RenderInfo *ridst,
