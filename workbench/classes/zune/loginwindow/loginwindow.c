@@ -101,7 +101,7 @@ Object *LoginWindow__OM_NEW
                             nametype            = 0,
                             methodtype          = 0;
     APTR                    pool                = NULL;
-    BPTR                    lock                = NULL;
+    BPTR                    lock                = BNULL;
     CONST_STRPTR            imageBase           = LoginWindow_ImageBase();
     char                    logoSpec[IMAGESPEC_MAX],
                             userSpec[IMAGESPEC_MAX];
@@ -338,7 +338,7 @@ Object *LoginWindow__OM_NEW
 
     if (!img_logo)
     {
-        if ((lock = Lock(logoSpec + 2, ACCESS_READ)) != NULL)
+        if ((lock = Lock(logoSpec + 2, ACCESS_READ)) != BNULL)
         {
             img_logo = ImageObject,
                     MUIA_Image_Spec, (IPTR)logoSpec,
@@ -350,9 +350,9 @@ Object *LoginWindow__OM_NEW
     }
     else img_logo = HVSpace;
 
-    lock = NULL;
+    lock = BNULL;
 
-    if ((lock = Lock(userSpec + 2, ACCESS_READ)) != NULL)
+    if ((lock = Lock(userSpec + 2, ACCESS_READ)) != BNULL)
     {
         img_user = ImageObject,
                 MUIA_Image_Spec, (IPTR)userSpec,
