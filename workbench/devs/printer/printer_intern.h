@@ -34,6 +34,7 @@ struct PrinterUnit {
     struct PrinterData  pu_PrinterData;
     struct PrinterBase *pu_PrinterBase;
     struct PrinterPrefs pu_Prefs;
+    TEXT                pu_OpenName[DEVICENAMESIZE + 8];
     struct Process     *pu_Process;
     struct Hook        *pu_ErrHook;
 
