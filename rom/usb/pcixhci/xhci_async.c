@@ -323,6 +323,8 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                              txtype, ioreq->iouh_DevAddr, ioreq->iouh_Endpoint);
 
             trbflags |= xhciBuildDataTRBFlags(ioreq, txtype);
+            if((txtype == UHCMD_BULKXFER) && (ioreq->iouh_Dir == UHDIR_IN))
+                trbflags |= TRBF_FLAG_ISP;
 
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
             unit->hu_NakTimeoutFrame[devadrep] =

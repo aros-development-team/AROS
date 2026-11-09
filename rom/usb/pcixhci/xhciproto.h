@@ -168,8 +168,6 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
                   ULONG trbflags);
 WORD xhciQueueTRB_IO(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload,
                      ULONG plen, ULONG trbflags, struct IORequest *ioreq);
-WORD xhciQueueData(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen,
-                   ULONG trbflags, BOOL ioconlast);
 WORD xhciQueueData_IO(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen,
                       ULONG trbflags, BOOL ioconlast, struct IORequest *ioreq);
 

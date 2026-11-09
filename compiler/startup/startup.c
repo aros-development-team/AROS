@@ -150,7 +150,12 @@ static void __startup_stack(struct ExecBase *SysBase)
     IPTR want = __stack;
     IPTR have = (IPTR)me->tc_SPUpper - (IPTR)me->tc_SPLower;
     struct StackSwapStruct sss;
-    struct StackSwapArgs args = { { 0 } };
+    /*
+     * Filled in member by member below. An initialiser that clears the
+     * whole structure can be compiled into a call of memset(), and this
+     * runs before the C library is opened.
+     */
+    struct StackSwapArgs args;
     UBYTE *stack;
 
     want = (want + 15) & ~(IPTR)15;
@@ -172,7 +177,18 @@ static void __startup_stack(struct ExecBase *SysBase)
     sss.stk_Lower = stack;
     sss.stk_Upper = stack + want;
     sss.stk_Pointer = sss.stk_Upper;
+    /*
+     * The entry takes SysBase only, but NewStackSwap() hands all eight
+     * slots over, so none of them is left undefined.
+     */
     args.Args[0] = (IPTR)SysBase;
+    args.Args[1] = 0;
+    args.Args[2] = 0;
+    args.Args[3] = 0;
+    args.Args[4] = 0;
+    args.Args[5] = 0;
+    args.Args[6] = 0;
+    args.Args[7] = 0;
     NewStackSwap(&sss, (APTR)___startup_entries_next, &args);
 
     FreeMem(stack, want);
