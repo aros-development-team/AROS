@@ -28,12 +28,16 @@ link_ntoa(sdl)
 	u_char *inlim = in + sdl->sdl_alen;
 	int firsttime = 1;
 
+	/* the name, and a colon only before an address (as FreeBSD's);
+	 * both within obuf */
 	if (sdl->sdl_nlen) {
-		bcopy(sdl->sdl_data, obuf, sdl->sdl_nlen);
-		out += sdl->sdl_nlen;
-		*out++ = ':';
+		i = sdl->sdl_nlen < (int)sizeof(obuf) - 1 ? sdl->sdl_nlen : (int)sizeof(obuf) - 1;
+		bcopy(sdl->sdl_data, obuf, i);
+		out += i;
+		if (sdl->sdl_alen && out < obuf + sizeof(obuf) - 1)
+			*out++ = ':';
 	}
-	while (in < inlim) {
+	while (in < inlim && out < obuf + sizeof(obuf) - 3) {
 		if (firsttime) firsttime = 0; else *out++ = '.';
 		i = *in++;
 		if (i > 0xf) {

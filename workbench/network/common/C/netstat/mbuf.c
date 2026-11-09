@@ -77,8 +77,9 @@ static struct mbtypes {
 	{ 0, 0 }
 };
 
-int nmbtypes = sizeof(mbstat.m_mtypes) / sizeof(short);
-bool seen[256];			/* "have we seen this type yet?" */
+/* AROSTCP counts MTCOUNT types (16), not 4.4BSD's 256 */
+int nmbtypes = sizeof(mbstat.m_mtypes) / sizeof(mbstat.m_mtypes[0]);
+bool seen[MTCOUNT];		/* "have we seen this type yet?" */
 
 /*
  * Print mbuf statistics.
@@ -91,7 +92,7 @@ mbpr(mbaddr)
 	register int i;
 	register struct mbtypes *mp;
 
-	if (nmbtypes != 256) {
+	if (nmbtypes != MTCOUNT) {
 		warnx("unexpected change to mbstat; check source");
 		return;
 	}
@@ -123,6 +124,8 @@ mbpr(mbaddr)
 	totfree = mbstat.m_clfree * MCLBYTES;
 	printf("%u Kbytes allocated to network (%d%% in use)\n",
 		totmem / 1024, (totmem - totfree) * 100 / totmem);
+	printf("%lu Kbytes taken from the system for mbufs and clusters\n",
+		mbstat.m_memused / 1024);
 	printf("%u requests for memory denied\n", mbstat.m_drops);
 	printf("%u requests for memory delayed\n", mbstat.m_wait);
 	printf("%u calls to protocol drain routines\n", mbstat.m_drain);

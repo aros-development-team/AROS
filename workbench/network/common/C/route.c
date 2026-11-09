@@ -153,6 +153,8 @@
 #include <sys/sockio.h>
 
 #include <net/route.h>
+#include <net/if.h>
+#include <net/if_dl.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -225,6 +227,7 @@ void	sodump(sup su, char *which);
 void	bprintf(FILE *fp, int b, u_char *s);
 void	mask_addr(void);
 int	getaddr(int which, char *s, struct hostent **hpp);
+int	prefixlen(const char *s);
 int	rtmsg(int cmd, int flags);
 int GetOpt(int argc, char **argv, char *opts);
 VOID CleanUpExit(LONG error);
@@ -424,11 +427,28 @@ bad:			usage(*argv);
 	}
 }
 	
+/*
+ * A link-layer address, as FreeBSD's route(8): link#INDEX when it carries
+ * neither a name nor an address (an interface route's gateway), else
+ * link_ntoa()'s NAME:ADDRESS (netlib).
+ */
+static char *
+link_name(struct sockaddr_dl *sdl)
+{
+	if (sdl->sdl_nlen == 0 && sdl->sdl_alen == 0 && sdl->sdl_slen == 0) {
+		static char line[32];
+
+		snprintf(line, sizeof(line), "link#%d", sdl->sdl_index);
+		return line;
+	}
+	return link_ntoa(sdl);
+}
+
 char *
 routename(struct sockaddr *sa)
 {
 	register char *cp;
-	static char line[INET6_ADDRSTRLEN + 10];
+	static char line[INET6_ADDRSTRLEN + IFNAMSIZ + 10];
 	struct hostent *hp;
 	static char domain[MAXHOSTNAMELEN + 1];
 	static int first = 1;
@@ -483,19 +503,33 @@ routename(struct sockaddr *sa)
 				cp = hp->h_name;
 			}
 		}
-		if (cp)
-			strcpy(line, cp);
-		else
-			inet_ntop(AF_INET6, &sin6->sin6_addr, line, sizeof(line));
+		{
+			/* the address, and its zone (RFC 4007 section 11) */
+			char a[INET6_ADDRSTRLEN], z[IFNAMSIZ + 12];
+
+			a[0] = z[0] = 0;
+			if (cp == NULL)
+				inet_ntop(AF_INET6, &sin6->sin6_addr, a, sizeof(a));
+			if (sin6->sin6_scope_id) {
+				char ifn[IFNAMSIZ];
+
+				if (if_indextoname(sin6->sin6_scope_id, ifn))
+					snprintf(z, sizeof(z), "%%%s", ifn);
+				else
+					snprintf(z, sizeof(z), "%%%lu",
+					    (unsigned long)sin6->sin6_scope_id);
+			}
+			snprintf(line, sizeof(line), "%s%s", cp ? cp : a, z);
+		}
 		break;
 	    }
+
+	case AF_LINK:
+		return (link_name((struct sockaddr_dl *)sa));
 
 #if 0
 	case AF_NS:
 		return (ns_print((struct sockaddr_ns *)sa));
-
-	case AF_LINK:
-		return (link_ntoa((struct sockaddr_dl *)sa));
 
 	case AF_ISO:
 		(void) sprintf(line, "iso %s",
@@ -523,7 +557,7 @@ char *
 netname(struct sockaddr *sa)
 {
 	char *cp = 0;
-	static char line[INET6_ADDRSTRLEN + 10];
+	static char line[INET6_ADDRSTRLEN + IFNAMSIZ + 10];
 	struct netent *np = 0;
 	u_long net, mask;
 	register u_long i;
@@ -579,20 +613,34 @@ netname(struct sockaddr *sa)
 		cp = 0;
 		if (IN6_IS_ADDR_UNSPECIFIED(&sin6->sin6_addr))
 			cp = "default";
-		if (cp)
-			strcpy(line, cp);
-		else
-			inet_ntop(AF_INET6, &sin6->sin6_addr, line, sizeof(line));
+		{
+			/* the address, and its zone (RFC 4007 section 11) */
+			char a[INET6_ADDRSTRLEN], z[IFNAMSIZ + 12];
+
+			a[0] = z[0] = 0;
+			if (cp == NULL)
+				inet_ntop(AF_INET6, &sin6->sin6_addr, a, sizeof(a));
+			if (sin6->sin6_scope_id) {
+				char ifn[IFNAMSIZ];
+
+				if (if_indextoname(sin6->sin6_scope_id, ifn))
+					snprintf(z, sizeof(z), "%%%s", ifn);
+				else
+					snprintf(z, sizeof(z), "%%%lu",
+					    (unsigned long)sin6->sin6_scope_id);
+			}
+			snprintf(line, sizeof(line), "%s%s", cp ? cp : a, z);
+		}
 		break;
 	    }
+
+	case AF_LINK:
+		return (link_name((struct sockaddr_dl *)sa));
 
 #if 0
 	case AF_NS:
 		return (ns_print((struct sockaddr_ns *)sa));
 		break;
-
-	case AF_LINK:
-		return (link_ntoa((struct sockaddr_dl *)sa));
 
 	case AF_ISO:
 		(void) sprintf(line, "iso %s",
@@ -731,6 +779,13 @@ newroute(int argc, char **argv)
 				argc--;
 				ishost = getaddr(RTA_DST, *++argv, &hp);
 				dest = *argv;
+				break;
+			case K_PREFIXLEN:
+				argc--;
+				if (prefixlen(*++argv) == 128) {
+					forcenet = 0;
+					ishost = 1;
+				}
 				break;
 			case K_NETMASK:
 				argc--;
@@ -887,6 +942,35 @@ inet_makenetandmask(u_long net, register struct sockaddr_in *s_in)
  * Interpret an argument as a network address of some kind,
  * returning 1 if a host address, 0 if a network address.
  */
+/*
+ * -prefixlen LEN (as FreeBSD's route(8)), or the /LEN of an IPv6
+ * destination: the netmask of LEN leading ones. Returns LEN.
+ */
+int
+prefixlen(const char *s)
+{
+	struct sockaddr_in6 *m = &so_mask.s_in6;
+	char *end;
+	long len = strtol(s, &end, 10);
+	int i;
+
+	if (*end != 0 || end == s || len < 0 || len > 128) {
+		(void) fprintf(stderr, "%s: bad prefix length\n", s);
+		CleanUpExit(1);
+	}
+	memset(m, 0, sizeof(*m));
+	m->sin6_family = AF_INET6;
+	m->sin6_len = sizeof(*m);
+	for (i = 0; i < len / 8; i++)
+		m->sin6_addr.s6_addr[i] = 0xff;
+	if (len % 8)
+		m->sin6_addr.s6_addr[i] = (0xff << (8 - len % 8)) & 0xff;
+	rtm_addrs |= RTA_NETMASK;
+	if (len < 128)
+		forcenet++;
+	return (int)len;
+}
+
 int
 getaddr(int which, char *s, struct hostent **hpp)
 {
@@ -923,12 +1007,45 @@ getaddr(int which, char *s, struct hostent **hpp)
 		return 0;
 	}
 
-	/* Handle AF_INET6 addresses */
+	/*
+	 * AF_INET6 addresses: ADDR, ADDR%ZONE (an interface's name or index,
+	 * RFC 4007 section 11, for a link-local address) and, for the
+	 * destination, ADDR/LEN (a network; as -prefixlen LEN).
+	 */
 	if (af == AF_INET6) {
 		struct sockaddr_in6 *sin6 = &su->s_in6;
-		if (inet_pton(AF_INET6, s, &sin6->sin6_addr) == 1) {
+		char buf[INET6_ADDRSTRLEN + IFNAMSIZ + 8], *zone, *len;
+
+		if (snprintf(buf, sizeof(buf), "%s", s) >= (int)sizeof(buf)) {
+			(void) fprintf(stderr, "%s: bad IPv6 address\n", s);
+			CleanUpExit(1);
+		}
+		len = (which == RTA_DST) ? strchr(buf, '/') : NULL;
+		if (len)
+			*len++ = 0;
+		zone = strchr(buf, '%');
+		if (zone)
+			*zone++ = 0;
+		if (inet_pton(AF_INET6, buf, &sin6->sin6_addr) == 1) {
 			sin6->sin6_family = AF_INET6;
 			sin6->sin6_len = sizeof(struct sockaddr_in6);
+			if (zone) {
+				char *end;
+				unsigned long n = strtoul(zone, &end, 10);
+
+				sin6->sin6_scope_id = (*end == 0 && end != zone) ? n :
+					if_nametoindex(zone);
+				if (sin6->sin6_scope_id == 0) {
+					(void) fprintf(stderr, "%s: no interface %s\n", s, zone);
+					CleanUpExit(1);
+				}
+			}
+			if (len) {
+				if (prefixlen(len) == 128)
+					return (1);
+				forcenet++;
+				return (0);  /* a network */
+			}
 			return (1);  /* host address */
 		}
 		if (hpp == NULL)
