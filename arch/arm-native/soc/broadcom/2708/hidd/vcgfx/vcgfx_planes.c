@@ -878,6 +878,7 @@ BOOL vcgfx_plane_page(OOP_Class *cl, OOP_Object *bm, ULONG page, BOOL wait)
     struct pRoot_Set setmsg;
     struct vcgfx_plane *pl;
     UBYTE *pixels;
+    UBYTE old = data->front;
     BOOL shown;
 
     /* A decode still writing the page is waited for outside the lock */
@@ -899,11 +900,29 @@ BOOL vcgfx_plane_page(OOP_Class *cl, OOP_Object *bm, ULONG page, BOOL wait)
                    && !((xsd->vcsd_PrimaryParts > 1) && (pl == &xsd->vcsd_Plane[xsd->vcsd_PrimaryAt]))
                    && vc4_hvs_plane_flip(xsd, pl)))
         planes_commit(xsd);
+    /* Not waited for: the displaced page is shown until this latch, and
+     * LockBuffer() waits for it there (vcgfx_plane_page_free()) */
+    data->flippending = shown && !wait && (old != page);
+    data->flipbuf     = old;
+    if (data->flippending)
+        data->fliptoken = vc4_hvs_latch_token(xsd);
     VC4_MBOX_UNLOCK(xsd);
 
     if (shown && wait)
         vc4_hvs_latch_wait(xsd);
     return shown;
+}
+
+/* Before 'page' is written: off the display if a NoWait swap displaced it */
+void vcgfx_plane_page_free(OOP_Class *cl, OOP_Object *bm, ULONG page)
+{
+    struct BitmapData *data = OOP_INST_DATA(cl, bm);
+
+    if (data->flippending && (data->flipbuf == page))
+    {
+        data->flippending = FALSE;
+        vc4_hvs_latch_wait_for(XSD(cl), data->fliptoken);
+    }
 }
 
 /* Is a plane scanning the bitmap out? */

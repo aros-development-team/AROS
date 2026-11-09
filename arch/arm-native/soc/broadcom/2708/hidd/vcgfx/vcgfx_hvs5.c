@@ -1311,6 +1311,15 @@ void vc4_hvs5_latch_wait(struct VideoCoreGfx_staticdata *xsd)
         hvs5_latch_wait(st);
 }
 
+/* The latch of an earlier commit: at once if it has passed */
+void vc4_hvs5_latch_wait_for(struct VideoCoreGfx_staticdata *xsd, ULONG armed)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+
+    if (st->hvs_Active)
+        hvs5_latch_until(st, armed);
+}
+
 void vc4_hvs5_update_cursor(struct VideoCoreGfx_staticdata *xsd)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;

@@ -373,6 +373,7 @@ void    vcgfx_plane_moved(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
 void    vcgfx_plane_restyle(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
 void    vcgfx_plane_forget(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
 BOOL    vcgfx_plane_page(OOP_Class *cl, OOP_Object *bm, ULONG page, BOOL wait);
+void    vcgfx_plane_page_free(OOP_Class *cl, OOP_Object *bm, ULONG page);
 BOOL    vcgfx_plane_shows(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
 /* YCbCr to RGB in 8-bit units, factors in Q22 (1.0 = 1 << 22):
  * R = ky*(Y-y0) + rcr*Cr, G = ky*(Y-y0) + gcb*Cb + gcr*Cr, B = ky*(Y-y0) + bcb*Cb,

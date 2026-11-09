@@ -224,6 +224,7 @@ void vc4_hvs5_update_cursor(struct VideoCoreGfx_staticdata *xsd);
 
 /* Wait for the last armed list update to latch. */
 void vc4_hvs5_latch_wait(struct VideoCoreGfx_staticdata *xsd);
+void vc4_hvs5_latch_wait_for(struct VideoCoreGfx_staticdata *xsd, ULONG armed);
 
 /* Screens as planes (vcsd_Plane[]). planes_ok says whether the list can
  * be owned at all; commit rebuilds it and hands it to the next vblank.

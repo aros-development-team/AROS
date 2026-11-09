@@ -570,6 +570,26 @@ void vc4_hvs6_latch_wait(struct VideoCoreGfx_staticdata *xsd)
         hvs6_latch_wait(st);
 }
 
+/* The frame count the last commit armed, bit 8 set while one is due */
+ULONG vc4_hvs6_latch_token(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+
+    return st->h6_LatchDue ? (0x100 | st->h6_ArmFrame) : 0;
+}
+
+/* That commit's latch, once FRCNT has moved on. The counter is 6 bits: a
+ * token 64 frames old can match again and cost one frame. */
+void vc4_hvs6_latch_wait_for(struct VideoCoreGfx_staticdata *xsd, ULONG token)
+{
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+
+    if (st->h6_Active && (token & 0x100)
+        && !hvs6_frame_wait(st, HVS6_CHAN(st->h6_Chan) + HVS6_DISPSTAT, 0x3fUL << 16,
+                            (token & 0x3f) << 16, FALSE))
+        bug("[VC4HVS6] frame counter stuck at %lu\n", (unsigned long)(token & 0x3f));
+}
+
 /* No firmware ALLOCMEM on this generation, so allocate the cursor buffer */
 BOOL vc4_hvs6_init_cursor(struct VideoCoreGfx_staticdata *xsd)
 {
