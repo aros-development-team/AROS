@@ -1624,6 +1624,14 @@ WORD cmdStartRTIso(struct IOUsbHWReq *ioreq,
     }
 
     UWORD prefill = (rtn->rtn_PTDCount > 1) ? 2 : 1;
+    if (hc->hc_HCIType == HCITYPE_EHCI) {
+        /* A full eight-transaction iTD completes one interrupt late, so an
+           EHCI stream needs more than two iTDs in flight to hold bInterval=1
+           cadence.  Four keeps the schedule contiguous. */
+        prefill = 4;
+        if (prefill > rtn->rtn_PTDCount)
+            prefill = rtn->rtn_PTDCount;
+    }
         for (UWORD cnt = 0; cnt < prefill; cnt++) {
             WORD queueresult = RC_OK;
             switch(hc->hc_HCIType) {

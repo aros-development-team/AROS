@@ -39,12 +39,75 @@ static inline struct EhciPTDPrivate *ehciPTDPrivate(struct PTDNode *ptd)
     return (struct EhciPTDPrivate *)ptd->ptd_Chipset;
 }
 
-#define EHCI_FRAME_NUMBER_MASK  0x1fff
+/* FRINDEX is 14 bits; after >> 3 the frame number is 11 bits and wraps
+   at 2048, not at 8192. */
+#define EHCI_FRAME_NUMBER_MASK  0x07ff
 #define EHCI_MICROFRAME_BW_MAX  6000
 
 static ULONG ehciGetFrameNumber(struct PCIController *hc)
 {
     return (READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT) >> 3) & EHCI_FRAME_NUMBER_MASK;
+}
+
+/* Signed distance from 'earlier' to 'later', modulo the frame-number wrap.
+   Plain subtraction breaks across the wrap; sign-extend from 11 bits. */
+static LONG ehciFrameDelta(UWORD later, UWORD earlier)
+{
+    LONG delta = (LONG)((later - earlier) & EHCI_FRAME_NUMBER_MASK);
+
+    if (delta & ((EHCI_FRAME_NUMBER_MASK + 1) >> 1))
+        delta -= EHCI_FRAME_NUMBER_MASK + 1;
+
+    return delta;
+}
+
+/* EHCI 1.0 4.7.2.1: two frames of lead is always enough.  A larger lead
+   only pushes an interval-1 stream out (the IST-derived value could reach
+   three). */
+static ULONG ehciGetIsochLead(ULONG interval)
+{
+    return interval > 2 ? interval : 2;
+}
+
+/* iouh_Interval is in microframes for high-speed endpoints, but an iTD is
+   scheduled per frame: 1..8 microframes all map to one frame. */
+static ULONG ehciIsoFrameInterval(struct IOUsbHWReq *ioreq)
+{
+    ULONG interval = ioreq->iouh_Interval ? ioreq->iouh_Interval : 1;
+
+    if (ioreq->iouh_Flags & UHFF_HIGHSPEED)
+        interval = (interval + 7) >> 3;
+
+    return interval ? interval : 1;
+}
+
+/* True when every transaction of this descriptor has completed. */
+static BOOL ehciIsoPTDComplete(struct PTDNode *ptd)
+{
+    struct EhciPTDPrivate *ptdpriv = ehciPTDPrivate(ptd);
+
+    if (!ptd->ptd_Descriptor)
+        return FALSE;
+
+    if (ptd->ptd_Flags & PTDF_SITD) {
+        struct EhciSiTD *sitd = (struct EhciSiTD *)ptd->ptd_Descriptor;
+        ULONG token;
+
+        CacheClearE(sitd, sizeof(*sitd), CACRF_InvalidateD);
+        token = READMEM32_LE(&sitd->sitd_Token);
+        return (token & ESITF_STATUS_ACTIVE) ? FALSE : TRUE;
+    } else {
+        struct EhciITD *itd = (struct EhciITD *)ptd->ptd_Descriptor;
+        UWORD pkt;
+
+        CacheClearE(itd, sizeof(*itd), CACRF_InvalidateD);
+        for (pkt = 0; pkt < ptdpriv->ptd_PktCount; pkt++) {
+            ULONG trans = READMEM32_LE(&itd->itd_Transaction[pkt]);
+            if (trans & EITF_STATUS_ACTIVE)
+                return FALSE;
+        }
+        return TRUE;
+    }
 }
 
 static void ehciIsoAccumulateBandwidth(struct PTDNode *ptd, ULONG usage[8])
@@ -174,11 +237,32 @@ void ehciHandleIsochTDs(struct PCIController *hc)
             continue;
         }
 
-        for(idx = 0; idx < ptdcount; idx++) {
-            struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+        for(;;) {
+            struct PTDNode *ptd = NULL;
+            LONG bestframe = 0;
+            UWORD curframe = (UWORD)ehciGetFrameNumber(hc);
 
-            if(!ptd || !(ptd->ptd_Flags & PTDF_ACTIVE))
-                continue;
+            /* Two iTDs can complete before this runs.  Deliver the done
+               hooks in scheduled-frame order (oldest first), not PTD index
+               order, so clients see data in the order it was sent. */
+            for(idx = 0; idx < ptdcount; idx++) {
+                struct PTDNode *cand = rtn->rtn_PTDs[idx];
+                LONG delta;
+
+                if(!cand || !(cand->ptd_Flags & PTDF_ACTIVE))
+                    continue;
+                if(!ehciIsoPTDComplete(cand))
+                    continue;
+
+                delta = ehciFrameDelta((UWORD)cand->ptd_FrameIdx, curframe);
+                if(!ptd || delta < bestframe) {
+                    ptd = cand;
+                    bestframe = delta;
+                }
+            }
+
+            if(!ptd)
+                break;
 
             struct EhciPTDPrivate *ptdpriv = ehciPTDPrivate(ptd);
             struct IOUsbHWReq *ioreq = pciusbIsoGetIOReq(rtn);
@@ -212,7 +296,7 @@ void ehciHandleIsochTDs(struct PCIController *hc)
                 CacheClearE(itd, sizeof(*itd), CACRF_InvalidateD);
                 for(pkt = 0; pkt < ptdpriv->ptd_PktCount; pkt++) {
                     ULONG trans = READMEM32_LE(&itd->itd_Transaction[pkt]);
-                    UWORD residual = (trans >> EITF_LENGTH_SHIFT) & EITF_LENGTH_MASK;
+                    UWORD length = (trans >> EITF_LENGTH_SHIFT) & EITF_LENGTH_MASK;
                     UWORD pktlen = ptdpriv->ptd_PktLength[pkt];
 
                     if(trans & EITF_STATUS_ACTIVE) {
@@ -222,8 +306,17 @@ void ehciHandleIsochTDs(struct PCIController *hc)
                     if(trans & (EITF_STATUS_DBE|EITF_STATUS_BABBLE|EITF_STATUS_XACTERR))
                         error = TRUE;
 
-                    if(pktlen > residual)
-                        actual += pktlen - residual;
+                    /* IN: the controller writes the number of bytes
+                       received.  OUT: controllers either leave the field
+                       unchanged (still the programmed length) or rewrite it
+                       as a residual (QEMU).  Handle both. */
+                    if(rtn->rtn_IOReq.iouh_Dir == UHDIR_IN) {
+                        actual += length;
+                    } else if(length == pktlen) {
+                        actual += pktlen;
+                    } else if(pktlen > length) {
+                        actual += pktlen - length;
+                    }
                 }
 
                 if(pkt < ptdpriv->ptd_PktCount)
@@ -237,30 +330,30 @@ void ehciHandleIsochTDs(struct PCIController *hc)
                 ptd->ptd_NextPTD = NULL;
             }
 
-            rtn->rtn_BufferReq.ubr_Length = ioreq->iouh_Actual;
-            rtn->rtn_BufferReq.ubr_Frame = ptd->ptd_FrameIdx;
+            struct IOUsbHWBufferReq *bufreq = &ptdpriv->ptd_BufferReq;
 
-            if(rtn->rtn_BounceBuffer &&
-                    rtn->rtn_BounceBuffer != rtn->rtn_BufferReq.ubr_Buffer) {
-                usbReleaseBuffer(rtn->rtn_BounceBuffer, rtn->rtn_BufferReq.ubr_Buffer,
-                                 rtn->rtn_BufferReq.ubr_Length, rtn->rtn_IOReq.iouh_Dir);
-                rtn->rtn_BounceBuffer = NULL;
+            bufreq->ubr_Length = ioreq->iouh_Actual;
+            bufreq->ubr_Frame = ptd->ptd_FrameIdx;
+
+            if(ptdpriv->ptd_BounceBuffer &&
+                    ptdpriv->ptd_BounceBuffer != bufreq->ubr_Buffer) {
+                usbReleaseBuffer(ptdpriv->ptd_BounceBuffer, bufreq->ubr_Buffer,
+                                 bufreq->ubr_Length, rtn->rtn_IOReq.iouh_Dir);
+                ptdpriv->ptd_BounceBuffer = NULL;
             }
 
             if(urti) {
                 if(rtn->rtn_IOReq.iouh_Dir == UHDIR_IN) {
-                    if(urti->urti_InReqHook)
-                        CallHookPkt(urti->urti_InReqHook, rtn, &rtn->rtn_BufferReq);
+                    /* The request hook is called once when the transfer is
+                       queued (ehciQueueIsochIO), not here.  Calling it again
+                       at completion gives IN clients two request hooks per
+                       iTD and a mismatched buffer for the done hook. */
                     if(urti->urti_InDoneHook)
-                        CallHookPkt(urti->urti_InDoneHook, rtn, &rtn->rtn_BufferReq);
+                        CallHookPkt(urti->urti_InDoneHook, rtn, bufreq);
                 } else {
                     if(urti->urti_OutDoneHook)
-                        CallHookPkt(urti->urti_OutDoneHook, rtn, &rtn->rtn_BufferReq);
+                        CallHookPkt(urti->urti_OutDoneHook, rtn, bufreq);
                 }
-                /* RT iso contract (cf. denebusb): advance the client buffer
-                   past the data just transferred; the next request hook
-                   continues from there unless it supplies a new buffer. */
-                rtn->rtn_BufferReq.ubr_Buffer += rtn->rtn_BufferReq.ubr_Length;
             }
 
             ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
@@ -383,60 +476,140 @@ WORD ehciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     }
 
     rtn->rtn_NextPTD = 0;
+    rtn->rtn_NextFrame = 0;
+    rtn->rtn_Flags &= ~(RTISO_FLAG_CADENCE_VALID|RTISO_FLAG_EXPLICIT_FRAME);
     rtn->rtn_BounceBuffer = NULL;
 
     return RC_OK;
+}
+
+static struct PTDNode *ehciNextIsoPTD(struct RTIsoNode *rtn)
+{
+    UWORD offset;
+
+    if (!rtn || !rtn->rtn_PTDs || !rtn->rtn_PTDCount)
+        return NULL;
+
+    for (offset = 0; offset < rtn->rtn_PTDCount; offset++) {
+        UWORD idx = (rtn->rtn_NextPTD + offset) % rtn->rtn_PTDCount;
+        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+
+        if (!ptd)
+            continue;
+
+        if (!(ptd->ptd_Flags & (PTDF_ACTIVE | PTDF_BUFFER_VALID))) {
+            rtn->rtn_NextPTD = (idx + 1) % rtn->rtn_PTDCount;
+            return ptd;
+        }
+    }
+
+    return NULL;
 }
 
 WORD ehciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     struct IOUsbHWReq *ioreq = pciusbIsoGetIOReq(rtn);
     struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
-    struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
+    struct PTDNode *ptd = ehciNextIsoPTD(rtn);
+    struct EhciPTDPrivate *ptdpriv;
+    struct IOUsbHWBufferReq *bufreq;
     ULONG interval;
+    BOOL explicit_frame;
 
     pciusbEHCIDebug("EHCI", "%s()\n", __func__);
+
+    if (!ptd)
+        return UHIOERR_NAKTIMEOUT;
+
+    /* Give each PTD its own buffer request, like OHCI.  With one shared
+       rtn_BufferReq only a single iTD could ever be in flight, which forced
+       interval-1 streams to run one iTD per scheduling lead. */
+    ptdpriv = ehciPTDPrivate(ptd);
+    bufreq = &ptdpriv->ptd_BufferReq;
+    *bufreq = rtn->rtn_BufferReq;
+    explicit_frame = FALSE;
+
+    /* Never inherit a completed frame as an explicit frame; the request
+       hook must ask for one on this call.  A stale past frame would make the
+       new iTD run only after the frame list wraps. */
+    bufreq->ubr_Frame = 0;
 
     if (urti) {
         if (ioreq->iouh_Dir == UHDIR_IN) {
             if (urti->urti_InReqHook)
-                CallHookPkt(urti->urti_InReqHook, rtn, &rtn->rtn_BufferReq);
+                CallHookPkt(urti->urti_InReqHook, rtn, bufreq);
         } else {
             if (urti->urti_OutReqHook)
-                CallHookPkt(urti->urti_OutReqHook, rtn, &rtn->rtn_BufferReq);
+                CallHookPkt(urti->urti_OutReqHook, rtn, bufreq);
         }
     } else {
-        rtn->rtn_BufferReq.ubr_Buffer = ioreq->iouh_Data;
-        rtn->rtn_BufferReq.ubr_Length = ioreq->iouh_Length;
-        rtn->rtn_BufferReq.ubr_Frame = ioreq->iouh_Frame;
-        rtn->rtn_BufferReq.ubr_Flags = 0;
+        bufreq->ubr_Buffer = ioreq->iouh_Data;
+        bufreq->ubr_Length = ioreq->iouh_Length;
+        bufreq->ubr_Frame = ioreq->iouh_Frame;
+        bufreq->ubr_Flags = 0;
     }
 
-    if (!rtn->rtn_BufferReq.ubr_Length)
-        rtn->rtn_BufferReq.ubr_Length = ioreq->iouh_Length;
+    if (!bufreq->ubr_Length)
+        bufreq->ubr_Length = ioreq->iouh_Length;
 
-    interval = ioreq->iouh_Interval ? ioreq->iouh_Interval : 1;
-    if (!rtn->rtn_BufferReq.ubr_Frame) {
+    interval = ehciIsoFrameInterval(ioreq);
+    {
         ULONG frameidx = ehciGetFrameNumber(hc);
-        ULONG lead = interval;
-        ULONG next = 0;
+        ULONG lead = ehciGetIsochLead(interval);
 
-        /* Ensure a minimum lead time so the HC has time to process the descriptor */
-        if(lead < 4) lead = 4;
+        /* Only accept an explicit frame that is still in the unambiguous
+           future window; anything else is rescheduled from now. */
+        if (bufreq->ubr_Frame) {
+            ULONG frame = bufreq->ubr_Frame & EHCI_FRAME_NUMBER_MASK;
+            LONG delta = ehciFrameDelta((UWORD)frame, (UWORD)frameidx);
 
-        if(rtn->rtn_NextFrame) {
-            LONG delta = (LONG)(rtn->rtn_NextFrame - (UWORD)frameidx);
-            /* rtn_NextFrame is valid if it is far enough in the future */
-            if(delta >= (LONG)lead && delta < (LONG)(EHCI_FRAME_NUMBER_MASK / 2))
-                next = rtn->rtn_NextFrame;
+            if (delta >= (LONG)lead && delta < (LONG)(EHCI_FRAME_NUMBER_MASK / 2)) {
+                explicit_frame = TRUE;
+                bufreq->ubr_Frame = (UWORD)frame;
+            } else {
+                bufreq->ubr_Frame = 0;
+            }
         }
-        if(!next)
-            next = (frameidx + lead) & EHCI_FRAME_NUMBER_MASK;
-        rtn->rtn_BufferReq.ubr_Frame = (UWORD)next;
-    } else {
-        rtn->rtn_BufferReq.ubr_Frame &= EHCI_FRAME_NUMBER_MASK;
+
+        if (!bufreq->ubr_Frame) {
+            ULONG next = 0;
+
+            if (rtn->rtn_Flags & RTISO_FLAG_CADENCE_VALID) {
+                LONG delta = ehciFrameDelta((UWORD)rtn->rtn_NextFrame, (UWORD)frameidx);
+
+                /* Accept a running cadence only when it is beyond the
+                   scheduling threshold and still unambiguous.  Anything
+                   else (including a stale value from a previous run) is
+                   rescheduled from now. */
+                if (delta >= (LONG)lead && delta < (LONG)(EHCI_FRAME_NUMBER_MASK / 2))
+                    next = rtn->rtn_NextFrame;
+            }
+            if (!next)
+                next = (frameidx + lead) & EHCI_FRAME_NUMBER_MASK;
+            bufreq->ubr_Frame = (UWORD)next;
+        }
     }
-    rtn->rtn_NextFrame = (rtn->rtn_BufferReq.ubr_Frame + interval) & EHCI_FRAME_NUMBER_MASK;
+
+    if (urti) {
+        if (explicit_frame)
+            rtn->rtn_Flags |= RTISO_FLAG_EXPLICIT_FRAME;
+        else
+            rtn->rtn_Flags &= ~RTISO_FLAG_EXPLICIT_FRAME;
+    }
+
+    rtn->rtn_NextFrame = (bufreq->ubr_Frame + interval) & EHCI_FRAME_NUMBER_MASK;
+    rtn->rtn_Flags |= RTISO_FLAG_CADENCE_VALID;
+
+    ptd->ptd_FrameIdx = bufreq->ubr_Frame;
+    ptd->ptd_Length = bufreq->ubr_Length;
+    ptd->ptd_Flags |= PTDF_BUFFER_VALID;
+    ptdpriv->ptd_BounceBuffer = NULL;
+    rtn->rtn_BufferReq = *bufreq;
+    /* RT iso contract (cf. denebusb/OHCI): advance the client buffer past
+       the data just queued; the next request hook continues from there
+       unless it supplies a new buffer. */
+    if(urti)
+        rtn->rtn_BufferReq.ubr_Buffer += bufreq->ubr_Length;
 
     return RC_OK;
 }
@@ -478,10 +651,6 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
     UWORD idx;
     UWORD ptdcount = rtn->rtn_PTDCount;
-    APTR dmabuffer;
-    ULONG offset = 0;
-    ULONG remaining;
-    UWORD scheduled = 0;
     BOOL scheduled_any = FALSE;
 
     pciusbEHCIDebug("EHCI", "%s()\n", __func__);
@@ -489,31 +658,13 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     if(!rtn->rtn_PTDs || !ptdcount)
         return FALSE;
 
-    dmabuffer = rtn->rtn_BufferReq.ubr_Buffer;
-#if __WORDSIZE == 64
-    if(dmabuffer && !ehcihcp->ehc_64BitCapable) {
-        dmabuffer = usbGetBuffer(dmabuffer, rtn->rtn_BufferReq.ubr_Length,
-                                 rtn->rtn_IOReq.iouh_Dir);
-        if(!dmabuffer) {
-            ehciAbortIsochIO(hc, rtn, UHIOERR_OUTOFMEMORY);
-            return FALSE;
-        }
-
-        if(dmabuffer != rtn->rtn_BufferReq.ubr_Buffer &&
-                rtn->rtn_IOReq.iouh_Dir == UHDIR_OUT) {
-            CopyMem(rtn->rtn_BufferReq.ubr_Buffer, dmabuffer, rtn->rtn_BufferReq.ubr_Length);
-        }
-    }
-#endif
-    rtn->rtn_BounceBuffer = (dmabuffer != rtn->rtn_BufferReq.ubr_Buffer) ? dmabuffer : NULL;
-    remaining = rtn->rtn_BufferReq.ubr_Length;
-
     for(idx = 0; idx < ptdcount; idx++) {
-        UWORD ptdidx = (rtn->rtn_NextPTD + idx) % ptdcount;
+        UWORD ptdidx = idx;
         struct PTDNode *ptd = rtn->rtn_PTDs[ptdidx];
         struct EhciITD *itd;
         struct EhciSiTD *sitd;
         APTR buffer;
+        APTR dmabuffer;
         IPTR phys;
         ULONG len;
         ULONG slot;
@@ -549,22 +700,38 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
             }
         }
 
-        if(!remaining)
-            break;
-
-        struct EhciPTDPrivate *ptdpriv = ehciPTDPrivate(ptd);
-        buffer = (UBYTE *)dmabuffer + offset;
-        len = ptd->ptd_Length ? ptd->ptd_Length : remaining;
-        if(len > remaining)
-            len = remaining;
-        ptdlen = len;
-
-        if(!buffer || !len)
+        if(!(ptd->ptd_Flags & PTDF_BUFFER_VALID))
             continue;
 
+        struct EhciPTDPrivate *ptdpriv = ehciPTDPrivate(ptd);
+        struct IOUsbHWBufferReq *bufreq = &ptdpriv->ptd_BufferReq;
+        buffer = bufreq->ubr_Buffer;
+        len = bufreq->ubr_Length;
+        ptdlen = len;
+
+        if(!buffer || !len) {
+            /* A zero-length request must not permanently occupy a PTD. */
+            ptd->ptd_Flags &= ~PTDF_BUFFER_VALID;
+            continue;
+        }
+
+        dmabuffer = buffer;
+#if __WORDSIZE == 64
+        if(dmabuffer && !ehcihcp->ehc_64BitCapable) {
+            dmabuffer = usbGetBuffer(dmabuffer, len, rtn->rtn_IOReq.iouh_Dir);
+            if(!dmabuffer) {
+                ehciAbortIsochIO(hc, rtn, UHIOERR_OUTOFMEMORY);
+                return FALSE;
+            }
+            if(dmabuffer != buffer && rtn->rtn_IOReq.iouh_Dir == UHDIR_OUT)
+                CopyMem(buffer, dmabuffer, len);
+        }
+#endif
+        ptdpriv->ptd_BounceBuffer = (dmabuffer != buffer) ? dmabuffer : NULL;
+
         is_split = (ptd->ptd_Flags & PTDF_SITD) != 0;
-        slot = (rtn->rtn_BufferReq.ubr_Frame + scheduled) & framemask;
-        phys = (IPTR)pciGetPhysical(hc, buffer);
+        slot = ptd->ptd_FrameIdx & framemask;
+        phys = (IPTR)pciGetPhysical(hc, dmabuffer);
         ptdpriv->ptd_PktCount = 0;
         for(pktidx = 0; pktidx < 8; pktidx++)
             ptdpriv->ptd_PktLength[pktidx] = 0;
@@ -583,7 +750,10 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
                           ESIM_PORT(rtn->rtn_IOReq.iouh_SplitHubPort) |
                           ESIM_HUB(rtn->rtn_IOReq.iouh_SplitHubAddr));
 
-            WRITEMEM32_LE(&sitd->sitd_Token, ESITF_STATUS_ACTIVE |
+            /* siTD has no separate completion interrupt bit: bit 31 is IOC
+               and the active state is the low status bit.  Split transfers
+               behind a USB 2.0 hub never complete without both. */
+            WRITEMEM32_LE(&sitd->sitd_Token, ESITF_IOC | ESITF_STATUS_ACTIVE |
                           ((ptdlen & ESITF_LENGTH_MASK) << ESITF_LENGTH_SHIFT));
 
             ehciSetPointer(ehcihcp, sitd->sitd_BufferPtr[0], sitd->sitd_ExtBufferPtr[0],
@@ -605,6 +775,15 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
             if(pktcnt > 8)
                 pktcnt = 8;
 
+            /* Buffer pointer page 2 bits 1:0 carry Multi (transactions per
+               microframe).  Zero is reserved/undefined, so default to 1 and
+               follow the endpoint's high-bandwidth multiplier if set. */
+            ULONG multi = 1;
+            if(rtn->rtn_IOReq.iouh_Flags & UHFF_MULTI_3)
+                multi = 3;
+            else if(rtn->rtn_IOReq.iouh_Flags & UHFF_MULTI_2)
+                multi = 2;
+
             ehciSetPointer(ehcihcp, itd->itd_BufferPtr[0], itd->itd_ExtBufferPtr[0],
                            (phys & EITM_BUFFER_BASE) |
                            EITM_DEVADDR(rtn->rtn_IOReq.iouh_DevAddr) |
@@ -614,6 +793,7 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
                            EITM_MAXPKTSIZE(rtn->rtn_IOReq.iouh_MaxPktSize));
             ehciSetPointer(ehcihcp, itd->itd_BufferPtr[2], itd->itd_ExtBufferPtr[2],
                            ((phys + 8192) & EITM_BUFFER_BASE) |
+                           EITM_MULTI(multi) |
                            EITM_BUFFER_DIR(rtn->rtn_IOReq.iouh_Dir == UHDIR_IN));
             ehciSetPointer(ehcihcp, itd->itd_BufferPtr[3], itd->itd_ExtBufferPtr[3], (phys + 12288) & EITM_BUFFER_BASE);
             ehciSetPointer(ehcihcp, itd->itd_BufferPtr[4], itd->itd_ExtBufferPtr[4], (phys + 16384) & EITM_BUFFER_BASE);
@@ -634,12 +814,19 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
             pktoffset = phys & EITM_BUFFER_OFFSET;
             len = ptdlen;
             for(pktidx = 0; pktidx < pktcnt; pktidx++) {
+                ULONG trans;
                 pktlen = ptdpriv->ptd_PktLength[pktidx];
-                WRITEMEM32_LE(&itd->itd_Transaction[pktidx],
-                              EITF_STATUS_ACTIVE |
-                              ((pktoffset >> 12) << EITF_PAGESELECT_SHIFT) |
-                              (pktoffset & EITM_BUFFER_OFFSET) |
-                              ((pktlen & EITF_LENGTH_MASK) << EITF_LENGTH_SHIFT));
+                trans = EITF_STATUS_ACTIVE |
+                        ((pktoffset >> 12) << EITF_PAGESELECT_SHIFT) |
+                        (pktoffset & EITM_BUFFER_OFFSET) |
+                        ((pktlen & EITF_LENGTH_MASK) << EITF_LENGTH_SHIFT);
+                /* RT-ISO clients rely on the completion interrupt to run
+                   ehciHandleIsochTDs().  Without IOC on the last transaction
+                   the controller never raises USBINT and no request hook /
+                   done hook is ever called. */
+                if(pktidx == pktcnt - 1)
+                    trans |= EITF_IOC;
+                WRITEMEM32_LE(&itd->itd_Transaction[pktidx], trans);
                 len -= pktlen;
                 pktoffset += pktlen;
             }
@@ -680,12 +867,8 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
         ptd->ptd_FrameIdx = slot;
         ptd->ptd_Length = ptdlen;
-        ptd->ptd_Flags |= (PTDF_ACTIVE | PTDF_BUFFER_VALID);
-        remaining -= ptdlen;
-        offset += ptdlen;
-        scheduled++;
+        ptd->ptd_Flags |= PTDF_ACTIVE;
         scheduled_any = TRUE;
-        rtn->rtn_NextPTD = (ptdidx + 1) % ptdcount;
     }
 
     return scheduled_any;
@@ -711,12 +894,23 @@ void ehciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         }
     }
 
-    if(rtn->rtn_BounceBuffer &&
-            rtn->rtn_BounceBuffer != rtn->rtn_BufferReq.ubr_Buffer) {
-        usbReleaseBuffer(rtn->rtn_BounceBuffer, rtn->rtn_BufferReq.ubr_Buffer,
-                         rtn->rtn_BufferReq.ubr_Length, rtn->rtn_IOReq.iouh_Dir);
-        rtn->rtn_BounceBuffer = NULL;
+    for(idx = 0; idx < ptdcount; idx++) {
+        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+        if(ptd && ptd->ptd_Chipset) {
+            struct EhciPTDPrivate *ptdpriv = ehciPTDPrivate(ptd);
+            if(ptdpriv->ptd_BounceBuffer &&
+                    ptdpriv->ptd_BounceBuffer != ptdpriv->ptd_BufferReq.ubr_Buffer) {
+                usbReleaseBuffer(ptdpriv->ptd_BounceBuffer, ptdpriv->ptd_BufferReq.ubr_Buffer,
+                                 ptdpriv->ptd_BufferReq.ubr_Length, rtn->rtn_IOReq.iouh_Dir);
+                ptdpriv->ptd_BounceBuffer = NULL;
+            }
+        }
     }
+
+    /* Drop the old cadence so a later Start does not inherit a stale frame
+       (which could otherwise wait a long time before it becomes current). */
+    rtn->rtn_NextFrame = 0;
+    rtn->rtn_Flags &= ~(RTISO_FLAG_CADENCE_VALID|RTISO_FLAG_EXPLICIT_FRAME);
 }
 
 void ehciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)

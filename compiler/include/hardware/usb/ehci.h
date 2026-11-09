@@ -204,6 +204,7 @@
 #define EITM_DEVADDR(x)          ((x) & 0x7f)
 #define EITM_ENDPT(x)            (((x) & 0x0f) << 8)
 #define EITM_MAXPKTSIZE(x)       (((x) & 0x07ff) << 0)
+#define EITM_MULTI(x)            ((x) & 0x03)
 #define EITM_DIRECTION_IN        (1UL<<11)
 #define EITM_BUFFER_DIR(x)       ((x) ? EITM_DIRECTION_IN : 0)
 #define EITM_SMASK               0x000000ff
@@ -215,7 +216,8 @@
 #define ESIM_PORT(x)             (((x) & 0xff) << 16)
 #define ESIM_HUB(x)              (((x) & 0x7f) << 24)
 
-#define ESITF_STATUS_ACTIVE      (1UL<<31)
+#define ESITF_IOC                (1UL<<31)
+#define ESITF_STATUS_ACTIVE      0x80
 #define ESITF_STATUS_ERR         (1UL<<30)
 #define ESITF_STATUS_BABBLE      (1UL<<29)
 #define ESITF_STATUS_XACTERR     (1UL<<28)
