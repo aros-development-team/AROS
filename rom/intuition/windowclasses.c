@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
     
     Classes for window decor stuff, like dragbar, close etc.
@@ -70,6 +70,9 @@ on screen.
 
 /***********************************************************************************/
 
+#ifdef __MORPHOS__
+
+/* Task started by DragBarClass GM_GOACTIVE to move the window asynchronously */
 void MoveTask(struct dragbar_data *data,struct Window *w,struct Screen *screen,struct IntuitionBase *IntuitionBase)
 {
     struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
@@ -163,6 +166,8 @@ void MoveTask(struct dragbar_data *data,struct Window *w,struct Screen *screen,s
         }
     }
 }
+
+#endif /* __MORPHOS__ */
 
 /***********************************************************************************/
 
@@ -333,6 +338,62 @@ IPTR DragBarClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender * msg)
 
 /***********************************************************************************/
 
+/* Draw the frame that shows where the dragged window will go. It is drawn
+   in COMPLEMENT mode, so drawing it again erases it. */
+
+static void dragbar_drawframe(struct dragbar_data *data, struct Window *w,
+                              struct IntuitionBase *IntuitionBase)
+{
+    drawwindowframe(w->WScreen
+                    , data->rp
+                    , data->curleft
+                    , data->curtop
+                    , data->curleft + w->Width  - 1
+                    , data->curtop  + w->Height - 1
+                    , IntuitionBase
+                    );
+}
+
+/***********************************************************************************/
+
+/* Release the locks that are held while the user drags a window */
+
+static void dragbar_releaselocks(struct dragbar_data *data, struct Window *w,
+                                 struct IntuitionBase *IntuitionBase)
+{
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
+
+    if (data->drag_layerlock)
+    {
+        UnlockLayers(&w->WScreen->LayerInfo);
+        data->drag_layerlock = FALSE;
+    }
+
+#ifdef USEGADGETLOCK
+    if (data->drag_gadgetlock)
+    {
+        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+        data->drag_gadgetlock = FALSE;
+    }
+
+    if (data->drag_inputhandlerlock)
+    {
+        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
+        data->drag_inputhandlerlock = FALSE;
+    }
+#endif
+
+#ifdef USEWINDOWLOCK
+    if (data->drag_windowlock)
+    {
+        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
+        data->drag_windowlock = FALSE;
+    }
+#endif
+}
+
+/***********************************************************************************/
+
 IPTR DragBarClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
@@ -431,29 +492,14 @@ IPTR DragBarClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 
         #ifndef DELAYEDDRAG
             if (!(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OPAQUEMOVE))
-                drawwindowframe(w->WScreen
-                        , data->rp
-                        , data->curleft
-                        , data->curtop
-                        , data->curleft + w->Width  - 1
-                        , data->curtop  + w->Height - 1
-                        , IntuitionBase
-                           );
+                dragbar_drawframe(data, w, IntuitionBase);
 
             data->isrendered = TRUE;
         #endif
 
             data->drag_canceled = FALSE;
 
-            {
-                UQUAD currenttime;
-                
-                currenttime = ie->ie_TimeStamp.tv_secs;
-                currenttime = currenttime * 50;
-                currenttime += ie->ie_TimeStamp.tv_micro / 20000;
-                
-                data->lasteventtime = currenttime;
-            }
+            data->lasteventtime = EventTicks(ie);
 
             /* size mouse bounds such that mouse pointer cannot move if window cannot move, if offscreenlayers is turned off */
             if (!(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OFFSCREENLAYERS)) {
@@ -469,34 +515,7 @@ IPTR DragBarClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
         }
 
 fail:
-        if (data->drag_layerlock)
-        {
-            UnlockLayers(&w->WScreen->LayerInfo);
-            data->drag_layerlock = FALSE;
-            ;
-        }
-
-    #ifdef USEGADGETLOCK
-        if (data->drag_gadgetlock)
-        {
-            ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
-            data->drag_gadgetlock = FALSE;
-        }
-        
-        if (data->drag_inputhandlerlock)
-        {
-            ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
-            data->drag_inputhandlerlock = FALSE;
-        }
-    #endif
-
-    #ifdef USEWINDOWLOCK
-        if (data->drag_windowlock)
-        {
-            ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
-            data->drag_windowlock = FALSE;
-        }
-    #endif
+        dragbar_releaselocks(data, w, IntuitionBase);
     }
 
     return retval;
@@ -643,14 +662,7 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
                         if ((data->isrendered) && (!(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OPAQUEMOVE)))
                         {
                             /* Erase old frame */
-                            drawwindowframe(w->WScreen
-                                            , data->rp
-                                            , data->curleft
-                                            , data->curtop
-                                            , data->curleft + w->Width  - 1
-                                            , data->curtop  + w->Height - 1
-                                            , IntuitionBase
-                                            );
+                            dragbar_drawframe(data, w, IntuitionBase);
                         }
 
                         data->curleft = new_left;
@@ -662,11 +674,7 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
 
                             if (newx || newy)
                             {
-                                UQUAD currenttime;
-                                
-                                currenttime = ie->ie_TimeStamp.tv_secs;
-                                currenttime = currenttime * 50;
-                                currenttime += ie->ie_TimeStamp.tv_micro / 20000;
+                                UQUAD currenttime = EventTicks(ie);
 
                                 if (currenttime > data->lasteventtime + 10) //10 delay should result in intuitick freq
                                 {
@@ -678,6 +686,7 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
                                     data->lasteventtime = currenttime;
                                 }
 
+                            #ifdef __MORPHOS__
                                 if (data->movetask)
                                 {
                                     Forbid();
@@ -687,9 +696,8 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
                                     CheckLayers(w->WScreen, IntuitionBase);
                                 }
                                 else
+                            #endif
                                 {
-                                    struct Requester *req;
-
                                     LockLayers(&w->WScreen->LayerInfo);
 
                                     w->LeftEdge    += newx;
@@ -702,40 +710,7 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
 
                                     MoveSizeLayer(WLAYER(w), newx, newy, 0, 0);
 
-                                    for (req = w->FirstRequest; req; req = req->OlderRequest)
-                                    {
-                                        struct Layer *layer = req->ReqLayer;
-
-                                        if (layer)
-                                        {
-                                            int dx, dy, dw, dh;
-                                            int left, top, right, bottom;
-
-                                            left = data->curleft + req->LeftEdge;
-                                            top = data->curtop + req->TopEdge;
-                                            right = left + req->Width - 1;
-                                            bottom = top + req->Height - 1;
-
-                                            if (left > data->curleft + w->Width - 1)
-                                                left = data->curleft + w->Width - 1;
-
-                                            if (top > data->curtop + w->Height - 1)
-                                                top = data->curtop + w->Height - 1;
-
-                                            if (right > data->curleft + w->Width - 1)
-                                                right = data->curleft + w->Width - 1;
-
-                                            if (bottom > data->curtop + w->Height - 1)
-                                                bottom = data->curtop + w->Height - 1;
-
-                                            dx = left - layer->bounds.MinX;
-                                            dy = top - layer->bounds.MinY;
-                                            dw = right - left - layer->bounds.MaxX + layer->bounds.MinX;
-                                            dh = bottom - top - layer->bounds.MaxY + layer->bounds.MinY;
-
-                                            MoveSizeLayer(layer, dx, dy, dw, dh);
-                                        }
-                                    }
+                                    MoveRequesterLayers(w, data->curleft, data->curtop, w->Width, w->Height, IntuitionBase);
                                     
                                     CheckLayers(w->WScreen, IntuitionBase);
 
@@ -753,13 +728,7 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
                             }
                             #endif
                                 /* Rerender the window frame */
-                            drawwindowframe(w->WScreen
-                                            , data->rp
-                                            , data->curleft
-                                            , data->curtop
-                                            , data->curleft + w->Width  - 1
-                                            , data->curtop  + w->Height - 1
-                                            , IntuitionBase);
+                            dragbar_drawframe(data, w, IntuitionBase);
                             data->isrendered = TRUE;
                         }
 
@@ -782,38 +751,24 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
             #ifdef DELAYEDDRAG
             if ((!(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OPAQUEMOVE)) && (!data->drag_layerlock))
             {
-                UQUAD currenttime;
-                
-                currenttime = ie->ie_TimeStamp.tv_secs;
-                currenttime = currenttime * 50;
-                currenttime += ie->ie_TimeStamp.tv_micro / 20000;
+                UQUAD currenttime = EventTicks(ie);
 
                 if (currenttime > data->lasteventtime + 10)
                 {
                     LockLayers(&w->WScreen->LayerInfo);
                     data->drag_layerlock = TRUE;
 
-                    drawwindowframe(w->WScreen
-                        , data->rp
-                        , data->curleft
-                        , data->curtop
-                        , data->curleft + w->Width  - 1
-                        , data->curtop  + w->Height - 1
-                        , IntuitionBase
-                        );
+                    dragbar_drawframe(data, w, IntuitionBase);
                     data->lasteventtime = currenttime;
                     data->isrendered = TRUE;
                 }
             }
             #endif
 
+            #ifdef __MORPHOS__
             if (data->movetask)
             {
-                UQUAD currenttime;
-                
-                currenttime = ie->ie_TimeStamp.tv_secs;
-                currenttime = currenttime * 50;
-                currenttime += ie->ie_TimeStamp.tv_micro / 20000;
+                UQUAD currenttime = EventTicks(ie);
 
                 if ((!data->drag_refreshed) && currenttime > data->lasteventtime + 10) //10 delay should result in intuitick freq
                 {
@@ -827,6 +782,7 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
                 }
                 CheckLayers(w->WScreen,IntuitionBase);
             }
+            #endif
             break;
         } /* switch (ie->ie_Class) */
 
@@ -841,7 +797,6 @@ IPTR DragBarClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactiv
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    struct LayersBase   *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct dragbar_data *data;
     struct Window       *w;
 
@@ -857,14 +812,7 @@ IPTR DragBarClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactiv
         SetDrMd(data->rp, COMPLEMENT);
 
         /* Erase old frame */
-        drawwindowframe(w->WScreen
-                , data->rp
-                , data->curleft
-                , data->curtop
-                , data->curleft + w->Width  - 1
-                , data->curtop  + w->Height - 1
-                , IntuitionBase
-                   );
+        dragbar_drawframe(data, w, IntuitionBase);
 
     }
 
@@ -873,11 +821,13 @@ IPTR DragBarClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactiv
     if (!data->drag_refreshed) CheckLayers(w->WScreen, IntuitionBase);
 
     Forbid();
+#ifdef __MORPHOS__
     if (data->movetask)
     {
         Signal(data->movetask,WSIG_DIE);
         data->movetask = 0;
     }
+#endif
     Permit();
 
     if (!data->drag_canceled)// && !(GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_OPAQUEMOVE))
@@ -906,33 +856,7 @@ IPTR DragBarClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactiv
 
     data->drag_canceled = TRUE;
 
-    if (data->drag_layerlock)
-    {
-        UnlockLayers(&w->WScreen->LayerInfo);
-        data->drag_layerlock = FALSE;
-    }
-
-#ifdef USEGADGETLOCK
-    if (data->drag_gadgetlock)
-    {
-        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
-        data->drag_gadgetlock = FALSE;
-    }
-
-    if (data->drag_inputhandlerlock)
-    {
-        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
-        data->drag_inputhandlerlock = FALSE;
-    }
-#endif
-
-#ifdef USEWINDOWLOCK
-    if (data->drag_windowlock)
-    {
-        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
-        data->drag_windowlock = FALSE;
-    }
-#endif
+    dragbar_releaselocks(data, w, IntuitionBase);
 
     /* User through with drag operation. Unlock layers and free
     rastport clone
@@ -999,6 +923,8 @@ IPTR DragBarClass__OM_NEW(Class *cl, Object *o, Msg msg)
 
 /***********************************************************************************/
 
+#if USE_OPAQUESIZE || defined(__MORPHOS__)
+
 void smartresize(struct Window *w,struct sizebutton_data *data,Class *cl)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
@@ -1057,6 +983,64 @@ void smartresize(struct Window *w,struct sizebutton_data *data,Class *cl)
     CheckLayers(w->WScreen, IntuitionBase);
 
     UnlockLayers(&w->WScreen->LayerInfo);
+}
+
+#endif /* USE_OPAQUESIZE || __MORPHOS__ */
+
+/***********************************************************************************/
+
+/* Draw the frame that shows the size the window will get. It is drawn in
+   COMPLEMENT mode, so drawing it again erases it. */
+
+static void sizebutton_drawframe(struct sizebutton_data *data, struct Window *w,
+                                 struct IntuitionBase *IntuitionBase)
+{
+    drawwindowframe(w->WScreen
+                    , data->rp
+                    , data->left
+                    , data->top
+                    , data->left + data->width  - 1
+                    , data->top  + data->height - 1
+                    , IntuitionBase
+                    );
+}
+
+/***********************************************************************************/
+
+/* Release the locks that are held while the user resizes a window */
+
+static void sizebutton_releaselocks(struct sizebutton_data *data, struct Window *w,
+                                    struct IntuitionBase *IntuitionBase)
+{
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
+
+    if (data->drag_layerlock)
+    {
+        UnlockLayers(&w->WScreen->LayerInfo);
+        data->drag_layerlock = FALSE;
+    }
+
+#ifdef USEGADGETLOCK
+    if (data->drag_gadgetlock)
+    {
+        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+        data->drag_gadgetlock = FALSE;
+    }
+
+    if (data->drag_inputhandlerlock)
+    {
+        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
+        data->drag_inputhandlerlock = FALSE;
+    }
+#endif
+
+#ifdef USEWINDOWLOCK
+    if (data->drag_windowlock)
+    {
+        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
+        data->drag_windowlock = FALSE;
+    }
+#endif
 }
 
 /***********************************************************************************/
@@ -1166,26 +1150,12 @@ IPTR SizeButtonClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *m
 
         #ifndef DELAYEDSIZE
             if(!OPAQUESIZE)
-                drawwindowframe(w->WScreen
-                                , data->rp
-                                , data->left
-                                , data->top
-                                , data->left + data->width  - 1
-                                , data->top  + data->height - 1
-                                , IntuitionBase
-                                );
+                sizebutton_drawframe(data, w, IntuitionBase);
 
             data->isrendered = TRUE;
         #endif
 
-            {
-                UQUAD currenttime;
-                
-                currenttime = ie->ie_TimeStamp.tv_secs;
-                currenttime = currenttime * 50;
-                currenttime += ie->ie_TimeStamp.tv_micro / 20000;
-                data->lasteventtime = currenttime;
-            }
+            data->lasteventtime = EventTicks(ie);
 
             data->drag_canceled = FALSE;
 
@@ -1206,34 +1176,7 @@ IPTR SizeButtonClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *m
         }
 
 fail:
-        if (data->drag_layerlock)
-        {
-            UnlockLayers(&w->WScreen->LayerInfo);
-            data->drag_layerlock = FALSE;
-            ;
-        }
-
-#ifdef USEGADGETLOCK
-        if (data->drag_gadgetlock)
-        {
-            ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
-            data->drag_gadgetlock = FALSE;
-        }
-        
-        if (data->drag_inputhandlerlock)
-        {
-            ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
-            data->drag_inputhandlerlock = FALSE;
-        }
-#endif
-
-#ifdef USEWINDOWLOCK
-        if (data->drag_windowlock)
-        {
-            ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
-            data->drag_windowlock = FALSE;
-        }
-#endif
+        sizebutton_releaselocks(data, w, IntuitionBase);
     }
 
     return retval;
@@ -1388,14 +1331,7 @@ IPTR SizeButtonClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput
                         if (data->isrendered && !OPAQUESIZE)
                         {
                             /* Erase old frame */
-                            drawwindowframe(w->WScreen
-                                            , data->rp
-                                            , data->left
-                                            , data->top
-                                            , data->left + data->width  - 1
-                                            , data->top  + data->height - 1
-                                            , IntuitionBase
-                                            );
+                            sizebutton_drawframe(data, w, IntuitionBase);
 
                         }
 
@@ -1442,14 +1378,7 @@ IPTR SizeButtonClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput
                         data->drag_ticks = 2;
 
                         if (!OPAQUESIZE)
-                            drawwindowframe(w->WScreen
-                                            , data->rp
-                                            , data->left
-                                            , data->top
-                                            , data->left + data->width  - 1
-                                            , data->top  + data->height - 1
-                                            , IntuitionBase
-                                            );
+                            sizebutton_drawframe(data, w, IntuitionBase);
 
                         data->isrendered = TRUE;
 
@@ -1474,24 +1403,14 @@ IPTR SizeButtonClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput
             #ifdef DELAYEDSIZE
             if (!data->drag_layerlock && !OPAQUESIZE)
             {
-                UQUAD currenttime;
-                currenttime = ie->ie_TimeStamp.tv_secs;
-                currenttime = currenttime * 50;
-                currenttime += ie->ie_TimeStamp.tv_micro / 20000;
+                UQUAD currenttime = EventTicks(ie);
 
                 if (currenttime > data->lasteventtime + 10)
                 {
                     LockLayers(&w->WScreen->LayerInfo);
                     data->drag_layerlock = TRUE;
 
-                    drawwindowframe(w->WScreen
-                                    , data->rp
-                                    , data->left
-                                    , data->top
-                                    , data->left + data->width  - 1
-                                    , data->top  + data->height - 1
-                                    , IntuitionBase
-                                    );
+                    sizebutton_drawframe(data, w, IntuitionBase);
                     data->lasteventtime = currenttime;
                     data->isrendered = TRUE;
                 }
@@ -1537,7 +1456,6 @@ IPTR SizeButtonClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInac
 {
     struct IntuitionBase    *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GfxBase          *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    struct LayersBase       *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct sizebutton_data  *data;
     struct Window           *w;
 
@@ -1553,14 +1471,7 @@ IPTR SizeButtonClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInac
 
         /* Erase old frame */
         if (!OPAQUESIZE)
-            drawwindowframe(w->WScreen
-                            , data->rp
-                            , data->left
-                            , data->top
-                            , data->left + data->width  - 1
-                            , data->top  + data->height - 1
-                            , IntuitionBase
-                            );
+            sizebutton_drawframe(data, w, IntuitionBase);
 
     }
     else
@@ -1572,33 +1483,7 @@ IPTR SizeButtonClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInac
     }
     data->isrendered = FALSE;
 
-    if (data->drag_layerlock)
-    {
-        UnlockLayers(&w->WScreen->LayerInfo);
-        data->drag_layerlock = FALSE;
-    }
-
-#ifdef USEGADGETLOCK
-    if (data->drag_gadgetlock)
-    {
-        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
-        data->drag_gadgetlock = FALSE;
-    }
-    
-    if (data->drag_inputhandlerlock)
-    {
-        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->InputHandlerLock);
-        data->drag_inputhandlerlock = FALSE;
-    }
-#endif
-
-#ifdef USEWINDOWLOCK
-    if (data->drag_windowlock)
-    {
-        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
-        data->drag_windowlock = FALSE;
-    }
-#endif
+    sizebutton_releaselocks(data, w, IntuitionBase);
 
     //jDc: workarounds refresh pb on GZZ window resize
     ((struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data)->ActiveSysGadget->Flags &= ~GFLG_SELECTED;

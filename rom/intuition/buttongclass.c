@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2020, The AROS Development Team. All rights reserved.
+    Copyright  1995-2026, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
 
     AROS buttongclass implementation.
@@ -124,18 +124,7 @@ IPTR ButtonGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
         
         if (gi)
         {
-            struct RastPort *rp = ObtainGIRPort(gi);
-
-            if (rp)
-            {
-                struct gpRender rmsg;
-                rmsg.MethodID = GM_RENDER;
-                rmsg.gpr_GInfo = gi;
-                rmsg.gpr_RPort = rp;
-                rmsg.gpr_Redraw = GREDRAW_REDRAW;
-                DoMethodA((Object *)g, &rmsg);
-                ReleaseGIRPort(rp);
-            }
+            DoGadgetRender((struct Gadget *)g, gi, GREDRAW_REDRAW, IntuitionBase);
         }
     }
 
@@ -170,21 +159,19 @@ IPTR ButtonGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 
         if ((g->Flags & GFLG_GADGIMAGE) == 0) /* not an image-button */
         {
-            /* draw border */
+            struct Border *border = (struct Border *)g->GadgetRender;
+
+            /* draw border; the select border replaces the normal one while selected */
             if ((g->SelectRender != NULL ) &&  (g->Flags & GFLG_SELECTED))
-                DrawBorder(rp,
-                       ((struct Border *)g->SelectRender),
-                       container.Left,
-                       container.Top);
-            else if (g->GadgetRender != NULL)
-                DrawBorder(rp,
-                       ((struct Border *)g->GadgetRender),
-                       container.Left,
-                       container.Top);
+                border = (struct Border *)g->SelectRender;
+
+            if (border != NULL)
+                DrawBorder(rp, border, container.Left, container.Top);
 
         }
         else /* GFLG_GADGIMAGE set */
         {
+            struct Image *image = (struct Image *)g->GadgetRender;
             ULONG state;
 
             if (g->Activation & (GACT_LEFTBORDER |
@@ -207,23 +194,16 @@ IPTR ButtonGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
                 state = IDS_NORMAL;
             }
 
-            if ((g->SelectRender != NULL) &&
-                (g->Flags & GFLG_SELECTED)) /* render selected image */
+            /* the select image replaces the normal one while selected */
+            if ((g->SelectRender != NULL) && (g->Flags & GFLG_SELECTED))
+                image = (struct Image *)g->SelectRender;
+
+            if (image != NULL)
             {
                 /* No centering of the image inside the gadget to be done! */
 
                 DrawImageState(rp,
-                           (struct Image *)g->SelectRender,
-                           container.Left, container.Top,
-                           state + IDS_SELECTED,
-                           msg->gpr_GInfo->gi_DrInfo );
-            }
-            else if ( g->GadgetRender != NULL ) /* render normal image */
-            {
-                /* No centering of the image inside the gadget to be done! */
-                
-                DrawImageState(rp,
-                           (struct Image *)g->GadgetRender,
+                           image,
                            container.Left, container.Top,
                            state + ((g->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
                            msg->gpr_GInfo->gi_DrInfo);
@@ -354,24 +334,10 @@ IPTR ButtonGClass__GM_HANDLEINPUT(Class * cl, struct Gadget * g, struct gpInput 
                 case SELECTUP:
                     if( g->Flags & GFLG_SELECTED )
                     {
-                        struct RastPort *rp;
-
                         /* mouse is over gadget */
                         g->Flags &= ~GFLG_SELECTED;
 
-                        if ((rp = ObtainGIRPort(gi)))
-                        {
-                            struct gpRender method;
-                            
-                            method.MethodID   = GM_RENDER;
-                            method.gpr_GInfo  = gi;
-                            method.gpr_RPort  = rp;
-                            method.gpr_Redraw = GREDRAW_UPDATE;
-                            
-                            DoMethodA((Object *)g, (Msg)&method);
-                            
-                            ReleaseGIRPort(rp);
-                        }
+                        DoGadgetRender(g, gi, GREDRAW_UPDATE, IntuitionBase);
                         
                         retval = GMR_NOREUSE | GMR_VERIFY;
                         /* This doesn't really make sense, as Termination will
@@ -404,48 +370,20 @@ IPTR ButtonGClass__GM_HANDLEINPUT(Class * cl, struct Gadget * g, struct gpInput 
                         {
                             if ( (g->Flags & GFLG_SELECTED) == 0 )
                             {
-                                struct RastPort *rp;
-
                                 /* mouse is over gadget */
                                 g->Flags |= GFLG_SELECTED;
 
-                                if ((rp = ObtainGIRPort(gi)))
-                                {
-                                    struct gpRender method;
-                                    
-                                    method.MethodID   = GM_RENDER;
-                                    method.gpr_GInfo  = gi;
-                                    method.gpr_RPort  = rp;
-                                    method.gpr_Redraw = GREDRAW_UPDATE;
-                                    
-                                    DoMethodA((Object *)g, (Msg)&method);
-                                    
-                                    ReleaseGIRPort(rp);
-                                }
+                                DoGadgetRender(g, gi, GREDRAW_UPDATE, IntuitionBase);
                             }
                         }
                         else
                         {
                             if ( (g->Flags & GFLG_SELECTED) != 0 )
                             {
-                                struct RastPort *rp;
-
                                 /* mouse is not over gadget */
                                 g->Flags &= ~GFLG_SELECTED;
 
-                                if ((rp = ObtainGIRPort(gi)))
-                                {
-                                    struct gpRender method;
-                                    
-                                    method.MethodID   = GM_RENDER;
-                                    method.gpr_GInfo  = gi;
-                                    method.gpr_RPort  = rp;
-                                    method.gpr_Redraw = GREDRAW_UPDATE;
-                                    
-                                    DoMethodA((Object *)g, (Msg)&method);
-                                    
-                                    ReleaseGIRPort(rp);
-                                }
+                                DoGadgetRender(g, gi, GREDRAW_UPDATE, IntuitionBase);
                             }
                         }
                         break;
@@ -488,21 +426,9 @@ IPTR ButtonGClass__GM_GOINACTIVE(Class * cl, struct Gadget *g, struct gpGoInacti
 
         if (gi)
         {
-            struct RastPort *rp = ObtainGIRPort(gi);
-
-            if (rp)
+            if (DoGadgetRender(g, gi, GREDRAW_REDRAW, IntuitionBase))
             {
-                struct gpRender method;
                 struct opUpdate method2;
-
-                method.MethodID   = GM_RENDER;
-                method.gpr_GInfo  = gi;
-                method.gpr_RPort  = rp;
-                method.gpr_Redraw = GREDRAW_REDRAW;
-                
-                DoMethodA((Object *)g, (Msg)&method);
-
-                ReleaseGIRPort(rp);
 
                 method2.MethodID     = OM_NOTIFY;
                 method2.opu_AttrList = NULL;

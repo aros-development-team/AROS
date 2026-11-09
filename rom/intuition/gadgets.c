@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 
     Common routines for Gadgets.
@@ -315,24 +315,28 @@ WORD GetGadgetTop(struct Gadget *gad, struct Screen *scr, struct Window *win, st
 
 /**********************************************************************************************/
 
-WORD GetGadgetWidth(struct Gadget *gad, struct Screen *scr, struct Window *win, struct Requester *req)
+/* gadget box in domain coords, and the domain itself */
+static void GetRelGadgetIBox(struct Gadget *gad, struct Screen *scr, struct Window *win,
+                             struct Requester *req, struct IBox *box, struct IBox *domain)
 {
-    struct IBox box;
+    GetGadgetDomain(gad, scr, win, req, domain);
 
-    GetGadgetDomain(gad, scr, win, req, &box);
+    box->Left   = gad->LeftEdge;
+    box->Top    = gad->TopEdge;
+    box->Width  = gad->Width;
+    box->Height = gad->Height;
 
-    return gad->Width + ADDREL(gad, GFLG_RELWIDTH, (&box), Width);
-}
+    if (gad->Flags & GFLG_RELRIGHT)
+        box->Left += domain->Width - 1;
 
-/**********************************************************************************************/
+    if (gad->Flags & GFLG_RELBOTTOM)
+        box->Top += domain->Height - 1;
 
-WORD GetGadgetHeight(struct Gadget *gad, struct Screen *scr, struct Window *win, struct Requester *req)
-{
-    struct IBox box;
+    if (gad->Flags & GFLG_RELWIDTH)
+        box->Width += domain->Width;
 
-    GetGadgetDomain(gad, scr, win, req, &box);
-
-    return gad->Height + ADDREL(gad, GFLG_RELHEIGHT, (&box), Height);
+    if (gad->Flags & GFLG_RELHEIGHT)
+        box->Height += domain->Height;
 }
 
 /**********************************************************************************************/
@@ -358,24 +362,7 @@ void GetWinGadgetIBox(struct Gadget *gad, struct Screen *scr, struct Window *win
 {
     struct IBox domain;
 
-    GetGadgetDomain(gad, scr, win, req, &domain);
-
-    box->Left   = gad->LeftEdge;
-    box->Top    = gad->TopEdge;
-    box->Width  = gad->Width;
-    box->Height = gad->Height;
-
-    if (gad->Flags & GFLG_RELRIGHT)
-        box->Left += domain.Width - 1;
-
-    if (gad->Flags & GFLG_RELBOTTOM)
-        box->Top += domain.Height - 1;
-
-    if (gad->Flags & GFLG_RELWIDTH)
-        box->Width += domain.Width;
-
-    if (gad->Flags & GFLG_RELHEIGHT)
-        box->Height += domain.Height;
+    GetRelGadgetIBox(gad, scr, win, req, box, &domain);
 
     box->Left += domain.Left;
     box->Top += domain.Top;
@@ -389,11 +376,7 @@ void GetDomGadgetIBox(struct Gadget *gad, struct Screen *scr, struct Window *win
 {
     struct IBox domain;
 
-    GetWinGadgetIBox(gad, scr, win, req, box);
-    GetGadgetDomain(gad, scr, win, req, &domain);
-
-    box->Left -= domain.Left;
-    box->Top  -= domain.Top;
+    GetRelGadgetIBox(gad, scr, win, req, box, &domain);
 }
 
 /**********************************************************************************************/
@@ -729,6 +712,34 @@ void SetupGInfo(struct GadgetInfo *gi, struct Window *win, struct Requester *req
 
     DEBUG_SETUPGINFO(dprintf("SetGInfo: Win %p Req %p RP %p Layer %p\n",
                              gi->gi_Window, gi->gi_Requester, gi->gi_RastPort, gi->gi_Layer));
+}
+
+/**********************************************************************************************/
+
+/* Send GM_RENDER to a BOOPSI gadget, with a RastPort obtained for the given
+   GadgetInfo. Returns FALSE if no RastPort was available. */
+BOOL DoGadgetRender(struct Gadget *gad, struct GadgetInfo *gi, ULONG redraw,
+                    struct IntuitionBase *IntuitionBase)
+{
+    struct RastPort *rp = ObtainGIRPort(gi);
+
+    if (rp)
+    {
+        struct gpRender method;
+
+        method.MethodID   = GM_RENDER;
+        method.gpr_GInfo  = gi;
+        method.gpr_RPort  = rp;
+        method.gpr_Redraw = redraw;
+
+        DoMethodA((Object *)gad, (Msg)&method);
+
+        ReleaseGIRPort(rp);
+
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 /**********************************************************************************************/

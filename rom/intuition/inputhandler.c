@@ -88,14 +88,14 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
                     (iihdata->ActionsMemPool = CreatePool(MEMF_SEM_PROTECTED,
                                   2000, 2000)))
                 {
-                    const struct TagItem dragtags[] =
+                    static const struct TagItem dragtags[] =
                     {
                         {GA_SysGadget   , TRUE          },
                         {GA_SysGType    , GTYP_WDRAGGING},
                         {TAG_DONE                       }
                     };
 
-                    const struct TagItem sizetags[] =
+                    static const struct TagItem sizetags[] =
                     {
                         {GA_SysGadget   , TRUE          },
                         {GA_SysGType    , GTYP_SIZING   },
@@ -172,33 +172,6 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
     } /* if (iihandler) */
 
     ReturnPtr ("InitIIH", struct Interrupt *, NULL);
-}
-
-/****************************************************************************************/
-
-VOID CleanupIIH(struct Interrupt *iihandler, struct IntuitionBase *IntuitionBase)
-{
-    struct IIHData *iihdata = (struct IIHData *)iihandler->is_Data;
-
-    D(bug("[Intuition] %s()\n", __func__));
-
-    DisposeObject((Object *)iihdata->MasterDragGadget);
-    DisposeObject((Object *)iihdata->MasterSizeGadget);
-
-    FreeGeneratedInputEvents(iihdata);
-    DeletePool(iihdata->InputEventMemPool);
-    DeletePool(iihdata->ActionsMemPool);
-
-    /* One might think that this port is still in use by the inputhandler.
-    ** However, if intuition is closed for the last time, there should be no
-    ** windows that IntuiMessage can be sent to.
-    */
-    FreeMem(iihdata->IntuiReplyPort, sizeof (struct MsgPort));
-
-    FreeMem(iihdata, sizeof (struct IIHData));
-    FreeMem(iihandler, sizeof (struct Interrupt));
-
-    return;
 }
 
 /****************************************************************************************/
@@ -432,6 +405,8 @@ static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *
 }
 /****************************************************************************************/
 
+#if 0 /* toolbox stuff disabled, see IntuiInputHandler() */
+
 struct Window *GetToolBoxWindow(struct InputEvent *ie, struct Screen *scr, struct IntuitionBase *IntuitionBase)
 {
     /* The caller has checked that the input event is a IECLASS_RAWMOUSE, SELECTDOWN event */
@@ -481,6 +456,79 @@ struct Window *GetToolBoxWindow(struct InputEvent *ie, struct Screen *scr, struc
 
     D(bug("GetToolBoxWindow: New window %p\n", new_w));
     return new_w;
+}
+
+#endif
+
+/****************************************************************************************/
+
+/* The menu number that a key event selects as a shortcut in the menu strip a
+   window uses (its own, or the one of the window that lends it its menus).
+   MENUNULL if there is none. The caller must hold the MenuLock. */
+
+static UWORD KeyMenuCode(struct InputEvent *ie, struct Window *w, struct IntuitionBase *IntuitionBase)
+{
+    struct Library *KeymapBase = GetPrivIBase(IntuitionBase)->KeymapBase;
+    struct Menu    *strip = w->MenuStrip;
+    UBYTE           key;
+
+    if (((struct IntWindow *)w)->menulendwindow)
+    {
+        strip = ((struct IntWindow *)w)->menulendwindow->MenuStrip;
+    }
+
+    DEBUG_KEY(dprintf("Handler: MenuStrip 0x%lx\n",strip));
+
+    if (strip && (MapRawKey(ie, &key, 1, NULL) == 1))
+    {
+        return FindMenuShortCut(strip, key, TRUE, IntuitionBase);
+    }
+
+    return MENUNULL;
+}
+
+/****************************************************************************************/
+
+/* Is the pointer over the gadget that the GadgetInfo describes? */
+
+static BOOL InsideGIGadget(struct GadgetInfo *gi, struct Gadget *gadget)
+{
+    return InsideGadget(gi->gi_Screen, gi->gi_Window,
+                        gi->gi_Requester, gadget,
+                        gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
+}
+
+/****************************************************************************************/
+
+/* Count successive clicks of one button and note the time of this one.
+   Only a click that is allowed to be a double click (candouble) can
+   continue the count. */
+
+static void NoteClick(struct InputEvent *ie, UWORD button, BOOL candouble,
+                      struct IntuitionBase *IntuitionBase)
+{
+    if (candouble && DoubleClick(GetPrivIBase(IntuitionBase)->LastClickSecs,GetPrivIBase(IntuitionBase)->LastClickMicro,
+                                 ie->ie_TimeStamp.tv_secs,ie->ie_TimeStamp.tv_micro))
+    {
+        if (GetPrivIBase(IntuitionBase)->DoubleClickButton != button)
+        {
+            GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
+            GetPrivIBase(IntuitionBase)->DoubleClickButton = button;
+        }
+        else
+        {
+            GetPrivIBase(IntuitionBase)->DoubleClickCounter ++;
+        }
+    }
+    else
+    {
+        GetPrivIBase(IntuitionBase)->DoubleClickButton = button;
+        GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
+    }
+
+    /* update last click time for doubleclicktofront */
+    GetPrivIBase(IntuitionBase)->LastClickSecs = ie->ie_TimeStamp.tv_secs;
+    GetPrivIBase(IntuitionBase)->LastClickMicro = ie->ie_TimeStamp.tv_micro;
 }
 
 /****************************************************************************************/
@@ -600,41 +648,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
         }
 
         if (!IsToolbox) {
-            if (!gadget && stitlebarhit)
-            {
-                struct Window *ww = 0;
-            
-                ww = FindDesktopWindow(screen, IntuitionBase);
-                DEBUG_CLICK(bug("[Inputhandler] Clicked on backdrop window 0x%p\n", ww));
-                if (ww) {
-                    ActivateWindow(ww);
-                    w = ww;
-                }
-            }
-
-            if (!stitlebarhit && !new_active_window && DoubleClick(GetPrivIBase(IntuitionBase)->LastClickSecs,GetPrivIBase(IntuitionBase)->LastClickMicro,
-                                        ie->ie_TimeStamp.tv_secs,ie->ie_TimeStamp.tv_micro))
-            {
-                if (GetPrivIBase(IntuitionBase)->DoubleClickButton != SELECTDOWN)
-                {
-                    GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
-                    GetPrivIBase(IntuitionBase)->DoubleClickButton = SELECTDOWN;
-                }
-                else
-                {
-                    GetPrivIBase(IntuitionBase)->DoubleClickCounter ++;
-                }
-            }
-            else
-            {
-                DEBUG_CLICK(bug("[Inputhandler] Resetting doubleclick counter\n"));
-                GetPrivIBase(IntuitionBase)->DoubleClickButton = SELECTDOWN;
-                GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
-            }
-
-            /* update last click time for doubleclicktofront */
-            GetPrivIBase(IntuitionBase)->LastClickSecs = ie->ie_TimeStamp.tv_secs;
-            GetPrivIBase(IntuitionBase)->LastClickMicro = ie->ie_TimeStamp.tv_micro;
+            NoteClick(ie, SELECTDOWN, !stitlebarhit && !new_active_window, IntuitionBase);
 
 #ifdef SKINS
             if (!stitlebarhit)
@@ -776,9 +790,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
             ** else deactivate stringadget and reuse event.
             */
 
-            if (InsideGadget(gi->gi_Screen, gi->gi_Window,
-                     gi->gi_Requester, gadget,
-                     gi->gi_Screen->MouseX, gi->gi_Screen->MouseY))
+            if (InsideGIGadget(gi, gadget))
             {
             UWORD imsgcode;
 
@@ -895,9 +907,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
     if (gadget)
     {
-        BOOL inside = InsideGadget(gi->gi_Screen, gi->gi_Window,
-                       gi->gi_Requester, gadget,
-                       gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
+        BOOL inside = InsideGIGadget(gi, gadget);
 
         /*int selected = (gadget->Flags & GFLG_SELECTED) != 0;*/
 
@@ -1027,28 +1037,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
         break;
     }
 
-    if (DoubleClick(GetPrivIBase(IntuitionBase)->LastClickSecs,GetPrivIBase(IntuitionBase)->LastClickMicro,
-            ie->ie_TimeStamp.tv_secs,ie->ie_TimeStamp.tv_micro))
-    {
-        if (GetPrivIBase(IntuitionBase)->DoubleClickButton != MENUDOWN)
-        {
-        GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
-        GetPrivIBase(IntuitionBase)->DoubleClickButton = MENUDOWN;
-        }
-        else
-        {
-        GetPrivIBase(IntuitionBase)->DoubleClickCounter ++;
-        }
-    }
-    else
-    {
-        GetPrivIBase(IntuitionBase)->DoubleClickButton = MENUDOWN;
-        GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
-    }
-
-    /* update last click time for doubleclicktofront */
-    GetPrivIBase(IntuitionBase)->LastClickSecs = ie->ie_TimeStamp.tv_secs;
-    GetPrivIBase(IntuitionBase)->LastClickMicro = ie->ie_TimeStamp.tv_micro;
+    NoteClick(ie, MENUDOWN, TRUE, IntuitionBase);
 
 #ifdef SKINS
     {
@@ -1247,22 +1236,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 
     case MIDDLEDOWN:
         iihdata->ActQualifier |= IEQUALIFIER_MIDBUTTON;
-        if (DoubleClick(GetPrivIBase(IntuitionBase)->LastClickSecs,GetPrivIBase(IntuitionBase)->LastClickMicro,
-            ie->ie_TimeStamp.tv_secs,ie->ie_TimeStamp.tv_micro))
-        {
-        if (GetPrivIBase(IntuitionBase)->DoubleClickButton != MIDDLEDOWN)
-        {
-            GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
-            GetPrivIBase(IntuitionBase)->DoubleClickButton = MIDDLEDOWN;
-        } else
-            GetPrivIBase(IntuitionBase)->DoubleClickCounter ++;
-        } else {
-        GetPrivIBase(IntuitionBase)->DoubleClickButton = MIDDLEDOWN;
-        GetPrivIBase(IntuitionBase)->DoubleClickCounter = 0;
-        }
-        /* update last click time for doubleclicktofront */
-        GetPrivIBase(IntuitionBase)->LastClickSecs = ie->ie_TimeStamp.tv_secs;
-        GetPrivIBase(IntuitionBase)->LastClickMicro = ie->ie_TimeStamp.tv_micro;
+        NoteClick(ie, MIDDLEDOWN, TRUE, IntuitionBase);
         break;
 
     case MIDDLEUP:
@@ -1685,8 +1659,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
                 {
                     if (!(iihdata->TitlebarAppearTime))
                     {
-                        iihdata->TitlebarAppearTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
-                        iihdata->TitlebarAppearTime += ie->ie_TimeStamp.tv_micro / 20000;
+                        iihdata->TitlebarAppearTime = EventTicks(ie);
                     }
                 }
                 else
@@ -1713,12 +1686,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
                 {
                     BOOL inside;
 
-                    inside = InsideGadget(gi->gi_Screen,
-                                  gi->gi_Window,
-                                  gi->gi_Requester,
-                                  gadget,
-                                  gi->gi_Screen->MouseX,
-                                  gi->gi_Screen->MouseY);
+                    inside = InsideGIGadget(gi, gadget);
 
                     if  (inside != iihdata->MouseWasInsideBoolGadget) {
                         iihdata->MouseWasInsideBoolGadget = inside;
@@ -1788,14 +1756,11 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
                 {
                     if (!iihdata->LastHelpGadget)
                     {
-                        iihdata->HelpGadgetFindTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
-                        iihdata->HelpGadgetFindTime += ie->ie_TimeStamp.tv_micro / 20000;
+                        iihdata->HelpGadgetFindTime = EventTicks(ie);
                     } else {
                         if (hw == iihdata->LastHelpWindow)
                         {
-                            iihdata->HelpGadgetFindTime = ((UQUAD)ie->ie_TimeStamp.tv_secs) * 50;
-                            iihdata->HelpGadgetFindTime += ie->ie_TimeStamp.tv_micro / 20000;
-                            iihdata->HelpGadgetFindTime += 25;//smaller delay
+                            iihdata->HelpGadgetFindTime = EventTicks(ie) + 25;//smaller delay
                         }
                     }
                 }
@@ -2091,67 +2056,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                     (!(GetPrivScreen(w->WScreen)->MenuVerifyMsgCount)) &&
                     (!(MENUS_ACTIVE)) && (!(SYSGADGET_ACTIVE)))
                 {
-                    switch (gadget->GadgetType & GTYP_GTYPEMASK)
-                    {
-                    case GTYP_CUSTOMGADGET:
-                        {
-                            struct gpGoInactive gpgi;
-
-                            gpgi.MethodID   = GM_GOINACTIVE;
-                            gpgi.gpgi_GInfo = gi;
-                            gpgi.gpgi_Abort = 1;
-
-                            Locked_DoMethodA(gi->gi_Window, gadget, (Msg)&gpgi, IntuitionBase);
-                            break;
-                        }
-
-                    case GTYP_STRGADGET:
-                            gadget->Flags &= ~GFLG_SELECTED;
-                            RefreshStrGadget(gadget, gi->gi_Window, gi->gi_Requester, IntuitionBase);
-                            break;
-
-                    case GTYP_BOOLGADGET:
-                            /* That a bool gadget is active here can only happen
-                               if user used LMB to activate gadget and LAMIGA + LALT
-                               to activate other window, or viceversa */
-                            /* The gadget must be a RELVERIFY one */
-                            if (!(gadget->Activation & GACT_TOGGLESELECT))
-                            {
-                                BOOL inside;
-
-                                inside = InsideGadget(gi->gi_Screen, gi->gi_Window,
-                                                  gi->gi_Requester, gadget,
-                                                  gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
-
-                                if (inside)
-                                {
-                                    gadget->Flags &= ~GFLG_SELECTED;
-                                    RefreshBoolGadgetState(gadget, gi->gi_Window,
-                                                           gi->gi_Requester, IntuitionBase);
-                                }
-                            }
-                            break;
-
-                    case GTYP_PROPGADGET:
-                            /* That a prop gadget is active here can only happen
-                               if user used LMB to activate gadget and LAMIGA + LALT
-                               to activate other window, or viceversa */
-
-                            HandlePropSelectUp(gadget, gi->gi_Window, NULL, IntuitionBase);
-                            if (gadget->Activation & GACT_RELVERIFY)
-                            {
-                                ih_fire_intuimessage(gi->gi_Window,
-                                                 IDCMP_GADGETUP,
-                                                 0,
-                                                 gadget,
-                                                 IntuitionBase);
-                            }
-                            break;
-                
-                    } /* switch (gadget->GadgetType & GTYP_GTYPEMASK) */
-
-                    gadget->Activation &= ~GACT_ACTIVEGADGET;
-                    iihdata->ActiveGadget = NULL;
+                    AbortActiveGadget(gadget, iihdata, IntuitionBase);
                     gadget = NULL;
                 }
 
@@ -2478,50 +2383,28 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                         (!(w->Flags & WFLG_RMBTRAP)) &&
                         (w->IDCMPFlags & IDCMP_MENUPICK))
                     {
-                        struct Menu *strip = 0;
+                        UWORD menucode;
 
                         DEBUG_KEY(dprintf("Handler: MenuKey\n"));
                         ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
 
-                        strip = w->MenuStrip;
+                        menucode = KeyMenuCode(ie, w, IntuitionBase);
 
-                        if (((struct IntWindow *)w)->menulendwindow)
+                        DEBUG_KEY(dprintf("Handler: menucode 0x%lx\n",menucode));
+
+                        if (menucode != MENUNULL)
                         {
-                            strip = ((struct IntWindow *)w)->menulendwindow->MenuStrip;
-                        }
+                            DEBUG_KEY(dprintf("Handler: build menuevent\n"));
+                            ie->ie_Class        = IECLASS_MENU;
+                            ie->ie_SubClass     = IESUBCLASS_MENUSTOP;
+                            ie->ie_EventAddress = w;
+                            ie->ie_Code         = menucode;
 
-                        DEBUG_KEY(dprintf("Handler: MenuStrip 0x%lx\n",strip));
-                        if (strip)
-                        {
-                            UBYTE key;
+                            reuse_event = TRUE;
+                            menushortcut = TRUE;
 
-                            if (MapRawKey(ie, &key, 1, NULL) == 1)
-                            {
-                                UWORD menucode;
-
-                                menucode = FindMenuShortCut(strip, key, TRUE, IntuitionBase);
-
-                                DEBUG_KEY(dprintf("Handler: menucode 0x%lx\n",menucode));
-
-                                if (menucode != MENUNULL)
-                                {
-                                    DEBUG_KEY(dprintf("Handler: build menuevent\n"));
-                                    ie->ie_Class        = IECLASS_MENU;
-                                    ie->ie_SubClass     = IESUBCLASS_MENUSTOP;
-                                    ie->ie_EventAddress = w;
-                                    ie->ie_Code         = menucode;
-
-                                    reuse_event = TRUE;
-                                    menushortcut = TRUE;
-
-                                    MENUS_ACTIVE = TRUE;
-                                    iihdata->MenuWindow = w;
-                                }
-                            }
-                            else
-                            {
-                                DEBUG_KEY(dprintf("Handler: MapRawKey failed\n"));
-                            }
+                            MENUS_ACTIVE = TRUE;
+                            iihdata->MenuWindow = w;
                         }
                         if (!menushortcut) /* !! */
                             ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
@@ -2531,51 +2414,33 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                         if ((ie->ie_Qualifier & IEQUALIFIER_RCOMMAND) &&
                             (!(w->IDCMPFlags & IDCMP_MENUPICK)))
                         {
-                            struct Menu   *strip = 0;
                             struct Window *window = w;
+                            UWORD          menucode;
 
                             /* not sure here about RMBTRAP */
                             DEBUG_KEY(dprintf("Handler: no idcmp, create a MENULIST idcmp\n"));
 
                             ObtainSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
 
-                            strip = w->MenuStrip;
-
                             if (((struct IntWindow *)w)->menulendwindow)
                             {
-                                strip = ((struct IntWindow *)w)->menulendwindow->MenuStrip;
                                 window = ((struct IntWindow *)w)->menulendwindow;
                             }
 
-                            DEBUG_KEY(dprintf("Handler: MenuStrip 0x%lx\n",strip));
-                            if (strip)
+                            menucode = KeyMenuCode(ie, w, IntuitionBase);
+
+                            DEBUG_KEY(dprintf("Handler: menucode 0x%lx\n",menucode));
+
+                            if (menucode != MENUNULL)
                             {
-                                UBYTE key;
-
-                                if (MapRawKey(ie, &key, 1, NULL) == 1)
-                                {
-                                    UWORD menucode;
-
-                                    menucode = FindMenuShortCut(strip, key, TRUE, IntuitionBase);
-
-                                    DEBUG_KEY(dprintf("Handler: menucode 0x%lx\n",menucode));
-
-                                    if (menucode != MENUNULL)
-                                    {
-                                        DEBUG_KEY(dprintf("Handler: build menuevent\n"));
-                                        ih_fire_intuimessage(window,
-                                                         IDCMP_MENUPICK,
-                                                         menucode,
-                                                         ie->ie_position.ie_addr, /* ie_dead.ie_prev[1|2]Down[Code|Qual]. 64 bit machines!? */
-                                                         IntuitionBase);
-                                        keep_event = FALSE;
-                                        menushortcut = TRUE;
-                                    }
-                                }
-                                else
-                                {
-                                    DEBUG_KEY(dprintf("Handler: MapRawKey failed\n"));
-                                }
+                                DEBUG_KEY(dprintf("Handler: build menuevent\n"));
+                                ih_fire_intuimessage(window,
+                                                 IDCMP_MENUPICK,
+                                                 menucode,
+                                                 ie->ie_position.ie_addr, /* ie_dead.ie_prev[1|2]Down[Code|Qual]. 64 bit machines!? */
+                                                 IntuitionBase);
+                                keep_event = FALSE;
+                                menushortcut = TRUE;
                             }
                             ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->MenuLock);
                         } /* if could be a menu short but current window has no idcmp cut */
@@ -2667,10 +2532,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
                     if (window)
                     {
-                        struct msSetPointerShape pmsg;
                         Object *pointer = ((struct IntWindow *)window)->pointer;
-
-                        pmsg.MethodID = MM_SetPointerShape;
 
                         DEBUG_POINTER(dprintf("InputHandler:  Pointer 0x%lx\n",
                                       pointer));
@@ -2689,28 +2551,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                                 pointer = GetPrivIBase(IntuitionBase)->BusyPointer;
                             }
 
-                            GetAttr(POINTERA_SharedPointer, pointer, (IPTR *) &pmsg.pointer);
-
-                            DEBUG_POINTER(dprintf("InputHandler: scr 0x%lx pointer 0x%lx shared_pointer 0x%lx\n",
-                                          scr, pointer, pmsg.pointer));
-                            DEBUG_POINTER(dprintf("InputHandler: sprite 0x%lx\n",
-                                          pmsg.pointer->sprite));
-
-                            if (DoMethodA(scr->IMonitorNode, &pmsg))
-                            {
-                                ObtainSharedPointer(pmsg.pointer, IntuitionBase);
-                                ReleaseSharedPointer(scr->Pointer, IntuitionBase);
-                                scr->Pointer = pmsg.pointer;
-                                if (window)
-                                {
-                                    window->XOffset = pmsg.pointer->xoffset;
-                                    window->YOffset = pmsg.pointer->yoffset;
-                                }
-                            }
-                            else
-                            {
-                                DEBUG_POINTER(dprintf("InputHandler: can't set pointer.\n"));
-                            }
+                            SetScreenPointer(scr, window, pointer, IntuitionBase);
                         }
                         else
                         {
@@ -2767,7 +2608,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 #ifdef SKINS
             if (screen->MouseY <= screen->BarHeight && GetPrivScreen(screen)->SpecialFlags & SF_AppearingBar && !iihdata->TitlebarOnTop && iihdata->TitlebarAppearTime)
             {
-                UQUAD currenttime = (((UQUAD)ie->ie_TimeStamp.tv_secs) * 50) + (UQUAD)(ie->ie_TimeStamp.tv_micro / 20000);
+                UQUAD currenttime = EventTicks(ie);
                 if (currenttime >= iihdata->TitlebarAppearTime + 10)
                 {
                     iihdata->TitlebarOnTop = TRUE;
@@ -2785,7 +2626,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 #endif
             
             {
-                UQUAD currenttime = (((UQUAD)ie->ie_TimeStamp.tv_secs) * 50) + (UQUAD)(ie->ie_TimeStamp.tv_micro / 20000);
+                UQUAD currenttime = EventTicks(ie);
 #define SECONDS(x) (x*50)
                 if (iihdata->HelpGadgetFindTime && (currenttime >= iihdata->HelpGadgetFindTime + SECONDS(1)))
                 {

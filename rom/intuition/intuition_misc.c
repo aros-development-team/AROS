@@ -209,6 +209,90 @@ Object* CreateStdSysImage(WORD which, WORD preferred_height, struct Screen *scr,
 
 /**********************************************************************************/
 
+/* The gadgets a window can have in its title bar in addition to the standard
+   ones: the WA_ExtraTitlebarGadgets flag that asks for it, its image, the
+   offset of its gadget ID from the window's first extra gadget ID, and its
+   slot in the window's system gadget array. */
+static const struct
+{
+    UBYTE flag;
+    UBYTE imagetype;
+    UBYTE id;
+    UBYTE gadgettype;
+}
+extragadgets[] =
+{
+    { ETG_LOCK    , LOCKIMAGE    , ETD_Lock    , LOCKGAD     },
+    { ETG_ICONIFY , ICONIFYIMAGE , ETD_Iconify , ICONIFYGAD  },
+    { ETG_JUMP    , JUMPIMAGE    , ETD_Jump    , JUMPGAD     },
+    { ETG_SNAPSHOT, SNAPSHOTIMAGE, ETD_Snapshot, SNAPSHOTGAD },
+    { ETG_MUI     , MUIIMAGE     , ETD_MUI     , MUIGAD      },
+    { ETG_POPUP   , POPUPIMAGE   , ETD_PopUp   , POPUPGAD    }
+};
+
+/* Create the depth, zoom or close gadget of a window together with its image.
+   The depth and zoom gadgets are placed to the left of *relright, which is
+   moved on by their width; the close gadget (relright == NULL) sits at the
+   left edge of the window. Returns FALSE if the gadget could not be created. */
+static BOOL addtitlegadget(struct Window *w, BOOL is_gzz, struct DrawInfo *dri,
+                           ULONG imagetype, ULONG gtyp, ULONG gadgettype, LONG *relright,
+                           struct IntuitionBase *IntuitionBase)
+{
+    ULONG TitleHeight = w->BorderTop;
+    struct TagItem gadget_tags[] =
+    {
+        {GA_Image           , 0                 },
+        {relright ? TAG_IGNORE : GA_Left, 0     },
+        {GA_Top             , 0                 },
+    #if SQUARE_WIN_GADGETS
+        {GA_Width           , TitleHeight       },
+    #endif
+        {GA_Height          , TitleHeight       },
+        {GA_SysGadget   , TRUE              },
+        {GA_SysGType    , gtyp              },
+        {GA_TopBorder   , TRUE              },
+        {GA_GZZGadget   , is_gzz            },
+        {GA_RelVerify   , TRUE              },
+        {TAG_DONE                               }
+    };
+    Object *im;
+
+    im = CreateStdSysImage(imagetype, TitleHeight, w->WScreen, dri, IntuitionBase);
+    if (!im)
+        return FALSE;
+
+    gadget_tags[0].ti_Data = (IPTR)im;
+
+    SYSGAD(w, gadgettype) = NewObjectA(NULL, BUTTONGCLASS, gadget_tags);
+
+    if (!SYSGAD(w, gadgettype))
+    {
+        DisposeObject(im);
+        return FALSE;
+    }
+
+    if (relright)
+    {
+        IPTR width;
+        struct TagItem gadtags[] =
+        {
+            {GA_RelRight, 0         },
+            {TAG_DONE               }
+        };
+
+        GetAttr(GA_Width, SYSGAD(w, gadgettype), &width);
+
+        *relright -= width;
+        gadtags[0].ti_Data = *relright;
+
+        SetAttrsA(SYSGAD(w, gadgettype), gadtags);
+    }
+
+    return TRUE;
+}
+
+/**********************************************************************************/
+
 BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 {
 
@@ -223,12 +307,9 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
     dri = GetScreenDrawInfo(w->WScreen);
     if (dri)
     {
-        LONG db_left, db_width, relright,ewidth; /* dragbar sizes */
+        LONG relright;
         BOOL sysgads_ok = TRUE;
-
-
-        db_left = 0;
-        db_width = 0; /* Georg Steger: was w->Width; */
+        UWORD extra;
 
         /* Relright of rightmost button */
         //relright = - (TitleHeight - 1);
@@ -290,63 +371,8 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 
         if (w->Flags & WFLG_DEPTHGADGET)
         {
-            struct TagItem depth_tags[] =
-            {
-                {GA_Image           , 0                 },
-              //{GA_RelRight          , relright          },
-                {GA_Top             , 0                 },
-            #if SQUARE_WIN_GADGETS
-                {GA_Width           , TitleHeight       },
-            #endif
-                {GA_Height          , TitleHeight       },
-                {GA_SysGadget   , TRUE              },
-                {GA_SysGType    , GTYP_WDEPTH       },
-                {GA_TopBorder   , TRUE              },
-                {GA_GZZGadget   , is_gzz            },
-                {GA_RelVerify   , TRUE              },
-                {TAG_DONE                               }
-            };
-            Object *im;
-
-            im = CreateStdSysImage(DEPTHIMAGE, TitleHeight, w->WScreen, dri, IntuitionBase);
-            if (!im)
-            {
+            if (!addtitlegadget(w, is_gzz, dri, DEPTHIMAGE, GTYP_WDEPTH, DEPTHGAD, &relright, IntuitionBase))
                 sysgads_ok = FALSE;
-            }
-            else
-            {
-                depth_tags[0].ti_Data = (IPTR)im;
-
-                SYSGAD(w, DEPTHGAD) = NewObjectA(NULL, BUTTONGCLASS, depth_tags);
-
-                if (!SYSGAD(w, DEPTHGAD))
-                {
-                    DisposeObject(im);
-                    sysgads_ok = FALSE;
-                }
-                else
-                {
-                    IPTR width;
-                    GetAttr(GA_Width, SYSGAD(w, DEPTHGAD), &width);
-
-                    /*****/
-
-                    relright -= width;
-                    db_width -= width;
-
-                    {
-                        struct TagItem gadtags[] =
-                        {
-                            {GA_RelRight, relright  },
-                         /* {GA_Width   , width     }, */
-                            {TAG_DONE               }
-                        };
-
-                        SetAttrsA(SYSGAD(w, DEPTHGAD), gadtags);
-                    }
-                }
-            }
-
         }
 
             /* RKRMs: window gets zoom gadget if WA_Zoom tag was used,
@@ -355,150 +381,25 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
         if ((w->Flags & WFLG_HASZOOM) ||
             ((w->Flags & WFLG_SIZEGADGET) && (w->Flags & WFLG_DEPTHGADGET)))
         {
-            struct TagItem zoom_tags[] =
-            {
-                {GA_Image           , 0                 },
-                //{GA_RelRight  , relright          },
-                {GA_Top             , 0                 },
-            #if SQUARE_WIN_GADGETS
-                {GA_Width           , TitleHeight       },
-            #endif
-                {GA_Height          , TitleHeight       },
-                {GA_SysGadget   , TRUE              },
-                {GA_SysGType    , GTYP_WZOOM        },
-                {GA_TopBorder   , TRUE              },
-                {GA_GZZGadget   , is_gzz            },
-                {GA_RelVerify   , TRUE              },
-                {TAG_DONE                               }
-            };
-
-            Object *im;
-
-            im = CreateStdSysImage(ZOOMIMAGE, TitleHeight, w->WScreen, dri, IntuitionBase);
-            if (!im)
-            {
+            if (!addtitlegadget(w, is_gzz, dri, ZOOMIMAGE, GTYP_WZOOM, ZOOMGAD, &relright, IntuitionBase))
                 sysgads_ok = FALSE;
-            }
-            else
+        }
+
+        /* The extra title bar gadgets, from right to left */
+        for (extra = 0; extra < sizeof(extragadgets) / sizeof(extragadgets[0]); extra++)
+        {
+            if (((struct IntWindow *)(w))->extrabuttons & extragadgets[extra].flag)
             {
-                zoom_tags[0].ti_Data = (IPTR)im;
-
-                SYSGAD(w, ZOOMGAD) = NewObjectA(NULL, BUTTONGCLASS, zoom_tags);
-
-                if (!SYSGAD(w, ZOOMGAD))
-                {
-                    DisposeObject(im);
-                    sysgads_ok = FALSE;
-                }
-                else
-                {
-                    IPTR width;
-                    GetAttr(GA_Width, SYSGAD(w, ZOOMGAD), &width);
-
-                    relright -= width;
-                    db_width -= width;
-
-                    {
-                        struct TagItem gadtags[] =
-                            {
-                                {GA_RelRight, relright},
-                                {TAG_DONE             }
-                            };
-
-
-                        SetAttrsA(SYSGAD(w, ZOOMGAD), gadtags);
-                    }
-                }
+                relright -= addextragadget(w, is_gzz, dri, relright, extragadgets[extra].imagetype,
+                                           ((struct IntWindow *)w)->extrabuttonsid + extragadgets[extra].id,
+                                           extragadgets[extra].gadgettype, IntuitionBase);
             }
-        }
-
-        if (((struct IntWindow *)(w))->extrabuttons & ETG_LOCK)
-        {
-            ewidth = addextragadget(w,is_gzz,dri,relright,LOCKIMAGE,((struct IntWindow *)w)->extrabuttonsid + ETD_Lock,LOCKGAD,IntuitionBase);
-            relright -= ewidth;
-            db_width -= ewidth;
-        }
-
-        if (((struct IntWindow *)(w))->extrabuttons & ETG_ICONIFY)
-        {
-            ewidth = addextragadget(w,is_gzz,dri,relright,ICONIFYIMAGE,((struct IntWindow *)w)->extrabuttonsid + ETD_Iconify,ICONIFYGAD,IntuitionBase);
-            relright -= ewidth;
-            db_width -= ewidth;
-        }
-
-        if (((struct IntWindow *)(w))->extrabuttons & ETG_JUMP)
-        {
-            ewidth = addextragadget(w,is_gzz,dri,relright,JUMPIMAGE,((struct IntWindow *)w)->extrabuttonsid + ETD_Jump,JUMPGAD,IntuitionBase);
-            relright -= ewidth;
-            db_width -= ewidth;
-        }
-
-        if (((struct IntWindow *)(w))->extrabuttons & ETG_SNAPSHOT)
-        {
-            ewidth = addextragadget(w,is_gzz,dri,relright,SNAPSHOTIMAGE,((struct IntWindow *)w)->extrabuttonsid + ETD_Snapshot,SNAPSHOTGAD,IntuitionBase);
-            relright -= ewidth;
-            db_width -= ewidth;
-        }
-
-        if (((struct IntWindow *)(w))->extrabuttons & ETG_MUI)
-        {
-            ewidth = addextragadget(w,is_gzz,dri,relright,MUIIMAGE,((struct IntWindow *)w)->extrabuttonsid + ETD_MUI,MUIGAD,IntuitionBase);
-            relright -= ewidth;
-            db_width -= ewidth;
-        }
-
-        if (((struct IntWindow *)(w))->extrabuttons & ETG_POPUP)
-        {
-            ewidth = addextragadget(w,is_gzz,dri,relright,POPUPIMAGE,((struct IntWindow *)w)->extrabuttonsid + ETD_PopUp,POPUPGAD,IntuitionBase);
-            relright -= ewidth;
-            db_width -= ewidth;
         }
 
         if (w->Flags & WFLG_CLOSEGADGET)
         {
-            struct TagItem close_tags[] =
-            {
-                {GA_Image           , 0                     },
-                {GA_Left            , 0                     },
-                {GA_Top             , 0                     },
-            #if SQUARE_WIN_GADGETS
-                {GA_Width           , TitleHeight       },
-            #endif
-                {GA_Height          , TitleHeight       },
-                {GA_SysGadget   , TRUE              },
-                {GA_SysGType    , GTYP_CLOSE        },
-                {GA_TopBorder   , TRUE              },
-                {GA_GZZGadget   , is_gzz            },
-                {GA_RelVerify   , TRUE              },
-                {TAG_DONE                               }
-            };
-            Object *im;
-
-            im = CreateStdSysImage(CLOSEIMAGE, TitleHeight, w->WScreen, dri,IntuitionBase);
-            if (!im)
-            {
+            if (!addtitlegadget(w, is_gzz, dri, CLOSEIMAGE, GTYP_CLOSE, CLOSEGAD, NULL, IntuitionBase))
                 sysgads_ok = FALSE;
-            }
-            else
-            {
-                close_tags[0].ti_Data = (IPTR)im;
-
-                SYSGAD(w, CLOSEGAD) = NewObjectA(NULL, BUTTONGCLASS, close_tags);
-
-                if (!SYSGAD(w, CLOSEGAD))
-                {
-                    DisposeObject(im);
-                    sysgads_ok = FALSE;
-                }
-                else
-                {
-                    IPTR width;
-                    GetAttr(GA_Width, SYSGAD(w, CLOSEGAD), &width);
-
-                    db_left  += width;
-                    db_width -= width;
-                }
-            }
         }
 
         if (w->Flags & WFLG_DRAGBAR)

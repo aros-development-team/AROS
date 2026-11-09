@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -220,7 +220,7 @@ static IPTR draw_frameiclass(Class *cl, struct Image *im, struct impDraw *msg, W
     Default pen array, this should be globally accessable from
     all the boopsi objects, unless someone as a better idea...
     */
-    UWORD default_pens[] =
+    static const UWORD default_pens[] =
     {
         1, /* detailPen      */
         0, /* blockPen       */
@@ -239,7 +239,7 @@ static IPTR draw_frameiclass(Class *cl, struct Image *im, struct impDraw *msg, W
     /* we will check the rastport present */
     if(msg->imp_RPort)
     {
-        UWORD           *pens = default_pens;
+        const UWORD     *pens = default_pens;
         UWORD            left, top;
         UWORD            shine, shadow;
         BOOL             selected;
@@ -324,38 +324,38 @@ static IPTR draw_frameiclass(Class *cl, struct Image *im, struct impDraw *msg, W
         switch(fid->fid_FrameType)
         {
             case FRAME_DEFAULT:
-                DrawFrame(cl, rp, shine, shadow, left, top, width, height, FALSE);
-                break;
-
             case FRAME_BUTTON:
-                DrawFrame(cl, rp, shine, shadow, left, top, width, height, TRUE);
-                break;
-
             case FRAME_RIDGE:
-                /* render outer pen-inverted thick bevel */
-                DrawFrame(cl, rp, shine, shadow, left, top, width, height, TRUE);
-
-                /* render inner thick bevel */
-                DrawFrame(cl, rp, shadow, shine,
-                          left + fid->fid_HOffset / 2, top + fid->fid_VOffset / 2,
-                          width - fid->fid_HOffset, height - fid->fid_VOffset,
-                          TRUE);
-                break;
-
             case FRAME_ICONDROPBOX:
             {
-                WORD hoffset = fid->fid_HOffset * 2 / 3;
-                WORD voffset = fid->fid_VOffset * 2 / 3;
+                WORD hoffset, voffset, hinset, vinset;
 
-                /* render outer pen-inverted thick bevel */
-                DrawFrame(cl, rp, shine, shadow, left, top, width, height, TRUE);
+                /* outer bevel: thin for FRAME_DEFAULT, thick otherwise */
+                DrawFrame(cl, rp, shine, shadow, left, top, width, height,
+                          fid->fid_FrameType != FRAME_DEFAULT);
 
-                /* render inner thick bevel */
+                if (fid->fid_FrameType == FRAME_RIDGE)
+                {
+                    hoffset = fid->fid_HOffset / 2;
+                    voffset = fid->fid_VOffset / 2;
+                    hinset  = fid->fid_HOffset;
+                    vinset  = fid->fid_VOffset;
+                }
+                else if (fid->fid_FrameType == FRAME_ICONDROPBOX)
+                {
+                    hoffset = fid->fid_HOffset * 2 / 3;
+                    voffset = fid->fid_VOffset * 2 / 3;
+                    hinset  = hoffset * 2;
+                    vinset  = voffset * 2;
+                }
+                else
+                    break;
+
+                /* render inner pen-inverted thick bevel */
                 DrawFrame(cl, rp, shadow, shine, left + hoffset, top + voffset,
-                         width - hoffset * 2, height - voffset * 2, TRUE);
+                          width - hinset, height - vinset, TRUE);
                 break;
             }
-
         } /* switch */
 
         if(!fid->fid_EdgesOnly)

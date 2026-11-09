@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2020, The AROS Development Team. All rights reserved.
+    Copyright  1995-2026, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -245,7 +245,8 @@ IPTR PropGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
     if (msg->ops_GInfo)
     {
         CalcBBox (msg->ops_GInfo->gi_Window, msg->ops_GInfo->gi_Requester, g, &old_knobbox);
-        old_knobbox_ok = CalcKnobSize(g, &old_knobbox);
+        CalcKnobSize(g, &old_knobbox);
+        old_knobbox_ok = TRUE;
     }
 
     newtop = data->top; /* !! */
@@ -730,17 +731,18 @@ IPTR PropGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
                            new_knobbox.Top,
                            new_knobbox.Height));
 
-        if (CalcKnobSize(g, &new_knobbox))
+        CalcKnobSize(g, &new_knobbox);
+
+    #if PROP_RENDER_OPTIMIZATION
+        RefreshPropGadgetKnob (g, data->old_knobbox, &new_knobbox, msg->gpr_GInfo->gi_Window, msg->gpr_GInfo->gi_Requester, IntuitionBase);
+    #else
         {
-        #if PROP_RENDER_OPTIMIZATION
-            RefreshPropGadgetKnob (g, data->old_knobbox, &new_knobbox, msg->gpr_GInfo->gi_Window, msg->gpr_GInfo->gi_Requester, IntuitionBase);
-        #else
             struct BBox gbox;
 
             CalcBBox (msg->gpr_GInfo->gi_Window, msg->gpr_GInfo->gi_Requester, g, &gbox);
             RefreshPropGadgetKnob (g, &gbox, &new_knobbox, msg->gpr_GInfo->gi_Window, msg->gpr_GInfo->gi_Requester, IntuitionBase);
-        #endif
         }
+    #endif
 
         data->old_knobbox = 0;
     }

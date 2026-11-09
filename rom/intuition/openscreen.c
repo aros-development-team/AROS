@@ -294,7 +294,15 @@ static const char THIS_FILE[] = __FILE__;
         ok = FALSE;
     }
 
-    if (ok && tagList)
+    /* Without a screen object there is nothing the tags could set up */
+    if (!ok)
+        tagList = NULL;
+
+    /*
+     * Evaluate the tags. The tag functions accept a NULL list: GetTagData()
+     * returns the default and NextTagItem() returns NULL at once, so without
+     * tags everything keeps the value taken from the NewScreen structure.
+     */
     {
         char *pubname = NULL;
 
@@ -492,18 +500,6 @@ static const char THIS_FILE[] = __FILE__;
 #endif
             switch(tag->ti_Tag)
             {
-            case SA_CompositingFlags:
-                compflags = tag->ti_Data;
-                DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_CompositingFlags 0x%p\n", compflags));
-                break;
-            case SA_AlphaPreCompositingHook:
-                compalphahook = (struct Hook *)tag->ti_Data;
-                DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_AlphaPreCompositingHook 0x%p\n", compalphahook));
-                break;
-            case SA_PixelFormat:
-                reqpixfmt = (LONG)tag->ti_Data;
-                DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_PixelFormat %ld\n", reqpixfmt));
-                break;
             case SA_Left:
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_Left %ld\n",tag->ti_Data));
                 ns.LeftEdge  = tag->ti_Data;
@@ -717,83 +713,108 @@ static const char THIS_FILE[] = __FILE__;
                 DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_MinimizeISG 0x%lx\n",tag->ti_Data));
                 break;
 
-            case SA_MonitorName:
-                monitorname = (char*)tag->ti_Data;
-                break;
-#ifndef __AROS__ /* AROS: Disable MorphOS-specific extensions and private stuff */
-            case SA_SkinName: /* TODO: Complete support for named skins and enable this tag. Value needed. */
-                DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_SkinName (%s)\n",(char *)tag->ti_Data));
-                skinname = (char *)tag->ti_Data;
-                break;
-
-            case SA_VesaFallback:
-                vesafallback = tag->ti_Data;
-                break;
-
-            case SA_ModeEditControl:
-                modecontrol = (ULONG*)tag->ti_Data;
-                break;
-
-            case SA_WindowLock: /* TODO: We also can support this private tag. In which situations we don't need locking ? */
-                dowindowlock = tag->ti_Data ? TRUE : FALSE;
-                break;
-
-            case SA_CompositingLayers:
-                compositing = tag->ti_Data ? TRUE : FALSE;
-                break;
-#endif
-            case SA_ShowPointer:
-                showpointer = tag->ti_Data ? TRUE : FALSE;
-                break;
-
-            case SA_GammaControl:
-                gammacontrol = tag->ti_Data ? TRUE : FALSE;
-                break;
-
-            case SA_GammaRed:
-                gammared = (UBYTE*)tag->ti_Data;
-                break;
-
-            case SA_GammaBlue:
-                gammablue = (UBYTE*)tag->ti_Data;
-                break;
-
-            case SA_GammaGreen:
-                gammagreen = (UBYTE*)tag->ti_Data;
-                break;
-
-            case SA_3DSupport:
-                support3d = tag->ti_Data ? TRUE : FALSE;
-                break;
-
-            case SA_AdaptSize:
-                adaptsize = tag->ti_Data ? TRUE : FALSE;
-                break;
-
-            case SA_DisplayWidth:
-                displaywidth = (ULONG)tag->ti_Data;
-                break;
-
-            case SA_DisplayHeight:
-                displayheight = (ULONG)tag->ti_Data;
-                break;
-
-            case SA_ExactMatchMonitorName:
-                exactname = tag->ti_Data ? TRUE : FALSE;
-                break;
-
-            /* TODO: Missing SA_ Tags */
             default:
-                DEBUG_OPENSCREEN(dprintf("OpenScreen: unknown tag 0x%lx data 0x%lx\n",
-                             tag->ti_Tag,
-                             tag->ti_Data));
+                /*
+                 * The tags numbered from SA_Dummy + 100 up lie apart from the
+                 * ones above. They have a switch of their own, so that each of
+                 * the two covers a dense range of numbers.
+                 */
+                switch(tag->ti_Tag)
+                {
+                case SA_MonitorName:
+                    monitorname = (char*)tag->ti_Data;
+                    break;
+#ifndef __AROS__ /* AROS: Disable MorphOS-specific extensions and private stuff */
+                case SA_SkinName: /* TODO: Complete support for named skins and enable this tag. Value needed. */
+                    DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_SkinName (%s)\n",(char *)tag->ti_Data));
+                    skinname = (char *)tag->ti_Data;
+                    break;
+
+                case SA_VesaFallback:
+                    vesafallback = tag->ti_Data;
+                    break;
+
+                case SA_ModeEditControl:
+                    modecontrol = (ULONG*)tag->ti_Data;
+                    break;
+
+                case SA_WindowLock: /* TODO: We also can support this private tag. In which situations we don't need locking ? */
+                    dowindowlock = tag->ti_Data ? TRUE : FALSE;
+                    break;
+
+                case SA_CompositingLayers:
+                    compositing = tag->ti_Data ? TRUE : FALSE;
+                    break;
+#endif
+                case SA_ShowPointer:
+                    showpointer = tag->ti_Data ? TRUE : FALSE;
+                    break;
+
+                case SA_GammaControl:
+                    gammacontrol = tag->ti_Data ? TRUE : FALSE;
+                    break;
+
+                case SA_GammaRed:
+                    gammared = (UBYTE*)tag->ti_Data;
+                    break;
+
+                case SA_GammaBlue:
+                    gammablue = (UBYTE*)tag->ti_Data;
+                    break;
+
+                case SA_GammaGreen:
+                    gammagreen = (UBYTE*)tag->ti_Data;
+                    break;
+
+                case SA_3DSupport:
+                    support3d = tag->ti_Data ? TRUE : FALSE;
+                    break;
+
+                case SA_AdaptSize:
+                    adaptsize = tag->ti_Data ? TRUE : FALSE;
+                    break;
+
+                case SA_DisplayWidth:
+                    displaywidth = (ULONG)tag->ti_Data;
+                    break;
+
+                case SA_DisplayHeight:
+                    displayheight = (ULONG)tag->ti_Data;
+                    break;
+
+                case SA_ExactMatchMonitorName:
+                    exactname = tag->ti_Data ? TRUE : FALSE;
+                    break;
+
+                case SA_CompositingFlags:
+                    compflags = tag->ti_Data;
+                    DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_CompositingFlags 0x%p\n", compflags));
+                    break;
+                case SA_AlphaPreCompositingHook:
+                    compalphahook = (struct Hook *)tag->ti_Data;
+                    DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_AlphaPreCompositingHook 0x%p\n", compalphahook));
+                    break;
+                case SA_PixelFormat:
+                    reqpixfmt = (LONG)tag->ti_Data;
+                    DEBUG_OPENSCREEN(dprintf("OpenScreen: SA_PixelFormat %ld\n", reqpixfmt));
+                    break;
+
+                /* TODO: Missing SA_ Tags */
+                default:
+                    DEBUG_OPENSCREEN(dprintf("OpenScreen: unknown tag 0x%lx data 0x%lx\n",
+                                 tag->ti_Tag,
+                                 tag->ti_Data));
+                    break;
+
+
+                } /* switch (tag->ti_Tag), SA_Dummy + 100 up */
                 break;
 
             } /* switch (tag->ti_Tag) */
 
         } /* while ((tag = NextTagItem (&tagList))) */
 
-    } /* if (tagList) */
+    }
 
     DEBUG_OPENSCREEN(dprintf("OpenScreen: Left %d Top %d Width %d Height %d Depth %d Tags 0x%lx\n",
                  ns.LeftEdge, ns.TopEdge, ns.Width, ns.Height, ns.Depth, tagList));

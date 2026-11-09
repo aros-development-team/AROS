@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -87,17 +87,14 @@ IPTR FrButtonClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 
     if ((g->Flags & GFLG_GADGIMAGE) == 0) /* not an image-button */
     {
-        /* draw border */
+        struct Border *border = (struct Border *)g->GadgetRender;
+
+        /* draw border; the select border replaces the normal one while selected */
         if ((g->SelectRender != NULL ) &&  (g->Flags & GFLG_SELECTED))
-            DrawBorder(rp,
-                       ((struct Border *)g->SelectRender),
-                       container.Left,
-                       container.Top);
-        else if (g->GadgetRender != NULL)
-            DrawBorder(rp,
-                       ((struct Border *)g->GadgetRender),
-                       container.Left,
-                       container.Top);
+            border = (struct Border *)g->SelectRender;
+
+        if (border != NULL)
+            DrawBorder(rp, border, container.Left, container.Top);
     }
     else /* GFLG_GADGIMAGE set */
     {
@@ -108,47 +105,28 @@ IPTR FrButtonClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
             {TAG_DONE                }
         };
 
-        if ((g->SelectRender != NULL) &&
-            (g->Flags & GFLG_SELECTED)) /* render selected image */
+        /* the select image replaces the normal one while selected */
+        BOOL          useselect = (g->SelectRender != NULL) && (g->Flags & GFLG_SELECTED);
+        struct Image *image = useselect ? g->SelectRender : g->GadgetRender;
+
+        if (image != NULL)
         {
             ULONG x, y;
-            struct Image *sr = g->SelectRender;
             
-            if(sr->Depth == CUSTOMIMAGEDEPTH)
+            if(image->Depth == CUSTOMIMAGEDEPTH)
             {
                 // ONLY DO THIS FOR REAL IMAGE OBJECTS (cyfm 31/12/02)
                 /* center image position, we assume image top and left is 0 */
-                SetAttrsA(g->SelectRender, image_tags);
+                SetAttrsA(image, image_tags);
             }
 
-            x = container.Left + (container.Width / 2) - (sr->Width / 2);
-            y = container.Top + (container.Height / 2) - (sr->Height / 2);
+            x = container.Left + (container.Width / 2) - (image->Width / 2);
+            y = container.Top + (container.Height / 2) - (image->Height / 2);
 
             DrawImageState(rp,
-                           sr,
+                           image,
                            x, y,
-                           IDS_SELECTED,
-                           msg->gpr_GInfo->gi_DrInfo );
-        }
-        else if ( g->GadgetRender != NULL ) /* render normal image */
-        {
-            ULONG x, y;
-            struct Image *gr = g->GadgetRender;
-            
-            if(gr->Depth == CUSTOMIMAGEDEPTH)
-            {
-                // ONLY DO THIS FOR REAL IMAGE OBJECTS (cyfm 31/12/02)
-                /* center image position, we assume image top and left is 0 */
-                SetAttrsA(gr, image_tags);
-            }
-
-            x = container.Left + (container.Width / 2) - (gr->Width / 2);
-            y = container.Top + (container.Height / 2) - (gr->Height / 2);
-
-            DrawImageState(rp,
-                           gr,
-                           x, y,
-                           ((g->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
+                           ((useselect || (g->Flags & GFLG_SELECTED)) ? IDS_SELECTED : IDS_NORMAL ),
                            msg->gpr_GInfo->gi_DrInfo);
         }
     }
@@ -328,21 +306,7 @@ IPTR FrButtonClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
                 
         if (gi)
         {
-            struct RastPort *rp = ObtainGIRPort(gi);
-                    
-            if (rp)
-            {
-                struct gpRender method;
-                        
-                method.MethodID   = GM_RENDER;
-                method.gpr_GInfo  = gi;
-                method.gpr_RPort  = rp;
-                method.gpr_Redraw = GREDRAW_REDRAW;
-                        
-                DoMethodA(o, (Msg)&method);
-                        
-                ReleaseGIRPort(rp);
-            }
+            DoGadgetRender((struct Gadget *)o, gi, GREDRAW_REDRAW, IntuitionBase);
         }
     }
     

@@ -6,6 +6,7 @@
 /**************************************************************************************************/
 
 #include <exec/types.h>
+#include <stddef.h>
 
 #include <proto/intuition.h>
 #include <proto/layers.h>
@@ -180,58 +181,38 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 
     BOOL         tc = (data->dri->dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
 
+        /* The same message serves all three decorator classes, see SYSI_SAMEFIELD */
+        struct wdpGetDefSizeSysImage  wmsg;
+        struct IntScreen             *scr = (struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen);
+        Object                       *decorobj;
+
+        wmsg.wdp_TrueColor      = tc;
+        wmsg.wdp_Which          = data->type;
+        wmsg.wdp_SysiSize       = size;
+        wmsg.wdp_ReferenceFont  = reffont;
+        wmsg.wdp_Width          = &width;
+        wmsg.wdp_Height         = &height;
+        wmsg.wdp_Flags          = 0;
+        wmsg.wdp_Dri            = data->dri;
+        wmsg.wdp_UserBuffer     = 0;
+
         if (data->type == SDEPTHIMAGE)
         {
-        struct sdpGetDefSizeSysImage  smsg;
-        
-                smsg.MethodID           = SDM_GETDEFSIZE_SYSIMAGE;
-        smsg.sdp_TrueColor      = tc;
-                smsg.sdp_Which          = data->type;
-                smsg.sdp_SysiSize       = size;
-                smsg.sdp_ReferenceFont  = reffont;
-                smsg.sdp_Width          = &width;
-                smsg.sdp_Height         = &height;
-                smsg.sdp_Flags          = 0;
-                smsg.sdp_Dri            = data->dri;
-                smsg.sdp_UserBuffer     = 0;
-
-        DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->ScrDecorObj, (Msg)&smsg);
-
+            wmsg.MethodID = SDM_GETDEFSIZE_SYSIMAGE;
+            decorobj = scr->ScrDecorObj;
         }
         else if ((data->type == AMIGAKEY) || (data->type == MENUCHECK) || (data->type == SUBMENUIMAGE))
         {
-        struct mdpGetDefSizeSysImage  mmsg;
-
-                mmsg.MethodID           = MDM_GETDEFSIZE_SYSIMAGE;
-        mmsg.mdp_TrueColor      = tc;
-                mmsg.mdp_Which          = data->type;
-                mmsg.mdp_SysiSize       = size;
-                mmsg.mdp_ReferenceFont  = reffont;
-                mmsg.mdp_Width          = &width;
-                mmsg.mdp_Height         = &height;
-                mmsg.mdp_Flags          = 0;
-                mmsg.mdp_Dri            = data->dri;
-        DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->MenuDecorObj, (Msg)&mmsg);
-
+            wmsg.MethodID = MDM_GETDEFSIZE_SYSIMAGE;
+            decorobj = scr->MenuDecorObj;
         }
         else
         {
-        struct wdpGetDefSizeSysImage  wmsg;
-
-                wmsg.MethodID           = WDM_GETDEFSIZE_SYSIMAGE;
-        wmsg.wdp_TrueColor      = tc;
-                wmsg.wdp_Which          = data->type;
-                wmsg.wdp_SysiSize       = size;
-                wmsg.wdp_ReferenceFont  = reffont;
-                wmsg.wdp_Width          = &width;
-                wmsg.wdp_Height         = &height;
-                wmsg.wdp_Flags          = 0;
-                wmsg.wdp_Dri            = data->dri;
-                wmsg.wdp_UserBuffer     = 0;
-
-        DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wmsg);
-
+            wmsg.MethodID = WDM_GETDEFSIZE_SYSIMAGE;
+            decorobj = scr->WinDecorObj;
         }
+
+        DoMethodA(decorobj, (Msg)&wmsg);
 
         
         if (!set_width) IM(obj)->Width = width;
@@ -281,61 +262,25 @@ Object *SysIClass__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
 
     D(bug("sysi_setnew called successfully\n"));
 
-    switch (data->type)
+    /* sysi_setnew() has already rejected every unsupported image type */
+    if (data->type == CHECKIMAGE)
     {
-
-        case CHECKIMAGE:
+        struct TagItem tags[] =
         {
-            struct TagItem tags[] =
-            {
-                {IA_FrameType, FRAME_BUTTON },
-                {IA_EdgesOnly, FALSE            },
-                {TAG_MORE                       }
-            };
+            {IA_FrameType, FRAME_BUTTON },
+            {IA_EdgesOnly, FALSE            },
+            {TAG_MORE                       }
+        };
 
-            tags[2].ti_Data = (IPTR)msg->ops_AttrList;
+        tags[2].ti_Data = (IPTR)msg->ops_AttrList;
 
-            data->frame = NewObjectA(NULL, FRAMEICLASS, tags);
-            if (!data->frame)
-            {
-                STACKULONG method = OM_DISPOSE;
-                CoerceMethodA(cl, obj, (Msg)&method);
-                return NULL;
-            }
-            break;
-        }
-
-            /* Just to prevent it from reaching default: */
-        case MXIMAGE:
-        case LEFTIMAGE:
-        case UPIMAGE:
-        case RIGHTIMAGE:
-        case DOWNIMAGE:
-
-        case SDEPTHIMAGE:
-        case DEPTHIMAGE:
-        case ZOOMIMAGE:
-        case CLOSEIMAGE:
-        case SIZEIMAGE:
-
-        case MENUCHECK:
-        case AMIGAKEY:
-        case SUBMENUIMAGE:
-        case ICONIFYIMAGE:
-        case LOCKIMAGE:
-        case MUIIMAGE:
-        case POPUPIMAGE:
-        case SNAPSHOTIMAGE:
-        case JUMPIMAGE:
-            break;
-
-        default:
-            {
-                STACKULONG method = OM_DISPOSE;
-                
-                CoerceMethodA(cl, obj, (Msg)&method);
-            }
+        data->frame = NewObjectA(NULL, FRAMEICLASS, tags);
+        if (!data->frame)
+        {
+            STACKULONG method = OM_DISPOSE;
+            CoerceMethodA(cl, obj, (Msg)&method);
             return NULL;
+        }
     }
 
     return obj;
@@ -343,18 +288,72 @@ Object *SysIClass__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
 
 /**************************************************************************************************/
 
-/* Georg Steger
+/*
+ * The window, screen and menu decorator classes take the same message for
+ * drawing a system image and (except for the user buffer, which the menu
+ * decorator does not get) for asking its default size, so one structure is
+ * filled for whichever of them is responsible for the image type.
  */
-#define HSPACING 3
-#define VSPACING 3
-/* Ralph Schmidt
- * heuristics for smaller arrows used in apps
- * like filer
- */
-#define HSPACING_MIDDLE 2
-#define VSPACING_MIDDLE 2
-#define HSPACING_SMALL 1
-#define VSPACING_SMALL 1
+#define SYSI_SAMEFIELD(msgtype, field)                                              \
+    _Static_assert(offsetof(struct sdp##msgtype, sdp_##field) ==                    \
+                   offsetof(struct wdp##msgtype, wdp_##field),                      \
+                   "sdp" #msgtype " does not match wdp" #msgtype);                  \
+    _Static_assert(offsetof(struct mdp##msgtype, mdp_##field) ==                    \
+                   offsetof(struct wdp##msgtype, wdp_##field),                      \
+                   "mdp" #msgtype " does not match wdp" #msgtype)
+
+SYSI_SAMEFIELD(DrawSysImage, TrueColor);
+SYSI_SAMEFIELD(DrawSysImage, Dri);
+SYSI_SAMEFIELD(DrawSysImage, RPort);
+SYSI_SAMEFIELD(DrawSysImage, X);
+SYSI_SAMEFIELD(DrawSysImage, Y);
+SYSI_SAMEFIELD(DrawSysImage, Width);
+SYSI_SAMEFIELD(DrawSysImage, Height);
+SYSI_SAMEFIELD(DrawSysImage, Which);
+SYSI_SAMEFIELD(DrawSysImage, State);
+SYSI_SAMEFIELD(DrawSysImage, Flags);
+SYSI_SAMEFIELD(DrawSysImage, UserBuffer);
+_Static_assert(sizeof(struct sdpDrawSysImage) == sizeof(struct wdpDrawSysImage),
+               "sdpDrawSysImage does not match wdpDrawSysImage");
+_Static_assert(sizeof(struct mdpDrawSysImage) == sizeof(struct wdpDrawSysImage),
+               "mdpDrawSysImage does not match wdpDrawSysImage");
+
+SYSI_SAMEFIELD(GetDefSizeSysImage, TrueColor);
+SYSI_SAMEFIELD(GetDefSizeSysImage, Dri);
+SYSI_SAMEFIELD(GetDefSizeSysImage, ReferenceFont);
+SYSI_SAMEFIELD(GetDefSizeSysImage, Which);
+SYSI_SAMEFIELD(GetDefSizeSysImage, SysiSize);
+SYSI_SAMEFIELD(GetDefSizeSysImage, Width);
+SYSI_SAMEFIELD(GetDefSizeSysImage, Height);
+SYSI_SAMEFIELD(GetDefSizeSysImage, Flags);
+_Static_assert(offsetof(struct sdpGetDefSizeSysImage, sdp_UserBuffer) ==
+               offsetof(struct wdpGetDefSizeSysImage, wdp_UserBuffer),
+               "sdpGetDefSizeSysImage does not match wdpGetDefSizeSysImage");
+_Static_assert(sizeof(struct mdpGetDefSizeSysImage) <= sizeof(struct wdpGetDefSizeSysImage),
+               "mdpGetDefSizeSysImage does not match wdpGetDefSizeSysImage");
+
+/* Let a decorator object of the image's screen draw the image */
+static void sysi_decordraw(Class *cl, Object *obj, struct impDraw *msg, ULONG methodid,
+                           Object *decorobj, IPTR userbuffer)
+{
+    struct SysIData         *data = INST_DATA(cl, obj);
+    struct wdpDrawSysImage   decormsg;
+
+    decormsg.MethodID       = methodid;
+    decormsg.wdp_TrueColor  = (data->dri->dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
+    decormsg.wdp_RPort      = msg->imp_RPort;
+    decormsg.wdp_X          = (WORD)(IM(obj)->LeftEdge + msg->imp_Offset.X);
+    decormsg.wdp_Y          = (WORD)(IM(obj)->TopEdge + msg->imp_Offset.Y);
+    decormsg.wdp_Width      = (UWORD)IM(obj)->Width;
+    decormsg.wdp_Height     = (UWORD)IM(obj)->Height;
+    decormsg.wdp_Which      = data->type;
+    decormsg.wdp_State      = msg->imp_State;
+    decormsg.wdp_Flags      = 0;
+    decormsg.wdp_Dri        = data->dri;
+    decormsg.wdp_UserBuffer = userbuffer;
+
+    DoMethodA(decorobj, (Msg)&decormsg);
+}
 
 IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
 {
@@ -369,52 +368,9 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
     UWORD                    height = IM(obj)->Height;
     WORD                     right = left + width - 1;
     WORD                     bottom = top + height - 1;
-    struct wdpDrawSysImage   wdecormsg;
-    struct sdpDrawSysImage   sdecormsg;
-    struct mdpDrawSysImage   mdecormsg;
-
-    BOOL         tc = (data->dri->dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
+    struct IntScreen        *scr = GetPrivScreen(data->dri->dri_Screen);
 
     if (rport) if (rport->Layer) win = (struct Window *) rport->Layer->Window;
-
-    wdecormsg.MethodID  = WDM_DRAW_SYSIMAGE;
-    wdecormsg.wdp_TrueColor      = tc;
-    wdecormsg.wdp_RPort = rport;
-    wdecormsg.wdp_X = left;
-    wdecormsg.wdp_Y = top;
-    wdecormsg.wdp_Width = width;
-    wdecormsg.wdp_Height = height;
-    wdecormsg.wdp_Which = data->type;
-    wdecormsg.wdp_State = msg->imp_State;
-    wdecormsg.wdp_Flags = 0;
-    wdecormsg.wdp_Dri = data->dri;
-    wdecormsg.wdp_UserBuffer = (win == NULL) ? 0 : ((struct IntWindow *)win)->DecorUserBuffer;
-
-    sdecormsg.MethodID  = SDM_DRAW_SYSIMAGE;
-    sdecormsg.sdp_TrueColor      = tc;
-    sdecormsg.sdp_RPort = rport;
-    sdecormsg.sdp_X = left;
-    sdecormsg.sdp_Y = top;
-    sdecormsg.sdp_Width = width;
-    sdecormsg.sdp_Height = height;
-    sdecormsg.sdp_Which = data->type;
-    sdecormsg.sdp_State = msg->imp_State;
-    sdecormsg.sdp_Flags = 0;
-    sdecormsg.sdp_Dri = data->dri;
-    sdecormsg.sdp_UserBuffer = GetPrivScreen(data->dri->dri_Screen)->DecorUserBuffer;
-
-    mdecormsg.MethodID  = MDM_DRAW_SYSIMAGE;
-    mdecormsg.mdp_TrueColor      = tc;
-    mdecormsg.mdp_RPort = rport;
-    mdecormsg.mdp_X = left;
-    mdecormsg.mdp_Y = top;
-    mdecormsg.mdp_Width = width;
-    mdecormsg.mdp_Height = height;
-    mdecormsg.mdp_Which = data->type;
-    mdecormsg.mdp_State = msg->imp_State;
-    mdecormsg.mdp_Flags = 0;
-    mdecormsg.mdp_Dri = data->dri;
-    mdecormsg.mdp_UserBuffer = GetPrivScreen(data->dri->dri_Screen)->DecorUserBuffer;
 
     SetDrMd(rport, JAM1);
 
@@ -549,42 +505,26 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
         }
 
         case LEFTIMAGE:
+        case UPIMAGE:
+        case RIGHTIMAGE:
+        case DOWNIMAGE:
         {
             UWORD hspacing,vspacing;
-            WORD  cy;
+            BOOL  horiz = (data->type == LEFTIMAGE) || (data->type == RIGHTIMAGE);
+            BOOL  flip = (data->type == RIGHTIMAGE) || (data->type == DOWNIMAGE);
 
             if (!(data->flags & (SYSIFLG_NOBORDER | SYSIFLG_GADTOOLS)))
             {
-                DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wdecormsg);
+                sysi_decordraw(cl, obj, msg, WDM_DRAW_SYSIMAGE, scr->WinDecorObj,
+                               (win == NULL) ? 0 : ((struct IntWindow *)win)->DecorUserBuffer);
                 break;
             }
-            
-            hspacing = HSPACING;
-            vspacing = VSPACING;
 
-            if (width <= 12)
-            {
-                hspacing = HSPACING_MIDDLE;
-            }
-            
-            if (width <= 10)
-            {
-                hspacing = HSPACING_SMALL;
-            }
-
-            if (height <= 12)
-            {
-                vspacing = VSPACING_MIDDLE;
-            }
-            
-            if (height <= 10)
-            {
-                vspacing = VSPACING_SMALL;
-            }
+            getarrowspacing(width, height, &hspacing, &vspacing);
 
             if (!(data->flags & SYSIFLG_NOBORDER))
             {
-                drawimageframe(rport, LEFTIMAGE, msg->imp_State, data->dri->dri_Pens,
+                drawimageframe(rport, data->type, msg->imp_State, data->dri->dri_Pens,
                                  left, top, width, height, 1, 1, IntuitionBase);
                 left++;
                 top++;
@@ -602,24 +542,61 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
 
             if (data->flags & SYSIFLG_GADTOOLS)
             {
+                /* Two double-width strokes meeting at the arrow tip. LEFT/RIGHT
+                 * and UP/DOWN are mirror images: only the two ends swap. */
+                WORD i;
+
                 SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
 
-                cy = height / 2;
+                if (horiz)
+                {
+                    WORD cy = height / 2;
+                    WORD xa = left + width - 1 - hspacing;  /* base of the arrow */
+                    WORD xb = left + hspacing;              /* tip of the arrow  */
+                    WORD ya[4], yb[4];
 
-                Move(rport, left + width - 1 - hspacing, top + vspacing + 1);
-                Draw(rport, left + hspacing, top + height - cy);
-                Move(rport, left + width - 1 - hspacing, top + vspacing);
-                Draw(rport, left + hspacing, top + height - cy - 1);
+                    ya[0] = top + vspacing + 1;             yb[0] = top + height - cy;
+                    ya[1] = top + vspacing;                 yb[1] = top + height - cy - 1;
+                    ya[2] = top + height - 1- vspacing - 1; yb[2] = top + cy - 1;
+                    ya[3] = top + height - 1 - vspacing;    yb[3] = top + cy;
 
-                Move(rport, left + width - 1 - hspacing, top + height - 1- vspacing - 1);
-                Draw(rport, left + hspacing, top + cy - 1);
-                Move(rport, left + width - 1 - hspacing, top + height - 1 - vspacing);
-                Draw(rport, left + hspacing, top + cy);
+                    if (flip)
+                    {
+                        WORD t = xa; xa = xb; xb = t;
+                    }
+
+                    for (i = 0; i < 4; i++)
+                    {
+                        Move(rport, xa, ya[i]);
+                        Draw(rport, xb, yb[i]);
+                    }
+                }
+                else
+                {
+                    WORD cx = width / 2;
+                    WORD ya = top + height - 1 - vspacing;  /* base of the arrow */
+                    WORD yb = top + vspacing;               /* tip of the arrow  */
+                    WORD xa[4], xb[4];
+
+                    xa[0] = left + hspacing + 1;             xb[0] = left + width - cx;
+                    xa[1] = left + hspacing;                 xb[1] = left + width - cx - 1;
+                    xa[2] = left + width - 1 - hspacing - 1; xb[2] = left + cx - 1;
+                    xa[3] = left + width - 1 - hspacing;     xb[3] = left + cx;
+
+                    if (flip)
+                    {
+                        WORD t = ya; ya = yb; yb = t;
+                    }
+
+                    for (i = 0; i < 4; i++)
+                    {
+                        Move(rport, xa[i], ya);
+                        Draw(rport, xb[i], yb);
+                    }
+                }
             }
             else
             {
-                WORD i;
-
                 SetAPen(rport, getbgpen(msg->imp_State, data->dri->dri_Pens));
 
                 RectFill(rport, left, top, right, bottom);
@@ -629,341 +606,8 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
                 width -= hspacing * 2;
                 height -= vspacing * 2;
 
-                right = left + width - 1;
-                bottom = top + height - 1;
-
-                cy = (height + 1) / 2;
-
-                SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
-
-                for(i = 0; i < cy; i++)
-                {
-                    RectFill(rport, left + (cy - i - 1) * width / cy,
-                             top + i,
-                             right - i * width / cy / 2,
-                             top + i);
-                    RectFill(rport, left + (cy - i - 1) * width / cy,
-                             bottom - i,
-                             right - i * width / cy / 2,
-                             bottom - i);
-                }
-
-            }
-            break;
-        }
-
-        case UPIMAGE:
-        {
-            UWORD hspacing,vspacing;
-            WORD  cx;
-
-            if (!(data->flags & (SYSIFLG_NOBORDER | SYSIFLG_GADTOOLS)))
-            {
-                DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wdecormsg);
-                break;
-            }
-
-            hspacing = HSPACING;
-            vspacing = VSPACING;
-
-            if (width <= 12)
-            {
-                hspacing = HSPACING_MIDDLE;
-            }
-            
-            if (width <= 10)
-            {
-                hspacing = HSPACING_SMALL;
-            }
-
-            if (height <= 12)
-            {
-                vspacing = VSPACING_MIDDLE;
-            }
-            
-            if (height <= 10)
-            {
-                vspacing = VSPACING_SMALL;
-            }
-
-            if (!(data->flags & SYSIFLG_NOBORDER))
-            {
-                drawimageframe(rport, UPIMAGE, msg->imp_State, data->dri->dri_Pens,
-                                 left, top, width, height, 1, 1, IntuitionBase);
-                left++;
-                top++;
-                right--;
-                bottom--;
-                width -= 2;
-                height -= 2;
-
-                if (data->flags & SYSIFLG_GADTOOLS)
-                {
-                    SetAPen(rport, getbgpen_gt(msg->imp_State, data->dri->dri_Pens));
-                    RectFill(rport, left, top, right, bottom);
-                }
-
-            }
-
-            if (data->flags & SYSIFLG_GADTOOLS)
-            {
-                SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
-
-                cx = width / 2;
-
-                Move(rport, left + hspacing + 1, top + height - 1 - vspacing);
-                Draw(rport, left + width - cx, top + vspacing);
-                Move(rport, left + hspacing, top + height - 1 - vspacing);
-                Draw(rport, left + width - cx - 1, top + vspacing);
-
-                Move(rport, left + width - 1 - hspacing - 1, top + height - 1 - vspacing);
-                Draw(rport, left + cx - 1, top + vspacing);
-                Move(rport, left + width - 1 - hspacing, top + height - 1 - vspacing);
-                Draw(rport, left + cx, top + vspacing);
-            }
-            else
-            {
-                WORD i;
-
-                SetAPen(rport, getbgpen(msg->imp_State, data->dri->dri_Pens));
-
-                RectFill(rport, left, top, right, bottom);
-
-                left += hspacing;
-                top += vspacing;
-                width -= hspacing * 2;
-                height -= vspacing * 2;
-
-                right = left + width - 1;
-                bottom = top + height - 1;
-
-                cx = (width + 1) / 2;
-
-                SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
-
-                for(i = 0; i < cx; i++)
-                {
-                    RectFill(rport, left + i,
-                             top + (cx - i - 1) * height / cx,
-                             left + i,
-                             bottom - i * height / cx / 2);
-                    RectFill(rport, right - i,
-                             top + (cx - i - 1) * height / cx,
-                             right - i,
-                             bottom - i * height / cx / 2);
-                }
-
-            }
-            break;
-        }
-
-        case RIGHTIMAGE:
-        {
-            UWORD hspacing,vspacing;
-            WORD  cy;
-
-            if (!(data->flags & (SYSIFLG_NOBORDER | SYSIFLG_GADTOOLS)))
-            {
-                DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wdecormsg);
-                break;
-            }
-
-            hspacing = HSPACING;
-            vspacing = VSPACING;
-
-            if (width <= 12)
-            {
-                hspacing = HSPACING_MIDDLE;
-            }
-            
-            if (width <= 10)
-            {
-                hspacing = HSPACING_SMALL;
-            }
-
-            if (height <= 12)
-            {
-                vspacing = VSPACING_MIDDLE;
-            }
-            
-            if (height <= 10)
-            {
-                vspacing = VSPACING_SMALL;
-            }
-
-            if (!(data->flags & SYSIFLG_NOBORDER))
-            {
-                drawimageframe(rport, RIGHTIMAGE, msg->imp_State, data->dri->dri_Pens,
-                                 left, top, width, height, 1, 1, IntuitionBase);
-                left++;
-                top++;
-                right--;
-                bottom--;
-                width -= 2;
-                height -= 2;
-
-                if (data->flags & SYSIFLG_GADTOOLS)
-                {
-                    SetAPen(rport, getbgpen_gt(msg->imp_State, data->dri->dri_Pens));
-                    RectFill(rport, left, top, right, bottom);
-                }
-
-            }
-
-            if (data->flags & SYSIFLG_GADTOOLS)
-            {
-                SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
-
-                cy = height / 2;
-
-                Move(rport, left + hspacing, top + vspacing + 1);
-                Draw(rport, left + width - 1 - hspacing, top + height - cy);
-                Move(rport, left + hspacing, top + vspacing);
-                Draw(rport, left + width - 1 - hspacing, top + height - cy - 1);
-
-                Move(rport, left + hspacing, top + height - 1- vspacing - 1);
-                Draw(rport, left + width - 1 - hspacing, top + cy - 1);
-                Move(rport, left + hspacing, top + height - 1 - vspacing);
-                Draw(rport, left + width - 1 - hspacing, top + cy);
-
-            }
-            else
-            {
-                WORD i;
-
-                SetAPen(rport, getbgpen(msg->imp_State, data->dri->dri_Pens));
-
-                RectFill(rport, left, top, right, bottom);
-
-                left += hspacing;
-                top += vspacing;
-                width -= hspacing * 2;
-                height -= vspacing * 2;
-
-                right = left + width - 1;
-                bottom = top + height - 1;
-
-                cy = (height + 1) / 2;
-
-                SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
-
-                for(i = 0; i < cy; i++)
-                {
-                    RectFill(rport, left + i * width / cy / 2,
-                             top + i,
-                             right - (cy - i - 1) * width / cy,
-                             top + i);
-                    RectFill(rport, left + i * width / cy / 2,
-                             bottom - i,
-                             right - (cy - i - 1) * width / cy,
-                             bottom - i);
-                }
-
-            }
-            break;
-        }
-
-        case DOWNIMAGE:
-        {
-            UWORD hspacing,vspacing;
-            WORD  cx;
- 
-            if (!(data->flags & (SYSIFLG_NOBORDER | SYSIFLG_GADTOOLS)))
-            {
-                DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wdecormsg);
-                break;
-            }
-
-            hspacing = HSPACING;
-            vspacing = VSPACING;
-
-            if (width <= 12)
-            {
-                hspacing = HSPACING_MIDDLE;
-            }
-            
-            if (width <= 10)
-            {
-                hspacing = HSPACING_SMALL;
-            }
-
-            if (height <= 12)
-            {
-                vspacing = VSPACING_MIDDLE;
-            }
-            
-            if (height <= 10)
-            {
-                vspacing = VSPACING_SMALL;
-            }
-
-            if (!(data->flags & SYSIFLG_NOBORDER))
-            {
-                drawimageframe(rport, DOWNIMAGE, msg->imp_State, data->dri->dri_Pens,
-                                 left, top, width, height, 1, 1, IntuitionBase);
-                left++;
-                top++;
-                right--;
-                bottom--;
-                width -= 2;
-                height -= 2;
-
-                if (data->flags & SYSIFLG_GADTOOLS)
-                {
-                    SetAPen(rport, getbgpen_gt(msg->imp_State, data->dri->dri_Pens));
-                    RectFill(rport, left, top, right, bottom);
-                }
-            }
-
-            if (data->flags & SYSIFLG_GADTOOLS)
-            {
-                SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
-
-                cx = width / 2;
-
-                Move(rport, left + hspacing + 1, top + vspacing);
-                Draw(rport, left + width - cx, top + height - 1 - vspacing);
-                Move(rport, left + hspacing, top + vspacing);
-                Draw(rport, left + width - cx - 1, top + height - 1 - vspacing);
-
-                Move(rport, left + width - 1 - hspacing - 1, top + vspacing);
-                Draw(rport, left + cx - 1, top + height - 1 - vspacing);
-                Move(rport, left + width - 1 - hspacing, top + vspacing);
-                Draw(rport, left + cx, top + height - 1 - vspacing);
-            }
-            else
-            {
-                WORD i;
-
-                SetAPen(rport, getbgpen(msg->imp_State, data->dri->dri_Pens));
-
-                RectFill(rport, left, top, right, bottom);
-
-                left += hspacing;
-                top += vspacing;
-                width -= hspacing * 2;
-                height -= vspacing * 2;
-
-                right = left + width - 1;
-                bottom = top + height - 1;
-
-                cx = (width + 1) / 2;
-
-                SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
-
-                for(i = 0; i < cx; i++)
-                {
-                    RectFill(rport, left + i,
-                             top + i * height / cx / 2,
-                             left + i,
-                             bottom - (cx - i - 1) * height / cx);
-                    RectFill(rport, right - i,
-                             top + i * height / cx / 2,
-                             right -  i,
-                             bottom - (cx - i - 1) * height / cx);
-
-                }
-
+                drawarrowimage(rport, data->type, data->dri->dri_Pens[SHADOWPEN],
+                               left, top, width, height, IntuitionBase);
             }
             break;
         }
@@ -972,47 +616,25 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
         case ZOOMIMAGE:
         case DEPTHIMAGE:
         case SIZEIMAGE:
-        {
-            DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wdecormsg);
-            break;
-        }
-
-        case SDEPTHIMAGE:
-        {
-            DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->ScrDecorObj, (Msg)&sdecormsg);
-            break;
-        }
-        
-        case MENUCHECK:
-        {
-            DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->MenuDecorObj, (Msg)&mdecormsg);
-            break;
-        }
-
-        case AMIGAKEY:
-        {
-            DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->MenuDecorObj, (Msg)&mdecormsg);
-            break;
-        }
-
-        case SUBMENUIMAGE:
-        {
-            DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->MenuDecorObj, (Msg)&mdecormsg);
-            break;
-        }
-
         /* MUI and other non-std images */
         case MUIIMAGE:
         case SNAPSHOTIMAGE:
         case POPUPIMAGE:
         case ICONIFYIMAGE:
         case LOCKIMAGE:
-        {
-            DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wdecormsg);
+            sysi_decordraw(cl, obj, msg, WDM_DRAW_SYSIMAGE, scr->WinDecorObj,
+                           (win == NULL) ? 0 : ((struct IntWindow *)win)->DecorUserBuffer);
             break;
-        }
 
+        case SDEPTHIMAGE:
+            sysi_decordraw(cl, obj, msg, SDM_DRAW_SYSIMAGE, scr->ScrDecorObj, scr->DecorUserBuffer);
+            break;
 
+        case MENUCHECK:
+        case AMIGAKEY:
+        case SUBMENUIMAGE:
+            sysi_decordraw(cl, obj, msg, MDM_DRAW_SYSIMAGE, scr->MenuDecorObj, scr->DecorUserBuffer);
+            break;
 
     } /* switch (image type) */
 

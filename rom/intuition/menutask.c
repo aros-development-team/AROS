@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -798,22 +798,94 @@ static struct MenuItem *FindSubItem(WORD *var, struct MenuHandlerData *mhd)
 
 /**************************************************************************************************/
 
+
+/* Tags common to the menu bar, menu and sub-menu windows */
+static const struct TagItem menuwin_tags[] =
+{
+    {WA_Left        , 0                       },
+    {WA_Top         , 0                       },
+    {WA_Width       , 0                       },
+    {WA_Height      , 0                       },
+    {WA_AutoAdjust  , TRUE                    },
+    {WA_Borderless  , TRUE                    },
+    {WA_CustomScreen, 0                       },
+    {WA_BackFill    , (IPTR)LAYERS_NOBACKFILL},
+    {TAG_DONE       , 0                       }
+};
+
+/* Fill in the tag list for one of the menu windows */
+static void InitMenuWinTags(struct TagItem *tags, LONG x, LONG y, LONG w, LONG h, struct MenuHandlerData *mhd)
+{
+    memcpy(tags, menuwin_tags, sizeof(menuwin_tags));
+    tags[0].ti_Data = x;
+    tags[1].ti_Data = y;
+    tags[2].ti_Data = w;
+    tags[3].ti_Data = h;
+    tags[6].ti_Data = (IPTR)mhd->scr;
+}
+
+/*
+ * Allocate the menu decorator's user buffer for a menu window that is about
+ * to be opened with win_tags and tell the decorator about it. flag is the
+ * MDP_MDF_ value naming the kind of window. Fails if there is no memory for
+ * the buffer.
+ */
+static BOOL InitMenuDecor(struct MenuHandlerData *mhd, IPTR *buffer, struct TagItem *win_tags, ULONG flag,
+                          struct IntuitionBase *IntuitionBase)
+{
+    IPTR userbuffersize;
+    struct mdpInitMenu  msg;
+
+    GetAttr(MDA_UserBuffer, ((struct IntScreen *)(mhd->scr))->MenuDecorObj, &userbuffersize);
+
+    if (userbuffersize)
+    {
+        mhd->DecorUserBufferSize = userbuffersize;
+        *buffer = (IPTR) AllocMem(userbuffersize, MEMF_ANY | MEMF_CLEAR);
+        if (0 == *buffer) return FALSE;
+    }
+
+    msg.MethodID = MDM_INITMENU;
+    msg.mdp_TrueColor = mhd->TrueColor;
+    msg.mdp_RPort = &mhd->scr->RastPort;
+    msg.mdp_Left = win_tags[0].ti_Data;
+    msg.mdp_Top = win_tags[1].ti_Data;
+    msg.mdp_Width = win_tags[2].ti_Data;
+    msg.mdp_Height = win_tags[3].ti_Data;
+    msg.mdp_UserBuffer = *buffer;
+    msg.mdp_ScreenUserBuffer = ((struct IntScreen *) mhd->scr)->DecorUserBuffer;
+    msg.mdp_MenuDecorFlags = (MENUS_UNDERMOUSE(IntuitionBase)) ? MDP_MDF_MENUS_UNDERMOUSE : 0;
+    msg.mdp_MenuDecorFlags |= flag;
+    msg.mdp_Screen = mhd->scr;
+
+    DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);
+    return TRUE;
+}
+
+/* Tell the menu decorator that a menu window is gone and free its user buffer */
+static void ExitMenuDecor(struct MenuHandlerData *mhd, IPTR *buffer, struct IntuitionBase *IntuitionBase)
+{
+    struct mdpExitMenu  msg;
+
+    msg.MethodID       = MDM_EXITMENU;
+    msg.mdp_TrueColor  = mhd->TrueColor;
+    msg.mdp_UserBuffer = *buffer;
+    DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);
+
+    if (*buffer)
+    {
+        FreeMem((void *)*buffer, mhd->DecorUserBufferSize);
+    }
+    *buffer = 0;
+}
+
 static void MakeMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    struct TagItem win_tags[] =
-    {
-        {WA_Left        , 0                       },
-        {WA_Top         , 0                       },
-        {WA_Width       , mhd->scr->Width        },
-        {WA_Height      , mhd->scr->BarHeight + 1},
-        {WA_AutoAdjust  , TRUE                    },
-        {WA_Borderless  , TRUE                    },
-        {WA_CustomScreen, (IPTR)mhd->scr         },
-        {WA_BackFill    , (IPTR)LAYERS_NOBACKFILL},
-        {TAG_DONE       , 0                          }
-    };
+    struct TagItem win_tags[9];
     struct Menu *menu;
+
+    InitMenuWinTags(win_tags, 0, 0, mhd->scr->Width, mhd->scr->BarHeight + 1, mhd);
 
     mhd->menubarwin = NULL;
     /* No entry to draw ? */
@@ -903,35 +975,7 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
         FreeRastPort(temprp);
     }
 
-    {
-        IPTR userbuffersize;
-        struct mdpInitMenu  msg;
-
-        GetAttr(MDA_UserBuffer, ((struct IntScreen *)(mhd->scr))->MenuDecorObj, &userbuffersize);
-
-        if (userbuffersize)
-        {
-            mhd->DecorUserBufferSize = userbuffersize;
-            mhd->BarDecorUserBuffer = (IPTR) AllocMem(userbuffersize, MEMF_ANY | MEMF_CLEAR);
-            if (0 == mhd->BarDecorUserBuffer) return;
-        }
-
-        msg.MethodID = MDM_INITMENU;
-        msg.mdp_TrueColor = mhd->TrueColor;
-        msg.mdp_RPort = &mhd->scr->RastPort;
-        msg.mdp_Left = win_tags[0].ti_Data;
-        msg.mdp_Top = win_tags[1].ti_Data;
-        msg.mdp_Width = win_tags[2].ti_Data;
-        msg.mdp_Height = win_tags[3].ti_Data;
-        msg.mdp_UserBuffer = mhd->BarDecorUserBuffer;
-        msg.mdp_ScreenUserBuffer = ((struct IntScreen *) mhd->scr)->DecorUserBuffer;
-        msg.mdp_MenuDecorFlags = (MENUS_UNDERMOUSE(IntuitionBase)) ? MDP_MDF_MENUS_UNDERMOUSE : 0;
-        msg.mdp_MenuDecorFlags |= MDP_MDF_MENU;
-
-        msg.mdp_Screen = mhd->scr;
-
-        DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);
-    }
+    if (!InitMenuDecor(mhd, &mhd->BarDecorUserBuffer, win_tags, MDP_MDF_MENU, IntuitionBase)) return;
 
     
     D(bug("MakeMenuBarWin: mhd 0x%lx\n", mhd));
@@ -952,21 +996,11 @@ static void KillMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
 {
     if (mhd->menubarwin)
     {
-        struct mdpExitMenu  msg;
 
         CloseWindow(mhd->menubarwin);
         mhd->menubarwin = NULL;
 
-        msg.MethodID = MDM_EXITMENU;
-        msg.mdp_UserBuffer = mhd->BarDecorUserBuffer;
-        msg.mdp_TrueColor = mhd->TrueColor;
-        DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);
-
-        if (mhd->BarDecorUserBuffer)
-        {
-            FreeMem((void *)mhd->BarDecorUserBuffer, mhd->DecorUserBufferSize);
-        }
-        mhd->BarDecorUserBuffer = 0;
+        ExitMenuDecor(mhd, &mhd->BarDecorUserBuffer, IntuitionBase);
     }
 
 }
@@ -1164,18 +1198,9 @@ static void MakeMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
     }
 
     {
-        struct TagItem win_tags[] =
-        {
-            {WA_Left         , xpos             },
-            {WA_Top         , ypos             },
-            {WA_Width       , width            },
-            {WA_Height      , height           },
-            {WA_AutoAdjust  , TRUE             },
-            {WA_Borderless  , TRUE             },
-            {WA_CustomScreen, (IPTR)mhd->scr   },
-            {WA_BackFill    , (IPTR)LAYERS_NOBACKFILL},
-            {TAG_DONE       , 0                }
-        };
+        struct TagItem win_tags[9];
+
+        InitMenuWinTags(win_tags, xpos, ypos, width, height, mhd);
 
         if (MENUS_UNDERMOUSE(IntuitionBase))
         {
@@ -1201,33 +1226,7 @@ static void MakeMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
                 item = item->NextItem;
             }
 
-            IPTR    userbuffersize;
-
-        GetAttr(MDA_UserBuffer, ((struct IntScreen *)(mhd->scr))->MenuDecorObj, &userbuffersize);
-    
-        if (userbuffersize)
-        {
-        mhd->DecorUserBufferSize = userbuffersize;
-        mhd->DecorUserBuffer = (IPTR) AllocMem(userbuffersize, MEMF_ANY | MEMF_CLEAR);
-        if (0 == mhd->DecorUserBuffer) return;
-        }
-
-            struct mdpInitMenu  msg;
-
-            msg.MethodID        = MDM_INITMENU;
-            msg.mdp_TrueColor   = mhd->TrueColor;
-            msg.mdp_RPort       = &mhd->scr->RastPort;
-            msg.mdp_Left        = win_tags[0].ti_Data;
-            msg.mdp_Top         = win_tags[1].ti_Data;
-            msg.mdp_Width       = width;
-            msg.mdp_Height      = height;
-            msg.mdp_UserBuffer  = mhd->DecorUserBuffer;
-            msg.mdp_ScreenUserBuffer   = ((struct IntScreen *) mhd->scr)->DecorUserBuffer;
-            msg.mdp_Screen             = mhd->scr;
-            msg.mdp_MenuDecorFlags = (MENUS_UNDERMOUSE(IntuitionBase)) ? MDP_MDF_MENUS_UNDERMOUSE : 0;
-            msg.mdp_MenuDecorFlags |= MDP_MDF_ITEM;
-
-            DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);
+            if (!InitMenuDecor(mhd, &mhd->DecorUserBuffer, win_tags, MDP_MDF_ITEM, IntuitionBase)) return;
 
             mhd->menuwin = OpenWindowTagList(0, win_tags);
 
@@ -1257,18 +1256,7 @@ static void KillMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
         {
             item->Flags &= ~ISDRAWN;
         }
-           struct mdpExitMenu  msg;
-
-        msg.MethodID       = MDM_EXITMENU;
-        msg.mdp_TrueColor  = mhd->TrueColor;
-        msg.mdp_UserBuffer = mhd->DecorUserBuffer;
-        DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);
-
-        if (mhd->DecorUserBuffer)
-        {
-            FreeMem((void *)mhd->DecorUserBuffer, mhd->DecorUserBufferSize);
-        }
-        mhd->DecorUserBuffer = 0;
+        ExitMenuDecor(mhd, &mhd->DecorUserBuffer, IntuitionBase);
 
         mhd->activemenu->Flags &= ~MIDRAWN;
 
@@ -1305,18 +1293,9 @@ static void MakeSubMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
 {
     struct MenuItem *item = mhd->activeitem->SubItem;
 
-    struct TagItem  win_tags[] =
-    {
-        {WA_Left        , 0                         },
-        {WA_Top         , 0                         },
-        {WA_Width       , 0                         },
-        {WA_Height      , 0                         },
-        {WA_AutoAdjust  , TRUE                      },
-        {WA_Borderless  , TRUE                      },
-        {WA_CustomScreen, (IPTR)mhd->scr           },
-        {WA_BackFill    , (IPTR)LAYERS_NOBACKFILL  },
-        {TAG_DONE                                   }
-    };
+    struct TagItem  win_tags[9];
+
+    InitMenuWinTags(win_tags, 0, 0, 0, 0, mhd);
 
     if(mhd->menubarwin)
     {
@@ -1364,35 +1343,7 @@ static void MakeSubMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
             item = item->NextItem;
         }
 
-        IPTR    userbuffersize;
-
-        GetAttr(MDA_UserBuffer, ((struct IntScreen *)(mhd->scr))->MenuDecorObj, &userbuffersize);
-
-        if (userbuffersize)
-        {
-        mhd->DecorUserBufferSize = userbuffersize;
-        mhd->SubDecorUserBuffer = (IPTR) AllocMem(userbuffersize, MEMF_ANY | MEMF_CLEAR);
-        if (0 == mhd->SubDecorUserBuffer) return;
-        }
-
-        {
-            struct mdpInitMenu  msg;
-            msg.MethodID             = MDM_INITMENU;
-            msg.mdp_TrueColor = mhd->TrueColor;
-            msg.mdp_RPort         = &mhd->scr->RastPort;
-            msg.mdp_Left = win_tags[0].ti_Data;
-            msg.mdp_Top = win_tags[1].ti_Data;
-            msg.mdp_Width = win_tags[2].ti_Data;
-            msg.mdp_Height = win_tags[3].ti_Data;
-            msg.mdp_UserBuffer = mhd->SubDecorUserBuffer;
-            msg.mdp_ScreenUserBuffer   = ((struct IntScreen *) mhd->scr)->DecorUserBuffer;
-            msg.mdp_TrueColor = mhd->TrueColor;
-            msg.mdp_Screen             = mhd->scr;
-            msg.mdp_MenuDecorFlags = (MENUS_UNDERMOUSE(IntuitionBase)) ? MDP_MDF_MENUS_UNDERMOUSE : 0;
-            msg.mdp_MenuDecorFlags |= MDP_MDF_SUBITEM;
-
-            DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);
-        }
+        if (!InitMenuDecor(mhd, &mhd->SubDecorUserBuffer, win_tags, MDP_MDF_SUBITEM, IntuitionBase)) return;
         mhd->submenuwin = OpenWindowTagList(0, win_tags);
 
         mhd->maxcommkeywidth_submenu = CalcMaxCommKeyWidth(mhd->submenuwin, mhd, IntuitionBase);
@@ -1410,18 +1361,7 @@ static void KillSubMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
         CloseWindow(mhd->submenuwin);
 
         TimeDelay(UNIT_VBLANK,0,20000);
-        struct mdpExitMenu  msg;
-
-        msg.MethodID       = MDM_EXITMENU;
-        msg.mdp_TrueColor  = mhd->TrueColor;
-        msg.mdp_UserBuffer = mhd->SubDecorUserBuffer;
-        DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);
-
-        if (mhd->SubDecorUserBuffer)
-        {
-            FreeMem((void *)mhd->SubDecorUserBuffer, mhd->DecorUserBufferSize);
-        }
-        mhd->SubDecorUserBuffer = 0;
+        ExitMenuDecor(mhd, &mhd->SubDecorUserBuffer, IntuitionBase);
 
         mhd->submenuwin = NULL;
 
@@ -1454,6 +1394,58 @@ static void RenderSubMenu(struct MenuHandlerData *mhd, struct IntuitionBase *Int
 
 /**************************************************************************************************/
 
+
+/*
+ * Print the text of a menu item. Unless the classic menu look is used the text
+ * is drawn in the given DrawInfo pen. An item with a sub-menu also gets the
+ * sub-menu image, and only the first IntuiText of its chain is printed.
+ */
+static void PrintMenuItemText(struct MenuItem *item, struct IntuiText *it, struct RastPort *rp,
+                              WORD offx, WORD offy, WORD pen,
+                              struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
+{
+    struct IntuiText *save = it->NextText;
+
+    if (item->SubItem)
+    {
+        Forbid();
+        it->NextText = NULL;
+    }
+
+    if (!MENUS_AMIGALOOK(IntuitionBase))
+    {
+        it->FrontPen = mhd->dri->dri_Pens[pen];
+        it->DrawMode = JAM1;
+    }
+    PrintIText(rp, it, offx + item->LeftEdge, offy + item->TopEdge);
+
+    if (item->SubItem)
+    {
+        DrawImageState(rp, mhd->submenuimage, offx + item->Width - mhd->submenuimage->Width, offy + item->TopEdge + ((item->Height - mhd->submenuimage->Height) >> 1), IDS_NORMAL, mhd->dri);
+        it->NextText = save;
+        Permit();
+    }
+}
+
+/* Draw the text or image an item shows while it is highlighted */
+static void RenderHighFill(struct MenuItem *item, APTR fill, struct RastPort *rp, WORD offx, WORD offy,
+                           struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
+{
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+
+    SetDrMd(rp, JAM1);
+
+    if (item->Flags & ITEMTEXT)
+    {
+        PrintMenuItemText(item, (struct IntuiText *)fill, rp, offx, offy, TEXTPEN, mhd, IntuitionBase);
+    }
+    else
+    {
+        EraseImage(rp, (struct Image *)fill, offx + item->LeftEdge, offy + item->TopEdge);
+        DrawImageState(rp, (struct Image *)fill, offx + item->LeftEdge, offy + item->TopEdge, IDS_SELECTED, mhd->dri);
+    }
+}
+
 static void RenderItem(struct MenuItem *item, WORD itemtype,  struct Rectangle *box,
                        struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
@@ -1474,33 +1466,7 @@ static void RenderItem(struct MenuItem *item, WORD itemtype,  struct Rectangle *
 
         if (item->Flags & ITEMTEXT)
         {
-        struct IntuiText *save = ((struct IntuiText*) item->ItemFill)->NextText;
-
-        if (item->SubItem)
-            {
-            Forbid();
-            ((struct IntuiText*) item->ItemFill)->NextText = NULL;
-        }
-
-            struct IntuiText *it = (struct IntuiText *)item->ItemFill;
-    
-            if (MENUS_AMIGALOOK(IntuitionBase))
-            {
-                PrintIText(rp, it, offx + item->LeftEdge, offy + item->TopEdge);
-            }
-            else
-            {
-                it->FrontPen = mhd->dri->dri_Pens[(item->Flags & HIGHITEM) ? FILLTEXTPEN : TEXTPEN];
-                it->DrawMode = JAM1;
-    
-                PrintIText(rp, it, offx + item->LeftEdge, offy + item->TopEdge);
-            }
-        if (item->SubItem)
-        {
-        DrawImageState(rp, mhd->submenuimage, offx + item->Width - mhd->submenuimage->Width, offy + item->TopEdge + ((item->Height - mhd->submenuimage->Height) >> 1), IDS_NORMAL, mhd->dri);
-            ((struct IntuiText*) item->ItemFill)->NextText = save;
-            Permit();
-        }
+            PrintMenuItemText(item, (struct IntuiText *)item->ItemFill, rp, offx, offy, (item->Flags & HIGHITEM) ? FILLTEXTPEN : TEXTPEN, mhd, IntuitionBase);
         }
         else
         {
@@ -1782,43 +1748,7 @@ static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandl
         y2 = y1 + item->Height - 1;
 
     if (CustomDrawBackground(rp, win, x1, y1, x2 - x1 + 1, y2 - y1 + 1, item->Flags, mhd, IntuitionBase)) {
-            SetDrMd(rp, JAM1);
-
-            if(item->Flags & ITEMTEXT)
-            {
-            struct IntuiText *save = ((struct IntuiText*) fill)->NextText;
-
-            if (item->SubItem)
-                {
-            Forbid();
-            ((struct IntuiText*) fill)->NextText = NULL;
-            }
-
-                if (MENUS_AMIGALOOK(IntuitionBase))
-                {
-                    PrintIText(rp, (struct IntuiText *)fill, x1, y1);
-                }
-                else
-                {
-                    struct IntuiText *it = (struct IntuiText *)fill;
-    
-                    it->FrontPen = mhd->dri->dri_Pens[TEXTPEN];
-                    it->DrawMode = JAM1;
-    
-                    PrintIText(rp, it, x1, y1);
-                }
-            if (item->SubItem)
-            {
-            DrawImageState(rp, mhd->submenuimage, offx + item->Width - mhd->submenuimage->Width, offy + item->TopEdge + ((item->Height - mhd->submenuimage->Height) >> 1), IDS_NORMAL, mhd->dri);
-                ((struct IntuiText*) fill)->NextText = save;
-                Permit();
-            }
-            }
-            else
-            {
-                EraseImage(rp, (struct Image *)fill, x1, y1);
-                DrawImageState(rp, (struct Image *)fill, x1, y1, IDS_SELECTED, mhd->dri);
-            }
+            RenderHighFill(item, fill, rp, offx, offy, mhd, IntuitionBase);
         RenderItem(item, itemtype, box, mhd, IntuitionBase);
         return;
     }
@@ -1826,42 +1756,7 @@ static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandl
         switch(item->Flags & HIGHFLAGS)
         {
         case HIGHIMAGE:
-            SetDrMd(rp, JAM1);
-
-            if(item->Flags & ITEMTEXT)
-            {
-            struct IntuiText *save = ((struct IntuiText*) fill)->NextText;
-
-            if (item->SubItem)
-                {
-            Forbid();
-            ((struct IntuiText*) fill)->NextText = NULL;
-            }
-                if (MENUS_AMIGALOOK(IntuitionBase))
-                {
-                    PrintIText(rp, (struct IntuiText *)fill, x1, y1);
-                }
-                else
-                {
-                    struct IntuiText *it = (struct IntuiText *)fill;
-    
-                    it->FrontPen = mhd->dri->dri_Pens[TEXTPEN];
-                    it->DrawMode = JAM1;
-    
-                    PrintIText(rp, it, x1, y1);
-                }
-            if (item->SubItem)
-            {
-            DrawImageState(rp, mhd->submenuimage, offx + item->Width - mhd->submenuimage->Width, offy + item->TopEdge + ((item->Height - mhd->submenuimage->Height) >> 1), IDS_NORMAL, mhd->dri);
-                ((struct IntuiText*) fill)->NextText = save;
-                Permit();
-            }
-            }
-            else
-            {
-                EraseImage(rp, (struct Image *)fill, x1, y1);
-                DrawImageState(rp, (struct Image *)fill, x1, y1, IDS_SELECTED, mhd->dri);
-            }
+            RenderHighFill(item, fill, rp, offx, offy, mhd, IntuitionBase);
             break;
 
         case HIGHCOMP:

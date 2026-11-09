@@ -21,9 +21,31 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 
+#include <stddef.h>
+
 #include "intuition_intern.h"
 #include "monitorclass_intern.h"
 #include "monitorclass_private.h"
+
+/*
+ * The slot of IMonitorNode.neighbour[] that belongs to one of the attributes
+ * MA_TopLeftMonitor ... MA_BottomRightMonitor. Each named member has to be
+ * the slot of its attribute.
+ */
+#define NEIGHBOUR(attr)     neighbour[(attr) - MA_TopLeftMonitor]
+
+#define CHECK_NEIGHBOUR(attr, member)                                       \
+    _Static_assert(offsetof(struct IMonitorNode, member) ==                 \
+                   offsetof(struct IMonitorNode, NEIGHBOUR(attr)), #attr)
+
+CHECK_NEIGHBOUR(MA_TopLeftMonitor,      topleft);
+CHECK_NEIGHBOUR(MA_TopMiddleMonitor,    topmiddle);
+CHECK_NEIGHBOUR(MA_TopRightMonitor,     topright);
+CHECK_NEIGHBOUR(MA_MiddleLeftMonitor,   middleleft);
+CHECK_NEIGHBOUR(MA_MiddleRightMonitor,  middleright);
+CHECK_NEIGHBOUR(MA_BottomLeftMonitor,   bottomleft);
+CHECK_NEIGHBOUR(MA_BottomMiddleMonitor, bottommiddle);
+CHECK_NEIGHBOUR(MA_BottomRightMonitor,  bottomright);
 
 /*i***************************************************************************
 
@@ -941,35 +963,14 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
         break;
 
     case MA_TopLeftMonitor:
-        *msg->opg_Storage = (IPTR)data->topleft;
-        break;
-
     case MA_TopMiddleMonitor:
-        *msg->opg_Storage = (IPTR)data->topmiddle;
-        break;
-
     case MA_TopRightMonitor:
-        *msg->opg_Storage = (IPTR)data->topright;
-        break;
-
     case MA_MiddleLeftMonitor:
-        *msg->opg_Storage = (IPTR)data->middleleft;
-        break;
-
     case MA_MiddleRightMonitor:
-        *msg->opg_Storage = (IPTR)data->middleright;
-        break;
-
     case MA_BottomLeftMonitor:
-        *msg->opg_Storage = (IPTR)data->bottomleft;
-        break;
-
     case MA_BottomMiddleMonitor:
-        *msg->opg_Storage = (IPTR)data->bottommiddle;
-        break;
-
     case MA_BottomRightMonitor:
-        *msg->opg_Storage = (IPTR)data->bottomright;
+        *msg->opg_Storage = (IPTR)data->NEIGHBOUR(msg->opg_AttrID);
         break;
 
     case MA_GammaControl:
@@ -1021,37 +1022,16 @@ IPTR MonitorClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
     while((tag = NextTagItem(&tstate))) {
         switch (tag->ti_Tag) {
         case MA_TopLeftMonitor:
-            data->topleft = (Object *)tag->ti_Data;
-            break;
-
         case MA_TopMiddleMonitor:
-            data->topmiddle = (Object *)tag->ti_Data;
-            break;
-
         case MA_TopRightMonitor:
-            data->topright = (Object *)tag->ti_Data;
-            break;
-
         case MA_MiddleLeftMonitor:
-            data->middleleft = (Object *)tag->ti_Data;
-            break;
-
         case MA_MiddleRightMonitor:
-            data->middleright = (Object *)tag->ti_Data;
-            break;
-
         case MA_BottomLeftMonitor:
-            data->bottomleft = (Object *)tag->ti_Data;
-            break;
-
         case MA_BottomMiddleMonitor:
-            data->bottommiddle = (Object *)tag->ti_Data;
+        case MA_BottomRightMonitor:
+            data->NEIGHBOUR(tag->ti_Tag) = (Object *)tag->ti_Data;
             break;
 
-        case MA_BottomRightMonitor:
-            data->bottomright = (Object *)tag->ti_Data;
-            break;
-        
         case MA_PointerVisible:
             HIDD_Display_SetCursorVisible(data->handle->display, tag->ti_Data);
             break;
@@ -1062,11 +1042,19 @@ IPTR MonitorClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
 /*i**************************************************************************/
 
-#define Relink(nextAttr, prev, prevAttr, next)          \
-    if (prev)                                           \
-        SetAttrs(prev, nextAttr, next, TAG_DONE);       \
-    if (next)                                           \
-        SetAttrs(next, prevAttr, prev, TAG_DONE)
+/*
+ * Link the two monitors on opposite sides of a monitor that goes away with
+ * each other. Both links are read from the instance data at the moment they
+ * are used.
+ */
+static void Relink(ULONG nextAttr, Object **prev, ULONG prevAttr, Object **next,
+                   struct IntuitionBase *IntuitionBase)
+{
+    if (*prev)
+        SetAttrs(*prev, nextAttr, *next, TAG_DONE);
+    if (*next)
+        SetAttrs(*next, prevAttr, *prev, TAG_DONE);
+}
 
 IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
@@ -1091,10 +1079,10 @@ IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
     Remove((struct Node *)data);
 
     /* Remove this monitor from spatial links */
-    Relink(MA_BottomRightMonitor, data->topleft, MA_TopLeftMonitor, data->bottomright);
-    Relink(MA_BottomMiddleMonitor, data->topmiddle, MA_TopMiddleMonitor, data->bottommiddle);
-    Relink(MA_BottomLeftMonitor, data->topright, MA_TopRightMonitor, data->bottomleft);
-    Relink(MA_MiddleLeftMonitor, data->middleright, MA_MiddleRightMonitor, data->middleleft);
+    Relink(MA_BottomRightMonitor, &data->topleft, MA_TopLeftMonitor, &data->bottomright, IntuitionBase);
+    Relink(MA_BottomMiddleMonitor, &data->topmiddle, MA_TopMiddleMonitor, &data->bottommiddle, IntuitionBase);
+    Relink(MA_BottomLeftMonitor, &data->topright, MA_TopRightMonitor, &data->bottomleft, IntuitionBase);
+    Relink(MA_MiddleLeftMonitor, &data->middleright, MA_MiddleRightMonitor, &data->middleleft, IntuitionBase);
 
     /* If this was the active monitor, try to activate another one */
     if (GetPrivIBase(IntuitionBase)->ActiveMonitor == o)
@@ -1538,19 +1526,41 @@ IPTR MonitorClass__MM_Query3DSupport(Class *cl, Object *obj, struct msQuery3DSup
 
 *****************************************************************************/
 
+/*
+ * Copy the gamma tables of a monitor to (set == FALSE) or from (set == TRUE)
+ * the red, green and blue tables given. A NULL table is left out.
+ */
+static void CopyGammaTables(UBYTE *gamma, UBYTE *red, UBYTE *green, UBYTE *blue, BOOL set)
+{
+    UBYTE *tables[3];
+    WORD i;
+
+    _Static_assert(GAMMA_R == 0 && GAMMA_G == 256 && GAMMA_B == 512, "gamma tables follow each other");
+
+    tables[0] = red;
+    tables[1] = green;
+    tables[2] = blue;
+
+    for (i = 0; i < 3; i++, gamma += 256)
+    {
+        if (tables[i])
+        {
+            if (set)
+                CopyMem(tables[i], gamma, 256);
+            else
+                CopyMem(gamma, tables[i], 256);
+        }
+    }
+}
+
 void MonitorClass__MM_GetDefaultGammaTables(Class *cl, Object *obj, struct msGetDefaultGammaTables *msg)
 {
     struct IMonitorNode *data = INST_DATA(cl, obj);
 
     if (data->gamma)
     {
-        if (msg->Red)
-            CopyMem(&data->gamma[GAMMA_R], msg->Red, 256);
-        if (msg->Green)
-            CopyMem(&data->gamma[GAMMA_G], msg->Green, 256);
-        if (msg->Blue)
-            CopyMem(&data->gamma[GAMMA_B], msg->Blue, 256);
-     }
+        CopyGammaTables(data->gamma, msg->Red, msg->Green, msg->Blue, FALSE);
+    }
 }
 
 /*i***************************************************************************
@@ -1753,7 +1763,8 @@ IPTR MonitorClass__MM_RunBlanker(Class *cl, Object *obj, Msg *msg)
 
 *****************************************************************************/
 
-IPTR MonitorClass__MM_EnterPowerSaveMode(Class *cl, Object *obj, Msg *msg)
+/* Switch the display of a monitor to a DPMS level */
+static IPTR SetDPMSLevel(Class *cl, Object *obj, IPTR level)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
@@ -1761,11 +1772,16 @@ IPTR MonitorClass__MM_EnterPowerSaveMode(Class *cl, Object *obj, Msg *msg)
     struct IMonitorNode *data = INST_DATA(cl, obj);
     struct TagItem tags[] =
     {
-        {aHidd_Display_DPMSLevel, vHidd_Gfx_DPMSLevel_Off},
-        {TAG_DONE               , 0                      }
+        {aHidd_Display_DPMSLevel, level},
+        {TAG_DONE               , 0    }
     };
-    
+
     return OOP_SetAttrs(data->handle->display, tags);
+}
+
+IPTR MonitorClass__MM_EnterPowerSaveMode(Class *cl, Object *obj, Msg *msg)
+{
+    return SetDPMSLevel(cl, obj, vHidd_Gfx_DPMSLevel_Off);
 }
 
 /*i***************************************************************************
@@ -1805,17 +1821,7 @@ IPTR MonitorClass__MM_EnterPowerSaveMode(Class *cl, Object *obj, Msg *msg)
 
 IPTR MonitorClass__MM_ExitBlanker(Class *cl, Object *obj, Msg *msg)
 {
-    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
-    struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
-    OOP_AttrBase HiddDisplayAttrBase = GetPrivIBase(IntuitionBase)->HiddDisplayAttrBase;
-    struct IMonitorNode *data = INST_DATA(cl, obj);
-    struct TagItem tags[] =
-    {
-        {aHidd_Display_DPMSLevel, vHidd_Gfx_DPMSLevel_On},
-        {TAG_DONE               , 0                     }
-    };
-    
-    return OOP_SetAttrs(data->handle->display, tags);
+    return SetDPMSLevel(cl, obj, vHidd_Gfx_DPMSLevel_On);
 }
 
 /*i***************************************************************************
@@ -1873,12 +1879,7 @@ IPTR MonitorClass__MM_SetDefaultGammaTables(Class *cl, Object *obj, struct msSet
     {
         IPTR ret;
 
-        if (msg->Red)
-            CopyMem(msg->Red  , &data->gamma[GAMMA_R], 256);
-        if (msg->Green)
-            CopyMem(msg->Green, &data->gamma[GAMMA_G], 256);
-        if (msg->Blue)
-            CopyMem(msg->Blue , &data->gamma[GAMMA_B], 256);
+        CopyGammaTables(data->gamma, msg->Red, msg->Green, msg->Blue, TRUE);
 
         ObtainSemaphore(&GetPrivIBase(IntuitionBase)->ViewLordLock);
 

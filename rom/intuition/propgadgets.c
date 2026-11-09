@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -30,6 +30,22 @@
 
 BOOL isonborder(struct Gadget *gadget,struct Window *window);
 
+/* The display hook of a BOOPSI prop gadget, NULL for any other gadget */
+static struct Hook *PropDisplayHook(struct Gadget *gad, struct IntuitionBase *IntuitionBase)
+{
+    struct Hook *dhook = NULL;
+
+    if ((gad->Flags & GFLG_EXTENDED) != 0)
+    {
+        if ((((struct ExtGadget *) gad)->MoreFlags & GMORE_BOOPSIGADGET) != 0)
+        {
+            GetAttr(PGA_DisplayHook, (Object *) gad, (IPTR *)&dhook);
+        }
+    }
+
+    return dhook;
+}
+
 static void RenderPropBackground(struct Gadget *gad, struct Window *win, struct DrawInfo *dri,
                                  struct Rectangle *rect, struct Rectangle *proprect,
                                  struct Rectangle *knobrect, struct PropInfo *pi,
@@ -38,17 +54,23 @@ static void RenderPropBackground(struct Gadget *gad, struct Window *win, struct 
 {
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
+    struct Hook *dhook = NULL;
 
-    if (onborder)
+    /* A gadget in the window border is drawn by the window decorator, any
+       other one by its display hook, if it has one. Both get the same message. */
+    if (!onborder)
+    {
+        dhook = PropDisplayHook(gad, IntuitionBase);
+    }
+
+    if (onborder || dhook)
     {
         struct wdpDrawBorderPropBack msg;
 
         msg.MethodID        = WDM_DRAW_BORDERPROPBACK;
 
         msg.wdp_Window      = win;
-    msg.wdp_TrueColor   = (((struct IntScreen *)win->WScreen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
-    msg.wdp_UserBuffer  = ((struct IntWindow *)win)->DecorUserBuffer;
-
+        msg.wdp_TrueColor   = (((struct IntScreen *)win->WScreen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
         msg.wdp_RPort       = rp;
         msg.wdp_Gadget      = gad;
         msg.wdp_RenderRect  = rect;
@@ -57,60 +79,39 @@ static void RenderPropBackground(struct Gadget *gad, struct Window *win, struct 
         msg.wdp_Flags       = 0;
         msg.wdp_Dri         = dri;
 
-        DoMethodA(((struct IntScreen *)(win->WScreen))->WinDecorObj, (Msg)&msg);
+        if (onborder)
+        {
+            msg.wdp_UserBuffer  = ((struct IntWindow *)win)->DecorUserBuffer;
+
+            DoMethodA(((struct IntScreen *)(win->WScreen))->WinDecorObj, (Msg)&msg);
+        }
+        else
+        {
+            CallHookPkt(dhook, (Object *) gad, (Msg)&msg);
+        }
     }
     else
     {
         static CONST UWORD pattern[] = {0x5555,0xAAAA};
-        struct Hook *dhook = NULL;
 
-        if ((gad->Flags & GFLG_EXTENDED) != 0)
+        SetDrMd(rp, JAM2);
+
+        if (pi->Flags & PROPNEWLOOK)
         {
-            if ((((struct ExtGadget *) gad)->MoreFlags & GMORE_BOOPSIGADGET) != 0)
-            {
-                GetAttr(PGA_DisplayHook, (Object *) gad, (IPTR *)&dhook);
-            }
-        }
-        if (dhook) {
+            SetAfPt(rp, pattern, 1);
+            SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
+            SetBPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
 
-            struct wdpDrawBorderPropBack msg;
-
-            msg.MethodID            = WDM_DRAW_BORDERPROPBACK;
-
-            msg.wdp_Window      = win;
-            msg.wdp_TrueColor   = (((struct IntScreen *)win->WScreen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
-            msg.wdp_RPort           = rp;
-            msg.wdp_Gadget      = gad;
-            msg.wdp_RenderRect  = rect;
-            msg.wdp_PropRect    = proprect;
-            msg.wdp_KnobRect    = knobrect;
-            msg.wdp_Flags           = 0;
-            msg.wdp_Dri         = dri;
-
-            CallHookPkt(dhook, (Object *) gad, (Msg)&msg);
+            RectFill(rp, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY);
+            SetAfPt(rp, NULL, 0);
         }
         else
         {
-            SetDrMd(rp, JAM2);
-
-            if (pi->Flags & PROPNEWLOOK)
-            {
-                SetAfPt(rp, pattern, 1);
-                SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
-                SetBPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
-
-                RectFill(rp, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY);
-                SetAfPt(rp, NULL, 0);
-            }
-            else
-            {
-                SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
-                RectFill(rp, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY);
-            }
+            SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
+            RectFill(rp, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY);
         }
     }
 }
-
 
 VOID HandlePropSelectDown(struct Gadget *gadget, struct Window *w, struct Requester *req,
                           UWORD mouse_x, UWORD mouse_y, struct IntuitionBase *IntuitionBase)
@@ -131,8 +132,7 @@ VOID HandlePropSelectDown(struct Gadget *gadget, struct Window *w, struct Reques
     mouse_x += knob.Left;
     mouse_y += knob.Top;
 
-    if (!CalcKnobSize (gadget, &knob))
-        return;
+    CalcKnobSize (gadget, &knob);
 
     GetPrivIBase(IntuitionBase)->prop_clickoffset_x = mouse_x - knob.Left;
     GetPrivIBase(IntuitionBase)->prop_clickoffset_y = mouse_y - knob.Top;
@@ -252,8 +252,7 @@ VOID HandlePropMouseMove(struct Gadget *gadget, struct Window *w,struct Requeste
     {
         CalcBBox (w, req, gadget, &knob);
 
-        if (!CalcKnobSize (gadget, &knob))
-            return;
+        CalcKnobSize (gadget, &knob);
 
         /* Move the knob the same amount, ie.
         knob.Left += dx; knob.Top += dy;
@@ -322,7 +321,7 @@ VOID HandlePropMouseMove(struct Gadget *gadget, struct Window *w,struct Requeste
     return;
 }
 
-int CalcKnobSize (struct Gadget * propGadget, struct BBox * knobbox)
+void CalcKnobSize (struct Gadget * propGadget, struct BBox * knobbox)
 {
     struct PropInfo *pi;
     WORD             x, y;
@@ -406,8 +405,6 @@ int CalcKnobSize (struct Gadget * propGadget, struct BBox * knobbox)
             pi->VPotRes = 1;
     }
     //dprintf("knob(%d,%d,%d,%d)\n", knobbox->Left, knobbox->Top, knobbox->Width, knobbox->Height);
-
-    return TRUE;
 } /* CalcKnobSize */
 
 
@@ -420,11 +417,8 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
     struct GadgetInfo    gi;
     struct RastPort     *rp = 0;
     struct BBox          bbox, kbox;
-    BOOL                 onborder;
 
     D(bug("RefreshPropGadget(gad=%p, win=%s, req=%p)\n", gadget, window->Title, req));
-
-    onborder = (IS_BORDER_GADGET(gadget) || isonborder(gadget,window));
 
     if ((dri = GetScreenDrawInfo(window->WScreen)))
     {
@@ -435,8 +429,6 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
         {
             for (;;)
             {
-                BOOL umn;
-
                 CalcBBox (window, req, gadget, &bbox);
                 kbox = bbox;
 
@@ -447,7 +439,7 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
                 if (!pi)
                     break;
 
-                umn = CalcKnobSize (gadget, &kbox);
+                CalcKnobSize (gadget, &kbox);
 
                 SetDrMd (rp, JAM2);
                 if (!(pi->Flags & PROPBORDERLESS))
@@ -463,22 +455,7 @@ void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
                     bbox.Width -= 2; bbox.Height -= 2;
                 }
 
-                if (umn)
-                {
-                    RefreshPropGadgetKnob (gadget, &bbox, &kbox, window, req, IntuitionBase);
-                }
-                else
-                {
-                    struct Rectangle tmprect;
-                    
-                    tmprect.MinX = bbox.Left;
-                    tmprect.MaxX = bbox.Left + bbox.Width - 1;
-                    tmprect.MinY = bbox.Top;
-                    tmprect.MaxY = bbox.Top + bbox.Height - 1;
-
-                    RenderPropBackground(gadget, window, dri, &tmprect, &tmprect, NULL,
-                                         pi, rp, onborder, IntuitionBase);
-                } // if (CalcKnob
+                RefreshPropGadgetKnob (gadget, &bbox, &kbox, window, req, IntuitionBase);
                 break;
             }
 
@@ -662,6 +639,7 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
             if (flags & AUTOKNOB)
             {
                 int hit = ((flags & KNOBHIT) != 0);
+                struct Hook *dhook = NULL;
 
                 D(bug("RefresPropGadgetKnob: draw knob Left %d Top %d Width %d Height %d\n",
                       knob->Left,
@@ -669,7 +647,12 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                       knob->Width,
                       knob->Height));
 
-                if (onborder)
+                if (!onborder)
+                {
+                    dhook = PropDisplayHook(gadget, IntuitionBase);
+                }
+
+                if (onborder || dhook)
                 {
                     struct wdpDrawBorderPropKnob msg;
                     struct Rectangle             knobrect;
@@ -680,7 +663,6 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 
                     msg.MethodID        = WDM_DRAW_BORDERPROPKNOB;
                     msg.wdp_TrueColor   = (((struct IntScreen *)window->WScreen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
-                    msg.wdp_UserBuffer  = ((struct IntWindow *)window)->DecorUserBuffer;
                     msg.wdp_Window      = window;
                     msg.wdp_RPort       = rp;
                     msg.wdp_Gadget      = gadget;
@@ -689,122 +671,100 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                     msg.wdp_Flags       = hit ? WDF_DBPK_HIT : 0;
                     msg.wdp_Dri         = dri;
 
-                    DoMethodA(((struct IntScreen *)(window->WScreen))->WinDecorObj, (Msg)&msg);
-
-                } /* gadget inside window border */
-                else
-                {
-                    struct Hook *dhook = NULL;
-
-                    if ((gadget->Flags & GFLG_EXTENDED) != 0)
+                    if (onborder)
                     {
-                        if ((((struct ExtGadget *) gadget)->MoreFlags & GMORE_BOOPSIGADGET) != 0)
-                        {
-                            GetAttr(PGA_DisplayHook, (Object *) gadget, (IPTR *)&dhook);
-                        }
-                    }
-                    if (dhook) {
-                        struct wdpDrawBorderPropKnob msg;
-                        struct Rectangle                 knobrect;
-                        knobrect.MinX = knob->Left;
-                        knobrect.MinY = knob->Top;
-                        knobrect.MaxX = knob->Left + knob->Width - 1;
-                        knobrect.MaxY = knob->Top + knob->Height - 1;
-                        msg.MethodID            = WDM_DRAW_BORDERPROPKNOB;
-                        msg.wdp_TrueColor   = (((struct IntScreen *)window->WScreen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
-                        msg.wdp_Window          = window;
-                        msg.wdp_RPort           = rp;
-                        msg.wdp_Gadget          = gadget;
-                        msg.wdp_RenderRect  = &knobrect;
-                        msg.wdp_PropRect        = &brect;
-                        msg.wdp_Flags           = hit ? WDF_DBPK_HIT : 0;
-                        msg.wdp_Dri         = dri;
+                        /* gadget inside window border */
+                        msg.wdp_UserBuffer  = ((struct IntWindow *)window)->DecorUserBuffer;
 
-                        CallHookPkt(dhook, (Object *) gadget, (Msg)&msg);
+                        DoMethodA(((struct IntScreen *)(window->WScreen))->WinDecorObj, (Msg)&msg);
                     }
                     else
                     {
+                        CallHookPkt(dhook, (Object *) gadget, (Msg)&msg);
+                    }
+                }
+                else
+                {
+                    /* gadget not inside window border and without display (render) hook */
+                    BOOL stdlook = TRUE;
 
-                        BOOL stdlook = TRUE;
+                    #ifdef SKINS
+                    stdlook = RenderPropKnob(window,dri,rp,pi,knob,hit,IntuitionBase);
+                    #endif
 
-                        #ifdef SKINS
-                        stdlook = RenderPropKnob(window,dri,rp,pi,knob,hit,IntuitionBase);
-                        #endif
-
-                        if (stdlook)
+                    if (stdlook)
+                    {
+                        if (flags & PROPBORDERLESS)
                         {
-                            if (flags & PROPBORDERLESS)
-                            {
-                                SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
+                            SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
 
-                                /* paint black right and bottom edges */
+                            /* paint black right and bottom edges */
+
+                            RectFill(rp,knob->Left + knob->Width - 1,
+                                     knob->Top,
+                                     knob->Left + knob->Width - 1,
+                                     knob->Top + knob->Height - 1);
+
+                            RectFill(rp,knob->Left,
+                                     knob->Top + knob->Height - 1,
+                                     knob->Left + knob->Width - 2,
+                                     knob->Top + knob->Height - 1);
+
+                            knob->Width--;
+                            knob->Height--;
+
+                        } /* propborderless */
+                        else
+                        {
+                            SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
+
+                            if (flags & FREEHORIZ)
+                            {
+                                /* black line at the left and at the right */
+
+                                RectFill(rp,knob->Left,
+                                         knob->Top,
+                                         knob->Left,
+                                         knob->Top + knob->Height - 1);
 
                                 RectFill(rp,knob->Left + knob->Width - 1,
                                          knob->Top,
                                          knob->Left + knob->Width - 1,
                                          knob->Top + knob->Height - 1);
 
+                                knob->Left++,
+                                knob->Width -= 2;
+                            }
+                            if (flags & FREEVERT)
+                            {
+                                /* black line at the top and at the bottom */
+
+                                RectFill(rp,knob->Left,
+                                         knob->Top,
+                                         knob->Left + knob->Width - 1,
+                                         knob->Top);
+
                                 RectFill(rp,knob->Left,
                                          knob->Top + knob->Height - 1,
-                                         knob->Left + knob->Width - 2,
+                                         knob->Left + knob->Width - 1,
                                          knob->Top + knob->Height - 1);
 
-                                knob->Width--;
-                                knob->Height--;
+                                knob->Top++;
+                                knob->Height -= 2;
+                            }
 
-                            } /* propborderless */
-                            else
-                            {
-                                SetAPen(rp,dri->dri_Pens[SHADOWPEN]);
-
-                                if (flags & FREEHORIZ)
-                                {
-                                    /* black line at the left and at the right */
-
-                                    RectFill(rp,knob->Left,
-                                             knob->Top,
-                                             knob->Left,
-                                             knob->Top + knob->Height - 1);
-
-                                    RectFill(rp,knob->Left + knob->Width - 1,
-                                             knob->Top,
-                                             knob->Left + knob->Width - 1,
-                                             knob->Top + knob->Height - 1);
-
-                                    knob->Left++,
-                                    knob->Width -= 2;
-                                }
-                                if (flags & FREEVERT)
-                                {
-                                    /* black line at the top and at the bottom */
-
-                                    RectFill(rp,knob->Left,
-                                             knob->Top,
-                                             knob->Left + knob->Width - 1,
-                                             knob->Top);
-
-                                    RectFill(rp,knob->Left,
-                                             knob->Top + knob->Height - 1,
-                                             knob->Left + knob->Width - 1,
-                                             knob->Top + knob->Height - 1);
-
-                                    knob->Top++;
-                                    knob->Height -= 2;
-                                }
-
-                            } /* not propborderless */
+                        } /* not propborderless */
 
 
-                            SetAPen(rp, dri->dri_Pens[SHINEPEN]);
+                        SetAPen(rp, dri->dri_Pens[SHINEPEN]);
 
-                            /* interior */
-                            RectFill(rp,knob->Left,
-                                     knob->Top,
-                                     knob->Left + knob->Width - 1,
-                                     knob->Top + knob->Height - 1);
-                        } /* stdlook */
-                    } /* gadget has no display (render) hook */
-                } /* gadget not inside window border */
+                        /* interior */
+                        RectFill(rp,knob->Left,
+                                 knob->Top,
+                                 knob->Left + knob->Width - 1,
+                                 knob->Top + knob->Height - 1);
+                    } /* stdlook */
+                }
 
             } /* if (flags & AUTOKNOB) */
             else

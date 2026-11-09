@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -231,17 +231,17 @@ const struct TagItem mapproptop[] = {
                                     PGA_Top, 0,
                                     TAG_END);
                             }
+#if (0)
                             if (gadgets = FindGadgetByID(req->FirstGadget, (UWORD)-4))
                             {
-#if (0)
                                 DEBUG_BUILDEASYREQUEST(dprintf("%s: Adjusting HProp gadget @ 0x%p\n", __func__, gadgets));
                                 SetGadgetAttrs(gadgets, req, NULL,
                                     PGA_Total, content_w,
                                     PGA_Visible, req->GZZWidth,
                                     PGA_Top, pos_x,
                                     TAG_END);
-#endif                    
                             }
+#endif
                             gadgets = requserdata->Gadgets;
                             buildreq_draw(&requserdata->ReqDims, requserdata->ReqBody,
                                      req, scr, requserdata->Gadgets, IntuitionBase);

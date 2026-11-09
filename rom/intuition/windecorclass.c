@@ -47,17 +47,6 @@
 #define DEFSIZE_WIDTH  14
 #define DEFSIZE_HEIGHT 14
 
-#define HSPACING 3
-#define VSPACING 3
-/* Ralph Schmidt
- * heuristics for smaller arrows used in apps
- * like filer
- */
-#define HSPACING_MIDDLE 2
-#define VSPACING_MIDDLE 2
-#define HSPACING_SMALL 1
-#define VSPACING_SMALL 1
-
 #define DRI(dri) ((struct DrawInfo *)(dri))
 
 /**************************************************************************************************/
@@ -66,40 +55,14 @@
 
 IPTR WinDecorClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
-    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
-    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
-    struct windecor_data *data;
-
-    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
-    if (obj)
-    {
-        data = INST_DATA(cl, obj);
-        data->userbuffersize = (ULONG) GetTagData(WDA_UserBuffer, 0, msg->ops_AttrList);
-    }
-
-    return (IPTR)obj;
+    return decor_om_new(cl, obj, msg, WDA_UserBuffer);
 }
 
 /**************************************************************************************************/
 
 IPTR WinDecorClass__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 {
-    struct windecor_data *data = INST_DATA(cl, obj);
-
-    switch(msg->opg_AttrID)
-    {
-        case WDA_UserBuffer:
-        *msg->opg_Storage = (IPTR) data->userbuffersize;
-        break;
-    case WDA_TrueColorOnly:
-        *msg->opg_Storage = FALSE;
-        break;
-
-    default:
-        return DoSuperMethodA(cl, obj, (Msg)msg);
-    }
-
-    return 1;
+    return decor_om_get(cl, obj, msg, WDA_UserBuffer, WDA_TrueColorOnly);
 }
     
 
@@ -266,6 +229,7 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
     LONG                        bottom = top + height - 1;
     LONG                        h_spacing, v_spacing;
     UWORD                       frameh, framev;
+    UWORD                       hspacing, vspacing;
 
     getintframesizes(IntuitionBase, &frameh, &framev);
 
@@ -274,40 +238,68 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
     switch(msg->wdp_Which)
     {
     case MUIIMAGE:
-    {
-        renderimageframe(rp, CLOSEIMAGE, state, pens, left, top, width, height, IntuitionBase);
-        /* no code yet */
-        break;
-    }
     case POPUPIMAGE:
+    case ICONIFYIMAGE:
+    case CLOSEIMAGE:
+    case ZOOMIMAGE:
+    case DEPTHIMAGE:
+    case SIZEIMAGE:
+    case LEFTIMAGE:
+    case UPIMAGE:
+    case RIGHTIMAGE:
+    case DOWNIMAGE:
+        break;
+
+    default:
+        return FALSE;
+    }
+
+    /* The arrow spacing depends on the size of the whole image */
+    getarrowspacing(width, height, &hspacing, &vspacing);
+
+    /* The frame only depends on the image type for the four arrows */
+    renderimageframe(rp, msg->wdp_Which, state, pens, left, top, width, height, IntuitionBase);
+
+    if ((msg->wdp_Which == MUIIMAGE) || (msg->wdp_Which == POPUPIMAGE))
     {
-        renderimageframe(rp, CLOSEIMAGE, state, pens, left, top, width, height, IntuitionBase);
-        /* code should be added later */
+        /* no code yet */
+        return TRUE;
+    }
+
+    left++;
+    top++;
+    width -= (frameh << 1);
+    height -= (framev << 1);
+
+    switch(msg->wdp_Which)
+    {
+    case ICONIFYIMAGE:
+    case CLOSEIMAGE:
+    case ZOOMIMAGE:
+        right = left + width - 1;
+        bottom = top + height - 1;
+        break;
+
+    default:
+        right--;
+        bottom--;
         break;
     }
-    case ICONIFYIMAGE:
+
+    /* Clear background into correct color */
+    SetAPen(rp, getbgpen(state, pens));
+    RectFill(rp, left, top, right, bottom);
+
+    switch(msg->wdp_Which)
     {
-        UWORD  bg;
+    case ICONIFYIMAGE:
+    case ZOOMIMAGE:
+    {
         WORD   h_spacing;
         WORD   v_spacing;
 
-        renderimageframe(rp, ICONIFYIMAGE, state, pens,
-                         left, top, width, height, IntuitionBase);
-        left++;
-        top++;
-        width -= (frameh << 1);
-        height -= (framev << 1);
-
-        right = left + width - 1;
-        bottom = top + height - 1 ;
         h_spacing = width / 6;
         v_spacing = height / 6;
-
-        bg = getbgpen(state, pens);
-
-        /* Clear background into correct color */
-        SetAPen(rp, bg);
-        RectFill(rp, left, top, right, bottom);
 
         left += h_spacing;
         right -= h_spacing;
@@ -322,7 +314,10 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
         RectFill(rp, left + 1, top + 1, right - 1, bottom - 1);
 
         right = left + (right - left + 1) / 2;
-        top = top + (bottom - top + 1) / 2;
+        if (msg->wdp_Which == ICONIFYIMAGE)
+            top = top + (bottom - top + 1) / 2;
+        else
+            bottom = top + (bottom - top + 1) / 2;
 
         if (right - left <  4) right = left + 4;
 
@@ -339,21 +334,11 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
         RectFill(rp,left, top, right, bottom);
         break;
     }
+
     case CLOSEIMAGE:
     {
-        renderimageframe(rp, CLOSEIMAGE, state, pens, left, top, width, height, IntuitionBase);
-        left++;
-        top++;
-        width -= (frameh << 1);
-        height -= (framev << 1);
-
-        right = left + width - 1;
-        bottom = top + height - 1;
         h_spacing = width * 4 / 10;
         v_spacing = height * 3 / 10;
-
-        SetAPen(rp, getbgpen(state, pens));
-        RectFill(rp, left, top, right, bottom);
 
         left += h_spacing;
         right -= h_spacing;
@@ -374,160 +359,21 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
         break;
     }
 
-    case ZOOMIMAGE:
-    {
-        UWORD  bg;
-        WORD   h_spacing;
-        WORD   v_spacing;
-
-        renderimageframe(rp, ZOOMIMAGE, state, pens,
-                         left, top, width, height, IntuitionBase);
-        left++;
-        top++;
-        width -= (frameh << 1);
-        height -= (framev << 1);
-
-        right = left + width - 1;
-        bottom = top + height - 1 ;
-        h_spacing = width / 6;
-        v_spacing = height / 6;
-
-        bg = getbgpen(state, pens);
-
-        /* Clear background into correct color */
-        SetAPen(rp, bg);
-        RectFill(rp, left, top, right, bottom);
-
-        left += h_spacing;
-        right -= h_spacing;
-        top += v_spacing;
-        bottom -= v_spacing;
-
-        SetAPen(rp, pens[SHADOWPEN]);
-        RectFill(rp, left, top, right, bottom);
-
-        SetAPen(rp, pens[(state == IDS_SELECTED) ? SHINEPEN :
-                            (state == IDS_NORMAL) ? FILLPEN : BACKGROUNDPEN]);
-        RectFill(rp, left + 1, top + 1, right - 1, bottom - 1);
-
-        right = left + (right - left + 1) / 2;
-        bottom = top + (bottom - top + 1) / 2;
-
-        if (right - left <  4) right = left + 4;
-
-        SetAPen(rp, pens[SHADOWPEN]);
-        RectFill(rp, left, top, right, bottom);
-
-        left += 2;
-        right -= 2;
-        top += 1;
-        bottom -= 1;
-
-        SetAPen(rp, pens[(state == IDS_SELECTED) ? FILLPEN :
-                            (state == IDS_NORMAL) ? SHINEPEN : BACKGROUNDPEN]);
-        RectFill(rp,left, top, right, bottom);
-        break;
-    }
-
     case DEPTHIMAGE:
-    {
-        UWORD  bg;
-        WORD   h_spacing;
-        WORD   v_spacing;
-
-        renderimageframe(rp, DEPTHIMAGE, state, pens,
-                         left, top, width, height, IntuitionBase);
-        left++;
-        top++;
-        right--;
-        bottom--;
-        width -= (frameh << 1);
-        height -= (framev << 1);
-
-        h_spacing = width / 6;
-        v_spacing = height / 6;
-
-        bg = getbgpen(state, pens);
-
-        /* Clear background into correct color */
-        SetAPen(rp, bg);
-        RectFill(rp, left, top, right, bottom);
-
-        /* Draw a image of two partly overlapped tiny windows,
-        */
-        left += h_spacing;
-        top  += v_spacing;
-
-        width  -= h_spacing * 2;
-        height -= v_spacing * 2;
-
-        right  = left + width  - 1;
-        bottom = top  + height - 1;
-
-        /* Render top left window  */
-        SetAPen(rp, pens[SHADOWPEN]);
-        drawrect(rp
-                 , left
-                 , top
-                 , right - (width / 3 )
-                 , bottom - (height / 3)
-                 , IntuitionBase);
-
-        /* Fill top left window (inside of the frame above) */
-        if ((state != IDS_INACTIVENORMAL))
-        {
-            SetAPen(rp, pens[BACKGROUNDPEN]);
-            RectFill(rp, left + 1, top + 1,
-                 right - (width / 3) - 1, bottom - (height / 3) - 1);
-        }
-
-        /* Render bottom right window  */
-        SetAPen(rp, pens[SHADOWPEN]);
-        drawrect(rp, left + (width / 3), top + (height / 3),
-                 right, bottom, IntuitionBase);
-
-        /* Fill bottom right window (inside of the frame above) */
-        SetAPen(rp, pens[(state == IDS_INACTIVENORMAL) ? BACKGROUNDPEN : SHINEPEN]);
-        RectFill(rp, left + (width / 3) + 1, top + (height / 3) + 1,
-                 right - 1, bottom - 1);
-
-        if (state == IDS_SELECTED)
-        {
-            /* Re-Render top left window  */
-
-            SetAPen(rp, pens[SHADOWPEN]);
-            drawrect(rp, left, top,
-                 right - (width / 3 ), bottom - (height / 3), IntuitionBase);
-        }
+        drawdepthwindows(rp, pens, state, FALSE, left, top, width, height, IntuitionBase);
         break;
-    }
 
     case SIZEIMAGE:
     {
-        UWORD  bg;
         WORD   h_spacing;
         WORD   v_spacing;
         WORD   x, y;
 
-        renderimageframe(rp, SIZEIMAGE, state, pens,
-                         left, top, width, height, IntuitionBase);
-        left++;
-        top++;
-        right--;
-        bottom--;
-        width -= (frameh << 1);
-        height -= (framev << 1);
-
         h_spacing = width  / 5;
         v_spacing = height / 5;
 
-        bg = getbgpen(state, pens);
-
-        /* Clear background into correct color */
-        SetAPen(rp, bg);
-        RectFill(rp, left, top, right, bottom);
-
         /* A triangle image */
+
         left += h_spacing;
         top  += v_spacing;
 
@@ -558,241 +404,10 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
         break;
     }
 
-    case LEFTIMAGE:
-    {
-        UWORD hspacing,vspacing;
-        WORD  cy, i;
-
-        hspacing = HSPACING;
-        vspacing = VSPACING;
-
-        if (width <= 12)
-            hspacing = HSPACING_MIDDLE;
-
-        if (width <= 10)
-            hspacing = HSPACING_SMALL;
-
-        if (height <= 12)
-            vspacing = VSPACING_MIDDLE;
-
-        if (height <= 10)
-            vspacing = VSPACING_SMALL;
-
-        renderimageframe(rp, LEFTIMAGE, state, pens,
-                         left, top, width, height, IntuitionBase);
-        left++;
-        top++;
-        right--;
-        bottom--;
-        width -= (frameh << 1);
-        height -= (framev << 1);
-
-        SetAPen(rp, getbgpen(state, pens));
-        RectFill(rp, left, top, right, bottom);
-
-        left += hspacing;
-        top += vspacing;
-        width -= hspacing * 2;
-        height -= vspacing * 2;
-
-        right = left + width - 1;
-        bottom = top + height - 1;
-
-        cy = (height + 1) / 2;
-
-        SetAPen(rp, pens[SHADOWPEN]);
-
-        for(i = 0; i < cy; i++)
-        {
-            RectFill(rp, left + (cy - i - 1) * width / cy,
-                     top + i,
-                     right - i * width / cy / 2,
-                     top + i);
-            RectFill(rp, left + (cy - i - 1) * width / cy,
-                     bottom - i,
-                     right - i * width / cy / 2,
-                     bottom - i);
-        }
+    default:    /* LEFTIMAGE, UPIMAGE, RIGHTIMAGE, DOWNIMAGE */
+        drawarrowimage(rp, msg->wdp_Which, pens[SHADOWPEN], left + hspacing, top + vspacing,
+                       width - hspacing * 2, height - vspacing * 2, IntuitionBase);
         break;
-    }
-
-    case UPIMAGE:
-    {
-        UWORD hspacing,vspacing;
-        WORD  cx, i;
-
-        hspacing = HSPACING;
-        vspacing = VSPACING;
-
-        if (width <= 12)
-            hspacing = HSPACING_MIDDLE;
-    
-        if (width <= 10)
-            hspacing = HSPACING_SMALL;
-
-        if (height <= 12)
-            vspacing = VSPACING_MIDDLE;
-    
-        if (height <= 10)
-            vspacing = VSPACING_SMALL;
-
-        renderimageframe(rp, UPIMAGE, state, pens,
-                         left, top, width, height, IntuitionBase);
-        left++;
-        top++;
-        right--;
-        bottom--;
-        width -= (frameh << 1);
-        height -= (framev << 1);
-
-        SetAPen(rp, getbgpen(state, pens));
-        RectFill(rp, left, top, right, bottom);
-
-        left += hspacing;
-        top += vspacing;
-        width -= hspacing * 2;
-        height -= vspacing * 2;
-
-        right = left + width - 1;
-        bottom = top + height - 1;
-
-        cx = (width + 1) / 2;
-
-        SetAPen(rp, pens[SHADOWPEN]);
-
-        for(i = 0; i < cx; i++)
-        {
-            RectFill(rp, left + i,
-                     top + (cx - i - 1) * height / cx,
-                     left + i,
-                     bottom - i * height / cx / 2);
-            RectFill(rp, right - i,
-                     top + (cx - i - 1) * height / cx,
-                     right - i,
-                     bottom - i * height / cx / 2);
-        }
-
-        break;
-    }
-
-    case RIGHTIMAGE:
-    {
-        UWORD hspacing,vspacing;
-        WORD  cy, i;
-
-        hspacing = HSPACING;
-        vspacing = VSPACING;
-
-        if (width <= 12)
-            hspacing = HSPACING_MIDDLE;
-
-        if (width <= 10)
-            hspacing = HSPACING_SMALL;
-
-        if (height <= 12)
-            vspacing = VSPACING_MIDDLE;
-
-        if (height <= 10)
-            vspacing = VSPACING_SMALL;
-
-        renderimageframe(rp, RIGHTIMAGE, state, pens,
-                         left, top, width, height, IntuitionBase);
-        left++;
-        top++;
-        right--;
-        bottom--;
-        width -= (frameh << 1);
-        height -= (framev << 1);
-
-        SetAPen(rp, getbgpen(state, pens));
-        RectFill(rp, left, top, right, bottom);
-
-        left += hspacing;
-        top += vspacing;
-        width -= hspacing * 2;
-        height -= vspacing * 2;
-
-        right = left + width - 1;
-        bottom = top + height - 1;
-
-        cy = (height + 1) / 2;
-
-        SetAPen(rp, pens[SHADOWPEN]);
-
-        for(i = 0; i < cy; i++)
-        {
-            RectFill(rp, left + i * width / cy / 2,
-                     top + i,
-                     right - (cy - i - 1) * width / cy,
-                     top + i);
-            RectFill(rp, left + i * width / cy / 2,
-                     bottom - i,
-                     right - (cy - i - 1) * width / cy,
-                     bottom - i);
-        }
-        break;
-    }
-
-    case DOWNIMAGE:
-    {
-        UWORD hspacing,vspacing;
-        WORD  cx, i;
-
-        hspacing = HSPACING;
-        vspacing = VSPACING;
-
-        if (width <= 12)
-            hspacing = HSPACING_MIDDLE;
-
-        if (width <= 10)
-            hspacing = HSPACING_SMALL;
-
-        if (height <= 12)
-            vspacing = VSPACING_MIDDLE;
-
-        if (height <= 10)
-            vspacing = VSPACING_SMALL;
-
-        renderimageframe(rp, DOWNIMAGE, state, pens,
-                         left, top, width, height, IntuitionBase);
-        left++;
-        top++;
-        right--;
-        bottom--;
-        width -= (frameh << 1);
-        height -= (framev << 1);
-
-        SetAPen(rp, getbgpen(state, pens));
-        RectFill(rp, left, top, right, bottom);
-
-        left += hspacing;
-        top += vspacing;
-        width -= hspacing * 2;
-        height -= vspacing * 2;
-
-        right = left + width - 1;
-        bottom = top + height - 1;
-
-        cx = (width + 1) / 2;
-
-        SetAPen(rp, pens[SHADOWPEN]);
-
-        for(i = 0; i < cx; i++)
-        {
-            RectFill(rp, left + i,
-                     top + i * height / cx / 2,
-                     left + i,
-                     bottom - (cx - i - 1) * height / cx);
-            RectFill(rp, right - i,
-                     top + i * height / cx / 2,
-                     right -  i,
-                     bottom - (cx - i - 1) * height / cx);
-        }
-        break;
-    }
-
-    default:
-        return FALSE;
     }
 
     return TRUE;
@@ -889,43 +504,47 @@ IPTR WinDecorClass__WDM_DRAW_WINBORDER(Class *cl, Object *obj, struct wdpDrawWin
     struct Window        *window = msg->wdp_Window;
     UWORD                *pens = DRI(msg->wdp_Dri)->dri_Pens;
     LONG                  left, right;
+    /* The window's size and border sizes do not change while it is drawn */
+    WORD                  width = window->Width, height = window->Height;
+    BYTE                  borderleft = window->BorderLeft, bordertop = window->BorderTop;
+    BYTE                  borderright = window->BorderRight, borderbottom = window->BorderBottom;
 
     SetDrMd(rp, JAM1);
     SetAPen(rp, pens[SHINEPEN]);
 
-    if (window->BorderTop > 0)
+    if (bordertop > 0)
     {
         /* Outer shine edge on top side */
 
-        CheckRectFill(rp, 0, 0, window->Width - 1, 0, IntuitionBase);
+        CheckRectFill(rp, 0, 0, width - 1, 0, IntuitionBase);
     }
 
     if (!(msg->wdp_Flags & WDF_DWB_TOP_ONLY))
     {
-        if (window->BorderLeft > 0)
+        if (borderleft > 0)
         {
             /* Outer shine edge on left side */
 
-            CheckRectFill(rp, 0, 0, 0, window->Height - 1, IntuitionBase);
+            CheckRectFill(rp, 0, 0, 0, height - 1, IntuitionBase);
         }
 
-        if (window->BorderRight > 1)
+        if (borderright > 1)
         {
             /* Inner shine edge on right side */
 
             CheckRectFill(rp,
-                      window->Width - window->BorderRight, window->BorderTop,
-                          window->Width - window->BorderRight, window->Height - window->BorderBottom,
+                      width - borderright, bordertop,
+                          width - borderright, height - borderbottom,
                           IntuitionBase);
         }
 
-        if (window->BorderBottom > 1)
+        if (borderbottom > 1)
         {
             /* Inner shine edge on bottom side */
 
             CheckRectFill(rp,
-                          window->BorderLeft, window->Height - window->BorderBottom,
-                          window->Width - window->BorderRight, window->Height - window->BorderBottom,
+                          borderleft, height - borderbottom,
+                          width - borderright, height - borderbottom,
                           IntuitionBase);
         }
     }
@@ -934,73 +553,73 @@ IPTR WinDecorClass__WDM_DRAW_WINBORDER(Class *cl, Object *obj, struct wdpDrawWin
 
     if (!(msg->wdp_Flags & WDF_DWB_TOP_ONLY))
     {
-        if (window->BorderRight > 0)
+        if (borderright > 0)
         {
             /* Outer shadow edge on right side */
 
-            CheckRectFill(rp, window->Width - 1, 1,
-                      window->Width - 1, window->Height - 1, IntuitionBase);
+            CheckRectFill(rp, width - 1, 1,
+                      width - 1, height - 1, IntuitionBase);
         }
 
-        if (window->BorderBottom > 0)
+        if (borderbottom > 0)
         {
             /* Outer shadow edge on bottom side */
 
-            CheckRectFill(rp, 1, window->Height - 1,
-                  window->Width - 1, window->Height - 1, IntuitionBase);
+            CheckRectFill(rp, 1, height - 1,
+                  width - 1, height - 1, IntuitionBase);
         }
 
-        if (window->BorderLeft > 1)
+        if (borderleft > 1)
         {
             /* Inner shadow edge on left side */
 
-            CheckRectFill(rp, window->BorderLeft - 1, window->BorderTop - 1,
-                      window->BorderLeft - 1, window->Height - window->BorderBottom,
+            CheckRectFill(rp, borderleft - 1, bordertop - 1,
+                      borderleft - 1, height - borderbottom,
                       IntuitionBase);
         }
     }
 
-    if (window->BorderTop > 1)
+    if (bordertop > 1)
     {
         /* Inner shadow edge on top side */
 
-        CheckRectFill(rp, window->BorderLeft - 1, window->BorderTop - 1,
-                      window->Width - window->BorderRight, window->BorderTop - 1,
+        CheckRectFill(rp, borderleft - 1, bordertop - 1,
+                      width - borderright, bordertop - 1,
                       IntuitionBase);
     }
 
     SetAPen(rp, pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);
 
-    if (window->BorderTop > 2)
+    if (bordertop > 2)
     {
         /* Fill on top side */
 
-        CheckRectFill(rp, 1, 1, window->Width - 2, window->BorderTop - 2, IntuitionBase);
+        CheckRectFill(rp, 1, 1, width - 2, bordertop - 2, IntuitionBase);
     }
 
     if (!(msg->wdp_Flags & WDF_DWB_TOP_ONLY))
     {
-        if (window->BorderLeft > 2)
+        if (borderleft > 2)
         {
             /* Fill on left side */
 
-            CheckRectFill(rp, 1, 1, window->BorderLeft - 2, window->Height - 2, IntuitionBase);
+            CheckRectFill(rp, 1, 1, borderleft - 2, height - 2, IntuitionBase);
         }
 
-        if (window->BorderRight > 2)
+        if (borderright > 2)
         {
             /* Fill on right side */
 
-            CheckRectFill(rp, window->Width - window->BorderRight + 1, 1,
-                      window->Width - 2, window->Height - 2, IntuitionBase);
+            CheckRectFill(rp, width - borderright + 1, 1,
+                      width - 2, height - 2, IntuitionBase);
         }
 
-        if (window->BorderBottom > 2)
+        if (borderbottom > 2)
         {
             /* Fill on bottom side */
 
-            CheckRectFill(rp, 1, window->Height - window->BorderBottom + 1,
-                          window->Width - 2, window->Height - 2, IntuitionBase);
+            CheckRectFill(rp, 1, height - borderbottom + 1,
+                          width - 2, height - 2, IntuitionBase);
         }
     }
 
@@ -1012,16 +631,16 @@ IPTR WinDecorClass__WDM_DRAW_WINBORDER(Class *cl, Object *obj, struct wdpDrawWin
 
         SetAPen(rp, pens[SHINEPEN]);
         Move(rp, left, 1);
-        Draw(rp, left, window->BorderTop - 2);
+        Draw(rp, left, bordertop - 2);
     }
 
-    if (right != window->Width - 1)
+    if (right != width - 1)
     {
         /* Right edges of title area */
 
         SetAPen(rp, pens[SHADOWPEN]);
         Move(rp, right, 1);
-        Draw(rp, right, window->BorderTop - 2);
+        Draw(rp, right, bordertop - 2);
     }
 
     if (window->Title) INTERNAL_WDM_DRAW_WINTITLE(cl, obj, msg);

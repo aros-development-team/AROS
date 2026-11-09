@@ -33,6 +33,39 @@ void SetActiveMonPointerPos(struct IntuitionBase *IntuitionBase)
     }
 }
 
+/* Show the image of a pointer object on the monitor of a screen. If that
+   works the screen holds a reference to the shared pointer from then on and
+   the window, if one is given, takes over its hot spot. */
+void SetScreenPointer(struct IntScreen *scr, struct Window *window, Object *pointer,
+                      struct IntuitionBase *IntuitionBase)
+{
+    struct msSetPointerShape pmsg;
+
+    pmsg.MethodID = MM_SetPointerShape;
+    pmsg.pointer = NULL;
+
+    GetAttr(POINTERA_SharedPointer, pointer, (IPTR *)&pmsg.pointer);
+
+    DEBUG_POINTER(dprintf("SetScreenPointer: scr 0x%lx pointer 0x%lx sprite 0x%lx\n",
+                          scr, pointer, pmsg.pointer->sprite));
+
+    if (DoMethodA(scr->IMonitorNode, &pmsg))
+    {
+        ObtainSharedPointer(pmsg.pointer, IntuitionBase);
+        ReleaseSharedPointer(scr->Pointer, IntuitionBase);
+        scr->Pointer = pmsg.pointer;
+        if (window)
+        {
+            window->XOffset = pmsg.pointer->xoffset;
+            window->YOffset = pmsg.pointer->yoffset;
+        }
+    }
+    else
+    {
+        DEBUG_POINTER(dprintf("SetScreenPointer: can't set pointer.\n"));
+    }
+}
+
 BOOL ResetPointer(struct IntuitionBase *IntuitionBase)
 {
     struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);

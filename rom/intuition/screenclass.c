@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -80,6 +80,24 @@ IPTR ScreenClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
     return DoSuperMethodA(cl, o, msg);
 }
+
+/*
+ * ScreenClass__OM_GET() finds the monitor attribute of an SA_xxxScreen
+ * attribute by its position in the grid of neighbours: check that both
+ * series are numbered that way.
+ */
+#define CHECK_NEIGHBOUR(sa, ma, pos)                                            \
+    _Static_assert((sa) - SA_TopLeftScreen - ((sa) > SA_MiddleLeftScreen) == (pos) \
+                   && (ma) == MA_TopLeftMonitor + (pos), #sa)
+
+CHECK_NEIGHBOUR(SA_TopLeftScreen,      MA_TopLeftMonitor,      0);
+CHECK_NEIGHBOUR(SA_TopMiddleScreen,    MA_TopMiddleMonitor,    1);
+CHECK_NEIGHBOUR(SA_TopRightScreen,     MA_TopRightMonitor,     2);
+CHECK_NEIGHBOUR(SA_MiddleLeftScreen,   MA_MiddleLeftMonitor,   3);
+CHECK_NEIGHBOUR(SA_MiddleRightScreen,  MA_MiddleRightMonitor,  4);
+CHECK_NEIGHBOUR(SA_BottomLeftScreen,   MA_BottomLeftMonitor,   5);
+CHECK_NEIGHBOUR(SA_BottomMiddleScreen, MA_BottomMiddleMonitor, 6);
+CHECK_NEIGHBOUR(SA_BottomRightScreen,  MA_BottomRightMonitor,  7);
 
 static IPTR GetScreen(ULONG attrID, struct IntScreen *screen, struct IntuitionBase *IntuitionBase)
 {
@@ -774,148 +792,149 @@ IPTR ScreenClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
         *msg->opg_Storage = (screen->Screen.Flags & SCREENBEHIND) ? TRUE : FALSE;
         break;
 
-    case SA_Displayed:
-        *msg->opg_Storage = screen->GammaControl.Active;
-        break;
-
-    case SA_MonitorName:
-        return GetAttr(MA_MonitorName, screen->IMonitorNode, msg->opg_Storage);
-
-    case SA_MonitorObject:
-        *msg->opg_Storage = (IPTR)screen->IMonitorNode;
-        break;
-
-    case SA_TopLeftScreen:
-        *msg->opg_Storage = GetScreen(MA_TopLeftMonitor, screen, IntuitionBase);
-        break;
-
-    case SA_TopMiddleScreen:
-        *msg->opg_Storage = GetScreen(MA_TopMiddleMonitor, screen, IntuitionBase);
-        break;
-
-    case SA_TopRightScreen:
-        *msg->opg_Storage = GetScreen(MA_TopRightMonitor, screen, IntuitionBase);
-        break;
-
-    case SA_MiddleLeftScreen:
-        *msg->opg_Storage = GetScreen(MA_MiddleLeftMonitor, screen, IntuitionBase);
-        break;
-
-    case SA_MiddleRightScreen:
-        *msg->opg_Storage = GetScreen(MA_MiddleRightMonitor, screen, IntuitionBase);
-        break;
-
-    case SA_BottomLeftScreen:
-        *msg->opg_Storage = GetScreen(MA_BottomLeftMonitor, screen, IntuitionBase);
-        break;
-
-    case SA_BottomMiddleScreen:
-        *msg->opg_Storage = GetScreen(MA_BottomMiddleMonitor, screen, IntuitionBase);
-        break;
-
-    case SA_BottomRightScreen:
-        *msg->opg_Storage = GetScreen(MA_BottomRightMonitor, screen, IntuitionBase);
-        break;
-
-    case SA_ShowPointer:
-        *msg->opg_Storage = screen->ShowPointer;
-        break;
-
-    case SA_GammaRed:
-        *msg->opg_Storage = (IPTR)screen->GammaControl.GammaTableR;
-        break;
-
-    case SA_GammaBlue:
-        *msg->opg_Storage = (IPTR)screen->GammaControl.GammaTableB;
-        break;
-
-    case SA_GammaGreen:
-        *msg->opg_Storage = (IPTR)screen->GammaControl.GammaTableG;
-        break;
-
-    case SA_DisplayWidth:
-        *msg->opg_Storage = screen->Screen.ViewPort.DWidth;
-        break;
-
-    case SA_DisplayHeight:
-        *msg->opg_Storage = screen->Screen.ViewPort.DHeight;
-        break;
-
-    case SA_PixelFormat:
-        if (IS_HIDD_BM(screen->Screen.RastPort.BitMap))
-        {
-            OOP_Object *pixfmt = NULL;
-
-            OOP_GetAttr(HIDD_BM_OBJ(screen->Screen.RastPort.BitMap), aHidd_BitMap_PixFmt, (IPTR *)&pixfmt);
-            if (pixfmt)
-                OOP_GetAttr(pixfmt, aHidd_PixFmt_CgxPixFmt, msg->opg_Storage);
-            else
-                *msg->opg_Storage = -1;
-        }
-        else
-        {
-            *msg->opg_Storage = -1;
-        }
-        break;
-
-    case SA_ScreenbarTextYPos:
-        *msg->opg_Storage = screen->Screen.BarVBorder + screen->Screen.BarLayer->rp->TxBaseline;
-        break;
-
-    case SA_ScreenbarTextPen:
-        *msg->opg_Storage = screen->Pens[BARDETAILPEN];
-        break;
-
-    case SA_ScreenbarTextColor:
-        *msg->opg_Storage = 0xFFFFFFFF;
-        if (screen->ScrDecorObj) {
-            GetAttr(SA_ScreenbarTextColor, screen->ScrDecorObj, msg->opg_Storage);
-            break;
-        }
-        break;
-
-    case SA_ScreenbarTextFont:
-        if (screen->ScrDecorObj) {
-            *msg->opg_Storage = (IPTR)screen->DInfo.dri_Font;
-            break;
-        }
-        *msg->opg_Storage = (IPTR)screen->Screen.BarLayer->rp->Font;
-        break;
-
-    case SA_CompositingFlags:
-        *msg->opg_Storage = (IPTR)(screen->SpecialFlags >> 8);
-        break;
-
-    case SA_AlphaPreCompositingHook:
-        *msg->opg_Storage = (IPTR)screen->preAlphaCompHook;
-        break;
-
-    /*
-     * Composited layers (WA_Opaqueness / WA_AlphaSurface): what the screen's
-     * display can do, from graphics.library's private
-     * CompositeLayersSupported() which layers.library itself asks.
-     * Read-only; OpenScreen() ignores them.
-     */
-    case SA_CompositingLayers:
-    case SA_OpacitySupport:
-        *msg->opg_Storage = CompositeLayersSupported(screen->Screen.RastPort.BitMap, NULL) ? TRUE : FALSE;
-        break;
-
-    case SA_SourceAlphaSupport:
-        {
-            ULONG alphaformat = (ULONG)-1;
-
-            *msg->opg_Storage = (CompositeLayersSupported(screen->Screen.RastPort.BitMap, &alphaformat)
-                                 && (ULONG)-1 != alphaformat) ? TRUE : FALSE;
-        }
-        break;
-
-    case SA_ScreenbarSignal:    /* Reserved in AROS */
-        *msg->opg_Storage = 0;
-        break;
-
     default:
-        return FALSE;
+        /*
+         * The attributes numbered from SA_Dummy + 100 up lie apart from the
+         * ones above. They have a switch of their own, so that each of the
+         * two covers a dense range of numbers.
+         */
+        switch (msg->opg_AttrID)
+        {
+        case SA_Displayed:
+            *msg->opg_Storage = screen->GammaControl.Active;
+            break;
+
+        case SA_MonitorName:
+            return GetAttr(MA_MonitorName, screen->IMonitorNode, msg->opg_Storage);
+
+        case SA_MonitorObject:
+            *msg->opg_Storage = (IPTR)screen->IMonitorNode;
+            break;
+
+        case SA_TopLeftScreen:
+        case SA_TopMiddleScreen:
+        case SA_TopRightScreen:
+        case SA_MiddleLeftScreen:
+        case SA_MiddleRightScreen:
+        case SA_BottomLeftScreen:
+        case SA_BottomMiddleScreen:
+        case SA_BottomRightScreen:
+            {
+                /*
+                 * The screen attributes are numbered like a 3x3 grid with
+                 * this screen in the middle, the monitor attributes like the
+                 * same grid without the middle.
+                 */
+                ULONG pos = msg->opg_AttrID - SA_TopLeftScreen;
+
+                if (pos > SA_MiddleLeftScreen - SA_TopLeftScreen)
+                    pos--;
+
+                *msg->opg_Storage = GetScreen(MA_TopLeftMonitor + pos, screen, IntuitionBase);
+            }
+            break;
+
+        case SA_ShowPointer:
+            *msg->opg_Storage = screen->ShowPointer;
+            break;
+
+        case SA_GammaRed:
+            *msg->opg_Storage = (IPTR)screen->GammaControl.GammaTableR;
+            break;
+
+        case SA_GammaBlue:
+            *msg->opg_Storage = (IPTR)screen->GammaControl.GammaTableB;
+            break;
+
+        case SA_GammaGreen:
+            *msg->opg_Storage = (IPTR)screen->GammaControl.GammaTableG;
+            break;
+
+        case SA_DisplayWidth:
+            *msg->opg_Storage = screen->Screen.ViewPort.DWidth;
+            break;
+
+        case SA_DisplayHeight:
+            *msg->opg_Storage = screen->Screen.ViewPort.DHeight;
+            break;
+
+        case SA_PixelFormat:
+            if (IS_HIDD_BM(screen->Screen.RastPort.BitMap))
+            {
+                OOP_Object *pixfmt = NULL;
+
+                OOP_GetAttr(HIDD_BM_OBJ(screen->Screen.RastPort.BitMap), aHidd_BitMap_PixFmt, (IPTR *)&pixfmt);
+                if (pixfmt)
+                    OOP_GetAttr(pixfmt, aHidd_PixFmt_CgxPixFmt, msg->opg_Storage);
+                else
+                    *msg->opg_Storage = -1;
+            }
+            else
+            {
+                *msg->opg_Storage = -1;
+            }
+            break;
+
+        case SA_ScreenbarTextYPos:
+            *msg->opg_Storage = screen->Screen.BarVBorder + screen->Screen.BarLayer->rp->TxBaseline;
+            break;
+
+        case SA_ScreenbarTextPen:
+            *msg->opg_Storage = screen->Pens[BARDETAILPEN];
+            break;
+
+        case SA_ScreenbarTextColor:
+            *msg->opg_Storage = 0xFFFFFFFF;
+            if (screen->ScrDecorObj) {
+                GetAttr(SA_ScreenbarTextColor, screen->ScrDecorObj, msg->opg_Storage);
+                break;
+            }
+            break;
+
+        case SA_ScreenbarTextFont:
+            if (screen->ScrDecorObj) {
+                *msg->opg_Storage = (IPTR)screen->DInfo.dri_Font;
+                break;
+            }
+            *msg->opg_Storage = (IPTR)screen->Screen.BarLayer->rp->Font;
+            break;
+
+        case SA_CompositingFlags:
+            *msg->opg_Storage = (IPTR)(screen->SpecialFlags >> 8);
+            break;
+
+        case SA_AlphaPreCompositingHook:
+            *msg->opg_Storage = (IPTR)screen->preAlphaCompHook;
+            break;
+
+        /*
+         * Composited layers (WA_Opaqueness / WA_AlphaSurface): what the screen's
+         * display can do, from graphics.library's private
+         * CompositeLayersSupported() which layers.library itself asks.
+         * Read-only; OpenScreen() ignores them.
+         */
+        case SA_CompositingLayers:
+        case SA_OpacitySupport:
+            *msg->opg_Storage = CompositeLayersSupported(screen->Screen.RastPort.BitMap, NULL) ? TRUE : FALSE;
+            break;
+
+        case SA_SourceAlphaSupport:
+            {
+                ULONG alphaformat = (ULONG)-1;
+
+                *msg->opg_Storage = (CompositeLayersSupported(screen->Screen.RastPort.BitMap, &alphaformat)
+                                     && (ULONG)-1 != alphaformat) ? TRUE : FALSE;
+            }
+            break;
+
+        case SA_ScreenbarSignal:    /* Reserved in AROS */
+            *msg->opg_Storage = 0;
+            break;
+
+        default:
+            return FALSE;
+        }
+        break;
     }
 
     return TRUE;

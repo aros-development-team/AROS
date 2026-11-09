@@ -74,43 +74,14 @@
 
 IPTR MenuDecorClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
-    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
-    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
-    struct scrdecor_data *data;
-    
-    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
-    if (obj)
-    {
-        data = INST_DATA(cl, obj);
-
-        data->userbuffersize = (ULONG) GetTagData(MDA_UserBuffer, 0, msg->ops_AttrList);
-        
-    }
-    
-    return (IPTR)obj;
+    return decor_om_new(cl, obj, msg, MDA_UserBuffer);
 }
 
 /**************************************************************************************************/
 
 IPTR MenuDecorClass__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 {
-    struct scrdecor_data *data = INST_DATA(cl, obj);
-
-    switch(msg->opg_AttrID)
-    {
-        case MDA_UserBuffer:
-            *msg->opg_Storage = (IPTR) data->userbuffersize;
-            break;
-
-        case MDA_TrueColorOnly:
-            *msg->opg_Storage = FALSE;
-            break;
-            
-        default:
-            return DoSuperMethodA(cl, obj, (Msg)msg);
-    }
-    
-    return 1;
+    return decor_om_get(cl, obj, msg, MDA_UserBuffer, MDA_TrueColorOnly);
 }
     
 
