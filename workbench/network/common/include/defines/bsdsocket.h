@@ -853,6 +853,22 @@
     __inet_pton_WB(SocketBase, (arg1), (arg2), (arg3))
 #endif
 
+#define __In_LocalAddr_WB(__SocketBase, __arg1) \
+        AROS_LC1(LONG, In_LocalAddr, \
+                  AROS_LCA(ULONG,(__arg1),D0), \
+        struct Library *, (__SocketBase), 102, BSDSocket)
+
+#define In_LocalAddr(arg1) \
+    __In_LocalAddr_WB(SocketBase, (arg1))
+
+#define __In_CanForward_WB(__SocketBase, __arg1) \
+        AROS_LC1(LONG, In_CanForward, \
+                  AROS_LCA(ULONG,(__arg1),D0), \
+        struct Library *, (__SocketBase), 103, BSDSocket)
+
+#define In_CanForward(arg1) \
+    __In_CanForward_WB(SocketBase, (arg1))
+
 #define __gethostbyname_r_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4, __arg5) \
         AROS_LC5(struct hostent *, RS_gethostbyname_r, \
                   AROS_LCA(const char *,(__arg1),A0), \

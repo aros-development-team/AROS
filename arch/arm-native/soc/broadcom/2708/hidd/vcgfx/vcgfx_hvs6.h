@@ -71,6 +71,9 @@ static inline void hvs6_wr(ULONG offset, ULONG value)
 #define HVS6_ORDER_BGRA     (2UL << 13)     /* B,G,R,A - gallium, as HVS5 */
 #define HVS6_CTL0_FMT_MASK  0x1f
 #define HVS6_CTL0_FMT_8888  7
+#define HVS6_CTL0_ADDR      (7UL << 20)     /* addressing: 0 = linear,    */
+#define HVS6_ADDR_COL128    (1UL << 20)     /* 1 = 128-byte columns (SAND)*/
+#define HVS6_PXF_YUV10      17              /* 10-bit YCbCr, columns only */
 
 /* Plane entry. POS0/POS2 pack opposite to HVS5; extents are minus one. */
 #define HVS6_ENT_CTL0       0

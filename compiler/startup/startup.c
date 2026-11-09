@@ -124,6 +124,79 @@ static int __startup_latehook_dispatcher(struct Hook *_latehook)
     return (int)CallHookA(_latehook, NULL, NULL);
 }
 
+/*
+ * A program can ask for a minimum stack by defining
+ *
+ *     ULONG __stack = 65536;
+ *
+ * as with libnix (`long __stack` is read the same way on the supported
+ * architectures). A Shell start otherwise runs the program on the Shell's
+ * stack and a Workbench start on the icon's, whatever the program needs.
+ * When the current stack is smaller, the rest of the start-up (the C library
+ * set-up and its exit() landing point, main()) runs on a new stack of that
+ * size on the same task, so exit() from anywhere returns here and the stack is
+ * freed. Without the symbol, or when the stack is large enough, nothing
+ * changes. If the memory cannot be allocated the program runs on the stack it
+ * has.
+ *
+ * __stack is a weak definition, as __detached_name is: the program's own
+ * definition replaces it.
+ */
+ULONG __stack __attribute__((weak)) = 0;
+
+static void __startup_stack(struct ExecBase *SysBase)
+{
+    struct Task *me = FindTask(NULL);
+    IPTR want = __stack;
+    IPTR have = (IPTR)me->tc_SPUpper - (IPTR)me->tc_SPLower;
+    struct StackSwapStruct sss;
+    /*
+     * Filled in member by member below. An initialiser that clears the
+     * whole structure can be compiled into a call of memset(), and this
+     * runs before the C library is opened.
+     */
+    struct StackSwapArgs args;
+    UBYTE *stack;
+
+    want = (want + 15) & ~(IPTR)15;
+    if (want <= have)
+    {
+        __startup_entries_next();
+        return;
+    }
+
+    stack = AllocMem(want, MEMF_ANY);
+    if (!stack)
+    {
+        D(bug("%s: no memory for a %lu-byte stack, keeping %lu bytes\n", __func__, (unsigned long)want, (unsigned long)have));
+        __startup_entries_next();
+        return;
+    }
+
+    D(bug("%s: %lu-byte stack instead of %lu bytes\n", __func__, (unsigned long)want, (unsigned long)have));
+    sss.stk_Lower = stack;
+    sss.stk_Upper = stack + want;
+    sss.stk_Pointer = sss.stk_Upper;
+    /*
+     * The entry takes SysBase only, but NewStackSwap() hands all eight
+     * slots over, so none of them is left undefined.
+     */
+    args.Args[0] = (IPTR)SysBase;
+    args.Args[1] = 0;
+    args.Args[2] = 0;
+    args.Args[3] = 0;
+    args.Args[4] = 0;
+    args.Args[5] = 0;
+    args.Args[6] = 0;
+    args.Args[7] = 0;
+    NewStackSwap(&sss, (APTR)___startup_entries_next, &args);
+
+    FreeMem(stack, want);
+}
+
+/* After detaching (-100), before every other entry: they and main() run on the new stack. */
+ADD2SET(__startup_stack, PROGRAM_ENTRIES, -60);
+
 static void __startup_main(struct ExecBase *SysBase)
 {
     APTR TaskResBase = _TaskResBase;

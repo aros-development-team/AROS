@@ -3,7 +3,13 @@
 #include <proto/oop.h>
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
+#include "amigagfx_intern.h"
 #include <hidd/amigavideo.h>
+
+OOP_MethodID gfx_AmigaGfxBase(struct GfxBase *GfxBase)
+{
+    return OOP_GetMethodID(IID_Hidd_AmigaGfx, 0);
+}
 
 BOOL internal_TryRawBlit(struct gfxdisplay_data *driver,
     struct BitMap *src, struct BitMap *dst, WORD sx, WORD sy, WORD dx, WORD dy,
@@ -15,7 +21,7 @@ BOOL internal_TryRawBlit(struct gfxdisplay_data *driver,
         !src->Depth || src->Depth > 8 || src->Depth != dst->Depth)
         return FALSE;
 
-    HiddAmigaGfxBase = OOP_GetMethodID(IID_Hidd_AmigaGfx, 0);
+    HiddAmigaGfxBase = gfx_AmigaGfxBase(GfxBase);
     return HIDD_AMIGAGFX_CopyBitMap(driver->display_gfxhidd, src, dst,
         sx, sy, dx, dy, width, height, MINTERM_TO_GCDRMD(minterm), mask);
 }

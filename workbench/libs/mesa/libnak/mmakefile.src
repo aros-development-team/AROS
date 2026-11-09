@@ -85,7 +85,7 @@ USER_INCLUDES += \
             -I$(top_srcdir)/src/nouveau/winsys \
             -I$(top_srcdir)/src/nouveau \
             -I$(top_srcdir)/include/drm-uapi \
-            -I$(SRCDIR)/workbench/hidds/nouveau/include
+            -I$(SRCDIR)/workbench/hidds/nvgfx/include
 
 USER_CPPFLAGS += -DNDEBUG
 USER_CFLAGS += $(MESA_NOWARNFLAGS) $(NOWARN_UNUSED_FUNCTION)

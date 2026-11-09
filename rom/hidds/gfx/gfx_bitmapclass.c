@@ -28,6 +28,27 @@
 
 /****************************************************************************************/
 
+/* BM__Root__New() fills in the direct method calls as an array of BMFastMethod */
+#define BM_FASTMETHOD_FOLLOWS(prev, next)                                       \
+    _Static_assert(offsetof(struct HIDDBitMapData, next) ==                     \
+                   offsetof(struct HIDDBitMapData, prev) +                      \
+                   sizeof(struct BMFastMethod) &&                               \
+                   offsetof(struct HIDDBitMapData, next##_Class) ==             \
+                   offsetof(struct HIDDBitMapData, next) +                      \
+                   offsetof(struct BMFastMethod, Class),                        \
+                   #next " must follow " #prev " in HIDDBitMapData")
+_Static_assert(offsetof(struct HIDDBitMapData, putpixel_Class) ==
+               offsetof(struct HIDDBitMapData, putpixel) + offsetof(struct BMFastMethod, Class),
+               "putpixel_Class must follow putpixel in HIDDBitMapData");
+BM_FASTMETHOD_FOLLOWS(putpixel, getpixel);
+BM_FASTMETHOD_FOLLOWS(getpixel, drawpixel);
+BM_FASTMETHOD_FOLLOWS(drawpixel, drawline);
+BM_FASTMETHOD_FOLLOWS(drawline, getimage);
+BM_FASTMETHOD_FOLLOWS(getimage, putimage);
+BM_FASTMETHOD_FOLLOWS(putimage, convertpixels);
+BM_FASTMETHOD_FOLLOWS(convertpixels, unmappixel);
+BM_FASTMETHOD_FOLLOWS(unmappixel, mapcolor);
+
 #define POINT_OUTSIDE_CLIP(gc, x, y)    \
         (  (x) < GC_CLIPX1(gc)          \
         || (x) > GC_CLIPX2(gc)          \
@@ -1013,27 +1034,40 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
                               (data->videoformat == vHidd_VideoFmt_P212) ||
                               (data->videoformat == vHidd_VideoFmt_P410) ||
                               (data->videoformat == vHidd_VideoFmt_P412)) ? 2 : 1;
-                struct TagItem vtags[] =
+                /* Tag data is value + bpp * bppmul */
+                static const struct
                 {
-                    { aHidd_PixFmt_ColorModel,     vHidd_ColorModel_Video    },
-                    { aHidd_PixFmt_RedShift,       0                         },
-                    { aHidd_PixFmt_GreenShift,     0                         },
-                    { aHidd_PixFmt_BlueShift,      0                         },
-                    { aHidd_PixFmt_AlphaShift,     0                         },
-                    { aHidd_PixFmt_RedMask,        0                         },
-                    { aHidd_PixFmt_GreenMask,      0                         },
-                    { aHidd_PixFmt_BlueMask,       0                         },
-                    { aHidd_PixFmt_AlphaMask,      0                         },
-                    { aHidd_PixFmt_Depth,          bpp * 8                   },
-                    { aHidd_PixFmt_BitsPerPixel,   bpp * 8                   },
-                    { aHidd_PixFmt_BytesPerPixel,  bpp                       },
-                    { aHidd_PixFmt_StdPixFmt,      vHidd_StdPixFmt_Unknown   },
-                    { aHidd_PixFmt_CLUTShift,      0                         },
-                    { aHidd_PixFmt_CLUTMask,       0                         },
-                    { aHidd_PixFmt_BitMapType,     vHidd_BitMapType_Chunky   },
-                    { aHidd_PixFmt_SwapPixelBytes, 0                         },
-                    { TAG_DONE,                    0                         }
+                    UBYTE attr, value, bppmul;
+                } vpf[] =
+                {
+                    { aoHidd_PixFmt_ColorModel,     vHidd_ColorModel_Video,  0 },
+                    { aoHidd_PixFmt_RedShift,       0,                       0 },
+                    { aoHidd_PixFmt_GreenShift,     0,                       0 },
+                    { aoHidd_PixFmt_BlueShift,      0,                       0 },
+                    { aoHidd_PixFmt_AlphaShift,     0,                       0 },
+                    { aoHidd_PixFmt_RedMask,        0,                       0 },
+                    { aoHidd_PixFmt_GreenMask,      0,                       0 },
+                    { aoHidd_PixFmt_BlueMask,       0,                       0 },
+                    { aoHidd_PixFmt_AlphaMask,      0,                       0 },
+                    { aoHidd_PixFmt_Depth,          0,                       8 },
+                    { aoHidd_PixFmt_BitsPerPixel,   0,                       8 },
+                    { aoHidd_PixFmt_BytesPerPixel,  0,                       1 },
+                    { aoHidd_PixFmt_StdPixFmt,      vHidd_StdPixFmt_Unknown, 0 },
+                    { aoHidd_PixFmt_CLUTShift,      0,                       0 },
+                    { aoHidd_PixFmt_CLUTMask,       0,                       0 },
+                    { aoHidd_PixFmt_BitMapType,     vHidd_BitMapType_Chunky, 0 },
+                    { aoHidd_PixFmt_SwapPixelBytes, 0,                       0 }
                 };
+                struct TagItem vtags[sizeof(vpf) / sizeof(vpf[0]) + 1];
+                ULONG i;
+
+                for (i = 0; i < sizeof(vpf) / sizeof(vpf[0]); i++)
+                {
+                    vtags[i].ti_Tag  = HiddPixFmtAttrBase + vpf[i].attr;
+                    vtags[i].ti_Data = vpf[i].value + bpp * vpf[i].bppmul;
+                }
+                vtags[i].ti_Tag  = TAG_DONE;
+                vtags[i].ti_Data = 0;
 
                 data->prot.pixfmt = DMEnum__Internal__RegisterPixFmt(CSD(cl)->dmenumclass, vtags);
                 data->pf_registered = (data->prot.pixfmt != NULL);
@@ -1134,6 +1168,19 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
             }
         }
 
+        if (ok && DMEnum__Internal__IsSoftwareMode(CSD(cl)->dmenumclass,
+                                                   data->dmenum, data->modeid))
+        {
+            /* Software modes have storage, but cannot be scanned out. */
+            if (data->framebuffer || data->scanout)
+                ok = FALSE;
+            else
+            {
+                data->displayable = FALSE;
+                data->compositable = TRUE;
+            }
+        }
+
         if (ok)
         {
             InitSemaphore(&data->lock);
@@ -1146,33 +1193,26 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
              * We don't check against errors because our base class contains all
              * these functions.
              */
-#if USE_FAST_PUTPIXEL
-            data->putpixel = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_PutPixel, &data->putpixel_Class);
-#endif
-#if USE_FAST_GETPIXEL
-            data->getpixel = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_GetPixel, &data->getpixel_Class);
-#endif
-#if USE_FAST_DRAWPIXEL
-            data->drawpixel = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_DrawPixel, &data->drawpixel_Class);
-#endif
-#if USE_FAST_DRAWLINE
-            data->drawline = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_DrawLine, &data->drawline_Class);
-#endif
-#if USE_FAST_GETIMAGE
-            data->getimage = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_GetImage, &data->getimage_Class);
-#endif
-#if USE_FAST_PUTIMAGE
-            data->putimage = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_PutImage, &data->putimage_Class);
-#endif
-#if USE_FAST_CONVERTPIXELS
-            data->convertpixels = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_ConvertPixels, &data->convertpixels_Class);
-#endif
-#if USE_FAST_UNMAPPIXEL
-            data->unmappixel = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_UnmapPixel, &data->unmappixel_Class);
-#endif
-#if USE_FAST_MAPCOLOR
-            data->mapcolor = OOP_GetMethod(obj, HiddBitMapBase + moHidd_BitMap_MapColor, &data->mapcolor_Class);
-#endif
+            {
+                /* In the order of their {func, Class} pairs in HIDDBitMapData */
+                static const UBYTE fastmethods[] =
+                {
+                    moHidd_BitMap_PutPixel,
+                    moHidd_BitMap_GetPixel,
+                    moHidd_BitMap_DrawPixel,
+                    moHidd_BitMap_DrawLine,
+                    moHidd_BitMap_GetImage,
+                    moHidd_BitMap_PutImage,
+                    moHidd_BitMap_ConvertPixels,
+                    moHidd_BitMap_UnmapPixel,
+                    moHidd_BitMap_MapColor
+                };
+                struct BMFastMethod *fm = (struct BMFastMethod *)&data->putpixel;
+                ULONG i;
+
+                for (i = 0; i < sizeof(fastmethods); i++)
+                    fm[i].func = OOP_GetMethod(obj, HiddBitMapBase + fastmethods[i], &fm[i].Class);
+            }
             /*
              * Try to create the colormap.
              *
@@ -1192,7 +1232,8 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
              *        missing entries, but is it so good?
              */
 
-            if (data->displayable)
+            if (data->displayable || (data->compositable && data->prot.pixfmt &&
+                                     IS_PALETTE(PF(data->prot.pixfmt))))
             {
                 data->colmap = OOP_NewObject(NULL, CLID_Hidd_ColorMap, colmap_tags);
                 if (NULL == data->colmap)
@@ -1436,6 +1477,14 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
     struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
     BOOL ret = TRUE;
 
+    if (!msg->numColors)
+        return TRUE;
+    if (!msg->colors)
+        return FALSE;
+
+    /* Protect the colormap object's lifetime, including replacement. */
+    ObtainSemaphore(&data->lock);
+
     /* Subclass has initialized HIDDT_Color->pixelVal field and such.
        Just copy it into the colortab.
     */
@@ -1454,6 +1503,7 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 
     if (NULL == data->colmap)
     {
+        ReleaseSemaphore(&data->lock);
         return FALSE;
     }
 
@@ -1462,12 +1512,14 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
                            msg->firstColor, msg->numColors,
                            data->prot.pixfmt))
     {
+        ReleaseSemaphore(&data->lock);
         return FALSE;
     }
 
     /* The changed palette invalidates any cached nearest-colour results */
     if (data->invlut)
         memset(data->invlut, 0xFF, 32768 * sizeof(UWORD));
+    ReleaseSemaphore(&data->lock);
 
     /* We may need to duplicate changes on framebuffer if running in mirrored mode */
     if (data->visible)
@@ -1481,6 +1533,9 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 
         ReleaseSemaphore(&data->lock);
     }
+
+    if (ret && data->prot.pixfmt && IS_PALETTE(PF(data->prot.pixfmt)))
+        Compositor__Internal__PaletteChanged(CSD(cl), data->display_obj);
 
     return ret;
 }
@@ -1689,7 +1744,8 @@ VOID BM__Hidd_BitMap__DrawLine
 {
     if (BM_VIDEO_GUARD(cl, obj))
         return;
-    WORD        dx, dy, incrE, incrNE, d, x, y, s1, s2, t, i;
+    LONG        dx, dy, incrE, incrNE, d, i;  /* LONG: a line may be longer than 32767 */
+    WORD        x, y, s1, s2, t;
     WORD        x1, y1, x2, y2;
     UWORD       maskLine;  /* for line pattern */
     ULONG       fg;   /* foreground pen   */
@@ -1747,91 +1803,11 @@ VOID BM__Hidd_BitMap__DrawLine
     x2 = msg->x2;
     y2 = msg->y2;
     
-    if (y1 == y2)
-    {
-        /*
-            Horizontal line drawing code.
-        */
-        y = y1;
-        
-        /* Don't swap coordinates if x2 < x1! Because of linepattern! */
-        
-        if (x1 < x2)
-        {
-            x2++;
-            dx = 1;
-        }
-        else
-        {
-            x2--;
-            dx = -1;
-        }
-        
-        for(i = x1; i != x2; i += dx)
-        {
-            /* Pixel inside ? */
-
-            if (!doclip || !POINT_OUTSIDE_CLIP(gc, i, y ))
-            {
-                if(GC_LINEPAT(gc) & maskLine)
-                {
-                    DRAWPIXEL(cl, obj, gc, i, y);
-                }
-                else if (opaque)
-                {
-                    GC_FG(gc) = GC_BG(gc);
-                    DRAWPIXEL(cl, obj, gc, i, y);
-                    GC_FG(gc) = fg;
-                }
-            }
-            
-            maskLine = maskLine >> 1;
-            if (!maskLine) maskLine = 1L << 15;
-        }
-    }
-    else if (x1 == x2)
-    {
-        /*
-            Vertical line drawing code.
-        */
-        x = x1;
-
-        /* Don't swap coordinates if y2 < y1! Because of linepattern! */
-        
-        if (y1 < y2)
-        {
-            y2++;
-            dy = 1;
-        }
-        else
-        {
-            y2--;
-            dy = -1;
-        }
-        
-        for(i = y1; i != y2; i += dy)
-        {
-            /* Pixel inside ? */
-            if (!doclip || !POINT_OUTSIDE_CLIP(gc, x, i ))
-            {
-                if(GC_LINEPAT(gc) & maskLine)
-                {
-                    DRAWPIXEL(cl, obj, gc, x, i);
-                }
-                else if (opaque)
-                {
-                    GC_FG(gc) = GC_BG(gc);
-                    DRAWPIXEL(cl, obj, gc, x, i);
-                    GC_FG(gc) = fg;
-                }
-            }
-            
-            maskLine = maskLine >> 1;
-            if (!maskLine) maskLine = 1L << 15;
-            
-        }
-    }
-    else
+    /*
+     * Horizontal and vertical lines need no special case: they are drawn
+     * per pixel as well, and the generic loop below just never steps the
+     * other axis for them.
+     */
     {
         /*
             Generic line drawing code.
@@ -2096,6 +2072,27 @@ VOID BM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *obj,
 
 /* TODO: Try to opimize clipping here */
 
+/*
+ * Draw the four symmetric points of an ellipse, (cx + x, cy + y), (cx + x, cy - y),
+ * (cx - x, cy + y) and (cx - x, cy - y) in that order, clipped if doclip is set.
+ */
+GFX_SHARED VOID ellipse_plot4(OOP_Class *cl, OOP_Object *obj, OOP_Object *gc,
+                              LONG cx, LONG cy, LONG x, LONG y, APTR doclip)
+{
+    WORD i;
+
+    for (i = 0; i < 4; i++)
+    {
+        LONG px = (i & 2) ? cx - x : cx + x;
+        LONG py = (i & 1) ? cy - y : cy + y;
+
+        if (!doclip || !POINT_OUTSIDE_CLIP(gc, px, py))
+        {
+            DRAWPIXEL(cl, obj, gc, px, py);
+        }
+    }
+}
+
 VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
                                   struct pHidd_BitMap_DrawEllipse *msg)
 {
@@ -2120,37 +2117,7 @@ VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
     {
         /* draw 4 points using symmetry */
 
-        if  (doclip)
-        {
-
-            if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y + y))
-            {
-                DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y + y);
-            }
-
-            if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y - y))
-            {
-                DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y - y);
-            }
-
-            if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y + y))
-            {
-                DRAWPIXEL(cl, obj, gc, msg->x - x, msg->y + y);
-            }
-
-            if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y - y))
-            {
-                DRAWPIXEL(cl, obj, gc, msg->x - x, msg->y - y);
-            }
-
-        }
-        else
-        {
-            DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y + y);
-            DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y - y);
-            DRAWPIXEL(cl, obj, gc, msg->x - x, msg->y + y);
-            DRAWPIXEL(cl, obj, gc, msg->x - x, msg->y - y);
-        }
+        ellipse_plot4(cl, obj, gc, msg->x, msg->y, x, y, doclip);
 
         y++;            /* always move up here */
         t9 = t9 + t3;
@@ -2172,37 +2139,7 @@ VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
     {
         /* draw 4 points using symmetry */
     #if 1
-        if  (doclip)
-        {
-
-            if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y + y))
-            {
-                DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y + y);
-            }
-
-            if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y - y))
-            {
-                DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y - y);
-            }
-
-            if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y + y))
-            {
-                DRAWPIXEL(cl, obj, gc, msg->x - x, msg->y + y);
-            }
-
-            if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y - y))
-            {
-                DRAWPIXEL(cl, obj, gc, msg->x - x, msg->y - y);
-            }
-
-        }
-        else
-        {
-            DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y + y);
-            DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y - y);
-            DRAWPIXEL(cl, obj, gc, msg->x - x, msg->y + y);
-            DRAWPIXEL(cl, obj, gc, msg->x - x, msg->y - y);
-        }
+        ellipse_plot4(cl, obj, gc, msg->x, msg->y, x, y, doclip);
     #else
         DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y + y);
         DRAWPIXEL(cl, obj, gc, msg->x + x, msg->y - y);
@@ -3637,6 +3574,7 @@ struct patb_data
     LONG   a_red, a_green, a_blue;
     LONG   b_red, b_green, b_blue;
     UBYTE  invert;
+    BOOL   dst_opaque;  /* the destination has no alpha channel */
 };
 
 static void JAM1AlphaTemplateBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD height, struct patb_data *data)
@@ -3650,15 +3588,32 @@ static void JAM1AlphaTemplateBuffered(ULONG *xbuf, UWORD starty, UWORD width, UW
         for (x = 0; x < width; x++)
         {
             LONG dst_red, dst_green, dst_blue, alpha;
+            ULONG dst_alpha;
 
             alpha = (*pixarray++) ^ data->invert;
             RGB32_DECOMPOSE(dst_red, dst_green, dst_blue, xbuf[x]);
+            dst_alpha = data->dst_opaque ? 0xFF : ARGB32_ALPHA_VALUE(xbuf[x]);
 
-            dst_red   += do_alpha(alpha, data->a_red, dst_red);
-            dst_green += do_alpha(alpha, data->a_green, dst_green);
-            dst_blue  += do_alpha(alpha, data->a_blue, dst_blue);
+            if (dst_alpha == 0xFF)
+            {
+                /* Opaque destination: blend into it, its alpha stays */
+                dst_red   += do_alpha(alpha, data->a_red, dst_red);
+                dst_green += do_alpha(alpha, data->a_green, dst_green);
+                dst_blue  += do_alpha(alpha, data->a_blue, dst_blue);
 
-            xbuf[x] = ARGB32_COMPOSE(dst_red, dst_green, dst_blue, 0);
+                xbuf[x] = ARGB32_COMPOSE(dst_red, dst_green, dst_blue, xbuf[x]);
+            }
+            else if (alpha)
+            {
+                /* Translucent destination: source-over, the coverage accumulates */
+                ULONG out_a = over_alpha(alpha, dst_alpha);
+
+                dst_red   = over_channel(alpha, dst_alpha, out_a, data->a_red,   dst_red);
+                dst_green = over_channel(alpha, dst_alpha, out_a, data->a_green, dst_green);
+                dst_blue  = over_channel(alpha, dst_alpha, out_a, data->a_blue,  dst_blue);
+
+                xbuf[x] = ARGB32_COMPOSE_A(out_a, dst_red, dst_green, dst_blue);
+            }
         }
 
         xbuf += width;
@@ -3705,7 +3660,8 @@ static void JAM2AlphaTemplateBuffered(ULONG *xbuf, UWORD starty, UWORD width, UW
             dst_green = data->b_green + ((data->a_green - data->b_green) * alpha) / 256;
             dst_blue  = data->b_blue  + ((data->a_blue  - data->b_blue)  * alpha) / 256;
 
-            xbuf[x] = ARGB32_COMPOSE(dst_red, dst_green, dst_blue, 0);
+            /* Foreground over background: opaque */
+            xbuf[x] = ARGB32_COMPOSE_A(0xFF, dst_red, dst_green, dst_blue);
         }
 
         xbuf += width;
@@ -3722,6 +3678,7 @@ VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
     BOOL get = TRUE;
     void (*op)(ULONG *, UWORD, UWORD, UWORD, struct patb_data *);
     struct patb_data data;
+    struct HIDDBitMapData *bmdata = OOP_INST_DATA(cl, o);
     HIDDT_Color color;
 
     EnterFunc(bug("BitMap::PutAlphaTemplate(x=%d, y=%d, width=%d, height=%d)\n"
@@ -3757,6 +3714,7 @@ VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
     data.pixarray = msg->alpha;
     data.modulo   = msg->modulo;
     data.invert   = msg->invertalpha ? 255 : 0;
+    data.dst_opaque = (((HIDDT_PixelFormat *)bmdata->prot.pixfmt)->alpha_mask == 0);
 
     DoBufferedOperation(cl, o, msg->x, msg->y, msg->width, msg->height, get, vHidd_StdPixFmt_ARGB32, (VOID_FUNC)op, &data);
 
@@ -4687,7 +4645,8 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
         HIDDT_ModeID modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
         OOP_Object *sync, *pixfmt;
 
-        if (HIDD_DMEnum_GetMode(data->dmenum, modeid, &sync, &pixfmt))
+        if (!DMEnum__Internal__IsSoftwareMode(CSD(cl)->dmenumclass, data->dmenum, modeid) &&
+            HIDD_DMEnum_GetMode(data->dmenum, modeid, &sync, &pixfmt))
         {
             data->modeid = modeid;
             /*
@@ -4843,10 +4802,29 @@ OOP_Object *BM__Hidd_BitMap__SetColorMap(OOP_Class *cl, OOP_Object *o,
 
     data = OOP_INST_DATA(cl, o);
 
+    ObtainSemaphore(&data->lock);
     old = data->colmap;
     data->colmap = msg->colorMap;
+    ReleaseSemaphore(&data->lock);
+
+    if (data->prot.pixfmt && IS_PALETTE(PF(data->prot.pixfmt)))
+        Compositor__Internal__PaletteChanged(CSD(cl), data->display_obj);
 
     return old;
+}
+
+/* Copy under the bitmap's ownership lock; no colormap pointer escapes. */
+BOOL BM__Internal__SnapshotPalette(struct class_static_data *data_csd, OOP_Object *bitmap,
+                                 HIDDT_Color *colors, ULONG capacity)
+{
+    struct HIDDBitMapData *data = OOP_INST_DATA(data_csd->bitmapclass, bitmap);
+    BOOL present;
+
+    ObtainSemaphoreShared(&data->lock);
+    present = data->colmap != NULL;
+    CM__Internal__Snapshot(data_csd->colormapclass, data->colmap, colors, capacity);
+    ReleaseSemaphore(&data->lock);
+    return present;
 }
 
 /*****************************************************************************************

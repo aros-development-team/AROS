@@ -160,11 +160,7 @@ struct LayerInfo_extra
  * Hand the Layer_Info's surface list to the display at the end of a layer
  * operation. Nothing is done (one test) when it never had a composited layer.
  */
-#define UPDATE_SURFACES(li) \
-    do { \
-        if (NULL != LIE(li) && (0 != LIE(li)->lie_NumComposited || NULL != LIE(li)->lie_Surfaces)) \
-            _UpdateSurfaces(li, LayersBase); \
-    } while (0)
+#define UPDATE_SURFACES(li) _UpdateSurfacesIfAny(li, LayersBase)
 
 /*
  * These are special types of ResData resources. If layers finds one of

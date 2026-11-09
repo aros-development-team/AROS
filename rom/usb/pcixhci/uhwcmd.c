@@ -1632,18 +1632,11 @@ WORD cmdStartRTIso(struct IOUsbHWReq *ioreq,
         return(UHIOERR_BADPARAMS);
     }
 
-    UWORD prefill = (rtn->rtn_PTDCount > 1) ? 2 : 1;
-    for(UWORD cnt = 0; cnt < prefill; cnt++) {
-        WORD queueresult = RC_OK;
-        queueresult = xhciQueueIsochIO(hc, rtn);
-        if(queueresult != RC_OK) {
-            Enable();
-            return queueresult;
-        }
+    if(!xhciRefillIsochIO(hc, rtn, TRUE)) {
+        /* not one request could be prepared */
+        Enable();
+        return UHIOERR_NAKTIMEOUT;
     }
-
-    for(UWORD cnt = 0; cnt < prefill; cnt++)
-        xhciStartIsochIO(hc, rtn);
 
     Enable();
 
@@ -1853,9 +1846,17 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
             cmpioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
             while(((struct Node *) cmpioreq)->ln_Succ) {
                 if(ioreq == cmpioreq) {
+                    struct pciusbXHCIIODevPrivate *dp = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
+                    ioreq->iouh_Req.io_Error = IOERR_ABORTED;
+                    if(dp) {
+                        /* its TD is on the ring: the event task takes it back and replies it */
+                        dp->dpAbort = TRUE;
+                        Enable();
+                        SureCause(base, &hc->hc_CompleteInt);
+                        return TRUE;
+                    }
                     xhciFreeAsyncContext(hc, unit, ioreq);
                     Enable();
-                    ioreq->iouh_Req.io_Error = IOERR_ABORTED;
                     TermIO(ioreq, base);
                     return TRUE;
                 }
@@ -1864,9 +1865,16 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
             cmpioreq = (struct IOUsbHWReq *) hc->hc_PeriodicTDQueue.lh_Head;
             while(((struct Node *) cmpioreq)->ln_Succ) {
                 if(ioreq == cmpioreq) {
+                    struct pciusbXHCIIODevPrivate *dp = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
+                    ioreq->iouh_Req.io_Error = IOERR_ABORTED;
+                    if(dp) {
+                        dp->dpAbort = TRUE;
+                        Enable();
+                        SureCause(base, &hc->hc_CompleteInt);
+                        return TRUE;
+                    }
                     xhciFreePeriodicContext(hc, unit, ioreq);
                     Enable();
-                    ioreq->iouh_Req.io_Error = IOERR_ABORTED;
                     TermIO(ioreq, base);
                     return TRUE;
                 }
@@ -2013,6 +2021,13 @@ AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)
                 }
                 // Timeout active transfers
                 ForeachNode(TOList, ioreq) {
+                    struct pciusbXHCIIODevPrivate *dp = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
+
+                    if((cnt < 2) && dp && dp->dpAbort) {
+                        /* still waiting to be taken back from the controller */
+                        causeint = TRUE;
+                        continue;
+                    }
                     if(cnt < 1) {
                         if(ioreq->iouh_Flags & UHFF_NAKTIMEOUT) {
                             if(ioreq->iouh_DriverPrivate1) {
@@ -2030,7 +2045,12 @@ AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)
                         if((unit->hu_NakTimeoutFrame[devadrep]) && (framecnt > unit->hu_NakTimeoutFrame[devadrep])) {
                             KPRINTF(200, "xHCI: HC 0x%p NAK timeout %ld, IOReq=%p\n", hc, unit->hu_NakTimeoutFrame[devadrep], ioreq);
                             ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
-                            xhciAbortRequest(hc, ioreq);
+                            if((cnt == 1) && dp) {
+                                dp->dpAbort = TRUE;
+                                unit->hu_NakTimeoutFrame[devadrep] = 0;
+                                causeint = TRUE;
+                            } else
+                                xhciAbortRequest(hc, ioreq);
                         } else if(unit->hu_NakTimeoutFrame[devadrep])
                             causeint = TRUE;
                     }

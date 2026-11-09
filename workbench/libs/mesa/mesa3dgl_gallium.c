@@ -14,6 +14,9 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/gallium.h>
+#include <proto/oop.h>
+
+#include <hidd/gallium.h>
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -200,9 +203,9 @@ static VOID MESA3DGLFrameBufferCreateResource(struct mesa3dgl_framebuffer * amfb
          * DMA blit) needs a linear source and can't detile. Drivers that
          * ignore the flags (or default to linear) are unaffected. */
         templ.bind      = PIPE_BIND_RENDER_TARGET
-                        | PIPE_BIND_SAMPLER_VIEW
-                        | PIPE_BIND_LINEAR
-                        | PIPE_BIND_SCANOUT;
+                        | PIPE_BIND_SAMPLER_VIEW;
+        if (amfb->linear_display)
+            templ.bind |= PIPE_BIND_LINEAR | PIPE_BIND_SCANOUT;
         break;
     case ST_ATTACHMENT_DEPTH_STENCIL:
         templ.format    = amfb->stvis.depth_stencil_format;
@@ -254,6 +257,7 @@ static BOOL MESA3DGLScanoutCreate(struct mesa3dgl_framebuffer * amfb)
     tags[6].ti_Data = (IPTR)amfb->screen;
 
     amfb->scanout = CreateScanoutFrameBuffer(ctx->driver, ctx->window, tags);
+    amfb->scanout_vsync = -1;      /* the swap interval is applied at the next swap */
     if (!amfb->scanout)
     {
         D(bug("[MESA3DGL] %s: no scan-out framebuffer for window %p (%lux%lu), using the blit path\n",
@@ -318,6 +322,17 @@ static VOID MESA3DGLScanoutSelect(struct mesa3dgl_framebuffer * amfb, ULONG buff
  * tracker picks the new attachment up at its next framebuffer validate
  * (the drawable stamp changes and the drawables are invalidated).
  */
+/* Give the scan-out framebuffer the context's swap interval (GLA_SwapInterval,
+ * glASwapInterval()): 0 lets swaps return at once (3 buffers), 1 waits. */
+static VOID MESA3DGLScanoutVSync(struct mesa3dgl_context * ctx, struct mesa3dgl_framebuffer * amfb)
+{
+    if (amfb->scanout_vsync != ctx->swap_interval)
+    {
+        amfb->scanout_vsync = ctx->swap_interval;
+        SetScanoutFrameBufferAttr(amfb->scanout, SFBA_NoWait, ctx->swap_interval ? FALSE : TRUE);
+    }
+}
+
 VOID MESA3DGLScanoutSwap(struct mesa3dgl_context * ctx)
 {
     struct mesa3dgl_framebuffer * amfb = ctx->framebuffer;
@@ -326,6 +341,7 @@ VOID MESA3DGLScanoutSwap(struct mesa3dgl_context * ctx)
     if (!amfb->scanout)
         return;
 
+    MESA3DGLScanoutVSync(ctx, amfb);
     next = SwapScanoutFrameBuffer(amfb->scanout);
     if (next != amfb->scanout_back)
     {
@@ -411,6 +427,26 @@ static bool MESA3DGLFrameBufferFlushFront(struct st_context *stctx,
 
 static uint32_t mesa3dgl_fb_ID;
 
+/* Whether the driver's DisplayResource needs linear colour buffers: a
+ * driver that reads their memory directly does (vc4's DMA blit, which
+ * cannot detile); one that reads them back through the pipe (zink) does
+ * not, and its buffers then keep the GPU's faster tiled layout. A driver
+ * that does not answer keeps linear buffers. */
+static BOOL MESA3DGLLinearDisplay(APTR driver)
+{
+    OOP_AttrBase HiddGalliumAttrBase;
+    IPTR linear = TRUE;
+
+    if (!driver)
+        return TRUE;
+    if ((HiddGalliumAttrBase = OOP_ObtainAttrBase((STRPTR)IID_Hidd_Gallium)))
+    {
+        OOP_GetAttr((OOP_Object *)driver, aHidd_Gallium_LinearDisplay, &linear);
+        OOP_ReleaseAttrBase((STRPTR)IID_Hidd_Gallium);
+    }
+    return linear ? TRUE : FALSE;
+}
+
 struct mesa3dgl_framebuffer * MESA3DGLNewFrameBuffer(struct mesa3dgl_context * ctx, struct st_visual * stvis)
 {
     D(bug("[MESA3DGL] %s()\n", __func__));
@@ -432,15 +468,20 @@ struct mesa3dgl_framebuffer * MESA3DGLNewFrameBuffer(struct mesa3dgl_context * c
     framebuffer->base.stamp = 1;
     framebuffer->screen = ctx->stmanager->screen;
     framebuffer->ctx = ctx;
+    framebuffer->linear_display = MESA3DGLLinearDisplay(ctx->driver);
 
     /* 3D scan-out switches: ENV:MESA3DGL_NOSCANOUT (any value) keeps the
-     * blit path; ENV:MESA3DGL_SCANOUT_BUFFERS 2 or 3 (default 2: swaps
-     * wait for the flip, so a buffer is never rendered while scanned out;
-     * 3 relies on the driver's latch bookkeeping, still to be verified). */
+     * blit path; ENV:MESA3DGL_SCANOUT_BUFFERS 2 or 3. With 3 (the default)
+     * swaps do not wait for the display: the flip is queued, and a frame
+     * finished while the previous flip is still pending is not shown -
+     * the next one replaces it (rendering is not tied to the refresh
+     * rate, and never goes to a buffer that is on screen). With 2 every
+     * swap waits for its flip to latch. */
     {
         TEXT buf[8];
 
-        framebuffer->scanout_buffers = 2;
+        framebuffer->scanout_buffers = 3;
+        framebuffer->scanout_vsync = -1;
         if (GetVar("MESA3DGL_NOSCANOUT", buf, sizeof(buf), 0) > 0)
             framebuffer->noscanout = TRUE;
         if (GetVar("MESA3DGL_SCANOUT_BUFFERS", buf, sizeof(buf), 0) > 0

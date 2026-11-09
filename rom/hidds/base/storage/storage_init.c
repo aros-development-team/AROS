@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -35,6 +35,7 @@ static int Storage_Init(LIBBASETYPEPTR LIBBASE)
         {
             D(bug("[HiddStorage] %s: hwroot @ 0x%p\n", __func__, hwroot));
             csd->hwAttrBase = OOP_ObtainAttrBase(IID_HW);
+            csd->hiddMethodBase = OOP_GetMethodID(IID_Hidd, 0);
             csd->hwMethodBase = OOP_GetMethodID(IID_HW, 0);
             csd->hiddSCMethodBase = OOP_GetMethodID(IID_Hidd_StorageController, 0);
 

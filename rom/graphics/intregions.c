@@ -204,9 +204,18 @@ void _DisposeRegionRectangleList
         RR->Prev->Next = NULL;
     }
 
-    /* Is this the first rectangle in the chunk? */
-    if(!Counter(RR)) {
-        /* If so then this chunk has to be deleted too */
+    /*
+     * First slot of its chunk, or head of the whole list (AndRectRegion may
+     * have unlinked the slots before it): the chunk goes too. The chunk
+     * chain runs through Rects[SIZERECTBUF-1].RR.Next, which is not
+     * RR->Prev when AndRectRegion unlinked the previous chunk's last
+     * slot(s): cut it there as well, or it keeps naming freed chunks and
+     * the next ClearRegion frees them again, disposing chunks whose pool
+     * is long gone.
+     */
+    if(!Counter(RR) || !RR->Prev) {
+        if(RR->Prev)
+            Chunk(RR->Prev)->Rects[SIZERECTBUF - 1].RR.Next = NULL;
         NextChunk = Chunk(RR);
     } else {
         /* otherwise dispose all the chunks starting from the one after this one */
@@ -644,44 +653,68 @@ BOOL _DoOperationBandBand
 
     FirstLastDst = LastDst = Dst = *DstPtr = NULL;
 
-    while(Src1 && Src2) {
+    while(Src1 || Src2) {
         LONG MinY, MaxY;
 
-        if(NextSrc1Ptr) {
-            TopY1 = MinY(Src1) + OffY1;
-            NextSrc1Ptr = NULL;
-        }
+        if(Src1 && Src2) {
+            if(NextSrc1Ptr) {
+                TopY1 = MinY(Src1) + OffY1;
+                NextSrc1Ptr = NULL;
+            }
 
-        if(NextSrc2Ptr) {
-            TopY2 = MinY(Src2) + OffY2;
-            NextSrc2Ptr = NULL;
-        }
+            if(NextSrc2Ptr) {
+                TopY2 = MinY(Src2) + OffY2;
+                NextSrc2Ptr = NULL;
+            }
 
-        if(TopY1 < TopY2) {
+            if(TopY1 < TopY2) {
+                MinY = TopY1;
+                MaxY = MIN(MaxY(Src1) + OffY1, TopY2 - 1);
+                TopY1 = MaxY + 1;
+
+                Band1 = Src1;
+                Band2 = NULL;
+            } else if(TopY2 < TopY1) {
+                MinY = TopY2;
+                MaxY = MIN(MaxY(Src2) + OffY2, TopY1 - 1);
+                TopY2 = MaxY + 1;
+
+                Band1 = NULL;
+                Band2 = Src2;
+            } else {
+                MinY = TopY1;
+                MaxY = MIN(MaxY(Src1) + OffY1, MaxY(Src2) + OffY2);
+                TopY1 = TopY2 = MaxY + 1;
+
+                Band1 = Src1;
+                Band2 = Src2;
+            }
+
+            NextSrc1Ptr = (MaxY == MaxY(Src1) + OffY1) ? &Src1 : NULL;
+            NextSrc2Ptr = (MaxY == MaxY(Src2) + OffY2) ? &Src2 : NULL;
+        } else if(Src1) {
+            /* Only the first source is left: its remaining bands, whole */
+            if(NextSrc1Ptr)
+                TopY1 = MinY(Src1) + OffY1;
+
             MinY = TopY1;
-            MaxY = MIN(MaxY(Src1) + OffY1, TopY2 - 1);
-            TopY1 = MaxY + 1;
-
+            MaxY = MaxY(Src1) + OffY1;
             Band1 = Src1;
             Band2 = NULL;
-        } else if(TopY2 < TopY1) {
-            MinY = TopY2;
-            MaxY = MIN(MaxY(Src2) + OffY2, TopY1 - 1);
-            TopY2 = MaxY + 1;
+            NextSrc1Ptr = &Src1;
+            NextSrc2Ptr = NULL;
+        } else {
+            /* Only the second source is left: its remaining bands, whole */
+            if(NextSrc2Ptr)
+                TopY2 = MinY(Src2) + OffY2;
 
+            MinY = TopY2;
+            MaxY = MaxY(Src2) + OffY2;
             Band1 = NULL;
             Band2 = Src2;
-        } else {
-            MinY = TopY1;
-            MaxY = MIN(MaxY(Src1) + OffY1, MaxY(Src2) + OffY2);
-            TopY1 = TopY2 = MaxY + 1;
-
-            Band1 = Src1;
-            Band2 = Src2;
+            NextSrc1Ptr = NULL;
+            NextSrc2Ptr = &Src2;
         }
-
-        NextSrc1Ptr = (MaxY == MaxY(Src1) + OffY1) ? &Src1 : NULL;
-        NextSrc2Ptr = (MaxY == MaxY(Src2) + OffY2) ? &Src2 : NULL;
 
         if
         (
@@ -696,65 +729,11 @@ BOOL _DoOperationBandBand
             )
         ) {
             res = FALSE;
-            goto end;
+            break;
         }
 
         DOBANDCHECKS(FirstLastDst, LastDst, Dst);
     }
-
-
-    while(Src1) {
-        if(NextSrc1Ptr)
-            TopY1 = MinY(Src1) + OffY1;
-
-        NextSrc1Ptr = (void *)~0;
-
-
-        if
-        (
-            !Operation
-            (
-                OffX1, OffX2,
-                TopY1, MaxY(Src1) + OffY1,
-                Src1, NULL,
-                &Dst,
-                &Src1, NULL,
-                GfxBase
-            )
-        ) {
-            res = FALSE;
-            goto end;
-        }
-
-        DOBANDCHECKS(FirstLastDst, LastDst, Dst);
-    }
-
-    while(Src2) {
-        if(NextSrc2Ptr)
-            TopY2 = MinY(Src2) + OffY2;
-
-        NextSrc2Ptr = (void *)~0;
-
-        if
-        (
-            !Operation
-            (
-                OffX1, OffX2,
-                TopY2, MaxY(Src2) + OffY2,
-                NULL, Src2,
-                &Dst,
-                NULL, &Src2,
-                GfxBase
-            )
-        ) {
-            res = FALSE;
-            goto end;
-        }
-
-        DOBANDCHECKS(FirstLastDst, LastDst, Dst);
-    }
-
-end:
 
     if(Dst) {
         if(res) {
@@ -767,6 +746,92 @@ end:
     return res;
 }
 
+
+
+/*
+ * Make R stand for the single rectangle Rect as an operand of the functions
+ * below; rr is the storage for it. The rectangle is kept as it is, in a
+ * region at the origin, and only what the band operations read is set up.
+ */
+void _RectToRegion(struct Rectangle *Rect, struct Region *R, struct RegionRectangle *rr)
+{
+    InitRegion(R);
+    R->RegionRectangle = rr;
+
+    rr->bounds = *Rect;
+    rr->Next   = NULL;
+    rr->Prev   = NULL;
+}
+
+/* Res = R1 <Operation> R2. Res must be an empty region. */
+BOOL _RegionOp(BandOperation *Operation, struct Region *R1, struct Region *R2,
+               struct Region *Res, struct GfxBase *GfxBase)
+{
+    if(_DoOperationBandBand(Operation, MinX(R1), MinX(R2), MinY(R1), MinY(R2),
+                            R1->RegionRectangle, R2->RegionRectangle,
+                            &Res->RegionRectangle, &Res->bounds, GfxBase)) {
+        _TranslateRegionRectangles(Res->RegionRectangle, -MinX(Res), -MinY(Res));
+        return TRUE;
+    }
+    return FALSE;
+}
+
+/* Dst = R1 <Operation> R2. Dst may be one of the operands; it is left as it was on failure. */
+BOOL _RegionOpInPlace(BandOperation *Operation, struct Region *R1, struct Region *R2,
+                      struct Region *Dst, struct GfxBase *GfxBase)
+{
+    struct Region Res;
+
+    InitRegion(&Res);
+    if(!_RegionOp(Operation, R1, R2, &Res, GfxBase))
+        return FALSE;
+
+    ClearRegion(Dst);
+    *Dst = Res;
+    return TRUE;
+}
+
+/* Res = R1 <Operation> R2 for a Res just made by NewRegion() (NULL passes through); disposes it on failure */
+struct Region *_RegionOpND(BandOperation *Operation, struct Region *R1, struct Region *R2,
+                           struct Region *Res, struct GfxBase *GfxBase)
+{
+    if(Res && !_RegionOp(Operation, R1, R2, Res, GfxBase)) {
+        DisposeRegion(Res);
+        Res = NULL;
+    }
+    return Res;
+}
+
+/* Res = copy of R for a Res just made by NewRegion(); disposes it on failure */
+struct Region *_CopyRegionND(struct Region *R, struct Region *Res, struct GfxBase *GfxBase)
+{
+    if(_CopyRegionRectangles(R, Res, GfxBase))
+        return Res;
+    DisposeRegion(Res);
+    return NULL;
+}
+
+/* R3 = R1 xor R2, as what is in only one of them. R3 must be an empty region. */
+BOOL _XorRegions(struct Region *R1, struct Region *R2, struct Region *R3, struct GfxBase *GfxBase)
+{
+    struct RegionRectangle *Diff1 = NULL, *Diff2 = NULL;
+    BOOL res;
+
+    res = _DoOperationBandBand(_ClearBandBand, MinX(R1), MinX(R2), MinY(R1), MinY(R2),
+                               R1->RegionRectangle, R2->RegionRectangle, &Diff1, &R3->bounds, GfxBase) &&
+          _DoOperationBandBand(_ClearBandBand, MinX(R2), MinX(R1), MinY(R2), MinY(R1),
+                               R2->RegionRectangle, R1->RegionRectangle, &Diff2, &R3->bounds, GfxBase) &&
+          _DoOperationBandBand(_OrBandBand, 0, 0, 0, 0, Diff1, Diff2,
+                               &R3->RegionRectangle, &R3->bounds, GfxBase);
+
+    _DisposeRegionRectangleList(Diff1, GfxBase);
+    _DisposeRegionRectangleList(Diff2, GfxBase);
+
+    if(res)
+        _TranslateRegionRectangles(R3->RegionRectangle, -MinX(R3), -MinY(R3));
+
+    return res;
+}
 
 #if DOTEST
 

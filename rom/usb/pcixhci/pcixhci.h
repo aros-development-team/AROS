@@ -83,8 +83,20 @@ struct PTDNode {
 #define PTDF_BUFFER_VALID       (1<<1)
 #define PTDF_SITD               (1<<2)
 #define PTDF_QUEUED             (1<<3)
+#define PTDF_EXPLICIT_FRAME     (1<<4)  /* the client chose this TD's frame */
 
 #define PCIUSB_ISO_PTD_COUNT    8
+
+/*
+ * How much output an RT isochronous stream keeps queued with the controller.
+ * The stream is refilled from the event ring task when a transfer completes;
+ * whatever keeps that task from running for longer than the queue lasts
+ * leaves the endpoint's ring empty (Ring Underrun) and a gap on the wire.
+ * Two transfers, as queued until now, last one service interval.
+ * The price is latency: the client's request hook runs this far ahead of
+ * the bus, and its buffer has to stay untouched for as long.
+ */
+#define XHCI_RTISO_OUT_QUEUE_USEC   8000
 
 struct RTIsoNode {
     struct MinNode              rtn_Node;
@@ -296,6 +308,7 @@ struct PCIDevice {
     OOP_MethodID                hd_HiddPCIDeviceMB;
     OOP_MethodID                hd_HiddPCIDriverMB;
     OOP_MethodID                hd_HWBase;
+    OOP_MethodID                hd_HiddMB;
 #endif
 
     struct List                 hd_TempHCIList;
@@ -331,6 +344,8 @@ struct PCIDevice {
 #define HiddPCIDriverBase               (base->hd_HiddPCIDriverMB)
 #undef HWBase
 #define HWBase                          (base->hd_HWBase)
+#undef HiddBase
+#define HiddBase                        (base->hd_HiddMB)
 #endif
 
 #if defined(USE_FAST_PCICFG)

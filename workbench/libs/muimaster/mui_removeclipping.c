@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/muimaster.h>
@@ -20,20 +20,24 @@
         struct Library *, MUIMasterBase, 29, MUIMaster)
 
 /*  FUNCTION
+        Remove a rectangular clip by forwarding the token to
+        MUI_RemoveClipRegion(). The region allocated for the clip is freed.
 
     INPUTS
+        mri - Rendering context used for the corresponding MUI_AddClipping().
+        handle - Exact token returned by MUI_AddClipping(), including NULL
+                 or the no-push sentinel (APTR)-1.
 
     RESULT
+        None.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
+        Remove nested clips in reverse order. A token other than (APTR)-1
+        pops the top MUI clipping region; it does not select a stack entry.
+        The rendering context must remain valid even for the sentinel.
 
     SEE ALSO
-
-    INTERNALS
+        MUI_AddClipping(), MUI_RemoveClipRegion()
 
 *****************************************************************************/
 {

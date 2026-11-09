@@ -24,11 +24,10 @@ struct Errors
     STRPTR  string;
 };
 
-/* A NULL string ending the table of a subsystem stands for
-   "unknown <subsystem name> error", see Alert_GetString() */
 
-/* Get a string from an array of type Errors. */
-static STRPTR getString(ULONG alertnum, const struct Errors *errs)
+/* Find an entry in an array of type Errors. If there is none, the
+   terminating entry (number 0) is returned. */
+static const struct Errors *findError(ULONG alertnum, const struct Errors *errs)
 {
     /* Some of alert codes have AT_DeadEnd bit set, others have it reset.
        However in real life AT_DeadEnd bit may be set for any error, so
@@ -39,7 +38,13 @@ static STRPTR getString(ULONG alertnum, const struct Errors *errs)
     {
         errs++;
     }
-    return errs->string;
+    return errs;
+}
+
+/* Get a string from an array of type Errors. */
+static STRPTR getString(ULONG alertnum, const struct Errors *errs)
+{
+    return findError(alertnum, errs)->string;
 }
 
 static const struct Errors cpustrings[] =
@@ -111,8 +116,13 @@ static const struct Errors types[] =
     { 0x00,     "unknown problem with "}
 };
 
-static const struct Errors execstrings[] =
+/*
+ * All specific alerts. The subsystem is part of the alert number (bits 24-30),
+ * so one table serves all subsystems.
+ */
+static const struct Errors alertstrings[] =
 {
+    /* exec.library */
     { AN_ExcptVect,     "MC68k Exception vector checksum" },
     { AN_BaseChkSum,    "ExecBase checksum" },
     { AN_LibChkSum,     "Library checksum failure" },
@@ -128,11 +138,8 @@ static const struct Errors execstrings[] =
     { AN_StackProbe,    "Stack extends out of range" },
     { AN_BadFreeAddr,   "Memory header not located" },
     { AN_BadSemaphore,  "Attempt to use the old message semaphore" },
-    { 0, NULL }
-};
 
-static const struct Errors gfxstrings[] =
-{
+    /* graphics.library */
     { AN_GfxNoMem,      "Graphics out of memory" },
     { AN_GfxNoMemMspc,  "No memory to allocate MonitorSpec" },
     { AN_LongFrame,     "No memory for long frame" },
@@ -145,22 +152,11 @@ static const struct Errors gfxstrings[] =
     { AN_GfxFreeError,  "Error in GfxFree()" },
     { AN_GfxNoLCM,      "Emergency memory not available" },
     { AN_ObsoleteFont,  "Unsupported font description used" },
-    { 0, NULL }
-};
 
-static const struct Errors unknownstrings[] =
-{
-    { 0, "unknown error" }
-};
-
-static const struct Errors layersstrings[] =
-{
+    /* layers.library */
     { AN_LayersNoMem,   "layers: no memory" },
-    { 0, NULL }
-};
 
-static const struct Errors intuistrings[] =
-{
+    /* intuition.library */
     { AN_GadgetType,    "intuition: unknown gadget type" },
     { AN_CreatePort,    "intuition couldn't create port, no memory" },
     { AN_ItemAlloc,     "no memory for menu item" },
@@ -178,16 +174,8 @@ static const struct Errors intuistrings[] =
     { AN_NoConsole,     "couldn't open the console.device" },
     { AN_NoISem,        "intuition skipped obtaining a semaphore" },
     { AN_ISemOrder,     "intuition got a semaphore in wrong order" },
-    { 0, NULL }
-};
 
-static const struct Errors mathstrings[] =
-{
-    { 0, "unknown math library error" }
-};
-
-static const struct Errors dosstrings[] =
-{
+    /* dos.library */
     { AN_StartMem,      "no memory at startup" },
     { AN_EndTask,       "EndTask did not end task" },
     { AN_QPktFail,      "QPkt failure" },
@@ -202,217 +190,58 @@ static const struct Errors dosstrings[] =
     { AN_BadOverlay,    "bad overlay" },
     { AN_BadInitFunc,   "invalid initialization packet for cli/shell" },
     { AN_FileReclosed,  "filehandle closed more than once" },
-    { 0, NULL }
-};
 
-static const struct Errors ramlibstrings[] =
-{
+    /* ramlib */
     { AN_BadSegList,    "bad library seglist" },
-    { 0, "unknown ramlib/lddemon error" }
-};
 
-static const struct Errors iconstrings[] =
-{
-    { 0, NULL }
-};
-
-static const struct Errors expanstrings[] =
-{
+    /* expansion.library */
     { AN_BadExpansionFree,  "expansion freeing region already freed"},
-    { 0, NULL }
-};
 
-static const struct Errors utilitystrings[] =
-{
-    {0, "unknown utility.library error" }
-};
-
-static const struct Errors keymapstrings[] =
-{
-    {0, "unknown keymap error" }
-};
-
-static const struct Errors dfontstrings[] =
-{
-    { 0, NULL }
-};
-
-static const struct Errors audiostrings[] =
-{
-    { 0, NULL }
-};
-
-static const struct Errors consolestrings[] =
-{
+    /* console.device */
     { AN_NoWindow, "can't open initial console window" },
-    { 0, NULL }
-};
 
-static const struct Errors gameportstrings[] =
-{
-    { 0, NULL }
-};
-
-static const struct Errors keyboardstrings[] =
-{
-    { 0, NULL }
-};
-
-static const struct Errors trackdiskstrings[] =
-{
+    /* trackdisk.device */
     { AN_TDCalibSeek,   "trackdisk calibrate seek error" },
-    { 0, NULL }
-};
 
-static const struct Errors timerstrings[] =
-{
+    /* timer.device */
     { AN_TMBadReq,      "bad timer request" },
     { AN_TMBadSupply,   "bad timer powersupply frequency" },
-    { 0, NULL }
-};
 
-static const struct Errors ciastrings[] =
-{
-    { 0, "unknown cia resource error" }
-};
-
-static const struct Errors diskstrings[] =
-{
+    /* disk.resource */
     { AN_DRHasDisk, "get disk unit, already has disk" },
     { AN_DRIntNoAct,"disk interrupt, no active unit" },
-    { 0, NULL }
-};
 
-static const struct Errors miscstrings[] =
-{
-    { 0, NULL }
-};
-
-static const struct Errors bootstrings[] =
-{
+    /* bootstrap */
     { AN_BootError, "boot code returned an error" },
-    { 0, NULL }
-};
 
-static const struct Errors workbenchstrings[] =
-{
+    /* workbench */
     { AN_NoFonts,           "no fonts for workbench" },
     { AN_WBBadStartupMsg1,  "bad startup message 1 for workbench" },
     { AN_WBBadStartupMsg2,  "bad startup message 2 for workbench" },
     { AN_WBBadIOMsg,        "bad IO message for workbench" },
     { AN_WBReLayoutToolMenu, "error with layout on tools menu" },
+
     { 0, NULL }
 };
 
-static const struct Errors diskcopystrings[] =
+/*
+ * Subsystems whose specific alerts, when not listed above, have a text of
+ * their own. For the others see Alert_GetString().
+ */
+static const struct Errors unknownstrings[] =
 {
-    {0, NULL }
-};
-
-static const struct Errors gadtoolsstrings[] =
-{
-    {0, "unknown gadtools.library error" }
-};
-
-static const struct Errors arosstrings[] =
-{
-    {0, "unknown aros.library error" }
-};
-
-static const struct Errors oopstrings[] =
-{
-    {0, "unknown oop.library error" }
-};
-
-static const struct Errors hiddstrings[] =
-{
-    {0, "unknown Hidd system error" }
-};
-
-static const struct Errors partitionstrings[] =
-{
-    {0, NULL }
-};
-
-static const struct Errors *const stringlist[] =
-{
-    /* 0x00 */
-    unknownstrings,
-    execstrings,
-    gfxstrings,
-    layersstrings,
-    intuistrings,
-    mathstrings,
-    unknownstrings,
-    dosstrings,
-    ramlibstrings,
-    iconstrings,
-    expanstrings,
-    dfontstrings,
-    utilitystrings,
-    keymapstrings,
-    unknownstrings,
-    unknownstrings,
-
-    /* 0x10 */
-    audiostrings,
-    consolestrings,
-    gameportstrings,
-    keyboardstrings,
-    trackdiskstrings,
-    timerstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-
-    /* 0x20 */
-    ciastrings,
-    diskstrings,
-    miscstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-
-    /* 0x30 */
-    bootstrings,
-    workbenchstrings,
-    diskcopystrings,
-    gadtoolsstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-    unknownstrings,
-
-    /* 0x40 */
-    arosstrings,
-    oopstrings,
-    hiddstrings,
-    partitionstrings
+    { 0x05,     "unknown math library error" },
+    { 0x08,     "unknown ramlib/lddemon error" },
+    { 0x0c,     "unknown utility.library error" },
+    { 0x0d,     "unknown keymap error" },
+    { 0x20,     "unknown cia resource error" },
+    { 0x33,     "unknown gadtools.library error" },
+    /* This subsystem has a name, but it is not used for its unlisted alerts */
+    { 0x34,     "unknown error" },
+    { 0x40,     "unknown aros.library error" },
+    { 0x41,     "unknown oop.library error" },
+    { 0x42,     "unknown Hidd system error" },
+    { 0, NULL }
 };
 
 /* Similar to strcpy() but returns a pointer to the next byte beyond the
@@ -460,12 +289,20 @@ STRPTR Alert_GetString(ULONG alertnum, STRPTR buf)
     else
     {
         UBYTE subsys = (alertnum & 0x7f000000) >> 24;
-        STRPTR str = getString(alertnum, stringlist[subsys]);
+        STRPTR str = getString(alertnum, alertstrings);
+
+        if (str == NULL)
+            str = getString(subsys, unknownstrings);
 
         if (str == NULL)
         {
+            /* "unknown <subsystem> error", or "unknown error" if the
+               subsystem has no name */
+            const struct Errors *sub = findError(subsys, subsystems);
+
             buf = Alert_AddString(buf, "unknown ");
-            buf = Alert_AddString(buf, getString(subsys, subsystems));
+            if (sub->number)
+                buf = Alert_AddString(buf, sub->string);
             str = "error";
         }
         buf = Alert_AddString(buf, str);

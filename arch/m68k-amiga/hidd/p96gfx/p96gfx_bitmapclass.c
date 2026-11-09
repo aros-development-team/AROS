@@ -39,6 +39,21 @@
 #include "p96gfx_bitmap.h"
 #include "p96gfx_rtg.h"
 
+/* The pixel size dispatch below relies on these */
+P96_ASSERT_BPP_METHODS(CopyMemBox);
+P96_ASSERT_NEXT_METHOD(CopyLUTMemBox16, CopyLUTMemBox24);
+P96_ASSERT_NEXT_METHOD(CopyLUTMemBox24, CopyLUTMemBox32);
+P96_ASSERT_NEXT_METHOD(PutMem32Image8, PutMem32Image16);
+P96_ASSERT_NEXT_METHOD(PutMem32Image16, PutMem32Image24);
+P96_ASSERT_NEXT_METHOD(GetMem32Image8, GetMem32Image16);
+P96_ASSERT_NEXT_METHOD(GetMem32Image16, GetMem32Image24);
+P96_ASSERT_NEXT_METHOD(FillMemRect24, FillMemRect32);
+_Static_assert(offsetof(struct pHidd_BitMap_FillMemRect24, fill) ==
+               offsetof(struct pHidd_BitMap_FillMemRect32, fill),
+               "FillMemRect24 and FillMemRect32 messages differ");
+P96_ASSERT_BPP_METHODS(PutMemTemplate);
+P96_ASSERT_BPP_METHODS(PutMemPattern);
+
 /* LOCK_BITMAP_MULTI:
 
   swap bitmap between RAM <-> VRAM allowed only if this lock is held
@@ -53,6 +68,21 @@
 /*#define DEBUG_POKE_VIDEODATA*/
 
 static BOOL P96GFXBitmap__ToFRAM(OOP_Class *cl, OOP_Object *o, struct P96GfxBitMapData *bm);
+
+/* Let the blitter finish before the bitmap memory is touched */
+void P96GFXBitmap__WaitBlit(struct p96gfx_staticdata *csd, struct p96gfx_carddata *cid)
+{
+    LOCK_HW
+    WaitBlitter(cid);
+    UNLOCK_HW
+}
+
+static void P96GFXBitmap__LockWait(struct p96gfx_staticdata *csd, struct P96GfxBitMapData *data)
+{
+    LOCK_BITMAP(data)
+    P96GFXBitmap__WaitBlit(csd, data->gfxCardData);
+}
+
 
 static APTR P96GFXBitmap__AllocVRAM(OOP_Class *cl, OOP_Object *o, struct P96GfxBitMapData *bm)
 {
@@ -325,7 +355,7 @@ OOP_Object *P96GFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     DB2(bug("[P96Gfx:Bitmap] %s: Card Data @ 0x%p\n", __func__, data->gfxCardData));
     cid = data->gfxCardData;
 
-    data->rgbformat = P96GFXRTG__GetFormat(csd, cid, data->pixfmtobj);
+    data->rgbformat = P96GFXRTG__GetFormat(csd, data->pixfmtobj);
 
     data->align = displayable ? 32 : 16;
     width = (width + data->align - 1) & ~(data->align - 1);
@@ -468,7 +498,7 @@ VOID P96GFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
                             OOP_GetAttr(sync, aHidd_Sync_HDisp, &dwidth);
                             OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
                             OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
-                            data->rgbformat = P96GFXRTG__GetFormat(csd, cid, pf);
+                            data->rgbformat = P96GFXRTG__GetFormat(csd, pf);
                             modeinfo = P96GFXRTG__GetModeInfo(csd, cid, sync, pf, cid->fakemodeinfo);
                             cid->modeinfo = modeinfo;
                             *cid->rgbformat = data->rgbformat;
@@ -621,25 +651,6 @@ VOID P96GFXBitmap__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 
 /****************************************************************************************/
 
-static int P96GFXBitmap_Init(LIBBASETYPEPTR LIBBASE)
-{
-    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
-    return TRUE; //return OOP_ObtainAttrBases(attrbases);
-}
-
-/****************************************************************************************/
-
-static int P96GFXBitmap_Expunge(LIBBASETYPEPTR LIBBASE)
-{
-    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
-    //OOP_ReleaseAttrBases(attrbases);
-    return TRUE;
-}
-
-/****************************************************************************************/
-
-ADD2INITLIB(P96GFXBitmap_Init, 0);
-ADD2EXPUNGELIB(P96GFXBitmap_Expunge, 0);
 
 BOOL P96GFXBitmap__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_ObtainDirectAccess *msg)
 {
@@ -663,9 +674,7 @@ BOOL P96GFXBitmap__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o,
     *msg->bankSizeReturn = *msg->memSizeReturn = data->bytesperline * data->height;
     data->locked++;
 
-    LOCK_HW
-    WaitBlitter(cid);
-    UNLOCK_HW
+    P96GFXBitmap__WaitBlit(csd, cid);
 
     return TRUE;
 }
@@ -738,7 +747,7 @@ VOID P96GFXBitmap__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
 
     LOCK_BITMAP(data)
 
-    LOCK_HW
+    LOCK_HW /* called per pixel: stays inline */
     WaitBlitter(cid);
     UNLOCK_HW
 
@@ -785,7 +794,7 @@ ULONG P96GFXBitmap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 
     LOCK_BITMAP(data)
 
-    LOCK_HW
+    LOCK_HW /* called per pixel: stays inline */
     WaitBlitter(cid);
     UNLOCK_HW
 
@@ -850,7 +859,7 @@ VOID P96GFXBitmap__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
         WORD ady = dy < 0 ? -dy : dy;
         BOOL horizontal = adx > ady;
 
-        P96GFXRTG__MakeRenderInfo(csd, cid, &ri, data);
+        P96GFXRTG__MakeRenderInfo(&ri, data);
 
         memset(&renderLine, 0, sizeof(renderLine));
         renderLine.X = msg->x1;
@@ -900,24 +909,21 @@ VOID P96GFXBitmap__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
 VOID P96GFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     struct P96GfxBitMapData *data = OOP_INST_DATA(cl, o);
-    struct p96gfx_carddata *cid = data->gfxCardData;
     struct p96gfx_staticdata *csd = CSD(cl);
 
     D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
 
-    LOCK_BITMAP(data)
-
-    LOCK_HW
-    WaitBlitter(cid);
-    UNLOCK_HW
+    P96GFXBitmap__LockWait(csd, data);
 
     switch(msg->pixFmt)
     {
         case vHidd_StdPixFmt_Native:
-            switch(data->bytesperpixel)
+        case vHidd_StdPixFmt_Native32:
+            /* CopyMemBox8..32 and GetMem32Image8..24 are numbered in pixel size order */
+            if (P96_BPP_VALID(data->bytesperpixel))
             {
-                case 1:
-                    HIDD_BM_CopyMemBox8(o,
+                if ((msg->pixFmt == vHidd_StdPixFmt_Native) || (data->bytesperpixel == 4))
+                    HIDD_BM_CopyMemBox8_(P96_BPP_BASE(data->bytesperpixel), o,
                                         data->VideoData,
                                         msg->x,
                                         msg->y,
@@ -928,57 +934,8 @@ VOID P96GFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pH
                                         msg->height,
                                         data->bytesperline,
                                         msg->modulo);
-                    break;
-
-                case 2:
-                    HIDD_BM_CopyMemBox16(o,
-                                         data->VideoData,
-                                         msg->x,
-                                         msg->y,
-                                         msg->pixels,
-                                         0,
-                                         0,
-                                         msg->width,
-                                         msg->height,
-                                         data->bytesperline,
-                                         msg->modulo);
-                    break;
-
-                case 3:
-                    HIDD_BM_CopyMemBox24(o,
-                                         data->VideoData,
-                                         msg->x,
-                                         msg->y,
-                                         msg->pixels,
-                                         0,
-                                         0,
-                                         msg->width,
-                                         msg->height,
-                                         data->bytesperline,
-                                         msg->modulo);
-                    break;
-
-                case 4:
-                    HIDD_BM_CopyMemBox32(o,
-                                         data->VideoData,
-                                         msg->x,
-                                         msg->y,
-                                         msg->pixels,
-                                         0,
-                                         0,
-                                         msg->width,
-                                         msg->height,
-                                         data->bytesperline,
-                                         msg->modulo);
-                    break;
-             } /* switch(data->bytesperpix) */
-            break;
-
-        case vHidd_StdPixFmt_Native32:
-            switch(data->bytesperpixel)
-            {
-                case 1:
-                    HIDD_BM_GetMem32Image8(o,
+                else
+                    HIDD_BM_GetMem32Image8_(P96_BPP_BASE(data->bytesperpixel), o,
                                            data->VideoData,
                                            msg->x,
                                            msg->y,
@@ -987,46 +944,7 @@ VOID P96GFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pH
                                            msg->height,
                                            data->bytesperline,
                                            msg->modulo);
-                    break;
-
-                case 2:
-                    HIDD_BM_GetMem32Image16(o,
-                                            data->VideoData,
-                                            msg->x,
-                                            msg->y,
-                                            msg->pixels,
-                                            msg->width,
-                                            msg->height,
-                                            data->bytesperline,
-                                            msg->modulo);
-                    break;
-
-                case 3:
-                    HIDD_BM_GetMem32Image24(o,
-                                            data->VideoData,
-                                            msg->x,
-                                            msg->y,
-                                            msg->pixels,
-                                            msg->width,
-                                            msg->height,
-                                            data->bytesperline,
-                                            msg->modulo);
-                    break;
-
-                case 4:
-                    HIDD_BM_CopyMemBox32(o,
-                                         data->VideoData,
-                                         msg->x,
-                                         msg->y,
-                                         msg->pixels,
-                                         0,
-                                         0,
-                                         msg->width,
-                                         msg->height,
-                                         data->bytesperline,
-                                         msg->modulo);
-                    break;
-            } /* switch(data->bytesperpix) */
+            }
             break;
 
         default:
@@ -1053,17 +971,12 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
                                 struct pHidd_BitMap_PutImage *msg)
 {
     struct P96GfxBitMapData *data = OOP_INST_DATA(cl, o);
-    struct p96gfx_carddata *cid = data->gfxCardData;
     struct p96gfx_staticdata *csd = CSD(cl);
     BOOL v = FALSE;
 
     D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
 
-    LOCK_BITMAP(data)
-
-    LOCK_HW
-    WaitBlitter(cid);
-    UNLOCK_HW
+    P96GFXBitmap__LockWait(csd, data);
 
     if (data->invram)
     {
@@ -1076,7 +989,7 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
             struct RenderInfo ri;
             WORD sx, sy, dx, dy;
 
-            P96GFXRTG__MakeRenderInfo(csd, cid, &ri, data);
+            P96GFXRTG__MakeRenderInfo(&ri, data);
             if (msg->pixels < data->VideoData)
             {
             }
@@ -1094,10 +1007,12 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
     if (!v) switch(msg->pixFmt)
     {
         case vHidd_StdPixFmt_Native:
-            switch(data->bytesperpixel)
+        case vHidd_StdPixFmt_Native32:
+            /* CopyMemBox8..32 and PutMem32Image8..24 are numbered in pixel size order */
+            if (P96_BPP_VALID(data->bytesperpixel))
             {
-                case 1:
-                    HIDD_BM_CopyMemBox8(o,
+                if ((msg->pixFmt == vHidd_StdPixFmt_Native) || (data->bytesperpixel == 4))
+                    HIDD_BM_CopyMemBox8_(P96_BPP_BASE(data->bytesperpixel), o,
                                         msg->pixels,
                                         0,
                                         0,
@@ -1108,57 +1023,8 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
                                         msg->height,
                                         msg->modulo,
                                         data->bytesperline);
-                    break;
-
-                case 2:
-                    HIDD_BM_CopyMemBox16(o,
-                                         msg->pixels,
-                                         0,
-                                         0,
-                                         data->VideoData,
-                                         msg->x,
-                                         msg->y,
-                                         msg->width,
-                                         msg->height,
-                                         msg->modulo,
-                                         data->bytesperline);
-                    break;
-
-                case 3:
-                    HIDD_BM_CopyMemBox24(o,
-                                         msg->pixels,
-                                         0,
-                                         0,
-                                         data->VideoData,
-                                         msg->x,
-                                         msg->y,
-                                         msg->width,
-                                         msg->height,
-                                         msg->modulo,
-                                         data->bytesperline);
-                    break;
-
-                case 4:
-                    HIDD_BM_CopyMemBox32(o,
-                                         msg->pixels,
-                                         0,
-                                         0,
-                                         data->VideoData,
-                                         msg->x,
-                                         msg->y,
-                                         msg->width,
-                                         msg->height,
-                                         msg->modulo,
-                                         data->bytesperline);
-                    break;
-            } /* switch(data->bytesperpix) */
-            break;
-
-        case vHidd_StdPixFmt_Native32:
-            switch(data->bytesperpixel)
-            {
-                case 1:
-                    HIDD_BM_PutMem32Image8(o,
+                else
+                    HIDD_BM_PutMem32Image8_(P96_BPP_BASE(data->bytesperpixel), o,
                                            msg->pixels,
                                            data->VideoData,
                                            msg->x,
@@ -1167,46 +1033,7 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
                                            msg->height,
                                            msg->modulo,
                                            data->bytesperline);
-                    break;
-
-                case 2:
-                    HIDD_BM_PutMem32Image16(o,
-                                            msg->pixels,
-                                            data->VideoData,
-                                            msg->x,
-                                            msg->y,
-                                            msg->width,
-                                            msg->height,
-                                            msg->modulo,
-                                            data->bytesperline);
-                    break;
-
-                case 3:
-                    HIDD_BM_PutMem32Image24(o,
-                                            msg->pixels,
-                                            data->VideoData,
-                                            msg->x,
-                                            msg->y,
-                                            msg->width,
-                                            msg->height,
-                                            msg->modulo,
-                                            data->bytesperline);
-                    break;
-
-                case 4:
-                    HIDD_BM_CopyMemBox32(o,
-                                         msg->pixels,
-                                         0,
-                                         0,
-                                         data->VideoData,
-                                         msg->x,
-                                         msg->y,
-                                         msg->width,
-                                         msg->height,
-                                         msg->modulo,
-                                         data->bytesperline);
-                    break;
-            } /* switch(data->bytesperpix) */
+            }
             break;
 
         default:
@@ -1229,25 +1056,30 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
-VOID P96GFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
-                                   struct pHidd_BitMap_PutImageLUT *msg)
+/* For the methods that only have to let the blitter finish first */
+static void P96GFXBitmap__WaitSuper(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct P96GfxBitMapData *data = OOP_INST_DATA(cl, o);
     struct p96gfx_carddata *cid = data->gfxCardData;
     struct p96gfx_staticdata *csd = CSD(cl);
 
+    P96GFXBitmap__WaitBlit(csd, cid);
+
+    OOP_DoSuperMethod(cl, o, msg);
+}
+
+VOID P96GFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
+                                   struct pHidd_BitMap_PutImageLUT *msg)
+{
+    struct P96GfxBitMapData *data = OOP_INST_DATA(cl, o);
+    struct p96gfx_staticdata *csd = CSD(cl);
+
     D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
 
-    LOCK_BITMAP(data)
+    P96GFXBitmap__LockWait(csd, data);
 
-    LOCK_HW
-    WaitBlitter(cid);
-    UNLOCK_HW
-
-    switch(data->bytesperpixel)
-    {
-        case 2:
-            HIDD_BM_CopyLUTMemBox16(o,
+    if ((data->bytesperpixel >= 2) && (data->bytesperpixel <= 4))
+        HIDD_BM_CopyLUTMemBox16_(HiddBitMapBase + data->bytesperpixel - 2, o,
                                  msg->pixels,
                                  0,
                                  0,
@@ -1259,42 +1091,8 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
                                  msg->modulo,
                                  data->bytesperline,
                                  msg->pixlut);
-            break;
-
-        case 3:
-            HIDD_BM_CopyLUTMemBox24(o,
-                                 msg->pixels,
-                                 0,
-                                 0,
-                                 data->VideoData,
-                                 msg->x,
-                                 msg->y,
-                                 msg->width,
-                                 msg->height,
-                                 msg->modulo,
-                                 data->bytesperline,
-                                 msg->pixlut);
-            break;
-
-        case 4:
-            HIDD_BM_CopyLUTMemBox32(o,
-                                    msg->pixels,
-                                    0,
-                                    0,
-                                    data->VideoData,
-                                    msg->x,
-                                    msg->y,
-                                    msg->width,
-                                    msg->height,
-                                    msg->modulo,
-                                    data->bytesperline,
-                                    msg->pixlut);
-            break;
-
-        default:
-            OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-            break;
-    } /* switch(data->bytesperpix) */
+    else
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     UNLOCK_BITMAP(data)
 }
@@ -1304,17 +1102,7 @@ VOID P96GFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
 VOID P96GFXBitmap__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
                                    struct pHidd_BitMap_GetImageLUT *msg)
 {
-    struct P96GfxBitMapData *data = OOP_INST_DATA(cl, o);
-    struct p96gfx_carddata *cid = data->gfxCardData;
-    struct p96gfx_staticdata *csd = CSD(cl);
-
-    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
-
-    LOCK_HW
-    WaitBlitter(cid);
-    UNLOCK_HW
-
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    P96GFXBitmap__WaitSuper(cl, o, (OOP_Msg)msg);
 }
 
 /****************************************************************************************/
@@ -1332,11 +1120,7 @@ VOID P96GFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
 
     D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
 
-    LOCK_BITMAP(data)
-
-    LOCK_HW
-    WaitBlitter(cid);
-    UNLOCK_HW
+    P96GFXBitmap__LockWait(csd, data);
 #if 0
     maybeputinvram(cid, data);
 #endif
@@ -1344,15 +1128,17 @@ VOID P96GFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
     if (data->invram) {
         struct RenderInfo ri;
 
-        P96GFXRTG__MakeRenderInfo(csd, cid, &ri, data);
+        P96GFXRTG__MakeRenderInfo(&ri, data);
 
         LOCK_HW
 
-        if (mode == vHidd_GC_DrawMode_Clear || mode == vHidd_GC_DrawMode_Set) {
-            ULONG pen = mode == vHidd_GC_DrawMode_Clear ? 0x00000000 : 0xffffffff;
+        if (mode == vHidd_GC_DrawMode_Clear || mode == vHidd_GC_DrawMode_Set || mode == vHidd_GC_DrawMode_Copy) {
+            ULONG pen = fg;
+            if (mode == vHidd_GC_DrawMode_Clear)
+                pen = 0x00000000;
+            else if (mode == vHidd_GC_DrawMode_Set)
+                pen = 0xffffffff;
             v = FillRect(cid, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, pen, mask, data->rgbformat);
-        } else if (mode == vHidd_GC_DrawMode_Copy) {
-            v = FillRect(cid, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, fg, mask, data->rgbformat);
         } else if (mode == vHidd_GC_DrawMode_Invert) {
             v = InvertRect(cid, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, mask, data->rgbformat);
         }
@@ -1362,16 +1148,10 @@ VOID P96GFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
 
     /* The memory fallbacks below write whole pixels, so a partial mask has to
        go to the superclass instead. */
-    if (!v && colmask != ~0)
+    if (!v)
     {
-        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-        UNLOCK_BITMAP(data)
-        return;
-    }
-
-    if (!v) switch(mode)
-    {
-        case vHidd_GC_DrawMode_Copy:
+        if ((colmask == ~0) && (mode == vHidd_GC_DrawMode_Copy))
+        {
             switch(data->bytesperpixel)
             {
                 case 1:
@@ -1397,18 +1177,9 @@ VOID P96GFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
                     break;
 
                 case 3:
-                    HIDD_BM_FillMemRect24(o,
-                                         data->VideoData,
-                                         msg->minX,
-                                         msg->minY,
-                                         msg->maxX,
-                                         msg->maxY,
-                                         data->bytesperline,
-                                         fg);
-                    break;
-
                 case 4:
-                    HIDD_BM_FillMemRect32(o,
+                    /* the 24 and 32 bit messages are the same */
+                    HIDD_BM_FillMemRect24_(HiddBitMapBase + data->bytesperpixel - 3, o,
                                          data->VideoData,
                                          msg->minX,
                                          msg->minY,
@@ -1418,9 +1189,8 @@ VOID P96GFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
                                          fg);
                     break;
             }
-            break;
-
-        case vHidd_GC_DrawMode_Invert:
+        }
+        else if ((colmask == ~0) && (mode == vHidd_GC_DrawMode_Invert))
             HIDD_BM_InvertMemRect(o,
                                  data->VideoData,
                                  msg->minX * data->bytesperpixel,
@@ -1428,12 +1198,9 @@ VOID P96GFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
                                  msg->maxX * data->bytesperpixel + data->bytesperpixel - 1,
                                  msg->maxY,
                                  data->bytesperline);
-            break;
-
-        default:
+        else
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-            break;
-    } /* switch(mode) */
+    }
 
     UNLOCK_BITMAP(data)
 }
@@ -1457,45 +1224,15 @@ VOID P96GFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
         msg->x, msg->y, msg->width, msg->height,
         msg->pattern, msg->patternsrcx, msg->patternsrcy, fg, bg, msg->patternheight));
 
-    LOCK_BITMAP(data)
-
-    LOCK_HW
-    WaitBlitter(cid);
-    UNLOCK_HW
+    P96GFXBitmap__LockWait(csd, data);
 
     if ((msg->mask == NULL) && (msg->patterndepth == 1))
     {
-        switch (msg->patternheight)
+        /* Size is log2 of the pattern height; anything else is not for the card */
+        for (pat.Size = 0; pat.Size <= 8; pat.Size++)
         {
-            case 1:
-            pat.Size = 0;
-            break;
-            case 2:
-            pat.Size = 1;
-            break;
-            case 4:
-            pat.Size = 2;
-            break;
-            case 8:
-            pat.Size = 3;
-            break;
-            case 16:
-            pat.Size = 4;
-            break;
-            case 32:
-            pat.Size = 5;
-            break;
-            case 64:
-            pat.Size = 6;
-            break;
-            case 128:
-            pat.Size = 7;
-            break;
-            case 256:
-            pat.Size = 8;
-            break;
-            default:
-            pat.Size = 0xff;
+            if (msg->patternheight == (1 << pat.Size))
+                break;
         }
 
         if (pat.Size <= 8)
@@ -1507,7 +1244,7 @@ VOID P96GFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
             {
                 struct RenderInfo ri;
 
-                P96GFXRTG__MakeRenderInfo(csd, cid, &ri, data);
+                P96GFXRTG__MakeRenderInfo(&ri, data);
 
                 if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
                      drawmode = JAM1;
@@ -1536,17 +1273,10 @@ VOID P96GFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
 
     /* The memory fallbacks below write whole pixels, so a partial mask has to
        go to the superclass instead. */
-    if (!v && colmask != ~0)
+    if (!v)
     {
-        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-        UNLOCK_BITMAP(data)
-        return;
-    }
-
-    if (!v) switch(data->bytesperpixel)
-    {
-        case 1:
-            HIDD_BM_PutMemPattern8(o,
+        if ((colmask == ~0) && P96_BPP_VALID(data->bytesperpixel))
+            HIDD_BM_PutMemPattern8_(P96_BPP_BASE(data->bytesperpixel), o,
                                    msg->gc,
                                    msg->pattern,
                                    msg->patternsrcx,
@@ -1564,75 +1294,9 @@ VOID P96GFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
                                    msg->y,
                                    msg->width,
                                    msg->height);
-            break;
-
-        case 2:
-            HIDD_BM_PutMemPattern16(o,
-                                    msg->gc,
-                                    msg->pattern,
-                                    msg->patternsrcx,
-                                    msg->patternsrcy,
-                                    msg->patternheight,
-                                    msg->patterndepth,
-                                    msg->patternlut,
-                                    msg->invertpattern,
-                                    msg->mask,
-                                    msg->maskmodulo,
-                                    msg->masksrcx,
-                                    data->VideoData,
-                                    data->bytesperline,
-                                    msg->x,
-                                    msg->y,
-                                    msg->width,
-                                    msg->height);
-            break;
-
-        case 3:
-            HIDD_BM_PutMemPattern24(o,
-                                    msg->gc,
-                                    msg->pattern,
-                                    msg->patternsrcx,
-                                    msg->patternsrcy,
-                                    msg->patternheight,
-                                    msg->patterndepth,
-                                    msg->patternlut,
-                                    msg->invertpattern,
-                                    msg->mask,
-                                    msg->maskmodulo,
-                                    msg->masksrcx,
-                                    data->VideoData,
-                                    data->bytesperline,
-                                    msg->x,
-                                    msg->y,
-                                    msg->width,
-                                    msg->height);
-            break;
-
-        case 4:
-            HIDD_BM_PutMemPattern32(o,
-                                    msg->gc,
-                                    msg->pattern,
-                                    msg->patternsrcx,
-                                    msg->patternsrcy,
-                                    msg->patternheight,
-                                    msg->patterndepth,
-                                    msg->patternlut,
-                                    msg->invertpattern,
-                                    msg->mask,
-                                    msg->maskmodulo,
-                                    msg->masksrcx,
-                                    data->VideoData,
-                                    data->bytesperline,
-                                    msg->x,
-                                    msg->y,
-                                    msg->width,
-                                    msg->height);
-            break;
-
-        default:
+        else
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-            break;
-    } /* switch(data->bytesperpixel) */
+    }
 
     UNLOCK_BITMAP(data)
 }
@@ -1651,11 +1315,7 @@ VOID P96GFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
 
     D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
 
-    LOCK_BITMAP(data)
-
-    LOCK_HW
-    WaitBlitter(cid);
-    UNLOCK_HW
+    P96GFXBitmap__LockWait(csd, data);
 
 #if 0
     maybeputinvram(cid, data);
@@ -1666,7 +1326,7 @@ VOID P96GFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
         struct RenderInfo ri;
         UBYTE drawmode;
 
-        P96GFXRTG__MakeRenderInfo(csd, cid, &ri, data);
+        P96GFXRTG__MakeRenderInfo(&ri, data);
 
         if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
              drawmode = JAM1;
@@ -1693,17 +1353,10 @@ VOID P96GFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
 
     /* The memory fallbacks below write whole pixels, so a partial mask has to
        go to the superclass instead. */
-    if (!v && colmask != ~0)
+    if (!v)
     {
-        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-        UNLOCK_BITMAP(data)
-        return;
-    }
-
-    if (!v) switch(data->bytesperpixel)
-    {
-        case 1:
-            HIDD_BM_PutMemTemplate8(o,
+        if ((colmask == ~0) && P96_BPP_VALID(data->bytesperpixel))
+            HIDD_BM_PutMemTemplate8_(P96_BPP_BASE(data->bytesperpixel), o,
                                     msg->gc,
                                     msg->masktemplate,
                                     msg->modulo,
@@ -1715,57 +1368,9 @@ VOID P96GFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
                                     msg->width,
                                     msg->height,
                                     msg->inverttemplate);
-            break;
-
-        case 2:
-            HIDD_BM_PutMemTemplate16(o,
-                                     msg->gc,
-                                     msg->masktemplate,
-                                     msg->modulo,
-                                     msg->srcx,
-                                     data->VideoData,
-                                     data->bytesperline,
-                                     msg->x,
-                                     msg->y,
-                                     msg->width,
-                                     msg->height,
-                                     msg->inverttemplate);
-            break;
-
-        case 3:
-            HIDD_BM_PutMemTemplate24(o,
-                                     msg->gc,
-                                     msg->masktemplate,
-                                     msg->modulo,
-                                     msg->srcx,
-                                     data->VideoData,
-                                     data->bytesperline,
-                                     msg->x,
-                                     msg->y,
-                                     msg->width,
-                                     msg->height,
-                                     msg->inverttemplate);
-            break;
-
-        case 4:
-            HIDD_BM_PutMemTemplate32(o,
-                                     msg->gc,
-                                     msg->masktemplate,
-                                     msg->modulo,
-                                     msg->srcx,
-                                     data->VideoData,
-                                     data->bytesperline,
-                                     msg->x,
-                                     msg->y,
-                                     msg->width,
-                                     msg->height,
-                                     msg->inverttemplate);
-            break;
-
-        default:
+        else
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-            break;
-    } /* switch(data->bytesperpixel) */
+    }
 
     UNLOCK_BITMAP(data)
 }
@@ -1774,51 +1379,5 @@ VOID P96GFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
 
 VOID P96GFXBitmap__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg)
 {
-    struct P96GfxBitMapData *data = OOP_INST_DATA(cl, o);
-    struct p96gfx_carddata *cid = data->gfxCardData;
-    struct p96gfx_staticdata *csd = CSD(cl);
-
-    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
-
-    LOCK_HW
-    WaitBlitter(cid);
-    UNLOCK_HW
-
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-}
-
-/****************************************************************************************/
-
-BOOL P96GFXBitmap__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
-                                   struct pHidd_PlanarBM_SetBitMap *msg)
-{
-    struct P96GfxBitMapData *data = OOP_INST_DATA(cl, o);
-    struct p96gfx_carddata *cid = data->gfxCardData;
-    struct p96gfx_staticdata *csd = CSD(cl);
-
-    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
-
-    LOCK_HW
-    WaitBlitter(cid);
-    UNLOCK_HW
-
-    return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-}
-
-/****************************************************************************************/
-
-BOOL P96GFXBitmap__Hidd_PlanarBM__GetBitMap(OOP_Class *cl, OOP_Object *o,
-                                   struct pHidd_PlanarBM_GetBitMap *msg)
-{
-    struct P96GfxBitMapData *data = OOP_INST_DATA(cl, o);
-    struct p96gfx_carddata *cid = data->gfxCardData;
-    struct p96gfx_staticdata *csd = CSD(cl);
-
-    D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
-
-    LOCK_HW
-    WaitBlitter(cid);
-    UNLOCK_HW
-
-    return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    P96GFXBitmap__WaitSuper(cl, o, (OOP_Msg)msg);
 }

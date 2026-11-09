@@ -80,7 +80,7 @@ do                                                                             \
 
 #define HIDD_BMF_SHARED_PIXTAB         1
 #define HIDD_BMF_OWN_PIXTAB            2	/* own colormap and pixtab with the friend's colours mapped opaque (alphapixtab.c) */
-#define HIDD_BMF_CLEAR_ALPHA           4	/* has alpha, its friend none: Clear writes transparent 0 */
+#define HIDD_BMF_CLEAR_ALPHA           4	/* has alpha and a friend: Clear writes transparent 0 */
 #define HIDD_BMF_SCREEN_BITMAP         512
 #define HIDD_BMF_LAYERSURFACES         1024	/* has a LayerSurfaceNode (composited layers) */
 
@@ -229,6 +229,10 @@ void amiga2hidd_fast(APTR src_info, OOP_Object *hidd_gc, WORD x_src, WORD y_src,
 BOOL MoveRaster(struct RastPort *rp, WORD dx, WORD dy, WORD x1, WORD y1,
                 WORD x2, WORD y2, BOOL UpdateDamageList, struct GfxBase *GfxBase);
 
+/* ScrollRaster() and ScrollRasterBF() (scrollraster.c) */
+void internal_ScrollRaster(struct RastPort *rp, WORD dx, WORD dy, WORD xMin, WORD yMin,
+                           WORD xMax, WORD yMax, BOOL backfill, struct GfxBase *GfxBase);
+
 BOOL GetRPClipRectangleForRect(struct RastPort *rp, struct Rectangle *rect, struct Rectangle *r);
 BOOL GetRPClipRectangleForBitMap(struct RastPort *rp, struct BitMap *bm,
                                  struct Rectangle *r, struct GfxBase *GfxBase);
@@ -245,7 +249,19 @@ void BltRastPortBitMap(struct RastPort *srcRastPort, WORD xSrc, WORD ySrc,
                        WORD xSize, WORD ySize, ULONG minterm,
                        struct GfxBase *GfxBase);
 
+/* The pixel value of an ARGB8888 colour in a HIDD bitmap */
+HIDDT_Pixel argb_pixel_for(OOP_Object *bm_obj, ULONG argb, struct GfxBase *GfxBase);
+
 void GenMinterms(struct RastPort *rp);
+
+/* The render data of BltBitMapRastPort() and BltMaskBitMapRastPort() */
+struct bitmap_render_data {
+    struct render_special_info rsi;
+    ULONG                      minterm;
+    struct BitMap             *srcbm;
+    OOP_Object                *srcbm_obj;
+    PLANEPTR                   mask;        /* BltMaskBitMapRastPort() only */
+};
 
 /****************************************************************************************/
 

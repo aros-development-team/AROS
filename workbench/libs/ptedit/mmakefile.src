@@ -1,0 +1,49 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+# ptedit.library: the write side of partition.library's table handlers.
+# The helpers and private headers shared with partition.library live there.
+PARTITIONDIR := ../../../rom/partition
+
+COMMONFILES := \
+	partition_types \
+	partition_support \
+	partitionmbr_common \
+	partitionrdb_common \
+	partitiongpt_common \
+	crc32
+
+FILES := \
+	$(addprefix $(PARTITIONDIR)/,$(COMMONFILES)) \
+	ptedit_support \
+	partitionebr_edit \
+	partitionmbr_edit \
+	partitionrdb_edit \
+	partitiongpt_edit
+
+FUNCS := \
+	writepartitiontable \
+	createpartitiontable \
+	addpartition \
+	deletepartition \
+	setpartitiontableattrs \
+	setpartitionattrs \
+	destroypartitiontable \
+	writepartitiondata
+
+#MM- workbench-libs : workbench-libs-ptedit
+#MM workbench-libs-ptedit-includes : kernel-partition-includes
+#MM workbench-libs-ptedit : kernel-partition-includes linklibs-fatbpb workbench-libs-uuid-includes
+
+USER_INCLUDES := -I$(SRCDIR)/rom/partition
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+	       -DDEBUG=0
+USER_LDFLAGS  := -static
+
+%build_module mmake=workbench-libs-ptedit \
+    modname=ptedit modtype=library \
+    files="ptedit_init $(FUNCS) $(FILES)" uselibs="fatbpb"
+
+%common

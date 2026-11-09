@@ -150,14 +150,8 @@ static Object *obtainconunit(struct Window *window,
     struct Window *activewin;
     Object *o, *ostate;
     ULONG lock;
-    struct Node *node;
 
     D(bug("obtainconunit()\n"));
-
-    ForeachNode(&ConsoleDevice->unitList, node)
-    {
-        D(bug("Node: %p\n", node));
-    }
 
     /* Lock the console list */
     ObtainSemaphoreShared(&ConsoleDevice->unitListLock);
@@ -248,28 +242,4 @@ struct Interrupt *initCDIH(struct ConsoleBase *ConsoleDevice)
         FreeMem(cdihandler, sizeof(struct Interrupt));
     }
     ReturnPtr("initCDIH", struct Interrupt *, NULL);
-}
-
-/****************
-** CleanupIIH  **
-****************/
-
-VOID cleanupCDIH(struct Interrupt *cdihandler,
-    struct ConsoleBase *ConsoleDevice)
-{
-    struct cdihData *cdihdata;
-
-    cdihdata = &ConsoleDevice->consIHData;
-
-    /* Drop any events still queued for the console task */
-    {
-        struct Message *msg;
-        while ((msg = GetMsg(cdihdata->inputPort)))
-            FreeMem(msg, sizeof(struct cdihMessage));
-    }
-    DeleteMsgPort(cdihdata->inputPort);
-
-    FreeMem(cdihandler, sizeof(struct Interrupt));
-
-    return;
 }

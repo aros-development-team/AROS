@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: dos.library function Examine().
 */
@@ -60,7 +60,7 @@
     ASSERT_VALID_FILELOCK(lock);
 
     D(bug("[Examine] lock=%x fib=%x\n", fl, fib));
-    ret = dopacket2(DOSBase, NULL, fl ? fl->fl_Task : GetFileSysTask(), ACTION_EXAMINE_OBJECT, lock, MKBADDR(fib));
+    ret = dopacket2n(DOSBase, fl ? fl->fl_Task : GetFileSysTask(), ACTION_EXAMINE_OBJECT, lock, MKBADDR(fib));
     if (ret) {
         fixfib(fib);
         D(bug("[Examine] '%s'\n", fib->fib_FileName));

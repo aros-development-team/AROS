@@ -70,6 +70,8 @@ extern Object *optObjCheckEFI;
 extern Object *optObjCheckFormatESP;
 extern Object *optObjCheckCopyESP;
 extern Object *bootopt_esp;
+extern Object *bootopt_grubgroup;
+extern Object *bootopt_efigroup;
 #endif
 
 extern Object *optObjCyclePartScheme;
@@ -101,6 +103,81 @@ char * GetDevNameForVolume(char *volumeName);
 BOOL isUSBDevice(const char *devStr);
 
 void create_environment_variable(CONST_STRPTR envarchiveDisk, CONST_STRPTR name, CONST_STRPTR value);
+
+/* An existing partition may have been created by hand larger than its
+   filesystem supports, and formatting it would leave a broken volume.
+   Returns FALSE when the partition behind devname is too large, telling
+   the user in an error window when report is TRUE. */
+static BOOL FormatSizeOK(struct InstallStage_DATA *data, CONST_STRPTR devname,
+    BOOL report)
+{
+    UQUAD sizeMB = 0;
+    ULONG maxMB = 0;
+    CONST_STRPTR fsname = NULL;
+
+    if (devname == NULL || !GetPartitionLimit(devname, &sizeMB, &maxMB, &fsname)
+        || maxMB == 0 || sizeMB <= maxMB)
+        return TRUE;
+
+    if (report)
+    {
+        TEXT msg[strlen(_(MSG_FORMATTOOBIG)) + strlen(devname) + 40];
+
+        sprintf(msg, _(MSG_FORMATTOOBIG), devname, (ULONG)sizeMB, fsname, maxMB);
+        MUI_RequestA(data->installer, data->window, 0, _(MSG_ERROR),
+            _(MSG_OK), msg, NULL);
+    }
+
+    return FALSE;
+}
+
+/* When existing partitions are used, refuse to leave Format selected for
+   a partition its filesystem cannot hold. */
+static void CheckFormatSelection(struct InstallStage_DATA *data, BOOL sys, BOOL work)
+{
+    STRPTR name;
+
+    if (XGET(data->instc_options_main->opt_partmethod, MUIA_Radio_Active) != 2)
+        return;
+
+    if (sys && XOPTOGET(optObjCheckFormatSys, MUIA_Selected))
+    {
+        name = NULL;
+        OPTOGET(optObjDestVolumeName, MUIA_String_Contents, (IPTR *)&name);
+        if (!FormatSizeOK(data, name, TRUE))
+            OPTOSET(optObjCheckFormatSys, MUIA_Selected, FALSE);
+    }
+
+    if (work && XOPTOGET(optObjCheckWork, MUIA_Selected)
+        && XOPTOGET(optObjCheckFormatWork, MUIA_Selected))
+    {
+        name = NULL;
+        GET(work_devname, MUIA_String_Contents, &name);
+        if (!FormatSizeOK(data, name, TRUE))
+            OPTOSET(optObjCheckFormatWork, MUIA_Selected, FALSE);
+    }
+}
+
+/* params[0]: 0 checks the System partition, 1 the Work partition */
+AROS_UFH3S(void, formatcheckHookFunc,
+    AROS_UFHA(struct Hook *, h,  A0),
+    AROS_UFHA(Object*, installer, A2),
+    AROS_UFHA(IPTR *, params, A1))
+{
+    AROS_USERFUNC_INIT
+
+    Class *CLASS = (Class *)h->h_Data;
+
+    CheckFormatSelection(INST_DATA(CLASS, installer), params[0] == 0,
+        params[0] == 1);
+
+    AROS_USERFUNC_EXIT
+}
+
+struct Hook formatcheckHook =
+{
+    .h_Entry = (HOOKFUNC)formatcheckHookFunc,
+};
 
 AROS_UFH3S(BOOL, partradioHookFunc,
     AROS_UFHA(struct Hook *, h,  A0),
@@ -151,6 +228,9 @@ AROS_UFH3S(BOOL, partradioHookFunc,
                 D(bug("[InstallAROS:Stage] %s:     Changing to '%s'\n", __func__, devvolName));
                 SET(work_devname, MUIA_String_Contents, devvolName);
             }
+
+            /* Format may already be selected for these partitions */
+            CheckFormatSelection(data, TRUE, TRUE);
 
             break;
         }
@@ -264,6 +344,21 @@ IPTR InstallStage__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
         partradioHook.h_Data = CLASS;
         DoMethod(data->instc_options_main->opt_partmethod, MUIM_Notify, MUIA_Radio_Active, MUIV_EveryTime,
                  self, 3, MUIM_CallHook, &partradioHook, MUIV_TriggerValue);
+
+        /* Check an existing partition's size when Format is selected for
+           it, or when another partition is entered with Format selected */
+        formatcheckHook.h_Data = CLASS;
+        DoMethod((Object *)XGET(optObjCheckFormatSys, MUIA_InstallOption_Obj),
+                 MUIM_Notify, MUIA_Selected, TRUE,
+                 self, 3, MUIM_CallHook, &formatcheckHook, 0);
+        DoMethod((Object *)XGET(optObjCheckFormatWork, MUIA_InstallOption_Obj),
+                 MUIM_Notify, MUIA_Selected, TRUE,
+                 self, 3, MUIM_CallHook, &formatcheckHook, 1);
+        DoMethod((Object *)XGET(optObjDestVolumeName, MUIA_InstallOption_Obj),
+                 MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+                 self, 3, MUIM_CallHook, &formatcheckHook, 0);
+        DoMethod(work_devname, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+                 self, 3, MUIM_CallHook, &formatcheckHook, 1);
             
         data->instc_options_grub =
             (APTR) GetTagData(MUIA_Grub_Options, (IPTR) NULL,
@@ -589,6 +684,17 @@ IPTR InstallStage__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
             if (!data->instc_options_main->bootloaded)
             {
                 data->instc_options_main->bootloaded = TRUE;
+#ifdef INSTALL_BL_PC_EFI
+                extern Object *optObjCycleBootMode;
+                BootLoaderType = XOPTOGET(optObjCycleBootMode, MUIA_Cycle_Active) ?
+                    BOOTLOADER_EFI : BIOSBootLoaderType;
+                Object *bootOptions = (Object *)XGET(bootopt_grubgroup, MUIA_Parent);
+                DoMethod(bootOptions, MUIM_Group_InitChange);
+                SET(bootopt_grubgroup, MUIA_ShowMe, BootLoaderType != BOOTLOADER_EFI);
+                SET(bootopt_efigroup, MUIA_ShowMe, BootLoaderType == BOOTLOADER_EFI);
+                DoMethod(bootOptions, MUIM_Group_ExitChange);
+#endif
+
 
 #if defined(INSTALL_BL_EFI)
                 if (BootLoaderType == BOOTLOADER_EFI)
@@ -596,6 +702,7 @@ IPTR InstallStage__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                     TEXT espName[64], espText[96];
                     BOOL formatted = FALSE;
 
+                    data->instc_options_grub->bootinfo = TRUE;
                     if (BOOTLOADER_ESPInfo(espName, sizeof(espName),
                             &formatted))
                     {
@@ -603,10 +710,9 @@ IPTR InstallStage__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                             formatted ? "" : "  (unformatted)");
                         SET(bootopt_esp, MUIA_Text_Contents, (IPTR)espText);
 
-                        /* One that already holds a filesystem may be shared
-                           with another operating system */
-                        OPTOSET(optObjCheckFormatESP, MUIA_Selected,
-                            formatted ? FALSE : TRUE);
+                        /* A failed mount may be damaged or temporarily
+                         * unreadable, not blank. Formatting is always opt-in. */
+                        OPTOSET(optObjCheckFormatESP, MUIA_Selected, FALSE);
                     }
                     else
                     {
@@ -658,6 +764,26 @@ IPTR InstallStage__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
                 data->instc_stage_prev = EInstallOptionsStage;
                 break;
             }
+#if defined(INSTALL_BL_EFI)
+            else if (BootLoaderType == BOOTLOADER_EFI)
+            {
+                TEXT espName[64];
+                BOOL formatted = FALSE;
+                if (!BOOTLOADER_ESPInfo(espName, sizeof(espName), &formatted))
+                {
+                    MUI_RequestA(data->installer, data->window, 0, _(MSG_ERROR),
+                        _(MSG_OK), _(MSG_EFINOESP), NULL);
+                    return 0;
+                }
+                if (!formatted && XOPTOGET(optObjCheckCopyESP, MUIA_Selected) &&
+                    !XOPTOGET(optObjCheckFormatESP, MUIA_Selected))
+                {
+                    MUI_RequestA(data->installer, data->window, 0, _(MSG_EFIESPIS),
+                        _(MSG_OK), _(MSG_FORMATPART), NULL);
+                    return 0;
+                }
+            }
+#endif
             else if (
 #if defined(INSTALL_BL_EFI)
                 (BootLoaderType != BOOTLOADER_EFI) &&
@@ -1132,8 +1258,22 @@ IPTR InstallStage__MUIM_Partition(Class * CLASS, Object * self, Msg message)
         SET(data->back, MUIA_Disabled, TRUE);
         SET(data->proceed, MUIA_Disabled, TRUE);
 
-        char tmpcmd[150], tmparg[100];
+        char *tmpcmd, tmparg[100];
+        IPTR sysname, workname;
+
         GET(optObjDestDevice, MUIA_InstallOption_Value, &tmp);
+        OPTOGET(optObjDestVolumeName, MUIA_String_Contents, &sysname);
+        GET(work_devname, MUIA_String_Contents, &workname);
+        /* All variable strings plus room for option names and four signed
+         * numeric arguments (including 64-bit IPTR values). */
+        tmpcmd = malloc(strlen((char *)tmp) + strlen((char *)sysname)
+            + strlen((char *)workname) + 384);
+        if (tmpcmd == NULL)
+        {
+            SET(data->proceed, MUIA_Disabled, FALSE);
+            SetIoErr(ERROR_NO_FREE_STORE);
+            return RETURN_FAIL;
+        }
         GET(optObjDestUnit, MUIA_InstallOption_Value, &option);
         sprintf(tmpcmd, "C:Partition DEVICE=%s UNIT=%ld FORCE QUIET",
             (char *)tmp, option);
@@ -1142,7 +1282,24 @@ IPTR InstallStage__MUIM_Partition(Class * CLASS, Object * self, Msg message)
         OPTOGET(optObjCheckEFI, MUIA_Selected, &option);
         if (option)
         {
-            strcat(tmpcmd, " BOOTSIZE=100 BOOTTYPE=fat32");
+            IPTR deviceName, unit;
+            ULONG bootMB = 100;
+            struct PartitionHandle *root;
+            GET(optObjDestDevice, MUIA_InstallOption_Value, &deviceName);
+            GET(optObjDestUnit, MUIA_InstallOption_Value, &unit);
+            root = OpenRootPartition((CONST_STRPTR)deviceName, unit);
+            if (root)
+            {
+                /* FAT32 needs at least 65525 data clusters, including on
+                 * disks whose logical sectors are larger than 512 bytes. */
+                ULONG minimum = ((UQUAD)root->dg.dg_SectorSize * 66560 +
+                    1024 * 1024 - 1) / (1024 * 1024);
+                if (minimum > bootMB)
+                    bootMB = minimum;
+                CloseRootPartition(root);
+            }
+            sprintf(tmparg, " BOOTSIZE=%lu BOOTTYPE=fat32", bootMB);
+            strcat(tmpcmd, tmparg);
         }
         /* Partition scheme to use? */
         OPTOGET(optObjCyclePartScheme, MUIA_Cycle_Active, &option);
@@ -1161,9 +1318,7 @@ IPTR InstallStage__MUIM_Partition(Class * CLASS, Object * self, Msg message)
         }
 
         /* Specify SYS name */
-        OPTOGET(optObjDestVolumeName, MUIA_String_Contents, &tmp);
-        sprintf(tmparg, " SYSNAME=\"%s\"", (char *)tmp);
-        strcat(tmpcmd, tmparg);
+        sprintf(tmpcmd + strlen(tmpcmd), " SYSNAME=\"%s\"", (char *)sysname);
 
         /* Specify SYS filesystem (defaults to FFSIntl) */
         get(optObjCycleFSTypeSys, MUIA_Cycle_Active, &tmp);
@@ -1196,9 +1351,7 @@ IPTR InstallStage__MUIM_Partition(Class * CLASS, Object * self, Msg message)
                 strcat(tmpcmd, " WORKTYPE=SFS");
 
             /* Specify WORK name */
-            GET(work_devname, MUIA_String_Contents, &tmp);
-            sprintf(tmparg, " WORKNAME=\"%s\"", (char *)tmp);
-            strcat(tmpcmd, tmparg);
+            sprintf(tmpcmd + strlen(tmpcmd), " WORKNAME=\"%s\"", (char *)workname);
         }
 
         /* Specify whether to wipe disk or not */
@@ -1213,9 +1366,10 @@ IPTR InstallStage__MUIM_Partition(Class * CLASS, Object * self, Msg message)
                 bug("[InstallAROS:Stage] %s: Partitioning Free Space...\n", __func__);
         )
 
-        D(bug("[InstallAROS:Stage] %s: ### Executing '%s'\n", __func__, &tmpcmd));
+        D(bug("[InstallAROS:Stage] %s: ### Executing '%s'\n", __func__, tmpcmd));
         LOG_Printf("partitioning: %s", tmpcmd);
         tmp = SystemTagList(tmpcmd, NULL);
+        free(tmpcmd);
         LOG_Printf("partitioning returned %ld", (LONG)tmp);
 
         SET(data->proceed, MUIA_Disabled, FALSE);
@@ -1673,6 +1827,7 @@ IPTR InstallStage__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
     SET(data->proceed, MUIA_Disabled, FALSE);
 
     /* STEP : CREATE ENVIRONMENT VARIABLES THAT POINT TO INSTALLATION LOCATIONS */
+    if (data->inst_success == MUIV_Inst_InProgress)
     {
         TEXT varval[255];
         IPTR optcheck = 0;
@@ -1699,7 +1854,8 @@ IPTR InstallStage__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
     }
 
     /* STEP : EXECUTE EXTERNAL POST-INSTALL SCRIPT */
-    if ((BOOL) XGET(data->instc_options_main->opt_copycore, MUIA_Selected))
+    if (data->inst_success == MUIV_Inst_InProgress &&
+        (BOOL) XGET(data->instc_options_main->opt_copycore, MUIA_Selected))
     {
         BPTR scriptfile = Open(POST_INSTALL_SCRIPT, MODE_OLDFILE);
         if (scriptfile)
@@ -1802,10 +1958,31 @@ IPTR InstallStage__MUIM_Format(Class * CLASS, Object * self, Msg message)
     char vol_nametmp[100];
     char fmt_nametmp[100];
     char *name_tmp = NULL;
-    BOOL success = FALSE;
+    BOOL success;
     IPTR option = FALSE;
     BPTR lock = BNULL;
     char tmp[100];
+
+    /* An existing partition its filesystem cannot hold is never formatted.
+       Format is unchecked for it when selected, but the device name may
+       have been changed since without being confirmed. */
+    if (XGET(data->instc_options_main->opt_partmethod, MUIA_Radio_Active) == 2)
+    {
+        OPTOGET(optObjDestVolumeName, MUIA_String_Contents, (IPTR *)&name_tmp);
+        if ((BOOL) XOPTOGET(optObjCheckFormatSys, MUIA_Selected)
+            && !FormatSizeOK(data, name_tmp, FALSE))
+        {
+            LOG_Printf("not formatting %s: too large for its filesystem", name_tmp);
+            OPTOSET(optObjCheckFormatSys, MUIA_Selected, FALSE);
+        }
+        GET(work_devname, MUIA_String_Contents, (IPTR *)&name_tmp);
+        if ((BOOL) XOPTOGET(optObjCheckFormatWork, MUIA_Selected)
+            && !FormatSizeOK(data, name_tmp, FALSE))
+        {
+            LOG_Printf("not formatting %s: too large for its filesystem", name_tmp);
+            OPTOSET(optObjCheckFormatWork, MUIA_Selected, FALSE);
+        }
+    }
 
     if ((BOOL) XOPTOGET(optObjCheckFormatSys, MUIA_Selected))
     {
@@ -1832,9 +2009,13 @@ IPTR InstallStage__MUIM_Format(Class * CLASS, Object * self, Msg message)
             FormatPartition(dev_nametmp, vol_nametmp, ID_INTER_FFS_DISK);
         LOG_Printf("format %s as '%s': %s", dev_nametmp, vol_nametmp,
             success ? "ok" : "FAILED");
+        if (!success)
+        {
+            data->inst_success = MUIV_Inst_Failed;
+            return FALSE;
+        }
 
-        if (success)
-            set(data->gauge2, MUIA_Gauge_Current, 100);
+        set(data->gauge2, MUIA_Gauge_Current, 100);
     }
 
     OPTOGET(optObjCheckWork, MUIA_Selected, &option);
@@ -1863,27 +2044,28 @@ IPTR InstallStage__MUIM_Format(Class * CLASS, Object * self, Msg message)
             FormatPartition(dev_nametmp, vol_nametmp, ID_INTER_FFS_DISK);
         LOG_Printf("format %s as '%s': %s", dev_nametmp, vol_nametmp,
             success ? "ok" : "FAILED");
-
-        if (success)
+        if (!success)
         {
-            SET(data->gauge2, MUIA_Gauge_Current, 100);
-            lock = Lock((CONST_STRPTR)dev_nametmp, SHARED_LOCK);      /* check the dest dir exists */
-            if (lock == BNULL)
-            {
-                bug("[InstallAROS:Stage] (Warning) FORMAT: Failed for chosen work partition '%s' : defaulting to sys only\n", dev_nametmp);
-                extras_path = dest_Path;
-            }
-            else
-            {
-                UnLock(lock);
-                lock = BNULL;
-            }
+            data->inst_success = MUIV_Inst_Failed;
+            return FALSE;
+        }
+
+        SET(data->gauge2, MUIA_Gauge_Current, 100);
+        lock = Lock((CONST_STRPTR)dev_nametmp, SHARED_LOCK);      /* check the dest dir exists */
+        if (lock == BNULL)
+        {
+            bug("[InstallAROS:Stage] (Warning) FORMAT: Failed for chosen work partition '%s' : defaulting to sys only\n", dev_nametmp);
+            extras_path = dest_Path;
+        }
+        else
+        {
+            UnLock(lock);
+            lock = BNULL;
         }
     }
-    if (success)
-        SET(data->gauge2, MUIA_Gauge_Current, 100);
+    SET(data->gauge2, MUIA_Gauge_Current, 100);
 
-    return success;
+    return TRUE;
 }
 
 IPTR InstallStage__MUIM_IC_CopyFile

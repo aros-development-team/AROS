@@ -106,48 +106,6 @@ struct charmapcondata
 static VOID charmapcon_clear_selection(Class *cl, Object *o);
 
 
-/* Template used to quickly fill constant fields */
-CONST struct Scroll ScrollBar = {
-    {
-        /* PropGadget */
-        NULL, 0, 0, 0, 0,
-        GFLG_RELRIGHT | GFLG_RELHEIGHT,
-        GACT_RIGHTBORDER | GACT_FOLLOWMOUSE | GACT_IMMEDIATE |
-        GACT_RELVERIFY,
-        GTYP_PROPGADGET,
-        NULL, NULL, NULL, 0, NULL,
-        0, NULL
-    },
-    {
-        /* Up-gadget */
-        NULL, 0, 0, 0, 0,
-        GFLG_RELRIGHT | GFLG_RELBOTTOM | GFLG_GADGHIMAGE |
-        GFLG_GADGIMAGE,
-        GACT_RIGHTBORDER | GACT_RELVERIFY | GACT_IMMEDIATE,
-        GTYP_BOOLGADGET,
-        NULL, NULL, NULL, 0, NULL,
-        1, NULL
-    },
-    {
-        /* Down-Gadget */
-        NULL, 0, 0, 0, 0,
-        GFLG_RELRIGHT | GFLG_RELBOTTOM | GFLG_GADGHIMAGE |
-        GFLG_GADGIMAGE,
-        GACT_RIGHTBORDER | GACT_RELVERIFY | GACT_IMMEDIATE,
-        GTYP_BOOLGADGET,
-        NULL, NULL, NULL, 0, NULL,
-        2, NULL
-    },
-    {
-        /* PropInfo */
-        PROP_FLAGS,
-        MAXPOT, MAXPOT,
-        MAXBODY, MAXBODY
-    }
-    /* Other values may be NULL */
-};
-
-
 #ifdef GfxBase
 #undef GfxBase
 #endif
@@ -156,6 +114,14 @@ CONST struct Scroll ScrollBar = {
 static VOID charmapcon_refresh(Class *cl, Object *o, LONG off);
 static VOID charmap_swap_line_contents(struct charmap_line *a,
     struct charmap_line *b);
+
+/*** Create one of the system images that the scroller is built from ***/
+static struct Image *charmapcon_sysimage(Class *cl, struct DrawInfo *di,
+    ULONG which)
+{
+    return (struct Image *)NewObject(NULL, "sysiclass",
+        SYSIA_Which, which, SYSIA_DrawInfo, (IPTR) di, TAG_END);
+}
 
 /*** Allocate and attach a prop gadget to the window ***/
 static VOID charmapcon_add_prop(Class *cl, Object *o)
@@ -191,19 +157,34 @@ static VOID charmapcon_add_prop(Class *cl, Object *o)
     data->boopsigad = FALSE;
 
     /* Get memory */
-    if ((data->prop = pg = (void *)AllocMem(sizeof(*pg), MEMF_PUBLIC)))
+    if ((data->prop = pg =
+            (void *)AllocMem(sizeof(*pg), MEMF_PUBLIC | MEMF_CLEAR)))
     {
-        /* Copy default flags/modes/etc. */
-        CopyMem(&ScrollBar, pg, sizeof(*pg));
+        /* Fill in the fields that do not depend on the window. Everything
+         * else starts as zero. */
+        pg->scroller.Flags = GFLG_RELRIGHT | GFLG_RELHEIGHT;
+        pg->scroller.Activation = GACT_RIGHTBORDER | GACT_FOLLOWMOUSE |
+            GACT_IMMEDIATE | GACT_RELVERIFY;
+        pg->scroller.GadgetType = GTYP_PROPGADGET;
+
+        pg->down.Flags = pg->up.Flags = GFLG_RELRIGHT | GFLG_RELBOTTOM |
+            GFLG_GADGHIMAGE | GFLG_GADGIMAGE;
+        pg->down.Activation = pg->up.Activation =
+            GACT_RIGHTBORDER | GACT_RELVERIFY | GACT_IMMEDIATE;
+        pg->down.GadgetType = pg->up.GadgetType = GTYP_BOOLGADGET;
+        pg->down.GadgetID = 1;
+        pg->up.GadgetID = 2;
+
         pg->pinfo.Flags = PROP_FLAGS;
+        pg->pinfo.HorizPot = pg->pinfo.VertPot = MAXPOT;
+        pg->pinfo.HorizBody = pg->pinfo.VertBody = MAXBODY;
+
         struct DrawInfo *di;
 
         di = (void *)GetScreenDrawInfo(win->WScreen);
 
         /* We need to get size-gadget height, to adjust properly arrows */
-        if ((dummy = (struct Image *)NewObject(NULL, "sysiclass",
-                    SYSIA_Which, SIZEIMAGE,
-                    SYSIA_DrawInfo, (IPTR) di, TAG_END)))
+        if ((dummy = charmapcon_sysimage(cl, di, SIZEIMAGE)))
         {
             size_width = dummy->Width;  /* width of up/down-gadgets */
             size_height = dummy->Height;        /* bottom offset */
@@ -212,18 +193,14 @@ static VOID charmapcon_add_prop(Class *cl, Object *o)
             DisposeObject(dummy);
 
             /* Get the boopsi image of the up and down arrow */
-            if ((pg->upimage = (struct Image *)NewObject(NULL, "sysiclass",
-                        SYSIA_Which, UPIMAGE,
-                        SYSIA_DrawInfo, (IPTR) di, TAG_END)))
+            if ((pg->upimage = charmapcon_sysimage(cl, di, UPIMAGE)))
             {
                 pg->up.GadgetRender = pg->up.SelectRender =
                     (APTR) pg->upimage;
                 height = pg->upimage->Height;
 
                 if ((pg->downimage =
-                        (struct Image *)NewObject(NULL, "sysiclass",
-                            SYSIA_Which, DOWNIMAGE, SYSIA_DrawInfo,
-                            (IPTR) di, TAG_END)))
+                        charmapcon_sysimage(cl, di, DOWNIMAGE)))
                 {
                     struct Gadget *G = (void *)pg;
                     WORD hoffset = size_width / 4;
@@ -351,7 +328,7 @@ static Object *charmapcon_new(Class *cl, Object *o, struct opSet *msg)
     if (newGfxBase == NULL)
         return NULL;
 
-    o = (Object *) DoSuperMethodA(cl, o, (Msg) msg);
+    o = (Object *) Console_Super(cl, o, (Msg) msg);
     if (o)
     {
         struct charmapcondata *data = INST_DATA(cl, o);
@@ -384,7 +361,7 @@ static VOID charmapcon_dispose(Class *cl, Object *o, Msg msg)
 
     CloseLibrary(data->ccd_GfxBase);
 
-    DoSuperMethodA(cl, o, msg);
+    Console_Super(cl, o, msg);
 }
 
 /*********  CharMapCon::DoCommand()  ****************************/
@@ -465,6 +442,35 @@ static struct charmap_line *charmapcon_find_line(Class *cl, Object *o,
     return line;
 }
 
+/* Give len cells of a line, starting at column x, the current pens and
+ * text style. */
+static VOID charmap_set_attrs(Class *cl, Object *o,
+    struct charmap_line *line, ULONG x, ULONG len)
+{
+    SetMem(line->fgpen + x, CU(o)->cu_FgPen, len);
+    SetMem(line->bgpen + x, CU(o)->cu_BgPen, len);
+    SetMem(line->flags + x, CU(o)->cu_TxFlags, len);
+}
+
+/* The same, and fill the cells with spaces. */
+static VOID charmap_blank(Class *cl, Object *o,
+    struct charmap_line *line, ULONG x, ULONG len)
+{
+    charmap_set_attrs(cl, o, line, x, len);
+    SetMem(line->text + x, ' ', len);
+}
+
+/* Move len cells of a line from column 'from' to column 'to'. The two
+ * ranges may overlap. */
+static VOID charmap_move_cells(struct charmap_line *line, ULONG to,
+    ULONG from, ULONG len)
+{
+    LONG i;
+
+    for (i = 0; i < CHARMAP_PLANES; i++)
+        memmove(line->plane[i] + to, line->plane[i] + from, len);
+}
+
 static VOID charmap_ascii(Class *cl, Object *o, ULONG xcp, ULONG ycp,
     char *str, ULONG len)
 {
@@ -501,21 +507,14 @@ static VOID charmap_ascii(Class *cl, Object *o, ULONG xcp, ULONG ycp,
     }
     else
     {
-        SetMem(line->fgpen + xcp, CU(o)->cu_FgPen, len);
-        SetMem(line->bgpen + xcp, CU(o)->cu_BgPen, len);
-        SetMem(line->flags + xcp, CU(o)->cu_TxFlags, len);
+        charmap_set_attrs(cl, o, line, xcp, len);
         memcpy(line->text + xcp, str, len);
     }
 
     // If cursor output is moved further right on the screen than
     // the last output, we need to fill the line
     if (oldsize < xcp)
-    {
-        SetMem(line->fgpen + oldsize, CU(o)->cu_FgPen, xcp - oldsize);
-        SetMem(line->bgpen + oldsize, CU(o)->cu_BgPen, xcp - oldsize);
-        SetMem(line->flags + oldsize, CU(o)->cu_TxFlags, xcp - oldsize);
-        SetMem(line->text + oldsize, ' ', xcp - oldsize);
-    }
+        charmap_blank(cl, o, line, oldsize, xcp - oldsize);
 }
 
 static VOID charmap_scroll_up(Class *cl, Object *o, ULONG y)
@@ -578,31 +577,6 @@ static VOID charmap_scroll_down(Class *cl, Object *o, ULONG y)
             data->select_y_max += 1;
             data->select_y_min += 1;
         }
-    }
-}
-
-/* Scroll terminal contents down, inserting blank lines at the top.  This is
- * distinct from charmap_scroll_down(), which navigates backwards through the
- * scrollback history and saves a viewport that the next output restores. */
-static VOID charmap_scroll_contents_down(Class *cl, Object *o, ULONG count)
-{
-    ULONG y;
-
-    count = MIN(count, CHAR_YMAX(o) + 1);
-    if (!charmapcon_find_line(cl, o, CHAR_YMAX(o)))
-        return;
-
-    while (count--)
-    {
-        struct charmap_line *line =
-            charmapcon_find_line(cl, o, CHAR_YMAX(o));
-
-        for (y = CHAR_YMAX(o); y > 0; y--)
-        {
-            charmap_swap_line_contents(line, line->prev);
-            line = line->prev;
-        }
-        charmap_resize(ConsoleDevice, line, 0);
     }
 }
 
@@ -682,12 +656,7 @@ static VOID charmap_delete_chars(Class *cl, Object *o, ULONG x, ULONG y,
 
     remaining = line->size - x - count;
     if (remaining > 0)
-    {
-        memmove(line->fgpen + x, line->fgpen + x + count, remaining);
-        memmove(line->bgpen + x, line->bgpen + x + count, remaining);
-        memmove(line->flags + x, line->flags + x + count, remaining);
-        memmove(line->text + x, line->text + x + count, remaining);
-    }
+        charmap_move_cells(line, x, x + count, remaining);
 
     charmap_resize(ConsoleDevice, line, line->size - count);
 }
@@ -710,15 +679,8 @@ static VOID charmap_insert_chars(Class *cl, Object *o, ULONG x, ULONG y,
         return;
 
     tail = oldsize - x;
-    memmove(line->fgpen + x + count, line->fgpen + x, tail);
-    memmove(line->bgpen + x + count, line->bgpen + x, tail);
-    memmove(line->flags + x + count, line->flags + x, tail);
-    memmove(line->text + x + count, line->text + x, tail);
-
-    SetMem(line->fgpen + x, CU(o)->cu_FgPen, count);
-    SetMem(line->bgpen + x, CU(o)->cu_BgPen, count);
-    SetMem(line->flags + x, CU(o)->cu_TxFlags, count);
-    SetMem(line->text + x, ' ', count);
+    charmap_move_cells(line, x + count, x, tail);
+    charmap_blank(cl, o, line, x, count);
 }
 
 static VOID charmap_formfeed(Class *cl, Object *o)
@@ -757,9 +719,19 @@ static VOID charmap_swap_line_contents(struct charmap_line *a,
     b->flags = flags;
 }
 
-static VOID charmap_insert_lines(Class *cl, Object *o, ULONG count)
+/* Insert count blank lines at row 'first' (del == FALSE): the lines from
+ * there on move down and the last ones are lost. Or delete count lines at
+ * row 'first' (del == TRUE): the lines below move up and blank lines appear
+ * at the bottom. The count is limited to the rows from 'first' on.
+ *
+ * Scrolling the terminal contents down is an insert at the first row. That
+ * is distinct from charmap_scroll_down(), which navigates backwards through
+ * the scrollback history and saves a viewport that the next output
+ * restores. */
+static VOID charmap_shift_lines(Class *cl, Object *o, ULONG count,
+    ULONG first, BOOL del)
 {
-    ULONG y, first = YCP;
+    ULONG y;
 
     count = MIN(count, CHAR_YMAX(o) - first + 1);
     if (!charmapcon_find_line(cl, o, CHAR_YMAX(o)))
@@ -767,34 +739,17 @@ static VOID charmap_insert_lines(Class *cl, Object *o, ULONG count)
 
     while (count--)
     {
+        /* Carry the contents of one line from the bottom up to 'first', or
+         * from 'first' down to the bottom, and empty it there */
         struct charmap_line *line =
-            charmapcon_find_line(cl, o, CHAR_YMAX(o));
-
-        for (y = CHAR_YMAX(o); y > first; y--)
-        {
-            charmap_swap_line_contents(line, line->prev);
-            line = line->prev;
-        }
-        charmap_resize(ConsoleDevice, line, 0);
-    }
-}
-
-static VOID charmap_delete_lines(Class *cl, Object *o, ULONG count)
-{
-    ULONG y, first = YCP;
-
-    count = MIN(count, CHAR_YMAX(o) - first + 1);
-    if (!charmapcon_find_line(cl, o, CHAR_YMAX(o)))
-        return;
-
-    while (count--)
-    {
-        struct charmap_line *line = charmapcon_find_line(cl, o, first);
+            charmapcon_find_line(cl, o, del ? first : CHAR_YMAX(o));
 
         for (y = first; y < CHAR_YMAX(o); y++)
         {
-            charmap_swap_line_contents(line, line->next);
-            line = line->next;
+            struct charmap_line *other = del ? line->next : line->prev;
+
+            charmap_swap_line_contents(line, other);
+            line = other;
         }
         charmap_resize(ConsoleDevice, line, 0);
     }
@@ -832,18 +787,15 @@ static VOID charmapcon_docommand(Class *cl, Object *o,
     case C_ASCII:
         charmapcon_clear_selection(cl, o);
         charmap_ascii(cl, o, XCP, YCP, (char *)&params[0], 1);
-        DoSuperMethodA(cl, o, (Msg) msg);
         break;
 
     case C_ASCII_STRING:
         charmapcon_clear_selection(cl, o);
         charmap_ascii(cl, o, XCP, YCP, (char *)params[0], (int)params[1]);
-        DoSuperMethodA(cl, o, (Msg) msg);
         break;
 
     case C_FORMFEED:
         charmap_formfeed(cl, o);
-        DoSuperMethodA(cl, o, (Msg) msg);
         break;
 
     case C_DELETE_CHAR:
@@ -855,7 +807,6 @@ static VOID charmapcon_docommand(Class *cl, Object *o,
                 count = max_count;
 
             charmap_delete_chars(cl, o, XCP, YCP, (ULONG) count);
-            DoSuperMethodA(cl, o, (Msg) msg);
         }
         break;
 
@@ -868,7 +819,6 @@ static VOID charmapcon_docommand(Class *cl, Object *o,
                 count = max_count;
 
             charmap_insert_chars(cl, o, XCP, YCP, (ULONG) count);
-            DoSuperMethodA(cl, o, (Msg) msg);
         }
         break;
 
@@ -883,7 +833,6 @@ static VOID charmapcon_docommand(Class *cl, Object *o,
                     GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o),
                     YRSIZE * (ULONG)count));
             charmap_scroll_up(cl, o, (ULONG)count);
-            DoSuperMethodA(cl, o, (Msg) msg);
             break;
         }
 
@@ -897,8 +846,7 @@ static VOID charmapcon_docommand(Class *cl, Object *o,
             D(bug("C_SCROLL_DOWN area (%d, %d) to (%d, %d), %d\n",
                     GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o),
                     YRSIZE * (ULONG)count));
-            charmap_scroll_contents_down(cl, o, (ULONG)count);
-            DoSuperMethodA(cl, o, (Msg) msg);
+            charmap_shift_lines(cl, o, (ULONG)count, 0, FALSE);
             break;
         }
 
@@ -909,8 +857,7 @@ static VOID charmapcon_docommand(Class *cl, Object *o,
 
             if (count > max_count)
                 count = max_count;
-            charmap_insert_lines(cl, o, (ULONG)count);
-            DoSuperMethodA(cl, o, (Msg) msg);
+            charmap_shift_lines(cl, o, (ULONG)count, YCP, FALSE);
             break;
         }
 
@@ -921,8 +868,7 @@ static VOID charmapcon_docommand(Class *cl, Object *o,
 
             if (count > max_count)
                 count = max_count;
-            charmap_delete_lines(cl, o, (ULONG)count);
-            DoSuperMethodA(cl, o, (Msg) msg);
+            charmap_shift_lines(cl, o, (ULONG)count, YCP, TRUE);
             break;
         }
 
@@ -943,30 +889,18 @@ static VOID charmapcon_docommand(Class *cl, Object *o,
                     break;
                 }
             }
-            DoSuperMethodA(cl, o, (Msg) msg);
             break;
         }
-
-    default:
-        DoSuperMethodA(cl, o, (Msg) msg);
-        break;
     }
+
+    /* The superclass does the rendering of every command */
+    Console_Super(cl, o, (Msg) msg);
 
     if (old_scrollback_size != data->scrollback_size ||
         old_scrollback_pos != data->scrollback_pos)
         charmapcon_adj_prop(cl, o);
 
     ReturnVoid("CharMapCon::DoCommand");
-}
-
-/**************************
-**  CharMapCon::ClearCell()  **
-**************************/
-static VOID charmapcon_clearcell(Class *cl, Object *o,
-    struct P_Console_ClearCell *msg)
-{
-    // FIXME, insert space.
-    DoSuperMethodA(cl, o, (Msg) msg);
 }
 
 static VOID charmapcon_refresh_lines(Class *cl, Object *o, LONG fromLine,
@@ -1207,34 +1141,61 @@ static VOID charmapcon_refresh(Class *cl, Object *o, LONG off)
 }
 
 
-static ULONG charmapcon_calc_selection_size(struct charmap_line *first,
+/* Walk the text selected from column minx of line 'first' to column maxx of
+ * line 'last' and return its size, with a carriage return for every line
+ * end in it. If bufpos is not NULL the text is also copied there. */
+static ULONG charmapcon_walk_selection(char *bufpos,
+    struct charmap_line *first,
     struct charmap_line *last, ULONG minx, ULONG maxx)
 {
     struct charmap_line *cur = first;
     ULONG size = 0;
+
     while (cur)
     {
         if (cur->text)
         {
+            /* empty lines may not have text ptrs */
+            ULONG from = 0, len;
+
             if (cur == first)
             {
                 if (cur == last)
-                    size += abs(maxx - minx);
+                {
+                    from = MIN(minx, maxx);
+                    len = abs(maxx - minx);
+                }
                 else
-                    size += cur->size - minx;
+                {
+                    from = minx;
+                    len = cur->size - minx;
+                }
             }
             else if (cur == last)
             {
-                size += maxx;
+                len = maxx;
             }
             else
             {
-                size += cur->size;
+                len = cur->size;
             }
-        }
-        if (cur != last || (cur == last && maxx == cur->size))
-            size += 1;          /* line feed */
 
+            if (bufpos)
+            {
+                CopyMem(cur->text + from, bufpos, len);
+                bufpos += len;
+            }
+            size += len;
+        }
+        if (cur != last || (cur == last && maxx == cur->size))  /* line feed */
+        {
+            if (bufpos)
+            {
+                *bufpos = '\r';
+                bufpos += 1;
+            }
+            size += 1;
+        }
         if (cur == last)
             break;
         cur = cur->next;
@@ -1242,56 +1203,17 @@ static ULONG charmapcon_calc_selection_size(struct charmap_line *first,
     return size;
 }
 
-char *charmapcon_get_selection(ULONG size,
+/* Return the selected text in a buffer of the given size, which has to be
+ * the size that charmapcon_walk_selection() reports for it. */
+static char *charmapcon_get_selection(ULONG size,
     struct charmap_line *first,
     struct charmap_line *last, ULONG minx, ULONG maxx)
 {
     char *buf = AllocMem(size, MEMF_ANY);
-    char *bufpos = buf;
-    struct charmap_line *cur = first;
 
-    if (!bufpos)
-        return 0;
+    if (buf)
+        charmapcon_walk_selection(buf, first, last, minx, maxx);
 
-    while (cur)
-    {
-        if (cur->text)
-        {
-            /* empty lines may not have text ptrs */
-            if (cur == first)
-            {
-                if (cur == last)
-                {
-                    CopyMem(cur->text + MIN(minx, maxx), bufpos,
-                        abs(maxx - minx));
-                    bufpos += abs(maxx - minx);
-                }
-                else
-                {
-                    CopyMem(cur->text + minx, bufpos, cur->size - minx);
-                    bufpos += cur->size - minx;
-                }
-            }
-            else if (cur == last)
-            {
-                CopyMem(cur->text, bufpos, maxx);
-                bufpos += maxx;
-            }
-            else
-            {
-                CopyMem(cur->text, bufpos, cur->size);
-                bufpos += cur->size;
-            }
-        }
-        if (cur != last || (cur == last && maxx == cur->size))  /* line feed */
-        {
-            *bufpos = '\r';
-            bufpos += 1;
-        }
-        if (cur == last)
-            break;
-        cur = cur->next;
-    }
     return buf;
 }
 
@@ -1331,7 +1253,7 @@ static VOID charmapcon_copy(Class *cl, Object *o, Msg copymsg)
         maxx = data->select_x_min;
     }
 
-    size = charmapcon_calc_selection_size(first, last, minx, maxx);
+    size = charmapcon_walk_selection(NULL, first, last, minx, maxx);
     buf = charmapcon_get_selection(size, first, last, minx, maxx);
     D(bug("%d bytes copied\n"));
 
@@ -1421,7 +1343,7 @@ static VOID charmapcon_newwindowsize(Class *cl, Object *o,
     WORD old_ycp = YCP;
     WORD old_ymax = CHAR_YMAX(o);
 
-    DoSuperMethodA(cl, o, (Msg) msg);
+    Console_Super(cl, o, (Msg) msg);
     D(bug("CharMapCon::NewWindowSize(o=%p) x=%d, y=%d, ymax=%d\n",
             o, XCP, YCP, CHAR_YMAX(o)));
 
@@ -1457,20 +1379,13 @@ static VOID charmapcon_newwindowsize(Class *cl, Object *o,
     charmapcon_refresh(cl, o, 0);
 }
 
-static VOID charmapcon_handlemouse(Class *cl, Object *o,
-    struct P_Console_HandleGadgets *msg)
+/* Convert the mouse position to a character cell and look up the line of
+ * that cell. Returns FALSE, and stores nothing, when the pointer is outside
+ * the console area. */
+static BOOL charmapcon_mouse_cell(Class *cl, Object *o, LONG *xp, LONG *yp,
+    struct charmap_line **linep)
 {
-    struct charmapcondata *data = INST_DATA(cl, o);
     struct Window *w = CU(o)->cu_Window;
-    struct InputEvent *e = msg->Event;
-
-    /* We have the following states:
-     * - No active selection and no mouse button => ignore
-     * - No active selection and left mouse button => Start selection
-     * - Active selection and no mouse button => End selection
-     * - Active selection and left mouse button => Update selection
-     */
-
     LONG x, y;
 
     /*
@@ -1488,6 +1403,34 @@ static VOID charmapcon_handlemouse(Class *cl, Object *o,
     x = w->MouseX;
     y = w->MouseY;
 
+    /* Inside the console area? */
+    if (x >= GFX_XMIN(o) && x <= GFX_XMAX(o) &&
+        y >= GFX_YMIN(o) && y <= GFX_YMAX(o))
+    {
+        /* charmapcon_find_line() may adjust the selection when it trims the
+         * scrollback, so the cell is stored before the call and the line
+         * after it */
+        *xp = (x - GFX_XMIN(o)) / XRSIZE;
+        *yp = (y - GFX_YMIN(o)) / YRSIZE;
+        *linep = charmapcon_find_line(cl, o, *yp);
+        return TRUE;
+    }
+    return FALSE;
+}
+
+static VOID charmapcon_handlemouse(Class *cl, Object *o,
+    struct P_Console_HandleGadgets *msg)
+{
+    struct charmapcondata *data = INST_DATA(cl, o);
+    struct InputEvent *e = msg->Event;
+
+    /* We have the following states:
+     * - No active selection and no mouse button => ignore
+     * - No active selection and left mouse button => Start selection
+     * - Active selection and no mouse button => End selection
+     * - Active selection and left mouse button => Update selection
+     */
+
     /* Active selection */
 
     if (!(e->ie_Qualifier & IEQUALIFIER_LEFTBUTTON))
@@ -1502,32 +1445,26 @@ static VOID charmapcon_handlemouse(Class *cl, Object *o,
     {
         if (e->ie_Qualifier & IEQUALIFIER_LEFTBUTTON && !data->ignore_drag)
         {
-            /* Inside the console area? */
-            if (x >= GFX_XMIN(o) && x <= GFX_XMAX(o) &&
-                y >= GFX_YMIN(o) && y <= GFX_YMAX(o))
-            {
-                D(bug("activated selection with x: %ld, y: %ld,"
-                    " xmin: %ld, ymin: %Ld, xmax: %ld, ymax: %ld\n",
-                    x, y, GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o),
-                    GFX_YMAX(o)));
+            /* We need to clear these lines
+             */
+            LONG old_min_y =
+                MIN(data->select_y_min, data->select_y_max);
+            LONG old_max_y =
+                MAX(data->select_y_min, data->select_y_max);
+            BOOL clear_old_selection =
+                data->select_x_min != data->select_x_max ||
+                data->select_y_min != data->select_y_max;
 
-                /* We need to clear these lines
-                 */
-                LONG old_min_y =
-                    MIN(data->select_y_min, data->select_y_max);
-                LONG old_max_y =
-                    MAX(data->select_y_min, data->select_y_max);
-                BOOL clear_old_selection =
-                    data->select_x_min != data->select_x_max ||
-                    data->select_y_min != data->select_y_max;
+            /* Inside the console area? */
+            if (charmapcon_mouse_cell(cl, o, &data->select_x_min,
+                    &data->select_y_min, &data->select_line_min))
+            {
+                D(bug("activated selection with x: %ld, y: %ld\n",
+                    data->select_x_min, data->select_y_min));
 
                 /* Yes, so start selection */
                 data->active_selection = 1;
                 data->ignore_drag = 0;
-                data->select_x_min = (x - GFX_XMIN(o)) / XRSIZE;
-                data->select_y_min = (y - GFX_YMIN(o)) / YRSIZE;
-                data->select_line_min =
-                    charmapcon_find_line(cl, o, data->select_y_min);
 
                 data->select_x_max = data->select_x_min;
                 data->select_y_max = data->select_y_min;
@@ -1555,31 +1492,29 @@ static VOID charmapcon_handlemouse(Class *cl, Object *o,
     }
 
     /* Update selection. */
-    if (x >= GFX_XMIN(o) && x <= GFX_XMAX(o) &&
-        y >= GFX_YMIN(o) && y <= GFX_YMAX(o))
     {
-
         LONG xmax, ymax;
+
         xmax = data->select_x_max;
         ymax = data->select_y_max;
-        data->select_x_max = (x - GFX_XMIN(o)) / XRSIZE;
-        data->select_y_max = (y - GFX_YMIN(o)) / YRSIZE;
-        data->select_line_max =
-            charmapcon_find_line(cl, o, data->select_y_max);
-        /* FIXME: More intelligent refresh */
-        if (xmax != data->select_x_max || ymax != data->select_y_max)
+
+        if (charmapcon_mouse_cell(cl, o, &data->select_x_max,
+                &data->select_y_max, &data->select_line_max))
         {
-            charmapcon_refresh_lines(cl, o, MIN(ymax,
-                    MIN(data->select_y_min, data->select_y_max)), MAX(ymax,
-                    MAX(data->select_y_min, data->select_y_max)));
+            /* FIXME: More intelligent refresh */
+            if (xmax != data->select_x_max || ymax != data->select_y_max)
+            {
+                charmapcon_refresh_lines(cl, o, MIN(ymax,
+                        MIN(data->select_y_min, data->select_y_max)), MAX(ymax,
+                        MAX(data->select_y_min, data->select_y_max)));
+            }
+        }
+        else
+        {
+            /* FIXME: Outside the console area, we need to scroll the window
+               and just update the selection based on that */
         }
     }
-    else
-    {
-        /* FIXME: Outside the console area, we need to scroll the window
-           and just update the selection based on that */
-    }
-
 }
 
 static VOID charmapcon_handlegadgets(Class *cl, Object *o,
@@ -1590,7 +1525,7 @@ static VOID charmapcon_handlegadgets(Class *cl, Object *o,
     if (e->ie_Class == IECLASS_ACTIVEWINDOW ||
         e->ie_Class == IECLASS_INACTIVEWINDOW)
     {
-        DoSuperMethodA(cl, o, (Msg)msg);
+        Console_Super(cl, o, (Msg)msg);
         return;
     }
 
@@ -1691,11 +1626,6 @@ AROS_UFH3S(IPTR, dispatch_charmapconclass,
         charmapcon_docommand(cl, o, (struct P_Console_DoCommand *)msg);
         break;
 
-    case M_Console_ClearCell:
-        // FIXME: scroll down to end here if it's not there already.
-        charmapcon_clearcell(cl, o, (struct P_Console_ClearCell *)msg);
-        break;
-
     case M_Console_NewWindowSize:
         charmapcon_newwindowsize(cl, o,
             (struct P_Console_NewWindowSize *)msg);
@@ -1714,7 +1644,7 @@ AROS_UFH3S(IPTR, dispatch_charmapconclass,
         break;
 
     default:
-        retval = DoSuperMethodA(cl, o, msg);
+        retval = Console_Super(cl, o, msg);
         break;
     }
 

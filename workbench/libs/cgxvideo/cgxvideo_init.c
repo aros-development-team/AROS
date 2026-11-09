@@ -66,7 +66,9 @@ static int cgxv_init(struct IntCGXVBase *CGXVideoBase)
     CGXVideoBase->attrbases[0].attrBase    = &CGXVideoBase->cgxv_HiddBitMapAttrBase;
     CGXVideoBase->attrbases[1].interfaceID = IID_Hidd_Display;
     CGXVideoBase->attrbases[1].attrBase    = &CGXVideoBase->cgxv_HiddDisplayAttrBase;
-    CGXVideoBase->attrbases[2].interfaceID = NULL;
+    CGXVideoBase->attrbases[2].interfaceID = IID_Hidd_PixFmt;
+    CGXVideoBase->attrbases[2].attrBase    = &CGXVideoBase->cgxv_HiddPixFmtAttrBase;
+    CGXVideoBase->attrbases[3].interfaceID = NULL;
 
     if (!OOP_ObtainAttrBases(CGXVideoBase->attrbases))
         return FALSE;

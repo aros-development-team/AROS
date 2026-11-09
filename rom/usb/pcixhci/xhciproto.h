@@ -168,8 +168,6 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
                   ULONG trbflags);
 WORD xhciQueueTRB_IO(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload,
                      ULONG plen, ULONG trbflags, struct IORequest *ioreq);
-WORD xhciQueueData(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen,
-                   ULONG trbflags, BOOL ioconlast);
 WORD xhciQueueData_IO(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen,
                       ULONG trbflags, BOOL ioconlast, struct IORequest *ioreq);
 
@@ -188,7 +186,8 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
 WORD xhciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 WORD xhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 void xhciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
-void xhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
+BOOL xhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
+UWORD xhciRefillIsochIO(struct PCIController *hc, struct RTIsoNode *rtn, BOOL starting);
 void xhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 
 // xhcihw.c

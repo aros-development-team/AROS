@@ -33,6 +33,39 @@ void SetActiveMonPointerPos(struct IntuitionBase *IntuitionBase)
     }
 }
 
+/* Show the image of a pointer object on the monitor of a screen. If that
+   works the screen holds a reference to the shared pointer from then on and
+   the window, if one is given, takes over its hot spot. */
+void SetScreenPointer(struct IntScreen *scr, struct Window *window, Object *pointer,
+                      struct IntuitionBase *IntuitionBase)
+{
+    struct msSetPointerShape pmsg;
+
+    pmsg.MethodID = MM_SetPointerShape;
+    pmsg.pointer = NULL;
+
+    GetAttr(POINTERA_SharedPointer, pointer, (IPTR *)&pmsg.pointer);
+
+    DEBUG_POINTER(dprintf("SetScreenPointer: scr 0x%lx pointer 0x%lx sprite 0x%lx\n",
+                          scr, pointer, pmsg.pointer->sprite));
+
+    if (DoMethodA(scr->IMonitorNode, &pmsg))
+    {
+        ObtainSharedPointer(pmsg.pointer, IntuitionBase);
+        ReleaseSharedPointer(scr->Pointer, IntuitionBase);
+        scr->Pointer = pmsg.pointer;
+        if (window)
+        {
+            window->XOffset = pmsg.pointer->xoffset;
+            window->YOffset = pmsg.pointer->yoffset;
+        }
+    }
+    else
+    {
+        DEBUG_POINTER(dprintf("SetScreenPointer: can't set pointer.\n"));
+    }
+}
+
 BOOL ResetPointer(struct IntuitionBase *IntuitionBase)
 {
     struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
@@ -243,10 +276,25 @@ struct TextFont *SafeReopenFont(struct IntuitionBase *IntuitionBase,
     struct IntIntuitionBase *_intuitionBase = GetPrivIBase(IntuitionBase);
     struct GfxBase *GfxBase = _intuitionBase->GfxBase;
     struct TextFont *ret = NULL, *font;
+    struct SignalSemaphore *fontsem;
 
-    /* Atomically lock the font before, so it can't go away
+    /*
+     * Pin the font under the semaphore graphics.library itself uses for
+     * the font list and tf_Accessors (OpenFont/CloseFont/RemFont), so it
+     * cannot go away under us. Forbid() alone only stops this CPU.
      */
-    Forbid();
+    if (!_intuitionBase->GfxFontSem)
+    {
+        Forbid();
+        _intuitionBase->GfxFontSem = FindSemaphore("graphics.library/TextFonts");
+        Permit();
+    }
+    fontsem = _intuitionBase->GfxFontSem;
+
+    if (fontsem)
+        ObtainSemaphore(fontsem);
+    else
+        Forbid();
 
     font = *fontptr;
     if (font)
@@ -254,7 +302,10 @@ struct TextFont *SafeReopenFont(struct IntuitionBase *IntuitionBase,
         struct TextAttr ta;
 
         font->tf_Accessors++;
-        Permit();
+        if (fontsem)
+            ReleaseSemaphore(fontsem);
+        else
+            Permit();
 
         /* Now really open it
          */
@@ -267,11 +318,17 @@ struct TextFont *SafeReopenFont(struct IntuitionBase *IntuitionBase,
 
         /* Unlock it
          */
-        Forbid();
+        if (fontsem)
+            ObtainSemaphore(fontsem);
+        else
+            Forbid();
         font->tf_Accessors--;
     }
 
-    Permit();
+    if (fontsem)
+        ReleaseSemaphore(fontsem);
+    else
+        Permit();
 
     return ret;
 }

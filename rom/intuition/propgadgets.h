@@ -2,7 +2,7 @@
 #define _PROPGADGETS_H_
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -20,7 +20,7 @@
 #define PSIG_REFRESHALL     SIGF_INTUITION
 #define PSIG_DIE    	    SIGF_ABORT
 
-int CalcKnobSize (struct Gadget * propGadget, struct BBox * knobbox);
+void CalcKnobSize (struct Gadget * propGadget, struct BBox * knobbox);
 void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
                         struct Requester * requester, struct IntuitionBase * IntuitionBase);
 void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,

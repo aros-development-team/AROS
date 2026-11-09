@@ -35,6 +35,7 @@
 
 #include <cybergraphx/cybergraphics.h>
 
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -77,6 +78,100 @@ struct gfx_driverdata *AllocDriverData(struct RastPort *rp, BOOL alloc, struct G
 
 /* *********************** Display driver handling *********************** */
 
+/*
+ * The HIDD method and attribute bases graphics.library keeps in GfxBase:
+ * the interface and where its base goes, in the order they are obtained.
+ */
+struct gfx_basedesc {
+    CONST_STRPTR iid;
+    UWORD        offset;    /* in struct GfxBase_intern */
+};
+
+#define GFX_BASE(iid, field) { iid, offsetof(struct GfxBase_intern, field) }
+
+_Static_assert(sizeof(struct GfxBase_intern) <= 0xFFFF, "gfx_basedesc.offset is a UWORD");
+
+/* The method base fields have the names of the macros that reach them */
+#pragma push_macro("HWBase")
+#pragma push_macro("HiddBitMapBase")
+#pragma push_macro("HiddColorMapBase")
+#pragma push_macro("HiddGfxBase")
+#pragma push_macro("HiddDisplayBase")
+#pragma push_macro("HiddDMEnumBase")
+#pragma push_macro("HiddGCBase")
+#pragma push_macro("HiddPlanarBMBase")
+#undef HWBase
+#undef HiddBitMapBase
+#undef HiddColorMapBase
+#undef HiddGfxBase
+#undef HiddDisplayBase
+#undef HiddDMEnumBase
+#undef HiddGCBase
+#undef HiddPlanarBMBase
+
+static const struct gfx_basedesc gfx_methodbases[] = {
+    GFX_BASE(IID_HW,            HWBase),
+    GFX_BASE(IID_Hidd_BitMap,   HiddBitMapBase),
+    GFX_BASE(IID_Hidd_ColorMap, HiddColorMapBase),
+    GFX_BASE(IID_Hidd_Gfx,      HiddGfxBase),
+    GFX_BASE(IID_Hidd_Display,  HiddDisplayBase),
+    GFX_BASE(IID_Hidd_DMEnum,   HiddDMEnumBase),
+    GFX_BASE(IID_Hidd_GC,       HiddGCBase),
+    GFX_BASE(IID_Hidd_PlanarBM, HiddPlanarBMBase)
+};
+
+#pragma pop_macro("HWBase")
+#pragma pop_macro("HiddBitMapBase")
+#pragma pop_macro("HiddColorMapBase")
+#pragma pop_macro("HiddGfxBase")
+#pragma pop_macro("HiddDisplayBase")
+#pragma pop_macro("HiddDMEnumBase")
+#pragma pop_macro("HiddGCBase")
+#pragma pop_macro("HiddPlanarBMBase")
+
+static const struct gfx_basedesc gfx_attrbases[] = {
+    GFX_BASE(IID_Hidd_Gfx,        softrast.hiddGfxAttrBase),
+    GFX_BASE(IID_Hidd_Display,    softrast.hiddDisplayAttrBase),
+    GFX_BASE(IID_Hidd_DMEnum,     softrast.hiddDMEnumAttrBase),
+    GFX_BASE(IID_Hidd_BitMap,     softrast.hiddBitMapAttrBase),
+    GFX_BASE(IID_Hidd_GC,         softrast.hiddGCAttrBase),
+    GFX_BASE(IID_Hidd_Sync,       softrast.hiddSyncAttrBase),
+    GFX_BASE(IID_Hidd_PixFmt,     softrast.hiddPixFmtAttrBase),
+    GFX_BASE(IID_Hidd_PlanarBM,   softrast.hiddPlanarBMAttrBase),
+    GFX_BASE(IID_Hidd_Compositor, softrast.hiddCompositorAttrBase)
+};
+
+/*
+ * Obtain the bases of a table, method bases or attribute bases (attrs).
+ * All of them are obtained; FALSE if any of them is 0.
+ */
+static BOOL driver_ObtainBases(const struct gfx_basedesc *desc, ULONG count, BOOL attrs,
+                               struct GfxBase *GfxBase)
+{
+    BOOL ok = TRUE;
+
+    for (; count; count--, desc++)
+    {
+        APTR field = (UBYTE *)GfxBase + desc->offset;
+        ULONG base;
+
+        if (attrs)
+            base = *(OOP_AttrBase *)field = OOP_ObtainAttrBase(desc->iid);
+        else
+            base = *(OOP_MethodID *)field = OOP_GetMethodID(desc->iid, 0);
+
+        if (!base)
+            ok = FALSE;
+    }
+    return ok;
+}
+
+void driver_GetMethodBases(struct GfxBase *GfxBase)
+{
+    driver_ObtainBases(gfx_methodbases, sizeof(gfx_methodbases) / sizeof(gfx_methodbases[0]),
+                       FALSE, GfxBase);
+}
+
 int driver_init(struct GfxBase * GfxBase)
 {
     D(bug("[graphics.library/driver] %s()\n", __func__));
@@ -89,17 +184,7 @@ int driver_init(struct GfxBase * GfxBase)
     InitSemaphore(&(PrivGBase(GfxBase)->blit_sema));
 
     /* Init the needed attrbases */
-    __IHidd_Gfx      = OOP_ObtainAttrBase(IID_Hidd_Gfx);
-    __IHidd_Display  = OOP_ObtainAttrBase(IID_Hidd_Display);
-    __IHidd_DMEnum   = OOP_ObtainAttrBase(IID_Hidd_DMEnum);
-    __IHidd_BitMap   = OOP_ObtainAttrBase(IID_Hidd_BitMap);
-    __IHidd_GC       = OOP_ObtainAttrBase(IID_Hidd_GC);
-    __IHidd_Sync     = OOP_ObtainAttrBase(IID_Hidd_Sync);
-    __IHidd_PixFmt   = OOP_ObtainAttrBase(IID_Hidd_PixFmt);
-    __IHidd_PlanarBM = OOP_ObtainAttrBase(IID_Hidd_PlanarBM);
-
-    if (__IHidd_Gfx && __IHidd_Display && __IHidd_DMEnum && __IHidd_BitMap &&
-        __IHidd_GC && __IHidd_Sync && __IHidd_PixFmt && __IHidd_PlanarBM)
+    if (driver_ObtainBases(gfx_attrbases, sizeof(gfx_attrbases) / sizeof(gfx_attrbases[0]), TRUE, GfxBase))
     {
         OOP_Class *baseGfx;
 

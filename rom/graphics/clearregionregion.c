@@ -53,40 +53,11 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Region R3;
-
     /* If the regions don't overlap just return */
     if(!overlap(R1->bounds, R2->bounds))
         return TRUE;
 
-    InitRegion(&R3);
-
-    if
-    (
-        _DoOperationBandBand
-        (
-            _ClearBandBand,
-            MinX(R1),
-            MinX(R2),
-            MinY(R1),
-            MinY(R2),
-            R1->RegionRectangle,
-            R2->RegionRectangle,
-            &R3.RegionRectangle,
-            &R3.bounds,
-            GfxBase
-        )
-    ) {
-        ClearRegion(R2);
-
-        *R2 = R3;
-
-        _TranslateRegionRectangles(R3.RegionRectangle, -MinX(&R3), -MinY(&R3));
-
-        return TRUE;
-    }
-
-    return FALSE;
+    return _RegionOpInPlace(_ClearBandBand, R1, R2, R2, GfxBase);
 
     AROS_LIBFUNC_EXIT
 

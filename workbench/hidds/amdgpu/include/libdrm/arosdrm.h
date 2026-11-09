@@ -67,6 +67,9 @@ typedef struct _drmVersion {
 
 extern int           drmOpen(const char *name, const char *busid);
 extern int           drmClose(int fd);
+/* another fd for the same DRM file, as dup() of a Linux DRM fd gives;
+   the file is released when its last fd is closed */
+extern int           drmDupFd(int fd);
 extern drmVersionPtr drmGetVersion(int fd);
 extern void          drmFreeVersion(drmVersionPtr);
 extern int           drmCommandNone(int fd, unsigned long drmCommandIndex);

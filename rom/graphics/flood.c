@@ -13,7 +13,7 @@
 
 struct fillinfo {
     ULONG fillpen;
-    BOOL (*isfillable)(struct fillinfo *fi, LONG x, LONG y);
+    BOOL outline;   /* fill up to the outline pen, not while the colour matches */
     struct RastPort *rp;
     UBYTE *rasptr;
     ULONG bpr;
@@ -80,8 +80,7 @@ static VOID settmpraspixel(BYTE *rasptr, LONG x, LONG y,  ULONG bpr, UBYTE state
 static BOOL gettmpraspixel(BYTE *rasptr, LONG x, LONG y,  ULONG bpr);
 
 static BOOL filline(struct fillinfo *fi, LONG start_x, LONG start_y);
-static BOOL outline_isfillable(struct fillinfo *fi, LONG x, LONG y);
-static BOOL color_isfillable(struct fillinfo *fi, LONG x, LONG y);
+static BOOL isfillable(struct fillinfo *fi, LONG x, LONG y);
 
 #if DEBUG_FLOOD
 static int fail_count;
@@ -181,13 +180,13 @@ static int pix_written;
         fi.fillpen = GetOutlinePen(rp);
         D(bug("Got pen\n"));
 
-        fi.isfillable = outline_isfillable;
+        fi.outline = TRUE;
     } else {
         /* Color mode */
         D(bug("Reading pixel\n"));
         fi.fillpen = ReadPixel(rp, x, y);
         D(bug("pixel read: %d\n", fi.fillpen));
-        fi.isfillable = color_isfillable;
+        fi.outline = FALSE;
     }
 
     fi.rasptr = tmpras->RasPtr;
@@ -266,7 +265,7 @@ static BOOL gettmpraspixel(BYTE *rasptr, LONG x, LONG y,  ULONG bpr)
 #undef GfxBase
 #define GfxBase (fi->gfxbase)
 
-static BOOL color_isfillable(struct fillinfo *fi, LONG x, LONG y)
+static BOOL isfillable(struct fillinfo *fi, LONG x, LONG y)
 {
     BOOL fill;
 
@@ -274,7 +273,6 @@ static BOOL color_isfillable(struct fillinfo *fi, LONG x, LONG y)
         return FALSE;
 
     if(gettmpraspixel(fi->rasptr, x, y, fi->bpr)) {
-        /*      D(bug("Pixel checked twice at (%d, %d)\n", x, y)); */
         fill = FALSE;
 #if DEBUG_FLOOD
         fail_count ++;
@@ -282,42 +280,13 @@ static BOOL color_isfillable(struct fillinfo *fi, LONG x, LONG y)
     } else {
         ULONG pen = fi->planar_bm ? planar_readpixel(fi, x, y)
                                   : ReadPixel(fi->rp, x, y);
-        fill = (fi->fillpen == pen);
+
+        /* outline mode: everything but the outline pen; colour mode: only the seed's pen */
+        fill = fi->outline ? (fi->fillpen != pen) : (fi->fillpen == pen);
     }
 
     return fill;
 }
-
-static BOOL outline_isfillable(struct fillinfo *fi, LONG x, LONG y)
-{
-    BOOL fill;
-    /*    EnterFunc(bug("outline_isfillable(fi=%p, x=%d, y=%d)\n",
-            fi, x, y));
-    */
-    if(x < 0 || y < 0 || x >= fi->rp_width || y >= fi->rp_height)
-        return FALSE;
-
-    if(gettmpraspixel(fi->rasptr, x, y, fi->bpr)) {
-        /*      D(bug("Pixel checked twice at (%d, %d)\n", x, y)); */
-        fill = FALSE;
-#if DEBUG_FLOOD
-        fail_count ++;
-#endif
-    } else {
-        ULONG pen = fi->planar_bm ? planar_readpixel(fi, x, y)
-                                  : ReadPixel(fi->rp, x, y);
-        fill = (fi->fillpen != pen);
-    }
-
-    /*    D(bug("fillpen: %d, pen: %d\n", fi->fillpen, ReadPixel(fi->rp, x, y)));
-    */
-
-    /*    ReturnBool("outline_isfillable", fill);
-    */
-    return fill;
-}
-
-
 
 static VOID putfillpixel(struct fillinfo *fi, LONG x, LONG y)
 {
@@ -423,16 +392,16 @@ static BOOL filline(struct fillinfo *fi, LONG start_x, LONG start_y)
 
         for(x = start_x + 1; ; x ++) {
 
-            if(fi->isfillable(fi, x, start_y)) {
+            if(isfillable(fi, x, start_y)) {
                 putfillpixel(fi, x, start_y);
 
                 /* Check above */
                 if(x > rightmost_above) {
-                    if(fi->isfillable(fi, x, start_y - 1)) {
+                    if(isfillable(fi, x, start_y - 1)) {
                         /* Find rightmost pixel */
 
                         for(rightmost_above = x; ; rightmost_above ++) {
-                            if(!fi->isfillable(fi, rightmost_above + 1, start_y - 1))
+                            if(!isfillable(fi, rightmost_above + 1, start_y - 1))
                                 break;
                         }
 
@@ -448,11 +417,11 @@ static BOOL filline(struct fillinfo *fi, LONG start_x, LONG start_y)
                 /* Check below */
 
                 if(x > rightmost_below) {
-                    if(fi->isfillable(fi, x, start_y + 1)) {
+                    if(isfillable(fi, x, start_y + 1)) {
                         /* Find rightmost pixel */
 
                         for(rightmost_below = x; ; rightmost_below ++) {
-                            if(!fi->isfillable(fi, rightmost_below + 1, start_y + 1))
+                            if(!isfillable(fi, rightmost_below + 1, start_y + 1))
                                 break;
                         }
 
@@ -481,16 +450,16 @@ static BOOL filline(struct fillinfo *fi, LONG start_x, LONG start_y)
         for(x = start_x; ; x --) {
 
 
-            if(fi->isfillable(fi, x, start_y)) {
+            if(isfillable(fi, x, start_y)) {
                 putfillpixel(fi, x, start_y);
 
                 /* Check above */
                 if(x <= leftmost_above) {
-                    if(fi->isfillable(fi, x, start_y - 1)) {
+                    if(isfillable(fi, x, start_y - 1)) {
                         /* Find rightmost pixel */
 
                         for(leftmost_above = x; ; leftmost_above --) {
-                            if(!fi->isfillable(fi, leftmost_above - 1, start_y - 1))
+                            if(!isfillable(fi, leftmost_above - 1, start_y - 1))
                                 break;
                         }
 
@@ -506,11 +475,11 @@ static BOOL filline(struct fillinfo *fi, LONG start_x, LONG start_y)
                 /* Check below */
 
                 if(x < leftmost_below) {
-                    if(fi->isfillable(fi, x, start_y + 1)) {
+                    if(isfillable(fi, x, start_y + 1)) {
                         /* Find rightmost pixel */
 
                         for(leftmost_below = x; ; leftmost_below --) {
-                            if(!fi->isfillable(fi, leftmost_below - 1, start_y + 1))
+                            if(!isfillable(fi, leftmost_below - 1, start_y + 1))
                                 break;
                         }
 

@@ -56,7 +56,7 @@
     AROS_LIBFUNC_INIT
 
     /* TODO: Write graphics/CoerceMode() */
-    aros_print_not_implemented("CoerceMode");
+    gfx_NotImplemented("CoerceMode", GfxBase);
 
     return INVALID_ID;
 

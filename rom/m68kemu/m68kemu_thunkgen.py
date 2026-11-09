@@ -415,16 +415,19 @@ def validate_regs(regs):
 
 
 def get_func_properties(funcname, proto):
-    """Determine void status and shadow return type for a function."""
+    """Determine void status, shadow return type and BPTR return for a function."""
     is_void = funcname in VOID_FUNCTIONS
     shadow_ret = SHADOW_RETURNS.get(funcname)
+    bptr_ret = False
     if proto:
         ret_class = classify_return_type(proto[0])
         if not is_void and ret_class[0] == "void":
             is_void = True
         if not shadow_ret and not is_void and ret_class[0] == "shadow_create":
             shadow_ret = ret_class[1]
-    return is_void, shadow_ret
+        if re.sub(r"\bCONST\b|\bconst\b", "", proto[0]).strip() in BPTR_TYPES:
+            bptr_ret = True
+    return is_void, shadow_ret, bptr_ret
 
 
 def gen_typed_param(ctype, arg, rtype, rnum, sname):
@@ -438,7 +441,7 @@ def gen_typed_param(ctype, arg, rtype, rnum, sname):
         return None, False
     if ctype == "bptr":
         macro = f"THUNK_A({rnum})" if rtype == "a" else f"THUNK_D({rnum})"
-        return f"    BPTR arg_{arg} = (BPTR){macro};", False
+        return f"    BPTR arg_{arg} = m68k_bptr_in(ctx, {macro});", False
     if ctype == "taglist":
         return f"    struct TagItem *arg_{arg} = m68k_to_native_taglist(ctx, THUNK_A({rnum}));", True
     if ctype == "string":
@@ -471,7 +474,7 @@ def gen_param_line(funcname, arg, reg, ptype):
     return f"    ULONG arg_{arg} = THUNK_D({rnum});", False
 
 
-def gen_return_block(call, is_void, shadow_ret, cleanup):
+def gen_return_block(call, is_void, shadow_ret, cleanup, bptr_ret=False):
     """Generate return and cleanup statements for thunk."""
     lines = []
     if is_void:
@@ -483,6 +486,10 @@ def gen_return_block(call, is_void, shadow_ret, cleanup):
         lines.extend(cleanup)
         lines.append("    if (!_ret) return 0;")
         lines.append(f'    return shadow_create_by_name(ctx, "{shadow_ret}", _ret);')
+    elif bptr_ret:
+        lines.append(f"    BPTR _ret = {call};")
+        lines.extend(cleanup)
+        lines.append("    return (IPTR)m68k_bptr_out(ctx, _ret);")
     elif cleanup:
         lines.append(f"    IPTR _ret = (IPTR){call};")
         lines.extend(cleanup)
@@ -498,7 +505,7 @@ def gen_thunk(libname, funcname, bias, args, regs, protos):
         return None
 
     proto = protos.get(funcname)
-    is_void, shadow_ret = get_func_properties(funcname, proto)
+    is_void, shadow_ret, bptr_ret = get_func_properties(funcname, proto)
     proto_params = proto[1] if proto and len(proto) > 1 else None
 
     sig_parts = ", ".join(f"{a}={r}" for a, r in zip(args, regs))
@@ -538,7 +545,7 @@ def gen_thunk(libname, funcname, bias, args, regs, protos):
         call_args.append(f"arg_{arg}")
 
     call = f"{funcname}({', '.join(call_args)})"
-    lines.extend(gen_return_block(call, is_void, shadow_ret, cleanup))
+    lines.extend(gen_return_block(call, is_void, shadow_ret, cleanup, bptr_ret))
     lines.append("}\n")
     return "\n".join(lines)
 

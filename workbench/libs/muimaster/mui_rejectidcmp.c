@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/intuition.h>
@@ -23,21 +23,25 @@
         struct Library *, MUIMasterBase, 16, MUIMaster)
 
 /*  FUNCTION
+        Remove IDCMP event bits from an Area-derived object's legacy input
+        handler. If the object is set up and has a window, unregister the
+        handler before changing its mask, then register it again only if
+        event bits remain. Otherwise, update the stored mask.
 
     INPUTS
+        obj - Non-NULL Area-derived object.
+        flags - IDCMP event bits to remove. Other bits remain set.
 
     RESULT
+        None.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
-        The function itself is a bug ;-) Remove it!
+        This is the counterpart of MUI_RequestIDCMP(). It does not remove
+        separately registered event-handler nodes. Call in the object's
+        owning GUI task.
 
     SEE ALSO
-
-    INTERNALS
+        MUI_RequestIDCMP()
 
 *****************************************************************************/
 {

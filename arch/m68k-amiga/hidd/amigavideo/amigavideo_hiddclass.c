@@ -143,21 +143,22 @@ HIDDT_ModeID *AmigaVideoDMEnum__Hidd_DMEnum__QueryModeIDs(OOP_Class *cl, OOP_Obj
         }
     }
     DB2(bug("[AmigaVideo:Hidd] %s(%dx%d->%dx%d)\n", __func__, minwidth, minheight, maxwidth, maxheight));
-    cnt = 0;
-    ForeachNode(&csd->nativemodelist, node) {
-        if (node->width >= minwidth && node->width <= maxwidth && node->height >= minheight && node->height <= maxheight) {
-            cnt++;
+    /* first pass counts the matching modes, second pass stores them */
+    modeids = NULL;
+    for (;;) {
+        cnt = 0;
+        ForeachNode(&csd->nativemodelist, node) {
+            if (node->width >= minwidth && node->width <= maxwidth && node->height >= minheight && node->height <= maxheight) {
+                if (modeids)
+                    modeids[cnt] = node->modeid;
+                cnt++;
+            }
         }
-    }
-    modeids = AllocVec((cnt + 1) * sizeof(HIDDT_ModeID), MEMF_PUBLIC);
-    if (!modeids)
-        return NULL;
-    cnt = 0;
-    ForeachNode(&csd->nativemodelist, node) {
-        if (node->width >= minwidth && node->width <= maxwidth && node->height >= minheight && node->height <= maxheight) {
-            DB2(bug("[AmigaVideo:Hidd] %s: #%d = %08x\n", __func__, cnt, node->modeid));
-            modeids[cnt++] = node->modeid;
-        }
+        if (modeids)
+            break;
+        modeids = AllocVec((cnt + 1) * sizeof(HIDDT_ModeID), MEMF_PUBLIC);
+        if (!modeids)
+            return NULL;
     }
     modeids[cnt] = vHidd_ModeID_Invalid;
     return modeids;
@@ -276,6 +277,117 @@ static struct NativeChipsetMode *addmodeid(struct amigavideo_staticdata *csd, UL
     return m;
 }
 
+/* Attribute offsets of the tag lists Root::New hands to the superclass.
+   The attribute bases are only known at run time, so the tables hold the
+   offsets and addtags() adds the base. */
+static const UBYTE synctagoffs[] = {
+    aoHidd_Sync_HMin, aoHidd_Sync_HDisp, aoHidd_Sync_VDisp,
+    aoHidd_Sync_HDispMax, aoHidd_Sync_Flags, aoHidd_Sync_PixelClock,
+    aoHidd_Sync_VDispMax, aoHidd_Sync_VSyncStart, aoHidd_Sync_VSyncEnd,
+    aoHidd_Sync_VTotal, aoHidd_Sync_HSyncStart, aoHidd_Sync_HSyncEnd,
+    aoHidd_Sync_HTotal
+};
+#define NUMSYNCTAGS (sizeof(synctagoffs))
+
+/* positions of the tags in a pixel format tag list */
+enum {
+    PFT_RedShift, PFT_GreenShift, PFT_BlueShift, PFT_AlphaShift,
+    PFT_RedMask, PFT_GreenMask, PFT_BlueMask, PFT_AlphaMask,
+    PFT_CLUTMask, PFT_CLUTShift, PFT_ColorModel, PFT_Depth,
+    PFT_BytesPerPixel, PFT_BitsPerPixel, PFT_StdPixFmt, PFT_BitMapType,
+    NUMPFTAGS
+};
+
+#define PFTAG(x) [PFT_ ## x] = aoHidd_PixFmt_ ## x
+static const UBYTE pftagoffs[NUMPFTAGS] = {
+    PFTAG(RedShift), PFTAG(GreenShift), PFTAG(BlueShift), PFTAG(AlphaShift),
+    PFTAG(RedMask), PFTAG(GreenMask), PFTAG(BlueMask), PFTAG(AlphaMask),
+    PFTAG(CLUTMask), PFTAG(CLUTShift), PFTAG(ColorModel), PFTAG(Depth),
+    PFTAG(BytesPerPixel), PFTAG(BitsPerPixel), PFTAG(StdPixFmt),
+    PFTAG(BitMapType)
+};
+
+/*
+ * The values, in the order of the enum above. A colour mask slot holds the
+ * top byte of the mask as it is before the component is shifted into place
+ * (0xFF: 8 bits per gun, 0xF0: 4 bits per gun); addpftags() shifts it down
+ * by the component's shift, which is counted from bit 31.
+ */
+static const UBYTE pfvals_aga[NUMPFTAGS] = {
+    8, 16, 24, 0,
+    0xFF, 0xFF, 0xFF, 0x00,
+    0xFF, 0, vHidd_ColorModel_Palette, 8,
+    1, 8, vHidd_StdPixFmt_Plane, vHidd_BitMapType_Planar
+};
+static const UBYTE pfvals_ecs[NUMPFTAGS] = {
+    20, 24, 28, 0,
+    0xF0, 0xF0, 0xF0, 0x00,
+    0x1F, 0, vHidd_ColorModel_Palette, 5,
+    1, 5, vHidd_StdPixFmt_Plane, vHidd_BitMapType_Planar
+};
+_Static_assert(vHidd_ColorModel_Palette < 256 && vHidd_StdPixFmt_Plane < 256 &&
+               vHidd_BitMapType_Planar < 256, "pixel format values must fit a byte");
+_Static_assert(PFT_RedMask - PFT_RedShift == 4 && PFT_AlphaMask - PFT_AlphaShift == 4,
+               "each mask must sit four slots after its shift");
+
+static ULONG *addtags(ULONG *tagptr, ULONG base, const UBYTE *offs, const ULONG *vals, WORD n)
+{
+    while (n-- > 0) {
+        *tagptr++ = base + *offs++;
+        *tagptr++ = *vals++;
+    }
+    ADDTAG(TAG_DONE, 0);
+    return tagptr;
+}
+
+/* one pixel format tag list; depth replaces the table's Depth/BitsPerPixel */
+static ULONG *addpftags(struct amigavideo_staticdata *csd, ULONG *tagptr, const UBYTE *vals, ULONG depth)
+{
+    ULONG *t = tagptr;
+    UBYTE i;
+
+    for (i = 0; i < NUMPFTAGS; i++) {
+        ULONG v = vals[i];
+        if (i >= PFT_RedMask && i <= PFT_AlphaMask)
+            v = (v << 24) >> vals[i - (PFT_RedMask - PFT_RedShift)];
+        *t++ = __IHidd_PixFmt + pftagoffs[i];
+        *t++ = v;
+    }
+    *t++ = TAG_DONE;
+    *t++ = 0;
+    tagptr[PFT_Depth * 2 + 1] = depth;
+    tagptr[PFT_BitsPerPixel * 2 + 1] = depth;
+    return t;
+}
+
+struct modebuild
+{
+    ULONG *tagptr;
+    UBYTE *bufptr;
+    WORD cnt;
+    ULONG *modetags[NATIVEMODES], modeids[NATIVEMODES];
+};
+
+/* name and list the modes whose (modeid & mask) == value, or != if invert */
+static void addmodes(struct amigavideo_staticdata *csd, struct modebuild *mb, ULONG mask, ULONG value, BOOL invert)
+{
+    ULONG *tagptr = mb->tagptr;
+    UBYTE *bufptr = mb->bufptr;
+    WORD i;
+
+    for (i = 0; i < mb->cnt; i++) {
+        ULONG modeid = mb->modeids[i];
+        if (((modeid & mask) == value) == (invert != 0))
+            continue;
+        makemodename(modeid, bufptr);
+        ADDTAG(aHidd_Sync_Description,  (IPTR)bufptr);
+        bufptr += strlen(bufptr) + 1;
+        ADDTAG(aHidd_DMEnum_SyncTags, (IPTR)mb->modetags[i]);
+    }
+    mb->tagptr = tagptr;
+    mb->bufptr = bufptr;
+}
+
 OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
@@ -295,13 +407,10 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     ULONG allocsize = 3200, allocsizebuf = 1000;
     WORD x, y, cnt, i, j;
 
-    UBYTE *buf, *bufptr;
+    UBYTE *buf;
     ULONG *tags, *tagptr;
-    ULONG *modetags[NATIVEMODES], modeids[NATIVEMODES];
-    ULONG *pftags_aga[SPECIALMODES];
-    ULONG *pftags_ecs_shres = NULL, *pftags_ecs_hires, *pftags_ecs_lores, *pftags_ecs_6;
-    ULONG *mode_tags_aga;
-    ULONG *mode_tags_ecs;
+    struct modebuild mb;
+    ULONG *pftags[4];
     ULONG *displaymodetags = NULL;
 
     if (csd->amigagfxinstance) {
@@ -331,7 +440,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 
     NewList(&csd->nativemodelist);
     tags = tagptr = AllocVec(allocsize, MEMF_PUBLIC | MEMF_REVERSE);
-    buf = bufptr = AllocVec(allocsizebuf, MEMF_PUBLIC | MEMF_REVERSE);
+    buf = mb.bufptr = AllocVec(allocsizebuf, MEMF_PUBLIC | MEMF_REVERSE);
     if (!tags || !buf)
     {
         FreeVec(buf);
@@ -358,7 +467,8 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
         for (x = 0; widthtable[x]; x++) {
             WORD w = widthtable[x];
             WORD d, res;
-            ULONG modeid;
+            ULONG modeid, pclock;
+            ULONG sv[NUMSYNCTAGS];
             
             modeid = 0;
             if (w == (REZ_X_MIN << 2)) {
@@ -383,8 +493,28 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
             else
                 modeid |= PAL_MONITOR_ID;
 
+            /* the sync values are the same for all special modes */
+            sv[0] = (16 << res);
+            sv[1] = w;
+            sv[2] = h;
+            sv[3] = w + (48 << res);
+            sv[4] = (modeid & LORESLACE_KEY) ? vHidd_Sync_Interlaced : 0;
+            pclock = 1000000000 / (280 >> (res + 1));
+            D(bug("[AmigaVideo:Hidd] %s: pclock = %d\n", __func__, pclock));
+            sv[5] = pclock;
+            if (modeid & PAL_MONITOR_ID)
+                sv[6] = (modeid & LORESLACE_KEY) ? ((STANDARD_PAL_ROWS - MIN_PAL_ROW) << 1) : (STANDARD_PAL_ROWS - MIN_PAL_ROW);
+            else
+                sv[6] = (modeid & LORESLACE_KEY) ? ((STANDARD_NTSC_ROWS - MIN_NTSC_ROW) << 1) : (STANDARD_NTSC_ROWS - MIN_NTSC_ROW);
+            sv[7] = STANDARD_VBSTRT;
+            sv[8] = STANDARD_VBSTOP;
+            sv[9] = (modeid & PAL_MONITOR_ID) ? STANDARD_PAL_ROWS : STANDARD_NTSC_ROWS;
+            sv[10] = STANDARD_HBSTRT;
+            sv[11] = STANDARD_HBSTOP;
+            sv[12] = pclock / (100000000 / STANDARD_COLORCLOCKS / 28);
+
             for (i = 0; i < SPECIALMODES; i++) {
-                ULONG mid = modeid, pclock, syncstrt, synctot;
+                ULONG mid = modeid;
                 UWORD d2 = d;
                 if (i == 1) {
                     if (!csd->aga && (modeid & SUPER_KEY))
@@ -399,194 +529,68 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
                 }
                 
                 addmodeid(csd, mid, w, h, d2, csd->aga ? i : (i == 0 ? res : i - 1 + 3));
-                modetags[cnt] = tagptr;
-                modeids[cnt++] = mid;
+                mb.modetags[cnt] = tagptr;
+                mb.modeids[cnt++] = mid;
 
-                ADDTAG(aHidd_Sync_HMin, (16 << res));
-
-                ADDTAG(aHidd_Sync_HDisp, w);
-                ADDTAG(aHidd_Sync_VDisp, h);
-                ADDTAG(aHidd_Sync_HDispMax, w + (48 << res));
-                ADDTAG(aHidd_Sync_Flags, (modeid & LORESLACE_KEY) ? vHidd_Sync_Interlaced : 0);
-
-                pclock = 1000000000 / (280 >> (res + 1));
-                D(bug("[AmigaVideo:Hidd] %s: pclock = %d\n", __func__, pclock));
-                ADDTAG(aHidd_Sync_PixelClock, pclock);
-
-                if (modeid & PAL_MONITOR_ID)
-                {
-                    ADDTAG(aHidd_Sync_VDispMax, (modeid & LORESLACE_KEY) ? ((STANDARD_PAL_ROWS - MIN_PAL_ROW) << 1) : (STANDARD_PAL_ROWS - MIN_PAL_ROW));
-                }
-                else
-                {
-                    ADDTAG(aHidd_Sync_VDispMax, (modeid & LORESLACE_KEY) ? ((STANDARD_NTSC_ROWS - MIN_NTSC_ROW) << 1) : (STANDARD_NTSC_ROWS - MIN_NTSC_ROW));
-                }
-                ADDTAG(aHidd_Sync_VSyncStart, STANDARD_VBSTRT);
-                ADDTAG(aHidd_Sync_VSyncEnd, STANDARD_VBSTOP);
-                ADDTAG(aHidd_Sync_VTotal, (modeid & PAL_MONITOR_ID) ? STANDARD_PAL_ROWS : STANDARD_NTSC_ROWS);
-
-                ADDTAG(aHidd_Sync_HSyncStart, STANDARD_HBSTRT);
-                ADDTAG(aHidd_Sync_HSyncEnd, STANDARD_HBSTOP);
-                ADDTAG(aHidd_Sync_HTotal, pclock / (100000000 / STANDARD_COLORCLOCKS / 28));
-                ADDTAG(TAG_DONE, 0);
+                tagptr = addtags(tagptr, __IHidd_Sync, synctagoffs, sv, NUMSYNCTAGS);
             }
         }
     }
+    mb.cnt = cnt;
 
     if (csd->aga) {
-        pftags_aga[0] = tagptr;
-        ADDTAG(aHidd_PixFmt_RedShift,            8);
-        ADDTAG(aHidd_PixFmt_GreenShift,         16);
-        ADDTAG(aHidd_PixFmt_BlueShift,          24);
-        ADDTAG(aHidd_PixFmt_AlphaShift,          0);
-        ADDTAG(aHidd_PixFmt_RedMask,            0x00FF0000);
-        ADDTAG(aHidd_PixFmt_GreenMask,          0x0000FF00);
-        ADDTAG(aHidd_PixFmt_BlueMask,           0x000000FF);
-        ADDTAG(aHidd_PixFmt_AlphaMask,          0x00000000);
-        ADDTAG(aHidd_PixFmt_CLUTMask,           0x000000FF);
-        ADDTAG(aHidd_PixFmt_CLUTShift,          0);
-        ADDTAG(aHidd_PixFmt_ColorModel,         vHidd_ColorModel_Palette);
-        ADDTAG(aHidd_PixFmt_Depth,              8);
-        ADDTAG(aHidd_PixFmt_BytesPerPixel,      1);
-        ADDTAG(aHidd_PixFmt_BitsPerPixel,       8);
-        ADDTAG(aHidd_PixFmt_StdPixFmt,          vHidd_StdPixFmt_Plane);
-        ADDTAG(aHidd_PixFmt_BitMapType,         vHidd_BitMapType_Planar);
-        ADDTAG(TAG_DONE, 0);
-        
-        pftags_aga[1] = tagptr;
-        CopyMemQuick(pftags_aga[0], pftags_aga[1], (17 << 3));
-        tagptr[23] = 6;
-        tagptr[27] = 6;
-        tagptr = (APTR)((IPTR)tagptr + (17 << 3));
-
-        pftags_aga[2] = NULL;
-
-        mode_tags_aga = tagptr;
-
-        /* Chipset modes enumerate after RTG modes (if any) */
-        ADDTAG(aHidd_DMEnum_Priority,   (IPTR)-1);
-
-        ADDTAG(aHidd_Sync_VMin,         1);
-        ADDTAG(aHidd_Sync_HMax,         16384);
-        ADDTAG(aHidd_Sync_VMax,         16384);
-
-        for (j = 0; specialmask_aga[j] != 0xffffffff; j++) {
-            if (pftags_aga[j])
-                ADDTAG(aHidd_DMEnum_PixFmtTags,    (IPTR)pftags_aga[j]);
-            for (i = 0; i < cnt; i++) {
-                ULONG modeid = modeids[i];
-                if ((j == 0 && !(modeid & SPECIAL_MODE_MASK)) || (j > 0 && ((modeid & SPECIAL_MODE_MASK) == specialmask_aga[j]))) {
-                    makemodename(modeid, bufptr);
-                    ADDTAG(aHidd_Sync_Description,      (IPTR)bufptr);
-                    bufptr += strlen(bufptr) + 1;
-                    ADDTAG(aHidd_DMEnum_SyncTags, (IPTR)modetags[i]);
-                }
-            }
-        }
-
-        ADDTAG(TAG_DONE, 0);
-
-        displaymodetags = mode_tags_aga;
+        pftags[0] = tagptr;
+        tagptr = addpftags(csd, tagptr, pfvals_aga, 8);
+        pftags[1] = tagptr;
+        tagptr = addpftags(csd, tagptr, pfvals_aga, 6);
+        pftags[2] = NULL;
     } else {
-
-        pftags_ecs_lores = tagptr;
-        ADDTAG(aHidd_PixFmt_RedShift,           20);
-        ADDTAG(aHidd_PixFmt_GreenShift,         24);
-        ADDTAG(aHidd_PixFmt_BlueShift,          28);
-        ADDTAG(aHidd_PixFmt_AlphaShift,          0);
-        ADDTAG(aHidd_PixFmt_RedMask,            0x00000F00);
-        ADDTAG(aHidd_PixFmt_GreenMask,          0x000000F0);
-        ADDTAG(aHidd_PixFmt_BlueMask,           0x0000000F);
-        ADDTAG(aHidd_PixFmt_AlphaMask,          0x00000000);
-        ADDTAG(aHidd_PixFmt_CLUTMask,           0x0000001F);
-        ADDTAG(aHidd_PixFmt_CLUTShift,          0);
-        ADDTAG(aHidd_PixFmt_ColorModel,         vHidd_ColorModel_Palette);
-        ADDTAG(aHidd_PixFmt_Depth,              5);
-        ADDTAG(aHidd_PixFmt_BytesPerPixel,      1);
-        ADDTAG(aHidd_PixFmt_BitsPerPixel,       5);
-        ADDTAG(aHidd_PixFmt_StdPixFmt,          vHidd_StdPixFmt_Plane);
-        ADDTAG(aHidd_PixFmt_BitMapType,         vHidd_BitMapType_Planar);
-        ADDTAG(TAG_DONE, 0);
-
-        pftags_ecs_hires = tagptr;
-        CopyMemQuick(pftags_ecs_lores, pftags_ecs_hires, (17 << 3));
-        tagptr[23] = 4;
-        tagptr[27] = 4;
-        tagptr = (APTR)((IPTR)tagptr + (17 << 3));
-
-        pftags_ecs_shres = tagptr;
-        CopyMemQuick(pftags_ecs_lores, pftags_ecs_shres, (17 << 3));
-        tagptr[23] = 2;
-        tagptr[27] = 2;
-        tagptr = (APTR)((IPTR)tagptr + (17 << 3));
-
-        pftags_ecs_6 = tagptr;
-        CopyMemQuick(pftags_ecs_lores, pftags_ecs_6, (17 << 3));
-        tagptr[23] = 6;
-        tagptr[27] = 6;
-        tagptr = (APTR)((IPTR)tagptr + (17 << 3));
-
-        mode_tags_ecs = tagptr;
-
-        /* Chipset modes enumerate after RTG modes (if any) */
-        ADDTAG(aHidd_DMEnum_Priority,   (IPTR)-1);
-
-        ADDTAG(aHidd_Sync_VMin,         1);
-        ADDTAG(aHidd_Sync_HMax,         csd->ecs_agnus ? 16384 : 1008);
-        ADDTAG(aHidd_Sync_VMax,         csd->ecs_agnus ? 16384 : 1008);
-
-        ADDTAG(aHidd_DMEnum_PixFmtTags,    (IPTR)pftags_ecs_lores);
-        for (i = 0; i < cnt; i++) {
-                if ((modeids[i] & SPECIAL_MODE_MASK) || (modeids[i] & SUPER_KEY) != LORES_KEY)
-                        continue;
-                makemodename(modeids[i], bufptr);
-                ADDTAG(aHidd_Sync_Description,  (IPTR)bufptr);
-                bufptr += strlen(bufptr) + 1;
-                ADDTAG(aHidd_DMEnum_SyncTags, (IPTR)modetags[i]);
-        }
-
-        ADDTAG(aHidd_DMEnum_PixFmtTags,    (IPTR)pftags_ecs_hires);
-        for (i = 0; i < cnt; i++) {
-                if ((modeids[i] & SPECIAL_MODE_MASK) || (modeids[i] & SUPER_KEY) != HIRES_KEY)
-                        continue;
-                makemodename(modeids[i], bufptr);
-                ADDTAG(aHidd_Sync_Description,  (IPTR)bufptr);
-                bufptr += strlen(bufptr) + 1;
-                ADDTAG(aHidd_DMEnum_SyncTags, (IPTR)modetags[i]);
-        }
-
-        ADDTAG(aHidd_DMEnum_PixFmtTags,    (IPTR)pftags_ecs_shres);
-        if (csd->ecs_denise) {
-                for (i = 0; i < cnt; i++) {
-                        if ((modeids[i] & SPECIAL_MODE_MASK) || (modeids[i] & SUPER_KEY) != SUPER_KEY)
-                                continue;
-                        makemodename(modeids[i], bufptr);
-                        ADDTAG(aHidd_Sync_Description,  (IPTR)bufptr);
-                        bufptr += strlen(bufptr) + 1;
-                        ADDTAG(aHidd_DMEnum_SyncTags, (IPTR)modetags[i]);
-                }
-        }
-
-        ADDTAG(aHidd_DMEnum_PixFmtTags,    (IPTR)pftags_ecs_6);
-        for (i = 0; i < cnt; i++) {
-                if (!(modeids[i] & SPECIAL_MODE_MASK))
-                        continue;
-                makemodename(modeids[i], bufptr);
-                ADDTAG(aHidd_Sync_Description,  (IPTR)bufptr);
-                bufptr += strlen(bufptr) + 1;
-                ADDTAG(aHidd_DMEnum_SyncTags, (IPTR)modetags[i]);
-        }
-
-        ADDTAG(TAG_DONE, 0);
-
-        displaymodetags = mode_tags_ecs;
+        pftags[0] = tagptr;
+        tagptr = addpftags(csd, tagptr, pfvals_ecs, 5);
+        pftags[1] = tagptr;
+        tagptr = addpftags(csd, tagptr, pfvals_ecs, 4);
+        pftags[2] = tagptr;
+        tagptr = addpftags(csd, tagptr, pfvals_ecs, 2);
+        pftags[3] = tagptr;
+        tagptr = addpftags(csd, tagptr, pfvals_ecs, 6);
     }
+
+    displaymodetags = tagptr;
+
+    /* Chipset modes enumerate after RTG modes (if any) */
+    ADDTAG(aHidd_DMEnum_Priority,   (IPTR)-1);
+
+    ADDTAG(aHidd_Sync_VMin,         1);
+    ADDTAG(aHidd_Sync_HMax,         (csd->aga || csd->ecs_agnus) ? 16384 : 1008);
+    ADDTAG(aHidd_Sync_VMax,         (csd->aga || csd->ecs_agnus) ? 16384 : 1008);
+
+    if (csd->aga) {
+        for (j = 0; specialmask_aga[j] != 0xffffffff; j++) {
+            if (pftags[j])
+                ADDTAG(aHidd_DMEnum_PixFmtTags,    (IPTR)pftags[j]);
+            mb.tagptr = tagptr;
+            addmodes(csd, &mb, SPECIAL_MODE_MASK, specialmask_aga[j], FALSE);
+            tagptr = mb.tagptr;
+        }
+    } else {
+        for (j = 0; j < 4; j++) {
+            ADDTAG(aHidd_DMEnum_PixFmtTags,    (IPTR)pftags[j]);
+            mb.tagptr = tagptr;
+            if (j == 3)
+                addmodes(csd, &mb, SPECIAL_MODE_MASK, 0, TRUE);
+            else if (j < 2 || csd->ecs_denise)
+                addmodes(csd, &mb, SPECIAL_MODE_MASK | SUPER_KEY, j == 0 ? LORES_KEY : (j == 1 ? HIRES_KEY : SUPER_KEY), FALSE);
+            tagptr = mb.tagptr;
+        }
+    }
+
+    ADDTAG(TAG_DONE, 0);
 
     EnterFunc(bug("[AmigaVideo:Hidd] %s()\n", __func__));
 
     D(
       bug("[AmigaVideo:Hidd] %s: tags @ 0x%p, alloc=%d used=%d\n", __func__, tags, allocsize, (ULONG)tagptr - (ULONG)tags);
-      bug("[AmigaVideo:Hidd] %s: buf @ 0x%p, alloc=%d used=%d\n", __func__, buf, allocsizebuf, bufptr - buf);
+      bug("[AmigaVideo:Hidd] %s: buf @ 0x%p, alloc=%d used=%d\n", __func__, buf, allocsizebuf, mb.bufptr - buf);
      )
 
     mymsg.mID   = msg->mID;
@@ -906,39 +910,42 @@ BOOL AmigaVideoCl__Hidd_AmigaGfx__CopyBitMap(OOP_Class *cl, OOP_Object *o,
         msg->mode, msg->mask);
 }
 
+/* The planar BitMap behind a bitmap object: an AmigaVideo bitmap's own, or
+   the one a generic planar bitmap wraps. NULL if it is neither. */
+static struct BitMap *getplanarbm(struct amigavideo_staticdata *csd, OOP_Object *bm)
+{
+    struct Library *OOPBase = csd->cs_OOPBase;
+    IPTR drawable = 0;
+    struct BitMap *pbm = NULL;
+
+    OOP_GetAttr(bm, aHidd_BitMap_AmigaVideo_Drawable, &drawable);
+    if (drawable) {
+        struct amigabm_data *data = OOP_INST_DATA(OOP_OCLASS(bm), bm);
+        pbm = data->pbm;
+    } else {
+        OOP_GetAttr(bm, aHidd_PlanarBM_BitMap, (IPTR *)&pbm);
+    }
+    return pbm;
+}
+
 VOID AmigaVideoCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
-    struct Library *OOPBase = csd->cs_OOPBase;
     HIDDT_DrawMode mode = GC_DRMD(msg->gc);
-    IPTR src = 0, dst = 0;
     struct BitMap *srcpbm = NULL;
-    struct BitMap *dstpbm = NULL;
+    struct BitMap *dstpbm;
     BOOL ok = FALSE;
  
-    OOP_GetAttr(msg->src,  aHidd_BitMap_AmigaVideo_Drawable, &src);
-    OOP_GetAttr(msg->dest, aHidd_BitMap_AmigaVideo_Drawable, &dst);
-    if (dst) {
-        struct amigabm_data *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
-        dstpbm = ddata->pbm;
-    } else {
-        OOP_GetAttr(msg->dest, aHidd_PlanarBM_BitMap, (IPTR *)&dstpbm);
-    }
-
+    dstpbm = getplanarbm(csd, msg->dest);
     if (dstpbm) {
-        if (src) {
-            /* Source is an AmigaVideo bitmap. */
-            struct amigabm_data *sdata = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
-            srcpbm = sdata->pbm;
-        } else {
-            /* Source is a generic planar bitmap (e.g. a plain struct BitMap
-             * wrapped by get_planarbm_object). Its planes can be blitted from
-             * directly as long as they live in Chip RAM (checked by canblit).
-             * This lets callers BltBitMap a hand-built planar BitMap - such as
-             * the dosboot animation image - straight to the screen with the
-             * hardware blitter instead of falling back to per-pixel C2P. */
-            OOP_GetAttr(msg->src, aHidd_PlanarBM_BitMap, (IPTR *)&srcpbm);
-        }
+        /* The source is an AmigaVideo bitmap or a generic planar bitmap
+         * (e.g. a plain struct BitMap wrapped by get_planarbm_object). The
+         * planes of the latter can be blitted from directly as long as they
+         * live in Chip RAM (checked by canblit). This lets callers BltBitMap
+         * a hand-built planar BitMap - such as the dosboot animation image -
+         * straight to the screen with the hardware blitter instead of
+         * falling back to per-pixel C2P. */
+        srcpbm = getplanarbm(csd, msg->src);
 
         if (srcpbm)
             ok = blit_copybox(csd, srcpbm, dstpbm, msg->srcX, msg->srcY, msg->width, msg->height, msg->destX, msg->destY, mode, GC_COLMASK(msg->gc));
@@ -951,26 +958,12 @@ VOID AmigaVideoCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_
 BOOL AmigaVideoCl__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBoxMasked *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
-    struct Library *OOPBase = csd->cs_OOPBase;
     HIDDT_DrawMode mode = GC_DRMD(msg->gc);
-    IPTR src = 0, dst = 0;
-    struct BitMap *srcpbm = NULL, *dstpbm = NULL;
+    struct BitMap *srcpbm, *dstpbm;
     BOOL ok = FALSE;
  
-    OOP_GetAttr(msg->src,  aHidd_BitMap_AmigaVideo_Drawable, &src);
-    OOP_GetAttr(msg->dest, aHidd_BitMap_AmigaVideo_Drawable, &dst);
-    if (src) {
-        struct amigabm_data *sdata = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
-        srcpbm = sdata->pbm;
-    } else {
-        OOP_GetAttr(msg->src, aHidd_PlanarBM_BitMap, (IPTR *)&srcpbm);
-    }
-    if (dst) {
-        struct amigabm_data *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
-        dstpbm = ddata->pbm;
-    } else {
-        OOP_GetAttr(msg->dest, aHidd_PlanarBM_BitMap, (IPTR *)&dstpbm);
-    }
+    srcpbm = getplanarbm(csd, msg->src);
+    dstpbm = getplanarbm(csd, msg->dest);
     /* Plain planar bitmaps can use the same native masked blit as display
        bitmaps. Keep unsupported modes, partial plane masks and non-Chip mask
        buffers on the superclass path. Copy and Or here both request masked
@@ -1063,19 +1056,20 @@ BOOL AmigaVideoDisplay__Hidd_Display__GetMaxSpriteSize(OOP_Class *cl, OOP_Object
     return TRUE;
 }
 
-BOOL AmigaVideoDisplay__Hidd_Display__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorPos *msg)
+/* position the pointer (spritenum < 0) or a numbered sprite, using the
+   resolution and interlace of the screen it is over */
+static void movesprite(struct amigavideo_staticdata *csd, WORD x, WORD y, int spritenum)
 {
-    struct amigavideo_staticdata *csd = CSD(cl);
     UBYTE res = 0, cursy;
     BOOL interlace = FALSE;
-
     struct amigabm_data *bm;
+
     ForeachNode(csd->compositedbms, bm)
     {
         /* A scrolled screen (negative topedge) starts its display band at the top */
         WORD bmtop = bm->topedge < 0 ? 0 : bm->topedge;
 
-        cursy = msg->y;
+        cursy = y;
         if (csd->interlaced)
             cursy >>= 1;
         if (cursy < ((bmtop + bm->displayheight) >> bm->interlace))
@@ -1086,34 +1080,23 @@ BOOL AmigaVideoDisplay__Hidd_Display__SetCursorPos(OOP_Class *cl, OOP_Object *o,
         }
     }
 
-    setspritepos(csd, msg->x, msg->y, res, interlace);
+    if (spritenum < 0)
+        setspritepos(csd, x, y, res, interlace);
+    else
+        new_setspritepos(csd, x, y, res, interlace, spritenum);
+}
+
+BOOL AmigaVideoDisplay__Hidd_Display__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorPos *msg)
+{
+    struct amigavideo_staticdata *csd = CSD(cl);
+    movesprite(csd, msg->x, msg->y, -1);
     return TRUE;
 }
 
 BOOL AmigaVideoCl__Hidd_AmigaGfx__SetSpritePos(OOP_Class *cl, OOP_Object *o, struct pHidd_AmigaGfx_SetSpritePos *msg, int spritenum)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
-    UBYTE res = 0, cursy;
-    BOOL interlace = FALSE;
-
-    struct amigabm_data *bm;
-    ForeachNode(csd->compositedbms, bm)
-    {
-        /* A scrolled screen (negative topedge) starts its display band at the top */
-        WORD bmtop = bm->topedge < 0 ? 0 : bm->topedge;
-
-        cursy = msg->y;
-        if (csd->interlaced)
-            cursy >>= 1;
-        if (cursy < ((bmtop + bm->displayheight) >> bm->interlace))
-        {
-            res = bm->res;
-            interlace = (bm->interlace != 0);
-            break;
-        }
-    }
-
-    new_setspritepos(csd, msg->x, msg->y, res, interlace, spritenum);
+    movesprite(csd, msg->x, msg->y, spritenum);
     return TRUE;
 }
 
@@ -1879,46 +1862,52 @@ VOID AmigaVideoDisplay__Hidd_Display__BMToDisplayCoords(OOP_Class *cl, OOP_Objec
     D(bug("[AmigaVideo:Hidd] %s: %d,%d -> %d,%d\n", __func__, msg->TargetX, msg->TargetY, *msg->DispX, *msg->DispY));
 }
 
+/* the attribute bases and where each one is kept in the static data */
+#define ABOFF(f) offsetof(struct amigavideo_staticdata, f)
+static const char * const attrbaseids[] = {
+    IID_Hidd, IID_Hidd_BitMap, IID_Hidd_PlanarBM, IID_Hidd_BitMap_AmigaVideo,
+    IID_Hidd_GC, IID_Hidd_Sync, IID_Hidd_Gfx, IID_Hidd_Display, IID_Hidd_DMEnum,
+    IID_Hidd_AmigaVideoCompositor, IID_Hidd_PixFmt, IID_Hidd_ColorMap
+};
+static const UBYTE attrbaseoffs[] = {
+    ABOFF(hiddAttrBase), ABOFF(hiddBitMapAttrBase), ABOFF(hiddPlanarBitMapAttrBase),
+    ABOFF(hiddAmigaVideoBitMapAttrBase), ABOFF(hiddGCAttrBase), ABOFF(hiddSyncAttrBase),
+    ABOFF(hiddGfxAttrBase), ABOFF(hiddDisplayAttrBase), ABOFF(hiddDMEnumAttrBase),
+    ABOFF(hiddCompositorAttrBase), ABOFF(hiddPixFmtAttrBase), ABOFF(hiddColorMapAttrBase)
+};
+#define NUMATTRBASES (sizeof(attrbaseoffs))
+_Static_assert(sizeof(attrbaseids) / sizeof(attrbaseids[0]) == NUMATTRBASES,
+               "one offset for each interface id");
+_Static_assert(ABOFF(hiddColorMapAttrBase) < 256, "attribute base offsets must fit a byte");
+
 static void freeattrbases(struct amigavideo_staticdata *csd)
 {
     struct Library *OOPBase = csd->cs_OOPBase;
+    UBYTE i;
 
-    OOP_ReleaseAttrBase(IID_Hidd);
-    OOP_ReleaseAttrBase(IID_Hidd_BitMap);
-    OOP_ReleaseAttrBase(IID_Hidd_PlanarBM);
-    OOP_ReleaseAttrBase(IID_Hidd_BitMap_AmigaVideo);
-    OOP_ReleaseAttrBase(IID_Hidd_GC);
-    OOP_ReleaseAttrBase(IID_Hidd_Sync);
-    OOP_ReleaseAttrBase(IID_Hidd_Gfx);
-    OOP_ReleaseAttrBase(IID_Hidd_Display);
-    OOP_ReleaseAttrBase(IID_Hidd_DMEnum);
-    OOP_ReleaseAttrBase(IID_Hidd_AmigaVideoCompositor);
-    OOP_ReleaseAttrBase(IID_Hidd_PixFmt);
-    OOP_ReleaseAttrBase(IID_Hidd_ColorMap);
+    for (i = 0; i < NUMATTRBASES; i++)
+        OOP_ReleaseAttrBase(attrbaseids[i]);
 }
 
 int Init_AmigaVideoClass(LIBBASETYPEPTR LIBBASE)
 {
     struct amigavideo_staticdata *csd = &LIBBASE->csd;
     struct Library *OOPBase = csd->cs_OOPBase;
+    BOOL ok = TRUE;
+    UBYTE i;
 
     D(bug("[AmigaVideo:Hidd] %s()\n", __func__));
-    __IHidd             = OOP_ObtainAttrBase(IID_Hidd);
-    __IHidd_BitMap      = OOP_ObtainAttrBase(IID_Hidd_BitMap);
-    __IHidd_PlanarBM    = OOP_ObtainAttrBase(IID_Hidd_PlanarBM);
-    __IHidd_BitMap_AmigaVideo   = OOP_ObtainAttrBase(IID_Hidd_BitMap_AmigaVideo);
-    __IHidd_GC          = OOP_ObtainAttrBase(IID_Hidd_GC);
-    __IHidd_Sync        = OOP_ObtainAttrBase(IID_Hidd_Sync);
-    __IHidd_Gfx         = OOP_ObtainAttrBase(IID_Hidd_Gfx);
-    __IHidd_Display     = OOP_ObtainAttrBase(IID_Hidd_Display);
-    __IHidd_DMEnum      = OOP_ObtainAttrBase(IID_Hidd_DMEnum);
-    __IHidd_AmigaVideoCompositor          = OOP_ObtainAttrBase(IID_Hidd_AmigaVideoCompositor);
-    __IHidd_PixFmt              = OOP_ObtainAttrBase(IID_Hidd_PixFmt);
-    __IHidd_ColorMap    = OOP_ObtainAttrBase(IID_Hidd_ColorMap);
+    for (i = 0; i < NUMATTRBASES; i++)
+    {
+        OOP_AttrBase ab = OOP_ObtainAttrBase(attrbaseids[i]);
 
-    if (!__IHidd || !__IHidd_BitMap || !__IHidd_PlanarBM || !__IHidd_BitMap_AmigaVideo ||
-        !__IHidd_GC || !__IHidd_Sync || !__IHidd_Gfx || !__IHidd_Display || !__IHidd_DMEnum ||
-        !__IHidd_PixFmt || !__IHidd_ColorMap)
+        *(OOP_AttrBase *)((UBYTE *)csd + attrbaseoffs[i]) = ab;
+        /* the compositor's base is obtained, but is not required */
+        if (!ab && attrbaseoffs[i] != ABOFF(hiddCompositorAttrBase))
+            ok = FALSE;
+    }
+
+    if (!ok)
     {
         D(bug("[AmigaVideo:Hidd] %s: failed to obtain attribute bases\n", __func__));
         freeattrbases(csd);

@@ -77,7 +77,6 @@
 
     struct PropInfo *pi;
     struct BBox      old, new;
-    BOOL             knobok1, knobok2;
 #if PROP_RENDER_OPTIMIZATION
     BOOL             fullrefresh;
 #endif
@@ -109,9 +108,8 @@
                   (!(flags & AUTOKNOB) && gadget->GadgetRender) ||
                   !(((flags & FREEHORIZ) && pi->HorizPot != horizPot) ||
                     ((flags & FREEVERT) && pi->VertPot != vertPot));
-    knobok1 = fullrefresh ? TRUE : CalcKnobSize (gadget, &old);
-#else
-    knobok1 = TRUE;
+    if (!fullrefresh)
+        CalcKnobSize (gadget, &old);
 #endif
     /* We don't want the inputhandler to redraw the knob with values
      * partially changed, so use some protection.
@@ -141,12 +139,9 @@
         else
     #endif
         {
-            knobok2 = CalcKnobSize (gadget, &new);
+            CalcKnobSize (gadget, &new);
 
-            if (knobok2)
-            {
-                RefreshPropGadgetKnob (gadget, knobok1 ? &old : 0, &new, window, requester, IntuitionBase);
-            }
+            RefreshPropGadgetKnob (gadget, &old, &new, window, requester, IntuitionBase);
         }
 
 #ifdef PROPHACK

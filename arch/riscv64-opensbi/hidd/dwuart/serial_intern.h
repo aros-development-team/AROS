@@ -75,6 +75,8 @@ struct dwuart_port
     ULONG   irq;
     UBYTE   regshift;
     UBYTE   regwidth;
+    /* "dt" and the path of the node: the aHidd_DevicePath of the unit */
+    char    path[96];
 };
 
 struct class_static_data

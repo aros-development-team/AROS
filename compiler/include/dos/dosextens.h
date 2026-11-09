@@ -290,29 +290,7 @@ struct DevProc
    should not use this structure in any way and only use library-calls to
    access files. Treat this structure as PRIVATE. If you want to create
    this structure nevertheless, use AllocDosObject(). */
-struct FileHandle64
-{
-    /* The next three are used with packet-based filesystems */
-    ULONG  fh_Flags;
-    LONG   fh_Interactive;	/* interactive handle flag */
-    struct MsgPort * fh_Type;   /* port to send packets to */
-
-    BPTR    fh_Buf;
-    UQUAD    fh_Pos;
-    UQUAD    fh_End;
-
-    SIPTR fh_Funcs;
-    SIPTR fh_Func2;
-    SIPTR fh_Func3;
-    SIPTR fh_Args;
-    SIPTR fh_Arg2;
-
-    /* v39+ */
-    IPTR fh_BufSize;	/* Size of buffered io buffer */
-    BPTR  fh_OrigBuf;	/* Always the same as fh_Buf */
-};
-
-struct FileHandle32
+struct FileHandle
 {
     /* The next three are used with packet-based filesystems */
     ULONG  fh_Flags;
@@ -333,12 +311,6 @@ struct FileHandle32
     ULONG fh_BufSize;	/* Size of buffered io buffer */
     BPTR  fh_OrigBuf;	/* Always the same as fh_Buf */
 };
-
-#if (__DOS64)
-#define FileHandle FileHandle64 
-#else
-#define FileHandle FileHandle32
-#endif
 
 /* Original AmigaOS aliases */
 #define fh_Port fh_Interactive

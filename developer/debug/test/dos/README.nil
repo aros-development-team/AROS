@@ -1,0 +1,39 @@
+NIL lock packet regression (host only)
+=====================================
+
+From this directory:
+
+    cc -std=c99 -Wall -Wextra -Werror -fno-strict-aliasing \
+       -fsanitize=address,undefined \
+       -DAROS_FAST_BPTR nil_host.c -o /tmp/nil_host_fast
+    /tmp/nil_host_fast
+    cc -std=c99 -Wall -Wextra -Werror -fno-strict-aliasing \
+       -fsanitize=address,undefined \
+       nil_host.c -o /tmp/nil_host_shifted
+    /tmp/nil_host_shifted
+
+The test includes the production rom/dos/nil.c with packet-boundary types
+and allocation/release spies. It supplies the same FH_FROM_LOCK arguments
+as OpenFromLock: argument 1 is the destination handle; argument 2 is the
+source lock. It checks that the destination is initialized, the source
+lock is consumed exactly once at its decoded address, and its bytes are
+not overwritten as though it were a FileHandle. A separate case checks
+the FREE_LOCK BPTR-to-address conversion.
+
+The original FH_FROM_LOCK code fails both builds. The original FREE_LOCK
+code passes the fast build and fails the shifted build. Both cases pass
+after the correction. No global memory-availability measurement or task
+timing is used; the release spy records an incorrect pointer without
+dereferencing or freeing it.
+
+This models both BPTR conversions on the host, not two native target ABIs.
+It covers successful allocation and packet ownership only. It does not
+test allocation failure, the FREE_LOCK return convention, other NIL
+actions, FAT/other filesystem handlers, or an entire Shell launch. The
+target dos/nil test remains a separate API integration test.
+
+The negative control deliberately executes the old handler's wrong-type
+store into the source lock. Compile this harness with -fno-strict-aliasing
+so that observation does not depend on type-based alias optimization.
+Sanitizer-clean execution does not validate that historical store as
+portable C, nor establish an optimized native ABI result.

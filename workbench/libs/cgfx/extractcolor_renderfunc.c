@@ -20,7 +20,7 @@ ULONG extcol_render(struct extcol_render_data *ecrd, LONG x_src, LONG y_src,
     /* Get the info from the hidd */
     struct IntCGFXBase *CyberGfxBase = ecrd->CyberGfxBase;
     struct BitMap      *bm     = ecrd->destbm;
-    HIDDT_Pixel        *pixbuf = CyberGfxBase->pixel_buf;
+    HIDDT_Pixel        *pixbuf;
     LONG   x_dest = rect->MinX;
     LONG   y_dest = rect->MinY;
     ULONG  xsize  = rect->MaxX - rect->MinX + 1;
@@ -74,7 +74,9 @@ ULONG extcol_render(struct extcol_render_data *ecrd, LONG x_src, LONG y_src,
         dsty = y_dest + current_y;
 
         /* Get some more pixels from the HIDD */
-        HIDD_BM_GetImage(bm_obj, (UBYTE *)pixbuf, tocopy_w,
+        /* Each block fills the buffer from its start; the modulo is in bytes */
+        pixbuf = CyberGfxBase->pixel_buf;
+        HIDD_BM_GetImage(bm_obj, (UBYTE *)pixbuf, tocopy_w * sizeof(HIDDT_Pixel),
                          srcx, srcy, tocopy_w, tocopy_h, vHidd_StdPixFmt_Native32);
 
         /*  Write pixels to the destination */
@@ -82,7 +84,7 @@ ULONG extcol_render(struct extcol_render_data *ecrd, LONG x_src, LONG y_src,
         {
             for (x = 0; x < tocopy_w; x ++)
             {
-                if (*pixbuf ++ == ecrd->pixel)
+                if ((*pixbuf ++ & ecrd->mask) == ecrd->pixel)
                 {
                     ULONG i;
 

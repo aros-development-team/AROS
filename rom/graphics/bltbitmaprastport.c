@@ -12,13 +12,6 @@
 
 /****************************************************************************************/
 
-struct bitmap_render_data {
-    struct render_special_info rsi;
-    ULONG                      minterm;
-    struct BitMap             *srcbm;
-    OOP_Object                *srcbm_obj;
-};
-
 static ULONG bitmap_render(APTR bitmap_rd, WORD srcx, WORD srcy,
                            OOP_Object *dstbm_obj, OOP_Object *dst_gc,
                            struct Rectangle *rect, struct GfxBase *GfxBase)
@@ -94,11 +87,6 @@ static ULONG bitmap_render(APTR bitmap_rd, WORD srcx, WORD srcy,
 {
     AROS_LIBFUNC_INIT
 
-    struct bitmap_render_data   brd;
-    struct Rectangle            rr;
-    OOP_Object                  *gc;
-    Point                       src;
-
     EnterFunc(bug("BltBitMapRastPort(%d %d %d, %d, %d, %d, %x, %p, %p)\n"
                   , xSrc, ySrc, xDest, yDest, xSize, ySize, minterm, srcBitMap, destRP));
 
@@ -107,29 +95,9 @@ static ULONG bitmap_render(APTR bitmap_rd, WORD srcx, WORD srcy,
     FIX_GFXCOORD(xDest);
     FIX_GFXCOORD(yDest);
 
-    brd.srcbm_obj = OBTAIN_HIDD_BM(srcBitMap);
-    if(NULL == brd.srcbm_obj) {
-        return;
-    }
+    internal_BltBitMapRastPort(srcBitMap, xSrc, ySrc, destRP, xDest, yDest, xSize, ySize, minterm,
+                               bitmap_render, NULL, GfxBase);
 
-    brd.minterm = minterm;
-    brd.srcbm = srcBitMap;
-
-    /* Get RastPort's GC and set the correct ROP */
-    gc = GetDriverData(destRP, GfxBase);
-    GC_DRMD(gc) = MINTERM_TO_GCDRMD(minterm);
-
-    rr.MinX = xDest;
-    rr.MinY = yDest;
-    rr.MaxX = xDest + xSize - 1;
-    rr.MaxY = yDest + ySize - 1;
-
-    src.x = xSrc;
-    src.y = ySrc;
-
-    do_render_with_gc(destRP, &src, &rr, bitmap_render, &brd, gc, TRUE, TRUE, GfxBase);
-
-    RELEASE_HIDD_BM(brd.srcbm_obj, srcBitMap);
     ReturnVoid("BltBitMapRastPort");
 
     AROS_LIBFUNC_EXIT

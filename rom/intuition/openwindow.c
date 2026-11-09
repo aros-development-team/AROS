@@ -58,6 +58,43 @@ struct OpenWindowActionMsg
 static VOID int_openwindow(struct OpenWindowActionMsg *msg,
                            struct IntuitionBase *IntuitionBase);
 
+/*
+ * The window tags that switch one window flag on or off, in the form
+ * utility.library/PackBoolTags() takes. WA_Zoom is in here because the
+ * presence of a zoom box also sets a flag.
+ */
+static const struct TagItem windowflagtags[] =
+{
+    { WA_SizeGadget     , WFLG_SIZEGADGET       },
+    { WA_DragBar        , WFLG_DRAGBAR          },
+    { WA_DepthGadget    , WFLG_DEPTHGADGET      },
+    { WA_CloseGadget    , WFLG_CLOSEGADGET      },
+    { WA_Backdrop       , WFLG_BACKDROP         },
+    { WA_ReportMouse    , WFLG_REPORTMOUSE      },
+    { WA_NoCareRefresh  , WFLG_NOCAREREFRESH    },
+    { WA_Borderless     , WFLG_BORDERLESS       },
+    { WA_Activate       , WFLG_ACTIVATE         },
+    { WA_RMBTrap        , WFLG_RMBTRAP          },
+    { WA_WBenchWindow   , WFLG_WBENCHWINDOW     },
+    { WA_SizeBRight     , WFLG_SIZEBRIGHT       },
+    { WA_SizeBBottom    , WFLG_SIZEBBOTTOM      },
+    { WA_GimmeZeroZero  , WFLG_GIMMEZEROZERO    },
+    { WA_NewLookMenus   , WFLG_NEWLOOKMENUS     },
+    { WA_ToolBox        , WFLG_TOOLBOX          },
+    { WA_Zoom           , WFLG_HASZOOM          },
+    { TAG_DONE          , 0                     }
+};
+
+/* The same for the flags kept in IntWindow.moreflags */
+static const struct TagItem windowmoreflagtags[] =
+{
+    { WA_NotifyDepth    , WMFLG_NOTIFYDEPTH     },
+    { WA_MenuHelp       , WMFLG_MENUHELP        },
+    { WA_PointerDelay   , WMFLG_POINTERDELAY    },
+    { WA_TabletMessages , WMFLG_TABLETMESSAGES  },
+    { TAG_DONE          , 0                     }
+};
+
 /*****************************************************************************
 
     NAME */
@@ -186,254 +223,243 @@ WFLG_WINDOWACTIVE )
     if (tagList)
     {
         ASSERT_VALID_PTR_ROMOK(tagList);
+    }
 
-        /* Look at WA_Flags first, since boolean tags override part of it
-         * even if they appear before it.
-         */
-        nw.Flags |= (GetTagData(WA_Flags, nw.Flags, tagList) & ~WFLG_PRIVATEFLAGS);
+    /*
+     * Evaluate the tags. The tag functions accept a NULL list: GetTagData()
+     * returns the default and NextTagItem() returns NULL at once, so without
+     * tags everything keeps the value taken from the NewWindow structure.
+     */
 
-        while ((tag = NextTagItem (&tagList)))
+    /* Look at WA_Flags first, since boolean tags override part of it
+     * even if they appear before it.
+     */
+    nw.Flags |= (GetTagData(WA_Flags, nw.Flags, tagList) & ~WFLG_PRIVATEFLAGS);
+
+    /*
+     * The boolean tags, each setting or clearing its flag in the order they
+     * appear in the list. None of the tags handled in the loop below changes
+     * one of these flags, so it does not matter that this is done first.
+     */
+    nw.Flags  = PackBoolTags(nw.Flags, tagList, (struct TagItem *)windowflagtags);
+    moreFlags = PackBoolTags(moreFlags, tagList, (struct TagItem *)windowmoreflagtags);
+
+    while ((tag = NextTagItem (&tagList)))
+    {
+        /* ASSERT_VALID_PTR_ROMOK(tag); */
+
+        DEBUG_OPENWINDOW(dprintf("OpenWindow: Tag 0x%08lx 0x%p\n",
+                     (ULONG)tag->ti_Tag, tag->ti_Data));
+
+        switch ((ULONG)tag->ti_Tag)
         {
-            /* ASSERT_VALID_PTR_ROMOK(tag); */
+        case WA_Left:
+            nw.LeftEdge     = tag->ti_Data;
+            break;
 
-            DEBUG_OPENWINDOW(dprintf("OpenWindow: Tag 0x%08lx 0x%p\n",
-                         (ULONG)tag->ti_Tag, tag->ti_Data));
+        case WA_Top:
+            nw.TopEdge          = tag->ti_Data;
+            break;
 
+        case WA_Width:
+            nw.Width            = tag->ti_Data;
+            break;
+
+        case WA_Height:
+            nw.Height           = tag->ti_Data;
+            break;
+
+        case WA_IDCMP:
+            nw.IDCMPFlags   = tag->ti_Data;
+            break;
+
+        case WA_MinWidth:
+            nw.MinWidth     = tag->ti_Data;
+            break;
+
+        case WA_MinHeight:
+            nw.MinHeight    = tag->ti_Data;
+            break;
+
+        case WA_MaxWidth:
+            nw.MaxWidth     = tag->ti_Data;
+            break;
+
+        case WA_MaxHeight:
+            nw.MaxHeight    = tag->ti_Data;
+            break;
+
+        case WA_Gadgets:
+            nw.FirstGadget  = (struct Gadget *)(tag->ti_Data);
+            break;
+
+        case WA_Title:
+            nw.Title    = (UBYTE *)(tag->ti_Data);
+            break;
+
+        case WA_ScreenTitle:
+            screenTitle = (UBYTE *)tag->ti_Data;
+            break;
+
+        case WA_AutoAdjust:
+            autoAdjust  = (tag->ti_Data != 0);
+            break;
+
+        case WA_InnerWidth:
+            innerWidth  = tag->ti_Data;
+            break;
+
+        case WA_InnerHeight:
+            innerHeight = tag->ti_Data;
+            break;
+
+        case WA_Zoom:
+            /* WFLG_HASZOOM is set through windowflagtags */
+            zoombox = (struct IBox *)tag->ti_Data;
+            DEBUG_OPENWINDOW(dprintf("OpenWindow: zoom %d %d %d %d\n",
+                         zoombox->Left, zoombox->Top, zoombox->Width, zoombox->Height));
+            break;
+
+        case WA_DetailPen:
+            if (nw.DetailPen == 0xFF)
+                nw.DetailPen = tag->ti_Data;
+            break;
+
+        case WA_BlockPen:
+            if (nw.BlockPen == 0xFF)
+                nw.BlockPen = tag->ti_Data;
+            break;
+
+        case WA_CustomScreen:
+            nw.Screen = (struct Screen *)(tag->ti_Data);
+            nw.Type = CUSTOMSCREEN;
+            break;
+
+        case WA_SuperBitMap:
+            nw.Flags |= WFLG_SUPER_BITMAP;
+            nw.BitMap = (struct BitMap *)(tag->ti_Data);
+            break;
+
+        case WA_SimpleRefresh:
+            if (tag->ti_Data)
+            {
+                nw.Flags |= WFLG_SIMPLE_REFRESH;
+                nw.Flags &= ~WFLG_SUPER_BITMAP;
+            }
+            break;
+
+        case WA_SmartRefresh:
+            if (tag->ti_Data)
+                nw.Flags &= ~(WFLG_SIMPLE_REFRESH | WFLG_SUPER_BITMAP);
+            break;
+
+        case WA_PubScreenFallBack:
+            pubScreenFallBack = (tag->ti_Data ? TRUE : FALSE);
+            break;
+
+        case WA_PubScreenName:
+            pubScreenNameSet = TRUE;
+            pubScreenName = (STRPTR)tag->ti_Data;
+            break;
+
+        case WA_PubScreen:
+            nw.Type = PUBLICSCREEN;
+            nw.Screen = (struct Screen *)tag->ti_Data;
+            break;
+
+        case WA_BackFill:
+            backfillhook = (struct Hook *)tag->ti_Data;
+            break;
+
+        case WA_MouseQueue:
+            mousequeue = tag->ti_Data;
+            break;
+
+            /* These two are not implemented in AmigaOS */
+        case WA_WindowName:
+        case WA_Colors:
+            break;
+
+        case WA_RptQueue:
+            repeatqueue = tag->ti_Data;
+            break;
+
+        case WA_Checkmark:
+            Checkmark = (struct Image *)tag->ti_Data;
+            break;
+
+        case WA_AmigaKey:
+            AmigaKey = (struct Image *)tag->ti_Data;
+            break;
+
+        case WA_HelpGroup:
+            helpgroup = (ULONG)tag->ti_Data;
+            have_helpgroup = TRUE;
+            break;
+
+        case WA_HelpGroupWindow:
+            helpgroupwindow = (struct Window *)tag->ti_Data;
+            break;
+
+        #ifdef SKINS
+        case WA_SkinInfo:
+            skininfo = (struct SkinInfo *)tag->ti_Data;
+            hasskininfo = TRUE;
+            break;
+
+        case WA_TransparentRegion:
+            usertranspregion = (struct Region *)tag->ti_Data;
+            usertransphook = NULL; //doesn't make sense
+            break;
+
+        case WA_TransparentRegionHook:
+            usertransphook = (struct Hook *)tag->ti_Data;
+            usertranspregion = NULL;
+            break;
+
+        case WA_UserPort:
+            userport = (struct MsgPort *)tag->ti_Data;
+            break;
+/**********************************************************************************/
+
+        case WA_IAmMUI:
+            if (tag->ti_Data)
+                moreFlags |= WMFLG_IAMMUI;
+            else
+                moreFlags &= ~WMFLG_IAMMUI;
+            break;
+        #endif
+
+#ifndef __MORPHOS__
+        case WA_ShapeRegion:
+                shapeti = tag;
+            shape = (struct Region *)tag->ti_Data;
+            break;
+
+            case WA_ShapeHook:
+                shapehookti = tag;
+                shapehook = (struct Hook *)tag->ti_Data;
+            break;
+            
+
+        case WA_Hidden:
+            windowinvisible = tag->ti_Data;
+            break;
+#endif
+
+        case WA_Pointer:
+        case WA_BusyPointer:
+            do_setwindowpointer = TRUE;
+            break;
+
+        default:
+            /*
+             * The tags numbered from WA_Dummy + 100 up lie apart from the
+             * ones above. They have a switch of their own, so that each of
+             * the two covers a dense range of numbers.
+             */
             switch ((ULONG)tag->ti_Tag)
             {
-            case WA_Left:
-                nw.LeftEdge     = tag->ti_Data;
-                break;
-
-            case WA_Top:
-                nw.TopEdge          = tag->ti_Data;
-                break;
-
-            case WA_Width:
-                nw.Width            = tag->ti_Data;
-                break;
-
-            case WA_Height:
-                nw.Height           = tag->ti_Data;
-                break;
-
-            case WA_IDCMP:
-                nw.IDCMPFlags   = tag->ti_Data;
-                break;
-
-            case WA_MinWidth:
-                nw.MinWidth     = tag->ti_Data;
-                break;
-
-            case WA_MinHeight:
-                nw.MinHeight    = tag->ti_Data;
-                break;
-
-            case WA_MaxWidth:
-                nw.MaxWidth     = tag->ti_Data;
-                break;
-
-            case WA_MaxHeight:
-                nw.MaxHeight    = tag->ti_Data;
-                break;
-
-            case WA_Gadgets:
-                nw.FirstGadget  = (struct Gadget *)(tag->ti_Data);
-                break;
-
-            case WA_Title:
-                nw.Title    = (UBYTE *)(tag->ti_Data);
-                break;
-
-            case WA_ScreenTitle:
-                screenTitle = (UBYTE *)tag->ti_Data;
-                break;
-
-            case WA_AutoAdjust:
-                autoAdjust  = (tag->ti_Data != 0);
-                break;
-
-            case WA_InnerWidth:
-                innerWidth  = tag->ti_Data;
-                break;
-
-            case WA_InnerHeight:
-                innerHeight = tag->ti_Data;
-                break;
-
-#define MODIFY_FLAG(name)   if (tag->ti_Data) \
-nw.Flags |= (name); else nw.Flags &= ~(name)
-#define MODIFY_MFLAG(name)  if (tag->ti_Data) \
-moreFlags |= (name); else moreFlags &= ~(name)
-
-            case WA_SizeGadget:
-                MODIFY_FLAG(WFLG_SIZEGADGET);
-                break;
-
-            case WA_DragBar:
-                MODIFY_FLAG(WFLG_DRAGBAR);
-                break;
-
-            case WA_DepthGadget:
-                MODIFY_FLAG(WFLG_DEPTHGADGET);
-                break;
-
-            case WA_CloseGadget:
-                MODIFY_FLAG(WFLG_CLOSEGADGET);
-                break;
-
-            case WA_Backdrop:
-                MODIFY_FLAG(WFLG_BACKDROP);
-                break;
-
-            case WA_ReportMouse:
-                MODIFY_FLAG(WFLG_REPORTMOUSE);
-                break;
-
-            case WA_NoCareRefresh:
-                MODIFY_FLAG(WFLG_NOCAREREFRESH);
-                break;
-
-            case WA_Borderless:
-                MODIFY_FLAG(WFLG_BORDERLESS);
-                break;
-
-            case WA_Activate:
-                MODIFY_FLAG(WFLG_ACTIVATE);
-                break;
-
-            case WA_RMBTrap:
-                MODIFY_FLAG(WFLG_RMBTRAP);
-                break;
-
-            case WA_WBenchWindow:
-                MODIFY_FLAG(WFLG_WBENCHWINDOW);
-                break;
-
-            case WA_SizeBRight:
-                MODIFY_FLAG(WFLG_SIZEBRIGHT);
-                break;
-
-            case WA_SizeBBottom:
-                MODIFY_FLAG(WFLG_SIZEBBOTTOM);
-                break;
-
-            case WA_GimmeZeroZero:
-                MODIFY_FLAG(WFLG_GIMMEZEROZERO);
-                break;
-
-            case WA_NewLookMenus:
-                MODIFY_FLAG(WFLG_NEWLOOKMENUS);
-                break;
-
-            case WA_ToolBox:
-                MODIFY_FLAG(WFLG_TOOLBOX);
-                break;
-
-            case WA_Zoom:
-                zoombox = (struct IBox *)tag->ti_Data;
-                DEBUG_OPENWINDOW(dprintf("OpenWindow: zoom %d %d %d %d\n",
-                             zoombox->Left, zoombox->Top, zoombox->Width, zoombox->Height));
-                MODIFY_FLAG(WFLG_HASZOOM);
-                break;
-
-            case WA_DetailPen:
-                if (nw.DetailPen == 0xFF)
-                    nw.DetailPen = tag->ti_Data;
-                break;
-
-            case WA_BlockPen:
-                if (nw.BlockPen == 0xFF)
-                    nw.BlockPen = tag->ti_Data;
-                break;
-
-            case WA_CustomScreen:
-                nw.Screen = (struct Screen *)(tag->ti_Data);
-                nw.Type = CUSTOMSCREEN;
-                break;
-
-            case WA_SuperBitMap:
-                nw.Flags |= WFLG_SUPER_BITMAP;
-                nw.BitMap = (struct BitMap *)(tag->ti_Data);
-                break;
-
-            case WA_SimpleRefresh:
-                if (tag->ti_Data)
-                {
-                    nw.Flags |= WFLG_SIMPLE_REFRESH;
-                    nw.Flags &= ~WFLG_SUPER_BITMAP;
-                }
-                break;
-
-            case WA_SmartRefresh:
-                if (tag->ti_Data)
-                    nw.Flags &= ~(WFLG_SIMPLE_REFRESH | WFLG_SUPER_BITMAP);
-                break;
-
-            case WA_PubScreenFallBack:
-                pubScreenFallBack = (tag->ti_Data ? TRUE : FALSE);
-                break;
-
-            case WA_PubScreenName:
-                pubScreenNameSet = TRUE;
-                pubScreenName = (STRPTR)tag->ti_Data;
-                break;
-
-            case WA_PubScreen:
-                nw.Type = PUBLICSCREEN;
-                nw.Screen = (struct Screen *)tag->ti_Data;
-                break;
-
-            case WA_BackFill:
-                backfillhook = (struct Hook *)tag->ti_Data;
-                break;
-
-            case WA_MouseQueue:
-                mousequeue = tag->ti_Data;
-                break;
-
-                /* These two are not implemented in AmigaOS */
-            case WA_WindowName:
-            case WA_Colors:
-                break;
-
-            case WA_NotifyDepth:
-                MODIFY_MFLAG(WMFLG_NOTIFYDEPTH);
-                break;
-
-            case WA_RptQueue:
-                repeatqueue = tag->ti_Data;
-                break;
-
-            case WA_Checkmark:
-                Checkmark = (struct Image *)tag->ti_Data;
-                break;
-
-            case WA_AmigaKey:
-                AmigaKey = (struct Image *)tag->ti_Data;
-                break;
-
-            case WA_HelpGroup:
-                helpgroup = (ULONG)tag->ti_Data;
-                have_helpgroup = TRUE;
-                break;
-
-            case WA_HelpGroupWindow:
-                helpgroupwindow = (struct Window *)tag->ti_Data;
-                break;
-
-            case WA_MenuHelp:
-                MODIFY_MFLAG(WMFLG_MENUHELP);
-                break;
-
-            case WA_PointerDelay:
-                MODIFY_MFLAG(WMFLG_POINTERDELAY);
-                break;
-
-            case WA_TabletMessages:
-                MODIFY_MFLAG(WMFLG_TABLETMESSAGES);
-                break;
-
             case WA_ExtraTitlebarGadgets:
                 extrabuttons = (ULONG)tag->ti_Data;
                 break;
@@ -443,116 +469,37 @@ moreFlags |= (name); else moreFlags &= ~(name)
                 break;
 
             case WA_ExtraGadget_Iconify:
-                if (tag->ti_Data)
-                {
-                    extrabuttons |= ETG_ICONIFY;
-                }
-                else
-                {
-                    extrabuttons &= ~ETG_ICONIFY;
-                };
-                break;
-
             case WA_ExtraGadget_Lock:
-                if (tag->ti_Data)
-                {
-                    extrabuttons |= ETG_LOCK;
-                }
-                else
-                {
-                    extrabuttons &= ~ETG_LOCK;
-                };
-                break;
-
             case WA_ExtraGadget_MUI:
-                if (tag->ti_Data)
-                {
-                    extrabuttons |= ETG_MUI;
-                }
-                else
-                {
-                    extrabuttons &= ~ETG_MUI;
-                };
-                break;
-
             case WA_ExtraGadget_PopUp:
-                if (tag->ti_Data)
-                {
-                    extrabuttons |= ETG_POPUP;
-                }
-                else
-                {
-                    extrabuttons &= ~ETG_POPUP;
-                };
-                break;
-
             case WA_ExtraGadget_Snapshot:
-                if (tag->ti_Data)
-                {
-                    extrabuttons |= ETG_SNAPSHOT;
-                }
-                else
-                {
-                    extrabuttons &= ~ETG_SNAPSHOT;
-                };
-                break;
-
             case WA_ExtraGadget_Jump:
-                if (tag->ti_Data)
                 {
-                    extrabuttons |= ETG_JUMP;
+                    /* Each tag's ETG_ flag is the bit of its distance from the first tag */
+                    ULONG etg = 1UL << (tag->ti_Tag - WA_ExtraGadget_Iconify);
+
+                    _Static_assert(ETG_ICONIFY  == 1L << (WA_ExtraGadget_Iconify  - WA_ExtraGadget_Iconify), "ETG_ICONIFY");
+                    _Static_assert(ETG_LOCK     == 1L << (WA_ExtraGadget_Lock     - WA_ExtraGadget_Iconify), "ETG_LOCK");
+                    _Static_assert(ETG_MUI      == 1L << (WA_ExtraGadget_MUI      - WA_ExtraGadget_Iconify), "ETG_MUI");
+                    _Static_assert(ETG_POPUP    == 1L << (WA_ExtraGadget_PopUp    - WA_ExtraGadget_Iconify), "ETG_POPUP");
+                    _Static_assert(ETG_SNAPSHOT == 1L << (WA_ExtraGadget_Snapshot - WA_ExtraGadget_Iconify), "ETG_SNAPSHOT");
+                    _Static_assert(ETG_JUMP     == 1L << (WA_ExtraGadget_Jump     - WA_ExtraGadget_Iconify), "ETG_JUMP");
+
+                    if (tag->ti_Data)
+                    {
+                        extrabuttons |= etg;
+                    }
+                    else
+                    {
+                        extrabuttons &= ~etg;
+                    }
                 }
-                else
-                {
-                    extrabuttons &= ~ETG_JUMP;
-                };
                 break;
-
-            #ifdef SKINS
-            case WA_SkinInfo:
-                skininfo = (struct SkinInfo *)tag->ti_Data;
-                hasskininfo = TRUE;
-                break;
-
-            case WA_TransparentRegion:
-                usertranspregion = (struct Region *)tag->ti_Data;
-                usertransphook = NULL; //doesn't make sense
-                break;
-
-            case WA_TransparentRegionHook:
-                usertransphook = (struct Hook *)tag->ti_Data;
-                usertranspregion = NULL;
-                break;
-
-            case WA_UserPort:
-                userport = (struct MsgPort *)tag->ti_Data;
-                break;
-/**********************************************************************************/
-
-            case WA_IAmMUI:
-                MODIFY_MFLAG(WMFLG_IAMMUI);
-                break;
-            #endif
 
 #ifndef __MORPHOS__
-            case WA_ShapeRegion:
-                    shapeti = tag;
-                shape = (struct Region *)tag->ti_Data;
-                break;
-
-                case WA_ShapeHook:
-                    shapehookti = tag;
-                    shapehook = (struct Hook *)tag->ti_Data;
-                break;
-                
-
             case WA_Parent:
                 parentwin = ((struct Window *)tag->ti_Data);
                 parentl   = parentwin->WLayer;
-                break;
-
-            case WA_Hidden:
-                windowinvisible = tag->ti_Data;
                 break;
 
             /*
@@ -577,23 +524,19 @@ moreFlags |= (name); else moreFlags &= ~(name)
                 break;
 #endif
 
-            case WA_Pointer:
-            case WA_BusyPointer:
-                do_setwindowpointer = TRUE;
-                break;
+            } /* switch Tag, WA_Dummy + 100 up */
+            break;
 
-            } /* switch Tag */
+        } /* switch Tag */
 
-        } /* while ((tag = NextTagItem (&tagList))) */
+    } /* while ((tag = NextTagItem (&tagList))) */
 
-        /*
-         * A composited window keeps all its pixels in its surface, so it is
-         * a smart refresh window: it never gets refresh events from exposure.
-         */
-        if (composited)
-            nw.Flags &= ~(WFLG_SIMPLE_REFRESH | WFLG_SUPER_BITMAP);
-
-    } /* if (tagList) */
+    /*
+     * A composited window keeps all its pixels in its surface, so it is
+     * a smart refresh window: it never gets refresh events from exposure.
+     */
+    if (composited)
+        nw.Flags &= ~(WFLG_SIMPLE_REFRESH | WFLG_SUPER_BITMAP);
 
     if (nw.Flags & WFLG_SIZEGADGET)
     {
@@ -1388,6 +1331,31 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
 
 //  LockLayers(&w->WScreen->LayerInfo);
 
+    /*
+     * The tags for the layer of the window. The entries that do not apply
+     * to every layer start out as TAG_IGNORE and are filled in below.
+     */
+    struct TagItem layertags[] =
+    {
+        {LA_BackfillHook, (IPTR)backfillhook},
+        {SuperBitMap ? LA_SuperBitMap : TAG_IGNORE, (IPTR)SuperBitMap},
+#ifdef SKINS
+        {installtransphook ? LA_TransHook : TAG_IGNORE, notransphook ? (IPTR)&((struct IntIntuitionBase *)(IntuitionBase))->notransphook : (IPTR)&((struct IntIntuitionBase *)(IntuitionBase))->transphook},
+        {installtransphook ? LA_TransRegion : TAG_IGNORE, (IPTR)IW(w)->transpregion},
+#else
+        {TAG_IGNORE  , 0           }, /* [2]: LA_ShapeHook */
+        {TAG_IGNORE  , 0           }, /* [3]: LA_ShapeRegion */
+#endif
+        {LA_WindowPtr, (IPTR)w     },
+        {LA_ChildOf  , (IPTR)parent}, /* These two are AROS-specific */
+        {LA_Hidden   , invisible   },
+        {TAG_IGNORE  , 0           }, /* [7..9]: LA_Composited, LA_Opacity, LA_AlphaSurface */
+        {TAG_IGNORE  , 0           },
+        {TAG_IGNORE  , 0           },
+        {TAG_IGNORE  , 0           }, /* [10]: LA_InputShape */
+        {TAG_DONE}
+    };
+
     /* A GimmeZeroZero window??? */
     if (w->Flags & WFLG_GIMMEZEROZERO)
     {
@@ -1399,27 +1367,9 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
           I just make it that the outer window has the size of what is requested
         */
 
-        struct TagItem layertags[] =
-        {
-            {LA_BackfillHook, (IPTR)LAYERS_NOBACKFILL},
-            {SuperBitMap ? LA_SuperBitMap : TAG_IGNORE, (IPTR)SuperBitMap},
-#ifdef SKINS
-            {installtransphook ? LA_TransHook : TAG_IGNORE, notransphook ? (IPTR)&((struct IntIntuitionBase *)(IntuitionBase))->notransphook : (IPTR)&((struct IntIntuitionBase *)(IntuitionBase))->transphook},
-            {installtransphook ? LA_TransRegion : TAG_IGNORE, (IPTR)IW(w)->transpregion},
-#else
-            {TAG_IGNORE  , 0           },
-            {TAG_IGNORE  , 0           },
-#endif
-            {LA_WindowPtr, (IPTR)w     },
-            {LA_ChildOf  , (IPTR)parent}, /* These two are AROS-specific */
-            {LA_Hidden   , invisible   },
-            {TAG_IGNORE  , 0           }, /* [7..9]: LA_Composited, LA_Opacity, LA_AlphaSurface for the inner layer */
-            {TAG_IGNORE  , 0           },
-            {TAG_IGNORE  , 0           },
-            {TAG_DONE}
-        };
+        /* First create outer window. Its layer is never backfilled. */
+        layertags[0].ti_Data = (IPTR)LAYERS_NOBACKFILL;
 
-        /* First create outer window */
         struct Layer * L = CreateUpfrontLayerTagList(
                                    &w->WScreen->LayerInfo
                                    , w->WScreen->RastPort.BitMap
@@ -1503,27 +1453,20 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
     }
     else
     {
-        struct TagItem layertags[] =
+        if (msg->composited)
         {
-            {LA_BackfillHook, (IPTR)backfillhook},
-            {SuperBitMap ? LA_SuperBitMap : TAG_IGNORE, (IPTR)SuperBitMap},
-#ifdef SKINS
-            {installtransphook ? LA_TransHook : TAG_IGNORE, notransphook ? (IPTR)&((struct IntIntuitionBase *)(IntuitionBase))->notransphook : (IPTR)&((struct IntIntuitionBase *)(IntuitionBase))->transphook},
-            {installtransphook ? LA_TransRegion : TAG_IGNORE, (IPTR)IW(w)->transpregion},
-#else
-            {TAG_IGNORE  , 0           },
-            {TAG_IGNORE  , 0           },
-#endif
-            {LA_WindowPtr, (IPTR)w     },
-            {LA_ChildOf  , (IPTR)parent}, /* These two are AROS-specific */
-            {LA_Hidden, invisible   },
-            {msg->composited ? LA_Composited   : TAG_IGNORE, TRUE                  },
-            {msg->composited ? LA_Opacity      : TAG_IGNORE, msg->opaqueness       },
-            {msg->composited ? LA_AlphaSurface : TAG_IGNORE, msg->alphasurface     },
-            {msg->inputregion ? LA_InputShape  : TAG_IGNORE, (IPTR)msg->inputregion},
-            {TAG_DONE}
-        };
-
+            layertags[7].ti_Tag  = LA_Composited;
+            layertags[7].ti_Data = TRUE;
+            layertags[8].ti_Tag  = LA_Opacity;
+            layertags[8].ti_Data = msg->opaqueness;
+            layertags[9].ti_Tag  = LA_AlphaSurface;
+            layertags[9].ti_Data = msg->alphasurface;
+        }
+        if (msg->inputregion)
+        {
+            layertags[10].ti_Tag  = LA_InputShape;
+            layertags[10].ti_Data = (IPTR)msg->inputregion;
+        }
         if (shapehook)
         {
             layertags[2].ti_Tag  = LA_ShapeHook;

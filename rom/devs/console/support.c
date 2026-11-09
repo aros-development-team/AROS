@@ -196,40 +196,29 @@ ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite,
 **********************/
 
 
-static const UBYTE str_slm[] = {0x32, 0x30, 0x68}; /* Set linefeed mode    */
-static const UBYTE str_rnm[] = {0x32, 0x30, 0x6C}; /* Reset linefeed mode  */
-static const UBYTE str_ssm[] = {0x3E, 0x31, 0x68}; /* Set autoscroll mode */
-static const UBYTE str_rsm[] = {0x3E, 0x31, 0x6C}; /* Reset autoscroll mode */
-static const UBYTE str_swm[] = {0x3E, 0x37, 0x68}; /* Set autowrap mode */
-static const UBYTE str_rwm[] = {0x3E, 0x37, 0x6C}; /* Reset autowrap mode */
-static const UBYTE str_dsr[] = {0x36, 0x6E};       /* device status report */
-static const UBYTE str_con[] = {' ', 'p'};         /* cursor visible */
-static const UBYTE str_con2[] = {'1', ' ', 'p'};   /* cursor visible */
-static const UBYTE str_cof[] = {'0', ' ', 'p'};    /* cursor invisible */
-static const UBYTE str_srq1[] = {' ', 'q'};        /* window status request */
-static const UBYTE str_srq2[] = {'0', ' ', 'q'};   /* window status request */
-
-#define NUM_SPECIAL_COMMANDS 12
+/* Commands that are recognized by the complete character sequence after
+   the CSI. CommandStr holds Length characters. */
 static const struct special_cmd_descr
 {
     BYTE Command;
-    STRPTR CommandStr;
     BYTE Length;
-} scd_tab[NUM_SPECIAL_COMMANDS] =
+    UBYTE CommandStr[3];
+} scd_tab[] =
 {
-    {C_SET_LF_MODE, (STRPTR) str_slm, 3},
-    {C_RESET_LF_MODE, (STRPTR) str_rnm, 3},
-    {C_SET_AUTOSCROLL_MODE, (STRPTR) str_ssm, 3},
-    {C_RESET_AUTOSCROLL_MODE, (STRPTR) str_rsm, 3},
-    {C_SET_AUTOWRAP_MODE, (STRPTR) str_swm, 3},
-    {C_RESET_AUTOWRAP_MODE, (STRPTR) str_rwm, 3},
-    {C_DEVICE_STATUS_REPORT, (STRPTR) str_dsr, 2},
-    {C_CURSOR_VISIBLE, (STRPTR) str_con, 2},
-    {C_CURSOR_VISIBLE, (STRPTR) str_con2, 3},
-    {C_CURSOR_INVISIBLE, (STRPTR) str_cof, 3},
-    {C_WINDOW_STATUS_REQUEST, (STRPTR) str_srq1, 2},
-    {C_WINDOW_STATUS_REQUEST, (STRPTR) str_srq2, 3}
+    {C_SET_LF_MODE,           3, {0x32, 0x30, 0x68}}, /* Set linefeed mode */
+    {C_RESET_LF_MODE,         3, {0x32, 0x30, 0x6C}}, /* Reset linefeed mode */
+    {C_SET_AUTOSCROLL_MODE,   3, {0x3E, 0x31, 0x68}}, /* Set autoscroll mode */
+    {C_RESET_AUTOSCROLL_MODE, 3, {0x3E, 0x31, 0x6C}}, /* Reset autoscroll mode */
+    {C_SET_AUTOWRAP_MODE,     3, {0x3E, 0x37, 0x68}}, /* Set autowrap mode */
+    {C_RESET_AUTOWRAP_MODE,   3, {0x3E, 0x37, 0x6C}}, /* Reset autowrap mode */
+    {C_DEVICE_STATUS_REPORT,  2, {0x36, 0x6E}},       /* device status report */
+    {C_CURSOR_VISIBLE,        2, {' ', 'p'}},         /* cursor visible */
+    {C_CURSOR_VISIBLE,        3, {'1', ' ', 'p'}},    /* cursor visible */
+    {C_CURSOR_INVISIBLE,      3, {'0', ' ', 'p'}},    /* cursor invisible */
+    {C_WINDOW_STATUS_REQUEST, 2, {' ', 'q'}},         /* window status request */
+    {C_WINDOW_STATUS_REQUEST, 3, {'0', ' ', 'q'}}     /* window status request */
 };
+#define NUM_SPECIAL_COMMANDS (sizeof(scd_tab) / sizeof(scd_tab[0]))
 
 #if DEBUG
 static UBYTE *cmd_names[NUM_CONSOLE_COMMANDS] = {
@@ -289,22 +278,56 @@ static UBYTE *cmd_names[NUM_CONSOLE_COMMANDS] = {
 };
 #endif
 
+/* The control codes that are commands by themselves, with their commands.
+   Each of them starts a command. The last NUM_TEXT_CTRL_CODES of them do
+   not end a run of plain text that has already begun (see check_special()),
+   so they have to stay at the end of the table. */
+static const UBYTE ctrl_codes[][2] =
+{
+    {NIL,             C_NIL},
+    {BELL,            C_BELL},
+    {BACKSPACE,       C_BACKSPACE},
+    {HTAB,            C_HTAB},
+    {LINEFEED,        C_LINEFEED},
+    {FORMFEED,        C_FORMFEED},
+    {CARRIAGE_RETURN, C_CARRIAGE_RETURN},
+    {SHIFT_OUT,       C_SHIFT_OUT},
+    {SHIFT_IN,        C_SHIFT_IN},
+    {ESC,             C_ESC},
+    {INDEX,           C_INDEX},
+    {H_TAB_SET,       C_H_TAB_SET},
+    {REVERSE_INDEX,   C_REVERSE_IDX},
+    {VTAB,            C_VTAB},
+    {NEXT_LINE,       C_NEXT_LINE}
+};
+#define NUM_CTRL_CODES      (sizeof(ctrl_codes) / sizeof(ctrl_codes[0]))
+#define NUM_TEXT_CTRL_CODES 2
+
+/* Look a code up in the first num entries of ctrl_codes[]. Returns its
+   command, or -1 if it is not there. */
+static LONG find_ctrl_code(UBYTE code, ULONG num)
+{
+    ULONG i;
+
+    for (i = 0; i < num; i++)
+    {
+        if (ctrl_codes[i][0] == code)
+            return ctrl_codes[i][1];
+    }
+    return -1;
+}
+
+/* Does this character end a run of plain text? */
 static BOOL check_special(STRPTR string, LONG toparse)
 {
-    return ((*string == CSI) ||
-        (toparse >= 2 && (string[0] == ESC) && (string[1] == '[')) || /* CSI */
-        (*string == NIL) ||
-        (*string == BELL) ||
-        (*string == BACKSPACE) ||
-        (*string == HTAB) ||
-        (*string == LINEFEED) ||
-        (*string == FORMFEED) ||
-        (*string == CARRIAGE_RETURN) ||
-        (*string == SHIFT_OUT) ||
-        (*string == SHIFT_IN) ||
-        (*string == ESC) ||
-        (*string == INDEX) ||
-        (*string == H_TAB_SET) || (*string == REVERSE_INDEX));
+    /* Every code looked for is a C0 or C1 control code (0x00-0x1F or
+       0x80-0x9F); all other characters are plain text. <ESC>[ needs no test
+       of its own, because ESC is in the table. */
+    if (*string & 0x60)
+        return FALSE;
+
+    return (*string == CSI) ||
+        find_ctrl_code(*string, NUM_CTRL_CODES - NUM_TEXT_CTRL_CODES) >= 0;
 }
 
 static BOOL string2command(BYTE *cmd_ptr, UBYTE ** writestr_ptr,
@@ -383,83 +406,13 @@ static BOOL string2command(BYTE *cmd_ptr, UBYTE ** writestr_ptr,
     else
     {
         /* Look for standalone codes */
-        switch (*write_str)
+        LONG code = find_ctrl_code(*write_str, NUM_CTRL_CODES);
+
+        if (code >= 0)
         {
-        case NIL:
-            *cmd_ptr = C_NIL;
+            *cmd_ptr = code;
             found = TRUE;
-            break;
-
-        case BELL:
-            *cmd_ptr = C_BELL;
-            found = TRUE;
-            break;
-
-        case BACKSPACE:
-            *cmd_ptr = C_BACKSPACE;
-            found = TRUE;
-            break;
-
-        case HTAB:
-            *cmd_ptr = C_HTAB;
-            found = TRUE;
-            break;
-
-        case LINEFEED:
-            *cmd_ptr = C_LINEFEED;
-            found = TRUE;
-            break;
-
-        case VTAB:
-            *cmd_ptr = C_VTAB;
-            found = TRUE;
-            break;
-
-        case FORMFEED:
-            *cmd_ptr = C_FORMFEED;
-            found = TRUE;
-            break;
-
-        case CARRIAGE_RETURN:
-            *cmd_ptr = C_CARRIAGE_RETURN;
-            found = TRUE;
-            break;
-
-        case SHIFT_OUT:
-            *cmd_ptr = C_SHIFT_OUT;
-            found = TRUE;
-            break;
-
-        case SHIFT_IN:
-            *cmd_ptr = C_SHIFT_IN;
-            found = TRUE;
-            break;
-
-        case ESC:
-            *cmd_ptr = C_ESC;
-            found = TRUE;
-            break;
-
-        case INDEX:
-            *cmd_ptr = C_INDEX;
-            found = TRUE;
-            break;
-
-        case NEXT_LINE:
-            *cmd_ptr = C_NEXT_LINE;
-            found = TRUE;
-            break;
-
-        case H_TAB_SET:
-            *cmd_ptr = C_H_TAB_SET;
-            found = TRUE;
-            break;
-
-        case REVERSE_INDEX:
-            *cmd_ptr = C_REVERSE_IDX;
-            found = TRUE;
-            break;
-        } /* (switch) */
+        }
 
         if (found)
         {
@@ -575,6 +528,7 @@ static const struct Command
     {-1,                         },                      /* 0x7C | */
     {C_RESET_RAWEVENTS,          MAX_COMMAND_PARAMS},    /* 0x7D } */
 };
+#define NUM_CSI_COMMANDS (sizeof(csi2command) / sizeof(csi2command[0]))
 
 
 #define PARAM_BUF_SIZE MAX_COMMAND_PARAMS
@@ -588,15 +542,10 @@ struct cmd_params
        are saved, along with their number. For example
        for the command CURSOR POSITION, if only the second parameter
        (column) is specified in the write stream, then
-       numparams will be 1 and for the one entry, paramno will be 1
-       (C counting) and val will be <column>.
+       numparams will be 1 and val[0] will be <column>.
        Row will have to be set to some default value.
      */
-    struct cmd_param
-    {
-        UBYTE paramno;          /* Starts counting at 0 */
-        IPTR val;
-    } tab[PARAM_BUF_SIZE];
+    IPTR val[PARAM_BUF_SIZE];
 };
 
 
@@ -613,7 +562,9 @@ static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE ** writestr_ptr,
      ** even if we found a command ID.
      */
 
-    struct cmd_params params = { };
+    /* Only the counters need clearing: a val[] entry is set to zero when
+       its parameter starts */
+    struct cmd_params params;
     BYTE cmd = -1;
     BYTE cmd_next_idx = 0;      /* Index to byte after the command */
 
@@ -627,6 +578,9 @@ static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE ** writestr_ptr,
         next_can_be_commandid = TRUE, last_was_param = FALSE;
     UBYTE num_separators_found = 0;
 
+    params.numparams = 0;
+    params.overflow = FALSE;
+
     while (!done)
     {
         /* In case it's a parameter */
@@ -637,35 +591,11 @@ static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE ** writestr_ptr,
             break;
         }
 
-        switch (*write_str)
+        /* A character with an entry in csi2command[] ends the sequence */
+        if (*write_str >= FIRST_CSI_CMD &&
+            *write_str < FIRST_CSI_CMD + NUM_CSI_COMMANDS &&
+            csi2command[*write_str - FIRST_CSI_CMD].Command != -1)
         {
-        case 0x40:
-        case 0x41:
-        case 0x42:
-        case 0x43:
-        case 0x44:
-        case 0x45:
-        case 0x46:
-        case 0x48:
-        case 0x49:
-
-        case 0x4A:
-        case 0x4B:
-        case 0x4C:
-        case 0x4D:
-
-        case 0x50:
-        case 0x53:
-        case 0x54:
-        case 0x57:
-        case 0x5A:
-        case 0x6D:
-        case 0x74:
-        case 0x75:
-        case 0x78:
-        case 0x79:
-        case 0x7B:
-        case 0x7D:
             {
                 UBYTE idx = *write_str - FIRST_CSI_CMD;
                 UBYTE maxparams = csi2command[idx].MaxParams;
@@ -695,10 +625,10 @@ static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE ** writestr_ptr,
                 }
 
                 done = TRUE;
-
-                break;
             }
-
+        }
+        else switch (*write_str)
+        {
         case ';': /* parameter separator, skip it */
 
             if (!next_can_be_separator)
@@ -743,8 +673,7 @@ static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE ** writestr_ptr,
                     done = TRUE;
                     break;
                 }
-                params.tab[num_params - 1].paramno = num_params - 1;
-                params.tab[num_params - 1].val = 0;
+                params.val[num_params - 1] = 0;
 
                 last_was_param = TRUE;
             }
@@ -755,15 +684,15 @@ static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE ** writestr_ptr,
                     5 : (*write_str) - '0';
                 IPTR maxval = ~(IPTR)0;
 
-                if (params.tab[num_params - 1].val >
+                if (params.val[num_params - 1] >
                     (maxval - digit) / 10)
                 {
                     params.overflow = TRUE;
                 }
                 else
                 {
-                    params.tab[num_params - 1].val =
-                        params.tab[num_params - 1].val * 10 + digit;
+                    params.val[num_params - 1] =
+                        params.val[num_params - 1] * 10 + digit;
                 }
             }
 
@@ -808,25 +737,13 @@ static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE ** writestr_ptr,
         {
             /* Override with parsed values */
             D(bug("CMD %s: Setting param %d to %d\n", cmd_names[*cmd_ptr],
-                    params.tab[i].paramno, params.tab[i].val));
+                    i, params.val[i]));
 
-            p_tab[params.tab[i].paramno] = params.tab[i].val;
+            p_tab[i] = params.val[i];
         }
 
         *numparams_ptr = params.numparams;
     }
 
     return found;
-}
-
-VOID printstring(STRPTR string, ULONG len,
-    struct ConsoleBase *ConsoleDevice)
-{
-    while (len--)
-    {
-        bug("%d/%c ", *string, *string);
-        string++;
-    }
-
-    bug("\n");
 }

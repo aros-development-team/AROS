@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -54,7 +54,14 @@
     struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     ULONG Result = TRUE;
-    ULONG lock = LockIBase(0);
+    BOOL screenmode = type == IPREFS_TYPE_SCREENMODE_V37;
+    ULONG lock;
+
+    /* OpenWorkBench/CloseWorkBench take the public-screen list first.
+     * Keep the bitmap alive while comparing the requested mode below. */
+    if (screenmode)
+        LockPubScreenList();
+    lock = LockIBase(0);
 
     DEBUG_SETIPREFS(bug("[Intuition] %s: data %p length %lu type %lu\n", __func__, data, length, type));
 
@@ -88,10 +95,27 @@
             if (!closed)
             {
                 BOOL try = TRUE;
+                struct IScreenModePrefs *cur = GetPrivIBase(IntuitionBase)->ScreenModePrefs;
+                struct IScreenModePrefs *requested = data;
+                struct Screen *wb = GetPrivIBase(IntuitionBase)->WorkBench;
+
+                /* The request may describe the bitmap already supplied by
+                 * an RTG driver. Store that request unchanged, so applying
+                 * a shallower request again remains a no-op too. */
+                if (requested->smp_DisplayID == cur->smp_DisplayID &&
+                    requested->smp_Width == cur->smp_Width &&
+                    requested->smp_Height == cur->smp_Height &&
+                    requested->smp_Control == cur->smp_Control &&
+                    requested->smp_Depth == GetBitMapAttr(wb->RastPort.BitMap, BMA_DEPTH))
+                {
+                    CopyMem(requested, cur, sizeof(*cur));
+                    break;
+                }
 
                 reopen = TRUE;
 
                 UnlockIBase(lock);
+                UnlockPubScreenList();
 
                 while (try && !(closed = CloseWorkBench()))
                 {
@@ -294,42 +318,22 @@
                         (LONG) fp->Count,
                         (LONG) fp->Type));
 
-            if (fp->Type==0)
+            /* Type 0 are the pens of screens of up to 4 colours, the others of deeper ones */
+            defpenptr = (fp->Type == 0) ? &GetPrivIBase(IntuitionBase)->DriPens4[0]
+                                        : &GetPrivIBase(IntuitionBase)->DriPens8[0];
+            if (!closed)
             {
-                defpenptr = &GetPrivIBase(IntuitionBase)->DriPens4[0];
-                DEBUG_SETIPREFS(bug("[Intuition] %s: Pens4[]\n", __func__));
-                if (!closed)
+                struct IntDrawInfo      *dri;
+
+                wbsint = GetPrivScreen(GetPrivIBase(IntuitionBase)->WorkBench);
+                wbdepth = GetPrivIBase(IntuitionBase)->WorkBench->RastPort.BitMap->Depth;
+
+                /* Update the Workbench screen too if these are the pens of its depth */
+                if (((wbdepth < 3) == (fp->Type == 0)) && (dri = (struct IntDrawInfo *)GetScreenDrawInfo(GetPrivIBase(IntuitionBase)->WorkBench)))
                 {
-                    struct IntDrawInfo      *dri;
-
-                    wbsint = GetPrivScreen(GetPrivIBase(IntuitionBase)->WorkBench);
-                    wbdepth = GetPrivIBase(IntuitionBase)->WorkBench->RastPort.BitMap->Depth;
-                    
-                    if ((wbdepth < 3) && (dri = (struct IntDrawInfo *)GetScreenDrawInfo(GetPrivIBase(IntuitionBase)->WorkBench)))
-                    {
-                        DEBUG_SETIPREFS(bug("[Intuition] %s: updating wbscreen dri pens\n", __func__));
-                        scrpenptr = dri->dri_Pens;
-                        scrppenptr = wbsint->Pens;
-                    }
-                }
-            }
-            else
-            {
-                defpenptr = &GetPrivIBase(IntuitionBase)->DriPens8[0];
-                DEBUG_SETIPREFS(bug("[Intuition] %s: Pens8[]\n", __func__));
-                if (!closed)
-                {
-                    struct IntDrawInfo      *dri;
-
-                    wbsint = GetPrivScreen(GetPrivIBase(IntuitionBase)->WorkBench);
-                    wbdepth = GetPrivIBase(IntuitionBase)->WorkBench->RastPort.BitMap->Depth;
-
-                    if ((wbdepth >= 3) && (dri = (struct IntDrawInfo *)GetScreenDrawInfo(GetPrivIBase(IntuitionBase)->WorkBench)))
-                    {
-                        DEBUG_SETIPREFS(bug("[Intuition] %s: updating wbscreen dri pens\n", __func__));
-                        scrpenptr = dri->dri_Pens;
-                        scrppenptr = wbsint->Pens;
-                    }
+                    DEBUG_SETIPREFS(bug("[Intuition] %s: updating wbscreen dri pens\n", __func__));
+                    scrpenptr = dri->dri_Pens;
+                    scrppenptr = wbsint->Pens;
                 }
             }
             for (i=0;i<NUMDRIPENS;i++)
@@ -414,6 +418,8 @@
     }
 
     UnlockIBase(lock);
+    if (screenmode)
+        UnlockPubScreenList();
 
     DEBUG_SETIPREFS(bug("[Intuition] %s: Result 0x%lx\n", __func__, Result));
     

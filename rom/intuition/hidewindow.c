@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -122,71 +122,7 @@ static VOID int_hidewindow(struct HideWindowActionMsg *msg,
                 !IS_SCREEN_GADGET(iihd->ActiveGadget) &&
                 (iihd->GadgetInfo.gi_Window == window))
             {
-                struct Gadget *gadget = iihd->ActiveGadget;
-
-                switch (gadget->GadgetType & GTYP_GTYPEMASK)
-                {
-                    case GTYP_CUSTOMGADGET:
-                    {
-                        struct gpGoInactive gpgi;
-
-                        gpgi.MethodID   = GM_GOINACTIVE;
-                        gpgi.gpgi_GInfo = &iihd->GadgetInfo;
-                        gpgi.gpgi_Abort = 1;
-
-                        Locked_DoMethodA(window, gadget, (Msg)&gpgi, IntuitionBase);
-                        break;
-                    }
-
-                    case GTYP_STRGADGET:
-                        gadget->Flags &= ~GFLG_SELECTED;
-                        RefreshStrGadget(gadget,
-                                         iihd->GadgetInfo.gi_Window,
-                                         iihd->GadgetInfo.gi_Requester,
-                                         IntuitionBase);
-                        break;
-
-                    case GTYP_BOOLGADGET:
-                        if (!(gadget->Activation & GACT_TOGGLESELECT))
-                        {
-                            BOOL inside;
-
-                            inside = InsideGadget(iihd->GadgetInfo.gi_Screen,
-                                                  iihd->GadgetInfo.gi_Window,
-                                                  iihd->GadgetInfo.gi_Requester,
-                                                  gadget,
-                                                  iihd->GadgetInfo.gi_Screen->MouseX,
-                                                  iihd->GadgetInfo.gi_Screen->MouseY);
-
-                            if (inside)
-                            {
-                                gadget->Flags &= ~GFLG_SELECTED;
-                                RefreshBoolGadgetState(gadget,
-                                                       iihd->GadgetInfo.gi_Window,
-                                                       iihd->GadgetInfo.gi_Requester,
-                                                       IntuitionBase);
-                            }
-                        }
-                        break;
-
-                    case GTYP_PROPGADGET:
-                        HandlePropSelectUp(gadget,
-                                           iihd->GadgetInfo.gi_Window,
-                                           NULL,
-                                           IntuitionBase);
-                        if (gadget->Activation & GACT_RELVERIFY)
-                        {
-                            ih_fire_intuimessage(iihd->GadgetInfo.gi_Window,
-                                                 IDCMP_GADGETUP,
-                                                 0,
-                                                 gadget,
-                                                 IntuitionBase);
-                        }
-                        break;
-                }
-
-                gadget->Activation &= ~GACT_ACTIVEGADGET;
-                iihd->ActiveGadget = NULL;
+                AbortActiveGadget(iihd->ActiveGadget, iihd, IntuitionBase);
             }
 
             ActivateWindow(NULL);

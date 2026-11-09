@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Internal GadTools checkbox class.
 */
@@ -84,15 +84,26 @@ STATIC VOID drawimage(Class *cl, struct Gadget *gad, struct RastPort *rp,
     /* Draw disabled pattern, if not supported by imageclass. */
     if ((disabled) && !(gad->Flags & GFLG_IMAGEDISABLE))
     {
-        DoDisabledPattern(rp,
-                          gad->LeftEdge,
-                          gad->TopEdge,
-                          gad->LeftEdge + gad->Width - 1,
-                          gad->TopEdge + gad->Height - 1,
-                          data->dri->dri_Pens[SHADOWPEN],
-                          GadToolsBase);
+        gt_disabledpattern(GadToolsBase, rp, gad, data->dri);
     }
     
+}
+
+/**********************************************************************************************/
+
+/* drawimage() into a rastport obtained from the GadgetInfo. Returns FALSE if
+   there was no rastport. */
+static BOOL drawimagegi(Class *cl, struct Gadget *gad, struct GadgetInfo *gi, BOOL checked)
+{
+    struct RastPort *rp = ObtainGIRPort(gi);
+
+    if (!rp)
+        return FALSE;
+
+    drawimage(cl, gad, rp, checked, FALSE);
+    ReleaseGIRPort(rp);
+
+    return TRUE;
 }
 
 /**********************************************************************************************/
@@ -102,7 +113,6 @@ IPTR GTCheckBox__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
     struct CheckBoxData *data;
     struct TagItem      *tag;
     struct TagItem *taglist = msg->ops_AttrList;
-    struct RastPort     *rp;
     IPTR                retval = FALSE;
 
     data = INST_DATA(cl, g);
@@ -166,17 +176,8 @@ IPTR GTCheckBox__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
     if ((retval) && (msg->MethodID != OM_NEW) &&
         ((msg->MethodID != OM_UPDATE) || (OCLASS(g) == cl)))
     {
-        struct gpRender rmsg;
-        rmsg.gpr_RPort = ObtainGIRPort(msg->ops_GInfo);
-        if (rmsg.gpr_RPort)
-        {
-            rmsg.MethodID = GM_RENDER;
-            rmsg.gpr_GInfo = msg->ops_GInfo;
-            rmsg.gpr_Redraw = GREDRAW_UPDATE;
-            DoMethodA((Object *)g, &rmsg);
-            ReleaseGIRPort(rmsg.gpr_RPort);
+        if (gt_render(GadToolsBase, (Object *)g, msg->ops_GInfo, GREDRAW_UPDATE))
             retval = FALSE;
-        }
     }
 
     return retval;
@@ -300,17 +301,13 @@ IPTR GTCheckBox__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 IPTR GTCheckBox__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct CheckBoxData *data;
-    struct RastPort     *rp;
     IPTR                retval;
     
     data = INST_DATA(cl, g);
     data->flags |= CF_MouseOverGad;
     
-    rp = ObtainGIRPort(msg->gpi_GInfo);
-    if (rp)
+    if (drawimagegi(cl, g, msg->gpi_GInfo, (g->Flags&GFLG_SELECTED) ? FALSE : TRUE))
     {
-        drawimage(cl, g, rp, (g->Flags&GFLG_SELECTED) ? FALSE : TRUE, FALSE);
-        ReleaseGIRPort(rp);
         retval = GMR_MEACTIVE;
     }
     else
@@ -326,7 +323,6 @@ IPTR GTCheckBox__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 IPTR GTCheckBox__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct CheckBoxData *data;
-    struct RastPort     *rp;
     IPTR                retval = GMR_MEACTIVE;
 
     data = INST_DATA(cl, g);
@@ -357,13 +353,7 @@ IPTR GTCheckBox__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg
             {
                 if (data->flags & CF_MouseOverGad)
                 {
-                    rp = ObtainGIRPort(msg->gpi_GInfo);
-                    if (rp)
-                    {
-                        drawimage(cl, g, rp,
-                                  g->Flags&GFLG_SELECTED, FALSE);
-                        ReleaseGIRPort(rp);
-                    }
+                    drawimagegi(cl, g, msg->gpi_GInfo, g->Flags&GFLG_SELECTED);
                     data->flags &= ~CF_MouseOverGad;
                 }
             }
@@ -371,13 +361,7 @@ IPTR GTCheckBox__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg
             {
                 if (!(data->flags & CF_MouseOverGad))
                 {
-                    rp = ObtainGIRPort(msg->gpi_GInfo);
-                    if (rp)
-                    {
-                        drawimage(cl, g, rp,
-                                  (g->Flags&GFLG_SELECTED)?FALSE:TRUE, FALSE);
-                        ReleaseGIRPort(rp);
-                    }
+                    drawimagegi(cl, g, msg->gpi_GInfo, (g->Flags&GFLG_SELECTED)?FALSE:TRUE);
                     data->flags |= CF_MouseOverGad;
                 }
             }
@@ -398,16 +382,10 @@ IPTR GTCheckBox__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg
 IPTR GTCheckBox__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *msg)
 {
     struct CheckBoxData *data;
-    struct RastPort     *rp;
     
     data = INST_DATA(cl, g);
     data->flags &= ~CF_MouseOverGad;
-    rp = ObtainGIRPort(msg->gpgi_GInfo);
-    if (rp)
-    {
-        drawimage(cl, g, rp, g->Flags & GFLG_SELECTED, FALSE);
-        ReleaseGIRPort(rp);
-    }
+    drawimagegi(cl, g, msg->gpgi_GInfo, g->Flags & GFLG_SELECTED);
     
     return 0;
 }

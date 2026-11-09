@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Rename a file
 */
@@ -8,6 +8,7 @@
 #include <proto/exec.h>
 #include "dos_intern.h"
 #include <string.h>
+#include <proto/dos.h>
 
 /* An empty path component is the AmigaDOS parent operation: a leading '/',
  * a '/' right after the volume separator, or a doubled '/'. */
@@ -23,6 +24,33 @@ static BOOL has_parent_reference(CONST_STRPTR name)
             return TRUE;
     }
     return FALSE;
+}
+
+#define RENAME_BUFSIZE 256
+
+/* Append 'name' to the directory path in 'buf' (RENAME_BUFSIZE bytes).
+ * Returns buf, or 'fallback' if the result does not fit. */
+static CONST_STRPTR rename_join(char *buf, CONST_STRPTR name, CONST_STRPTR fallback)
+{
+    int namelen = strlen(name);
+    int len = strlen(buf);
+
+    if (len + namelen < RENAME_BUFSIZE - 1)
+    {
+        if (buf[len - 1] != ':')
+            buf[len++] = '/';
+        CopyMem(name, buf + len, namelen + 1);
+        return buf;
+    }
+    return fallback;
+}
+
+/* Make 'name' absolute by prefixing the current directory */
+static CONST_STRPTR rename_absolute(char *buf, CONST_STRPTR name, struct Process *me, struct DosLibrary *DOSBase)
+{
+    if (NameFromLock(me->pr_CurrentDir, buf, RENAME_BUFSIZE - 1))
+        return rename_join(buf, name, name);
+    return name;
 }
 
 /*****************************************************************************
@@ -69,8 +97,8 @@ static BOOL has_parent_reference(CONST_STRPTR name)
     struct DevProc *olddvp, *newdvp;
     LONG status;
     struct Process *me = (struct Process *)FindTask(NULL);
-    char buf1[256], vol[32];
-    char buf2[256];
+    char buf1[RENAME_BUFSIZE], vol[32];
+    char buf2[RENAME_BUFSIZE];
     int len;
     BSTR bstrNewName, bstrOldName;
 
@@ -100,18 +128,7 @@ static BOOL has_parent_reference(CONST_STRPTR name)
     else
     {
         /* convert to absolute path */
-        if (NameFromLock(me->pr_CurrentDir, buf1, sizeof(buf1) - 1))
-        {
-            int namelen = strlen(oldName);
-            len = strlen(buf1);
-            if (len + namelen < sizeof(buf1) - 1)
-            {
-                if (buf1[len - 1] != ':')
-                    buf1[len++] = '/';
-                CopyMem(oldName, buf1 + len, namelen + 1);
-                oldName = buf1;
-            }
-        }
+        oldName = rename_absolute(buf1, oldName, me, DOSBase);
     }
 
     len = SplitName(newName, ':', vol, 0, sizeof(vol) - 1);
@@ -138,17 +155,8 @@ static BOOL has_parent_reference(CONST_STRPTR name)
         {
             if (NameFromLock(lock, buf2, sizeof(buf2) - 1))
             {
-                int namelen;
-                len = strlen(buf2);
                 pos2 = newName + (int)(pos - buf2);
-                namelen = strlen(pos2);
-                if (len + namelen < sizeof(buf2) - 1)
-                {
-                    if (buf2[len - 1] != ':')
-                        buf2[len++] = '/';
-                    CopyMem(pos2, buf2 + len, namelen + 1);
-                    newName = buf2;
-                }
+                newName = rename_join(buf2, pos2, newName);
             }
             UnLock(lock);
         }
@@ -156,18 +164,7 @@ static BOOL has_parent_reference(CONST_STRPTR name)
     else
     {
         /* convert to absolute path */
-        if (NameFromLock(me->pr_CurrentDir, buf2, sizeof(buf2) - 1))
-        {
-            int namelen = strlen(newName);
-            len = strlen(buf2);
-            if (len + namelen < sizeof(buf2) - 1)
-            {
-                if (buf2[len - 1] != ':')
-                    buf2[len++] = '/';
-                CopyMem(newName, buf2 + len, namelen + 1);
-                newName = buf2;
-            }
-        }
+        newName = rename_absolute(buf2, newName, me, DOSBase);
     }
 
     D(bug("[Dos] rename %s %s\n", oldName, newName));

@@ -56,7 +56,7 @@
     switch (type)
     {
     case DOS64_FIB:
-        size = sizeof(struct FileInfoBlock64);
+        size = sizeof(struct FileInfoBlock);
         break;
     case DOS64_INFODATA:
         size = sizeof(struct InfoData64);

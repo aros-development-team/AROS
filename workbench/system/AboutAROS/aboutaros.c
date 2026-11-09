@@ -195,6 +195,163 @@ BOOL NamesToList
     return success;
 }
 
+/* Return the unique bounded AROS website URL already present in the
+ * localized About text. Accept only the project host with an optional
+ * slash-separated ASCII path; the caller keeps the displayed text unchanged.
+ * Invalid, ambiguous and oversized targets simply suppress the optional QR.
+ */
+#define ABOUTAROS_CATALOG_TEXT_LIMIT 4096UL
+static BOOL AboutAROSWebsiteURL(CONST_STRPTR text, char *dst, ULONG capacity,
+                                ULONG *urlLength)
+{
+    static const struct {
+        CONST_STRPTR name;
+        ULONG length;
+    } hosts[] = {
+        { "http://www.aros.org", sizeof("http://www.aros.org") - 1 },
+        { "https://www.aros.org", sizeof("https://www.aros.org") - 1 },
+        { "http://aros.org", sizeof("http://aros.org") - 1 },
+        { "https://aros.org", sizeof("https://aros.org") - 1 }
+    };
+    const char *p;
+    ULONG textLength = 0;
+    ULONG matches = 0;
+    ULONG acceptedLength = 0;
+
+    if (text == NULL || dst == NULL || urlLength == NULL || capacity == 0)
+        return FALSE;
+    dst[0] = '\0';
+    *urlLength = 0;
+    while (textLength < ABOUTAROS_CATALOG_TEXT_LIMIT &&
+           text[textLength] != '\0')
+        textLength++;
+    if (textLength == ABOUTAROS_CATALOG_TEXT_LIMIT)
+        return FALSE;
+    for (p = text; *p != '\0'; p++)
+    {
+        ULONG i;
+
+        for (i = 0; i < sizeof(hosts) / sizeof(hosts[0]); i++)
+        {
+            const char *end;
+            ULONG hostlen = hosts[i].length;
+            ULONG length;
+
+            if (strncmp(p, hosts[i].name, hostlen) != 0)
+                continue;
+            /* Do not treat a larger host as an AROS hostname. */
+            end = p + hostlen;
+            if (*end == '/')
+            {
+                do {
+                    end++;
+                } while ((*end >= 'a' && *end <= 'z') ||
+                         (*end >= 'A' && *end <= 'Z') ||
+                         (*end >= '0' && *end <= '9') ||
+                         *end == '/' || *end == '-' || *end == '_');
+            }
+            if (*end != '\0' && *end != ' ' && *end != '\t' &&
+                *end != '\r' && *end != '\n' &&
+                !(*end == '.' && (end[1] == '\0' || end[1] == ' ')) &&
+                !(*end == ',' && (end[1] == '\0' || end[1] == ' ')))
+                continue;
+            length = (ULONG)(end - p);
+            if (length == 0 || length >= capacity || length > 62)
+                return FALSE;
+            matches++;
+            if (matches > 1)
+                return FALSE;
+            {
+                ULONG j;
+                for (j = 0; j < length; j++)
+                    dst[j] = p[j];
+            }
+            dst[length] = '\0';
+            acceptedLength = length;
+            /* Skip the accepted URL to avoid matching inside its path. */
+            p = end - 1;
+            break;
+        }
+    }
+    if (matches == 1)
+    {
+        *urlLength = acceptedLength;
+        return TRUE;
+    }
+    return FALSE;
+}
+
+/* Localized Text.mui strings: wrap at spaces before drawing.  Unlike
+ * Floattext.mui, Text.mui is not a List and cannot create scrollbars.
+ * Only 4095 bytes of catalog text are accepted, and no multibyte character
+ * is split because only ASCII spaces are changed to newline separators.
+ */
+static STRPTR AboutAROSWrappedText(APTR pool, ULONG id)
+{
+    CONST_STRPTR text = _(id);
+    ULONG length = 0, i, column = 0;
+    ULONG lastSpace = ABOUTAROS_CATALOG_TEXT_LIMIT;
+    STRPTR result;
+
+    if (pool == NULL || text == NULL)
+        return NULL;
+    while (length < ABOUTAROS_CATALOG_TEXT_LIMIT && text[length] != '\0')
+        length++;
+    if (length == ABOUTAROS_CATALOG_TEXT_LIMIT)
+        return NULL;
+    result = AllocPooled(pool, length + 4);
+    if (result == NULL)
+        return NULL;
+    result[0] = '\033';
+    result[1] = '3';
+    for (i = 0; i <= length; i++)
+        result[i + 2] = text[i];
+    if (id == MSG_LICENSE_1)
+    {
+        result[length + 2] = ' ';
+        result[length + 3] = '\0';
+    }
+    for (i = 0; i < length; i++)
+    {
+        if (result[i + 2] == '\n')
+        {
+            column = 0;
+            lastSpace = ABOUTAROS_CATALOG_TEXT_LIMIT;
+            continue;
+        }
+        if (result[i + 2] == ' ')
+            lastSpace = i;
+        column++;
+        if (column >= 72 && lastSpace != ABOUTAROS_CATALOG_TEXT_LIMIT)
+        {
+            result[lastSpace + 2] = '\n';
+            column = i - lastSpace;
+            lastSpace = ABOUTAROS_CATALOG_TEXT_LIMIT;
+        }
+    }
+    return result;
+}
+
+/* Keep the licence link inline only for short localized sentences.
+ * Longer translations retain the original multi-line layout. */
+static BOOL AboutAROSLicenseInline(void)
+{
+    CONST_STRPTR parts[3] = { _(MSG_LICENSE_1), _(MSG_LICENSE_2), _(MSG_LICENSE_3) };
+    ULONG i, length = 0;
+    for (i = 0; i < 3; i++)
+    {
+        CONST_STRPTR p = parts[i];
+        if (p == NULL) return FALSE;
+        while (*p != '\0' && length <= 64)
+        {
+            length++;
+            p++;
+        }
+        if (*p != '\0') return FALSE;
+    }
+    return length <= 64;
+}
+
 /*** Methods ****************************************************************/
 /* Construct the AboutAROS application, window, lists and optional QR view.
  * Forward construction to the MUI superclass. A ready QR object is
@@ -226,10 +383,22 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     BPTR                   lock;
     APTR                   pool;
     Object                *qrGroup = NULL;
+    STRPTR                 copyrightText, licenseFirst, licenseLast, websiteText;
+    BOOL                   licenseInline;
 
     /* Allocate memory pool ------------------------------------------------*/
     pool = CreatePool(MEMF_ANY, 4096, 4096);
     if (pool == NULL) return NULL;
+    copyrightText = AboutAROSWrappedText(pool, MSG_COPYRIGHT);
+    licenseFirst = AboutAROSWrappedText(pool, MSG_LICENSE_1);
+    licenseLast = AboutAROSWrappedText(pool, MSG_LICENSE_3);
+    websiteText = AboutAROSWrappedText(pool, MSG_MORE_INFORMATION);
+    if (!copyrightText || !licenseFirst || !licenseLast || !websiteText)
+    {
+        DeletePool(pool);
+        return NULL;
+    }
+    licenseInline = AboutAROSLicenseInline();
 
     /* Check if the logotype is available ----------------------------------*/
     if ((lock = Lock(LOGOTYPE_IMAGE, ACCESS_READ)) != BNULL)
@@ -290,6 +459,7 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 GroupSpacing(2),
                 MUIA_Background, WINDOW_BG,
 
+                Child, (IPTR) VSpace(8),
                 Child, showLogotype
                     ? (IPTR) ImageObject,
                           MUIA_Image_Spec, (IPTR)    "3:"LOGOTYPE_IMAGE,
@@ -301,7 +471,7 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                           MUIA_Weight,               0,
                       End
                     ,
-                Child, (IPTR) VSpace(4),
+                Child, (IPTR) VSpace(8),
                 Child, (IPTR) HGroup,
                     InnerSpacing(0,0),
 
@@ -355,65 +525,78 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 End,
 #endif
                 Child, (IPTR) VSpace(4),
-                Child, (IPTR) (qrGroup = (Object *)HGroup,
-                    MUIA_InnerLeft, 0,
-                    MUIA_InnerTop, 0,
-                    MUIA_InnerRight, 8,
-                    MUIA_InnerBottom, 0,
-                    GroupSpacing(6),
-                    Child, (IPTR) VGroup,
-                        InnerSpacing(0,0),
-                        GroupSpacing(2),
-                        Child, (IPTR) TextObject,
-                            MUIA_Text_PreParse, (IPTR) "\0333\033c",
-                            MUIA_Text_Contents,        __(MSG_COPYRIGHT),
-                        End,
-                        Child, (IPTR) HGroup,
+                /* Center the information within the original logo footprint. */
+                Child, (IPTR) HGroup,
+                    InnerSpacing(0,0),
+                    GroupSpacing(0),
+                    Child, (IPTR) HSpace(0),
+                    Child, (IPTR) (qrGroup = (Object *)HGroup,
+                        MUIA_HorizWeight, 100,
+                        MUIA_FixWidth, 600,
+                        MUIA_InnerLeft, 20,
+                        MUIA_InnerRight, 12,
+                        MUIA_InnerTop, 0,
+                        MUIA_InnerBottom, 0,
+                        GroupSpacing(16),
+                        Child, (IPTR) VGroup,
                             InnerSpacing(0,0),
-                            GroupSpacing(0),
-
-                            Child, (IPTR) HVSpace,
+                            GroupSpacing(2),
+                            /* Native Text.mui: no list widgets or scrollbars. */
                             Child, (IPTR) TextObject,
-                                MUIA_Text_PreParse, (IPTR) tpp_Plain,
-                                MUIA_Text_Contents,        __(MSG_LICENSE_1),
-                                MUIA_Weight,               0,
+                                NoFrame,
+                                MUIA_Background, WINDOW_BG,
+                                MUIA_VertWeight, 0,
+                                MUIA_Text_Contents, (IPTR)copyrightText,
                             End,
+                            /* Short licence sentences use one line; the link remains clickable. */
+                            Child, (IPTR) HGroup,
+                                MUIA_Group_Horiz, licenseInline,
+                                InnerSpacing(0,0),
+                                GroupSpacing(0),
+                                Child, (IPTR) TextObject,
+                                    NoFrame,
+                                    MUIA_Background, WINDOW_BG,
+                                    MUIA_HorizWeight, 0,
+                                    MUIA_Text_Contents, (IPTR)licenseFirst,
+                                End,
+                                Child, (IPTR) (licenseButton = (Object *)TextObject,
+                                    MUIA_InputMode, MUIV_InputMode_RelVerify,
+                                    MUIA_Text_PreParse, (IPTR) "\0333\033u",
+                                    MUIA_Text_Contents, __(MSG_LICENSE_2),
+                                    MUIA_Weight, 0,
+                                End),
+                                Child, (IPTR) TextObject,
+                                    NoFrame,
+                                    MUIA_Background, WINDOW_BG,
+                                    MUIA_HorizWeight, 0,
+                                    MUIA_Text_Contents, (IPTR)licenseLast,
+                                End,
+                                /* Optical alignment within the existing text column.
+                                 * Zero width in the multi-line locale fallback. */
+                                Child, (IPTR) HSpace(licenseInline ? 42 : 0),
+                            End,
+                            Child, (IPTR) VSpace(8),
                             Child, (IPTR) TextObject,
-                                MUIA_Text_PreParse, (IPTR) tpp_Plain,
-                                MUIA_Text_Contents,        (IPTR)" ",
-                                MUIA_Weight,               0,
+                                NoFrame,
+                                MUIA_Background, WINDOW_BG,
+                                MUIA_VertWeight, 0,
+                                MUIA_Text_Contents, (IPTR)websiteText,
                             End,
-                            Child, (IPTR) (licenseButton = (Object *)TextObject,
-                                MUIA_InputMode,            MUIV_InputMode_RelVerify,
-                                MUIA_Text_PreParse, (IPTR) "\0333\033u",
-                                MUIA_Text_Contents,        __(MSG_LICENSE_2),
-                                MUIA_Weight,        0,
-                            End),
-                            Child, (IPTR) TextObject,
-                                MUIA_Text_PreParse, (IPTR) tpp_Plain,
-                                MUIA_Text_Contents,        __(MSG_LICENSE_3),
-                                MUIA_Weight,               0,
-                            End,
-                            Child, (IPTR) HVSpace,
-                        End,
-                        Child, (IPTR) TextObject,
-                            MUIA_Text_PreParse, (IPTR) "\0333\033c",
-                            MUIA_Text_Contents,        __(MSG_MORE_INFORMATION),
-                        End,
-                        Child, (IPTR) VSpace(4),
 #if defined(BUILDCPU)
-                        Child, (IPTR) TextObject,
-                            MUIA_Text_PreParse, (IPTR) "\0333\033c",
-                            MUIA_Text_Contents, (IPTR) str_buildcpu,
-                            MUIA_Weight,               0,
-                        End,
-                        Child, (IPTR) RectangleObject,
-                            MUIA_FixHeightTxt, (IPTR) " ",
-                            MUIA_Weight,               0,
-                        End,
+                            Child, (IPTR) TextObject,
+                                MUIA_Text_PreParse, (IPTR) "\0333\033c",
+                                MUIA_Text_Contents, (IPTR) str_buildcpu,
+                                MUIA_Weight, 0,
+                            End,
+                            Child, (IPTR) RectangleObject,
+                                MUIA_FixHeightTxt, (IPTR) " ",
+                                MUIA_Weight, 0,
+                            End,
 #endif
-                    End,
-                End),
+                        End,
+                    End),
+                    Child, (IPTR) HSpace(0),
+                End,
                 Child, (IPTR) VGroup,
                     InnerSpacing(4,4),
 
@@ -453,23 +636,26 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->aad_Window = window;
         data->aad_Pool   = pool;
 
-        /* Keep About usable without QRCode.mcc, including on older images. */
+        /* QRCode.mcc is optional. Reuse the exact localized CTA URL; do not
+         * invent a language mapping or a second, different website target.
+         */
         {
-            static const UBYTE qrText[] = "https://github.com/aros-development-team/AROS";
-            struct MUI_QRCodePayload qrPayload;
-            IPTR qrStatus = MUIV_QRCode_Status_Invalid;
-
-            if (qrGroup != NULL)
+            char qrURL[128];
+            ULONG qrLength = 0;
+            if (qrGroup != NULL &&
+                AboutAROSWebsiteURL(_(MSG_MORE_INFORMATION), qrURL,
+                                    sizeof(qrURL), &qrLength))
             {
-                Object *qrCode;
-
-                qrPayload.Bytes = qrText;
-                qrPayload.Length = (ULONG)(sizeof(qrText) - 1);
-                qrCode = MUI_NewObject(MUIC_QRCode,
-                    MUIA_QRCode_Data, (IPTR)&qrPayload,
+                LONG side = qrLength <= 26 ? 99 : (qrLength <= 42 ? 111 : 123);
+                IPTR qrStatus = MUIV_QRCode_Status_Invalid;
+                Object *qrCode = MUI_NewObject(MUIC_QRCode,
+                    MUIA_QRCode_Text, (IPTR)qrURL,
                     MUIA_QRCode_ECC, MUIV_QRCode_ECC_M,
-                    MUIA_FixWidth, 123,
-                    MUIA_FixHeight, 123,
+                    MUIA_Background, WINDOW_BG,
+                    MUIA_QRCode_ForegroundPenSpec, (IPTR)&(const struct MUI_PenSpec){ "s3" },
+                    MUIA_QRCode_Transparent, TRUE,
+                    MUIA_FixWidth, side,
+                    MUIA_FixHeight, side,
                     TAG_DONE);
                 if (qrCode != NULL)
                 {

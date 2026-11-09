@@ -59,25 +59,14 @@
     if(Res) {
         if(IS_RECT_EVIL(Rect)) {
             /* Source Rect is empty. Make a plain copy of Reg. */
-            if(_CopyRegionRectangles(Reg, Res, GfxBase))
-                return Res;
+            return _CopyRegionND(Reg, Res, GfxBase);
         } else {
+            struct Region R;
             struct RegionRectangle rr;
 
-            rr.bounds = *Rect;
-            rr.Next   = NULL;
-            rr.Prev   = NULL;
-
-            if(_DoOperationBandBand(_OrBandBand,
-                                    MinX(Reg), 0, MinY(Reg), 0,
-                                    Reg->RegionRectangle, &rr, &Res->RegionRectangle, &Res->bounds, GfxBase)) {
-                _TranslateRegionRectangles(Res->RegionRectangle, -MinX(Res), -MinY(Res));
-
-                return Res;
-            }
+            _RectToRegion(Rect, &R, &rr);
+            return _RegionOpND(_OrBandBand, Reg, &R, Res, GfxBase);
         }
-
-        DisposeRegion(Res);
     }
 
     return NULL;

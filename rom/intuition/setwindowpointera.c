@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -88,35 +88,12 @@
                 }
                 else
                 {
-                    struct msSetPointerShape pmsg;
-                    pmsg.MethodID = MM_SetPointerShape;
-                    pmsg.pointer = NULL;
-
                     if (pointer == NULL)
                         pointer = GetPrivIBase(IntuitionBase)->DefaultPointer;
                     if (busy)
                         pointer = GetPrivIBase(IntuitionBase)->BusyPointer;
 
-                    GetAttr(POINTERA_SharedPointer, pointer, (IPTR *)&pmsg.pointer);
-
-                    DEBUG_POINTER(dprintf("SetWindowPointer: scr 0x%lx pointer 0x%lx sprite 0x%lx\n",
-                                          scr, pointer, pmsg.pointer->sprite));
-
-                    if (DoMethodA(scr->IMonitorNode, &pmsg))
-                    {
-                        ObtainSharedPointer(pmsg.pointer, IntuitionBase);
-                        ReleaseSharedPointer(scr->Pointer, IntuitionBase);
-                        scr->Pointer = pmsg.pointer;
-                        if (window)
-                        {
-                            window->XOffset = pmsg.pointer->xoffset;
-                            window->YOffset = pmsg.pointer->yoffset;
-                        }
-                    }
-                    else
-                    {
-                        DEBUG_POINTER(dprintf("SetWindowPointer: can't set pointer.\n"));
-                    }
+                    SetScreenPointer(scr, window, pointer, IntuitionBase);
                 }
             }
 

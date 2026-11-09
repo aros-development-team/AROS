@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2026, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -512,16 +512,16 @@ static LONG sk_RenderPreInit(struct IODRPReq *io, LONG flags)
     }
 
     switch (PD->pd_Preferences.PrintPitch) {
-    case PP_ELITE: sk_FontCPI = 120; break;
-    case PP_FINE:  sk_FontCPI = 171; break;
-    case PP_PICA:  sk_FontCPI = 100; break;
+    case ELITE: sk_FontCPI = 120; break;
+    case FINE:  sk_FontCPI = 171; break;
+    case PICA:  sk_FontCPI = 100; break;
     default:
         return PDERR_BADDIMENSION;
     }
 
     switch (PD->pd_Preferences.PrintSpacing) {
-    case PS_SIX_LPI:   sk_SpacingLPI = 6; break;
-    case PS_EIGHT_LPI: sk_SpacingLPI = 8; break;
+    case SIX_LPI:   sk_SpacingLPI = 6; break;
+    case EIGHT_LPI: sk_SpacingLPI = 8; break;
     default:
         return PDERR_BADDIMENSION;
     }

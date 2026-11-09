@@ -20,9 +20,12 @@
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <aros/macros.h>
+#include <hidd/hidd.h>
 #include <hidd/pci.h>
 #include <hardware/pci.h>
 #include <utility/tagitem.h>
+
+#include <string.h>
 
 #include <fdt.h>
 
@@ -57,6 +60,8 @@ BOOL PCIDT_Map(struct pcidt_staticdata *psd, IPTR base, IPTR size)
     return PCIDT_MapAt(psd, base, base, size);
 }
 
+#define PCIDT_MAP_PIECE     0x40000000UL
+
 BOOL PCIDT_MapAt(struct pcidt_staticdata *psd, IPTR va, IPTR pa, IPTR size)
 {
     APTR KernelBase = psd->kernelBase;
@@ -68,11 +73,20 @@ BOOL PCIDT_MapAt(struct pcidt_staticdata *psd, IPTR va, IPTR pa, IPTR size)
         return FALSE;
     }
 
-    if (!KrnMapGlobal((APTR)va, (APTR)pa, size,
-                      MAP_Readable | MAP_Writable))
+    /* KrnMapGlobal() takes a 32-bit length: large regions go in pieces */
+    while (size)
     {
-        D(bug("[PCIDT:Driver] could not map %p+%p\n", pa, size);)
-        return FALSE;
+        IPTR piece = (size > PCIDT_MAP_PIECE) ? PCIDT_MAP_PIECE : size;
+
+        if (!KrnMapGlobal((APTR)va, (APTR)pa, piece,
+                          MAP_Readable | MAP_Writable))
+        {
+            D(bug("[PCIDT:Driver] could not map %p+%p\n", pa, piece);)
+            return FALSE;
+        }
+        va += piece;
+        pa += piece;
+        size -= piece;
     }
     return TRUE;
 }
@@ -467,6 +481,19 @@ static void pcidt_map64bars(struct pcidt_staticdata *psd,
                         PCIDT_MapAt(psd, pcidt_mem64_va(b, cpu), cpu,
                                     (IPTR)size);
                     }
+
+                    if (b->mem64RegionCount < PCIDT_MAX_REGIONS)
+                    {
+                        struct pcidt_region *r =
+                            &b->mem64Regions[b->mem64RegionCount++];
+
+                        r->addr = addr;
+                        r->size = size;
+                        r->bus  = bus;
+                        r->dev  = dev;
+                        r->sub  = sub;
+                        r->reg  = (UBYTE)(reg - 4);
+                    }
                 }
             }
         }
@@ -647,6 +674,7 @@ static ULONG pcidt_discover(struct pcidt_staticdata *psd)
             b = &psd->bridges[psd->bridgeCount];
             b->access = pcidt_known[i].access;
             b->index = psd->bridgeCount;
+            b->node = node;
 
             /*
              * A DesignWare node names its windows: "dbi" is the
@@ -779,6 +807,109 @@ static ULONG pcidt_discover(struct pcidt_staticdata *psd)
     return psd->bridgeCount;
 }
 
+/*
+ * What the firmware says about a bridge and its devices.
+ *
+ * Nothing but the driver knows that the object it made for a bridge and
+ * a node of the device tree (or of the ACPI namespace) are the same
+ * piece of hardware, so the objects say so themselves: each gets a
+ * vHidd_Relation_Firmware relation to the path of every node that
+ * describes it. The nodes are collected once, before the bridges are
+ * registered.
+ */
+void PCIDT_RecordFirmwareNode(struct pcidt_staticdata *psd, APTR acpi,
+                              fdt_node_t dt, ULONG bridge, UBYTE bus,
+                              UBYTE dev, UBYTE sub)
+{
+    struct pcidt_fwnode *fn = AllocVec(sizeof(struct pcidt_fwnode), MEMF_ANY);
+
+    if (fn)
+    {
+        fn->acpi = acpi;
+        fn->dt = dt;
+        fn->bridge = bridge;
+        fn->bus = bus;
+        fn->dev = dev;
+        fn->sub = sub;
+        ADDTAIL(&psd->fwNodes, &fn->node);
+    }
+}
+
+/*
+ * The nodes below a bridge's own are devices on its bus. Their "reg"
+ * starts with the configuration address, as the PCI bus binding lays it
+ * out: bus in bits 16-23, device in 11-15, function in 8-10. A node
+ * that declares three address cells of its own is a PCI-PCI bridge
+ * with the next bus inside it.
+ */
+static void pcidt_scannodes(struct pcidt_staticdata *psd, ULONG bridge,
+                            fdt_node_t parent)
+{
+    fdt_node_t child;
+
+    if (FDT_GetPropU32(parent, "#address-cells", 0) != 3)
+        return;
+
+    for (child = FDT_FirstChild(parent); child != FDT_NONE;
+         child = FDT_NextSibling(child))
+    {
+        ULONG len = 0;
+        const ULONG *reg = FDT_GetProp(child, "reg", &len);
+
+        if (reg && len >= 3 * sizeof(ULONG))
+        {
+            ULONG hi = (ULONG)FDT_ReadCells(reg, 1);
+
+            PCIDT_RecordFirmwareNode(psd, NULL, child, bridge,
+                                     (hi >> 16) & 0xff, (hi >> 11) & 0x1f,
+                                     (hi >> 8) & 0x07);
+            pcidt_scannodes(psd, bridge, child);
+        }
+    }
+}
+
+void PCIDT_DeclareFirmwareNodes(OOP_Class *cl, OOP_Object *o, ULONG bridge,
+                                UBYTE bus, UBYTE dev, UBYTE sub)
+{
+    struct pcidt_fwnode *fn;
+
+    ForeachNode(&PSD(cl)->fwNodes, fn)
+    {
+        char path[160];
+        BOOL ok;
+
+        if (fn->bridge != bridge || fn->dev != dev)
+            continue;
+        if (dev != PCIDT_FWNODE_HOST &&
+            (fn->bus != bus ||
+             (fn->sub != sub && fn->sub != PCIDT_FWNODE_ANYSUB)))
+            continue;
+
+        if (fn->acpi)
+        {
+            strcpy(path, "acpi/");
+            ok = PCIDT_ACPIPath(fn->acpi, &path[5], sizeof(path) - 5);
+        }
+        else
+        {
+            strcpy(path, "dt");
+            ok = FDT_GetPath(fn->dt, &path[2], sizeof(path) - 2);
+        }
+
+        if (ok)
+        {
+            struct TagItem tags[] =
+            {
+                { tHidd_Relation_Path,  (IPTR)path  },
+                { TAG_DONE,             0           }
+            };
+
+            HIDD_AddRelation(o, vHidd_Relation_Firmware, NULL, tags);
+        }
+        /* Carry on, there can be more than one node for an address */
+    }
+}
+
 OOP_Object *PCIDT__Root__New(OOP_Class *cl, OOP_Object *o,
                              struct pRoot_New *msg)
 {
@@ -798,7 +929,12 @@ OOP_Object *PCIDT__Root__New(OOP_Class *cl, OOP_Object *o,
          * so there is no way to be handed the bridge directly.
          */
         if (psd->bridgeNext < psd->bridgeCount)
+        {
             data->bridge = psd->bridges[psd->bridgeNext++];
+
+            PCIDT_DeclareFirmwareNodes(cl, busObj, data->bridge.index, 0,
+                                       PCIDT_FWNODE_HOST, 0);
+        }
 
         D(bug("[PCIDT:Driver] %s: bus object @ 0x%p, cfg @ %p\n",
               __func__, busObj, data->bridge.cfgBase);)
@@ -890,6 +1026,418 @@ APTR PCIDT__Hidd_PCIDriver__MapPCI(OOP_Class *cl, OOP_Object *o,
         return (APTR)pcidt_mem64_va(b, addr - b->mem64PciBase + b->mem64CpuBase);
 
     return (APTR)addr;
+}
+
+/*
+ * Resizable BAR.
+ *
+ * A larger region needs a new, naturally aligned address in the 64-bit
+ * window, which every bridge between it and the controller must then
+ * forward, the controller must translate, and the CPU must have mapped.
+ * Placement is decided against the regions recorded when the bridge came
+ * up and the windows of the bridges found by walking down from the root
+ * bus - nothing that is in use gets sized again.
+ */
+#define PCIDT_MAX_PCIBRIDGES    16
+
+struct pcidt_pcibridge
+{
+    UBYTE   bus, dev, sub;
+    UBYTE   sec, subord;
+    BOOL    pref64;         /* the prefetchable window takes 64-bit addresses */
+    UQUAD   prefBase, prefLimit;
+    UQUAD   memBase, memLimit;
+    ULONG   saved[3];       /* 0x24, 0x28, 0x2c as found */
+};
+
+static BOOL pcidt_spans_overlap(UQUAD a0, UQUAD a1, UQUAD b0, UQUAD b1)
+{
+    return (a0 <= b1) && (b0 <= a1);
+}
+
+static void pcidt_readwindows(struct pcidt_bridge *b, struct pcidt_pcibridge *p)
+{
+    ULONG pref = PCIDT_ReadConfig(b, p->bus, p->dev, p->sub, 0x24);
+    ULONG mem  = PCIDT_ReadConfig(b, p->bus, p->dev, p->sub, 0x20);
+
+    p->saved[0] = pref;
+    p->saved[1] = PCIDT_ReadConfig(b, p->bus, p->dev, p->sub, 0x28);
+    p->saved[2] = PCIDT_ReadConfig(b, p->bus, p->dev, p->sub, 0x2c);
+
+    p->pref64    = ((pref & 0xf) == 1);
+    p->prefBase  = (UQUAD)(pref & 0xfff0) << 16;
+    p->prefLimit = ((UQUAD)(pref & 0xfff00000)) | 0xfffff;
+    if (p->pref64)
+    {
+        p->prefBase  |= (UQUAD)p->saved[1] << 32;
+        p->prefLimit |= (UQUAD)p->saved[2] << 32;
+    }
+
+    p->memBase  = (UQUAD)(mem & 0xfff0) << 16;
+    p->memLimit = ((UQUAD)(mem & 0xfff00000)) | 0xfffff;
+}
+
+/* Every bridge reachable from the root bus, in the order buses are found */
+static ULONG pcidt_findbridges(struct pcidt_bridge *b,
+                               struct pcidt_pcibridge *out, ULONG max)
+{
+    UBYTE queue[PCIDT_MAX_PCIBRIDGES + 1];
+    ULONG head = 0, tail = 0, count = 0;
+
+    queue[tail++] = b->busStart;
+
+    while (head < tail)
+    {
+        UBYTE bus = queue[head++];
+        UBYTE dev;
+
+        for (dev = 0; dev < 32; dev++)
+        {
+            UBYTE sub, nfunc = 1;
+
+            for (sub = 0; sub < nfunc; sub++)
+            {
+                ULONG hdr, busreg;
+                struct pcidt_pcibridge *p;
+
+                if (PCIDT_ReadConfig(b, bus, dev, sub, 0x00) == 0xffffffff)
+                    continue;
+
+                hdr = (PCIDT_ReadConfig(b, bus, dev, sub, 0x0c) >> 16) & 0xff;
+                if (sub == 0 && (hdr & 0x80))
+                    nfunc = 8;
+                if ((hdr & 0x7f) != 1 || count >= max)
+                    continue;
+
+                busreg = PCIDT_ReadConfig(b, bus, dev, sub, 0x18);
+                p = &out[count++];
+                p->bus = bus;
+                p->dev = dev;
+                p->sub = sub;
+                p->sec = (UBYTE)(busreg >> 8);
+                p->subord = (UBYTE)(busreg >> 16);
+                pcidt_readwindows(b, p);
+
+                if (p->sec > bus && p->sec <= b->busEnd &&
+                    tail < PCIDT_MAX_PCIBRIDGES)
+                    queue[tail++] = p->sec;
+            }
+        }
+    }
+
+    return count;
+}
+
+/* Where a function's Resizable BAR pair for one register lives, or 0 */
+static UWORD pcidt_rebarctrl(struct pcidt_bridge *b, UBYTE bus, UBYTE dev,
+                             UBYTE sub, UBYTE bar)
+{
+    UWORD where = 0x100;
+    unsigned int guard = 0;
+
+    while (where >= 0x100 && where < 0xfff && guard++ < 64)
+    {
+        ULONG h = PCIDT_ReadConfig(b, bus, dev, sub, where);
+
+        if (h == 0 || h == 0xffffffff)
+            return 0;
+
+        if ((h & 0xffff) == PCIEECAP_REBAR)
+        {
+            ULONG pairs = (PCIDT_ReadConfig(b, bus, dev, sub,
+                                            where + PCIREBAR_CTRL(0)) &
+                           PCIREBAR_CTRL_NBAR_MASK) >> PCIREBAR_CTRL_NBAR_SHIFT;
+            ULONG i;
+
+            for (i = 0; i < pairs && i < 6; i++)
+            {
+                if ((PCIDT_ReadConfig(b, bus, dev, sub,
+                                      where + PCIREBAR_CTRL(i)) &
+                     PCIREBAR_CTRL_BAR_MASK) == bar)
+                    return where + PCIREBAR_CTRL(i);
+            }
+            return 0;
+        }
+
+        where = (h >> 20) & 0xffc;
+    }
+
+    return 0;
+}
+
+/* Write a bridge's prefetchable window, upper halves last */
+static void pcidt_setprefwindow(struct pcidt_bridge *b,
+                                struct pcidt_pcibridge *p,
+                                ULONG lo, ULONG basehi, ULONG limithi)
+{
+    /* A zero upper limit under a non-zero upper base closes the window
+       while the halves disagree */
+    PCIDT_WriteConfig(b, p->bus, p->dev, p->sub, 0x2c, 0);
+    PCIDT_WriteConfig(b, p->bus, p->dev, p->sub, 0x24, lo);
+    PCIDT_WriteConfig(b, p->bus, p->dev, p->sub, 0x28, basehi);
+    PCIDT_WriteConfig(b, p->bus, p->dev, p->sub, 0x2c, limithi);
+}
+
+BOOL PCIDT__Hidd_PCIDriver__ResizeBAR(OOP_Class *cl, OOP_Object *o,
+        struct pHidd_PCIDriver_ResizeBAR *msg)
+{
+    struct pcidt_staticdata *psd = PSD(cl);
+    struct PCIDTBusData *data = OOP_INST_DATA(cl, o);
+    struct PCIDTDeviceData *ddata;
+    struct pcidt_bridge *b;
+    struct pcidt_pcibridge bridges[PCIDT_MAX_PCIBRIDGES];
+    BOOL onpath[PCIDT_MAX_PCIBRIDGES];
+    struct pcidt_region *self = NULL;
+    UQUAD size = msg->size, addr, end, winEnd;
+    ULONG nbridges, i, j, lo, hi, cmd, ctrl, newctrl, sizebits, outbound;
+    UWORD reg, ctrlreg;
+    UBYTE bus, dev, sub;
+    BOOL placed = FALSE, ok = FALSE;
+    IPTR cpu = 0;
+
+    if (data->bridge.index >= psd->bridgeCount || msg->bar >= 6)
+        return FALSE;
+    b = &psd->bridges[data->bridge.index];
+    ddata = OOP_INST_DATA(psd->pcidtDeviceClass, msg->device);
+    bus = ddata->bus;
+    dev = ddata->dev;
+    sub = ddata->sub;
+    reg = 0x10 + (msg->bar << 2);
+
+    /* A power of two of at least 1MiB, and a window to put it in */
+    if (!b->mem64Size || size < 0x100000 || (size & (size - 1)))
+        return FALSE;
+    for (sizebits = 0; (1ULL << (sizebits + 20)) < size; sizebits++)
+        ;
+
+    /* Only a 64-bit prefetchable register can live in that window */
+    lo = PCIDT_ReadConfig(b, bus, dev, sub, reg);
+    if ((lo & PCIBAR_MASK_TYPE) != PCIBAR_TYPE_MMAP ||
+        (lo & PCIBAR_MEMTYPE_MASK) != PCIBAR_MEMTYPE_64BIT ||
+        !(lo & PCIBARF_PREFETCHABLE) || msg->bar == 5)
+        return FALSE;
+    hi = PCIDT_ReadConfig(b, bus, dev, sub, reg + 4);
+
+    ctrlreg = pcidt_rebarctrl(b, bus, dev, sub, msg->bar);
+    if (!ctrlreg)
+        return FALSE;
+    ctrl = PCIDT_ReadConfig(b, bus, dev, sub, ctrlreg);
+    if (!(PCIDT_ReadConfig(b, bus, dev, sub, ctrlreg - 4) &
+          (1UL << (sizebits + PCIREBAR_CAP_SIZES_SHIFT))))
+        return FALSE;
+
+    for (i = 0; i < b->mem64RegionCount; i++)
+    {
+        struct pcidt_region *r = &b->mem64Regions[i];
+
+        if (r->bus == bus && r->dev == dev && r->sub == sub && r->reg == reg)
+            self = r;
+    }
+
+    /* Bridges between the device and the root bus must forward it */
+    nbridges = pcidt_findbridges(b, bridges, PCIDT_MAX_PCIBRIDGES);
+    for (i = 0; i < nbridges; i++)
+    {
+        onpath[i] = (bus >= bridges[i].sec && bus <= bridges[i].subord);
+        if (onpath[i] && !bridges[i].pref64)
+        {
+            bug("[PCIDT:Driver] %02x:%02x.%x: bridge %02x:%02x.%x has no 64-bit"
+                " prefetchable window, BAR%u stays as it is\n", bus, dev, sub,
+                bridges[i].bus, bridges[i].dev, bridges[i].sub, msg->bar);
+            return FALSE;
+        }
+    }
+
+    /*
+     * The lowest naturally aligned address that overlaps no other region
+     * or another bridge's windows, and whose bridges' widened windows take
+     * in nothing that lies outside them.
+     */
+    winEnd = (UQUAD)b->mem64PciBase + b->mem64Size;
+    for (addr = ((UQUAD)b->mem64PciBase + size - 1) & ~(size - 1);
+         addr + size <= winEnd; addr += size)
+    {
+        BOOL clash = FALSE;
+
+        end = addr + size - 1;
+        cpu = (IPTR)(addr - b->mem64PciBase) + b->mem64CpuBase;
+        if (pcidt_mem64_va(b, cpu) + size > PCIDT_SV39_IDENTITY_LIMIT)
+            break;
+
+        for (i = 0; i < b->mem64RegionCount && !clash; i++)
+        {
+            struct pcidt_region *r = &b->mem64Regions[i];
+
+            if (r != self &&
+                pcidt_spans_overlap(addr, end, r->addr, r->addr + r->size - 1))
+                clash = TRUE;
+        }
+
+        for (i = 0; i < nbridges && !clash; i++)
+        {
+            struct pcidt_pcibridge *p = &bridges[i];
+
+            if (!onpath[i])
+            {
+                if ((p->prefBase <= p->prefLimit &&
+                     pcidt_spans_overlap(addr, end, p->prefBase, p->prefLimit)) ||
+                    (p->memBase <= p->memLimit &&
+                     pcidt_spans_overlap(addr, end, p->memBase, p->memLimit)))
+                    clash = TRUE;
+                continue;
+            }
+
+            /* What this bridge would forward afterwards */
+            {
+                UQUAD h0 = addr, h1 = end;
+
+                if (p->prefBase <= p->prefLimit)
+                {
+                    if (p->prefBase < h0)
+                        h0 = p->prefBase;
+                    if (p->prefLimit > h1)
+                        h1 = p->prefLimit;
+                }
+
+                for (j = 0; j < b->mem64RegionCount && !clash; j++)
+                {
+                    struct pcidt_region *r = &b->mem64Regions[j];
+
+                    if ((r->bus < p->sec || r->bus > p->subord) &&
+                        pcidt_spans_overlap(h0, h1, r->addr, r->addr + r->size - 1))
+                        clash = TRUE;
+                }
+                for (j = 0; j < nbridges && !clash; j++)
+                {
+                    struct pcidt_pcibridge *q = &bridges[j];
+
+                    if (j == i || onpath[j] ||
+                        (q->bus >= p->sec && q->bus <= p->subord))
+                        continue;
+                    if (q->prefBase <= q->prefLimit &&
+                        pcidt_spans_overlap(h0, h1, q->prefBase, q->prefLimit))
+                        clash = TRUE;
+                }
+            }
+        }
+
+        if (!clash)
+        {
+            placed = TRUE;
+            break;
+        }
+    }
+    if (!placed)
+    {
+        bug("[PCIDT:Driver] %02x:%02x.%x: no room for a %u MB BAR%u in the"
+            " 64-bit window\n", bus, dev, sub, (ULONG)(size >> 20), msg->bar);
+        return FALSE;
+    }
+
+    /* Reachable by the CPU before the device answers there */
+    if (!PCIDT_MapAt(psd, pcidt_mem64_va(b, cpu), cpu, (IPTR)size))
+    {
+        bug("[PCIDT:Driver] %02x:%02x.%x: could not map %u MB for BAR%u\n",
+            bus, dev, sub, (ULONG)(size >> 20), msg->bar);
+        return FALSE;
+    }
+
+    Forbid();
+
+    /* Decoding off for the change; the status half is written as zero,
+       which leaves its write-one-to-clear bits alone */
+    cmd = PCIDT_ReadConfig(b, bus, dev, sub, 0x04) & 0xffff;
+    PCIDT_WriteConfig(b, bus, dev, sub, 0x04, cmd & ~PCICMF_MEMDECODE);
+
+    newctrl = (ctrl & ~PCIREBAR_CTRL_SIZE_MASK) |
+              (sizebits << PCIREBAR_CTRL_SIZE_SHIFT);
+    PCIDT_WriteConfig(b, bus, dev, sub, ctrlreg, newctrl);
+    PCIDT_WriteConfig(b, bus, dev, sub, reg, (ULONG)addr | (lo & 0xf));
+    PCIDT_WriteConfig(b, bus, dev, sub, reg + 4, (ULONG)(addr >> 32));
+
+    if (((PCIDT_ReadConfig(b, bus, dev, sub, ctrlreg) & PCIREBAR_CTRL_SIZE_MASK) ==
+         (newctrl & PCIREBAR_CTRL_SIZE_MASK)) &&
+        ((PCIDT_ReadConfig(b, bus, dev, sub, reg) & ~0xf) == (ULONG)addr) &&
+        (PCIDT_ReadConfig(b, bus, dev, sub, reg + 4) == (ULONG)(addr >> 32)))
+    {
+        ok = TRUE;
+
+        for (i = 0; i < nbridges && ok; i++)
+        {
+            struct pcidt_pcibridge *p = &bridges[i];
+            UQUAD h0 = addr, h1 = end;
+            ULONG wlo;
+
+            if (!onpath[i])
+                continue;
+            if (p->prefBase <= p->prefLimit)
+            {
+                if (p->prefBase < h0)
+                    h0 = p->prefBase;
+                if (p->prefLimit > h1)
+                    h1 = p->prefLimit;
+            }
+
+            /* Bits 31:20 of each address; the type nibbles are read only */
+            wlo = (ULONG)((h0 >> 16) & 0xfff0) | (ULONG)(h1 & 0xfff00000) |
+                  (p->saved[0] & 0x000f000f);
+            pcidt_setprefwindow(b, p, wlo, (ULONG)(h0 >> 32), (ULONG)(h1 >> 32));
+
+            if ((PCIDT_ReadConfig(b, p->bus, p->dev, p->sub, 0x24) & 0xfff0fff0) !=
+                    (wlo & 0xfff0fff0) ||
+                PCIDT_ReadConfig(b, p->bus, p->dev, p->sub, 0x28) != (ULONG)(h0 >> 32) ||
+                PCIDT_ReadConfig(b, p->bus, p->dev, p->sub, 0x2c) != (ULONG)(h1 >> 32))
+                ok = FALSE;
+        }
+    }
+
+    outbound = ok ? PCIDT_ForwardOutbound(b, cpu, (IPTR)addr, (IPTR)size) : 0;
+    if (outbound == ~0U)
+        ok = FALSE;
+
+    if (!ok)
+    {
+        /* Put everything back as it was found */
+        for (i = 0; i < nbridges; i++)
+        {
+            if (onpath[i])
+                pcidt_setprefwindow(b, &bridges[i], bridges[i].saved[0],
+                                    bridges[i].saved[1], bridges[i].saved[2]);
+        }
+        PCIDT_WriteConfig(b, bus, dev, sub, ctrlreg, ctrl);
+        PCIDT_WriteConfig(b, bus, dev, sub, reg, lo);
+        PCIDT_WriteConfig(b, bus, dev, sub, reg + 4, hi);
+    }
+
+    PCIDT_WriteConfig(b, bus, dev, sub, 0x04, cmd);
+
+    Permit();
+
+    if (!ok)
+    {
+        bug("[PCIDT:Driver] %02x:%02x.%x: BAR%u did not take %u MB at %p,"
+            " left as it was\n", bus, dev, sub, msg->bar,
+            (ULONG)(size >> 20), (APTR)(IPTR)addr);
+        return FALSE;
+    }
+
+    if (!self && b->mem64RegionCount < PCIDT_MAX_REGIONS)
+        self = &b->mem64Regions[b->mem64RegionCount++];
+    if (self)
+    {
+        self->addr = addr;
+        self->size = size;
+        self->bus  = bus;
+        self->dev  = dev;
+        self->sub  = sub;
+        self->reg  = (UBYTE)reg;
+    }
+
+    bug("[PCIDT:Driver] %02x:%02x.%x: BAR%u is now %u MB at %p (was %p)\n",
+        bus, dev, sub, msg->bar, (ULONG)(size >> 20), (APTR)(IPTR)addr,
+        (APTR)(IPTR)(((UQUAD)hi << 32) | (lo & ~0xf)));
+
+    return TRUE;
 }
 
 ULONG PCIDT__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
@@ -1072,6 +1620,22 @@ static int PCIDT_InitClass(LIBBASETYPEPTR LIBBASE)
         D(bug("[PCIDT:Driver] %s: no host bridges described\n", __func__);)
         return FALSE;
     }
+
+    /*
+     * Note where the firmware describes each bridge and the devices on
+     * it. A machine can carry a tree and ACPI tables at once, so the
+     * namespace is looked at whichever of them the bridges came from.
+     */
+    for (i = 0; i < psd->bridgeCount; i++)
+    {
+        if (psd->bridges[i].node != FDT_NONE)
+        {
+            PCIDT_RecordFirmwareNode(psd, NULL, psd->bridges[i].node, i, 0,
+                                     PCIDT_FWNODE_HOST, 0);
+            pcidt_scannodes(psd, i, psd->bridges[i].node);
+        }
+    }
+    PCIDT_ScanACPINodes(psd);
 
     pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
     if (!pci)

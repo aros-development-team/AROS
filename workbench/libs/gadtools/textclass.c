@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
  
     Internal GadTools text class (NUMERIC_KIND and TEXT_KIND) .
 */
@@ -47,7 +47,6 @@ STATIC IPTR text_set(Class * cl, Object * o, struct opSet * msg)
     IPTR                retval = 0UL;
     struct TagItem      *tag, *tstate;
     struct TextData     *data = INST_DATA(cl, o);
-    struct RastPort     *rport;
     
     EnterFunc(bug("Text::Set()\n"));
     
@@ -155,17 +154,8 @@ STATIC IPTR text_set(Class * cl, Object * o, struct opSet * msg)
     /* Redraw the gadget, if an attribute was changed and if this is the
        objects' base-class. */
     if ((retval) && (OCLASS(o) == cl)) {
-        rport = ObtainGIRPort(msg->ops_GInfo);
-        if (rport) {
-            struct gpRender rmsg;
-            rmsg.MethodID = GM_RENDER;
-            rmsg.gpr_GInfo = msg->ops_GInfo;
-            rmsg.gpr_RPort = rport;
-            rmsg.gpr_Redraw = GREDRAW_REDRAW;
-            DoMethodA(o, &rmsg);
-            ReleaseGIRPort(rport);
+        if (gt_render(GadToolsBase, o, msg->ops_GInfo, GREDRAW_REDRAW))
             retval = FALSE;
-        }
     }
 
     ReturnInt ("Text::Set", IPTR, retval);
@@ -274,17 +264,11 @@ IPTR GTText__OM_NEW(Class * cl, Object * o, struct opSet *msg)
         
         if (data->flags & TEXTF_BORDER)
         {
-            struct TagItem frame_tags[] =
-            {
-                {IA_Width       , GetTagData(GA_Width, 0, msg->ops_AttrList)                            },
-                {IA_Height      , GetTagData(GA_Height, 0, msg->ops_AttrList)                           },
-                {IA_Resolution  , (data->dri->dri_Resolution.X << 16) + data->dri->dri_Resolution.Y     },
-                {IA_FrameType   , FRAME_BUTTON                                                          },
-                {IA_Recessed    , TRUE                                                                  },
-                {TAG_DONE       , 0UL                                                                   }
-            };
-
-            data->frame = NewObjectA(NULL, FRAMEICLASS, frame_tags);
+            data->frame = gt_newframe(GadToolsBase,
+                                      GetTagData(GA_Width, 0, msg->ops_AttrList),
+                                      GetTagData(GA_Height, 0, msg->ops_AttrList),
+                                      (data->dri->dri_Resolution.X << 16) + data->dri->dri_Resolution.Y,
+                                      FRAME_BUTTON, IA_Recessed);
         }
         
     }
@@ -448,17 +432,7 @@ IPTR GTText__OM_SET(Class *cl, Object *o, struct opSet *msg)
         struct GadgetInfo *gi = msg->ops_GInfo;
         if (gi)
         {
-            struct RastPort *rp = ObtainGIRPort(gi);
-            if (rp)
-            {
-                struct gpRender rmsg;
-                rmsg.MethodID = GM_RENDER;
-                rmsg.gpr_GInfo = gi;
-                rmsg.gpr_RPort = rp;
-                rmsg.gpr_Redraw = GREDRAW_REDRAW;
-                DoMethodA(o, &rmsg);
-                ReleaseGIRPort(rp);
-            } /* if */
+            gt_render(GadToolsBase, o, gi, GREDRAW_REDRAW);
         } /* if */
     } /* if */
 

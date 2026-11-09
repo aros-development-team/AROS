@@ -1,5 +1,5 @@
 TYPE  = TOOL
 STACK = 8192
-TOOLTYPE = "CLASS=hidd.gfx.nouveau"
-TOOLTYPE = "LIBRARY=nouveau.hidd"
+TOOLTYPE = "CLASS=hidd.gfx.nvgfx"
+TOOLTYPE = "LIBRARY=nvgfx.hidd"
 TOOLTYPE = "STARTPRI=-1"

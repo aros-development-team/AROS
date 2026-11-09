@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -37,6 +37,27 @@
    gadget does not work at all -> freeze */
 
 #define SUPPORT_TABCYCLE    1
+
+/****************************************************************************************/
+
+/* Move a member gadget: OM_SET with GA_Left and GA_Top */
+static void setmemberpos(struct Gadget *member, IPTR left, IPTR top, struct GadgetInfo *gi)
+{
+    struct opSet   m;
+    struct TagItem tags[3];
+
+    m.MethodID     = OM_SET;
+    m.ops_AttrList = tags;
+    m.ops_GInfo    = gi;
+
+    tags[0].ti_Tag  = GA_Left;
+    tags[0].ti_Data = left;
+    tags[1].ti_Tag  = GA_Top;
+    tags[1].ti_Data = top;
+    tags[2].ti_Tag  = TAG_DONE;
+
+    DoMethodA((Object *)member, (Msg)&m);
+}
 
 /****************************************************************************************/
 
@@ -208,23 +229,10 @@ IPTR GroupGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
 
     if (dx || dy)
     {
-        struct opSet   m;
-        struct TagItem tags[3];
-
-        m.MethodID     = OM_SET;
-        m.ops_AttrList = tags;
-        m.ops_GInfo    = msg->ops_GInfo;
-
-        tags[0].ti_Tag = GA_Left;
-        tags[1].ti_Tag = GA_Top;
-        tags[2].ti_Tag = TAG_DONE;
-
         memberstate = (struct Gadget *)data->memberlist.mlh_Head;
         while((member = NextObject(&memberstate)))
         {
-            tags[0].ti_Data = member->LeftEdge + dx;
-            tags[1].ti_Data = member->TopEdge  + dy;
-            DoMethodA((Object *)member, (Msg)&m);
+            setmemberpos(member, member->LeftEdge + dx, member->TopEdge + dy, msg->ops_GInfo);
         }
 
     } /* if (dx || dy) */
@@ -267,8 +275,6 @@ IPTR GroupGClass__OM_ADDMEMBER(Class *cl, struct Gadget *g, struct opMember *msg
 {
     struct GroupGData   *data = INST_DATA(cl, g);
     struct opAddTail     m;
-    struct opSet         m2;
-    struct TagItem       tags[3];
     IPTR                 rc;
 
     m.MethodID  = OM_ADDTAIL;
@@ -279,17 +285,9 @@ IPTR GroupGClass__OM_ADDMEMBER(Class *cl, struct Gadget *g, struct opMember *msg
     /* Member gadget had its coords relative to group gadget.
        Convert the coords to absolute coords. */
 
-    m2.MethodID = OM_SET;
-    m2.ops_AttrList = tags;
-    m2.ops_GInfo = NULL;
-
-    tags[0].ti_Tag  = GA_Left;
-    tags[0].ti_Data = ((struct Gadget *)msg->opam_Object)->LeftEdge + g->LeftEdge;
-    tags[1].ti_Tag  = GA_Top;
-    tags[1].ti_Data = ((struct Gadget *)msg->opam_Object)->TopEdge + g->TopEdge;
-    tags[2].ti_Tag  = TAG_DONE;
-
-    DoMethodA(msg->opam_Object, (Msg)&m2);
+    setmemberpos((struct Gadget *)msg->opam_Object,
+                 ((struct Gadget *)msg->opam_Object)->LeftEdge + g->LeftEdge,
+                 ((struct Gadget *)msg->opam_Object)->TopEdge + g->TopEdge, NULL);
 
     recalcgroupsize(cl, g);
 
@@ -300,8 +298,6 @@ IPTR GroupGClass__OM_ADDMEMBER(Class *cl, struct Gadget *g, struct opMember *msg
 
 IPTR GroupGClass__OM_REMMEMBER(Class *cl, struct Gadget *g, struct opMember *msg)
 {
-    struct opSet    m2;
-    struct TagItem  tags[3];
     IPTR            rc;
     STACKULONG      method = OM_REMOVE;
 
@@ -310,17 +306,9 @@ IPTR GroupGClass__OM_REMMEMBER(Class *cl, struct Gadget *g, struct opMember *msg
     /* Member gadget had its coords absolute here.
        Convert the coords back to relative coords. */
 
-    m2.MethodID     = OM_SET;
-    m2.ops_AttrList = tags;
-    m2.ops_GInfo    = NULL;
-
-    tags[0].ti_Tag  = GA_Left;
-    tags[0].ti_Data = ((struct Gadget *)msg->opam_Object)->LeftEdge - g->LeftEdge;
-    tags[1].ti_Tag  = GA_Top;
-    tags[1].ti_Data = ((struct Gadget *)msg->opam_Object)->TopEdge - g->TopEdge;
-    tags[2].ti_Tag  = TAG_DONE;
-
-    DoMethodA(msg->opam_Object, (Msg)&m2);
+    setmemberpos((struct Gadget *)msg->opam_Object,
+                 ((struct Gadget *)msg->opam_Object)->LeftEdge - g->LeftEdge,
+                 ((struct Gadget *)msg->opam_Object)->TopEdge - g->TopEdge, NULL);
 
     recalcgroupsize(cl, g);
 

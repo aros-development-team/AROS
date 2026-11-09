@@ -10,7 +10,7 @@ EXEDIR := $(AROS_TESTS)/cgxvideo
 #MM test-cgxvideo : includes linklibs linklibs-surfacetrack workbench-libs-cgxvideo
 
 %build_progs mmake=test-cgxvideo \
-    files="vlayertest vlayerplay surfacetrack" targetdir=$(EXEDIR) \
+    files="vlayertest vlayerplay surfacetrack csclayers" targetdir=$(EXEDIR) \
     uselibs="surfacetrack"
 
 %common

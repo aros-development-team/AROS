@@ -69,47 +69,14 @@
 
 IPTR ScrDecorClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
-    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
-    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
-    struct scrdecor_data *data;
-
-    D(bug("[SCRDECOR] %s()\n", __func__));
-
-    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
-    if (obj)
-    {
-        data = INST_DATA(cl, obj);
-
-        data->userbuffersize = (ULONG) GetTagData(SDA_UserBuffer, 0, msg->ops_AttrList);
-        
-    }
-    
-    return (IPTR)obj;
+    return decor_om_new(cl, obj, msg, SDA_UserBuffer);
 }
 
 /**************************************************************************************************/
 
 IPTR ScrDecorClass__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 {
-    struct scrdecor_data *data = INST_DATA(cl, obj);
-
-    D(bug("[SCRDECOR] %s()\n", __func__));
-
-    switch(msg->opg_AttrID)
-    {
-        case SDA_UserBuffer:
-            *msg->opg_Storage = (IPTR) data->userbuffersize;
-            break;
-
-        case SDA_TrueColorOnly:
-            *msg->opg_Storage = FALSE;
-            break;
-            
-        default:
-            return DoSuperMethodA(cl, obj, (Msg)msg);
-    }
-    
-    return 1;
+    return decor_om_get(cl, obj, msg, SDA_UserBuffer, SDA_TrueColorOnly);
 }
     
 
@@ -190,8 +157,6 @@ IPTR ScrDecorClass__SDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct sdpDrawSysI
         case SDEPTHIMAGE:
         {
             UWORD  bg;
-            WORD   h_spacing;
-            WORD   v_spacing;
 
             renderimageframe(rp, DEPTHIMAGE, state, pens,
                              left, top, width, height, IntuitionBase);
@@ -201,9 +166,6 @@ IPTR ScrDecorClass__SDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct sdpDrawSysI
             bottom--;
             width -= (frameh << 1);
             height -= (framev << 1);
-
-            h_spacing = width / 6;
-            v_spacing = height / 6;
 
             bg = pens[BACKGROUNDPEN];
  
@@ -216,34 +178,7 @@ IPTR ScrDecorClass__SDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct sdpDrawSysI
              * overlapping window frames.
              */
 
-            left += h_spacing;
-            top  += v_spacing;
-
-            width  -= h_spacing * 2;
-            height -= v_spacing * 2;
-
-            right  = left + width  - 1;
-            bottom = top  + height - 1;
-
-            /* Render top left window  */
-            SetAPen(rp, pens[SHADOWPEN]);
-            drawrect(rp, left, top, right - (width / 3 ), bottom - (height / 3), IntuitionBase);
-
-            /* Render bottom right window  */
-            SetAPen(rp, pens[SHADOWPEN]);
-            drawrect(rp, left + (width / 3), top + (height / 3), right, bottom, IntuitionBase);
-
-            /* Fill bottom right window (inside of the frame above) */
-            SetAPen(rp, pens[SHINEPEN]);
-            RectFill(rp, left + (width / 3) + 1, top + (height / 3) + 1,
-                            right - 1, bottom - 1);
-
-            if (state == IDS_SELECTED)
-            {
-                /* Re-Render top left window  */
-                SetAPen(rp, pens[SHADOWPEN]);
-                drawrect(rp, left, top, right - (width / 3 ), bottom - (height / 3), IntuitionBase);
-            }
+            drawdepthwindows(rp, pens, state, TRUE, left, top, width, height, IntuitionBase);
             break;
         }
 

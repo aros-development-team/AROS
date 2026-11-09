@@ -2,10 +2,14 @@
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
     CUnit tests for bsdsocket.library UDP (IPv4) over the loopback interface:
-    sendto/recvfrom, connected UDP, multiple datagrams and bound names.
+    sendto/recvfrom, connected UDP, multiple datagrams and bound names; and
+    a connected socket that keeps sending to a closed port, at a pace well
+    under the ICMP error rate limit, keeps getting ECONNREFUSED: the limit
+    refills as time passes, also while no TCP connection exists.
 */
 
 #include "socktest.h"
+#include <proto/dos.h>
 
 struct Library *SocketBase = NULL;
 
@@ -117,6 +121,39 @@ void testUDP_GETSOCKNAME(void)
     CloseSocket(rfd);
 }
 
+/* 30 datagrams to a closed port, about 3 a second: each one's ICMP Port
+ * Unreachable must come back as ECONNREFUSED - the rate limit lets 10 a
+ * second through (ip_icmp.c). */
+void testUDP_REFUSED_PACED(void)
+{
+    unsigned short nport;
+    struct sockaddr_storage ss;
+    socklen_t len;
+    long on = 1;
+    char buf[4];
+    int tmp, c, i, refused = 0;
+
+    tmp = st_bound(AF_INET, SOCK_DGRAM, &nport);      /* a port nobody has */
+    CU_ASSERT_FATAL(tmp >= 0);
+    CloseSocket(tmp);
+    c = socket(AF_INET, SOCK_DGRAM, 0);
+    CU_ASSERT_FATAL(c >= 0);
+    len = st_loopback(AF_INET, &ss, nport);
+    CU_ASSERT_EQUAL(connect(c, (struct sockaddr *)&ss, len), 0);
+    IoctlSocket(c, FIONBIO, (char *)&on);
+    for (i = 0; i < 30; i++) {
+        if (send(c, "x", 1, 0) < 0 && Errno() == ECONNREFUSED) {
+            refused++;
+            continue;
+        }
+        Delay(15);
+        if (recv(c, buf, sizeof(buf), 0) < 0 && Errno() == ECONNREFUSED)
+            refused++;
+    }
+    CloseSocket(c);
+    CU_ASSERT(refused >= 25);
+}
+
 int main(void)
 {
     CU_pSuite p;
@@ -135,7 +172,8 @@ int main(void)
         !CU_add_test(p, "sendto/recvfrom", testUDP_SENDTO) ||
         !CU_add_test(p, "connected UDP", testUDP_CONNECTED) ||
         !CU_add_test(p, "multiple datagrams", testUDP_MULTI) ||
-        !CU_add_test(p, "bind/getsockname", testUDP_GETSOCKNAME))
+        !CU_add_test(p, "bind/getsockname", testUDP_GETSOCKNAME) ||
+        !CU_add_test(p, "a closed port keeps refusing, paced", testUDP_REFUSED_PACED))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

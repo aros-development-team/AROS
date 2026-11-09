@@ -78,6 +78,20 @@ t_bool Iso_Is_Top_Level_Object (CDROM_OBJ *);
 #define VOL(vol,tag) (((t_iso_vol_info *)(vol->vol_info))->tag)
 #define OBJ(obj,tag) (((t_iso_obj_info *)(obj->obj_info))->tag)
 
+/*
+ * directory_record is packed, so its 32-bit fields have to be fetched byte
+ * by byte on CPUs that cannot do unaligned accesses. Do that in one place.
+ */
+CDVDFS_SHARED uint32_t Dir_Extent_Loc(const directory_record *dir)
+{
+    return dir->extent_loc;
+}
+
+CDVDFS_SHARED uint32_t Dir_Data_Length(const directory_record *dir)
+{
+    return dir->data_length;
+}
+
 int Get_Volume_Name(VOLUME *p_volume, char *buf, int buflen)
 {
     char *iso_name = VOL(p_volume,pvd).volume_id;
@@ -129,6 +143,13 @@ int Get_File_Name(VOLUME *volume, directory_record *dir, char *buf, int buflen)
  * Returns TRUE iff the ISO protocol is used; FALSE otherwise.
  */
 
+/* Is there a "CD001" volume descriptor in the sector 16 + p_offset? */
+static t_bool Is_Iso_Descriptor(CDROM *p_cdrom, t_ulong p_offset)
+{
+    return Read_Chunk(p_cdrom, 16 + p_offset) &&
+        StrNCmp((char *) p_cdrom->buffer + 1, "CD001", 5) == 0;
+}
+
 t_bool Uses_Iso_Protocol(CDROM *p_cdrom, t_ulong *p_offset)
 {
     int i, len;
@@ -143,9 +164,7 @@ t_bool Uses_Iso_Protocol(CDROM *p_cdrom, t_ulong *p_offset)
     if ((len = Data_Tracks(p_cdrom, &buf)) < 0)
     {
         *p_offset = 0;
-        if (!Read_Chunk(p_cdrom, 16))
-            return FALSE;
-        return StrNCmp((char *) p_cdrom->buffer + 1, "CD001", 5) == 0;
+        return Is_Iso_Descriptor(p_cdrom, 0);
     }
 
     if (len == 0)
@@ -157,8 +176,7 @@ session:
 */
     if (
             Find_Last_Session(p_cdrom, p_offset) &&
-            Read_Chunk(p_cdrom, 16 + *p_offset) &&
-            StrNCmp((char *) p_cdrom->buffer + 1, "CD001", 5) == 0
+            Is_Iso_Descriptor(p_cdrom, *p_offset)
        )
     {
         FreeVec (buf);
@@ -169,9 +187,7 @@ session:
     for (i=len-1; i>=0; i--)
     {
         *p_offset = buf[i];
-        if (!Read_Chunk(p_cdrom, 16 + *p_offset))
-            continue;
-        if (StrNCmp((char *) p_cdrom->buffer + 1, "CD001", 5) == 0)
+        if (Is_Iso_Descriptor(p_cdrom, *p_offset))
         {
             FreeVec (buf);
             return TRUE;
@@ -184,9 +200,7 @@ session:
        On some disks, the information in the TOC may not be valid. Therefore
        also check sector 16:
        */
-    if (!Read_Chunk(p_cdrom, 16))
-        return FALSE;
-    if (StrNCmp((char *) p_cdrom->buffer + 1, "CD001", 5) == 0)
+    if (Is_Iso_Descriptor(p_cdrom, 0))
     {
         *p_offset = 0;
         return TRUE;
@@ -485,7 +499,7 @@ CDROM_OBJ *Iso_Create_Directory_Obj(VOLUME *p_volume, uint32_t p_location)
 
     D(bug("[CDVDFS]\tIso_Create_Directory_Obj(%ld)\n", p_location));
 
-    if (p_location == VOL(p_volume,pvd).root.extent_loc)
+    if (p_location == Dir_Extent_Loc(&VOL(p_volume,pvd).root))
         return Iso_Open_Top_Level_Directory(p_volume);
 
     dir = Get_Directory_Record(p_volume, p_location, 0);
@@ -502,8 +516,8 @@ CDROM_OBJ *Iso_Create_Directory_Obj(VOLUME *p_volume, uint32_t p_location)
         return NULL;
     }
 
-    loc = dir->extent_loc;
-    len = dir->data_length;
+    loc = Dir_Extent_Loc(dir);
+    len = Dir_Data_Length(dir);
     for (;;)
     {
         if (offset >= len)
@@ -526,7 +540,7 @@ CDROM_OBJ *Iso_Create_Directory_Obj(VOLUME *p_volume, uint32_t p_location)
             offset = (offset & 0xfffff800) + 2048;
             continue;
         }
-        if (dir->extent_loc == p_location)
+        if (Dir_Extent_Loc(dir) == p_location)
             break;
         offset += dir->length;
     }
@@ -555,8 +569,9 @@ CDROM_OBJ *Iso_Create_Directory_Obj(VOLUME *p_volume, uint32_t p_location)
 CDROM_OBJ *Iso_Open_Obj_In_Directory(CDROM_OBJ *p_dir, char *p_name)
 {
     struct CDVDBase *global = p_dir->global;
-    uint32_t loc = OBJ(p_dir,dir)->extent_loc + OBJ(p_dir,dir)->ext_attr_length;
-    uint32_t len = OBJ(p_dir,dir)->data_length;
+    VOLUME *vol = p_dir->volume;
+    uint32_t loc = Dir_Extent_Loc(OBJ(p_dir,dir)) + OBJ(p_dir,dir)->ext_attr_length;
+    uint32_t len = Dir_Data_Length(OBJ(p_dir,dir));
     directory_record *dir;
     int offset;
     CDROM_OBJ *obj;
@@ -565,7 +580,7 @@ CDROM_OBJ *Iso_Open_Obj_In_Directory(CDROM_OBJ *p_dir, char *p_name)
     /* skip first two entries: */
 
     D(bug("[CDVDFS]\tIso_Open_Obj_In_Directory(%s)\n", p_name));
-    dir = Get_Directory_Record(p_dir->volume, loc, 0);
+    dir = Get_Directory_Record(vol, loc, 0);
     if (!dir)
     {
         D(bug("[CDVDFS]\tNo directory record for '.'\n"));
@@ -573,7 +588,7 @@ CDROM_OBJ *Iso_Open_Obj_In_Directory(CDROM_OBJ *p_dir, char *p_name)
     }
 
     offset = dir->length;
-    dir = Get_Directory_Record(p_dir->volume, loc, offset);
+    dir = Get_Directory_Record(vol, loc, offset);
     if (!dir)
     {
         D(bug("[CDVDFS]\tNo directory record for '..'\n"));
@@ -590,7 +605,7 @@ CDROM_OBJ *Iso_Open_Obj_In_Directory(CDROM_OBJ *p_dir, char *p_name)
             return NULL;
         }
 
-        dir = Get_Directory_Record(p_dir->volume, loc, offset);
+        dir = Get_Directory_Record(vol, loc, offset);
         if (!dir)
         {
             D(bug("[CDVDFS]\tFailed to read directory records\n"));
@@ -607,16 +622,16 @@ CDROM_OBJ *Iso_Open_Obj_In_Directory(CDROM_OBJ *p_dir, char *p_name)
 
         /* We skip files that are marked as associated */
         if (((dir->flags & FILE_FLAG_ASSOCIATED) == 0) &&
-                Names_Equal(p_dir->volume, dir, p_name))
+                Names_Equal(vol, dir, p_name))
             break;
 
         D(bug("[CDVDFS]\tRead dir advancing to next record\n"));
         offset += dir->length;
     }
 
-    if (p_dir->volume->protocol == PRO_ROCK && (cl = RR_Child_Link(p_dir->volume, dir)) >= 0)
+    if (vol->protocol == PRO_ROCK && (cl = RR_Child_Link(vol, dir)) >= 0)
     {
-        return Iso_Create_Directory_Obj(p_dir->volume, cl);
+        return Iso_Create_Directory_Obj(vol, cl);
     }
 
     obj = Iso_Alloc_Obj(global, dir->length);
@@ -628,13 +643,13 @@ CDROM_OBJ *Iso_Open_Obj_In_Directory(CDROM_OBJ *p_dir, char *p_name)
 
     obj->directory_f = (dir->flags & FILE_FLAG_DIRECTORY);
     obj->protection = (dir->flags & FILE_FLAG_HIDDEN) ? FIBF_HIDDEN : 0;
-    if (p_dir->volume->protocol == PRO_ROCK && Is_A_Symbolic_Link(p_dir->volume, dir, &obj->protection))
+    if (vol->protocol == PRO_ROCK && Is_A_Symbolic_Link(vol, dir, &obj->protection))
     {
         obj->symlink_f = 1;
         obj->directory_f = 0;
     }
     CopyMem(dir, OBJ(obj,dir), dir->length);
-    obj->volume = p_dir->volume;
+    obj->volume = vol;
     obj->pos = 0;
     if (!obj->directory_f)
         OBJ(obj,parent_loc) = loc;
@@ -676,7 +691,7 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
 
     D(bug("[CDVDFS]\tIso_Read_From_File()\n"));
 
-    if (p_file->pos == OBJ(p_file,dir)->data_length)
+    if (p_file->pos == Dir_Data_Length(OBJ(p_file,dir)))
     {
         /* at end of file: */
         return 0;
@@ -685,7 +700,7 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
     blockshift = VOL(vol,blockshift);
     /* 'firstblock' is the first logical block of the file section: */
     firstblock =
-        OBJ(p_file,dir)->extent_loc + OBJ(p_file,dir)->ext_attr_length;
+        Dir_Extent_Loc(OBJ(p_file,dir)) + OBJ(p_file,dir)->ext_attr_length;
     /*
        'offset' is the offset of the first logical block of the file
        extent from the first logical (2048-byte-)sector.
@@ -719,7 +734,7 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
         /*
          * how much data left in a file?
          */
-        remain_file = OBJ(p_file,dir)->data_length - p_file->pos;
+        remain_file = Dir_Data_Length(OBJ(p_file,dir)) - p_file->pos;
 
         /*
          * how much data remain in file vs chunk?
@@ -747,7 +762,7 @@ int Iso_Read_From_File(CDROM_OBJ *p_file, char *p_buffer, int p_buffer_length)
         /*
          * if read it all - end
          */
-        if (p_file->pos >= OBJ(p_file,dir)->data_length)
+        if (p_file->pos >= Dir_Data_Length(OBJ(p_file,dir)))
             break;
 
         loc += cd->buffer_bytes / SCSI_BUFSIZE;
@@ -802,7 +817,7 @@ int Iso_CDROM_Info(CDROM_OBJ *p_obj, CDROM_INFO *p_info)
         p_info->name_length = Get_File_Name(p_obj->volume, rec, p_info->name, sizeof(p_info->name));
         p_info->directory_f = p_obj->directory_f;
         p_info->symlink_f = p_obj->symlink_f;
-        p_info->file_length = OBJ(p_obj,dir)->data_length;
+        p_info->file_length = Dir_Data_Length(OBJ(p_obj,dir));
         p_info->date = Extract_Date(p_obj->global, OBJ(p_obj,dir));
         p_info->protection = p_obj->protection;
 
@@ -826,6 +841,8 @@ int Iso_Examine_Next
     uint32_t offset;
     directory_record *rec;
     int len;
+    VOLUME *vol = p_dir->volume;
+    uint32_t loc;
 
     D(bug("[CDVDFS]\tIso_Examine_Next()\n"));
 
@@ -835,14 +852,15 @@ int Iso_Examine_Next
         return 0;
     }
 
+    loc = Dir_Extent_Loc(OBJ(p_dir,dir)) + OBJ(p_dir,dir)->ext_attr_length;
     if (*p_offset == 0)
     {
         /* skip first two directory entries: */
 
         rec = Get_Directory_Record
             (
-             p_dir->volume,
-             OBJ(p_dir,dir)->extent_loc + OBJ(p_dir,dir)->ext_attr_length,
+             vol,
+             loc,
              0
             );
         if (!rec)
@@ -852,8 +870,8 @@ int Iso_Examine_Next
 
         rec = Get_Directory_Record
             (
-             p_dir->volume,
-             OBJ(p_dir,dir)->extent_loc + OBJ(p_dir,dir)->ext_attr_length,
+             vol,
+             loc,
              offset
             );
         if (!rec)
@@ -865,13 +883,13 @@ int Iso_Examine_Next
     do {
         for (;;)
         {
-            if (OBJ(p_dir,dir)->data_length <= *p_offset)
+            if (Dir_Data_Length(OBJ(p_dir,dir)) <= *p_offset)
                 return 0;
 
             rec = Get_Directory_Record
                 (
-                 p_dir->volume,
-                 OBJ(p_dir,dir)->extent_loc + OBJ(p_dir,dir)->ext_attr_length,
+                 vol,
+                 loc,
                  *p_offset
                 );
             if (!rec)
@@ -889,16 +907,16 @@ int Iso_Examine_Next
         *p_offset += rec->length;
     } while (rec->flags & FILE_FLAG_ASSOCIATED);
 
-    p_info->name_length = Get_File_Name(p_dir->volume, rec, p_info->name, sizeof(p_info->name));
+    p_info->name_length = Get_File_Name(vol, rec, p_info->name, sizeof(p_info->name));
 
     p_info->protection = (rec->flags & FILE_FLAG_HIDDEN) ? FIBF_HIDDEN : 0;
 
-    if (p_dir->volume->protocol == PRO_ROCK && Is_A_Symbolic_Link(p_dir->volume, rec, &p_info->protection))
+    if (vol->protocol == PRO_ROCK && Is_A_Symbolic_Link(vol, rec, &p_info->protection))
     {
         p_info->symlink_f = 1;
         p_info->directory_f = 0;
     }
-    else if (p_dir->volume->protocol == PRO_ROCK &&     Has_System_Use_Field(p_dir->volume, rec, "CL"))
+    else if (vol->protocol == PRO_ROCK &&     Has_System_Use_Field(vol, rec, "CL"))
     {
         p_info->symlink_f = 0;
         p_info->directory_f = 1;
@@ -909,11 +927,11 @@ int Iso_Examine_Next
         p_info->directory_f = rec->flags & FILE_FLAG_DIRECTORY;
     }
 
-    p_info->file_length = rec->data_length;
+    p_info->file_length = Dir_Data_Length(rec);
     p_info->date = Extract_Date(global, rec);
 
-    if (p_dir->volume->protocol == PRO_ROCK &&
-            (len = Get_RR_File_Comment(p_dir->volume, rec, &p_info->protection, p_info->comment, sizeof(p_info->name))) > 0)
+    if (vol->protocol == PRO_ROCK &&
+            (len = Get_RR_File_Comment(vol, rec, &p_info->protection, p_info->comment, sizeof(p_info->name))) > 0)
         p_info->comment_length = len;
     else
         p_info->comment_length = 0;
@@ -958,32 +976,33 @@ CDROM_OBJ *Iso_Find_Parent(CDROM_OBJ *p_object)
     directory_record *dir;
     uint32_t dir_loc;
     long pl;
+    VOLUME *vol = p_object->volume;
 
     D(bug("[CDVDFS]\tIso_Find_Parent(%08lx)\n", p_object));
 
     if (p_object->directory_f)
         dir_loc =
-            OBJ(p_object,dir)->extent_loc + OBJ(p_object,dir)->ext_attr_length;
+            Dir_Extent_Loc(OBJ(p_object,dir)) + OBJ(p_object,dir)->ext_attr_length;
     else
         dir_loc = OBJ(p_object,parent_loc);
 
-    dir = Get_Directory_Record(p_object->volume, dir_loc, 0);
+    dir = Get_Directory_Record(vol, dir_loc, 0);
     if (!dir)
         return NULL;
 
     if (p_object->directory_f)
     {
-        dir = Get_Directory_Record(p_object->volume, dir_loc, dir->length);
+        dir = Get_Directory_Record(vol, dir_loc, dir->length);
         if (!dir)
             return NULL;
         if (
-                p_object->volume->protocol == PRO_ROCK &&
-                (pl = RR_Parent_Link(p_object->volume, dir)) >= 0
+                vol->protocol == PRO_ROCK &&
+                (pl = RR_Parent_Link(vol, dir)) >= 0
            )
-            return Iso_Create_Directory_Obj(p_object->volume, pl);
+            return Iso_Create_Directory_Obj(vol, pl);
     }
 
-    return Iso_Create_Directory_Obj(p_object->volume, dir->extent_loc);
+    return Iso_Create_Directory_Obj(vol, Dir_Extent_Loc(dir));
 }
 
 /* Test if p_object is the root directory.
@@ -992,8 +1011,8 @@ CDROM_OBJ *Iso_Find_Parent(CDROM_OBJ *p_object)
 t_bool Iso_Is_Top_Level_Object (CDROM_OBJ *p_object)
 {
     return p_object->directory_f &&
-        OBJ(p_object,dir)->extent_loc ==
-        VOL(p_object->volume,pvd).root.extent_loc;
+        Dir_Extent_Loc(OBJ(p_object,dir)) ==
+        Dir_Extent_Loc(&VOL(p_object->volume,pvd).root);
 }
 
 /* Test if two objects are equal.
@@ -1001,8 +1020,8 @@ t_bool Iso_Is_Top_Level_Object (CDROM_OBJ *p_object)
 
 t_bool Iso_Same_Objects (CDROM_OBJ *p_obj1, CDROM_OBJ *p_obj2)
 {
-    return (OBJ(p_obj1,dir)->extent_loc ==
-            OBJ(p_obj2,dir)->extent_loc);
+    return (Dir_Extent_Loc(OBJ(p_obj1,dir)) ==
+            Dir_Extent_Loc(OBJ(p_obj2,dir)));
 }
 
 /*
@@ -1078,12 +1097,12 @@ void Iso_Volume_ID(VOLUME *p_volume, char *p_buffer, int p_buf_length)
 
 t_ulong Iso_Location (CDROM_OBJ *p_object)
 {
-    return OBJ(p_object,dir)->extent_loc;
+    return Dir_Extent_Loc(OBJ(p_object,dir));
 }
 
 t_ulong Iso_File_Length (CDROM_OBJ *p_obj)
 {
-    return OBJ(p_obj,dir)->data_length;
+    return Dir_Data_Length(OBJ(p_obj,dir));
 }
 
 static t_handler const g_iso_handler =

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 
     Desc: Alert context parsing routines
 */
@@ -62,17 +62,21 @@ void FormatAlertExtra(char *buffer, APTR stack, UBYTE type, APTR data, struct Ex
 
         if (TypeOfMem((APTR)ctx->PC))
         {
-            struct TagItem instrTags[] =
-            {
-                { DCIT_Instruction_Offset,      0 },
-                { DCIT_Instruction_HexStr,      0 },
-                { DCIT_Instruction_Asm,         0 },
-                { TAG_DONE,                     0 }
-            };
+            struct TagItem instrTags[4];
             char insPad[(__WORDSIZE/2) + 1];
             APTR tmpbuf, symaddr, symend = NULL;
             char *symname = NULL;
             ULONG x,inslen;
+
+            /* GetCtxInstructionA() stores its results in the tags' data */
+            instrTags[0].ti_Tag  = DCIT_Instruction_Offset;
+            instrTags[0].ti_Data = 0;
+            instrTags[1].ti_Tag  = DCIT_Instruction_HexStr;
+            instrTags[1].ti_Data = 0;
+            instrTags[2].ti_Tag  = DCIT_Instruction_Asm;
+            instrTags[2].ti_Data = 0;
+            instrTags[3].ti_Tag  = TAG_DONE;
+            instrTags[3].ti_Data = 0;
 
             /* Always start disassembly at valid instruction:
                 a) symbol start OR

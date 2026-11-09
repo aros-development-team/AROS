@@ -1,0 +1,18 @@
+Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+Native Amiga standard-packet placement regression
+
+Build with test-dos-packetplacement or test-dos-packetplacement-quick.
+The native Amiga DOS component normal/quick targets select this test.
+Run on a quiet stock 2 MiB Chip-only machine, one instance at a time.
+
+The test reserves a small arena and all remaining packet-sized free blocks
+while Forbid is held, then releases two separated holes in the arena.
+AllocDosObject(DOS_STDPKT) must use ordinary allocation direction, selecting
+the lower suitable hole, and initialize its public message/packet link.
+The test restores all reserved memory before printing its results.
+
+This exercises actual DOS/Exec allocation, not patched allocation vectors.
+Forced MEMF_REVERSE fails one of five checks; ordinary placement passes all
+five. AllocVec metadata and alignment are included when reserving other holes.
+The companion Hunk-placement test covers explicit reverse Hunk requests.

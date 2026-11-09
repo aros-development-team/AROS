@@ -935,7 +935,7 @@ void core_APIC_Calibrate(struct APICData *apic, apicid_t cpuNum)
     {
 #if defined(__AROSEXEC_SMP__)
         tls_t *apicTLS = apic->cores[cpuNum].cpu_TLS;
-        struct X86SchedulerPrivate *schedData = apicTLS->ScheduleData;
+        struct X86SchedulerPrivate *schedData = &apicTLS->Sched;
         DCALIB(bug("[Kernel:APIC-IA32.%03u] %s: tls @ 0x%p, scheduling data @ 0x%p\n", cpuNum, __func__, apicTLS, schedData);)
 #endif
 

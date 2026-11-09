@@ -16,26 +16,27 @@
 
 /*  SYNOPSIS */
         AROS_LHA(BPTR,                     lock, D1),
-        AROS_LHA(struct FileInfoBlock64 *, fib,  D2),
+        AROS_LHA(struct FileInfoBlock *,   fib,  D2),
         AROS_LHA(struct TagItem *,         tags, D3),
 
 /*  LOCATION */
         struct Dos64Base *, DOS64Base, 13, Dos64)
 
 /*  FUNCTION
-        Fill a 64-bit FileInfoBlock with information about the object
-        the given lock refers to.
+        Fill a FileInfoBlock with information about the object the
+        given lock refers to, including the 64-bit fib_Size64 and
+        fib_NumBlocks64 fields. fib_Size is 0 when the size does not
+        fit in 31 bits.
 
         If the filesystem does not support 64-bit examination the
-        request is delegated to the 32-bit Examine() and the result is
-        widened; sizes are then limited to what the filesystem
-        reports in 32 bits.
+        request is delegated to the 32-bit Examine(); the 64-bit fields
+        then hold what the filesystem reports in 32 bits.
 
     INPUTS
         lock - lock on the object to examine
-        fib  - FileInfoBlock64 to fill, allocated with
-               AllocDosObject64(DOS64_FIB, NULL) or at least longword
-               aligned
+        fib  - FileInfoBlock to fill, allocated with
+               AllocDosObject(DOS_FIB, NULL) or
+               AllocDosObject64(DOS64_FIB, NULL)
         tags - future extensions, pass NULL
 
     RESULT
@@ -58,11 +59,11 @@
 {
     AROS_LIBFUNC_INIT
 
-#if (__WORDSIZE == 64)
     struct FileLock *fl = BADDR(lock);
     SIPTR err = 0;
     LONG ret;
 
+    dos64_PrepFIB64(fib);
     ret = dos64_SendPkt(DOS64Base, fl ? fl->fl_Task : GetFileSysTask(),
                         ACTION_EXAMINE_OBJECT64, (SIPTR)lock,
                         (SIPTR)MKBADDR(fib), 0, 0, 0, &err);
@@ -73,7 +74,6 @@
     }
     if (!dos64_UnsupportedAction(err))
         return DOSFALSE;
-#endif
 
     return dos64_Examine32(DOS64Base, lock, fib, ACTION_EXAMINE_OBJECT);
 

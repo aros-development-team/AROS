@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Pattern matching and parsing functionality
 */
@@ -35,6 +35,20 @@
  *
  */
 
+
+/* The marker block after 'macur', allocated on first use; NULL if out of
+ * memory. Used by PUSH() (dos_intern.h) once per 128 markers. */
+static struct markerarray *marker_next(struct markerarray *macur)
+{
+    if(macur->next == NULL)
+    {
+        macur->next = AllocMem(sizeof(struct markerarray), MEMF_ANY);
+        if(macur->next == NULL)
+            return NULL;
+        macur->next->prev = macur;
+    }
+    return macur->next;
+}
 
 BOOL patternMatch(CONST_STRPTR pat, CONST_STRPTR str, BOOL useCase,
                   struct DosLibrary *DOSBase)
@@ -155,14 +169,7 @@ BOOL patternMatch(CONST_STRPTR pat, CONST_STRPTR str, BOOL useCase,
                     cur2->marker[cnt2].str = str;
             }
             
-            POP(t, pat, str);
-
-            if(t && *str)
-            {
-                PUSH(1, pat, str + 1);
-            }
-
-            break;
+            goto backtrack;
 
         case P_ORSTART: /* ( */
             s = ++pat;
@@ -230,12 +237,7 @@ BOOL patternMatch(CONST_STRPTR pat, CONST_STRPTR str, BOOL useCase,
             }
             else
             {
-                POP(t, pat, str);
-                
-                if(t && *str)
-                {
-                    PUSH(1, pat, str + 1);
-                }
+                goto backtrack;
             }
 
             break;
@@ -249,14 +251,7 @@ BOOL patternMatch(CONST_STRPTR pat, CONST_STRPTR str, BOOL useCase,
 
                 if(a == P_CLASS)
                 {
-                    POP(t, pat, str);
-
-                    if(t && *str)
-                    {
-                        PUSH(1, pat, str + 1);
-                    }
-
-                    break;
+                    goto backtrack;
                 }
                 
                 if(*pat == '-')
@@ -294,14 +289,7 @@ BOOL patternMatch(CONST_STRPTR pat, CONST_STRPTR str, BOOL useCase,
         case P_NOTCLASS: /* [~ */
             if(!*str)
             {
-                POP(t, pat, str);
-
-                if(t && *str)
-                {
-                    PUSH(1, pat, str + 1);
-                }
-                
-                break;
+                goto backtrack;
             }
             
             pat++;
@@ -337,14 +325,7 @@ BOOL patternMatch(CONST_STRPTR pat, CONST_STRPTR str, BOOL useCase,
 
                 if(c >= a && c <= b)
                 {
-                    POP(t, pat, str);
-
-                    if(t && *str)
-                    {
-                        PUSH(1, pat, str + 1);
-                    }
-
-                    break;
+                    goto backtrack;
                 }
             }
 
@@ -368,12 +349,7 @@ BOOL patternMatch(CONST_STRPTR pat, CONST_STRPTR str, BOOL useCase,
             }
             else
             {
-                POP(t, pat, str);
-
-                if(t && *str)
-                {
-                    PUSH(1, pat, str + 1);
-                }
+                goto backtrack;
             }
             break;
 
@@ -396,18 +372,23 @@ BOOL patternMatch(CONST_STRPTR pat, CONST_STRPTR str, BOOL useCase,
                 }
                 else
                 {
-                    POP(t, pat, str);
-                    
-                    if(t && *str)
-                    {
-                        PUSH(1, pat, str + 1);
-                    }
+                    goto backtrack;
                 }
             }
 
             break;
 
         } /* switch(*pat) */
+        continue;
+
+    backtrack:
+        /* This marker failed: resume the most recent one */
+        POP(t, pat, str);
+
+        if(t && *str)
+        {
+            PUSH(1, pat, str + 1);
+        }
     } /* while(TRUE) */
 
  end:

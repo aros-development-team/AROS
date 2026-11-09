@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -488,7 +488,6 @@ IPTR StrGClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 IPTR StrGClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
-    struct RastPort *rp;
     struct opUpdate  nmsg;
     struct TagItem   tags[3];
     struct StrGData *data = INST_DATA(cl, g);
@@ -496,19 +495,7 @@ IPTR StrGClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *
     g->Flags &= ~GFLG_SELECTED;
 
     /* Rerender gadget in inactive state */
-    rp = ObtainGIRPort(msg->gpgi_GInfo);
-    if (rp)
-    {
-        struct gpRender method;
-        
-        method.MethodID   = GM_RENDER;
-        method.gpr_GInfo  = msg->gpgi_GInfo;
-        method.gpr_RPort  = rp;
-        method.gpr_Redraw = GREDRAW_REDRAW;
-        DoMethodA((Object *)g, (Msg)&method);
-
-        ReleaseGIRPort(rp);
-    }
+    DoGadgetRender(g, msg->gpgi_GInfo, GREDRAW_REDRAW, IntuitionBase);
 
     /* Notify evt. change of string gadget contents */
 
@@ -555,7 +542,6 @@ IPTR StrGClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
     else
     {
         struct StrGData   *data = INST_DATA(cl, g);
-        struct RastPort   *rp;
         struct GadgetInfo *gi = msg->gpi_GInfo;
         
         g->Flags |= GFLG_SELECTED;
@@ -564,19 +550,7 @@ IPTR StrGClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
             strcpy(data->StrInfo.UndoBuffer, data->StrInfo.Buffer);
         }
 
-        if ((rp = ObtainGIRPort(gi)))
-        {
-            struct gpRender method;
-                    
-            method.MethodID   = GM_RENDER;
-            method.gpr_GInfo  = gi;
-            method.gpr_RPort  = rp;
-            method.gpr_Redraw = GREDRAW_REDRAW;
-                    
-            DoMethodA((Object *)g, (Msg)&method);
-                    
-            ReleaseGIRPort(rp);
-        }
+        DoGadgetRender(g, gi, GREDRAW_REDRAW, IntuitionBase);
     }
     return (IPTR)GMR_MEACTIVE;
 }
@@ -603,21 +577,7 @@ IPTR StrGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
         
         if (gi)
         {
-            struct RastPort *rp = ObtainGIRPort(gi);
-                    
-            if (rp)
-            {
-                struct gpRender method;
-                        
-                method.MethodID   = GM_RENDER;
-                method.gpr_GInfo  = gi;
-                method.gpr_RPort  = rp;
-                method.gpr_Redraw = GREDRAW_REDRAW;
-                        
-                DoMethodA((Object *)g, (Msg)&method);
-                        
-                ReleaseGIRPort(rp);
-            } /* if */
+            DoGadgetRender(g, gi, GREDRAW_REDRAW, IntuitionBase);
         } /* if */
     } /* if */
 

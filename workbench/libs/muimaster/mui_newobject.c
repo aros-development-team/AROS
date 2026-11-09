@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -25,26 +25,31 @@
         struct Library *, MUIMasterBase, 5, MUIMaster)
 
 /*  FUNCTION
-        Create object from MUI class.
+        Create an instance of the named MUI class with the supplied attributes.
+        The class is looked up through MUI_GetClass(), then instantiated
+        through intuition.library/NewObjectA().
 
     INPUTS
-        classid - case sensitive name/ID string of a MUI class.
-        taglist - attribute/value pairs for the new object.
+        classid - NUL-terminated class identifier. Built-in class names are
+                  case-sensitive. Use the MUIC_* identifiers where available.
+        tags - Attribute/value pairs terminated by TAG_DONE, or NULL for
+               the class defaults. Attribute types and ownership are defined
+               by the selected class.
 
     RESULT
-        Pointer to object. NULL means failure.
+        The new object, or NULL if the class lookup or construction fails.
 
     NOTES
+        MUI_NewObject() is the variadic tag-list wrapper.
 
-    EXAMPLE
-
-    BUGS
+        Release an independently owned object with MUI_DisposeObject(). If
+        ownership is transferred to a parent, follow that parent's disposal
+        contract instead of disposing of the child twice.
+        This function does not establish a separate MUI error code.
 
     SEE ALSO
-        MUI_DisposeObject(), intuition.library/SetAttrsA()
-        intuition.library/GetAttr()
-
-    INTERNALS
+        MUI_DisposeObject(), MUI_GetClass(),
+        intuition.library/NewObjectA()
 
 *****************************************************************************/
 {

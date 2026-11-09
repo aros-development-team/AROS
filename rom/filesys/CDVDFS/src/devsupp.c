@@ -131,6 +131,20 @@ int OpenCDRom(struct CDVDBase *global) {
         return FALSE;
 }
 
+/* Copy a DATAEXT/RESOURCEEXT argument, if given, truncated to the field. */
+static void Set_Fork_Extension(char *p_dest, size_t p_size, char *p_arg)
+{
+        size_t len;
+
+        if (!p_arg)
+                return;
+        len = strlen(p_arg);
+        if (len >= p_size)
+                len = p_size - 1;
+        CopyMem(p_arg, p_dest, len);
+        p_dest[len] = '\0';
+}
+
 int Get_Startup(struct CDVDBase *global,struct FileSysStartupMsg *fssm) {
         enum {
           ARG_RETRY,
@@ -173,19 +187,12 @@ int Get_Startup(struct CDVDBase *global,struct FileSysStartupMsg *fssm) {
                         global->g_memory_type = de->de_BufMemType;
 //                      global->g_memory_type = MEMF_ANY;
 
-                        global->g_retry_mode = FALSE;
-                        global->g_map_to_lowercase = FALSE;
                         global->g_maybe_map_to_lowercase = TRUE;
                         global->g_use_rock_ridge = TRUE;
                         global->g_use_joliet = TRUE;
-                        global->g_show_version_numbers = FALSE;
-                        global->g_hfs_first = FALSE;
                         strcpy(global->g_data_fork_extension, "dfork");
                         strcpy(global->g_resource_fork_extension, "rfork");
-                        global->g_convert_hfs_filenames = FALSE;
-                        global->g_convert_hfs_spaces = FALSE;
                         global->g_scan_interval = 3;
-                        global->g_play_cdda_command[0] = 0;
                         global->g_xpos = NO_ICON_POSITION;
                         global->g_ypos = NO_ICON_POSITION;
 
@@ -282,23 +289,10 @@ int Get_Startup(struct CDVDBase *global,struct FileSysStartupMsg *fssm) {
                                 }
                               }
 
-                              if (Args[ARG_DATAEXT]) {
-                                size_t len = strlen((char *)Args[ARG_DATAEXT]);
-                                if (len >= sizeof(global->g_data_fork_extension))
-                                  len = sizeof(global->g_data_fork_extension) - 1;
-                                CopyMem((char *)Args[ARG_DATAEXT],
-                                  global->g_data_fork_extension, len);
-                                global->g_data_fork_extension[len] = '\0';
-                              }
-
-                              if (Args[ARG_RESOURCEEXT]) {
-                                size_t len = strlen((char *)Args[ARG_RESOURCEEXT]);
-                                if (len >= sizeof(global->g_resource_fork_extension))
-                                  len = sizeof(global->g_resource_fork_extension) - 1;
-                                CopyMem((char *)Args[ARG_RESOURCEEXT],
-                                  global->g_resource_fork_extension, len);
-                                global->g_resource_fork_extension[len] = '\0';
-                              }
+                              Set_Fork_Extension(global->g_data_fork_extension,
+                                sizeof(global->g_data_fork_extension), (char *)Args[ARG_DATAEXT]);
+                              Set_Fork_Extension(global->g_resource_fork_extension,
+                                sizeof(global->g_resource_fork_extension), (char *)Args[ARG_RESOURCEEXT]);
 
                               global->g_convert_hfs_filenames = (Args[ARG_MACTOISO] != NULL);
                               global->g_convert_hfs_spaces = (Args[ARG_CONVERTSPACES] != NULL);

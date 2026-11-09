@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -21,13 +21,12 @@
 
 #include <string.h>
 
-#define DEV_EXT_LEN 7
-
 /*********************************************************************************************/
 
 static LONG stopchunks[] =
 {
     ID_PREF, ID_PTXT,
+    ID_PREF, ID_PUNT,
     ID_PREF, ID_PGFX
 };
 
@@ -35,14 +34,16 @@ void PrinterPrefs_Handler(STRPTR filename)
 {
     struct IFFHandle *iff;
     struct PrinterTxtPrefs *ptp;
+    struct PrinterUnitPrefs *pup;
     struct PrinterGfxPrefs *pgp;
-    char *devname;
-    ULONG devnamelen;
-    BOOL name_too_long = FALSE;
+    UBYTE devname[DEVICENAMESIZE] = "";
+    UBYTE port = 0xff;
+    CONST_STRPTR name;
+    ULONG len;
 
     D(bug("[PrinterPrefs] filename=%s\n", filename));
 
-    iff = CreateIFF(filename, stopchunks, 2);
+    iff = CreateIFF(filename, stopchunks, 3);
     if (iff)
     {
         struct Preferences prefs;
@@ -57,30 +58,9 @@ void PrinterPrefs_Handler(STRPTR filename)
                     ptp = LoadChunk(iff, sizeof(struct PrinterTxtPrefs), MEMF_ANY);
                     if (ptp)
                     {
-                        devname = FilePart(ptp->pt_Driver);
-                        devnamelen = strlen(devname);
-                        if (devnamelen < DEVNAME_SIZE + DEV_EXT_LEN)
-                        {
-                            if (devnamelen >= DEV_EXT_LEN && !strcmp(
-                                &devname[devnamelen - DEV_EXT_LEN], ".device"))
-                            {
-                                CopyMem(devname, prefs.PrtDevName, devnamelen - DEV_EXT_LEN);
-                                prefs.PrtDevName[devnamelen - DEV_EXT_LEN] = '0';
-                            }
-                            else if (devnamelen < DEVNAME_SIZE)
-                            {
-                                strncpy(prefs.PrtDevName, devname, sizeof(prefs.PrtDevName) - 1);
-                            }
-                            else
-                                name_too_long = TRUE;
-                        }
-                        else
-                            name_too_long = TRUE;
-
-                        if (name_too_long)
-                            bug("[IPREFS] ERROR: printer device name (%s) "
-                                "is too long!", devname);
-
+                        CopyMem(ptp->pt_Driver, prefs.PrinterFilename, sizeof(prefs.PrinterFilename) - 1);
+                        prefs.PrinterFilename[sizeof(prefs.PrinterFilename) - 1] = 0;
+                        port = ptp->pt_Port;
                         prefs.PrinterPort = ptp->pt_Port;
                         prefs.PaperType = AROS_BE2WORD(ptp->pt_PaperType);
                         prefs.PaperSize = AROS_BE2WORD(ptp->pt_PaperSize);
@@ -92,6 +72,15 @@ void PrinterPrefs_Handler(STRPTR filename)
                         prefs.PrintQuality = AROS_BE2WORD(ptp->pt_Quality);
 
                         FreeVec(ptp);
+                    }
+                    break;
+                case ID_PUNT:
+                    pup = LoadChunk(iff, sizeof(struct PrinterUnitPrefs), MEMF_ANY);
+                    if (pup)
+                    {
+                        CopyMem(pup->pu_DeviceName, devname, sizeof(devname) - 1);
+                        prefs.DefaultPrtUnit = AROS_BE2LONG(pup->pu_UnitNum);
+                        FreeVec(pup);
                     }
                     break;
                 case ID_PGFX:
@@ -118,6 +107,34 @@ void PrinterPrefs_Handler(STRPTR filename)
             }
         }
         KillIFF(iff);
+
+        /* PrtDevName is the device printer.device opens, without ".device".
+           The preferences give its full name, or none for the port's own;
+           older AROS preferences left out ".device". */
+        if (devname[0] != 0)
+            name = devname;
+        else if (port == PP_PARALLEL)
+            name = "parallel";
+        else if (port == PP_SERIAL)
+            name = "serial";
+        else if (port != 0xff)
+            name = "printtofile";
+        else
+            name = NULL;
+        if (name != NULL)
+        {
+            len = strlen(name);
+            if (len >= 7 && strcmp(&name[len - 7], ".device") == 0)
+                len -= 7;
+            if (len < sizeof(prefs.PrtDevName))
+            {
+                CopyMem(name, prefs.PrtDevName, len);
+                prefs.PrtDevName[len] = 0;
+            }
+            else
+                D(bug("[IPREFS] printer device name (%s) does not fit PrtDevName\n", name));
+        }
+
         SetPrefs(&prefs, sizeof(prefs), TRUE);
     }
 }

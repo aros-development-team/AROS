@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -58,15 +58,32 @@ static int isPCIDeviceAvailable(OOP_Class *cl, OOP_Object *o, UBYTE bus, UBYTE d
     return 1;
 }
 
-static OOP_Object *InsertDevice(OOP_Class *cl, OOP_Object *driver,
+/* Writes a number as hex digits, and returns the position behind them */
+static char *PutHex(char *buf, ULONG val, int digits)
+{
+    while (digits--)
+        *buf++ = "0123456789abcdef"[(val >> (digits * 4)) & 0xf];
+
+    return buf;
+}
+
+static OOP_Object *InsertDevice(OOP_Class *cl, OOP_Object *driver, ULONG segment,
                                                     ULONG *highBus, struct TagItem *devtags)
 {
     struct pcibase *pciBase = (struct pcibase *)cl->UserData;
     OOP_Class *deviceClass;
     OOP_Object *pcidev;
     IPTR bridge, secbus;
+    char path[] = "pci/ssss:bb:dd.f", *p = &path[4];
 
     D(bug("[PCI] %s()\n", __func__);)
+
+    /* Our tags follow the device path in the same array, see PCI::SetUpDriver() */
+    p = PutHex(p, segment, 4) + 1;
+    p = PutHex(p, devtags[1].ti_Data, 2) + 1;
+    p = PutHex(p, devtags[2].ti_Data, 2) + 1;
+    PutHex(p, devtags[3].ti_Data, 1);
+    devtags[0].ti_Data = (IPTR)path;
 
     OOP_GetAttr(driver, aHidd_PCIDriver_DeviceClass, (IPTR *)&deviceClass);
 
@@ -83,12 +100,8 @@ static OOP_Object *InsertDevice(OOP_Class *cl, OOP_Object *driver,
                 *highBus = secbus;
         }
         
-        /*
-         * Device class is our private and derived from rootclass.
-         * This makes casting to struct Node * safe.
-         */
         ObtainSemaphore(&pciBase->psd.dev_lock);
-        ADDTAIL(&pciBase->psd.devices, pcidev);
+        ADDTAIL(&pciBase->psd.devices, &PCIDEV_DATA(&pciBase->psd, pcidev)->node);
         ReleaseSemaphore(&pciBase->psd.dev_lock);
     }
     return pcidev;
@@ -104,18 +117,23 @@ static OOP_Object *InsertDevice(OOP_Class *cl, OOP_Object *driver,
 BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
     struct pHW_SetUpDriver *msg)
 {
+    struct pcibase *pciBase = (struct pcibase *)cl->UserData;
     OOP_Object *drv = msg->driverObject;
     ULONG highBus = 0;
     ULONG bus, dev, sub, type;
+    /* Every hardware driver has a bus numbering of its own */
+    ULONG segment = ((struct DrvInstData *)OOP_INST_DATA(pciBase->psd.pciDriverClass, drv))->segment;
 
     struct MinList *irq_routing;
 
     struct TagItem devtags[] =
     {
+        { aHidd_DevicePath              , 0         },
         { aHidd_PCIDevice_Bus           , 0         },
         { aHidd_PCIDevice_Dev           , 0         },
         { aHidd_PCIDevice_Sub           , 0         },
         { aHidd_PCIDevice_Driver        , (IPTR)drv },
+        { aHidd_Parent                  , (IPTR)drv },  /* The device belongs to the bus its driver operates */
         { TAG_DONE                      , 0         }
     };
 
@@ -136,12 +154,12 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
     {
         D(bug("[PCI] %s: Scanning bus %d\n", __func__,bus));
 
-        devtags[0].ti_Data = bus;
+        devtags[1].ti_Data = bus;
 
         for (dev=0; dev < 32; dev++)
         {
-            devtags[1].ti_Data = dev;
-            devtags[2].ti_Data = 0;
+            devtags[2].ti_Data = dev;
+            devtags[3].ti_Data = 0;
 
             /* Knock knock! Is any device here? */
             type = isPCIDeviceAvailable(cl, drv, bus, dev, 0);
@@ -150,18 +168,18 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
             {
             /* Regular device */
             case 1:
-                InsertDevice(cl, msg->driverObject, &highBus, devtags);
+                InsertDevice(cl, msg->driverObject, segment, &highBus, devtags);
                 break;
 
             /* Cool! Multifunction device, search subfunctions then */
             case 2:
-                InsertDevice(cl, msg->driverObject, &highBus, devtags);
+                InsertDevice(cl, msg->driverObject, segment, &highBus, devtags);
                     
                 for (sub=1; sub < 8; sub++)
                 {
-                    devtags[2].ti_Data = sub;
+                    devtags[3].ti_Data = sub;
                     if (isPCIDeviceAvailable(cl, drv, bus, dev, sub)) {
-                        InsertDevice(cl, msg->driverObject, &highBus, devtags);
+                        InsertDevice(cl, msg->driverObject, segment, &highBus, devtags);
                     }
                 }
                 break;
@@ -171,13 +189,13 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
 
     // Handle IRQ Routing
     {
-        struct pcibase *pciBase = (struct pcibase *)cl->UserData;
+        tDeviceData *devdata;
         OOP_Object *pcidev;
         if (irq_routing != NULL)
         {
             D(bug("[PCI] %s: Checking IRQ routing for newly added devices\n", __func__));
 
-            ForeachNode(&pciBase->psd.devices, pcidev)
+            ForeachDevice(&pciBase->psd, devdata, pcidev)
             {
                 AssignIRQ(cl, drv, irq_routing, pcidev);
             }
@@ -190,7 +208,7 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
          * reported when their own driver was added - and only those that
          * have an interrupt pin to route in the first place.
          */
-        ForeachNode(&pciBase->psd.devices, pcidev)
+        ForeachDevice(&pciBase->psd, devdata, pcidev)
         {
             IPTR devVal1 = 0, devVal2 = 0, devDrv = 0, devPin = 0;
             OOP_GetAttr(pcidev, aHidd_PCIDevice_Driver, &devDrv);
@@ -296,11 +314,12 @@ static OOP_Object *FindBridge(OOP_Class *cl, OOP_Object *drv, UBYTE bus)
 {
     struct pcibase *pciBase = (struct pcibase *)cl->UserData;
     OOP_Object *bridge = NULL, *pcidev;
+    tDeviceData *devdata;
     IPTR secbus, d, is_bridge;
 
     D(bug("[PCI] %s()\n", __func__);)
 
-    ForeachNode(&pciBase->psd.devices, pcidev)
+    ForeachDevice(&pciBase->psd, devdata, pcidev)
     {
         OOP_GetAttr(pcidev, aHidd_PCIDevice_Driver, &d);
         OOP_GetAttr(pcidev, aHidd_PCIDevice_isBridge, &is_bridge);
@@ -407,6 +426,7 @@ void PCI__Hidd_PCI__EnumDevices(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_E
     IPTR matchVal[sizeof(attrTable)];
     ULONG i;
     OOP_Object *dev;
+    tDeviceData *devdata;
     BOOL ok;
 
     D(bug("[PCI] %s()\n", __func__);)
@@ -429,7 +449,7 @@ void PCI__Hidd_PCI__EnumDevices(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_E
     ObtainSemaphoreShared(&pciBase->psd.dev_lock);
 
     /* For every device in the system... */
-    ForeachNode(&pciBase->psd.devices, dev)
+    ForeachDevice(&pciBase->psd, devdata, dev)
     {
         /* check the requirements with its properties */
         ok = TRUE;
@@ -458,7 +478,8 @@ void PCI__Hidd_PCI__EnumDevices(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_E
 BOOL PCI__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o, struct pHW_RemoveDriver *msg)
 {
     struct pcibase *pciBase = (struct pcibase *)cl->UserData;
-    OOP_Object *dev, *next, *drv;
+    OOP_Object *dev, *drv;
+    tDeviceData *devdata, *next;
     IPTR disallow = 0;
 
     D(
@@ -493,7 +514,7 @@ BOOL PCI__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o, struct pHW_RemoveDriver
      * about devices list being updated. With this notification we can
      * have full hotplug support.
      */
-    ForeachNode(&pciBase->psd.devices, dev)
+    ForeachDevice(&pciBase->psd, devdata, dev)
     {
         OOP_GetAttr(dev, aHidd_PCIDevice_Driver, (IPTR *)&drv);
         if (drv == msg->driverObject)
@@ -512,10 +533,10 @@ BOOL PCI__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o, struct pHW_RemoveDriver
         return FALSE;
     }
 
-    ForeachNodeSafe(&pciBase->psd.devices, dev, next)
+    ForeachNodeSafe(&pciBase->psd.devices, devdata, next)
     {
-        REMOVE(dev);
-        OOP_DisposeObject(dev);
+        REMOVE(&devdata->node);
+        OOP_DisposeObject(PCIDEV_OBJECT(&pciBase->psd, devdata));
     }
 
     ReleaseSemaphore(&pciBase->psd.dev_lock);

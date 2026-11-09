@@ -9,6 +9,10 @@
     Lang: english
 */
 
+#ifndef EXEC_TYPES_H
+#   include <exec/types.h>
+#endif
+
 /* Hunk types */
 #define HUNK_UNIT          999
 #define HUNK_NAME         1000

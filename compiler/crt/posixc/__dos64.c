@@ -50,22 +50,162 @@ void __dos64_probe(fcb *fcb)
         fcb->privflags |= _FCB_FS64;
 }
 
+/* Unlocked primitives: the caller holds the fcb lock */
+static QUAD __dos64_rawseek(struct Library *DOS64Base, BPTR fh, QUAD position, LONG mode)
+{
+    if (DOS64Base != NULL)
+        return Seek64(fh, mode, position);
+    if (position != (QUAD)(LONG)position)
+    {
+        SetIoErr(ERROR_OBJECT_TOO_LARGE);
+        return -1;
+    }
+    return Seek(fh, (LONG)position, mode);
+}
+
+static QUAD __dos64_rawgetpos(struct Library *DOS64Base, BPTR fh)
+{
+    if (DOS64Base != NULL)
+        return GetFilePosition64(fh);
+    return Seek(fh, 0, OFFSET_CURRENT);
+}
+
+static QUAD __dos64_rawgetsize(struct Library *DOS64Base, BPTR fh)
+{
+    QUAD pos;
+
+    if (DOS64Base != NULL)
+        return GetFileSize64(fh);
+
+    /*
+     * Seek() returns the previous position: seek to the end to learn
+     * nothing yet, then back to where we were - that second call
+     * reports the end position, i.e. the size.
+     */
+    pos = Seek(fh, 0, OFFSET_END);
+    if (pos == -1)
+        return -1;
+    return Seek(fh, (LONG)pos, OFFSET_BEGINNING);
+}
+
+static QUAD __dos64_rawwrite(struct Library *DOS64Base, BPTR fh, CONST_APTR buf, QUAD len)
+{
+    if (DOS64Base != NULL)
+        return Write64(fh, buf, len);
+    if (len > 0x7FFFF000LL)
+        len = 0x7FFFF000LL;
+    return Write(fh, buf, (LONG)len);
+}
+
+/* Before a write: move the handle to the pending past-EOF position,
+   zero-filling the gap if the file still ends before it. */
+static BOOL __dos64_fillgap(struct Library *DOS64Base, fcb *fcb)
+{
+    BPTR fh = fcb->handle;
+    QUAD target = fcb->seekpastend;
+    QUAD size = __dos64_rawgetsize(DOS64Base, fh);
+
+    if (size == -1)
+        return FALSE;
+    if (target <= size)
+    {
+        if (__dos64_rawseek(DOS64Base, fh, target, OFFSET_BEGINNING) == -1)
+            return FALSE;
+    }
+    else
+    {
+        UBYTE zeros[512];
+        QUAD left = target - size;
+
+        if (__dos64_rawseek(DOS64Base, fh, 0, OFFSET_END) == -1)
+            return FALSE;
+        memset(zeros, 0, sizeof(zeros));
+        while (left > 0)
+        {
+            QUAD w = __dos64_rawwrite(DOS64Base, fh, zeros,
+                                      left < (QUAD)sizeof(zeros) ? left : (QUAD)sizeof(zeros));
+            if (w <= 0)
+                return FALSE;
+            left -= w;
+        }
+    }
+    fcb->seekpastend = 0;
+    return TRUE;
+}
+
 QUAD __dos64_seek(fcb *fcb, QUAD position, LONG mode)
 {
     struct Library *DOS64Base = __dos64_base_for(fcb);
-    BPTR fh = fcb->handle;
     QUAD r;
 
     __fcb_lock(fcb);
-    if (DOS64Base != NULL)
-        r = Seek64(fh, mode, position);
-    else if (position != (QUAD)(LONG)position)
+    /* An explicit seek replaces a pending past-EOF position */
+    if (fcb->seekpastend)
     {
-        SetIoErr(ERROR_OBJECT_TOO_LARGE);
-        r = -1;
+        if (mode == OFFSET_CURRENT)
+        {
+            position += fcb->seekpastend;
+            mode = OFFSET_BEGINNING;
+        }
+        fcb->seekpastend = 0;
     }
-    else
-        r = Seek(fh, (LONG)position, mode);
+    r = __dos64_rawseek(DOS64Base, fcb->handle, position, mode);
+    __fcb_unlock(fcb);
+    return r;
+}
+
+QUAD __dos64_lseek(fcb *fcb, QUAD offset, LONG mode)
+{
+    struct Library *DOS64Base = __dos64_base_for(fcb);
+    BPTR fh = fcb->handle;
+    QUAD cur, size, target, r = -1;
+
+    __fcb_lock(fcb);
+    cur = fcb->seekpastend ? fcb->seekpastend : __dos64_rawgetpos(DOS64Base, fh);
+    if (cur == -1)
+        goto out;
+    switch (mode)
+    {
+    case OFFSET_BEGINNING:
+        target = offset;
+        break;
+    case OFFSET_CURRENT:
+        target = cur + offset;
+        break;
+    default:
+        size = __dos64_rawgetsize(DOS64Base, fh);
+        if (size == -1)
+            goto out;
+        target = size + offset;
+        break;
+    }
+    if (target < 0)
+    {
+        SetIoErr(ERROR_SEEK_ERROR);
+        goto out;
+    }
+
+    if (__dos64_rawseek(DOS64Base, fh, target, OFFSET_BEGINNING) != -1)
+    {
+        fcb->seekpastend = 0;
+        r = target;
+    }
+    else if (IoErr() == ERROR_SEEK_ERROR)
+    {
+        /* Most likely beyond EOF: allowed by POSIX, and it must not
+           change the file. Remember it for the next read or write. */
+        LONG ioerr = IoErr();
+
+        size = __dos64_rawgetsize(DOS64Base, fh);
+        if (size != -1 && target > size)
+        {
+            fcb->seekpastend = target;
+            r = target;
+        }
+        else
+            SetIoErr(ioerr);
+    }
+out:
     __fcb_unlock(fcb);
     return r;
 }
@@ -73,14 +213,13 @@ QUAD __dos64_seek(fcb *fcb, QUAD position, LONG mode)
 QUAD __dos64_getpos(fcb *fcb)
 {
     struct Library *DOS64Base = __dos64_base_for(fcb);
-    BPTR fh = fcb->handle;
     QUAD r;
 
     __fcb_lock(fcb);
-    if (DOS64Base != NULL)
-        r = GetFilePosition64(fh);
+    if (fcb->seekpastend)
+        r = fcb->seekpastend;
     else
-        r = Seek(fh, 0, OFFSET_CURRENT);
+        r = __dos64_rawgetpos(DOS64Base, fcb->handle);
     __fcb_unlock(fcb);
     return r;
 }
@@ -88,27 +227,12 @@ QUAD __dos64_getpos(fcb *fcb)
 QUAD __dos64_getsize(fcb *fcb)
 {
     struct Library *DOS64Base = __dos64_base_for(fcb);
-    BPTR fh = fcb->handle;
     QUAD r;
 
+    /* The two seeks of the 32-bit path must stay atomic against other
+       users of the handle, hence the lock spans both. */
     __fcb_lock(fcb);
-    if (DOS64Base != NULL)
-        r = GetFileSize64(fh);
-    else
-    {
-        /*
-         * Seek() returns the previous position: seek to the end to learn
-         * nothing yet, then back to where we were - that second call
-         * reports the end position, i.e. the size. The pair must stay
-         * atomic against other users of the handle, hence the lock spans
-         * both seeks.
-         */
-        QUAD pos = Seek(fh, 0, OFFSET_END);
-        if (pos == -1)
-            r = -1;
-        else
-            r = Seek(fh, (LONG)pos, OFFSET_BEGINNING);
-    }
+    r = __dos64_rawgetsize(DOS64Base, fcb->handle);
     __fcb_unlock(fcb);
     return r;
 }
@@ -140,6 +264,29 @@ QUAD __dos64_read(fcb *fcb, APTR buf, QUAD len)
     QUAD r;
 
     __fcb_lock(fcb);
+    if (fcb->seekpastend)
+    {
+        /* Reading at a position set beyond EOF: that is EOF, unless the
+           file has grown up to it in the meantime. */
+        QUAD size = __dos64_rawgetsize(DOS64Base, fh);
+
+        if (size == -1)
+        {
+            r = -1;
+            goto out;
+        }
+        if (fcb->seekpastend >= size)
+        {
+            r = 0;
+            goto out;
+        }
+        if (__dos64_rawseek(DOS64Base, fh, fcb->seekpastend, OFFSET_BEGINNING) == -1)
+        {
+            r = -1;
+            goto out;
+        }
+        fcb->seekpastend = 0;
+    }
     if (DOS64Base != NULL)
         r = Read64(fh, buf, len);
     else
@@ -149,6 +296,7 @@ QUAD __dos64_read(fcb *fcb, APTR buf, QUAD len)
             len = 0x7FFFF000LL;
         r = Read(fh, buf, (LONG)len);
     }
+out:
     __fcb_unlock(fcb);
     return r;
 }
@@ -156,43 +304,32 @@ QUAD __dos64_read(fcb *fcb, APTR buf, QUAD len)
 QUAD __dos64_write(fcb *fcb, CONST_APTR buf, QUAD len)
 {
     struct Library *DOS64Base = __dos64_base_for(fcb);
-    BPTR fh = fcb->handle;
     QUAD r;
 
     __fcb_lock(fcb);
-    if (DOS64Base != NULL)
-        r = Write64(fh, buf, len);
+    if (fcb->seekpastend && !__dos64_fillgap(DOS64Base, fcb))
+        r = -1;
     else
-    {
-        if (len > 0x7FFFF000LL)
-            len = 0x7FFFF000LL;
-        r = Write(fh, buf, (LONG)len);
-    }
+        r = __dos64_rawwrite(DOS64Base, fcb->handle, buf, len);
     __fcb_unlock(fcb);
     return r;
 }
 
-static void __dos64_widenfib(const struct FileInfoBlock32 *src,
-                             struct FileInfoBlock64 *dst)
+/* Derive the 64-bit fields of a FileInfoBlock filled by a 32-bit examine */
+static void __dos64_fib32to64(struct FileInfoBlock *fib)
 {
-    dst->fib_DiskKey      = src->fib_DiskKey;
-    dst->fib_DirEntryType = src->fib_DirEntryType;
-    memcpy(dst->fib_FileName, src->fib_FileName, sizeof(dst->fib_FileName));
-    dst->fib_Protection   = src->fib_Protection;
-    dst->fib_EntryType    = src->fib_EntryType;
-    dst->fib_Size         = (UQUAD)(ULONG)src->fib_Size;
-    dst->fib_NumBlocks    = (UQUAD)(ULONG)src->fib_NumBlocks;
-    dst->fib_Date         = src->fib_Date;
-    memcpy(dst->fib_Comment, src->fib_Comment, sizeof(dst->fib_Comment));
-    dst->fib_OwnerUID     = src->fib_OwnerUID;
-    dst->fib_OwnerGID     = src->fib_OwnerGID;
-    memset(dst->fib_Reserved, 0, sizeof(dst->fib_Reserved));
+    UQUAD size = (UQUAD)(ULONG)fib->fib_Size;
+
+    fib->fib_Size64      = size;
+    fib->fib_NumBlocks64 = (UQUAD)(ULONG)fib->fib_NumBlocks;
+    fib->fib_ActExtFlags = 0;
+    if (size > 0x7FFFFFFFULL)
+        fib->fib_Size = 0;
 }
 
-LONG __dos64_examine(BPTR obj, struct FileInfoBlock64 *fib, int what)
+LONG __dos64_examine(BPTR obj, struct FileInfoBlock *fib, int what)
 {
     struct Library *DOS64Base = __dos64_base();
-    struct FileInfoBlock32 *fib32;
     LONG ret = DOSFALSE;
 
     if (DOS64Base != NULL)
@@ -209,56 +346,40 @@ LONG __dos64_examine(BPTR obj, struct FileInfoBlock64 *fib, int what)
         return DOSFALSE;
     }
 
-    fib32 = AllocDosObject(DOS_FIB, NULL);
-    if (fib32 == NULL)
-        return DOSFALSE;
-
+    /* The 64-bit fields share the block, so examine into it directly */
     switch (what)
     {
     case __DOS64_EXAMINE:
-        ret = Examine(obj, (struct FileInfoBlock *)fib32);
+        ret = Examine(obj, fib);
         break;
     case __DOS64_EXAMINE_FH:
-        ret = ExamineFH(obj, (struct FileInfoBlock *)fib32);
+        ret = ExamineFH(obj, fib);
         break;
     case __DOS64_EXAMINE_NEXT:
-        /* Propagate the enumeration state into the temporary block */
-        fib32->fib_DiskKey = fib->fib_DiskKey;
-        memcpy(fib32->fib_FileName, fib->fib_FileName,
-               sizeof(fib32->fib_FileName));
-        ret = ExNext(obj, (struct FileInfoBlock *)fib32);
+        ret = ExNext(obj, fib);
         break;
     }
 
     if (ret)
-        __dos64_widenfib(fib32, fib);
+        __dos64_fib32to64(fib);
 
-    FreeDosObject(DOS_FIB, fib32);
     return ret;
 }
 
 LONG __dos64_info(BPTR lock, struct InfoData64 *id)
 {
     struct Library *DOS64Base = __dos64_base();
-    struct InfoData32 id32;
     LONG ret;
 
     if (DOS64Base != NULL)
         return Info64(lock, id);
 
-    memset(&id32, 0, sizeof(id32));
-    ret = Info(lock, (struct InfoData *)&id32);
+    /* InfoData64 starts with a standard InfoData */
+    ret = Info(lock, (struct InfoData *)id);
     if (ret)
     {
-        id->id_NumSoftErrors  = id32.id_NumSoftErrors;
-        id->id_UnitNumber     = id32.id_UnitNumber;
-        id->id_DiskState      = id32.id_DiskState;
-        id->id_NumBlocks      = (UQUAD)(ULONG)id32.id_NumBlocks;
-        id->id_NumBlocksUsed  = (UQUAD)(ULONG)id32.id_NumBlocksUsed;
-        id->id_BytesPerBlock  = id32.id_BytesPerBlock;
-        id->id_DiskType       = id32.id_DiskType;
-        id->id_VolumeNode     = id32.id_VolumeNode;
-        id->id_InUse          = id32.id_InUse;
+        id->id_NumBlocks64     = (UQUAD)(ULONG)id->id_NumBlocks;
+        id->id_NumBlocksUsed64 = (UQUAD)(ULONG)id->id_NumBlocksUsed;
     }
     return ret;
 }

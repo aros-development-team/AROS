@@ -1,16 +1,16 @@
-# Copyright (C) 2003-2018, The AROS Development Team. All rights reserved.
+# Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
 FILES := main args
 
 #MM- workbench-c : workbench-c-partition
-#MM workbench-c-partition : includes linklibs 
+#MM workbench-c-partition : includes linklibs linklibs-ptedit
 
 USER_LDFLAGS := -static
 
 %build_prog mmake=workbench-c-partition \
     progname=Partition targetdir=$(AROS_C) \
-    files=$(FILES) coverageinstr=no
+    files=$(FILES) uselibs="ptedit" coverageinstr=no
 
 %common

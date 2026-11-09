@@ -33,15 +33,26 @@ struct IMonitorNode
     OOP_Class 	                *bmtodisplaycoords_Class;
 #endif
 
-    /* xxx */
-    Object                      *topleft;
-    Object                      *topmiddle;
-    Object                      *topright;
-    Object                      *middleleft;
-    Object                      *middleright;
-    Object                      *bottomleft;
-    Object                      *bottommiddle;
-    Object                      *bottomright;
+    /*
+     * The monitors next to this one. They can be addressed by name or, in
+     * the order of the attributes MA_TopLeftMonitor ... MA_BottomRightMonitor,
+     * as an array.
+     */
+    union
+    {
+        struct
+        {
+            Object              *topleft;
+            Object              *topmiddle;
+            Object              *topright;
+            Object              *middleleft;
+            Object              *middleright;
+            Object              *bottomleft;
+            Object              *bottommiddle;
+            Object              *bottomright;
+        };
+        Object                  *neighbour[8];
+    };
 
     /* Monitor Cursor data */
     IPTR                        SpriteType;

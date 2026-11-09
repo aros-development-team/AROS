@@ -19,6 +19,21 @@
 static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
                          ULONG xdest, ULONG minterm);
 
+/* The selected writable planes of a classic bitmap, up to the common
+   source/destination depth. NULL and -1 destination planes are constants. */
+static LONG count_planar_planes(const struct BitMap *bitmap, ULONG depth, UBYTE mask)
+{
+    LONG count = 0;
+    ULONG plane;
+
+    for (plane = 0; plane < depth && plane < 8; plane++) {
+        if ((mask & (1U << plane)) && bitmap->Planes[plane] != NULL &&
+                bitmap->Planes[plane] != (PLANEPTR)-1)
+            count++;
+    }
+    return count;
+}
+
 /*****************************************************************************
 
     NAME */
@@ -113,6 +128,9 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 {
     AROS_LIBFUNC_INIT
     LONG planecnt;
+    ULONG wSrc, wDest;
+    ULONG x;
+    ULONG depth;
     struct gfxdisplay_data *planar_driver = NULL;
 
     FIX_GFXCOORD(xSrc);
@@ -149,57 +167,85 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
     if(planar_driver == (struct gfxdisplay_data *)CDD(GfxBase))
         planar_driver = NULL;
 
+    wSrc  = GetBitMapAttr(srcBitMap, BMA_WIDTH);
+    wDest = GetBitMapAttr(destBitMap, BMA_WIDTH);
+
+    /* Clip all blits */
+
+    depth = GetBitMapAttr(srcBitMap, BMA_DEPTH);
+    x     = GetBitMapAttr(destBitMap, BMA_DEPTH);
+
+    if(x < depth) depth = x;
+
+    /* Clip X and Y */
+    if(xSrc < 0) {
+        xDest += -xSrc;
+        xSize -= -xSrc;
+        xSrc = 0;
+    }
+
+    if(ySrc < 0) {
+        yDest += -ySrc;
+        ySize -= -ySrc;
+        ySrc = 0;
+    }
+
+    /* A negative destination is not clipped by the checks below (unsigned
+       compares) and the chunky blitters do not clip: rows/columns would land
+       in front of the destination buffer. */
+    if(xDest < 0) {
+        xSrc += -xDest;
+        xSize -= -xDest;
+        xDest = 0;
+    }
+
+    if(yDest < 0) {
+        ySrc += -yDest;
+        ySize -= -yDest;
+        yDest = 0;
+    }
+
+    /* Clip width and height for source and dest */
+    if(ySrc + ySize > srcBitMap->Rows) {
+        ySize = srcBitMap->Rows - ySrc;
+    }
+
+    if(yDest + ySize > destBitMap->Rows) {
+        ySize = destBitMap->Rows - yDest;
+    }
+
+    if((ULONG)(xSrc + xSize) >= wSrc) {
+        xSize = wSrc - xSrc;
+    }
+
+    if((ULONG)(xDest + xSize) >= wDest) {
+        xSize = wDest - xDest;
+    }
+
+    /* If the size is illegal or we need not copy anything, return */
+    if(ySize <= 0 || xSize <= 0 || !mask) return 0;
+
     if(IS_HIDD_BM(srcBitMap) || IS_HIDD_BM(destBitMap) || planar_driver) {
-        ULONG wSrc, wDest;
-        ULONG x;
-        ULONG depth;
+        LONG planar_planes = 8;
+        BOOL planar = !IS_HIDD_BM(srcBitMap) && !IS_HIDD_BM(destBitMap);
         struct gfxdisplay_data *driver, *dst_driver;
         OOP_Object *tmp_gc;
 
         EnterFunc(bug("driver_BltBitMap()\n"));
 
-        wSrc  = GetBitMapAttr(srcBitMap, BMA_WIDTH);
-        wDest = GetBitMapAttr(destBitMap, BMA_WIDTH);
-
-        /* Clip all blits */
-
-        depth = GetBitMapAttr(srcBitMap, BMA_DEPTH);
-        x     = GetBitMapAttr(destBitMap, BMA_DEPTH);
-
-        if(x < depth) depth = x;
-
-        /* Clip X and Y */
-        if(xSrc < 0) {
-            xDest += -xSrc;
-            xSize -= -xSrc;
-            xSrc = 0;
+        /* A driver can also handle ordinary planar bitmaps. Count the same
+         * selected, writable planes as the software path below, including
+         * when the driver consumes them without temporary HIDD wrappers. */
+        if (planar) {
+            planar_planes = count_planar_planes(destBitMap, depth, mask);
+            if (!planar_planes)
+                return 0;
         }
 
-        if(ySrc < 0) {
-            yDest += -ySrc;
-            ySize -= -ySrc;
-            ySrc = 0;
-        }
-
-        /* Clip width and height for source and dest */
-        if(ySrc + ySize > srcBitMap->Rows) {
-            ySize = srcBitMap->Rows - ySrc;
-        }
-
-        if(yDest + ySize > destBitMap->Rows) {
-            ySize = destBitMap->Rows - yDest;
-        }
-
-        if((ULONG)(xSrc + xSize) >= wSrc) {
-            xSize = wSrc - xSrc;
-        }
-
-        if((ULONG)(xDest + xSize) >= wDest) {
-            xSize = wDest - xDest;
-        }
-
-        /* If the size is illegal or we need not copy anything, return */
-        if(ySize <= 0 || xSize <= 0 || !mask) return 0;
+        /* FIXME: the fixed 8 for HIDD blits, including mixed planar/HIDD
+           blits, is a historical placeholder, not an actual plane count.
+           Planar setup failures copy no planes. */
+        planecnt = planar ? 0 : 8;
 
         /*
          * Select a driver to call
@@ -226,7 +272,7 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
          * Try that path after clipping, before allocating temporary wrappers. */
         if (planar_driver && internal_TryRawBlit(driver, srcBitMap, destBitMap,
                 xSrc, ySrc, xDest, yDest, xSize, ySize, minterm, mask, GfxBase))
-            return 8; /* Match the existing driver-path return value below. */
+            return planar_planes;
 
         tmp_gc = obtain_cache_object(CDD(GfxBase)->gc_cache, GfxBase);
         if(NULL != tmp_gc) {
@@ -239,7 +285,7 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
                 dstbm_obj = OBTAIN_HIDD_BM(destBitMap);
                 if(NULL != dstbm_obj) {
 
-                    int_bltbitmap(srcBitMap, srcbm_obj
+                    BOOL copied = int_bltbitmap(srcBitMap, srcbm_obj
                                   , xSrc, ySrc
                                   , destBitMap, dstbm_obj
                                   , xDest, yDest
@@ -248,6 +294,8 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
                                   , driver->display_gfxhidd
                                   , tmp_gc
                                   , GfxBase);
+                    if (planar && copied)
+                        planecnt = planar_planes;
                     update_bitmap(destBitMap, dstbm_obj, xDest, yDest, xSize, ySize, GfxBase);
 
                     RELEASE_HIDD_BM(dstbm_obj, destBitMap);
@@ -258,59 +306,13 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
             release_cache_object(CDD(GfxBase)->gc_cache, tmp_gc, GfxBase);
         }
 
-        /* FIXME: dummy return value of 8 planes */
-        planecnt = 8;
-
     } else {
-        ULONG wSrc, wDest;
-        ULONG x, y, plane;
-        ULONG depth;
+        ULONG y, plane;
         PLANEPTR src, dest, temp;
 
-        wSrc  = GetBitMapAttr(srcBitMap, BMA_WIDTH);
-        wDest = GetBitMapAttr(destBitMap, BMA_WIDTH);
         temp = NULL;
 
-        depth = GetBitMapAttr(srcBitMap, BMA_DEPTH);
-        x     = GetBitMapAttr(destBitMap, BMA_DEPTH);
-        if(x < depth)
-            depth = x;
-
-        /* Clip X and Y */
-        if(xSrc < 0) {
-            xDest += -xSrc;
-            xSize -= -xSrc;
-            xSrc = 0;
-        }
-
-        if(ySrc < 0) {
-            yDest += -ySrc;
-            ySize -= -ySrc;
-            ySrc = 0;
-        }
-
-        /* Clip width and height for source and dest */
-        if(ySrc + ySize > srcBitMap->Rows) {
-            ySize = srcBitMap->Rows - ySrc;
-        }
-
-        if(yDest + ySize > destBitMap->Rows) {
-            ySize = destBitMap->Rows - yDest;
-        }
-
-        if((ULONG)(xSrc + xSize) >= wSrc) {
-            xSize = wSrc - xSrc;
-        }
-
-        if((ULONG)(xDest + xSize) >= wDest) {
-            xSize = wDest - xDest;
-        }
-
-        /* If the size is illegal or we need not copy anything, return */
-        if(ySize <= 0 || xSize <= 0 || !mask)
-            return 0;
-
-        planecnt = 0;
+        planecnt = count_planar_planes(destBitMap, depth, mask);
 
         /* For all planes */
         for(plane = 0; plane < depth; plane ++) {
@@ -320,8 +322,6 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
             if((destBitMap->Planes[plane] != NULL) && (destBitMap->Planes[plane] != (PLANEPTR) - 1)) {
                 /* Copy this plane ? */
                 if((1L << plane) & mask) {
-
-                    planecnt ++; /* count it */
 
                     for(y = 0; y < (ULONG)ySize; y++) {
                         src  =  srcBitMap->Planes[plane] + (y + ySrc) * srcBitMap->BytesPerRow;

@@ -65,6 +65,30 @@ The API layer (`amiga_syscalls.c`) implements the Berkeley calls: each builds th
 `mbuf`s (for example, an address `mbuf` with `m_len = addrlen` and `sa_len` set) and invokes the
 socket-layer entry points (`sobind`, `soconnect`, `sosend`, `soreceive`, …), which in turn dispatch
 to the protocol via `so->so_proto->pr_usrreq(so, PRU_*, …)`.
+A send or receive that would block returns `EWOULDBLOCK` when the socket is non-blocking
+(`FIONBIO`, `SS_NBIO`) or the call has `MSG_DONTWAIT`, which applies to that call only.
+That holds as well for a socket buffer held by another task's call on a shared socket - a receive
+with `MSG_WAITALL` sleeps holding it - as FreeBSD's `SBLOCKWAIT()`; a blocking call waits for it.
+
+Name lookup (`gethostnamadr.c`) is what `gethostbyname()`, `gethostbyname_r()`, Miami's
+`gethostbyname2()` and both `getaddrinfo()`s (Roadshow's and Miami's) share. An address literal is
+taken as it is, and a localhost name (RFC 6761 section 6.3: `localhost` and the names within
+`.localhost`, any case, with or without the final dot) is the loopback address - 127.0.0.1, or
+`::1` for AF_INET6 - without the host table or the DNS; `getaddrinfo()` with AF_UNSPEC gives both.
+Anything else goes to the host table and the resolver in the configured order.
+The resolver (`res_search()`) searches as BIND 4.9's and resolv.conf(5) say, with `ndots` 1: a name
+with a dot is first tried as it is, and one not found that way, or one without a dot, is tried in
+each domain of the search list in turn (`RES_DNSRCH` is in `RES_DEFAULT`) - the static `DOMAIN`
+entries first, then the dynamic ones (DHCP, Router Advertisements); a final dot means only as it is.
+A `NAMESERVER` line in the NetDB takes an IPv4 or an IPv6 address; a link-local IPv6 server needs a
+zone, which the line has no room for, and goes with its interface instead (`DNS6=`, or learned from
+a Router Advertisement).
+The resolver's cache (`api/dns_cache.c`) keeps an answer for its smallest TTL, at most a day, on the
+monotonic clock (`GetUpTime()`): setting the system time neither drops answers early nor keeps them
+past their TTL.
+The networks table (`db/networks`) holds each network's number in host order, as
+`getnetent(3)` and the autodoc say, read with `inet_network()`'s rules (`__inet_network()`: "10.1"
+is 0x0a01), so `getnetbyaddr(127, AF_INET)` finds `loop 127`.
 
 ### 3.2 Concurrency and synchronization
 
@@ -210,7 +234,48 @@ selector `tcp_cc_default`. Two algorithms are built in:
 
 Each `tcpcb` selects an algorithm via `t_cc_algo`; `CC_ALGO(tp)` resolves it and falls back to
 NewReno if unset. The initial congestion window follows **RFC 6928 IW10**
-(`snd_cwnd = MIN(10 · mss, MAX(2 · mss, 14600))`).
+(`snd_cwnd = MIN(10 · mss, MAX(2 · mss, 14600))`), for every destination (4.4BSD left one on a
+local network without slow start, at 1 GB). In slow start an ACK grows cwnd by the bytes it
+acknowledges, at most `net.inet.tcp.abc_l` segments (`tcp_ss_incr()`, RFC 3465): 1 by default,
+RFC 5681's `min(N, SMSS)` (4.4BSD added a segment whatever the ACK acknowledged). A larger L grows
+faster behind delayed ACKs; on the bottleneck bench L = 2 overshot more (30-50% more drops at the
+end of slow start) for the same throughput.
+
+The first slow start of a connection ends by **HyStart++** (RFC 9406, `tcp_ss.c`; sysctl
+`net.inet.tcp.hystart`, on by default): it keeps the minimum RTT of each round (rounds by sequence
+number) and, when it grows by max(4 ms, min(RTT/8, 16 ms)) over the last round's, goes on in
+Conservative Slow Start - a quarter of the growth - for 5 rounds, then into congestion avoidance
+with `ssthresh = cwnd`; an RTT back below the CSS baseline resumes slow start. It applies only while
+`ssthresh` has its initial value; any loss, ECN or the end of CSS sets it. Not paced, an ACK grows
+cwnd by at most 8 segments (the RFC's L). Behind a 20 Mbit bottleneck (`ss_probe.py` in aros-matter)
+it halves the drops at the end of slow start (100 KB queue: 78-82 against 164-165; 256 KB:
+62-64 against 144-163), with no early exit when there is no bottleneck, and with a 1 MB queue the
+first slow start ends without any loss. When a slow start ends without a loss - by HyStart++, or at an `ssthresh`
+from the route (`RTV_SSTHRESH`) - there is no W_max yet: CUBIC's first epoch starts with K = 0 and
+W_max = cwnd (RFC 9438 section 4.10), so the cubic curve, not only the Reno-friendly one, grows
+cwnd from there.
+
+Loss recovery on a connection with SACK follows RFC 6675, as in FreeBSD and Linux. An ACK that
+SACKs data not SACKed before is a duplicate whatever window it offers (a receiver that grows its
+window as it reads changes it in every ACK). The scoreboard (`t_sack_blks`, `TCP_SACK_BOARD`
+ranges, the highest dropped when full) gives `IsLost()` (`tcp_sack_lostbound()`), `SetPipe()`
+(`tcp_compute_pipe()`) and `NextSeg()` (`tcp_sack_nextseg()`): on each ACK in recovery
+`tcp_sack_recover()` sends lost holes, each once (`snd_highrxt`, HighRxt), then new data, then
+other holes, within `ssthresh` - pipe, or what PRR (RFC 6937) allows from the data each ACK
+delivers when `tcp_do_prr` (sysctl `net.inet.tcp.prr`) is set. PRR is off by default: on the loss
+bench (random, several holes in a window, a lost retransmission, reordering) it made no
+difference either way. A partial ACK is one more ACK in recovery. `snd_cwnd` stays at
+what is in flight until the recovery ends, at `ssthresh`.
+
+As a receiver, the SACK blocks of an ACK (`tcp_sack_rcvblocks()`, from the reassembly queue once
+`rcv_nxt` has moved) begin with the one that holds the segment just received, as RFC 2018
+section 4 requires, then the ones sent before, most recent first, as many as fit. None lies below
+the cumulative ACK, where a sender would take it for a D-SACK (RFC 2883).
+
+Without SACK, loss recovery is NewReno (RFC 6582). A partial ACK in fast recovery resends the
+first unacknowledged segment with `cwnd` covering the bytes it acknowledges plus that segment
+(snd_una has not advanced yet), deflates `cwnd`, and is then processed like any ACK, so `snd_una`
+advances and the retransmit timer runs again, as in FreeBSD's `tcp_newreno_partial_ack()`.
 
 ### 5.2 SYN cache and SYN cookies
 
@@ -219,16 +284,107 @@ listen queue, with **stateless SYN cookies** as the overflow fallback, so a SYN 
 exhaust socket/accept-queue resources.
 
 - `syncache_add` (inbound SYN) → `syncache_respond` (SYN-ACK).
-- `syncache_expand` (final ACK) → `syncache_socket` builds the `ESTABLISHED` socket.
+- `syncache_expand` (final ACK) → `syncache_socket` builds the `ESTABLISHED` socket. An ACK
+  that completes nothing - no entry and no valid cookie, or an entry whose SYN-ACK it does not
+  acknowledge - gets a reset (RFC 9293 section 3.10.7.2): a peer that goes on with a connection
+  this side has dropped learns at once, instead of retransmitting until it times out. One out of
+  sequence for its entry, or one no socket can be made for, is dropped quietly.
 - `syncache_chkrst` (RST); entries time out via `tcp_slowtimo`; the table is purged in `tcp_close`.
 
 The SYN cache is fully dual-stack (see §6).
 
+The ISN (RFC 6528), the cookies, the cache's buckets and the timestamp offsets (§5.3) come from one
+keyed hash of the connection, `tcp_conn_hash()` (`tcp_subr.c`): SipHash-2-4 over both addresses -
+the whole 128 bits for IPv6 - both ports, a word of the caller's (the cookie's counter) and a byte
+for the use, so that no two uses give the same value. RFC 6528 asks for a function that cannot be
+computed without the key; Linux uses SipHash for the same values.
+
 ### 5.3 Timers
 
-`tcp_timer.c` runs the fast (200 ms) and slow (500 ms) timers driven from the daemon: retransmit
-(with exponential backoff), persist, keepalive, 2MSL/TIME-WAIT, and delayed-ACK. `tcp_slowtimo`
-also advances the ISS clock and expires SYN-cache entries.
+`tcp_timer.c` runs the fast (`PR_FASTHZ`, nominally 50 ms; timer.device's `UNIT_VBLANK` makes it
+about 60) and slow (500 ms) timers driven from the daemon: retransmit (with exponential backoff),
+persist, keepalive, 2MSL/TIME-WAIT, and delayed-ACK. `tcp_slowtimo` also expires SYN-cache
+entries, and advances the ISS clock (`tcp_iss`, RFC 6528) and `tcp_now` every tick, whether or not
+there are connections: `tcp_now` paces the IPv4 ICMP error rate limit (§7), PAWS's idle age and the
+SYN cache. Each connection's slow timers are counted down every slow tick, and its idle and
+duration clocks advanced; `tcp_timers()` hands the connection back, or NULL once a timer has closed
+it.
+
+Round-trip times and the retransmission timeout are in milliseconds, on `tcp_ms()` (timer.device's
+`GetUpTime()`, monotonic). It is the timestamp clock (RFC 7323, 1 ms a tick, as FreeBSD's and
+Linux's): a connection's TSval is `tcp_ms()` plus an offset of its own (`t_ts_offset`, RFC 7323
+section 5.4), a keyed hash of its addresses and ports with a key that is not the ISN's, so that a
+TSval tells neither the time since the stack started nor how two connections relate; the SYN cache
+keeps it (`sc_tsoff`) for the connection it makes. An ACK that takes `snd_una` forward gives an RTT
+sample from the timestamp it echoes, or else from the segment being timed (`t_rtttime`, its send
+time; never a retransmitted one: Karn), the SYN's included. `tcp_xmit_timer()` keeps SRTT and RTTVAR
+as RFC 6298 section 2 and FreeBSD do (scaled by 32 and 16), and the RTO is `SRTT + max(G, 4 *
+RTTVAR)`, G the fast tick, between `net.inet.tcp.rexmit_min` (200 ms; RFC 6298 section 2.4 says it
+SHOULD be 1 s, FreeBSD and Linux use about 200 ms, and so does this stack) and 64 s, doubled on
+each timeout. Before the first sample it is `net.inet.tcp.rttdflt`, 1 s (section 2.1; 4.4BSD had
+6 s), and 3 s once a connection is established with no sample after its SYN or SYN-ACK was
+retransmitted (section 5.7); the SYN cache resends a SYN-ACK after 1, 2, 4 and 8 s. The
+retransmission timer is a deadline (`t_rexmt_at`) checked on every fast tick, so it fires within
+one after the RTO, never before. On the bench (`tests/tcp/rto_probe.py` in aros-matter) the RTO
+after a lost tail is 0.20-0.24 s at an RTT of 0.4 ms, 0.26 s at 200 ms and 0.56 s at 500 ms, where
+the 500 ms clock gave 1.2-2.4 s.
+
+The retransmission timer also detects a path MTU black hole (RFC 2923 section 2.1): a path that
+drops large packets without saying so, because the ICMP that would say so is filtered. After the 2nd
+timeout in a row with a full-sized segment unacknowledged, `tcp_pmtud_blackhole()` (`tcp_subr.c`)
+tries segments that fit the IPv6 minimum MTU (1280), or 1240 bytes for IPv4; after the 4th, an IPv4
+connection stops setting DF (`TF_PMTUD_NODF`), so routers fragment again; after the 6th it was not
+the path, and the MSS and DF come back. A lowered MSS that gets through is kept, as a learned path
+MTU is. The steps are FreeBSD's (`tcp_timer_rexmt()`); detection is on by default, as in XNU
+(sysctl `net.inet.tcp.pmtud_blackhole`).
+
+Keepalive is per connection, with FreeBSD's options: `TCP_KEEPIDLE` (idle time before the first
+probe), `TCP_KEEPINTVL` (between probes) and `TCP_KEEPINIT` (to establish the connection) in
+seconds, `TCP_KEEPCNT` in probes; 0 gives back the system value (2 hours, 75 s, 75 s, 8), and
+`getsockopt()` reads what the connection uses (`TP_KEEPIDLE()` and the rest, `tcp_var.h`). A
+change re-arms the timer it concerns; a connection accepted by a listening socket has its values.
+The slow-tick timers are 16-bit, so a time is at most 16383 s (`TCP_KEEP_MAXSECS`); the idle
+counter saturates rather than wrapping.
+
+`TCP_USER_TIMEOUT` (RFC 5482; Linux's option and number, FreeBSD has none) is how long, in ms,
+data may wait - sent and unacknowledged, or held back by a shut window - before the connection is
+dropped with `ETIMEDOUT`; 0 (the default) is off. The wait starts when the retransmission or the
+persist timer is armed for it and restarts whenever an ACK takes `snd_una` forward (`t_acktime`);
+`tcp_slowtimo()` checks it for every connection, every 500 ms, whichever timer is running. With
+it the retransmission count no longer ends the connection (it goes on at the longest interval).
+With keepalive it replaces the probe count, as in Linux: a connection that has sent a probe and
+heard nothing for that long is dropped. Accepted connections inherit it.
+
+`TCP_INFO` (Linux's option, FreeBSD's `struct tcp_info` and `tcp_fill_info()`) gives a connection's
+state, the options it negotiated (`TCPI_OPT_*`), its segment size, windows and sequence numbers,
+`snd_cwnd` and `snd_ssthresh`, and its round-trip estimate, variance and retransmission timeout
+in microseconds; what the stack does not keep stays 0. The structure is larger than an mbuf, so
+the answer goes in a cluster; a shorter buffer gets its start.
+
+### 5.4 Options in the SYN
+
+A connection asks for the MSS (§6, segment size, for IPv6), window scale and timestamps
+(RFC 7323, `tcp_do_rfc1323`) and SACK (RFC 2018, `tcp_do_sack`). ECN (RFC 3168, `tcp_do_ecn`,
+sysctl `net.inet.tcp.ecn`) has three modes: 0 off, 1 ask for it in the SYN and accept it, 2 accept
+it when the peer asks (the default, as Linux, FreeBSD and Windows). In mode 1 a SYN resent twice
+goes without ECE and CWR (section 6.1.1.1), and only a SYN-ACK to a SYN that asked turns it on
+(`TF_ECN_SYN`). The ECN field of a segment is TCP's: ECT(0) on new data of a connection that agreed,
+over IPv4 and IPv6 (`tcp_v6output()` takes the traffic class), the rest of the byte from `IP_TOS` or
+`IPV6_TCLASS`. T/TCP (RFC 1644: the CC, CC.NEW and CC.ECHO options, the TAO cache, the shortened
+TIME-WAIT) is off by default too: RFC 6247 moved it to Historic, as it lets a SYN with a guessed
+CC skip the three-way handshake. It is still in the source, and `tcp_do_rfc1644` (sysctl
+`net.inet.tcp.rfc1644`) turns it back on.
+
+### 5.5 Resets, SYNs and ACKs out of place
+
+A connection checks the segments that could end it or put data in it (RFC 5961, as FreeBSD and
+Linux). A reset outside the receive window is dropped, and so is one before it, which the 4.4BSD
+code took for one in it. Only a reset at exactly the next expected sequence number ends the
+connection; any other in the window gets a challenge ACK, which a peer that has lost the
+connection answers with a reset at that number. A SYN on a synchronized connection gets a
+challenge ACK too, not a reset, and so does a segment whose ACK is older than SND.UNA by more than
+the peer's largest window (section 5.2), whose data is dropped. Challenge ACKs are limited to 5 a
+second on each connection (section 7), not for all of them together.
 
 ---
 
@@ -265,27 +421,42 @@ overlay), so header building and the state machine are shared; only the family e
   `struct sc_key` (via `syncache_key`) abstracts the family for hash/lookup/fill.
   `syncache_respond` builds the v6 SYN-ACK via `tcp_v6output`. `syncache_socket` sets the v6
   four-tuple directly (`inp_laddr6`/`faddr6`/`lport`/`fport`) — v6 PCBs are found by a linear scan
-  of `tcb`, so there is no `in_pcbrehash`/`in_pcbconnect`. SYN cookies fold the 128-bit addresses to
-  32 bits (`syncache_v6fold`) for the v4-shaped cookie hash (consistent because those addresses are
-  also present on the return ACK). `syncache_add`/`expand`/`chkrst` take `(isipv6, src6, dst6)`.
+  of `tcb`, so there is no `in_pcbrehash`/`in_pcbconnect`. The cookie, the ISN and the bucket hash
+  take the whole 128-bit addresses (`tcp_conn_hash()`, §5.2). `syncache_add`/`expand`/`chkrst` take
+  `(isipv6, src6, dst6)`.
 - **Source address selection.** `in6_pcbconnect` selects a source via `rtalloc()` +
   `in6_ifawithifp()` (mirroring `udp6_output`); an unbound socket must not connect from the
   unspecified address (`::`), which `ip6_input` discards on receipt (RFC 4291 scope).
+- **Segment size.** `tcp_mss()` and `tcp_mssopt()` work out the MSS from the family's headers: 60
+  bytes in front of the data on IPv6 (RFC 6691), 40 on IPv4. `inp_route` cannot hold an IPv6
+  destination, so for IPv6 `tcp_rtlookup6()` looks the route up each time and the caller releases it;
+  the link is the connection's zone for a link-local peer. The MSS is the route's path MTU, else the
+  link MTU, less the headers, at most `tcp_v6mssdflt` (1220) towards a destination off the link with
+  no path MTU known, and never more than the peer's MSS option, also when no route is found. It is
+not rounded down to a multiple of the mbuf cluster, as 4.4BSD did (FreeBSD has dropped that, Linux
+never did it): a 9000-byte link carries 8948-byte segments, not 8192. The
+  syncache's SYN-ACK advertises the same for IPv6 (`tcp_mssopt6()`), and a peer that sends no MSS is
+  taken to accept 1220 (RFC 9293 §3.7.1). `in6_localaddr()` counts an address on one of our prefixes
+  as local, as `in_localaddr()` does for IPv4.
 - **Port allocation.** `in6_pcballoclport` (IPPORT range + `in6_pcblookup` collision check) is used
   for both wildcard and explicit-address binds. An explicit `{addr, port}` bind that collides with
   an existing PCB is rejected with `EADDRINUSE` unless `SO_REUSEADDR`/`SO_REUSEPORT` is set.
 - **UDP6** is a separate path (`udp6_usrreq`/`udp6_output`/`udp6_input`) reusing the shared `inpcb`.
   `if_loop.c loconfig()` configures `lo0` with `::1` (and `127.0.0.1`); `::1` is in `in6_ifaddr` so
   `ip6_input` treats it as "ours". `IPV6_V6ONLY` and `IPV6_UNICAST_HOPS` round-trip. A `sendto()`
-on an unconnected socket chooses the source for that datagram only (the bound address, an
-`IPV6_PKTINFO` source, the asked-for interface's address, or the route's; for a group with no
-interface named, the `IPV6_MULTICAST_IF` one's), as `udp_output()` does for
-IPv4: the socket keeps its bound address, and only a missing port is bound for good. When the
+on an unconnected socket chooses the source for that datagram only (an `IPV6_PKTINFO` source,
+which wins over the bound address as RFC 3542 §6.1 says; the bound address; the asked-for
+interface's address; or the route's; for a group with no interface named, the `IPV6_MULTICAST_IF`
+one's), as `udp_output()` does for IPv4: the socket keeps its bound address, and only a missing port
+is bound for good. An `IPV6_PKTINFO` source that is not a usable address of ours is refused with
+`EADDRNOTAVAIL`; a connected socket keeps its connection's source. When the
   `IN6P_HOPLIMIT` (`IPV6_RECVHOPLIMIT`, or the RFC 2292 `IPV6_HOPLIMIT`) or `IN6P_PKTINFO`
   (`IPV6_RECVPKTINFO`) flag is set, `udp6_input` delivers the received hop limit and/or a
   `struct in6_pktinfo` (public in `<netinet/in.h>`: destination address + receiving interface index)
   as `IPPROTO_IPV6` ancillary `cmsg`s, chained via `m_next` and assembled before the headers are
-  stripped (RFC 3542).
+  stripped (RFC 3542). `IPV6_RECVTCLASS` (`IN6P_TCLASS`) adds the traffic class (section 6.5), so
+  an application sees the ECN field (QUIC, RFC 9000 section 13.4). `IPV6_TCLASS`, as a socket option
+  or ancillary data on one datagram, is the traffic class UDP and raw sockets send with (-1 is 0).
 - **Raw IPv6 sockets** (`raw_ip6.c`, after KAME's `raw_ip6.c`; RFC 3542 §3) have an `inpcb` on
   their own list (`rip6cb`), so the IPv6 options are the ones `ip6_ctloutput()` keeps for UDP6. The
   socket's protocol and its `ICMP6_FILTER` (level `IPPROTO_ICMPV6`, pass-all by default) live in a
@@ -304,7 +475,22 @@ IPv4: the socket keeps its bound address, and only a missing port is bound for g
   long. On LP64 `CMSG_DATA()` starts past padding after the 12-byte header, which a length of
   `sizeof(struct cmsghdr) + size` would cut from the data's end. `recvmsg()` copies the whole chain
   into the caller's buffer and reports what did not fit with `MSG_CTRUNC` in `msg_flags`. IPv4's
-  `IP_RECVDSTADDR` uses the same helper.
+  `IP_RECVDSTADDR`, `IP_RECVTOS` and `IP_RECVTTL` use the same helper.
+- **Receive time.** A UDP socket with `SO_TIMESTAMP` gets, first in each datagram's ancillary data,
+  the time the stack handed it to the socket - before it waits in the buffer, so a late
+  `recvmsg()` does not move it (`sbcreatetimestamp()`, `kern/uipc_socket2.c`, from
+  `udp_savecontrol()` and `udp6_append()`). `SO_TS_CLOCK` (FreeBSD's) chooses the clock, read once
+  per datagram, and so the message: `SO_TS_REALTIME_MICRO`, the default, gives `SCM_TIMESTAMP`, a
+  `struct timeval` from the C runtime's `timespec_get(TIME_UTC)` - the time posixc's
+  `gettimeofday()` gives, the system time from 1970 in UTC by the locale's offset of that moment,
+  so the stack keeps no conversion of its own; `SO_TS_MONOTONIC` gives `SCM_MONOTONIC`, a
+  `struct timespec` from timer.device's `GetUpTime()`, which is posixc's `CLOCK_MONOTONIC`. A
+  datagram keeps the kind it came in with. `SO_TS_REALTIME` and `SO_TS_BINTIME` are refused with
+  `EOPNOTSUPP` (an AROS choice; FreeBSD has them), other values with `EINVAL`. Both options change
+  at `splnet`, as the daemon reads them. `struct timeval` is two 32-bit fields on every target;
+  `struct timespec` is a 32-bit `time_t` and a `long`, 8 bytes on 32-bit targets and 16 on 64-bit
+  ones, so code that must read stamps across targets (an m68k program under emulation) should use
+  `SCM_TIMESTAMP`.
 
 ### 6.1 Neighbour Discovery
 
@@ -314,6 +500,11 @@ dispatches ICMPv6, and `in6.c` performs link-local autoconfiguration and joins t
 group via `in6_addmulti` → `S2_ADDMULTICASTADDRESS`, mapping `ff02::X` → `33:33:XX:XX:XX:XX`.
 `nd6_lookup` returns a neighbour route with its reference **held** (KAME semantics); every caller
 `rtfree()`s it when done.
+Neighbor Solicitations follow RFC 4861 §7.2.2 and §7.3.3 (`nd6_solicit()`): to resolve an address
+they go to its solicited-node group, to probe a neighbour in PROBE to the neighbour itself, at the
+link-layer address cached; at most three, a RetransTimer apart (the interface's, from Router
+Advertisements, 1 s by default), counted in `nd6_timer()`'s half-second ticks (`ln_ntick`). The
+packets waiting meanwhile are queued, not answered with solicitations of their own.
 
 A route through a router (`RTF_GATEWAY`) is not a neighbour: `nd6_rtrequest()` leaves it alone and
 its gateway stays the router's IPv6 address. When a packet follows it, `nd6_resolve()` resolves the
@@ -325,7 +516,15 @@ route to `::` without a netmask would be a host route, which the routing table r
 
 Router Advertisements are processed as by an RFC 4191 type C host. Each default router keeps its
 preference (high, medium, low; the reserved value counts as medium) and the default route goes
-through the most preferred one that has not expired, the one heard first among equals. A Route
+through the most preferred of those that have not expired and are reachable or probably reachable -
+their neighbour entry past INCOMPLETE (RFC 4861 §6.3.6, RFC 4191 §3.2) - the one heard first among
+equals (`defrouter_choose()`). With none known reachable, the one in use stays, or the most preferred
+is taken; when neighbour unreachability detection gives up on the one in use, the next one in the
+list is (round robin, `defrouter_unreachable()`). A more preferred router passed over is probed with
+a Neighbor Solicitation once a minute at most (RFC 4191 §3.5, `nd6_probe()`), and its answer
+(`defrouter_reachable()`) brings the default route back to it. A router whose Neighbor Advertisement clears the
+Router flag leaves the list, with the routes through it, its Route Information routes among them
+(RFC 4861 §7.2.5, `defrouter_notrouter()`, as FreeBSD's `defrouter_del()` flushes them). A Route
 Information Option installs a route to its prefix through the advertising router, on the interface
 it was heard on, one entry per (prefix, router) with its own lifetime and preference: the most
 preferred router for a prefix gets the route, and between prefixes the routing table's longest match
@@ -340,14 +539,83 @@ address added with `SIOCAIFADDR_IN6` - SLAAC, temporary or configured by hand - 
 can multicast. The first Router Solicitation follows the link-local's DAD; later addresses do not
 send another. An address's `IN6_IFF_*` flags are kept in `ia6_ifaflags`, apart from the generic
 `ifa_flags` (`ia6_flags`) where `IFA_ROUTE` records the prefix route `in6_ifscrub()` removes with
-the address. A prefix gets one temporary address (RFC 4941) at a time: another is made when a Router
+the address. Applications read them with `SIOCGIFAFLAG_IN6` (KAME; `ifru_flags6`, `EADDRNOTAVAIL` for
+an address the interface does not have). When DAD ends, passed or duplicated, the address is
+announced again as when it was added (`nd6_dad_announce()`: `RTM_NEWADDR` and the
+`SBTC_SIG_ADDRESS_CHANGE_MASK` signal), after its flags have changed, so a program woken by it finds
+it usable or `IN6_IFF_DUPLICATED`. The stack task does not wait to send that signal
+(`api_sendaddrchange()`): a task opening or closing the library may hold the list it walks and wait
+for the stack; the signal then goes from the next `nd6_timer()` tick. A prefix gets one temporary address (RFC 4941) at a time: another is made when a Router
 Advertisement repeats the prefix after the current one is deprecated.
+
+A prefix is on-link on the link it is advertised on: the prefix list has an entry per (prefix,
+interface) (`nd6_prefix_lookup()`), each with the lifetimes heard on its link, as in KAME. The
+routing table holds one route for a prefix: it is put on its entry's interface (`nd6_prefix_onlink()`;
+with a link-local gateway `rtrequest()` would take whichever interface registered fe80::/64 first),
+and when that entry ends - expired, or its interface gone - another interface's entry for the
+prefix gets it (`nd6_prefix_drop()`).
+
+An address SLAAC makes lives by its prefix's lifetimes (RFC 4862 §5.5.3, §5.5.4): each Router
+Advertisement for the prefix renews them (`nd6_slaac_lifetimes()`), but one that would cut the valid
+lifetime below two hours brings it down to two hours at most, so a forged advertisement cannot take
+the address away; a preferred lifetime of 0 deprecates it. `in6_tmpaddrtimer()` deprecates SLAAC and
+temporary addresses at the end of their preferred lifetime and removes them at the end of the valid
+one. An option whose preferred lifetime exceeds its valid one is ignored (§5.5.3 (c)). An address
+deleted by hand comes back with the next advertisement.
+
+The flags of a Neighbor Advertisement are used as they are on the wire: `ND_NA_FLAG_*` are in
+network byte order (KAME's `<netinet/icmp6.h>`), so `nd6_na_input()` and `nd6_na_output()` neither
+swap them nor need to.
+
+A Redirect (`nd6_redirect_input()`) is taken only as RFC 4861 §8.1 says: from a link-local address
+with hop limit 255, code 0, at least 40 octets, options that parse, a target that is link-local or
+the destination itself - and from the router that is the first hop to the destination now, the
+gateway of the route the table uses for it on that interface, so that another node on the link,
+router or not, cannot draw the traffic away. It then routes the destination through the target
+(a host route, replacing one an earlier Redirect made, `RTF_DYNAMIC`; a host route set by hand is left
+as it is, as in FreeBSD). A router ignores Redirects.
+
+The DNS options of a Router Advertisement (RFC 8106) give the resolver servers and search domains:
+the addresses of an RDNSS option and the domains of a DNSSL option go into the dynamic database
+(`ndb_ra_server()`, `ndb_ra_domain()`), tagged with the interface and with when they end. Each
+advertisement renews them, a lifetime of 0 ends them at once, `ndb_ra_timer()` (from `nd6_timer()`)
+drops them when it is up, and taking the interface down drops them with its DNS= servers
+(`ifnet_clear_dns()`). At most three of each are kept per interface; a new one replaces the one that
+ends soonest (§5.3.1). An option that does not parse is ignored whole. A link-local server is asked on
+the interface it was heard on (its zone; see 6.6). The static `NAMESERVER` and `DOMAIN` entries are never
+touched and come first; a DHCP client's update (`ClearDynNameServ()`, `ClearDynDomain()`) replaces
+only what DHCP gave, not what an interface or a router did. The stack task only attempts the
+database's lock for them (`AttemptSemaphore()`): an application may hold it from `ClearDynNameServ()`
+to `EndDynNameServ()` for as long as it likes, and an option heard meanwhile is taken from the next
+advertisement, as `ndb_ra_timer()` takes the expiries on its next tick. What the stack task must change in it
+without the lock - an interface's `DNS=` servers, its entries as it goes down or away, everything
+for a reload - is queued and applied in order by the next holder before its own change
+(`ndb_ops_locked()`: the application's own next call, or `ndb_ra_timer()` within a tick). The
+entries name their interface by index (`nsn_OwnerIndex`, `dn_OwnerIndex`), which is never reused,
+so those of an interface already gone cannot dangle meanwhile.
+
+Every time Neighbour Discovery keeps in seconds - when a neighbour's state ends, a default router's
+and a prefix's lifetimes, a route from a Route Information Option, the lifetimes of SLAAC and
+temporary addresses, the DAD and Router Solicitation timers, the servers and domains of RA options -
+is on the monotonic clock, timer.device's `GetUpTime()` (posixc's `CLOCK_MONOTONIC`), as FreeBSD's
+are on `time_uptime`. Setting the system time, by hand or from the network, ends none of them early
+and stretches none: with `GetSysTime()` a clock set a day forward took every SLAAC address, RIO route
+and RDNSS server away at the next tick, and one set back kept them a day too long
+(`cunit-net-clockstep`).
 
 An in-place reload deletes every address of every interface, the link-local included, and forgets
 the routers and prefixes heard on it (`nd6_purge_routers()`, `nd6_purge_prefixes()`). For an
 interface that stays up and running, `addifent()` then makes the link-local again with `in6_if_up()`,
 as when the interface comes up: DAD, then a Router Solicitation, whose answer brings back the default
 route and the SLAAC addresses.
+
+While a neighbour's link-layer address is being resolved, the packets for it are queued on its
+cache entry (`ln_hold`, chained through `m_nextpkt`): up to `ND6_MAXQUEUELEN` (16), the oldest
+dropped first, all sent in order when the Neighbor Advertisement comes (RFC 4861 section 7.2.2). A
+single slot would keep only the last fragment of a datagram fragmented on its way out. When the
+resolution fails, each queued packet gets an ICMPv6 Destination Unreachable, address unreachable
+(the section says MUST); it comes back to the socket that sent the packet, so a connected one
+learns the neighbour is not there.
 
 ### 6.2 Multicast Listener Discovery (MLD)
 
@@ -397,10 +665,66 @@ looped back.
 IPv6 routers never fragment, so an oversized datagram is dropped and reported with ICMPv6 Packet Too
 Big. `icmp6_input` handles that type by reading the reported next-hop MTU and the quoted packet's
 destination (copied out of the packed headers into aligned locals for strict-alignment targets) and
-calling `icmp6_update_pmtu`, which records the MTU on the destination route
-(`rt_rmx.rmx_mtu`, clamped to `IPV6_MMTU`, lowered only) and notifies upper layers via
-`pfctlinput(PRC_MSGSIZE)`. `ip6_output` then caps each datagram at the route's discovered PMTU (never
-above the link MTU), so subsequent traffic fits the bottleneck link instead of being black-holed.
+calling `icmp6_update_pmtu`, which records the MTU on the destination's route
+(`rt_rmx.rmx_mtu`, clamped to `IPV6_MMTU`, lowered only). `ip6_output` caps each datagram at the
+route's discovered PMTU (never above the link MTU), so subsequent traffic fits the bottleneck link
+instead of being black-holed, and a new TCP connection takes its MSS from it (`tcp_mss`).
+
+A TCP connection under way is told too (RFC 8201 section 5.2), so that it sends smaller segments
+rather than fragments: `icmp6_notify_error()` passes the Packet Too Big to `tcp6_ctlinput()` as
+`PRC_MSGSIZE`, with the MTU and the quoted segment's sequence number in the `ip6ctlparam`. When that
+segment is still unacknowledged - anything else is old, or forged by someone who does not see the
+connection (RFC 5927 section 7.2) - `tcp_mtudisc6()` lowers `t_maxopd`/`t_maxseg` as `tcp_mss`
+would for that MTU and resends from `snd_una`, as FreeBSD's `tcp_mtudisc()`. A UDP datagram is
+fragmented to the path MTU, unless the application does its own path MTU discovery (QUIC, RFC 9000
+section 14; RFC 8899) with the RFC 3542 section 11 options, as KAME and FreeBSD have them:
+
+- `IPV6_USE_MIN_MTU`: -1 (the default) sends multicast at 1280 bytes a packet and unicast at the
+  path MTU, 0 everything at the path MTU, 1 everything at 1280. `IPV6_DONTFRAG`: never fragment.
+  The datagram leaves whole even above the path MTU - an application probing for a larger one - and
+  is refused with `EMSGSIZE` only above the link's MTU. Both are socket options and ancillary data
+  on one datagram (UDP and raw sockets; `ip6_outflags()` turns them into `ip6_output()` flags).
+- `IPV6_RECVPATHMTU`: a Packet Too Big about a datagram the socket sent (its port, and its address
+  if bound, and its peer if connected), or a datagram refused with `IPV6_DONTFRAG`, gives the socket
+  an `IPV6_PATHMTU` message: no data, a `struct ip6_mtuinfo` with the destination and the MTU
+  (`ip6_notify_pmtu()`, from `udp6_ctlinput()`).
+- `IPV6_PATHMTU` (get): the path MTU to a connected socket's peer, as `ip6_output()` would find it
+  (`ip6_pathmtu()`).
+
+An ICMPv6 error about a link-scope destination carries the interface it came in on as the
+destination's zone (`sin6_scope_id`), so a socket bound to another interface is not told.
+
+That route is the destination's own. On the link it is the neighbour's host route, cloned by
+neighbour discovery. Through a router the table only has the router's route (a prefix, or `::/0`),
+which every destination behind it shares, so - as KAME's `icmp6_mtudisc_clone()` does - a host route
+through the same router (`RTF_HOST | RTF_GATEWAY | RTF_DYNAMIC`, the router route's metrics) is
+added for the destination and the MTU put on that. A lowered MTU is kept 10 minutes (`rmx_expire`
+says when), then the larger one is tried again (RFC 8201 section 4): `rt_pmtu_timer()` (from
+`ip_slowtimo()`) deletes a host route added for it and gives any other route its previous MTU back.
+The routes are held, with a reference, in a table of 32 (`pmtu_routes[]`, `net/route.c`, shared with
+IPv4 - §7); when it is full the one closest to expiring gives way.
+
+A route's `rmx_expire` is kept on the monotonic clock (`GetUpTime()`), as FreeBSD keeps it on
+`time_uptime`, so setting the system time does not give a path MTU back early or keep it longer. The
+routing socket (`RTM_GET`, the `NET_RT_DUMP` sysctl, `RTV_EXPIRE` in `RTM_ADD`/`RTM_CHANGE`) and
+`GetRouteInfo()` give and take it as BSD does, as a time of day: seconds since 1970 in UTC, what
+`time()` returns (`rt_expire_out()`, `rt_expire_in()`); `ip route` shows what is left of it.
+
+The other ICMPv6 errors (Destination Unreachable, Time Exceeded, Parameter Problem) go to the
+upper-layer protocol of the packet they quote, as in KAME: `icmp6_notify_error()` copies out the
+quoted IPv6 header and ports and calls that protocol's `pr_ctlinput` (`udp6_ctlinput`,
+`tcp6_ctlinput`) with the quoted destination as a `sockaddr_in6` and the source and ports in a
+`struct ip6ctlparam`. `in6_pcbnotify()` then passes the error to the IPv6 sockets connected to that
+destination from that port, as `in_pcbnotify()` does for IPv4: a connected UDP socket gets
+`ECONNREFUSED` for a Port Unreachable, and TCP keeps it as a soft error. They were once passed to
+`pfctlinput()` with no address, which reached the IPv4 handlers of every protocol, and
+`in_pcbnotify()` dereferenced the missing address: any ICMPv6 error took the stack down.
+
+On the sending side, a unicast UDP datagram for a port with no socket gets a Destination
+Unreachable, port unreachable (RFC 4443 §3.1), as `udp_input()` gives the IPv4 one. `icmp6_error()`
+sends no error about a packet to a group or from the unspecified or a multicast address (§2.4 (e)),
+and sends it from the address the offending packet was sent to when that is one of ours (§2.2 (a);
+for a link-local one, on the interface it came in on), else from an address on that interface.
 
 ### 6.4 Extension-header processing (RFC 8200)
 
@@ -459,21 +783,40 @@ chosen source address lives on — so a link-local send leaves the correct link 
 
 A link-scope address (`fe80::/10`, `ff01::/16`, `ff02::/16`) names a link only together with its zone
 (RFC 4007), the interface index in `sin6_scope_id`; the zone is never embedded in the address. A
-socket's zone is `inp_boundif`, the interface `SO_BINDTODEVICE` also sets. `in6_pcbbind()` accepts
+socket's zone is `inp_boundif`, the interface `SO_BINDTODEVICE` also sets (on IPv6 sockets as on
+IPv4 ones; `ENXIO` for an interface no one has, an empty name removes it). A `sendto()` to a
+link-scope destination with no zone goes to the socket's zone, and one with another zone is refused
+with `EINVAL`, as for `connect()`. A socket bound to an interface only hears what arrives there,
+unicast (`in6_pcblookup()` given the receiving interface) as multicast, a TCP listener of either
+family as UDP (`tcp_input()`: for IPv4, `tcp_boundif_pcb()` when the lookup found one bound
+elsewhere). When an interface goes
+away (`if_detach()`), no socket goes on naming its `struct ifnet`: one bound to it, either family,
+is left bound to it gone (`INP_BOUNDGONE`, `in_pcbifgone()`) - what it sends fails with `ENXIO`, it
+hears nothing, until it is bound again - a TCP connection on it is closed with `ENXIO`, without a
+reset (`tcp_ifgone()`), and an `IP_MULTICAST_IF`/`IPV6_MULTICAST_IF` naming it is forgotten. `in6_pcbbind()` accepts
 only one of our addresses (or a group, or `::`), a link-scope one only in its zone, and sets the
 socket's zone; `in6_pcbconnect()` takes the zone from the peer's `sin6_scope_id` (`ENXIO` if no
 interface has that index, `EINVAL` if the socket is in another zone) and picks the source on that
-link. Without a zone the routing table picks the link, as RFC 4007 section 6 allows for a default
-zone. `getsockname()`/`getpeername()`/`accept()` report the zone of link-scope addresses (for an
+link. A group with no zone is reached by the `IPV6_MULTICAST_IF` interface, as each datagram to it
+is, so a socket connected to it takes its source there (without being bound to it). Otherwise,
+without a zone, the routing table picks the link, as RFC 4007 section 6 allows for a default zone;
+for a group datagram with neither a zone nor `IPV6_MULTICAST_IF`, `ip6_output()` takes the link its
+source address is on, or else the first interface that is up.
+`getsockname()`/`getpeername()`/`accept()` report the zone of link-scope addresses (for an
 accepted connection, the link its link-local address is on), and `recvfrom()` the link a link-scope
 source arrived on. A packet sent to one of our own link-local addresses is looped back through
 `lo0` but received on the interface the address belongs to, as KAME's `origifp` does, so the zone
 and `IPV6_PKTINFO` name that link.
 
 Among an interface's usable addresses (not tentative or duplicated), `in6_ifawithifp()` picks the
-source by RFC 6724 section 5 rules 2, 3 and 7: the smaller of two scopes unless it is smaller than
-the destination's (a link-scope destination gets the link-local, a global one a global address),
-then a preferred address over a deprecated one, then a temporary address over a public one.
+source by RFC 6724 section 5 rules 1, 2, 3, 6, 7 and 8: the destination itself, if it is one of
+them; the smaller of two scopes unless it is smaller than the destination's (a link-scope
+destination gets the link-local, a global one a global address); a preferred address over a
+deprecated one; one whose label in the default policy table (section 2.1) is the destination's (a
+ULA destination gets the ULA, a global one a global address rather than the ULA); a temporary
+address over a public one; then the one with the longest prefix in common with the destination,
+counted no further than the source's own prefix. Without rules 6 and 8, of two global-scope
+addresses the first on the list won, whatever the destination.
 
 ---
 
@@ -484,16 +827,43 @@ then a preferred address over a deprecated one, then a temporary address over a 
   (`struct ipq`, bounded by `maxnipq`) and linked through separately allocated `struct ipqent`
   nodes — the fragment chain is kept out of the packet rather than overlaid on the IP header, so it
   is correct on 64-bit targets and a received fragment can no longer crash the stack (§10).
+- **Roadshow interface calls.** `ObtainInterfaceList()` gives one node per interface, its name
+  (`eth0`, `lo0`) in `ln_Name`, freed with `ReleaseInterfaceList()`. `QueryInterfaceTagList()` fills
+  `IFQ_Address`, `IFQ_DestinationAddress`, `IFQ_BroadcastAddress` and `IFQ_NetMask` with a
+  `struct sockaddr_in` from the interface's first IPv4 address, as the `SIOCGIF*` ioctls give them.
+- **Forwarding** (`in_canforward()`, `netinet/in.c`, also Roadshow's `In_CanForward()`): network 0,
+  the loopback network 127, multicast and class E (224/3) and link-local 169.254/16 (RFC 3927
+  section 2.7) are never forwarded or redirected to; any other unicast destination may be.
 - **ICMP** (`ip_icmp.c`) generates and processes error and informational messages. Error generation
   is rate-limited by a token bucket (`icmp_ratelimit`): a burst of 10 tokens refills at 5 tokens per
   500 ms slow-tick, keyed off the `tcp_now` clock; suppressed errors are counted in
   `icmpstat.icps_ratelimit`, bounding ICMP error amplification.
+- **Path MTU discovery** (RFC 1191). TCP sends with DF set (`tcp_do_pmtud`, in `tcp_output` and the
+  syncache's SYN-ACK). An ICMP "fragmentation needed" gives the next hop's MTU; an older router gives
+  0, and the next plateau below the quoted datagram's length is taken (section 7). It is never below
+  552 (`IP_PMTU_MIN`, as Linux), so a forged message cannot shrink packets further. `icmp_mtudisc()`
+  puts it on the destination's own route through `rt_pmtu_update()`, as for IPv6 (§6.3: a host route
+  through the router, given back after 10 minutes), and `ip_output` sizes packets by the route's MTU.
+  `tcp_ctlinput` (`PRC_MSGSIZE`) lowers the MSS of the connection the quoted segment belongs to,
+  when that segment is still unacknowledged (RFC 5927 section 7.2), with `tcp_mtudisc()`, shared with
+  IPv6; and when `ip_output` refuses a segment larger than the route's MTU (`EMSGSIZE`),
+  `tcp_output` does the same from the route. UDP ignores `PRC_MSGSIZE`; a socket with `IP_DONTFRAG`
+  (FreeBSD's number) sends with DF, so `ip_output` refuses a datagram above the path MTU with
+  `EMSGSIZE` instead of fragmenting it.
+  Where the ICMP never comes, the retransmission timer finds the black hole (§5.3). Sysctl
+  `net.inet.tcp.pmtud` turns DF off.
 - **UDP** (`udp_usrreq.c`) is the standard datagram path over the shared `udb` table. The default
   UDP receive buffer (`udp_recvspace`, 256 datagrams) and the IP input queue depth
   (`ipqmaxlen = 4·IFQ_MAXLEN`, `ip_input.c`) are sized to absorb short high-rate receive bursts
   before the owning task drains them, rather than dropping at the ~40-datagram default. `SO_BINDTODEVICE`
   pins a UDP socket to one interface, so a limited broadcast (`255.255.255.255`) or a reply can be
-  directed out a chosen link even on a multi-homed host with no default route.
+  directed out a chosen link even on a multi-homed host with no default route. A datagram carries
+  the ancillary data its socket asked for - `IP_RECVDSTADDR`, `IP_RECVTOS` (FreeBSD's: the TOS
+  byte, so the ECN field) and `IP_RECVTTL` (FreeBSD's: `cmsg_type` `IP_RECVTTL`, the TTL the
+  datagram arrived with in one byte - not Linux's `IP_TTL` and int; an mDNS responder checks it is
+  255, RFC 6762 section 11) - whether it was sent to one address or to a group or broadcast address
+  (`udp_savecontrol()`, from the header as it arrived). `IP_TOS` as ancillary data (a byte, or an int as Linux takes it) sets the
+  TOS byte of one datagram.
 - **IPv4 multicast** (built under `-DENABLE_MULTICAST`) provides host-side group membership,
   mirroring the IPv6 path. `in_addmulti`/`in_delmulti` (`in.c`) maintain the reference-counted
   `in_multihead` list and program the NIC hardware filter over SANA-II (RFC 1112 class-D →
@@ -538,7 +908,10 @@ locals before summing rather than reading them through a `u_int16_t *` taken fro
   feeds queued packets into the pool of write requests as earlier ones complete, so a burst of sends
   cannot drain the request or cluster pool and wedge the interface. `sana2arp.c` implements IPv4
   ARP with a **per-interface** ARP table (each `sana_softc` has its own `ss_arp.table` under
-  `ARPTAB_LOCK`).
+  `ARPTAB_LOCK`). While an address is resolved, up to `ARP_MAXHOLD` (16) packets are queued on its
+  entry (`at_hold`, chained through `m_nextpkt`, oldest dropped first) and all are sent when the reply
+  comes, so the fragments of a datagram all leave; the request is sent again at most once a second
+  (RFC 1122 section 2.3.2.1), not for every packet queued.
 - **Tunnel pseudo-interface.** `if_stf.c` provides a deviceless 6in4 (SIT) interface that
   encapsulates IPv6 in IPv4 (protocol 41) over the existing IPv4 stack — no SANA-II device is bound.
   See §6.5.
@@ -547,7 +920,10 @@ locals before summing rather than reading them through a `u_int16_t *` taken fro
   otherwise a requester offers retry / skip / shutdown. On a wireless link the stack requests
   `S2EVENT_DISCONNECT` and, when the link drops, tears down the addresses and routes that belonged to
   the old network; `sana_unrun` aborts the parked `S2_ONEVENT` before waiting on it, so another
-  opener keeping the device online can no longer hang shutdown.
+  opener keeping the device online can no longer hang shutdown. When the driver has no more events
+  for it - it does not do `S2_ONEVENT`, or the link went offline - `sana_connect` frees the request
+  there and then: `sana_poll()` has taken it off the port, and a later `WaitIO()` on it would
+  `Remove()` it from the port again, through stale links.
 - **DHCP across several interfaces.** The DHCP client (`kern/amiga_dhcp.c` launching `dhclient`) runs
   one socket per interface, each bound to its link, so a second interface (e.g. a Bluetooth PAN
   alongside ethernet) also gets an address; the default route, name servers and search domain follow
@@ -562,6 +938,21 @@ Properties the implementation provides:
 
 - **SYN-flood resistance** via the SYN cache plus stateless cookies (§5.2).
 - **ICMP error rate limiting** via a token bucket (§7).
+- **No silent data loss on close.** Closing a TCP connection whose received data is still unread
+  resets it instead of sending a FIN (`tcp_disconnect`), and data that arrives after the close is
+  answered with a reset (`tcp_input`), so the peer learns the data was lost (RFC 9293 §3.6.1,
+  RFC 1122 §4.2.2.13).
+- **Random values from the system CSPRNG.** The ISN key (RFC 6528, also the SYN cookies'), the
+  ephemeral ports, the IPv4 IDs and IPv6 fragment identifications (RFC 7739) and the interface
+  identifiers of temporary addresses (RFC 8981) come from `kern_random()` (`kern/kern_random.c`).
+  It takes them from the C runtime's `arc4random_buf()`, which draws on `entropy.resource`, 256
+  bytes at a time into a pool it hands out and wipes: every `GetEntropy()` call gathers and
+  reseeds, too much for every packet.
+- **Unpredictable ephemeral ports.** A port the stack picks for a TCP or UDP socket, IPv4 or IPv6
+  (bind to port 0, or the implicit bind of `connect()`/`sendto()`), is a random one from the IANA
+  dynamic range 49152-65535, else the next free one after it (RFC 6056 algorithm 1,
+  `in_pcbpickport()`), so an off-path attacker cannot guess it - nor the source port of a DNS
+  query (RFC 5452). With every port in use, the bind fails with `EADDRNOTAVAIL`.
 - **Memory-pressure safety.** Because `M_WAIT` can fail (§3.3), socket-layer and protocol
   allocation sites NULL-check and return `ENOBUFS` rather than dereferencing `NULL`.
 - **Input bounds validation.** Header and length fields are validated against the actual packet
@@ -612,8 +1003,9 @@ Properties the implementation provides:
   option on their reports, and receive-side `IPV6_HOPLIMIT`/`IPV6_PKTINFO` ancillary data is
   delivered; per-source multicast filtering (MLDv2 INCLUDE/EXCLUDE source lists) is not tracked.
 - **Unimplemented API surface.** Several Roadshow interface-management entrypoints
-  (`AddInterfaceTagList`, `ConfigureInterfaceTagList`, `ObtainInterfaceList`, …) and Miami calls
-  (`MiamiSysCtl`, `MiamiGetHardwareLen`, `sockatmark`, …) are stubs that log "not implemented".
+  (`AddInterfaceTagList`, `ConfigureInterfaceTagList`, …) and Miami calls
+  (`MiamiGetHardwareLen`, `sockatmark`, …) are stubs that log "not implemented". `MiamiSysCtl()`
+  serves the `net.inet.{ip,tcp,udp}` MIB only (`kern/kern_sysctl.c`).
 
 ---
 

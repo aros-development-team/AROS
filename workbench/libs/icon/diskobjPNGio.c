@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /****************************************************************************************/
@@ -186,6 +186,12 @@ ULONG *ReadMemPNG(struct DiskObject *icon, APTR stream, LONG *width, LONG *heigh
 
 
 /****************************************************************************************/
+
+/* A big endian 32 bit value from a byte stream, at any alignment */
+static ULONG GetBE32(const UBYTE *p)
+{
+    return (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
+}
 
 static void GetChunkInfo(APTR stream, APTR *chunkdata, ULONG *chunksize)
 {
@@ -401,7 +407,7 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
                 IPTR  val = 0;
                 BOOL  need_drawerdata = FALSE;
 
-                attr = (chunkdata[0] << 24) | (chunkdata[1] << 16) | (chunkdata[2] << 8) | chunkdata[3];
+                attr = GetBE32(chunkdata);
                 chunksize -=4;
                 chunkdata += 4;
                 
@@ -428,7 +434,7 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
                     case ATTR_FRAMELESS:
                         if (chunksize >= 4)
                         {
-                            val = (chunkdata[0] << 24) | (chunkdata[1] << 16) | (chunkdata[2] << 8) | chunkdata[3];
+                            val = GetBE32(chunkdata);
                             chunksize -=4;
                             chunkdata += 4;
                         }
@@ -623,10 +629,8 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
         
         while(!done && filepos < ((UBYTE *)icon->ni_Extra.Data + icon->ni_Extra.Size))
         {
-            ULONG chunksize = (filepos[0] << 24) | (filepos[1] << 16) |
-                              (filepos[2] << 8) | filepos[3];
-            ULONG chunktype = (filepos[4] << 24) | (filepos[5] << 16) |
-                              (filepos[6] << 8) | filepos[7];
+            ULONG chunksize = GetBE32(filepos);
+            ULONG chunktype = GetBE32(filepos + 4);
 
             chunksize += 12;
 
@@ -761,76 +765,78 @@ STATIC ULONG UpdateCRC(ULONG crc, UBYTE *buf, ULONG len, struct IconBase *IconBa
 
 /****************************************************************************************/
 
-STATIC BOOL WriteIconAttr(BPTR file, ULONG id, ULONG val, ULONG *chunksize,
-                          ULONG *crc, struct IconBase *IconBase)
+/* State of the icOn chunk being written: the CRC and the size cover its data */
+struct IconChunkWriter
 {
-    UBYTE buf[8];
-    
-    buf[0] = id >> 24;
-    buf[1] = id >> 16;
-    buf[2] = id >> 8;
-    buf[3] = id;
-    buf[4] = val >> 24;
-    buf[5] = val >> 16;
-    buf[6] = val >> 8;
-    buf[7] = val;
-    
-    if (Write(file, buf, 8) != 8) return FALSE;
+    BPTR             file;
+    ULONG            chunksize;
+    ULONG            crc;
+    struct IconBase *IconBase;
+};
 
-    *chunksize += 8;
-    *crc = UpdateCRC(*crc, buf, 8, IconBase);
+STATIC BOOL WriteIconData(struct IconChunkWriter *w, CONST_APTR data, ULONG len)
+{
+    struct IconBase *IconBase = w->IconBase;
+
+    if (Write(w->file, data, len) != len) return FALSE;
+    w->crc = UpdateCRC(w->crc, (UBYTE *)data, len, IconBase);
+    w->chunksize += len;
     return TRUE;
 }
 
 /****************************************************************************************/
 
-STATIC BOOL WriteIconStrAttr(BPTR file, ULONG id, char *val, ULONG *chunksize,
-                             ULONG *crc, struct IconBase *IconBase)
+STATIC BOOL WriteIconAttr(struct IconChunkWriter *w, ULONG id, ULONG val)
 {
-    UBYTE buf[4];
-    ULONG len = strlen(val) + 1;
-    
-    buf[0] = id >> 24;
-    buf[1] = id >> 16;
-    buf[2] = id >> 8;
-    buf[3] = id;
-    
-    if (Write(file, buf, 4) != 4) return FALSE;
-    *crc = UpdateCRC(*crc, buf, 4, IconBase);
-        
-    if (Write(file, val, len) != len) return FALSE;
-    *crc = UpdateCRC(*crc, val, len, IconBase);
+    ULONG buf[2];
 
-    *chunksize += 4 + len;
-    
-    return TRUE;
+    buf[0] = AROS_LONG2BE(id);
+    buf[1] = AROS_LONG2BE(val);
+
+    return WriteIconData(w, buf, 8);
+}
+
+/****************************************************************************************/
+
+STATIC BOOL WriteIconStrAttr(struct IconChunkWriter *w, ULONG id, char *val)
+{
+    id = AROS_LONG2BE(id);
+
+    if (!WriteIconData(w, &id, 4)) return FALSE;
+
+    return WriteIconData(w, val, strlen(val) + 1);
 }
                           
 /****************************************************************************************/
 
 STATIC BOOL WriteIconChunk(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase)
 {
-    ULONG crc = 0xFFFFFFFF;
-    ULONG chunksize = 0;
+    struct IconChunkWriter w;
     ULONG sizeseek = Seek(file, 0, OFFSET_CURRENT);
     UBYTE buf[] = {0x12, 0x34, 0x56, 0x78, 'i', 'c', 'O', 'n'};
+    ULONG be;
     
     if (sizeseek < 0) return FALSE;
+
+    w.file      = file;
+    w.chunksize = 0;
+    w.crc       = 0xFFFFFFFF;
+    w.IconBase  = IconBase;
 
     /* Write Chunk size + chunk type */
     if (Write(file, buf, 8) != 8) return FALSE;
     
-    crc = UpdateCRC(crc, buf + 4, 4, IconBase); /* chunksize is excluded from CRC */
+    w.crc = UpdateCRC(w.crc, buf + 4, 4, IconBase); /* chunksize is excluded from CRC */
 
     /* Write Frameless */
-    if (!WriteIconAttr(file, ATTR_FRAMELESS, NATIVEICON(dobj)->ni_Frameless, &chunksize, &crc, IconBase))
+    if (!WriteIconAttr(&w, ATTR_FRAMELESS, NATIVEICON(dobj)->ni_Frameless))
     {
         return FALSE;
     }
 
     /* Write Stack Size */
 
-    if (!WriteIconAttr(file, ATTR_STACKSIZE, dobj->do_StackSize, &chunksize, &crc, IconBase))
+    if (!WriteIconAttr(&w, ATTR_STACKSIZE, dobj->do_StackSize))
     {
         return FALSE;
     }
@@ -838,7 +844,7 @@ STATIC BOOL WriteIconChunk(BPTR file, struct DiskObject *dobj, struct IconBase *
     /* Write Icon X Position */
     if (dobj->do_CurrentX != NO_ICON_POSITION)
     {
-        if (!WriteIconAttr(file, ATTR_ICONX, dobj->do_CurrentX, &chunksize, &crc, IconBase))
+        if (!WriteIconAttr(&w, ATTR_ICONX, dobj->do_CurrentX))
         {
             return FALSE;
         }
@@ -847,7 +853,7 @@ STATIC BOOL WriteIconChunk(BPTR file, struct DiskObject *dobj, struct IconBase *
     /* Write Icon Y Position */
     if (dobj->do_CurrentY != NO_ICON_POSITION)
     {
-        if (!WriteIconAttr(file, ATTR_ICONY, dobj->do_CurrentY, &chunksize, &crc, IconBase))
+        if (!WriteIconAttr(&w, ATTR_ICONY, dobj->do_CurrentY))
         {
             return FALSE;
         }
@@ -855,32 +861,28 @@ STATIC BOOL WriteIconChunk(BPTR file, struct DiskObject *dobj, struct IconBase *
             
     if (dobj->do_DrawerData)
     {
-        if (!WriteIconAttr(file, ATTR_DRAWERX, dobj->do_DrawerData->dd_NewWindow.LeftEdge,
-            &chunksize, &crc, IconBase))
+        /* Write the drawer window box: ATTR_DRAWERX, ATTR_DRAWERY,
+           ATTR_DRAWERWIDTH and ATTR_DRAWERHEIGHT follow each other, as do
+           LeftEdge, TopEdge, Width and Height in the NewWindow */
+        WORD *box = &dobj->do_DrawerData->dd_NewWindow.LeftEdge;
+        ULONG i;
+
+        _Static_assert(ATTR_DRAWERY == ATTR_DRAWERX + 1 && ATTR_DRAWERWIDTH == ATTR_DRAWERX + 2 &&
+                       ATTR_DRAWERHEIGHT == ATTR_DRAWERX + 3, "drawer box attributes");
+        _Static_assert(offsetof(struct NewWindow, TopEdge) == offsetof(struct NewWindow, LeftEdge) + sizeof(WORD) &&
+                       offsetof(struct NewWindow, Width) == offsetof(struct NewWindow, LeftEdge) + 2 * sizeof(WORD) &&
+                       offsetof(struct NewWindow, Height) == offsetof(struct NewWindow, LeftEdge) + 3 * sizeof(WORD),
+                       "drawer box fields");
+
+        for (i = 0; i < 4; i++)
         {
-            return FALSE;
+            if (!WriteIconAttr(&w, ATTR_DRAWERX + i, box[i]))
+            {
+                return FALSE;
+            }
         }
         
-        if (!WriteIconAttr(file, ATTR_DRAWERY, dobj->do_DrawerData->dd_NewWindow.TopEdge,
-            &chunksize, &crc, IconBase))
-        {
-            return FALSE;
-        }
-
-        if (!WriteIconAttr(file, ATTR_DRAWERWIDTH, dobj->do_DrawerData->dd_NewWindow.Width,
-            &chunksize, &crc, IconBase))
-        {
-            return FALSE;
-        }
-
-        if (!WriteIconAttr(file, ATTR_DRAWERHEIGHT, dobj->do_DrawerData->dd_NewWindow.Height,
-            &chunksize, &crc, IconBase))
-        {
-            return FALSE;
-        }
-        
-        if (!WriteIconAttr(file, ATTR_DRAWERFLAGS, dd_to_flags(dobj),
-            &chunksize, &crc, IconBase))
+        if (!WriteIconAttr(&w, ATTR_DRAWERFLAGS, dd_to_flags(dobj)))
         {
             return FALSE;
         }
@@ -889,8 +891,7 @@ STATIC BOOL WriteIconChunk(BPTR file, struct DiskObject *dobj, struct IconBase *
             
     if (dobj->do_DefaultTool)
     {
-        if (!WriteIconStrAttr(file, ATTR_DEFAULTTOOL, dobj->do_DefaultTool,
-            &chunksize, &crc, IconBase))
+        if (!WriteIconStrAttr(&w, ATTR_DEFAULTTOOL, dobj->do_DefaultTool))
         {
             return FALSE;
         }
@@ -903,8 +904,7 @@ STATIC BOOL WriteIconChunk(BPTR file, struct DiskObject *dobj, struct IconBase *
         
         for(tt = (STRPTR *)dobj->do_ToolTypes; *tt; tt++)
         {
-            if (!WriteIconStrAttr(file, ATTR_TOOLTYPE, *tt, &chunksize,
-                                  &crc, IconBase))
+            if (!WriteIconStrAttr(&w, ATTR_TOOLTYPE, *tt))
             {
                 return FALSE;
             }
@@ -913,12 +913,8 @@ STATIC BOOL WriteIconChunk(BPTR file, struct DiskObject *dobj, struct IconBase *
                     
     /* Write CRC */
         
-    crc ^= 0xFFFFFFFF;
-    buf[0] = crc >> 24;
-    buf[1] = crc >> 16;
-    buf[2] = crc >> 8;
-    buf[3] = crc;
-    if (Write(file, buf, 4) != 4) return FALSE;
+    be = AROS_LONG2BE(w.crc ^ 0xFFFFFFFF);
+    if (Write(file, &be, 4) != 4) return FALSE;
     
     /* Trim any garbage at end of file */
     if (SetFileSize(file, 0, OFFSET_CURRENT) < 0) return FALSE;
@@ -926,11 +922,8 @@ STATIC BOOL WriteIconChunk(BPTR file, struct DiskObject *dobj, struct IconBase *
     /* Write chunk's size */
     if (Seek(file, sizeseek, OFFSET_BEGINNING) < 0) return FALSE;
 
-    buf[0] = chunksize >> 24;
-    buf[1] = chunksize >> 16;
-    buf[2] = chunksize >> 8;
-    buf[3] = chunksize;
-    if (Write(file, buf, 4) != 4) return FALSE;
+    be = AROS_LONG2BE(w.chunksize);
+    if (Write(file, &be, 4) != 4) return FALSE;
         
     if (Seek(file, 0, OFFSET_END) < 0) return FALSE;
     
@@ -963,10 +956,8 @@ BOOL WriteIconPNG(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase)
     
     while(!done)
     {
-        ULONG chunksize = (mempos[0] << 24) | (mempos[1] << 16) |
-                          (mempos[2] << 8) | mempos[3];
-        ULONG chunktype = (mempos[4] << 24) | (mempos[5] << 16) |
-                          (mempos[6] << 8) | mempos[7];
+        ULONG chunksize = GetBE32(mempos);
+        ULONG chunktype = GetBE32(mempos + 4);
         
         chunksize += 12;
         

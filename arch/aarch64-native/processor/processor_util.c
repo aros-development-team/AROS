@@ -13,6 +13,19 @@
 
 /* Tasks run at EL1t, so these sysreg reads need no SuperState(). */
 
+/*
+ * ID_AA64MMFR2_EL1. GNU as accepts the register name from 2.40 on, and
+ * before that only with -march=armv8.2-a, which AROS does not select
+ * (config/binutils_def is 2.32). Clang's integrated assembler accepts it.
+ * The architectural encoding assembles everywhere and is the same
+ * instruction, so it is the fallback.
+ */
+#if defined(__clang__)
+#define ID_AA64MMFR2_EL1    "id_aa64mmfr2_el1"
+#else
+#define ID_AA64MMFR2_EL1    "S3_0_C0_C7_2"
+#endif
+
 static const char *ARMCPUVendors[] =
 {
     "Unknown",
@@ -105,7 +118,7 @@ static ULONG cache_size_kb(unsigned int level, unsigned int instruction)
     __asm__ volatile("mrs %0, ccsidr_el1" : "=r"(ccsidr));
 
     /* FEAT_CCIDX widens CCSIDR; MMFR2 reads as zero on ARMv8.0. */
-    __asm__ volatile("mrs %0, id_aa64mmfr2_el1" : "=r"(mmfr2));
+    __asm__ volatile("mrs %0, " ID_AA64MMFR2_EL1 : "=r"(mmfr2));
 
     line_bytes = 1ULL << ((ccsidr & 7) + 4);
 

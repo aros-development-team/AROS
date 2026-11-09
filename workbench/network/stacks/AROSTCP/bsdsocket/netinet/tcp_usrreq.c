@@ -468,8 +468,9 @@ struct mbuf *nam;
         soisconnecting(so);
         tcpstat.tcps_connattempt++;
         tp->t_state = TCPS_SYN_SENT;
-        tp->t_timer[TCPT_KEEP] = TCPTV_KEEP_INIT;
+        tp->t_timer[TCPT_KEEP] = TP_KEEPINIT(tp);
         tp->iss = tcp_new_isn(inp);
+        tp->t_ts_offset = tcp_new_tsoff(inp);
         tcp_sendseqinit(tp);
         tp->cc_send = CC_INC(tcp_ccgen);
         return 0;
@@ -525,12 +526,56 @@ struct mbuf *nam;
     soisconnecting(so);
     tcpstat.tcps_connattempt++;
     tp->t_state = TCPS_SYN_SENT;
-    tp->t_timer[TCPT_KEEP] = TCPTV_KEEP_INIT;
+    tp->t_timer[TCPT_KEEP] = TP_KEEPINIT(tp);
     tp->iss = tcp_new_isn(inp);
+    tp->t_ts_offset = tcp_new_tsoff(inp);
     tcp_sendseqinit(tp);
     tp->cc_send = CC_INC(tcp_ccgen);
 
     return 0;
+}
+
+/*
+ * TCP_INFO: what FreeBSD's tcp_fill_info() gives of the connection, in
+ * its struct tcp_info (Linux's names and order). Times are in
+ * microseconds; the fields this stack does not keep stay 0.
+ */
+#define TCP_TICK_USEC   (1000000 / PR_SLOWHZ)      /* t_idle counts slow ticks */
+
+static void
+tcp_fill_info(const struct tcpcb *tp, struct tcp_info *ti)
+{
+    bzero(ti, sizeof(*ti));
+    ti->tcpi_state = tp->t_state;
+    if((tp->t_flags & TF_REQ_TSTMP) && (tp->t_flags & TF_RCVD_TSTMP))
+        ti->tcpi_options |= TCPI_OPT_TIMESTAMPS;
+    if(tp->t_flags & TF_SACK_PERMIT)
+        ti->tcpi_options |= TCPI_OPT_SACK;
+    if((tp->t_flags & TF_REQ_SCALE) && (tp->t_flags & TF_RCVD_SCALE)) {
+        ti->tcpi_options |= TCPI_OPT_WSCALE;
+        ti->tcpi_snd_wscale = tp->snd_scale;
+        ti->tcpi_rcv_wscale = tp->rcv_scale;
+    }
+    if(tp->t_flagsext & TF_ECN_PERMIT)
+        ti->tcpi_options |= TCPI_OPT_ECN;
+
+    ti->tcpi_rto = (u_int32_t)tp->t_rxtcur * 1000;
+    ti->tcpi_last_data_recv = (u_int32_t)tp->t_idle * TCP_TICK_USEC;
+    ti->tcpi_rtt = ((u_int32_t)tp->t_srtt * 1000) >> TCP_RTT_SHIFT;
+    ti->tcpi_rttvar = ((u_int32_t)tp->t_rttvar * 1000) >> TCP_RTTVAR_SHIFT;
+    ti->tcpi_snd_ssthresh = tp->snd_ssthresh;
+    ti->tcpi_snd_cwnd = tp->snd_cwnd;
+    ti->tcpi_snd_mss = tp->t_maxseg;
+    ti->tcpi_rcv_mss = tp->t_maxseg;
+
+    ti->tcpi_rcv_space = tp->rcv_wnd;
+    ti->tcpi_rcv_nxt = tp->rcv_nxt;
+    ti->tcpi_snd_wnd = tp->snd_wnd;
+    ti->tcpi_snd_nxt = tp->snd_nxt;
+    ti->tcpi_snd_una = tp->snd_una;
+    ti->tcpi_snd_max = tp->snd_max;
+    ti->tcpi_rcv_adv = tp->rcv_adv;
+    ti->tcpi_dupacks = tp->t_dupacks;
 }
 
 int
@@ -615,6 +660,50 @@ struct mbuf **mp;
                 tp->t_flags &= ~TF_NOPUSH;
             break;
 
+        /*
+         * Keepalive per connection, as FreeBSD: times in seconds, the count
+         * in probes; 0 gives back the system value. A change re-arms the
+         * timer it concerns. Up to TCP_KEEP_MAXSECS, which the 16-bit
+         * slow-tick timers hold.
+         */
+        case TCP_KEEPIDLE:
+        case TCP_KEEPINTVL:
+        case TCP_KEEPINIT:
+        case TCP_KEEPCNT:
+            if(m == NULL || m->m_len < sizeof(int) || (i = *mtod(m, int *)) < 0 ||
+                    i > (optname == TCP_KEEPCNT ? 32767 : TCP_KEEP_MAXSECS)) {
+                error = EINVAL;
+                break;
+            }
+            switch(optname) {
+            case TCP_KEEPIDLE:
+                tp->t_keepidle = i * PR_SLOWHZ;
+                if(tp->t_state >= TCPS_ESTABLISHED && tp->t_state <= TCPS_CLOSING)
+                    tp->t_timer[TCPT_KEEP] = TP_KEEPIDLE(tp);
+                break;
+            case TCP_KEEPINIT:
+                tp->t_keepinit = i * PR_SLOWHZ;
+                if(tp->t_state == TCPS_SYN_SENT || tp->t_state == TCPS_SYN_RECEIVED)
+                    tp->t_timer[TCPT_KEEP] = TP_KEEPINIT(tp);
+                break;
+            default:
+                if(optname == TCP_KEEPINTVL)
+                    tp->t_keepintvl = i * PR_SLOWHZ;
+                else
+                    tp->t_keepcnt = i;
+                if(tp->t_state == TCPS_FIN_WAIT_2 && tp->t_timer[TCPT_2MSL])
+                    tp->t_timer[TCPT_2MSL] = TP_MAXIDLE(tp);
+                break;
+            }
+            break;
+
+        case TCP_USER_TIMEOUT:      /* ms, RFC 5482; 0 is off */
+            if(m == NULL || m->m_len < sizeof(int) || *mtod(m, int *) < 0)
+                error = EINVAL;
+            else
+                tp->t_uto_ms = (u_int)*mtod(m, int *);
+            break;
+
         default:
             error = ENOPROTOOPT;
             break;
@@ -643,6 +732,32 @@ struct mbuf **mp;
             break;
         case TCP_NOPUSH:
             *mtod(m, int *) = tp->t_flags & TF_NOPUSH;
+            break;
+        case TCP_KEEPIDLE:          /* what the connection uses */
+            *mtod(m, int *) = TP_KEEPIDLE(tp) / PR_SLOWHZ;
+            break;
+        case TCP_KEEPINTVL:
+            *mtod(m, int *) = TP_KEEPINTVL(tp) / PR_SLOWHZ;
+            break;
+        case TCP_KEEPINIT:
+            *mtod(m, int *) = TP_KEEPINIT(tp) / PR_SLOWHZ;
+            break;
+        case TCP_KEEPCNT:
+            *mtod(m, int *) = TP_KEEPCNT(tp);
+            break;
+        case TCP_USER_TIMEOUT:
+            *mtod(m, int *) = (int)tp->t_uto_ms;
+            break;
+        case TCP_INFO:
+            if(sizeof(struct tcp_info) > MLEN) {
+                MCLGET(m, M_WAIT);
+                if(!(m->m_flags & M_EXT)) {
+                    error = ENOBUFS;
+                    break;
+                }
+            }
+            m->m_len = sizeof(struct tcp_info);
+            tcp_fill_info(tp, mtod(m, struct tcp_info *));
             break;
         default:
             error = ENOPROTOOPT;
@@ -706,6 +821,8 @@ struct socket *so;
  * Initiate (or continue) disconnect.
  * If embryonic state, just send reset (once).
  * If in ``let data drain'' option and linger null, just drop.
+ * If received data is still unread, drop with a reset too, so the peer
+ * learns it was lost (RFC 9293 section 3.6.1; RFC 1122 4.2.2.13).
  * Otherwise (hard), mark socket disconnecting and drop
  * current input data; switch states based on user close, and
  * send segment to peer (with FIN).
@@ -720,6 +837,8 @@ register struct tcpcb *tp;
         tp = tcp_close(tp);
     else if((so->so_options & SO_LINGER) && so->so_linger.tv_sec == 0)
         tp = tcp_drop(tp, 0);
+    else if(so->so_rcv.sb_cc > 0)
+        tp = tcp_drop(tp, ECONNRESET);
     else {
         soisdisconnecting(so);
         sbflush(&so->so_rcv);
@@ -801,8 +920,46 @@ size_t newlen;
     case TCPCTL_STATS:
         return (sysctl_rdstruct(oldp, oldlenp, newp, &tcpstat,
                                 sizeof tcpstat));
-    case TCPCTL_RTTDFLT:
-        return (sysctl_int(oldp, oldlenp, newp, newlen, &tcp_rttdflt));
+    case TCPCTL_RTTDFLT: {          /* the initial RTO, s */
+        int v = tcp_rttdflt, error;
+
+        error = sysctl_int(oldp, oldlenp, newp, newlen, &v);
+        if(error == 0 && (v < 1 || v * 1000 > TCPTV_REXMTMAX_MS))
+            error = EINVAL;
+        if(error == 0)
+            tcp_rttdflt = v;
+        return (error);
+    }
+    case TCPCTL_ABC_L: {            /* slow start, L * SMSS per ACK at most */
+        int v = tcp_abc_l, error;
+
+        error = sysctl_int(oldp, oldlenp, newp, newlen, &v);
+        if(error == 0 && (v < 1 || v > 16))
+            error = EINVAL;
+        if(error == 0)
+            tcp_abc_l = v;
+        return (error);
+    }
+    case TCPCTL_HYSTART: {
+        int v = tcp_do_hystart, error;
+
+        error = sysctl_int(oldp, oldlenp, newp, newlen, &v);
+        if(error == 0 && (v < 0 || v > 1))
+            error = EINVAL;
+        if(error == 0)
+            tcp_do_hystart = v;
+        return (error);
+    }
+    case TCPCTL_REXMIT_MIN: {       /* the least RTO, ms */
+        int v = tcp_rexmit_min, error;
+
+        error = sysctl_int(oldp, oldlenp, newp, newlen, &v);
+        if(error == 0 && (v < 1 || v > TCPTV_REXMTMAX_MS))
+            error = EINVAL;
+        if(error == 0)
+            tcp_rexmit_min = v;
+        return (error);
+    }
     case TCPCTL_KEEPIDLE:
         return (sysctl_int(oldp, oldlenp, newp, newlen,
                            &tcp_keepidle));
@@ -815,6 +972,23 @@ size_t newlen;
     case TCPCTL_RECVSPACE:
         return (sysctl_int(oldp, oldlenp, newp, newlen,
                            (int *)&tcp_recvspace)); /* XXX */
+    case TCPCTL_PMTUD:
+        return (sysctl_int(oldp, oldlenp, newp, newlen, &tcp_do_pmtud));
+    case TCPCTL_PMTUD_BLACKHOLE:
+        return (sysctl_int(oldp, oldlenp, newp, newlen,
+                           &tcp_do_pmtud_blackhole));
+    case TCPCTL_ECN: {
+        int v = tcp_do_ecn, error;
+
+        error = sysctl_int(oldp, oldlenp, newp, newlen, &v);
+        if(error == 0 && (v < 0 || v > 2))
+            error = EINVAL;
+        if(error == 0)
+            tcp_do_ecn = v;
+        return (error);
+    }
+    case TCPCTL_PRR:
+        return (sysctl_int(oldp, oldlenp, newp, newlen, &tcp_do_prr));
     default:
         return (ENOPROTOOPT);
     }

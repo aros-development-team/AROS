@@ -22,6 +22,14 @@
 #include "baseredef.h"
 #include "validator.h"
 
+/* store a DateStamp into three consecutive (days, mins, ticks) block longs */
+void putStamp(ULONG *dest, const struct DateStamp *ds)
+{
+        dest[0] = OS_LONG2BE(ds->ds_Days);
+        dest[1] = OS_LONG2BE(ds->ds_Minute);
+        dest[2] = OS_LONG2BE(ds->ds_Tick);
+}
+
 /**********************************************
  Name  : writeHeader
  Descr.: update header information (time)
@@ -38,27 +46,25 @@ ULONG writeHeader
         )
 {
 struct DateStamp ds;
+ULONG *tail;
 
         /* store current time as modification date for this object and all its ancestors */
         DateStamp(&ds);
         for (;;)
         {
-                blockbuffer->buffer[BLK_DAYS(volume)] = OS_LONG2BE(ds.ds_Days);
-                blockbuffer->buffer[BLK_MINS(volume)] = OS_LONG2BE(ds.ds_Minute);
-                blockbuffer->buffer[BLK_TICKS(volume)] = OS_LONG2BE(ds.ds_Tick);
-                if (blockbuffer->buffer[BLK_PARENT(volume)] == 0)
+                tail = BLK_TAILPTR(blockbuffer->buffer, volume);
+                putStamp(&tail[BLKO_DAYS], &ds);
+                if (tail[BLKO_PARENT] == 0)
                         break;
                 writeBlockDeferred(afsbase, volume, blockbuffer, BLK_CHECKSUM);
                 blockbuffer = getBlock
-                        (afsbase, volume, OS_BE2LONG(blockbuffer->buffer[BLK_PARENT(volume)]));
+                        (afsbase, volume, OS_BE2LONG(tail[BLKO_PARENT]));
                 if (blockbuffer == NULL)
                         return ERROR_UNKNOWN;
         }
         /* last block is not written yet - it's the rootblock */
         /* we have to change BLK_VOLUME_xxx */
-        blockbuffer->buffer[BLK_VOLUME_DAYS(volume)] = OS_LONG2BE(ds.ds_Days);
-        blockbuffer->buffer[BLK_VOLUME_MINS(volume)] = OS_LONG2BE(ds.ds_Minute);
-        blockbuffer->buffer[BLK_VOLUME_TICKS(volume)] = OS_LONG2BE(ds.ds_Tick);
+        putStamp(&tail[BLKO_VOLUME_DAYS], &ds);
         writeBlockDeferred(afsbase, volume, blockbuffer, BLK_CHECKSUM);
         return 0;
 }
@@ -194,6 +200,7 @@ LONG format
 {
 struct BlockCache *blockbuffer;
 struct DateStamp ds;
+ULONG *root, *tail;
 UWORD i;
 
         blockbuffer = getFreeCacheBlock(afsbase, volume, 0);
@@ -208,53 +215,45 @@ UWORD i;
                 {
                         blockbuffer->flags |= BCF_USED;
                         DateStamp(&ds);
-                        blockbuffer->buffer[BLK_PRIMARY_TYPE] = OS_LONG2BE(T_SHORT);
-                        blockbuffer->buffer[1] = 0;
-                        blockbuffer->buffer[2] = 0;
-                        blockbuffer->buffer[BLK_TABLE_SIZE] = OS_LONG2BE(volume->SizeBlock-56);
-                        blockbuffer->buffer[4] = 0;
+                        root = blockbuffer->buffer;
+                        tail = BLK_TAILPTR(root, volume);
+                        root[BLK_PRIMARY_TYPE] = OS_LONG2BE(T_SHORT);
+                        root[1] = 0;
+                        root[2] = 0;
+                        root[BLK_TABLE_SIZE] = OS_LONG2BE(volume->SizeBlock-56);
+                        root[4] = 0;
                         for (i=BLK_TABLE_START; i<=BLK_TABLE_END(volume); i++)
-                                blockbuffer->buffer[i] = 0;
-                        blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)] = -1;
+                                root[i] = 0;
+                        tail[BLKO_BITMAP_VALID_FLAG] = -1;
                         if (!createNewBitmapBlocks(afsbase, volume))
                         {
                                 blockbuffer->flags &= ~BCF_USED;
                                 return ERROR_UNKNOWN;
                         }
-                        for (
-                                        i=BLK_BITMAP_POINTERS_START(volume);
-                                        i<=BLK_BITMAP_POINTERS_END(volume);
-                                        i++
-                                )
+                        for (i=0; i<=BLKO_BITMAP_POINTERS_END-BLKO_BITMAP_POINTERS_START; i++)
                         {
-                                blockbuffer->buffer[i] = OS_LONG2BE
+                                tail[BLKO_BITMAP_POINTERS_START+i] = OS_LONG2BE
                                         (
-                                                volume->bitmapblockpointers[i-BLK_BITMAP_POINTERS_START(volume)]
+                                                volume->bitmapblockpointers[i]
                                         );
                         }
-                        blockbuffer->buffer[BLK_BITMAP_EXTENSION(volume)] =
+                        tail[BLKO_BITMAP_EXTENSION] =
                                 OS_LONG2BE(volume->bitmapextensionblock);
-                        blockbuffer->buffer[BLK_ROOT_DAYS(volume)] = OS_LONG2BE(ds.ds_Days);
-                        blockbuffer->buffer[BLK_ROOT_MINS(volume)] = OS_LONG2BE(ds.ds_Minute);
-                        blockbuffer->buffer[BLK_ROOT_TICKS(volume)] = OS_LONG2BE(ds.ds_Tick);
+                        putStamp(&tail[BLKO_ROOT_DAYS], &ds);
                         StrCpyToBstr
                                 (
                                         name,
-                                        (APTR)((char *)blockbuffer->buffer+(BLK_DISKNAME_START(volume)*4)),
+                                        (APTR)&tail[BLKO_DISKNAME_START],
                                         MAX_NAME_LENGTH
                                 );
-                        blockbuffer->buffer[volume->SizeBlock-12] = 0;
-                        blockbuffer->buffer[volume->SizeBlock-11] = 0;
-                        blockbuffer->buffer[BLK_VOLUME_DAYS(volume)] = OS_LONG2BE(ds.ds_Days);
-                        blockbuffer->buffer[BLK_VOLUME_MINS(volume)] = OS_LONG2BE(ds.ds_Minute);
-                        blockbuffer->buffer[BLK_VOLUME_TICKS(volume)] = OS_LONG2BE(ds.ds_Tick);
-                        blockbuffer->buffer[BLK_CREATION_DAYS(volume)] = OS_LONG2BE(ds.ds_Days);
-                        blockbuffer->buffer[BLK_CREATION_MINS(volume)] = OS_LONG2BE(ds.ds_Minute);
-                        blockbuffer->buffer[BLK_CREATION_TICKS(volume)] = OS_LONG2BE(ds.ds_Tick);
-                        blockbuffer->buffer[volume->SizeBlock-4] = 0;
-                        blockbuffer->buffer[volume->SizeBlock-3] = 0;
-                        blockbuffer->buffer[volume->SizeBlock-2] = 0;
-                        blockbuffer->buffer[BLK_SECONDARY_TYPE(volume)] = OS_LONG2BE(ST_ROOT);
+                        tail[-12] = 0;
+                        tail[-11] = 0;
+                        putStamp(&tail[BLKO_VOLUME_DAYS], &ds);
+                        putStamp(&tail[BLKO_CREATION_DAYS], &ds);
+                        tail[-4] = 0;
+                        tail[-3] = 0;
+                        tail[-2] = 0;
+                        tail[BLKO_SECONDARY_TYPE] = OS_LONG2BE(ST_ROOT);
                         if (!writeBlock(afsbase, volume, blockbuffer, BLK_CHECKSUM))
                         {
                                 blockbuffer->flags &= ~BCF_USED;
@@ -292,6 +291,7 @@ LONG relabel(struct AFSBase *afsbase, struct Volume *volume,
         CONST_STRPTR name, SIPTR *error) {
 struct BlockCache *blockbuffer;
 struct DateStamp ds;
+ULONG *tail;
 
         if (0 == checkValid(afsbase, volume))
         {
@@ -307,19 +307,16 @@ struct DateStamp ds;
         *error = ERROR_LINE_TOO_LONG;
         return DOSFALSE;
     }
+        tail = BLK_TAILPTR(blockbuffer->buffer, volume);
         StrCpyToBstr
                 (
                         name,
-                        (APTR)((char *)blockbuffer->buffer+(BLK_DISKNAME_START(volume)*4)),
+                        (APTR)&tail[BLKO_DISKNAME_START],
                         MAX_NAME_LENGTH
                 );
         DateStamp(&ds);
-        blockbuffer->buffer[BLK_ROOT_DAYS(volume)] = OS_LONG2BE(ds.ds_Days);
-        blockbuffer->buffer[BLK_ROOT_MINS(volume)] = OS_LONG2BE(ds.ds_Minute);
-        blockbuffer->buffer[BLK_ROOT_TICKS(volume)] = OS_LONG2BE(ds.ds_Tick);
-        blockbuffer->buffer[BLK_VOLUME_DAYS(volume)] = OS_LONG2BE(ds.ds_Days);
-        blockbuffer->buffer[BLK_VOLUME_MINS(volume)] = OS_LONG2BE(ds.ds_Minute);
-        blockbuffer->buffer[BLK_VOLUME_TICKS(volume)] = OS_LONG2BE(ds.ds_Tick);
+        putStamp(&tail[BLKO_ROOT_DAYS], &ds);
+        putStamp(&tail[BLKO_VOLUME_DAYS], &ds);
         if (!writeBlock(afsbase, volume, blockbuffer, BLK_CHECKSUM))
         {
                 *error = ERROR_UNKNOWN;

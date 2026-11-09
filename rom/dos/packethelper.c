@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -80,4 +80,22 @@ void freepacketinfo(struct DosLibrary *DOSBase, struct PacketHelperStruct *phs)
     if (phs->dp)
         FreeDeviceProc(phs->dp);
     FREEC2BSTR(phs->name);
+}
+
+/* Send 'action' for the object 'name' to its handler: the packet arguments
+ * are (lock, name, a, b), or (0, lock, name, a) if 'lead' is set. Returns the
+ * packet's result, or DOSFALSE if 'name' could not be resolved. */
+SIPTR pathpacket(struct DosLibrary *DOSBase, CONST_STRPTR name, LONG action, BOOL lead, SIPTR a, SIPTR b)
+{
+    struct PacketHelperStruct phs;
+    SIPTR status = DOSFALSE;
+
+    if (getpacketinfo(DOSBase, name, &phs)) {
+        if (lead)
+            status = dopacket4(DOSBase, NULL, phs.port, action, BNULL, phs.lock, phs.name, a);
+        else
+            status = dopacket4(DOSBase, NULL, phs.port, action, phs.lock, phs.name, a, b);
+        freepacketinfo(DOSBase, &phs);
+    }
+    return status;
 }

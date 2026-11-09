@@ -59,6 +59,7 @@
             ED_DATE       - date information (3 longwords)
             ED_COMMENT    - file comment (NULL if no comment exists)
             ED_OWNER      - owner user and group id
+            ED_SIZE64     - 64-bit size in bytes (ed_Size64)
 
             This is an incremental list, meaning that if you specify ED_OWNER
             you will get ALL attributes!
@@ -148,7 +149,8 @@
             offsetof(struct ExAllData,ed_Days),
             offsetof(struct ExAllData,ed_Comment),
             offsetof(struct ExAllData,ed_OwnerUID),
-            sizeof(struct ExAllData)
+            offsetof(struct ExAllData,ed_Size64),   /* ED_OWNER: up to ed_OwnerGID */
+            sizeof(struct ExAllData)                /* ED_SIZE64 */
         };
 
         /* Reset the 'fake' error */
@@ -217,7 +219,7 @@
             } while (0)
 
             
-        if (data > ED_OWNER)
+        if (data > ED_SIZE64)
             /* We don't have that many fields to fill in... */
             err = ERROR_BAD_NUMBER;
         else
@@ -245,6 +247,11 @@
                 /* Switch over the requested fields and fill them as appropriate.  */
                 switch(data)
                 {
+                    case ED_SIZE64:
+                        /* Only the 32-bit size is known here */
+                        curr->ed_Size64 = (UQUAD)(ULONG)icontrol->fib->fib_Size;
+
+                        /* Fall through */
                     case ED_OWNER:
                         curr->ed_OwnerUID = icontrol->fib->fib_OwnerUID;
                         curr->ed_OwnerGID = icontrol->fib->fib_OwnerGID;

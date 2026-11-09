@@ -20,6 +20,43 @@
 #endif
 
 
+/*
+ * Object relations.
+ *
+ * A relation is a single edge between two objects. It has two ends, and each
+ * end is linked into the relation list of the object it belongs to. An end
+ * holds the relation as seen from its own side, so enumerating the relations
+ * of an object is a plain walk of one list.
+ *
+ * A relation declared by device path whose target does not (or no longer)
+ * exist keeps its target end on class_static_data::cs_Unresolved.
+ */
+struct RelationEnd
+{
+    struct MinNode  rn_Node;
+    OOP_Object     *rn_Other;   /* Object at the other end, NULL if unresolved    */
+    ULONG           rn_Type;    /* vHidd_Relation_#? as seen from this end        */
+    ULONG           rn_Flags;
+};
+
+#define RNF_TARGET  (1 << 0)    /* This is the end at the target of the relation  */
+
+struct RelationEdge
+{
+    struct RelationEnd re_Source;   /* End at the object that declared the relation */
+    struct RelationEnd re_Target;
+    STRPTR             re_Path;     /* Device path the target was named by, or NULL */
+    STRPTR             re_Label;    /* Description, or NULL                         */
+    /* The strings follow */
+};
+
+/* An object registered under a device path. ln_Name is the path, stored behind the node. */
+struct PathNode
+{
+    struct Node  pn_Node;
+    OOP_Object  *pn_Object;
+};
+
 struct HIDDData
 {
     UWORD       hd_Type;
@@ -33,6 +70,8 @@ struct HIDDData
     UWORD       hd_Locking;
     ULONG       hd_Status;
     ULONG       hd_ErrorCode;
+    struct MinList   hd_Relations;  /* RelationEnds of this object */
+    struct PathNode *hd_Path;       /* Our device path, if we have one */
 };
 
 struct DriverNode
@@ -64,7 +103,22 @@ struct class_static_data
 
     struct Library              *cs_OOPBase;
     struct Library              *cs_UtilityBase;
+
+    struct SignalSemaphore      cs_RelLock;     /* Protects everything below, and all hd_Relations */
+    struct MinList              cs_Unresolved;  /* Target ends waiting for their device path       */
+    struct List                 cs_Paths;       /* PathNodes                                       */
 };
+
+/* Shared between the classes of this module */
+struct HIDDData;
+
+BOOL relation_Add(struct class_static_data *csd, OOP_Object *o, ULONG type,
+                  OOP_Object *target, CONST_STRPTR path, CONST_STRPTR label);
+OOP_Object *relation_Find(struct class_static_data *csd, struct HIDDData *hd, ULONG type,
+                          CONST_STRPTR classID);
+void relation_SetPath(struct class_static_data *csd, OOP_Object *o, struct HIDDData *hd,
+                      CONST_STRPTR path);
+void relation_Dispose(struct class_static_data *csd, OOP_Object *o, struct HIDDData *hd);
 
 
 /* Library base */

@@ -16,6 +16,7 @@ USER_INCLUDES += \
 
 LIB_GALLIUM_SOURCES = \
             gallium_init \
+            gallium_debugdescribe \
             createpipe \
             destroypipe \
             createpipescreen \

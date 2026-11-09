@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 
     Support functions for InputHandler.
@@ -117,18 +117,19 @@ void notify_mousemove_screensandwindows(struct IntuitionBase * IntuitionBase)
 
 /****************************************************************************************/
 
-void send_intuimessage(struct IntuiMessage *imsg, struct Window *w,
-                       struct IntuitionBase *IntuitionBase)
+/* Time stamp of an input event in ticks of 1/50 second */
+
+UQUAD EventTicks(const struct InputEvent *ie)
 {
-    SendIntuiMessage(w, imsg);
+    return (((UQUAD)ie->ie_TimeStamp.tv_secs) * 50) + (UQUAD)(ie->ie_TimeStamp.tv_micro / 20000);
 }
 
 /****************************************************************************************/
 
-void free_intuimessage(struct IntuiMessage *imsg,
+void send_intuimessage(struct IntuiMessage *imsg, struct Window *w,
                        struct IntuitionBase *IntuitionBase)
 {
-    FreeIntuiMessage(imsg);
+    SendIntuiMessage(w, imsg);
 }
 
 /****************************************************************************************/
@@ -236,16 +237,19 @@ BOOL fire_message(struct Window *w,ULONG Class, UWORD Code, APTR IAddress, struc
 
             if (iihdata->ActEventTablet && (w->MoreFlags & WMFLG_TABLETMESSAGES))
             {
-                if ((imsg->eim_TabletData = AllocPooled(GetPrivIBase(IntuitionBase)->IDCMPPool,sizeof (struct TabletData))))
+                struct IENewTablet *nt = iihdata->ActEventTablet;
+                struct TabletData  *td;
+
+                if ((imsg->eim_TabletData = td = AllocPooled(GetPrivIBase(IntuitionBase)->IDCMPPool,sizeof (struct TabletData))))
                 {
-                    memclr(imsg->eim_TabletData,sizeof (struct TabletData));
-                    imsg->eim_TabletData->td_XFraction = iihdata->ActEventTablet->ient_ScaledXFraction;
-                    imsg->eim_TabletData->td_YFraction = iihdata->ActEventTablet->ient_ScaledYFraction;
-                    imsg->eim_TabletData->td_TabletX = iihdata->ActEventTablet->ient_TabletX;
-                    imsg->eim_TabletData->td_TabletY = iihdata->ActEventTablet->ient_TabletY;
-                    imsg->eim_TabletData->td_RangeX = iihdata->ActEventTablet->ient_RangeX;
-                    imsg->eim_TabletData->td_RangeY = iihdata->ActEventTablet->ient_RangeY;
-                    imsg->eim_TabletData->td_TagList = CloneTagItems(iihdata->ActEventTablet->ient_TagList);
+                    memclr(td,sizeof (struct TabletData));
+                    td->td_XFraction = nt->ient_ScaledXFraction;
+                    td->td_YFraction = nt->ient_ScaledYFraction;
+                    td->td_TabletX = nt->ient_TabletX;
+                    td->td_TabletY = nt->ient_TabletY;
+                    td->td_RangeX = nt->ient_RangeX;
+                    td->td_RangeY = nt->ient_RangeY;
+                    td->td_TagList = CloneTagItems(nt->ient_TagList);
                 }
             }
 
@@ -280,6 +284,27 @@ BOOL fire_message(struct Window *w,ULONG Class, UWORD Code, APTR IAddress, struc
 
 /****************************************************************************************/
 
+/* The class of the input event that ih_fire_intuimessage() generates for a
+   deferred action, by the IDCMP class that was to be sent */
+static const struct
+{
+    ULONG idcmp;
+    UBYTE ieclass;
+}
+idcmp_ieclass[] =
+{
+    { IDCMP_NEWSIZE       , IECLASS_SIZEWINDOW     },
+    { IDCMP_CHANGEWINDOW  , IECLASS_CHANGEWINDOW   },
+    { IDCMP_ACTIVEWINDOW  , IECLASS_ACTIVEWINDOW   },
+    { IDCMP_INACTIVEWINDOW, IECLASS_INACTIVEWINDOW },
+    { IDCMP_CLOSEWINDOW   , IECLASS_CLOSEWINDOW    },
+    { IDCMP_GADGETUP      , IECLASS_GADGETUP       },
+    { IDCMP_GADGETDOWN    , IECLASS_GADGETDOWN     },
+    { IDCMP_REFRESHWINDOW , IECLASS_REFRESHWINDOW  },
+    { IDCMP_MENUHELP      , IECLASS_MENUHELP       },
+    { IDCMP_MENUPICK      , IECLASS_MENULIST       }
+};
+
 BOOL ih_fire_intuimessage(struct Window * w,
                           ULONG Class,
                           UWORD Code,
@@ -288,6 +313,7 @@ BOOL ih_fire_intuimessage(struct Window * w,
 {
     struct IIHData    *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
     struct InputEvent *ie/* = iihd->ActInputEvent*/;
+    UWORD i;
 
     BOOL result;
 
@@ -379,53 +405,19 @@ BOOL ih_fire_intuimessage(struct Window * w,
 
         if ((ie = AllocInputEvent(iihd)))
         {
-            switch(Class)
+            for (i = 0; i < sizeof(idcmp_ieclass) / sizeof(idcmp_ieclass[0]); i++)
             {
-            case IDCMP_NEWSIZE:
-                ie->ie_Class = IECLASS_SIZEWINDOW;
-                break;
+                if (Class == idcmp_ieclass[i].idcmp)
+                {
+                    ie->ie_Class = idcmp_ieclass[i].ieclass;
+                    break;
+                }
+            }
 
-            case IDCMP_CHANGEWINDOW:
-                ie->ie_Class = IECLASS_CHANGEWINDOW;
-                break;
-
-            case IDCMP_ACTIVEWINDOW:
-                ie->ie_Class = IECLASS_ACTIVEWINDOW;
-                break;
-
-            case IDCMP_INACTIVEWINDOW:
-                ie->ie_Class = IECLASS_INACTIVEWINDOW;
-                break;
-
-            case IDCMP_CLOSEWINDOW:
-                ie->ie_Class = IECLASS_CLOSEWINDOW;
-                break;
-
-            case IDCMP_GADGETUP:
-                ie->ie_Class = IECLASS_GADGETUP;
-                break;
-
-            case IDCMP_GADGETDOWN:
-                ie->ie_Class = IECLASS_GADGETDOWN;
-                break;
-
-            case IDCMP_REFRESHWINDOW:
-                ie->ie_Class = IECLASS_REFRESHWINDOW;
-                break;
-
-            case IDCMP_MENUHELP:
-                ie->ie_Class = IECLASS_MENUHELP;
-                break;
-
-            case IDCMP_MENUPICK:
-                ie->ie_Class = IECLASS_MENULIST;
-                break;
-
-            default:
+            if (i == sizeof(idcmp_ieclass) / sizeof(idcmp_ieclass[0]))
+            {
                 D(bug("ih_fireintuimessage: unexpected IDCMP (0x%X) for a deferred-action-fireintuimessage!\n", Class));
-                break;
-
-            } /* switch(Class) */
+            }
 
             ie->ie_Code             = Code;
             ie->ie_Qualifier    = iihd->ActQualifier;
@@ -1088,6 +1080,79 @@ struct Gadget *DoActivateGadget(struct Window *win, struct Requester *req, struc
 
 /****************************************************************************************/
 
+/* Make the active gadget of the input handler inactive because its window
+   loses the input focus or is hidden. */
+
+void AbortActiveGadget(struct Gadget *gadget, struct IIHData *iihdata,
+                       struct IntuitionBase *IntuitionBase)
+{
+    struct GadgetInfo *gi = &iihdata->GadgetInfo;
+
+    switch (gadget->GadgetType & GTYP_GTYPEMASK)
+    {
+        case GTYP_CUSTOMGADGET:
+        {
+            struct gpGoInactive gpgi;
+
+            gpgi.MethodID   = GM_GOINACTIVE;
+            gpgi.gpgi_GInfo = gi;
+            gpgi.gpgi_Abort = 1;
+
+            Locked_DoMethodA(gi->gi_Window, gadget, (Msg)&gpgi, IntuitionBase);
+            break;
+        }
+
+        case GTYP_STRGADGET:
+            gadget->Flags &= ~GFLG_SELECTED;
+            RefreshStrGadget(gadget, gi->gi_Window, gi->gi_Requester, IntuitionBase);
+            break;
+
+        case GTYP_BOOLGADGET:
+            /* That a bool gadget is active here can only happen
+               if user used LMB to activate gadget and LAMIGA + LALT
+               to activate other window, or viceversa */
+            /* The gadget must be a RELVERIFY one */
+            if (!(gadget->Activation & GACT_TOGGLESELECT))
+            {
+                BOOL inside;
+
+                inside = InsideGadget(gi->gi_Screen, gi->gi_Window,
+                                      gi->gi_Requester, gadget,
+                                      gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
+
+                if (inside)
+                {
+                    gadget->Flags &= ~GFLG_SELECTED;
+                    RefreshBoolGadgetState(gadget, gi->gi_Window,
+                                           gi->gi_Requester, IntuitionBase);
+                }
+            }
+            break;
+
+        case GTYP_PROPGADGET:
+            /* That a prop gadget is active here can only happen
+               if user used LMB to activate gadget and LAMIGA + LALT
+               to activate other window, or viceversa */
+
+            HandlePropSelectUp(gadget, gi->gi_Window, NULL, IntuitionBase);
+            if (gadget->Activation & GACT_RELVERIFY)
+            {
+                ih_fire_intuimessage(gi->gi_Window,
+                                     IDCMP_GADGETUP,
+                                     0,
+                                     gadget,
+                                     IntuitionBase);
+            }
+            break;
+
+    } /* switch (gadget->GadgetType & GTYP_GTYPEMASK) */
+
+    gadget->Activation &= ~GACT_ACTIVEGADGET;
+    iihdata->ActiveGadget = NULL;
+}
+
+/****************************************************************************************/
+
 struct Gadget *FindCycleGadget(struct Window *win, struct Requester *req,
                                struct Gadget *gad, WORD direction)
 {
@@ -1223,6 +1288,48 @@ void FixWindowCoords(struct Window *win, LONG *left, LONG *top, LONG *width, LON
 
 /****************************************************************************************/
 
+/* Redraw the frame and the gadgets of a window whose layer was damaged */
+
+static void RefreshDamagedGadgetry(struct Window *w, struct IntuitionBase *IntuitionBase)
+{
+    if (!IS_GZZWINDOW(w))
+    {
+        if (w->Flags & WFLG_BORDERLESS)
+        {
+            int_refreshglist(w->FirstGadget, w, NULL, -1, 0, 0, IntuitionBase);
+        }
+        else
+        {
+            int_refreshwindowframe(w,0,0,IntuitionBase);
+        }
+    }
+    else
+    {
+        /* refresh all gadgets except border gadgets */
+        int_refreshglist(w->FirstGadget, w, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
+    }
+}
+
+/****************************************************************************************/
+
+/* Put an IECLASS_EVENT/IECODE_REFRESH event for the window into the input stream */
+
+static void QueueRefreshEvent(struct Window *w, struct IIHData *iihdata,
+                              struct IntuitionBase *IntuitionBase)
+{
+    struct InputEvent *new_ie;
+
+    if ((new_ie = AllocInputEvent(iihdata)))
+    {
+        new_ie->ie_Class = IECLASS_EVENT;
+        new_ie->ie_Code = IECODE_REFRESH;
+        new_ie->ie_EventAddress = w;
+        CurrentTime(&new_ie->ie_TimeStamp.tv_secs, &new_ie->ie_TimeStamp.tv_micro);
+    }
+}
+
+/****************************************************************************************/
+
 void WindowNeedsRefresh(struct Window * w,
                         struct IntuitionBase * IntuitionBase )
 {
@@ -1260,22 +1367,7 @@ void WindowNeedsRefresh(struct Window * w,
 
         if (IS_NOCAREREFRESH(w) || (!((!(w->Flags & WFLG_SIMPLE_REFRESH)) && (!(IW(w)->specialflags & SPFLAG_LAYERRESIZED)))))
         {
-            if (!IS_GZZWINDOW(w))
-            {
-                if (w->Flags & WFLG_BORDERLESS)
-                {
-                    int_refreshglist(w->FirstGadget, w, NULL, -1, 0, 0, IntuitionBase);
-                }
-                else
-                {
-                    int_refreshwindowframe(w,0,0,IntuitionBase);
-                }
-            }
-            else
-            {
-                /* refresh all gadgets except border gadgets */
-                int_refreshglist(w->FirstGadget, w, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
-            }
+            RefreshDamagedGadgetry(w, IntuitionBase);
             IW(w)->specialflags &= ~SPFLAG_LAYERRESIZED;
         }
 
@@ -1303,22 +1395,7 @@ void WindowNeedsRefresh(struct Window * w,
     #endif
     
     #ifndef BEGINUPDATEGADGETREFRESH
-        if (!IS_GZZWINDOW(w))
-        {
-            if (w->Flags & WFLG_BORDERLESS)
-            {
-                int_refreshglist(w->FirstGadget, w, NULL, -1, 0, 0, IntuitionBase);
-            }
-            else
-            {
-                int_refreshwindowframe(w,0,0,IntuitionBase);
-            }
-        }
-        else
-        {
-            /* refresh all gadgets except border and gadtools gadgets */
-            int_refreshglist(w->FirstGadget, w, NULL, -1, 0, REFRESHGAD_BORDER , IntuitionBase);
-        }
+        RefreshDamagedGadgetry(w, IntuitionBase);
     #endif
 
     #ifdef DAMAGECACHE
@@ -1383,7 +1460,6 @@ void WindowNeedsRefresh(struct Window * w,
 
             if (!found)
             {
-                struct InputEvent *new_ie;
                 struct IIHData    *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
 
                 D(bug("Sending a refresh message to window %s  %d %d %d %d!!\n",
@@ -1395,13 +1471,7 @@ void WindowNeedsRefresh(struct Window * w,
 
                 DEBUG_WINDOWNEEDSREFRESH(dprintf("WindowNeedsRefresh: sending idcmp message\n"));
 
-                if ((new_ie = AllocInputEvent(iihdata)))
-                {
-                    new_ie->ie_Class             = IECLASS_EVENT;
-                    new_ie->ie_Code             = IECODE_REFRESH;
-                    new_ie->ie_EventAddress = w;
-                    CurrentTime(&new_ie->ie_TimeStamp.tv_secs, &new_ie->ie_TimeStamp.tv_micro);
-                }
+                QueueRefreshEvent(w, iihdata, IntuitionBase);
 
                 fire_intuimessage(w,
                                   IDCMP_REFRESHWINDOW,
@@ -1417,7 +1487,6 @@ void WindowNeedsRefresh(struct Window * w,
 
             if (FindTask(NULL) == iihdata->InputDeviceTask)
             {
-                struct InputEvent *new_ie;
 
                 D(bug("Sending a refresh message to window %s  %d %d %d %d!!\n",
                       w->Title ? w->Title : (STRPTR)"<NONAME>",
@@ -1427,13 +1496,7 @@ void WindowNeedsRefresh(struct Window * w,
                       w->Height));
                 DEBUG_WINDOWNEEDSREFRESH(dprintf("WindowNeedsRefresh: sending inputevent\n"));
 
-                if ((new_ie = AllocInputEvent(iihdata)))
-                {
-                    new_ie->ie_Class = IECLASS_EVENT;
-                    new_ie->ie_Code = IECODE_REFRESH;
-                    new_ie->ie_EventAddress = w;
-                    CurrentTime(&new_ie->ie_TimeStamp.tv_secs, &new_ie->ie_TimeStamp.tv_micro);
-                }
+                QueueRefreshEvent(w, iihdata, IntuitionBase);
 
                 ih_fire_intuimessage(w,
                              IDCMP_REFRESHWINDOW,
@@ -1594,26 +1657,6 @@ struct Window *FindActiveWindow(struct InputEvent *ie, struct Screen *scr, ULONG
     D(bug("FindActiveWindow: New window %p\n", new_w));
     return new_w;
 }
-
-/****************************************************************************************/
-
-struct Window *FindDesktopWindow(struct Screen *screen,struct IntuitionBase *IntuitionBase)
-{
-    struct Window *win;
-    
-    for (win = screen->FirstWindow; win; win = win->NextWindow)
-    {
-        if (win->Flags & WFLG_BACKDROP &&
-            win->Width == screen->Width &&
-            win->Height >= screen->Height - (screen->BarHeight + 2))
-        {
-            return win;
-        }
-    }
-    
-    return NULL;
-}
-
 
 /****************************************************************************************/
 

@@ -59,6 +59,20 @@ static BOOL AMiGAROM_IsValid(APTR romimg)
     return valid;
 }
 
+/* Where the ROM images live: imgcnt is 1, 2 or 4 and takes that many from the front */
+static const ULONG rombases[] = { 0xF80000, 0xE00000, 0xB00000, 0xA80000 };
+
+/* Print where one ROM image is, and where it really is if the MMU remaps it */
+static void AMiGAROM_ShowRegion(struct KernelBase *KernelBase, ULONG addr, ULONG size)
+{
+    APTR physaddr = KrnVirtualToPhysical((APTR)addr);
+
+    bug("ROMInfo:     0x%08x - 0x%08x", addr, addr + size - 1);
+    if (physaddr != (APTR)addr)
+        bug("@  0x%08x - 0x%08x", physaddr, (IPTR)physaddr + size - 1);
+    bug("\n");
+}
+
 static int AMiGAROMSupport_Init(struct KernelBase *KernelBase)
 {
     struct PlatformData *pd = KernelBase->kb_PlatformData;
@@ -92,6 +106,9 @@ static int AMiGAROMSupport_Init(struct KernelBase *KernelBase)
         imgcnt = 1;
     }
 
+    /* Size of one ROM image */
+    romsize /= imgcnt;
+
     if (pd->mmu_type)
     {
         void *(*getphysaddr)(void *virtaddr) = NULL;
@@ -108,43 +125,18 @@ static int AMiGAROMSupport_Init(struct KernelBase *KernelBase)
 
         if (getphysaddr)
         {
-            APTR physaddr;
+            ULONG n;
 
-            /* System ROM */
-            physaddr = getphysaddr((APTR)0xF80000);
-            if (physaddr != (APTR)0xF80000)
+            /* System ROM, Extended ROM, then the two Workbench ROM halves */
+            for (n = 0; n < imgcnt; n++)
             {
-                rommappings[i] = 0xF80000;
-                rommappings[i + 1] = (ULONG)physaddr;
-                i += 2;
-            }
-            if (romsize > ROMSIZE512)
-            {
-                /* Extended ROM */
-                physaddr = getphysaddr((APTR)0xE00000);
-                if (physaddr != (APTR)0xE00000)
+                APTR physaddr = getphysaddr((APTR)rombases[n]);
+
+                if (physaddr != (APTR)rombases[n])
                 {
-                    rommappings[i] = 0xE00000;
+                    rommappings[i] = rombases[n];
                     rommappings[i + 1] = (ULONG)physaddr;
                     i += 2;
-                }
-                if (romsize > ROMSIZE1MB)
-                {
-                    /* Workbench ROM */
-                    physaddr = getphysaddr((APTR)0xB00000);
-                    if (physaddr != (APTR)0xB00000)
-                    {
-                        rommappings[i] = 0xB00000;
-                        rommappings[i + 1] = (ULONG)physaddr;
-                        i += 2;
-                    }
-                    physaddr = getphysaddr((APTR)0xA80000);
-                    if (physaddr != (APTR)0xA80000)
-                    {
-                        rommappings[i] = 0xA80000;
-                        rommappings[i + 1] = (ULONG)physaddr;
-                        i += 2;
-                    }
                 }
             }
         }
@@ -154,44 +146,14 @@ static int AMiGAROMSupport_Init(struct KernelBase *KernelBase)
             CopyMem(rommappings, pd->romimg, sizeof(ULONG) * i);
             pd->romimg[i] = NULL;
             pd->romimg[i + 1] = NULL;
-            pd->romsize = romsize / imgcnt;
+            pd->romsize = romsize;
         }
     }
 
-    APTR physaddr;
     bug("ROMInfo: ROM region(s)..\n");
-    switch (romsize)
-    {
-        case ROMSIZE2MB:
-            {
-                physaddr = KrnVirtualToPhysical((APTR)0xA80000);
-                bug("ROMInfo:     0x%08x - 0x%08x", 0xA80000, 0xA80000 + (romsize / imgcnt) - 1);
-                if (physaddr != (APTR)0xA80000)
-                    bug("@  0x%08x - 0x%08x", physaddr, (IPTR)physaddr + (romsize / imgcnt) - 1);
-                bug("\n");
-                physaddr = KrnVirtualToPhysical((APTR)0xB00000);
-                bug("ROMInfo:     0x%08x - 0x%08x", 0xB00000, 0xB00000 + (romsize / imgcnt) - 1);
-                if (physaddr != (APTR)0xB00000)
-                    bug("@  0x%08x - 0x%08x", physaddr, (IPTR)physaddr + (romsize / imgcnt) - 1);
-                bug("\n");
-            }
-        case ROMSIZE1MB:
-            {
-                physaddr = KrnVirtualToPhysical((APTR)0xE00000);
-                bug("ROMInfo:     0x%08x - 0x%08x", 0xE00000, 0xE00000 + (romsize / imgcnt) - 1);
-                if (physaddr != (APTR)0xE00000)
-                    bug("@  0x%08x - 0x%08x", physaddr, (IPTR)physaddr + (romsize / imgcnt) - 1);
-                bug("\n");
-            }
-        case ROMSIZE512:
-            {
-                physaddr = KrnVirtualToPhysical((APTR)0xF80000);
-                bug("ROMInfo:     0x%08x - 0x%08x", 0xF80000, 0xF80000 + (romsize / imgcnt) - 1);
-                if (physaddr != (APTR)0xF80000)
-                    bug("@  0x%08x - 0x%08x", physaddr, (IPTR)physaddr + (romsize / imgcnt) - 1);
-                bug("\n");
-            }
-    }
+    /* Highest image first, as the mapping order above reversed */
+    while (imgcnt-- > 0)
+        AMiGAROM_ShowRegion(KernelBase, rombases[imgcnt], romsize);
     return TRUE;
 }
 

@@ -1,7 +1,6 @@
 #include <libraries/debug.h>
 #include <proto/debug.h>
 
-#include <ctype.h>
 #include <string.h>
 
 #include "debug_internal.h"
@@ -28,11 +27,29 @@ char *NextWord(char *s)
 
 /*****************************************************************************/
 
+/* Print a title, then the address and name of every node in a list */
+static void ShowNodes(const char *title, struct List *list)
+{
+    struct Node * node;
+
+    kprintf(title);
+
+    /* Look through the list */
+    for (node = GetHead(list); node; node = GetSucc(node))
+    {
+        kprintf("0x%p : %s\n", node, node->ln_Name);
+    }
+}
+
+/* A command is the first two letters of the input line */
+#define SADCMD(a, b) ((UWORD)(((UBYTE)(a) << 8) | (UBYTE)(b)))
+
 void InternalDebug(void *stack)
 {
     char comm[128];
     char *data;
     BOOL ignorelf = FALSE;
+    UWORD cmd;
 
     /*
      * Try to obtain debug input from the kernel.
@@ -105,23 +122,26 @@ void InternalDebug(void *stack)
         data = NextWord(comm);
         comm[2] = 0;
 
+        /* An empty or one-letter line gives a code which no command has */
+        cmd = comm[0] ? SADCMD(comm[0], comm[1]) : 0;
+
         /* Reboot command */
-        if (strcmp(comm, "RE") == 0 && strcmp(data, "AAAAAAAA") == 0)
+        if (cmd == SADCMD('R','E') && strcmp(data, "AAAAAAAA") == 0)
             ColdReboot();
         /* Restart command */
-        else if (strcmp(comm, "RS") == 0 && strcmp(data, "FFFFFFFF") == 0)
+        else if (cmd == SADCMD('R','S') && strcmp(data, "FFFFFFFF") == 0)
             ShutdownA(SD_ACTION_REBOOT);
         /* Forbid command */
-        else if (strcmp(comm, "FO") == 0)
+        else if (cmd == SADCMD('F','O'))
             Forbid();
         /* Permit command */
-        else if (strcmp(comm, "PE") == 0)
+        else if (cmd == SADCMD('P','E'))
             Permit();
         /* Disable command */
-        else if (strcmp(comm, "DI") == 0)
+        else if (cmd == SADCMD('D','I'))
             Disable();
         /* Show task information */
-        else if (strcmp(comm, "TI") == 0)
+        else if (cmd == SADCMD('T','I'))
         {
             struct Task *t = GetA(data);
 
@@ -155,7 +175,7 @@ void InternalDebug(void *stack)
                             t->tc_IDNestCnt,
                             t->tc_TDNestCnt);
         }
-        else if (strcmp(comm,"RI") == 0)
+        else if (cmd == SADCMD('R','I'))
         {
             struct Task *t = GetA(data);
 
@@ -179,22 +199,12 @@ void InternalDebug(void *stack)
             RawPutChar('\n');
         }
         /* Enable command */
-        else if (strcmp(comm, "EN") == 0)
+        else if (cmd == SADCMD('E','N'))
             Enable();
         /* ShowLibs command */
-        else if (strcmp(comm, "SL") == 0)
-        {
-            struct Node * node;
-
-            kprintf("Available libraries:\n");
-
-            /* Look through the list */
-            for (node = GetHead(&SysBase->LibList); node; node = GetSucc(node))
-            {
-                kprintf("0x%p : %s\n", node, node->ln_Name);
-            }
-        }
-        else if (strcmp(comm, "SI") == 0)
+        else if (cmd == SADCMD('S','L'))
+            ShowNodes("Available libraries:\n", &SysBase->LibList);
+        else if (cmd == SADCMD('S','I'))
         {
 /*          char buf[512];
             
@@ -205,33 +215,13 @@ void InternalDebug(void *stack)
             kprintf("Not implemented\n");
         }
         /* ShowResources command */
-        else if (strcmp(comm, "SR") == 0)
-        {
-            struct Node * node;
-
-            kprintf("Available resources:\n");
-
-            /* Look through the list */
-            for (node = GetHead(&SysBase->ResourceList); node; node = GetSucc(node))
-            {
-                kprintf("0x%p : %s\n", node, node->ln_Name);
-            }
-        }
+        else if (cmd == SADCMD('S','R'))
+            ShowNodes("Available resources:\n", &SysBase->ResourceList);
         /* ShowDevices command */
-        else if (strcmp(comm,"SD") == 0)
-        {
-            struct Node * node;
-
-            kprintf("Available devices:\n");
-
-            /* Look through the list */
-            for (node=GetHead(&SysBase->DeviceList); node; node = GetSucc(node))
-            {
-                kprintf("0x%p : %s\n", node, node->ln_Name);
-            }
-        }
+        else if (cmd == SADCMD('S','D'))
+            ShowNodes("Available devices:\n", &SysBase->DeviceList);
         /* ShowTasks command */
-        else if (strcmp(comm, "ST") == 0)
+        else if (cmd == SADCMD('S','T'))
         {
             struct Node * node;
 
@@ -261,7 +251,7 @@ void InternalDebug(void *stack)
             kprintf("Idle called %d times\n", SysBase->IdleCount);
         }
         /* Help command */
-        else if (strcmp(comm, "HE") == 0)
+        else if (cmd == SADCMD('H','E'))
         {
             kprintf("SAD Help:\n");
             kprintf("RE AAAAAAAA - reboots AROS - ColdReboot()\n"
@@ -295,7 +285,7 @@ void InternalDebug(void *stack)
                     "HE - this help.\n");
         }
         /* AllocMem command */
-        else if (strcmp(comm, "AM") == 0)
+        else if (cmd == SADCMD('A','M'))
         {
             ULONG size = GetL(data);
             ULONG requim = GetL(NextWord(data));
@@ -303,7 +293,7 @@ void InternalDebug(void *stack)
             kprintf("Allocated at 0x%p\n", AllocVec(size, requim));
         }
         /* FreeMem command */
-        else if (strcmp(comm, "FM") == 0)
+        else if (cmd == SADCMD('F','M'))
         {
             APTR base = GetA(&data[0]);
 
@@ -311,28 +301,28 @@ void InternalDebug(void *stack)
             FreeVec(base);
         }
         /* ReadByte */
-        else if (strcmp(comm, "RB") == 0)
+        else if (cmd == SADCMD('R','B'))
         {
             UBYTE *addr = GetA(data);
 
             kprintf("Byte at 0x%p: %02X\n", addr, *addr);
         }
         /* ReadWord */
-        else if (strcmp(comm, "RW") == 0)
+        else if (cmd == SADCMD('R','W'))
         {
             UWORD *addr = GetA(data);
 
             kprintf("Word at 0x%p: %04X\n", addr, *addr);
         }
         /* ReadLong */
-        else if (strcmp(comm, "RL") == 0)
+        else if (cmd == SADCMD('R','L'))
         {
             ULONG *addr = GetA(data);
 
             kprintf("Long at 0x%p: %08X\n", addr, *addr);
         }
         /* WriteByte */
-        else if (strcmp(comm,"WB") == 0)
+        else if (cmd == SADCMD('W','B'))
         {
             UBYTE *addr = GetA(data);
             UBYTE val = GetB(NextWord(data));
@@ -341,7 +331,7 @@ void InternalDebug(void *stack)
             *addr = val;
         }
         /* WriteWord */
-        else if (strcmp(comm, "WW") == 0)
+        else if (cmd == SADCMD('W','W'))
         {
             UWORD *addr = GetA(data);
             UWORD val = GetW(NextWord(data));
@@ -350,7 +340,7 @@ void InternalDebug(void *stack)
             *addr = val;
         }
         /* WriteLong */
-        else if (strcmp(comm, "WL") == 0)
+        else if (cmd == SADCMD('W','L'))
         {
             ULONG *addr = GetA(data);
             ULONG val = GetL(NextWord(data));
@@ -359,7 +349,7 @@ void InternalDebug(void *stack)
             *addr = val;
         }
         /* ReadArray */
-        else if (strcmp(comm, "RA") == 0)
+        else if (cmd == SADCMD('R','A'))
         {
             UBYTE *ptr = GetA(data);
             ULONG cnt = GetL(NextWord(data));
@@ -375,7 +365,7 @@ void InternalDebug(void *stack)
             kprintf("\n");
         }
         /* ReadASCII */
-        else if (strcmp(comm, "RC") == 0)
+        else if (cmd == SADCMD('R','C'))
         {
             char *ptr = GetA(data);
             ULONG cnt = GetL(NextWord(data));
@@ -390,7 +380,7 @@ void InternalDebug(void *stack)
             }
             kprintf(" \n");
         }
-        else if (strcmp(comm, "SS") == 0) {
+        else if (cmd == SADCMD('S','S')) {
             char *ptr = GetA(data);
             STRPTR modname = "(unknown)";
             STRPTR symname = "(unknown)";
@@ -410,7 +400,7 @@ void InternalDebug(void *stack)
 
             kprintf("%p:%p %s %s+0x%p\n", sym_l, sym_h, modname, symname, (APTR)ptr - (APTR)sym_l);
         }
-        else if (strcmp(comm, "QT") == 0 && strcmp(data, "00000000") == 0)
+        else if (cmd == SADCMD('Q','T') && strcmp(data, "00000000") == 0)
         {
             kprintf("Quitting SAD...\n");
             KrnReleaseInput(); /* Release debug input */
@@ -436,16 +426,19 @@ char GetK(struct ExecBase *SysBase)
 
 /****************************************************************************************/
 
-UQUAD GetQ(char* string)
+/* Parse up to 'digits' hexadecimal digits; stops at the first other character */
+static IPTR GetHex(char *string, int digits)
 {
-    UQUAD       ret = 0;
-    int         i;
+    IPTR        ret = 0;
 
-    for(i = 0; i < 16; i++)
+    while (digits-- > 0)
     {
-        char digit = toupper(string[i]);
+        char digit = *string++;
 
-        if (!isxdigit(digit))
+        if (digit >= 'a' && digit <= 'f')
+            digit -= 'a' - 'A';
+
+        if (!((digit >= '0' && digit <= '9') || (digit >= 'A' && digit <= 'F')))
             break;
 
         digit -= '0';
@@ -458,66 +451,30 @@ UQUAD GetQ(char* string)
 
 /****************************************************************************************/
 
+#if __WORDSIZE == 64
+UQUAD GetQ(char* string)
+{
+    return GetHex(string, 16);
+}
+
+/****************************************************************************************/
+#endif
+
 ULONG GetL(char* string)
 {
-    ULONG       ret = 0;
-    int         i;
-    
-    for(i = 0; i < 8; i++)
-    {
-        char digit = toupper(string[i]);
-
-        if (!isxdigit(digit))
-            break;
-
-        digit -= '0';
-        if (digit > 9) digit -= 'A' - '0' - 10;
-        ret = (ret << 4) + digit;
-    }
-
-    return ret;
+    return GetHex(string, 8);
 }
 
 /****************************************************************************************/
 
 UWORD GetW(char* string)
 {
-    UWORD       ret = 0;
-    int         i;
-    
-    for(i = 0; i < 4; i++)
-    {
-        char digit = toupper(string[i]);
-
-        if (!isxdigit(digit))
-            break;
-
-        digit -= '0';
-        if (digit > 9) digit -= 'A' - '0' - 10;
-        ret = (ret << 4) + digit;
-    }
-
-    return ret;
+    return GetHex(string, 4);
 }
 
 /****************************************************************************************/
 
 UBYTE GetB(char* string)
 {
-    UBYTE       ret = 0;
-    int         i;
-
-    for(i = 0; i < 2; i++)
-    {
-        char digit = toupper(string[i]);
-
-        if (!isxdigit(digit))
-            break;
-
-        digit -= '0';
-        if (digit > 9) digit -= 'A' - '0' - 10;
-        ret = (ret << 4) + digit;
-    }
-
-    return ret;
+    return GetHex(string, 2);
 }

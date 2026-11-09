@@ -31,9 +31,13 @@ void  afsSecEndPacket(struct AFSBase *afsbase);
 BOOL  afsSecIsActive(struct AFSBase *afsbase);
 LONG  afsSecCheckBlock(struct AFSBase *afsbase, struct Volume *volume, struct BlockCache *bb, LONG access);
 LONG  afsSecCheckProperty(struct AFSBase *afsbase, struct Volume *volume, struct BlockCache *bb);
-LONG  afsSecCheckName(struct AFSBase *afsbase, struct AfsHandle *dirah, CONST_STRPTR name, LONG access);
-LONG  afsSecCheckParent(struct AFSBase *afsbase, struct AfsHandle *dirah, CONST_STRPTR name, LONG access);
-LONG  afsSecCheckNameProperty(struct AFSBase *afsbase, struct AfsHandle *dirah, CONST_STRPTR name);
+/* what afsSecCheckNamed() looks up and checks, or'ed to the access type */
+#define AFS_SECNAMED_PARENT     0x100   /* the directory that will hold 'name' */
+#define AFS_SECNAMED_PROPERTY   0x200   /* property access instead of an access type */
+LONG  afsSecCheckNamed(struct AFSBase *afsbase, struct AfsHandle *dirah, CONST_STRPTR name, LONG access);
+#define afsSecCheckName(a,d,n,x)            afsSecCheckNamed(a,d,n,x)
+#define afsSecCheckParent(a,d,n,x)          afsSecCheckNamed(a,d,n,(x) | AFS_SECNAMED_PARENT)
+#define afsSecCheckNameProperty(a,d,n)      afsSecCheckNamed(a,d,n,AFS_SECNAMED_PROPERTY)
 ULONG afsSecNewOwner(struct AFSBase *afsbase);
 ULONG afsSecNewProtection(struct AFSBase *afsbase, ULONG def);
 ULONG afsSecSetOwner(struct AFSBase *afsbase, struct AfsHandle *dirah, CONST_STRPTR name, ULONG owner);

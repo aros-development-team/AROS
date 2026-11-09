@@ -64,113 +64,69 @@ void replypkt2(struct DosPacket *dp, SIPTR res1, SIPTR res2)
 
 /******************************************************************************************/
 
-static const UBYTE up_seq[]             = { 'A' };
-static const UBYTE down_seq[]           = { 'B' };
-static const UBYTE right_seq[]          = { 'C' };
-static const UBYTE left_seq[]           = { 'D' };
-static const UBYTE shift_up_seq[]       = { 'T' };
-static const UBYTE shift_down_seq[]     = { 'S' };
-static const UBYTE shift_right_seq[]    = { ' ', '@' };
-static const UBYTE shift_left_seq[]     = { ' ', 'A' };
-static const UBYTE shift_tab_seq[]      = { 'Z' };
-static const UBYTE help_seq[]           = { '?', '~' };
-static const UBYTE f1_seq[]             = { '0', '~' };
-static const UBYTE f2_seq[]             = { '1', '~' };
-static const UBYTE f3_seq[]             = { '2', '~' };
-static const UBYTE f4_seq[]             = { '3', '~' };
-static const UBYTE f5_seq[]             = { '4', '~' };
-static const UBYTE f6_seq[]             = { '5', '~' };
-static const UBYTE f7_seq[]             = { '6', '~' };
-static const UBYTE f8_seq[]             = { '7', '~' };
-static const UBYTE f9_seq[]             = { '8', '~' };
-static const UBYTE f10_seq[]            = { '9', '~' };
-static const UBYTE paste_seq[]          = { '0', ' ', 'v' };
-static const UBYTE f11_seq[]            = { '2', '0', '~' };
-static const UBYTE f12_seq[]            = { '2', '1', '~' };
-static const UBYTE shift_f1_seq[]       = { '1', '0', '~' };
-static const UBYTE shift_f2_seq[]       = { '1', '1', '~' };
-static const UBYTE shift_f3_seq[]       = { '1', '2', '~' };
-static const UBYTE shift_f4_seq[]       = { '1', '3', '~' };
-static const UBYTE shift_f5_seq[]       = { '1', '4', '~' };
-static const UBYTE shift_f6_seq[]       = { '1', '5', '~' };
-static const UBYTE shift_f7_seq[]       = { '1', '6', '~' };
-static const UBYTE shift_f8_seq[]       = { '1', '7', '~' };
-static const UBYTE shift_f9_seq[]       = { '1', '8', '~' };
-static const UBYTE shift_f10_seq[]      = { '1', '9', '~' };
-static const UBYTE shift_f11_seq[]      = { '3', '0', '~' };
-static const UBYTE shift_f12_seq[]      = { '3', '1', '~' };
-static const UBYTE insert_seq[]         = { '4', '0', '~' };
-static const UBYTE pageup_seq[]         = { '4', '1', '~' };
-static const UBYTE pagedown_seq[]       = { '4', '2', '~' };
-static const UBYTE pause_seq[]          = { '4', '3', '~' };
-static const UBYTE break_seq[]          = { '5', '3', '~' };
-static const UBYTE home_seq[]           = { '4', '4', '~' };
-static const UBYTE end_seq[]            = { '4', '5', '~' };
-static const UBYTE shift_insert_seq[]   = { '5', '0', '~' };
-static const UBYTE shift_pageup_seq[]   = { '5', '1', '~' };
-static const UBYTE shift_pagedown_seq[] = { '5', '2', '~' };
-static const UBYTE shift_home_seq[]     = { '5', '4', '~' };
-static const UBYTE shift_end_seq[]      = { '5', '5', '~' };
+/* The character sequences that can follow a CSI in the input stream, with
+   the input codes they stand for. The first matching entry counts. An entry
+   with length 0 ends the table.
 
-/* F11, F12, insert, pageup, pagedown, ... seq taken from
+   F11, F12, insert, pageup, pagedown, ... seq taken from
    RKRM: Devices/Console/Reading from the Console Device/Information about the Input Stream */
-   
+
 static CONST struct csimatch
 {
-    CONST UBYTE *seq;
-    WORD len;
-    WORD inp;
+    UBYTE seq[3];
+    UBYTE len;
+    UBYTE inp;
 }
 csimatchtable[] =
 {
-    {up_seq             , 1, INP_CURSORUP           },
-    {down_seq           , 1, INP_CURSORDOWN         },
-    {right_seq          , 1, INP_CURSORRIGHT        },
-    {left_seq           , 1, INP_CURSORLEFT         },
-    {shift_up_seq       , 1, INP_SHIFT_CURSORUP     },
-    {shift_down_seq     , 1, INP_SHIFT_CURSORDOWN   },
-    {shift_right_seq    , 2, INP_SHIFT_CURSORRIGHT  },
-    {shift_left_seq     , 2, INP_SHIFT_CURSORLEFT   },
-    {shift_tab_seq      , 1, INP_SHIFT_TAB          },
-    {help_seq           , 2, INP_HELP               },
-    {f1_seq             , 2, INP_F1                 },
-    {f2_seq             , 2, INP_F2                 },
-    {f3_seq             , 2, INP_F3                 },
-    {f4_seq             , 2, INP_F4                 },
-    {f5_seq             , 2, INP_F5                 },
-    {f6_seq             , 2, INP_F6                 },
-    {f7_seq             , 2, INP_F7                 },
-    {f8_seq             , 2, INP_F8                 },
-    {f9_seq             , 2, INP_F9                 },
-    {f10_seq            , 2, INP_F10                },
-    {f11_seq            , 3, INP_F11                },
-    {f12_seq            , 3, INP_F12                },
-    {shift_f1_seq       , 3, INP_SHIFT_F1           },
-    {shift_f2_seq       , 3, INP_SHIFT_F2           },
-    {shift_f3_seq       , 3, INP_SHIFT_F3           },
-    {shift_f4_seq       , 3, INP_SHIFT_F4           },
-    {shift_f5_seq       , 3, INP_SHIFT_F5           },
-    {shift_f6_seq       , 3, INP_SHIFT_F6           },
-    {shift_f7_seq       , 3, INP_SHIFT_F7           },
-    {shift_f8_seq       , 3, INP_SHIFT_F8           },
-    {shift_f9_seq       , 3, INP_SHIFT_F9           },
-    {shift_f10_seq      , 3, INP_SHIFT_F10          },
-    {shift_f11_seq      , 3, INP_SHIFT_F11          },
-    {shift_f12_seq      , 3, INP_SHIFT_F12          },
-    {insert_seq         , 3, INP_INSERT             },
-    {pageup_seq         , 3, INP_PAGEUP             },
-    {pagedown_seq       , 3, INP_PAGEDOWN           },
-    {pause_seq          , 3, INP_PAUSE              },
-    {break_seq          , 3, INP_BREAK              },
-    {home_seq           , 3, INP_HOME               },
-    {end_seq            , 3, INP_END                },
-    {shift_insert_seq   , 3, INP_SHIFT_INSERT       },
-    {shift_pageup_seq   , 3, INP_SHIFT_PAGEUP       },
-    {shift_pagedown_seq , 3, INP_SHIFT_PAGEDOWN     },
-    {shift_home_seq     , 3, INP_SHIFT_HOME         },
-    {shift_end_seq      , 3, INP_SHIFT_END          },
-    {paste_seq          , 3, INP_PASTE              },
-    {0                  , 0, 0                      }
+    {{'A'          }, 1, INP_CURSORUP          },
+    {{'B'          }, 1, INP_CURSORDOWN        },
+    {{'C'          }, 1, INP_CURSORRIGHT       },
+    {{'D'          }, 1, INP_CURSORLEFT        },
+    {{'T'          }, 1, INP_SHIFT_CURSORUP    },
+    {{'S'          }, 1, INP_SHIFT_CURSORDOWN  },
+    {{' ', '@'     }, 2, INP_SHIFT_CURSORRIGHT },
+    {{' ', 'A'     }, 2, INP_SHIFT_CURSORLEFT  },
+    {{'Z'          }, 1, INP_SHIFT_TAB         },
+    {{'?', '~'     }, 2, INP_HELP              },
+    {{'0', '~'     }, 2, INP_F1                },
+    {{'1', '~'     }, 2, INP_F2                },
+    {{'2', '~'     }, 2, INP_F3                },
+    {{'3', '~'     }, 2, INP_F4                },
+    {{'4', '~'     }, 2, INP_F5                },
+    {{'5', '~'     }, 2, INP_F6                },
+    {{'6', '~'     }, 2, INP_F7                },
+    {{'7', '~'     }, 2, INP_F8                },
+    {{'8', '~'     }, 2, INP_F9                },
+    {{'9', '~'     }, 2, INP_F10               },
+    {{'2', '0', '~'}, 3, INP_F11               },
+    {{'2', '1', '~'}, 3, INP_F12               },
+    {{'1', '0', '~'}, 3, INP_SHIFT_F1          },
+    {{'1', '1', '~'}, 3, INP_SHIFT_F2          },
+    {{'1', '2', '~'}, 3, INP_SHIFT_F3          },
+    {{'1', '3', '~'}, 3, INP_SHIFT_F4          },
+    {{'1', '4', '~'}, 3, INP_SHIFT_F5          },
+    {{'1', '5', '~'}, 3, INP_SHIFT_F6          },
+    {{'1', '6', '~'}, 3, INP_SHIFT_F7          },
+    {{'1', '7', '~'}, 3, INP_SHIFT_F8          },
+    {{'1', '8', '~'}, 3, INP_SHIFT_F9          },
+    {{'1', '9', '~'}, 3, INP_SHIFT_F10         },
+    {{'3', '0', '~'}, 3, INP_SHIFT_F11         },
+    {{'3', '1', '~'}, 3, INP_SHIFT_F12         },
+    {{'4', '0', '~'}, 3, INP_INSERT            },
+    {{'4', '1', '~'}, 3, INP_PAGEUP            },
+    {{'4', '2', '~'}, 3, INP_PAGEDOWN          },
+    {{'4', '3', '~'}, 3, INP_PAUSE             },
+    {{'5', '3', '~'}, 3, INP_BREAK             },
+    {{'4', '4', '~'}, 3, INP_HOME              },
+    {{'4', '5', '~'}, 3, INP_END               },
+    {{'5', '0', '~'}, 3, INP_SHIFT_INSERT      },
+    {{'5', '1', '~'}, 3, INP_SHIFT_PAGEUP      },
+    {{'5', '2', '~'}, 3, INP_SHIFT_PAGEDOWN    },
+    {{'5', '4', '~'}, 3, INP_SHIFT_HOME        },
+    {{'5', '5', '~'}, 3, INP_SHIFT_END         },
+    {{'0', ' ', 'v'}, 3, INP_PASTE             },
+    {{0}            , 0, 0                     }
 };
 
 
@@ -210,6 +166,33 @@ static IPTR string2val(const char *s, WORD len)
     }
     return v;
 }
+
+/* The keywords of a window specification that only set or clear flags.
+   A parameter selects the first keyword that it is an abbreviation of, so
+   the order of the table matters. BOOT is a private parameter. */
+static const struct con_keyword
+{
+    char name[9];
+    UBYTE nodrag;               /* TRUE: the window can not be dragged */
+    UWORD fhflags;              /* FHFLG_ bits to set */
+    UWORD set;                  /* WFLG_ bits to set */
+    UWORD clear;                /* WFLG_ bits to clear */
+}
+con_keywords[] =
+{
+    {"WAIT",     FALSE, FHFLG_WAIT,    0,                0},
+    {"CLOSE",    FALSE, 0,             WFLG_CLOSEGADGET, 0},
+    {"NOCLOSE",  FALSE, 0,             0,                WFLG_CLOSEGADGET},
+    {"AUTO",     FALSE, FHFLG_AUTO,    0,                0},
+    {"INACTIVE", FALSE, 0,             0,                WFLG_ACTIVATE},
+    {"NODEPTH",  FALSE, 0,             0,                WFLG_DEPTHGADGET},
+    {"NOSIZE",   FALSE, 0,             0,                WFLG_SIZEGADGET},
+    {"NODRAG",   TRUE,  0,             0,                WFLG_DRAGBAR},
+    {"NOBORDER", FALSE, 0,             WFLG_BORDERLESS,  0},
+    {"BACKDROP", FALSE, 0,             WFLG_BACKDROP,    WFLG_DRAGBAR | WFLG_SIZEGADGET},
+    {"BOOT",     FALSE, FHFLG_BOOTCON, 0,                0}
+};
+#define NUM_CON_KEYWORDS (sizeof(con_keywords) / sizeof(con_keywords[0]))
 
 BOOL parse_filename(struct filehandle *fh, char *filename, struct NewWindow *nw)
 {
@@ -257,6 +240,7 @@ BOOL parse_filename(struct filehandle *fh, char *filename, struct NewWindow *nw)
             if (paramok)
             {
                 UWORD paramlen = filename - param - 1;
+                UWORD i;
 
                 switch (paramid)
                 {
@@ -286,60 +270,23 @@ BOOL parse_filename(struct filehandle *fh, char *filename, struct NewWindow *nw)
                     break;
 
                 default:
-                    if (!strnicmp(param, "WAIT", paramlen))
+                    for (i = 0; i < NUM_CON_KEYWORDS; i++)
                     {
-                        fh->flags |= FHFLG_WAIT;
+                        if (!strnicmp(param, con_keywords[i].name, paramlen))
+                            break;
                     }
-                    else if (!strnicmp(param, "CLOSE", paramlen))
+
+                    if (i < NUM_CON_KEYWORDS)
                     {
-                        nw->Flags |= WFLG_CLOSEGADGET;
+                        fh->flags |= con_keywords[i].fhflags;
+                        nw->Flags |= con_keywords[i].set;
+                        nw->Flags &= ~(ULONG)con_keywords[i].clear;
+                        if (con_keywords[i].nodrag)
+                            nodrag = TRUE;
                     }
-                    else if (!strnicmp(param, "NOCLOSE", paramlen))
-                    {
-                        nw->Flags &= ~WFLG_CLOSEGADGET;
-                    }
-                    else if (!strnicmp(param, "AUTO", paramlen))
-                    {
-                        fh->flags |= FHFLG_AUTO;
-                    }
-                    else if (!strnicmp(param, "INACTIVE", paramlen))
-                    {
-                        nw->Flags &= ~WFLG_ACTIVATE;
-                    }
-                    else if (!strnicmp(param, "NODEPTH", paramlen))
-                    {
-                        nw->Flags &= ~WFLG_DEPTHGADGET;
-                    }
-                    else if (!strnicmp(param, "NOSIZE", paramlen))
-                    {
-                        nw->Flags &= ~WFLG_SIZEGADGET;
-                    }
-                    else if (!strnicmp(param, "NODRAG", paramlen))
-                    {
-                        nw->Flags &= ~WFLG_DRAGBAR;
-                        nodrag = TRUE;
-                    }
-                    else if (!strnicmp(param, "NOBORDER", paramlen))
-                    {
-                        nw->Flags |= WFLG_BORDERLESS;
-                    }
-                    else if (!strnicmp(param, "BACKDROP", paramlen))
-                    {
-                        nw->Flags |= WFLG_BACKDROP;
-                        nw->Flags &= ~(WFLG_DRAGBAR | WFLG_SIZEGADGET);
-                    }
-                    else if (!strnicmp(param, "SIMPLE", paramlen))
-                    {
-                        /* TODO */
-                    }
-                    else if (!strnicmp(param, "SMART", paramlen))
-                    {
-                        /* TODO */
-                    }
-                    else if (!strnicmp(param, "ALT", paramlen))
-                    {
-                        /* TODO: style "ALT30/30/200/200" */
-                    }
+                    /* TODO: SIMPLE, SMART and ALT (style "ALT30/30/200/200")
+                       are not supported. Their names, and abbreviations of
+                       them, are ignored. */
                     else if (!strnicmp(param, "WINDOW", 6))
                     {
                         /* Do we need some sanity checks here? */
@@ -352,10 +299,6 @@ BOOL parse_filename(struct filehandle *fh, char *filename, struct NewWindow *nw)
                             CopyMem(param + 6, fh->screenname, paramlen - 6);
                             fh->screenname[paramlen - 6] = '\0';
                         }
-                    }
-                    else if (!strnicmp(param, "BOOT", paramlen)) /* Private parameter */
-                    {
-                        fh->flags |= FHFLG_BOOTCON;
                     }
                     break;
 
@@ -447,33 +390,53 @@ void do_cursorvisible(struct filehandle *fh, BOOL on)
 
 /******************************************************************************************/
 
+/* Send CSI followed by one command character */
+static void do_csi(struct filehandle *fh, UBYTE cmd)
+{
+    UBYTE seq[2];
+
+    seq[0] = 0x9B;
+    seq[1] = cmd;
+    do_write(fh, seq, 2);
+}
+
+/******************************************************************************************/
+
 void do_deletechar(struct filehandle *fh)
 {
-    UBYTE seq[] =
-    { 0x9B, 'P' };
-
-    do_write(fh, seq, 2);
+    do_csi(fh, 'P');
 }
 
 /******************************************************************************************/
 
 void do_eraseinline(struct filehandle *fh)
 {
-    UBYTE seq[] =
-    { 0x9B, 'K' };
-
-    do_write(fh, seq, 2);
+    do_csi(fh, 'K');
 }
 
 /******************************************************************************************/
 
 void do_eraseindisplay(struct filehandle *fh)
 {
-    UBYTE seq[] =
-    { 0x9B, 'J' };
-
-    do_write(fh, seq, 2);
+    do_csi(fh, 'J');
 }
+
+/******************************************************************************************/
+
+/* Redraw the rest of the input line after an edit: with the cursor hidden
+   print 'count' characters, send CSI 'erase' if erase is not 0, and move the
+   cursor back to where it was. */
+static void redraw_tail(struct filehandle *fh, UBYTE *tail, WORD count,
+    UBYTE erase)
+{
+    do_cursorvisible(fh, FALSE);
+    do_write(fh, tail, count);
+    if (erase)
+        do_csi(fh, erase);
+    do_movecursor(fh, CUR_LEFT, count);
+    do_cursorvisible(fh, TRUE);
+}
+
 /******************************************************************************************/
 static void copy_from_pastebuf(struct filehandle * fh)
 {
@@ -498,6 +461,35 @@ static void copy_from_pastebuf(struct filehandle * fh)
     }
 }
 
+/* The input codes of the control characters. A character without an entry
+   is passed on like a normal key. */
+static const UBYTE ctrl_inp[32] =
+{
+    [1]  = INP_HOME,            /* CTRL-A */
+    [3]  = INP_CTRL_C,
+    [4]  = INP_CTRL_D,
+    [5]  = INP_CTRL_E,
+    [6]  = INP_CTRL_F,
+    [8]  = INP_BACKSPACE,       /* INP_SHIFT_BACKSPACE with shift */
+    [9]  = INP_TAB,
+    [10] = INP_LINEFEED,
+    [11] = INP_CONTROL_K,
+    [12] = INP_ECHO_STRING,     /* CTRL-L */
+    [13] = INP_RETURN,
+    [21] = INP_SHIFT_BACKSPACE, /* CTRL-U */
+    [23] = INP_CONTROL_W,
+    [24] = INP_CONTROL_X,
+    [25] = INP_CONTROL_Y,
+    [26] = INP_END,             /* CTRL-Z */
+    [28] = INP_EOF              /* CTRL-\ */
+};
+
+/* scan_input() turns backspace and delete into their shifted codes by
+   adding one, and uses INP_DONE for "no entry in ctrl_inp[]" */
+_Static_assert(INP_SHIFT_BACKSPACE == INP_BACKSPACE + 1 &&
+               INP_SHIFT_DELETE == INP_DELETE + 1 && INP_DONE == 0,
+               "scan_input() depends on the order of the INP_ codes");
+
 WORD scan_input(struct filehandle *fh, UBYTE *buffer)
 {
     CONST
@@ -511,93 +503,12 @@ WORD scan_input(struct filehandle *fh, UBYTE *buffer)
     {
         c = fh->consolebuffer[fh->conbufferpos++];
         D(bug("scan_input: check char %d\n", c));
-        switch (c)
+        if (c == 0x9B) /* CSI */
         {
-        case 1: /* CTRL-A */
-            result = INP_HOME;
-            break;
-
-        case 3:
-        case 4:
-        case 5:
-        case 6:
-            result = INP_CTRL_C - 3 + (WORD) c;
-            break;
-
-        case 8:
-            /* FIXME: Ugh... Race condition, anyone? The qualifier might
-             have changed between the keypress and the time we do this */
-            if (PeekQualifier() & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
-            {
-                result = INP_SHIFT_BACKSPACE;
-            }
-            else
-            {
-                result = INP_BACKSPACE;
-            }
-            break;
-
-        case 9:
-            result = INP_TAB;
-            break;
-
-        case 10:
-            result = INP_LINEFEED;
-            break;
-
-        case 11: /* CTRL-K */
-            result = INP_CONTROL_K;
-            break;
-
-        case 12: /* CTRL-L */
-            *buffer = c;
-            result = INP_ECHO_STRING;
-            break;
-
-        case 13:
-            result = INP_RETURN;
-            break;
-
-        case 127:
-            if (PeekQualifier() & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
-            {
-                result = INP_SHIFT_DELETE;
-            }
-            else
-            {
-                result = INP_DELETE;
-            }
-            break;
-
-        case 21: /* CTRL-U */
-            result = INP_SHIFT_BACKSPACE;
-            break;
-
-        case 23: /* CTRL-W */
-            result = INP_CONTROL_W;
-            break;
-
-        case 24:
-            result = INP_CONTROL_X;
-            break;
-
-        case 25: /* CTRL-Y */
-            result = INP_CONTROL_Y;
-            break;
-
-        case 26: /* CTRL-Z */
-            result = INP_END;
-            break;
-
-        case 28: /* CTRL-\ */
-            result = INP_EOF;
-            break;
-
-        case 0x9B: /* CSI */
             result = INP_UNKNOWN;
 
             match = csimatchtable;
-            for (; match->seq; match++)
+            for (; match->len; match++)
             {
                 if (!strncmp(match->seq, &(fh->consolebuffer[fh->conbufferpos]), match->len))
                 {
@@ -606,15 +517,35 @@ WORD scan_input(struct filehandle *fh, UBYTE *buffer)
                     break;
                 }
             }
-            break;
+        }
+        else
+        {
+            if (c < sizeof(ctrl_inp))
+                result = ctrl_inp[c];
+            else if (c == 127)
+                result = INP_DELETE;
 
-        default:
-            /* normal keys */
-            *buffer = c;
-            result = INP_STRING;
-            break;
+            if (result == INP_DONE)
+            {
+                /* normal keys */
+                result = INP_STRING;
+            }
 
-        } /* switch(c) */
+            if (result == INP_BACKSPACE || result == INP_DELETE)
+            {
+                /* FIXME: Ugh... Race condition, anyone? The qualifier might
+                 have changed between the keypress and the time we do this */
+                if (PeekQualifier() & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+                {
+                    /* INP_SHIFT_BACKSPACE or INP_SHIFT_DELETE */
+                    result++;
+                }
+            }
+            else if (result == INP_STRING || result == INP_ECHO_STRING)
+            {
+                *buffer = c;
+            }
+        }
 
     } /* if (fh->conbufferpos < fh->conbuffersize) */
 
@@ -905,11 +836,8 @@ BOOL process_input(struct filehandle *fh)
                     fh->inputsize--;
                     fh->inputpos--;
 
-                    do_cursorvisible(fh, FALSE);
-                    do_write(fh, &fh->inputbuffer[fh->inputpos + 1], chars_right);
-                    do_deletechar(fh);
-                    do_movecursor(fh, CUR_LEFT, chars_right);
-                    do_cursorvisible(fh, TRUE);
+                    redraw_tail(fh, &fh->inputbuffer[fh->inputpos + 1],
+                        chars_right, 'P');
 
                     memmove(&fh->inputbuffer[fh->inputpos], &fh->inputbuffer[fh->inputpos + 1], chars_right);
 
@@ -931,11 +859,8 @@ BOOL process_input(struct filehandle *fh)
                 {
                     WORD chars_right = fh->inputsize - fh->inputpos;
 
-                    do_cursorvisible(fh, FALSE);
-                    do_write(fh, &fh->inputbuffer[fh->inputpos], chars_right);
-                    do_eraseindisplay(fh);
-                    do_movecursor(fh, CUR_LEFT, chars_right);
-                    do_cursorvisible(fh, TRUE);
+                    redraw_tail(fh, &fh->inputbuffer[fh->inputpos],
+                        chars_right, 'J');
 
                     memmove(&fh->inputbuffer[fh->inputstart], &fh->inputbuffer[fh->inputpos], chars_right);
 
@@ -972,11 +897,8 @@ BOOL process_input(struct filehandle *fh)
 
                     if (chars_right > 0)
                     {
-                        do_cursorvisible(fh, FALSE);
-                        do_write(fh, &fh->inputbuffer[oldpos], chars_right);
-                        do_eraseinline(fh);
-                        do_movecursor(fh, CUR_LEFT, chars_right);
-                        do_cursorvisible(fh, TRUE);
+                        redraw_tail(fh, &fh->inputbuffer[oldpos],
+                            chars_right, 'K');
 
                         memmove(&fh->inputbuffer[newpos],
                             &fh->inputbuffer[oldpos], chars_right);
@@ -1005,11 +927,8 @@ BOOL process_input(struct filehandle *fh)
                 {
                     WORD chars_right = fh->inputsize - fh->inputpos;
 
-                    do_cursorvisible(fh, FALSE);
-                    do_write(fh, &fh->inputbuffer[fh->inputpos + 1], chars_right);
-                    do_deletechar(fh);
-                    do_movecursor(fh, CUR_LEFT, chars_right);
-                    do_cursorvisible(fh, TRUE);
+                    redraw_tail(fh, &fh->inputbuffer[fh->inputpos + 1],
+                        chars_right, 'P');
 
                     memmove(&fh->inputbuffer[fh->inputpos], &fh->inputbuffer[fh->inputpos + 1], chars_right);
                 }
@@ -1101,10 +1020,8 @@ BOOL process_input(struct filehandle *fh)
                 {
                     WORD chars_right = fh->inputsize - fh->inputpos;
 
-                    do_cursorvisible(fh, FALSE);
-                    do_write(fh, &fh->inputbuffer[fh->inputpos], chars_right);
-                    do_movecursor(fh, CUR_LEFT, chars_right);
-                    do_cursorvisible(fh, TRUE);
+                    redraw_tail(fh, &fh->inputbuffer[fh->inputpos],
+                        chars_right, 0);
 
                     memmove(&fh->inputbuffer[fh->inputpos + 1], &fh->inputbuffer[fh->inputpos], chars_right);
                     fh->inputbuffer[fh->inputpos++] = c;

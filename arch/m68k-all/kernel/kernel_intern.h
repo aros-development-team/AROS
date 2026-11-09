@@ -32,10 +32,8 @@ struct PlatformData
 };
 
 extern BOOL map_region(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, BOOL invalid, BOOL writeprotect, BOOL supervisor, UBYTE cachemode);
-extern BOOL unmap_region(struct KernelBase *kb, void *addr, ULONG size);
 extern void debug_mmu(struct KernelBase *kb);
 extern void enable_mmu(struct KernelBase *kb);
-extern void disable_mmu(struct KernelBase *kb);
 extern BOOL init_mmu(struct KernelBase *kb);
 
 extern void *getphysaddr_mmu030(void *virt);

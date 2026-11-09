@@ -252,6 +252,7 @@ BOOL pciInit(struct PCIDevice *hd)
                 Remove(&hc->hc_Node);
 
                 if ((usbContrClass) && (root)) {
+                    OOP_Object *usbc;
                     struct TagItem usbc_tags[] = {
                         {aHidd_Name,                0               },
                         {aHidd_HardwareName,        0               },
@@ -299,7 +300,10 @@ BOOL pciInit(struct PCIDevice *hd)
                         if(usbc_tags[1].ti_Data)
                             memcpy((char *)usbc_tags[1].ti_Data, hw_name, pos + 1);
 
-                        HW_AddDriver(root, usbContrClass, usbc_tags);
+                        usbc = HW_AddDriver(root, usbContrClass, usbc_tags);
+                        /* The controller object tells which PCI device it runs */
+                        if (usbc)
+                            HIDD_AddRelation(usbc, vHidd_Relation_Device, hc->hc_PCIDeviceObject, NULL);
                     }
                 }
                 hc->hc_Unit = hu;
@@ -790,9 +794,12 @@ void pciExpunge(struct PCIDevice *hd)
         }
         FreePooled(hd->hd_MemPool, hu, sizeof(struct PCIUnit));
     }
-    if(hd->hd_PCIHidd) {
-        OOP_DisposeObject(hd->hd_PCIHidd);
-    }
+    /* hd_PCIHidd is pci.hidd's singleton bus object: its Dispose method
+       does nothing, and pci.hidd disposes the object itself when it is
+       expunged. That can happen before this device is expunged (no PCI
+       driver keeps pci.hidd in use), so the object may already be freed
+       here: do not call it. */
+    hd->hd_PCIHidd = NULL;
 }
 /* \\\ */
 

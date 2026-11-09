@@ -221,6 +221,23 @@ static void InsertIntoConBuffer(struct completioninfo *ci, STRPTR s)
 
 /****************************************************************************************/
 
+/* Put the match into the input line, followed by a space unless it names a
+   directory or a volume */
+static void InsertMatch(struct filehandle *fh, struct completioninfo *ci)
+{
+    UBYTE c;
+
+    c = ci->match[strlen(ci->match) - 1];
+    if ((c != '/') && (c != ':'))
+    {
+        Strlcat(ci->match, " ", sizeof(ci->match));
+    }
+
+    InsertIntoConBuffer(ci, ci->match);
+}
+
+/****************************************************************************************/
+
 static void DoFileReq(struct filehandle *fh, struct completioninfo *ci)
 {
     struct Library *AslBase;
@@ -246,8 +263,6 @@ static void DoFileReq(struct filehandle *fh, struct completioninfo *ci)
             {
                 if (AslRequest(fr, NULL))
                 {
-                    UBYTE c;
-
                     if (Strlcpy(ci->match, fr->fr_Drawer, sizeof(ci->match)) >= sizeof(ci->match))
                         ci->match[0] = '\0';
                     else
@@ -258,13 +273,7 @@ static void DoFileReq(struct filehandle *fh, struct completioninfo *ci)
                         if (!strchr(ci->match, ' ') ||
                             AddQuotes(ci, ci->match, sizeof(ci->match)))
                         {
-                            c = ci->match[strlen(ci->match) - 1];
-                            if ((c != '/') && (c != ':'))
-                            {
-                                Strlcat(ci->match, " ", sizeof(ci->match));
-                            }
-
-                            InsertIntoConBuffer(ci, ci->match);
+                            InsertMatch(fh, ci);
                         }
                     }
 
@@ -442,12 +451,50 @@ static void DoScan(struct filehandle *fh, struct completioninfo *ci)
 
 /****************************************************************************************/
 
+/* The keys that move the selection in the list of matches: the direction,
+   and whether they move by a page or to the first or last entry instead of
+   by one line */
+static const struct
+{
+    UBYTE code;
+    BYTE scroll;
+    UBYTE page;
+    UBYTE extreme;
+}
+scrollkeys[] =
+{
+    { RAWKEY_UP,            -1, FALSE, FALSE },
+    { RAWKEY_DOWN,           1, FALSE, FALSE },
+    { RAWKEY_PAGEUP,        -1, TRUE,  FALSE },
+    { RAWKEY_PAGEDOWN,       1, TRUE,  FALSE },
+    { RAWKEY_HOME,          -1, FALSE, TRUE  },
+    { RAWKEY_END,            1, FALSE, TRUE  },
+    { RAWKEY_NM_WHEEL_UP,   -1, FALSE, FALSE },
+    { RAWKEY_NM_WHEEL_DOWN,  1, FALSE, FALSE }
+};
+#define NUM_SCROLLKEYS (sizeof(scrollkeys) / sizeof(scrollkeys[0]))
+
+/* The window tags of the requester that do not depend on the console */
+static const char titletext[] = "Select filename";
+static const struct TagItem choosereq_tags[] =
+{
+    { WA_Title, (IPTR) titletext                        },
+    { WA_CloseGadget, TRUE                              },
+    { WA_DragBar, TRUE                                  },
+    { WA_DepthGadget, TRUE                              },
+    { WA_Activate, TRUE                                 },
+    { WA_AutoAdjust, TRUE                               },
+    { WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_RAWKEY | IDCMP_VANILLAKEY | LISTVIEWIDCMP | BUTTONIDCMP },
+    { TAG_DONE                                          }
+};
+
 static BOOL DoChooseReq(struct filehandle *fh, struct completioninfo *ci)
 {
     static const char oktext[] = "Ok";
     static const char canceltext[] = "Cancel";
-    static const char titletext[] = "Select filename";
 
+    /* The requester opens on the screen of the console window */
+    struct Screen *scr = ci->fh->window->WScreen;
     struct RastPort temprp;
     struct DrawInfo *dri;
     struct Window *win;
@@ -459,10 +506,12 @@ static BOOL DoChooseReq(struct filehandle *fh, struct completioninfo *ci)
     LONG sec, micro, secold, microold;
     BOOL retval = FALSE;
 
-    if ((dri = GetScreenDrawInfo(ci->fh->window->WScreen)))
+    if ((dri = GetScreenDrawInfo(scr)))
     {
-        if ((vi = GetVisualInfoA(ci->fh->window->WScreen, NULL)))
+        if ((vi = GetVisualInfoA(scr, NULL)))
         {
+            UWORD fonty = dri->dri_Font->tf_YSize;
+
             InitRastPort(&temprp);
             SetFont(&temprp, dri->dri_Font);
 
@@ -471,30 +520,30 @@ static BOOL DoChooseReq(struct filehandle *fh, struct completioninfo *ci)
             buttonwidth = (buttonwidth > i) ? buttonwidth : i;
             buttonwidth += BUTTON_EXTRA_WIDTH;
 
-            buttonheight = dri->dri_Font->tf_YSize + BUTTON_EXTRA_HEIGHT;
+            buttonheight = fonty + BUTTON_EXTRA_HEIGHT;
 
             i = ci->nummatchnodes > 15 ? 15 : ci->nummatchnodes;
             if (i < 4)
                 i = 4;
 
-            winheight = i * (dri->dri_Font->tf_YSize + 1) + LV_EXTRA_HEIGHT + LV_BUTTON_SPACING_Y + buttonheight
+            winheight = i * (fonty + 1) + LV_EXTRA_HEIGHT + LV_BUTTON_SPACING_Y + buttonheight
                     + BORDER_Y * 2;
 
             winwidth = buttonwidth * 2 + BUTTON_SPACING_X + BORDER_X * 2;
-            i = ci->fh->window->WScreen->Width * 1 / 3;
+            i = scr->Width * 1 / 3;
             if (i > winwidth)
                 winwidth = i;
 
-            winleft = ci->fh->window->WScreen->MouseX
-                    - (winwidth + ci->fh->window->WScreen->WBorLeft + ci->fh->window->WScreen->WBorRight) / 2;
-            wintop = ci->fh->window->WScreen->MouseY
-                    - (winheight + ci->fh->window->WScreen->WBorTop + dri->dri_Font->tf_YSize + 1
-                            + ci->fh->window->WScreen->WBorBottom) / 2;
+            winleft = scr->MouseX
+                    - (winwidth + scr->WBorLeft + scr->WBorRight) / 2;
+            wintop = scr->MouseY
+                    - (winheight + scr->WBorTop + fonty + 1
+                            + scr->WBorBottom) / 2;
 
             gad = CreateContext(&gadlist);
 
-            ng.ng_LeftEdge = ci->fh->window->WScreen->WBorLeft + BORDER_X;
-            ng.ng_TopEdge = ci->fh->window->WScreen->WBorTop + dri->dri_Font->tf_YSize + 1 + BORDER_Y;
+            ng.ng_LeftEdge = scr->WBorLeft + BORDER_X;
+            ng.ng_TopEdge = scr->WBorTop + fonty + 1 + BORDER_Y;
             ng.ng_Width = winwidth - BORDER_X * 2;
             ng.ng_Height = winheight - BORDER_Y * 2 - buttonheight - LV_BUTTON_SPACING_Y;
             ng.ng_GadgetText = NULL;
@@ -514,7 +563,7 @@ static BOOL DoChooseReq(struct filehandle *fh, struct completioninfo *ci)
 
                 gad = lvgad = CreateGadgetA(LISTVIEW_KIND, gad, &ng, lvtags);
 
-                visible_lv_lines = (ng.ng_Height - LV_EXTRA_HEIGHT) / (dri->dri_Font->tf_YSize + 1);
+                visible_lv_lines = (ng.ng_Height - LV_EXTRA_HEIGHT) / (fonty + 1);
             }
 
             ng.ng_TopEdge += ng.ng_Height + LV_BUTTON_SPACING_Y;
@@ -535,20 +584,13 @@ static BOOL DoChooseReq(struct filehandle *fh, struct completioninfo *ci)
             {
                 struct TagItem wintags[] =
                 {
-                    { WA_CustomScreen, (IPTR) ci->fh->window->WScreen   },
-                    { WA_Title, (IPTR) titletext                        },
-                    { WA_CloseGadget, TRUE                              },
-                    { WA_DragBar, TRUE                                  },
-                    { WA_DepthGadget, TRUE                              },
-                    { WA_Activate, TRUE                                 },
-                    { WA_AutoAdjust, TRUE                               },
+                    { WA_CustomScreen, (IPTR) scr                       },
                     { WA_Left, winleft                                  },
                     { WA_Top, wintop                                    },
                     { WA_InnerWidth, winwidth                           },
                     { WA_InnerHeight, winheight                         },
-                    { WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_RAWKEY | IDCMP_VANILLAKEY | LISTVIEWIDCMP | BUTTONIDCMP },
                     { WA_Gadgets, (IPTR) gadlist                        },
-                    { TAG_DONE                                          }
+                    { TAG_MORE, (IPTR) choosereq_tags                   }
                 };
 
                 if ((win = OpenWindowTagList(NULL, wintags)))
@@ -590,44 +632,17 @@ static BOOL DoChooseReq(struct filehandle *fh, struct completioninfo *ci)
                                 WORD scroll = 0;
                                 BOOL page = FALSE;
                                 BOOL extreme = FALSE;
+                                UWORD k;
 
-                                switch (msg->Code)
+                                for (k = 0; k < NUM_SCROLLKEYS; k++)
                                 {
-                                case RAWKEY_UP:
-                                    scroll = -1;
-                                    break;
-
-                                case RAWKEY_DOWN:
-                                    scroll = 1;
-                                    break;
-
-                                case RAWKEY_PAGEUP:
-                                    scroll = -1;
-                                    page = TRUE;
-                                    break;
-
-                                case RAWKEY_PAGEDOWN:
-                                    scroll = 1;
-                                    page = TRUE;
-                                    break;
-
-                                case RAWKEY_HOME:
-                                    scroll = -1;
-                                    extreme = TRUE;
-                                    break;
-
-                                case RAWKEY_END:
-                                    scroll = 1;
-                                    extreme = TRUE;
-                                    break;
-
-                                case RAWKEY_NM_WHEEL_UP:
-                                    scroll = -1;
-                                    break;
-
-                                case RAWKEY_NM_WHEEL_DOWN:
-                                    scroll = 1;
-                                    break;
+                                    if (scrollkeys[k].code == msg->Code)
+                                    {
+                                        scroll = scrollkeys[k].scroll;
+                                        page = scrollkeys[k].page;
+                                        extreme = scrollkeys[k].extreme;
+                                        break;
+                                    }
                                 }
 
                                 if (msg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
@@ -744,11 +759,11 @@ static BOOL DoChooseReq(struct filehandle *fh, struct completioninfo *ci)
             FreeGadgets(gadlist);
             FreeVisualInfo(vi);
 
-        } /* if ((vi = GetVisualInfoA(ci->fh->window->WScreen, NULL))) */
+        } /* if ((vi = GetVisualInfoA(scr, NULL))) */
 
-        FreeScreenDrawInfo(ci->fh->window->WScreen, dri);
+        FreeScreenDrawInfo(scr, dri);
 
-    } /* if ((dri = GetScreenDrawInfo(fh->window->WScreen))) */
+    } /* if ((dri = GetScreenDrawInfo(scr))) */
 
     return retval;
 }
@@ -803,7 +818,6 @@ void Completion(struct filehandle *fh, BOOL withinfo)
                 {
                     WORD backspaces;
                     size_t matchlen;
-                    UBYTE c;
 
                     if ((ci->wordquoted || strchr(ci->match, ' ')) &&
                         !AddQuotes(ci, ci->match, sizeof(ci->match)))
@@ -829,13 +843,7 @@ void Completion(struct filehandle *fh, BOOL withinfo)
                     memmove(ci->match + backspaces, ci->match, matchlen + 1);
                     SetMem(ci->match, 8, backspaces);
 
-                    c = ci->match[strlen(ci->match) - 1];
-                    if ((c != '/') && (c != ':'))
-                    {
-                        Strlcat(ci->match, " ", sizeof(ci->match));
-                    }
-
-                    InsertIntoConBuffer(ci, ci->match);
+                    InsertMatch(fh, ci);
 
                 }
             }

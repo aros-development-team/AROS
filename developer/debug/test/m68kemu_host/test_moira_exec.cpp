@@ -7,6 +7,8 @@
 */
 #include "m68kemu_intern.h"
 #include "m68kemu_thunks.h"
+#define M68KEMU_HOST_WITH_MOIRA
+#include "m68kemu_host_stubs.inc"
 
 /* Stub thunk tables */
 const struct M68KThunkEntry m68kemu_thunks_exec[] = { { 0, nullptr } };
@@ -16,7 +18,7 @@ const ULONG m68kemu_thunks_dos_count = 0;
 
 extern "C" {
 ULONG M68KEmu_OpenLibrary(struct M68KEmuContext *, const char *) { return 0; }
-ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *, const char *) { return 0; }
+ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *, const char *, ULONG) { return 0; }
 }
 
 /* Include the C sources */

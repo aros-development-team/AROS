@@ -21,7 +21,7 @@ ULONG extcol_render(struct extcol_render_data *ecrd, LONG x_src, LONG y_src,
 {
     struct IntCGFXBase *CyberGfxBase = ecrd->CyberGfxBase;
     struct BitMap      *bm     = ecrd->destbm;
-    HIDDT_Pixel        *pixbuf = CyberGfxBase->pixel_buf;
+    HIDDT_Pixel        *pixbuf;
     LONG   x_dest = rect->MinX;
     LONG   y_dest = rect->MinY;
     ULONG  xsize  = rect->MaxX - rect->MinX + 1;
@@ -71,11 +71,14 @@ ULONG extcol_render(struct extcol_render_data *ecrd, LONG x_src, LONG y_src,
         dsty = y_dest + current_y;
 
         /* Fetch pixel block */
-        HIDD_BM_GetImage(bm_obj, (UBYTE *)pixbuf, tocopy_w,
+        /* Each block fills the buffer from its start; the modulo is in bytes */
+        pixbuf = CyberGfxBase->pixel_buf;
+        HIDD_BM_GetImage(bm_obj, (UBYTE *)pixbuf, tocopy_w * sizeof(HIDDT_Pixel),
                          srcx, srcy, tocopy_w, tocopy_h, vHidd_StdPixFmt_Native32);
 
         /* Prepare SSE broadcast of the target pixel */
         __m128i cmpval = _mm_set1_epi32(ecrd->pixel);
+        __m128i cmpmask = _mm_set1_epi32(ecrd->mask);
 
         for (y = 0; y < tocopy_h; y++)
         {
@@ -86,7 +89,7 @@ ULONG extcol_render(struct extcol_render_data *ecrd, LONG x_src, LONG y_src,
             for (; x_aligned + 3 < width; x_aligned += 4)
             {
                 __m128i px = _mm_loadu_si128((__m128i const*)(pixbuf + x_aligned));
-                __m128i eq = _mm_cmpeq_epi32(px, cmpval);
+                __m128i eq = _mm_cmpeq_epi32(_mm_and_si128(px, cmpmask), cmpval);
                 int mask   = _mm_movemask_ps(_mm_castsi128_ps(eq));
 
                 if (mask)
@@ -117,7 +120,7 @@ ULONG extcol_render(struct extcol_render_data *ecrd, LONG x_src, LONG y_src,
             /* Process remainder pixels */
             for (; x_aligned < width; x_aligned++)
             {
-                if (pixbuf[x_aligned] == ecrd->pixel)
+                if ((pixbuf[x_aligned] & ecrd->mask) == ecrd->pixel)
                 {
                     ULONG px_x = dstx + x_aligned;
                     ULONG px_y = dsty + y;

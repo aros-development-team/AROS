@@ -96,7 +96,7 @@ static struct Task *spawn(const char *name, APTR pc, int cpu, struct ListWorker 
 static int wait_all(const char *phase, struct ListWorker *w, int n)
 {
     int i, t;
-    ULONG last = ~0UL;
+    ULONG last = (ULONG)~0;
 
     for (t = 0; t < WAIT_TICKS; t++)
     {

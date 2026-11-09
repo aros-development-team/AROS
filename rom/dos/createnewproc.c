@@ -109,38 +109,57 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
 #define TAGDATA_NOT_SPECIFIED ~0ul
 
-    struct TagItem defaults[]=
+    /* The defaults as (tag - NP_Dummy, value) byte pairs; a value of -1
+       sign-extends to TAGDATA_NOT_SPECIFIED. Entries 9, 10 and 11 are
+       filled in below. NP_DEFAULT() fails to compile if a tag does not
+       fit the byte. */
+#define NP_DEFAULT(tag, value) \
+    { (tag) - NP_Dummy + 0 * sizeof(char[((tag) - NP_Dummy) <= 127 ? 1 : -1]), (value) }
+    static const BYTE defaults_init[][2]=
     {
-    /* 0 */    { NP_Seglist       , 0                           },
-    /* 1 */    { NP_Entry         , (IPTR)NULL                  },
-    /* 2 */    { NP_Input         , TAGDATA_NOT_SPECIFIED       },
-    /* 3 */    { NP_CloseInput    , 1                           },
-    /* 4 */    { NP_Output        , TAGDATA_NOT_SPECIFIED       },
-    /* 5 */    { NP_CloseOutput   , 1                           },
-    /* 6 */    { NP_Error         , TAGDATA_NOT_SPECIFIED       },
-    /* 7 */    { NP_CloseError    , 1                           },
-    /* 8 */    { NP_CurrentDir    , TAGDATA_NOT_SPECIFIED       },
-    /* 9 */    { NP_StackSize     , PROC_STACKSIZE              },
-    /*10 */    { NP_Name          , (IPTR)"New Process"         },
-    /*11 */    { NP_Priority      , me->pr_Task.tc_Node.ln_Pri  },
-    /*12 */    { NP_Arguments     , TAGDATA_NOT_SPECIFIED       },
-    /*13 */    { NP_Cli           , 0                           },
-    /*14 */    { NP_UserData      , (IPTR)NULL                  },
-    /*15 */    { NP_ExitCode      , (IPTR)NULL                  },
-    /*16 */    { NP_ExitData      , (IPTR)NULL                  },
-    /*17 */    { NP_WindowPtr     ,  0                          }, /* Default: default public screen */
-    /*18 */    { NP_CopyVars      , (IPTR)TRUE                  },
-    /*19 */    { NP_Synchronous   , (IPTR)FALSE                 },
-    /*20 */    { NP_FreeSeglist   , (IPTR)TRUE                  },
-    /*21 */    { NP_HomeDir       , TAGDATA_NOT_SPECIFIED       },
-    /*22 */    { NP_Path          , TAGDATA_NOT_SPECIFIED       }, /* Default: copy path from parent */
-    /*23 */    { NP_NotifyOnDeath , (IPTR)FALSE                 },
-    /*24 */    { NP_ConsoleTask   , TAGDATA_NOT_SPECIFIED       },
+    /* 0 */    NP_DEFAULT(NP_Seglist,        0),
+    /* 1 */    NP_DEFAULT(NP_Entry,          0),
+    /* 2 */    NP_DEFAULT(NP_Input,         -1),
+    /* 3 */    NP_DEFAULT(NP_CloseInput,     1),
+    /* 4 */    NP_DEFAULT(NP_Output,        -1),
+    /* 5 */    NP_DEFAULT(NP_CloseOutput,    1),
+    /* 6 */    NP_DEFAULT(NP_Error,         -1),
+    /* 7 */    NP_DEFAULT(NP_CloseError,     1),
+    /* 8 */    NP_DEFAULT(NP_CurrentDir,    -1),
+    /* 9 */    NP_DEFAULT(NP_StackSize,      0),
+    /*10 */    NP_DEFAULT(NP_Name,           0),
+    /*11 */    NP_DEFAULT(NP_Priority,       0),
+    /*12 */    NP_DEFAULT(NP_Arguments,     -1),
+    /*13 */    NP_DEFAULT(NP_Cli,            0),
+    /*14 */    NP_DEFAULT(NP_UserData,       0),
+    /*15 */    NP_DEFAULT(NP_ExitCode,       0),
+    /*16 */    NP_DEFAULT(NP_ExitData,       0),
+    /*17 */    NP_DEFAULT(NP_WindowPtr,      0), /* Default: default public screen */
+    /*18 */    NP_DEFAULT(NP_CopyVars,       1),
+    /*19 */    NP_DEFAULT(NP_Synchronous,    0),
+    /*20 */    NP_DEFAULT(NP_FreeSeglist,    1),
+    /*21 */    NP_DEFAULT(NP_HomeDir,       -1),
+    /*22 */    NP_DEFAULT(NP_Path,          -1), /* Default: copy path from parent */
+    /*23 */    NP_DEFAULT(NP_NotifyOnDeath,  0),
+    /*24 */    NP_DEFAULT(NP_ConsoleTask,   -1),
 #if defined(__AROSEXEC_SMP__)
-    /*25 */    { NP_Affinity      , (IPTR)NULL                  },
+    /*25 */    NP_DEFAULT(NP_Affinity,       0),
 #endif
-               { TAG_END          , 0                           }
     };
+#define NUM_DEFAULTS (sizeof(defaults_init) / sizeof(defaults_init[0]))
+    struct TagItem defaults[NUM_DEFAULTS + 1];
+    ULONG di;
+
+    for (di = 0; di < NUM_DEFAULTS; di++)
+    {
+        defaults[di].ti_Tag  = NP_Dummy + defaults_init[di][0];
+        defaults[di].ti_Data = (IPTR)(SIPTR)defaults_init[di][1];
+    }
+    defaults[NUM_DEFAULTS].ti_Tag  = TAG_END;
+    defaults[NUM_DEFAULTS].ti_Data = 0;
+    defaults[9].ti_Data  = PROC_STACKSIZE;
+    defaults[10].ti_Data = (IPTR)"New Process";
+    defaults[11].ti_Data = me->pr_Task.tc_Node.ln_Pri;
 
     /* C has no exceptions. This is a simple replacement. */
 #define ERROR_IF(a)  if(a) goto error  /* Throw a generic error. */
@@ -565,7 +584,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
             if (IsInteractive(process->pr_CIS)) {
                 fh = BADDR(process->pr_CIS);
 
-                if (dopacket(&oldSignal, fh->fh_Type, ACTION_CHANGE_SIGNAL, (SIPTR)fh->fh_Arg1, (SIPTR)&process->pr_MsgPort, 0, 0, 0, 0, 0) == DOSFALSE)
+                if (dopacket5f(&oldSignal, fh->fh_Type, ACTION_CHANGE_SIGNAL, (SIPTR)fh->fh_Arg1, (SIPTR)&process->pr_MsgPort, 0, 0, 0) == DOSFALSE)
                     oldSignal = 0;
             }
 

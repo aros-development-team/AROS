@@ -418,52 +418,34 @@ char c;
 			{
 				/* handle the first component record: */
 
-				if (buf[5] & 4) /* parent directory */
+				if ((buf[5] & 4) || !(buf[5] & (8 | 16)))
 				{
-				CDROM_OBJ *parent1 = Find_Parent(p_obj);
-				CDROM_OBJ *parent2;
+				/* parent directory (4), or else the current directory */
+				CDROM_OBJ *dir = Find_Parent(p_obj);
 				char fullpath[256];
-					if (!parent1)
-						return 0;
-					parent2 = Find_Parent(parent1);
-					if (!parent2)
+				int ok;
+
+					if (dir && (buf[5] & 4))
 					{
-						Close_Object(parent1);
-						return 0;
+					CDROM_OBJ *up = Find_Parent(dir);
+
+						Close_Object(dir);
+						dir = up;
 					}
-					if (!Full_Path_Name(parent2, fullpath, sizeof(fullpath)))
-					{
-						Close_Object(parent1);
-						Close_Object(parent2);
+					if (!dir)
 						return 0;
-					}
-					Close_Object(parent1);
-					Close_Object(parent2);
+					ok = Full_Path_Name(dir, fullpath, sizeof(fullpath));
+					Close_Object(dir);
+					if (!ok)
+						return 0;
 					StrCat (out, fullpath);
 					if (out[1] != 0)
 						StrCat (out, "/");
 				}
 				else if (buf[5] & 8) /* root */
 					StrCat (out, "sys:");
-				else if (buf[5] & 16) /* volume root */
+				else /* volume root (16) */
 					StrCat (out, ":");
-				else
-				{
-				/* current directory */
-				CDROM_OBJ *parent = Find_Parent(p_obj);
-				char fullpath[256];
-					if (!parent)
-						return 0;
-					if (!Full_Path_Name(parent, fullpath, sizeof(fullpath)))
-					{
-						Close_Object(parent);
-						return 0;
-					}
-					Close_Object(parent);
-					StrCat (out, fullpath);
-					if (out[1] != 0)
-						StrCat (out, "/");
-				}
 			}
 
 			if (!continued && !(buf[offs] & 2) &&
@@ -507,11 +489,11 @@ int Has_System_Use_Field
 	return Get_System_Use_Field(p_volume, p_dir, p_name, NULL, 0, 0);
 }
 
-/* Return content of "CL" system use field, or -1, if no such system use field
- * is present.
+/* Return content of the "CL" or "PL" system use field, or -1, if no such
+ * system use field is present.
  */
 
-LONG RR_Child_Link(VOLUME *p_volume, directory_record *p_dir) {
+static LONG RR_Link(VOLUME *p_volume, directory_record *p_dir, char *p_name) {
 struct cl {
 	char    	name[2];
 	char    	length[1];
@@ -520,7 +502,7 @@ struct cl {
 	LONG	pos_m;
 } buf;
 
-	if (!Get_System_Use_Field(p_volume, p_dir,"CL",(char *)&buf,sizeof(buf),0))
+	if (!Get_System_Use_Field(p_volume, p_dir,p_name,(char *)&buf,sizeof(buf),0))
 		return -1;
 	else if ((unsigned char)buf.length[0] < 12)
 		return -1;
@@ -532,27 +514,10 @@ struct cl {
 #endif
 }
 
-/* Return content of "PL" system use field, or -1, if no such system use field
- * is present.
- */
+LONG RR_Child_Link(VOLUME *p_volume, directory_record *p_dir) {
+	return RR_Link(p_volume, p_dir, "CL");
+}
 
 LONG RR_Parent_Link(VOLUME *p_volume, directory_record *p_dir) {
-struct pl {
-	char    	name[2];
-	char    	length[1];
-	char    	version[1];
-	LONG	pos_i;
-	LONG	pos_m;
-} buf;
-
-	if (!Get_System_Use_Field(p_volume,p_dir,"PL",(char *)&buf,sizeof(buf),0))
-		return -1;
-	else if ((unsigned char)buf.length[0] < 12)
-		return -1;
-	else
-#if AROS_BIG_ENDIAN
-		return buf.pos_m;
-#else
-		return buf.pos_i;
-#endif
+	return RR_Link(p_volume, p_dir, "PL");
 }

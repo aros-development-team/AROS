@@ -59,7 +59,10 @@
  
     INPUTS
  
-    ALL    --  Display all subdirectories and their files recursively.
+    ALL    --  Display all subdirectories and their files recursively
+               (a link to a directory on the path walked to it, or
+               above where the walk started, is listed but not
+               entered).
     DIRS   --  Display only directories.
     FILES  --  Display only files.
     INTER  --  Enter interactive mode.
@@ -98,12 +101,22 @@
 struct table
 {
     char **entries;
+    LONG  *types;       /* typed tables only: ALL reads a directory's type */
+    BOOL   typed;
     int    num;
     int    max;
 };
 
+/* The directories ALL has entered, innermost first */
+struct DirLock
+{
+    BPTR            lock;
+    struct DirLock *parent;
+};
+
 /* Global variables */
 int g_indent;
+int g_skipped;      /* directories ALL could not list */
 struct UtilityBase *UtilityBase;
 
 /*  Prototypes  */
@@ -112,7 +125,8 @@ static
 LONG doPatternDir(CONST_STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles,
                   BOOL inter);
 static
-LONG doDir(CONST_STRPTR dir, BOOL all, BOOL dirs, BOOL files, BOOL inter);
+LONG doDir(CONST_STRPTR dir, struct DirLock *path, BOOL all, BOOL dirs,
+           BOOL files, BOOL inter);
 
 static
 void showline(char *fmt, RAWARG args);
@@ -125,6 +139,18 @@ static
 int CheckDir(BPTR lock, struct ExAllData *ead, ULONG eadSize,
              struct ExAllControl *eac, struct table *dirs,
              struct table *files);
+
+static
+void freeTable(struct table *table);
+
+static
+BOOL isAbove(BPTR lock, BPTR dir);
+static
+BOOL canEnter(LONG type, BPTR dirlock, CONST_STRPTR name,
+              struct DirLock *path);
+
+static
+LONG skipFailed(LONG error, CONST_STRPTR dir);
 
 static
 TEXT* getLine(CONST_STRPTR prompt, TEXT *buffer, LONG buflen);
@@ -226,7 +252,7 @@ AROS_SH6(Dir, 50.10,
     }
     else
     {
-        error = doDir(dir, all, dirs, files, inter);
+        error = doDir(dir, NULL, all, dirs, files, inter);
     }
 
     if (error != RETURN_OK)
@@ -246,6 +272,10 @@ AROS_SH6(Dir, 50.10,
         }
         PrintFault(ioerr, NULL);
     }
+    else if (g_skipped != 0)
+    {
+        error = RETURN_WARN;
+    }
 
     CloseLibrary((struct Library *)UtilityBase);
     return error;
@@ -255,7 +285,7 @@ AROS_SH6(Dir, 50.10,
 
 
 static
-int AddEntry(struct table *table, char *entry)
+int AddEntry(struct table *table, char *entry, LONG type)
 {
     char *dup;
     int len;
@@ -264,20 +294,33 @@ int AddEntry(struct table *table, char *entry)
     {
         int    new_max = table->max + 128;
         char **new_entries;
+        LONG  *new_types;
 
         new_entries = AllocVec(sizeof(char *) * new_max, MEMF_ANY);
+        new_types = NULL;
+        if (table->typed)
+            new_types = AllocVec(sizeof(LONG) * new_max, MEMF_ANY);
 
-        if (new_entries == NULL)
+        if (new_entries == NULL || (table->typed && new_types == NULL))
+        {
+            FreeVec(new_entries);
+            FreeVec(new_types);
             return 0;
+        }
 
         if (table->num)
         {
             CopyMemQuick(table->entries, new_entries,
                          sizeof(char *) * table->num);
+            if (table->typed)
+                CopyMemQuick(table->types, new_types,
+                             sizeof(LONG) * table->num);
             FreeVec(table->entries);
+            FreeVec(table->types);
         }
 
         table->entries = new_entries;
+        table->types = new_types;
         table->max = new_max;
     }
 
@@ -290,9 +333,25 @@ int AddEntry(struct table *table, char *entry)
     {
         return 0;
     }
+    if (table->typed)
+        table->types[table->num] = type;
     table->entries[table->num++] = dup;
 
     return 1;
+}
+
+
+static
+void freeTable(struct table *table)
+{
+    int t;
+
+    for (t = 0; t < table->num; t++)
+    {
+        FreeVec(table->entries[t]);
+    }
+    FreeVec(table->entries);
+    FreeVec(table->types);
 }
 
 
@@ -478,6 +537,8 @@ LONG doPatternDir(CONST_STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles, BOOL
     LONG  ioerr = 0;
 
     files.entries = NULL;
+    files.types = NULL;
+    files.typed = FALSE;
     files.max = 0;
     files.num = 0;
 
@@ -514,12 +575,24 @@ LONG doPatternDir(CONST_STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles, BOOL
                     }
                     if (all)
                     {
-                        error = doDir(ap->ap_Buf, all, doDirs, doFiles, inter);
+                        struct DirLock up;
+
+                        up.lock = ap->ap_Current->an_Lock;
+                        up.parent = NULL;
+
+                        if (canEnter(ap->ap_Info.fib_DirEntryType, up.lock,
+                                     ap->ap_Info.fib_FileName, &up))
+                        {
+                            error = doDir(ap->ap_Buf, &up, all, doDirs,
+                                          doFiles, inter);
+                            error = skipFailed(error, ap->ap_Buf);
+                        }
                     }
                 }
                 else if (doFiles)
                 {
-                    if (!AddEntry(&files, ap->ap_Info.fib_FileName))
+                    if (!AddEntry(&files, ap->ap_Info.fib_FileName,
+                                  ap->ap_Info.fib_DirEntryType))
                     {
                         ioerr = ERROR_NO_FREE_STORE;
                         error = RETURN_FAIL;
@@ -546,15 +619,17 @@ LONG doPatternDir(CONST_STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles, BOOL
                 }
 
             }
-            MatchEnd(ap);
         }
         else
         {
             ioerr = match;
             error = RETURN_FAIL;
         }
+        MatchEnd(ap);
         FreeVec(ap);
     }
+
+    freeTable(&files);
 
     SetIoErr(ioerr);
 
@@ -563,9 +638,11 @@ LONG doPatternDir(CONST_STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles, BOOL
 
 
 static
-LONG doDir(CONST_STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter)
+LONG doDir(CONST_STRPTR dir, struct DirLock *path, BOOL all, BOOL doDirs,
+           BOOL doFiles, BOOL inter)
 {
     BPTR  lock;
+    struct DirLock here;
     static UBYTE buffer[4096];
     struct ExAllControl  *eac;
     LONG error = RETURN_OK;
@@ -574,6 +651,9 @@ LONG doDir(CONST_STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter)
     struct table  files;
 
     dirs.entries = files.entries = NULL;
+    dirs.types = files.types = NULL;
+    dirs.typed = TRUE;
+    files.typed = FALSE;
     dirs.max = files.max = 0;
     dirs.num = files.num = 0;
 
@@ -581,6 +661,9 @@ LONG doDir(CONST_STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter)
 
     if (lock != BNULL)
     {
+        here.lock = lock;
+        here.parent = path;
+
         eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
 
         if (eac != NULL)
@@ -598,7 +681,9 @@ LONG doDir(CONST_STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter)
                 error = RETURN_FAIL;
             }
 
-            if (error == 0 && doDirs)
+            /* ALL walks the subdirectories even when only files are
+               listed; their names are shown only when directories are */
+            if (error == 0 && (doDirs || all))
             {
                 if (dirs.num != 0)
                 {
@@ -612,7 +697,7 @@ LONG doDir(CONST_STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter)
                         STRPTR dirname = dirs.entries[t];
 
                         // Recurse into subdirectories if "ALL" was specified by the user
-                        if (all)
+                        if (all && canEnter(dirs.types[t], lock, dirname, &here))
                         {
                             char *newpath;
                             int len;
@@ -628,13 +713,14 @@ LONG doDir(CONST_STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter)
                                 {
                                     if (doDirs)
                                         showdir(dirname, inter);
-                                    error = doDir(newpath, all, doDirs, doFiles, inter);
+                                    error = doDir(newpath, &here, all, doDirs, doFiles, inter);
                                 }
                                 else
                                 {
                                     SetIoErr(ERROR_LINE_TOO_LONG);
                                     error = RETURN_ERROR;
                                 }
+                                error = skipFailed(error, newpath);
                                 FreeVec(newpath);
                             }
                             else
@@ -664,31 +750,8 @@ LONG doDir(CONST_STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter)
 
             }
 
-            if (dirs.num != 0)
-            {
-                for (t = 0; t < dirs.num; t++)
-                {
-                    FreeVec(dirs.entries[t]);
-                }
-
-                if (dirs.entries)
-                {
-                    FreeVec(dirs.entries);
-                }
-            }
-
-            if (files.num != 0)
-            {
-                for (t = 0; t < files.num; t++)
-                {
-                    FreeVec(files.entries[t]);
-                }
-
-                if (files.entries)
-                {
-                    FreeVec(files.entries);
-                }
-            }
+            freeTable(&dirs);
+            freeTable(&files);
 
         }
         else
@@ -697,7 +760,13 @@ LONG doDir(CONST_STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter)
             error = RETURN_FAIL;
         }
 
-        UnLock(lock);
+        /* UnLock() resets IoErr(), which tells the caller why we failed */
+        {
+            LONG ioerr = IoErr();
+
+            UnLock(lock);
+            SetIoErr(ioerr);
+        }
     }
     else
     {
@@ -788,7 +857,8 @@ int CheckDir(BPTR lock, struct ExAllData *ead, ULONG eadSize,
                 }
 #endif /* USE_SOFTLINKCHECK */
 
-                if (!AddEntry(ead->ed_Type > 0 ? dirs : files,ead->ed_Name))
+                if (!AddEntry(ead->ed_Type > 0 ? dirs : files, ead->ed_Name,
+                              ead->ed_Type))
                 {
                     loop = 0;
                     error = RETURN_FAIL;
@@ -804,6 +874,90 @@ int CheckDir(BPTR lock, struct ExAllData *ead, ULONG eadSize,
     while((loop) && (error == RETURN_OK));
 
     return error;
+}
+
+
+/* Is lock a directory above dir? */
+static
+BOOL isAbove(BPTR lock, BPTR dir)
+{
+    BPTR parent;
+    BOOL same = FALSE;
+
+    dir = ParentDir(dir);
+
+    while (dir && !same)
+    {
+        same = (SameLock(lock, dir) == LOCK_SAME);
+        parent = same ? BNULL : ParentDir(dir);
+        UnLock(dir);
+        dir = parent;
+    }
+
+    return same;
+}
+
+
+/* May ALL enter the directory name of this type in dirlock? A soft link
+   or hard-linked directory is not entered if it leads to a file, or to a
+   directory on the path walked to it or above where the walk started
+   (the path's last entry), which would loop. One that cannot be locked
+   is entered, so that listing it reports the error. */
+static
+BOOL canEnter(LONG type, BPTR dirlock, CONST_STRPTR name,
+              struct DirLock *path)
+{
+    struct FileInfoBlock *fib;
+    BPTR  lock, olddir;
+    BOOL  enter = TRUE;
+
+    if (type != ST_SOFTLINK && type != ST_LINKDIR)
+        return TRUE;
+
+    olddir = CurrentDir(dirlock);
+    lock = Lock(name, SHARED_LOCK);
+    CurrentDir(olddir);
+
+    if (lock == BNULL)
+        return TRUE;
+
+    if ((fib = AllocDosObject(DOS_FIB, NULL)) != NULL)
+    {
+        if (Examine(lock, fib) && fib->fib_DirEntryType < 0)
+            enter = FALSE;
+        FreeDosObject(DOS_FIB, fib);
+    }
+
+    for (; enter && path != NULL; path = path->parent)
+    {
+        if (SameLock(lock, path->lock) == LOCK_SAME)
+            enter = FALSE;
+        else if (path->parent == NULL && isAbove(lock, path->lock))
+            enter = FALSE;
+    }
+
+    UnLock(lock);
+
+    return enter;
+}
+
+
+/* A directory found by ALL that cannot be listed doesn't end the walk:
+   report it and go on with the next one. Only a break or running out of
+   memory stops it. */
+static
+LONG skipFailed(LONG error, CONST_STRPTR dir)
+{
+    LONG ioerr = IoErr();
+
+    if (error == RETURN_OK || ioerr == ERROR_BREAK ||
+        ioerr == ERROR_NO_FREE_STORE)
+        return error;
+
+    PrintFault(ioerr, dir);
+    g_skipped++;
+
+    return RETURN_OK;
 }
 
 

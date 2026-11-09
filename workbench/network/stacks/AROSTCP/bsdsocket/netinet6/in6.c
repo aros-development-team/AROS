@@ -45,6 +45,7 @@
 #include <net/rtsock_protos.h>
 
 #include <devices/sana2.h>
+#include <protos/kern/kern_random_protos.h>
 
 struct in6_ifaddr *in6_ifaddr = NULL;
 struct ifqueue    ip6intrq    = {0};
@@ -180,6 +181,18 @@ in6_control_locked(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
         if(ia == NULL)
             return EADDRNOTAVAIL;
         break;
+
+    case SIOCGIFAFLAG_IN6:
+        /* the flags of the address given, on this interface (KAME) */
+        for(; ia; ia = ia->ia_next)
+            if(ia->ia6_ifp == ifp &&
+                    IN6_ARE_ADDR_EQUAL(&ia->ia_addr.sin6_addr,
+                                       &ifr->ifr_ifru.ifru_addr.sin6_addr))
+                break;
+        if(ia == NULL)
+            return EADDRNOTAVAIL;
+        ifr->ifr_ifru.ifru_flags6 = ia->ia6_ifaflags;
+        return 0;
 
     default:
         if(ifp == NULL || ifp->if_ioctl == NULL)
@@ -490,26 +503,113 @@ in6_localaddr(struct in6_addr *in6)
     if(IN6_IS_ADDR_LOOPBACK(in6) || IN6_IS_ADDR_LINKLOCAL(in6))
         return 1;
 
+    /* on a link we have an address on, as in_localaddr() for IPv4 and KAME */
     for(ia = in6_ifaddr; ia; ia = ia->ia_next) {
-        if(IN6_ARE_ADDR_EQUAL(in6, &ia->ia_addr.sin6_addr))
+        int i;
+
+        for(i = 0; i < 16; i++)
+            if((in6->s6_addr[i] ^ ia->ia_addr.sin6_addr.s6_addr[i]) &
+                    ia->ia_prefixmask.sin6_addr.s6_addr[i])
+                break;
+        if(i == 16)
             return 1;
     }
     return 0;
 }
 
 /*
- * in6_srcbetter - whether a is a better source address than b for a
- * destination of scope dstscope, by the rules of RFC 6724 section 5 that
- * apply to addresses of one interface:
+ * in6_matchlen - the number of leading bits a and b have in common.
+ */
+static int
+in6_matchlen(const struct in6_addr *a, const struct in6_addr *b)
+{
+    int i, n = 0;
+
+    for(i = 0; i < 16; i++) {
+        u_int8_t x = a->s6_addr[i] ^ b->s6_addr[i];
+
+        if(x == 0) {
+            n += 8;
+            continue;
+        }
+        while(!(x & 0x80)) {
+            n++;
+            x <<= 1;
+        }
+        break;
+    }
+    return n;
+}
+
+/* the length of ia's prefix, from its prefix mask */
+static int
+in6_ia_plen(const struct in6_ifaddr *ia)
+{
+    int i, n = 0;
+
+    for(i = 0; i < 16; i++) {
+        u_int8_t x = ia->ia_prefixmask.sin6_addr.s6_addr[i];
+
+        while(x & 0x80) {
+            n++;
+            x <<= 1;
+        }
+        if(ia->ia_prefixmask.sin6_addr.s6_addr[i] != 0xff)
+            break;
+    }
+    return n;
+}
+
+/*
+ * in6_addrlabel - the label of an address in the default policy table of
+ * RFC 6724 section 2.1 (the longest prefix that matches).
+ */
+static int
+in6_addrlabel(const struct in6_addr *a)
+{
+    static const struct {
+        u_int8_t prefix[16];
+        int len, label;
+    } policy[] = {
+        { { 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1 },           128,  0 },  /* ::1 */
+        { { 0,0,0,0, 0,0,0,0, 0,0,0xff,0xff, 0,0,0,0 },      96,  4 },  /* ::ffff:0:0/96 */
+        { { 0 },                                              96,  3 },  /* ::/96 */
+        { { 0x20,0x01,0,0 },                                  32,  5 },  /* 2001::/32 (Teredo) */
+        { { 0x20,0x02 },                                      16,  2 },  /* 2002::/16 (6to4) */
+        { { 0x3f,0xfe },                                      16, 12 },  /* 3ffe::/16 (6bone) */
+        { { 0xfe,0xc0 },                                      10, 11 },  /* fec0::/10 (site-local) */
+        { { 0xfc },                                            7, 13 },  /* fc00::/7 (ULA) */
+    };
+    int i, best = -1, label = 1;                /* ::/0 */
+
+    for(i = 0; i < (int)(sizeof(policy) / sizeof(policy[0])); i++)
+        if(policy[i].len > best &&
+                in6_matchlen(a, (const struct in6_addr *)policy[i].prefix) >= policy[i].len) {
+            best = policy[i].len;
+            label = policy[i].label;
+        }
+    return label;
+}
+
+/*
+ * in6_srcbetter - whether a is a better source address than b for dst, of
+ * scope dstscope, by the rules of RFC 6724 section 5 that apply to addresses
+ * of one interface:
+ *  1. the destination itself;
  *  2. appropriate scope: of two scopes, the smaller one unless it is smaller
  *     than the destination's (so a link-scope destination gets the
  *     link-local, and a global one a global address);
  *  3. a preferred address over a deprecated one;
- *  7. a temporary address over a public one (RFC 4941).
+ *  6. one whose label is the destination's (so a ULA destination gets the
+ *     ULA, and a global one a global address rather than the ULA);
+ *  7. a temporary address over a public one (RFC 4941);
+ *  8. the longer prefix in common with the destination, counted no further
+ *     than the source's own prefix.
  * Otherwise the earlier address stays.
  */
 static int
-in6_srcbetter(struct in6_ifaddr *a, struct in6_ifaddr *b, int dstscope)
+in6_srcbetter(struct in6_ifaddr *a, struct in6_ifaddr *b,
+              const struct in6_addr *dst, int dstscope)
 {
     int sa = in6_addrscope(&a->ia_addr.sin6_addr);
     int sb = in6_addrscope(&b->ia_addr.sin6_addr);
@@ -517,7 +617,12 @@ in6_srcbetter(struct in6_ifaddr *a, struct in6_ifaddr *b, int dstscope)
     int db = (b->ia6_ifaflags & IN6_IFF_DEPRECATED) != 0;
     int ta = (a->ia6_ifaflags & IN6_IFF_TEMPORARY) != 0;
     int tb = (b->ia6_ifaflags & IN6_IFF_TEMPORARY) != 0;
+    int ea = IN6_ARE_ADDR_EQUAL(&a->ia_addr.sin6_addr, dst);
+    int eb = IN6_ARE_ADDR_EQUAL(&b->ia_addr.sin6_addr, dst);
+    int la, lb, ma, mb, pa, pb, ldst;
 
+    if(ea != eb)
+        return ea;
     if(sa != sb) {
         if(sa < sb)
             return sa >= dstscope;
@@ -525,9 +630,22 @@ in6_srcbetter(struct in6_ifaddr *a, struct in6_ifaddr *b, int dstscope)
     }
     if(da != db)
         return db;
+    ldst = in6_addrlabel(dst);
+    la = in6_addrlabel(&a->ia_addr.sin6_addr) == ldst;
+    lb = in6_addrlabel(&b->ia_addr.sin6_addr) == ldst;
+    if(la != lb)
+        return la;
     if(ta != tb)
         return ta;
-    return 0;
+    ma = in6_matchlen(&a->ia_addr.sin6_addr, dst);
+    mb = in6_matchlen(&b->ia_addr.sin6_addr, dst);
+    pa = in6_ia_plen(a);
+    pb = in6_ia_plen(b);
+    if(ma > pa)
+        ma = pa;
+    if(mb > pb)
+        mb = pb;
+    return ma > mb;
 }
 
 /* ------------------------------------------------------------------
@@ -544,7 +662,7 @@ in6_ifawithifp(struct ifnet *ifp, struct in6_addr *dst)
             continue;
         if(ia->ia6_ifaflags & (IN6_IFF_TENTATIVE | IN6_IFF_DUPLICATED))
             continue;
-        if(besta == NULL || in6_srcbetter(ia, besta, dstscope))
+        if(besta == NULL || in6_srcbetter(ia, besta, dst, dstscope))
             besta = ia;
     }
     return besta;
@@ -987,33 +1105,15 @@ in6_ifdetach(struct ifnet *ifp)
  * ================================================================== */
 
 /*
- * Generate a random interface identifier for temporary addresses (RFC 4941).
- * Uses AROS-available entropy sources.
+ * A random interface identifier for a temporary address (RFC 8981 section
+ * 3.3.1), from the C runtime's arc4random_buf() through kern_random.c: a
+ * xorshift generator seeded from the clock and the task address made them
+ * guessable, and a temporary address is there so that it cannot be.
  */
 static void
 in6_generate_random_iid(struct in6_addr *addr)
 {
-    u_int32_t *p = (u_int32_t *)&addr->s6_addr[8];
-    static u_int32_t rstate1 = 0, rstate2 = 0;
-
-    /* seed from available entropy if needed */
-    if(rstate1 == 0) {
-        struct timeval _tv;
-        GetSysTime(&_tv);
-        rstate1 = (u_int32_t)(IPTR)FindTask(NULL) ^ 0xdeadbeef;
-        rstate2 = (u_int32_t)(_tv.tv_sec * 1000000 + _tv.tv_usec) ^ 0xcafebabe;
-    }
-
-    /* xorshift64 */
-    rstate1 ^= rstate1 << 13;
-    rstate1 ^= rstate1 >> 7;
-    rstate1 ^= rstate1 << 17;
-    rstate2 ^= rstate2 << 13;
-    rstate2 ^= rstate2 >> 7;
-    rstate2 ^= rstate2 << 17;
-
-    p[0] = rstate1;
-    p[1] = rstate2;
+    kern_random(&addr->s6_addr[8], 8);
 
     /* clear the universal/local bit (RFC 4941 §3.2.1) - set to "local" */
     addr->s6_addr[8] &= ~0x02;
@@ -1099,7 +1199,7 @@ in6_tmpifadd(struct ifnet *ifp, struct nd_prefix *pr)
         return error;
 
     /* find the newly created address and set temporary flags + lifetimes */
-    GetSysTime(&_tv);
+    GetUpTime(&_tv);
     for(newia = in6_ifaddr; newia; newia = newia->ia_next) {
         if(IN6_ARE_ADDR_EQUAL(&newia->ia_addr.sin6_addr, &tmpaddr) &&
            newia->ia6_ifp == ifp)
@@ -1137,17 +1237,20 @@ in6_tmpaddrtimer(void)
     struct in6_ifaddr *ia, *nia;
     struct timeval _tv;
 
-    GetSysTime(&_tv);
+    GetUpTime(&_tv);
 
+    /* temporary addresses (RFC 4941) and those stateless autoconfiguration
+     * made (RFC 4862 section 5.5.4): deprecated at the end of the preferred
+     * lifetime, removed at the end of the valid one */
     for(ia = in6_ifaddr; ia; ia = nia) {
         nia = ia->ia_next;
-        if(!(ia->ia6_ifaflags & IN6_IFF_TEMPORARY))
+        if(!(ia->ia6_ifaflags & (IN6_IFF_TEMPORARY | IN6_IFF_AUTOCONF)))
             continue;
 
         /* check valid lifetime expiry */
         if(ia->ia6_lifetime_expire &&
            (u_int32_t)_tv.tv_sec >= ia->ia6_lifetime_expire) {
-            D(bug("[AROSTCP:IN6] %s: removing expired temporary addr\n",
+            D(bug("[AROSTCP:IN6] %s: removing expired autoconfigured addr\n",
                   __func__));
             in6_purgeaddr((struct ifaddr *)ia);
             continue;

@@ -2,7 +2,7 @@
 #define DEVICES_PRINTER_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: printer device commands and structures
@@ -39,6 +39,11 @@
 #define PRD_EDITPREFS	    	(CMD_NONSTD + 10)
 #define PRD_SETERRHOOK	    	(CMD_NONSTD + 11)
 #define PRD_DUMPRPORTTAGS   	(CMD_NONSTD + 12)
+#define PRD_PRIVATECMD		(CMD_NONSTD + 13)	/* AmigaOS: private */
+#define PRD_LASTSAVEDPREFS	(CMD_NONSTD + 14)	/* AmigaOS: private */
+#define PRD_SETJOBINFO		(CMD_NONSTD + 15)	/* AROS: io_Data = PJIA_ tags */
+#define PRD_GETDESTINATION	(CMD_NONSTD + 16)	/* AROS: io_Data = PDA_ tags */
+#define PRD_SETDESTINATION	(CMD_NONSTD + 17)	/* AROS: io_Data = PDA_ tags */
 
 /* printer command definitions */
 
@@ -254,6 +259,40 @@ struct DRPSourceMsg
     LONG     height;
     ULONG   *buf;
 };
+
+/* Tags for PRD_SETJOBINFO (AROS): what is being printed, for print queues.
+   The job is kept per printer.device unit, not per opener. printer.device
+   passes the command to an output device only if its NSCMD_DEVICEQUERY
+   reply lists it; the tags are on the sender's stack, so the receiver must
+   copy the strings. */
+
+#define PJIA_Dummy		(TAG_USER + 0x80000)
+#define PJIA_Application	(PJIA_Dummy + 1)	/* STRPTR */
+#define PJIA_Document		(PJIA_Dummy + 2)	/* STRPTR */
+
+/* PRD_GETDESTINATION, PRD_SETDESTINATION (AROS): an output device's own settings
+   for a unit - where a spooler queue sends its jobs, which network printer a unit
+   prints to - so that Printer prefs and a driver's prefs editor show and change
+   the same ones. A device that has them lists both commands in its
+   NSCMD_DEVICEQUERY reply; any other output device is just a name and a unit.
+   GET: for each tag the unit has, ti_Data points to where its value goes (a
+   buffer of PDA_VALUESIZE bytes for a string, a LONG for a number); PDA_Tags
+   tells which those are. SET: the new values; tags the unit does not have are
+   ignored. Open the unit with PRDOF_SETTINGS to use them without starting a job. */
+
+#define PRDOF_SETTINGS		(1UL << 31)	/* OpenDevice() flag: settings only */
+
+#define PDA_Dummy		(TAG_USER + 0x90000)
+#define PDA_Tags		(PDA_Dummy + 1)	/* GET: const Tag **, gets the unit's PDA_ tags, TAG_DONE ended */
+#define PDA_Device		(PDA_Dummy + 2)	/* STRPTR: "name.device" the unit sends its output to */
+#define PDA_Unit		(PDA_Dummy + 3)	/* LONG: that device's unit */
+#define PDA_URI			(PDA_Dummy + 4)	/* STRPTR: the network printer, ipp:// or socket:// */
+#define PDA_Name		(PDA_Dummy + 5)	/* STRPTR: the printer's name, for people */
+#define PDA_UUID		(PDA_Dummy + 6)	/* STRPTR: the printer's own ID, to find it again at a new address */
+#define PDA_Format		(PDA_Dummy + 7)	/* STRPTR: document format sent (MIME type); empty: the printer tells */
+#define PDA_Save		(PDA_Dummy + 8)	/* SET: BOOL, keep the settings over a reboot too */
+
+#define PDA_VALUESIZE		256
 
 /* Tags for PRD_EDITPREFS */
 

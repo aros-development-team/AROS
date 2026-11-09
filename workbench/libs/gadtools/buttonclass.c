@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Internal GadTools button class.
 */
@@ -41,23 +41,17 @@ Object *GTButton__OM_NEW(Class * cl, Object * obj, struct opSet *msg)
     struct ButtonData   *data;
     struct DrawInfo     *dri;
     struct Image        *frame;
-    struct TagItem      tags[] =
-    {
-        {IA_Width       , 0UL           },
-        {IA_Height      , 0UL           },
-        {IA_Resolution  , 0UL           },
-        {IA_FrameType   , FRAME_BUTTON  },
-        {TAG_DONE                       }
-    };
+    struct TagItem      tags[2];
 
     dri = (struct DrawInfo *) GetTagData(GA_DrawInfo, (IPTR) NULL, msg->ops_AttrList);
     if (!dri)
         return NULL;
 
-    tags[0].ti_Data = GetTagData(GA_Width, 0, msg->ops_AttrList);
-    tags[1].ti_Data = GetTagData(GA_Height, 0, msg->ops_AttrList);
-    tags[2].ti_Data = (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y;
-    frame = (struct Image *) NewObjectA(NULL, FRAMEICLASS, tags);
+    frame = (struct Image *) gt_newframe(GadToolsBase,
+                                         GetTagData(GA_Width, 0, msg->ops_AttrList),
+                                         GetTagData(GA_Height, 0, msg->ops_AttrList),
+                                         (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y,
+                                         FRAME_BUTTON, TAG_DONE);
     if (!frame)
         return NULL;
 
@@ -97,16 +91,8 @@ IPTR GTButton__OM_SET(Class * cl, Object * obj, struct opSet * msg)
     /* Redraw the gadget, if an attribute was changed and if this is the
        objects' base-class. */
     if ((retval) && (OCLASS(obj) == cl)) {
-        struct gpRender rmsg;
-        rmsg.gpr_RPort = ObtainGIRPort(msg->ops_GInfo);
-        if (rmsg.gpr_RPort) {
-            rmsg.MethodID = GM_RENDER;
-            rmsg.gpr_GInfo = msg->ops_GInfo;
-            rmsg.gpr_Redraw = GREDRAW_UPDATE;
-            DoMethodA(obj, &rmsg);
-            ReleaseGIRPort(rmsg.gpr_RPort);
+        if (gt_render(GadToolsBase, obj, msg->ops_GInfo, GREDRAW_UPDATE))
             retval = FALSE;
-        }
     }
 
     return retval;

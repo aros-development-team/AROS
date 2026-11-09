@@ -8,6 +8,116 @@
 #include <graphics/rastport.h>
 #include "gfxfuncsupport.h"
 
+#include <proto/graphics.h>
+
+/*
+ * Fill one strip that scrolling has vacated: through the layer's backfill
+ * hook for ScrollRasterBF(), with RectFill() in the pens ScrollRaster() has
+ * set up otherwise.
+ */
+static void scroll_fill(struct RastPort *rp, LONG x1, LONG y1, LONG x2, LONG y2,
+                        BOOL backfill, struct GfxBase *GfxBase)
+{
+    if(backfill)
+        EraseRect(rp, x1, y1, x2, y2);
+    else
+        RectFill(rp, x1, y1, x2, y2);
+}
+
+/*
+ * The body of ScrollRaster() (backfill FALSE) and ScrollRasterBF() (backfill
+ * TRUE), called with coordinates already passed through FIX_GFXCOORD().
+ */
+void internal_ScrollRaster(struct RastPort *rp, WORD dx, WORD dy, WORD xMin, WORD yMin,
+                           WORD xMax, WORD yMax, BOOL backfill, struct GfxBase *GfxBase)
+{
+    UBYTE old_fgpen = rp->FgPen;
+    UBYTE old_drmd = rp->DrawMode;
+    LONG width, height, absdx, absdy;
+
+    if((xMin > xMax) || (yMin > yMax)) return;
+
+    /*
+       adjust xMax and yMax in case the lower right corner would be outside
+       the rastport
+    */
+    /* Is it a window's rastport ? */
+    if(NULL != rp->Layer) {
+        struct Layer *L = rp->Layer;
+
+        if(xMax > (L->bounds.MaxX - L->bounds.MinX))
+            xMax = (L->bounds.MaxX - L->bounds.MinX) ;
+
+        if(yMax > (L->bounds.MaxY - L->bounds.MinY))
+            yMax = (L->bounds.MaxY - L->bounds.MinY) ;
+
+    } else {
+        /* this one belongs to a screen */
+        struct BitMap *bm = rp->BitMap;
+        ULONG width  = GetBitMapAttr(bm, BMA_WIDTH);
+        ULONG height = GetBitMapAttr(bm, BMA_HEIGHT);
+        if((ULONG)xMax >= width)
+            xMax = width - 1;
+        if((ULONG)yMax >= height)
+            yMax = height - 1;
+    }
+
+    absdx = (dx >= 0) ? dx : -dx;
+    absdy = (dy >= 0) ? dy : -dy;
+
+    width  = xMax - xMin + 1;
+    height = yMax - yMin + 1;
+
+    if((width < 1) || (height < 1)) return;
+
+    /*
+     * A distance that reaches the extent scrolls everything off. ScrollRaster()
+     * then leaves the rectangle exactly as it was: not scrolled, and not
+     * filled with BPen either. ScrollRasterBF() erases all of it.
+     */
+    if((absdx >= width) || (absdy >= height)) {
+        if(backfill)
+            EraseRect(rp, xMin, yMin, xMax, yMax);
+        return;
+    }
+
+    if(!MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE, GfxBase))
+        return;
+
+    /*
+     * For ScrollRaster() the vacated strip is BPen whatever the caller's draw
+     * mode: JAM1 with no AreaPtrn writes APen everywhere, and selecting it
+     * drops COMPLEMENT and INVERSVID with it.
+     */
+    if(!backfill)
+        SetABPenDrMd(rp, rp->BgPen, rp->BgPen, JAM1);
+
+    /* was it scrolled left or right? */
+    if(0 != dx) {
+        if(dx > 0) {
+            /* scrolled towards left, clearing on the right */
+            scroll_fill(rp, xMax - dx + 1, yMin, xMax, yMax, backfill, GfxBase);
+        } else {
+            /* scrolled towards right, clearing on the left */
+            /* a scroll by -1 should only erase a row of width 1 */
+            scroll_fill(rp, xMin, yMin, xMin - dx - 1, yMax, backfill, GfxBase);
+        }
+    }
+
+    if(0 != dy) {
+        if(dy > 0) {
+            /* scrolled up, clearing on the bottom */
+            scroll_fill(rp, xMin, yMax - dy + 1, xMax, yMax, backfill, GfxBase);
+        } else {
+            /* scrolled down, clearing on the top */
+            scroll_fill(rp, xMin, yMin, xMax, yMin - dy - 1, backfill, GfxBase);
+        }
+    }
+
+    if(!backfill)
+        SetABPenDrMd(rp, old_fgpen, rp->BgPen, old_drmd);
+}
+
 /*****************************************************************************
 
     NAME */
@@ -67,116 +177,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    UBYTE old_fgpen = rp->FgPen;
-    UBYTE old_drmd = rp->DrawMode;
-    LONG width, height, absdx, absdy;
-
     FIX_GFXCOORD(xMin);
     FIX_GFXCOORD(yMin);
     FIX_GFXCOORD(xMax);
     FIX_GFXCOORD(yMax);
 
-    if((xMin > xMax) || (yMin > yMax)) return;
-
-    /*
-       This function will simply call ScrollRaster() and fill the empty
-       space with calls to RectFill
-     */
-
-    /*
-       adjust xMax and yMax in case the lower right corner would be outside
-       the rastport
-    */
-    /* Is it a window's rastport ? */
-    if(NULL != rp->Layer) {
-        struct Layer *L = rp->Layer;
-
-        if(xMax > (L->bounds.MaxX - L->bounds.MinX))
-            xMax = (L->bounds.MaxX - L->bounds.MinX) ;
-
-        if(yMax > (L->bounds.MaxY - L->bounds.MinY))
-            yMax = (L->bounds.MaxY - L->bounds.MinY) ;
-
-    } else {
-        /* this one belongs to a screen */
-        struct BitMap *bm = rp->BitMap;
-        ULONG width  = GetBitMapAttr(bm, BMA_WIDTH);
-        ULONG height = GetBitMapAttr(bm, BMA_HEIGHT);
-        if((ULONG)xMax >= width)
-            xMax = width - 1;
-        if((ULONG)yMax >= height)
-            yMax = height - 1;
-    }
-
-    absdx = (dx >= 0) ? dx : -dx;
-    absdy = (dy >= 0) ? dy : -dy;
-
-    width  = xMax - xMin + 1;
-    height = yMax - yMin + 1;
-
-    if((width < 1) || (height < 1)) return;
-
-    /*
-     * A distance that reaches the extent scrolls everything off, and the
-     * rectangle is then left exactly as it was: not scrolled, and not filled
-     * with BPen either.
-     */
-    if((absdx >= width) || (absdy >= height))
-        return;
-
-    if(!MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE, GfxBase))
-        return;
-
-    /*
-       The raster is scrolled and I fill the empty area with the
-       RectFill()
-     */
-
-    /*
-     * The vacated strip is BPen whatever the caller's draw mode: JAM1 with no
-     * AreaPtrn writes APen everywhere, and selecting it drops COMPLEMENT and
-     * INVERSVID with it.
-     */
-    SetABPenDrMd(rp, rp->BgPen, rp->BgPen, JAM1);
-
-    /* was it scrolled left or right? */
-    if(0 != dx) {
-        if(dx > 0) {
-            /* scrolled towards left, clearing on the right */
-            RectFill(rp,
-                     xMax - dx + 1,
-                     yMin,
-                     xMax,
-                     yMax);
-        } else {
-            /* scrolled towards right, clearing on the left */
-            RectFill(rp,
-                     xMin,
-                     yMin,
-                     xMin - dx - 1,  /* a scroll by -1 should only erase a row of width 1 */
-                     yMax);
-        }
-    }
-
-    if(0 != dy) {
-        if(dy > 0) {
-            /* scrolled up, clearing on the bottom */
-            RectFill(rp,
-                     xMin,
-                     yMax - dy + 1,
-                     xMax,
-                     yMax);
-        } else {
-            /* scrolled down, clearing on the top */
-            RectFill(rp,
-                     xMin,
-                     yMin,
-                     xMax,
-                     yMin - dy - 1);
-        }
-    }
-
-    SetABPenDrMd(rp, old_fgpen, rp->BgPen, old_drmd);
+    internal_ScrollRaster(rp, dx, dy, xMin, yMin, xMax, yMax, FALSE, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* ScrollRaster */

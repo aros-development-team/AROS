@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Locks a file or directory.
 */
@@ -19,7 +19,7 @@
 #include "fs_driver.h"
 
 static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
-    BPTR *handle, LONG soft_nesting, struct DosLibrary *DOSBase);
+    APTR lockp, LONG soft_nesting, struct DosLibrary *DOSBase);
 
 #define MAX_SOFT_LINK_NESTING 16 /* Maximum level of soft links nesting */
 
@@ -148,10 +148,12 @@ BOOL pseudoLock(CONST_STRPTR name, LONG lockMode, BPTR *lock, LONG *ret, struct 
 
 
 /* Try to lock name recursively calling itself in case it's a soft link.
-   Store result in handle. Return boolean value indicating result. */
+   Store result in *(BPTR *)lockp. Return boolean value indicating result.
+   The type is that of a SoftlinkFunc (see FollowSoftlink()). */
 static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
-    BPTR *handle, LONG soft_nesting, struct DosLibrary *DOSBase)
+    APTR lockp, LONG soft_nesting, struct DosLibrary *DOSBase)
 {
+    BPTR *handle = lockp;
     /* Get pointer to process structure */
     struct Process *me = (struct Process *)FindTask(NULL);
     BPTR cur = BNULL;
@@ -225,42 +227,7 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
     }
 
     if (error == ERROR_IS_SOFT_LINK)
-    {
-        STRPTR softname = ResolveSoftlink(cur, dvp, name, DOSBase);
-
-        if (softname)
-        {
-            BPTR olddir = BNULL;
-
-            /*
-             * ResolveSoftlink() gives us path relative to either 'cur' lock
-             * (if on current volume), or 'dvp' volume root (if on different volume).
-             * In the latter case we need to change current directory to volume's root
-             * in order to follow the link correctly.
-             */
-            if (dvp)
-            {
-                olddir = me->pr_CurrentDir;
-                error = RootDir(dvp, DOSBase);
-            }
-            else
-                error = 0;
-
-            if (!error)
-            {
-                ret = InternalLock(softname, accessMode, handle, soft_nesting - 1, DOSBase);
-                error = ret ? 0 : IoErr();
-                D(bug("[Lock] Resolve error %d\n", error));
-
-                if (olddir)
-                    UnLock(CurrentDir(olddir));
-            }
-
-            FreeVec(softname);
-        }
-        else
-            error = IoErr();
-    }
+        error = FollowSoftlink(cur, dvp, name, InternalLock, accessMode, handle, soft_nesting, DOSBase);
 
     FreeDeviceProc(dvp);
 
@@ -273,6 +240,50 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
         ret = DOSTRUE;
 
     return ret;
+}
+
+/* Retry an operation that ran into the soft link 'name': resolve the link
+ * and call 'func' on its target, from the volume's root directory if the
+ * target is on another volume. Returns the error, 0 on success. */
+LONG FollowSoftlink(BPTR cur, struct DevProc *dvp, CONST_STRPTR name, SoftlinkFunc func,
+    LONG accessMode, APTR handle, LONG soft_nesting, struct DosLibrary *DOSBase)
+{
+    struct Process *me = (struct Process *)FindTask(NULL);
+    LONG error;
+    STRPTR softname = ResolveSoftlink(cur, dvp, name, DOSBase);
+
+    if (softname)
+    {
+        BPTR olddir = BNULL;
+
+        /*
+         * ResolveSoftlink() gives us path relative to either 'cur' lock
+         * (if on current volume), or 'dvp' volume root (if on different volume).
+         * In the latter case we need to change current directory to volume's root
+         * in order to follow the link correctly.
+         */
+        if (dvp)
+        {
+            olddir = me->pr_CurrentDir;
+            error = RootDir(dvp, DOSBase);
+        }
+        else
+            error = 0;
+
+        if (!error)
+        {
+            error = func(softname, accessMode, handle, soft_nesting - 1, DOSBase) ? 0 : IoErr();
+
+            if (olddir)
+                UnLock(CurrentDir(olddir));
+        }
+
+        FreeVec(softname);
+    }
+    else
+        error = IoErr();
+
+    return error;
 }
 
 /*

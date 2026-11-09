@@ -58,30 +58,20 @@ static const UWORD SupportedCommands[] = {
 
 /*****************************************************************************/
 
+static int GM_UNIQUENAME(Expunge) (LIBBASETYPEPTR ConsoleDevice);
+
 static int GM_UNIQUENAME(Init) (LIBBASETYPEPTR ConsoleDevice)
 {
-    ConsoleDevice->cb_UtilityBase =
-        TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
-    if (!ConsoleDevice->cb_UtilityBase)
-        return FALSE;
-
-    ConsoleDevice->cb_IntuitionBase =
-        TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
-    if (!ConsoleDevice->cb_IntuitionBase)
+    /* The device base starts out cleared, so on failure Expunge closes just
+       the libraries that have been opened */
+    if (!(ConsoleDevice->cb_UtilityBase =
+            TaggedOpenLibrary(TAGGEDOPEN_UTILITY)) ||
+        !(ConsoleDevice->cb_IntuitionBase =
+            TaggedOpenLibrary(TAGGEDOPEN_INTUITION)) ||
+        !(ConsoleDevice->cb_KeymapBase =
+            TaggedOpenLibrary(TAGGEDOPEN_KEYMAP)))
     {
-        CloseLibrary(ConsoleDevice->cb_UtilityBase);
-        ConsoleDevice->cb_UtilityBase = NULL;
-        return FALSE;
-    }
-
-    ConsoleDevice->cb_KeymapBase =
-        TaggedOpenLibrary(TAGGEDOPEN_KEYMAP);
-    if (!ConsoleDevice->cb_KeymapBase)
-    {
-        CloseLibrary(ConsoleDevice->cb_IntuitionBase);
-        ConsoleDevice->cb_IntuitionBase = NULL;
-        CloseLibrary(ConsoleDevice->cb_UtilityBase);
-        ConsoleDevice->cb_UtilityBase = NULL;
+        GM_UNIQUENAME(Expunge)(ConsoleDevice);
         return FALSE;
     }
 
@@ -353,45 +343,39 @@ ADD2OPENDEV(GM_UNIQUENAME(Open), 0) ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
         break;
 
     case CD_ASKKEYMAP:
-        if (ioreq->io_Length < sizeof(struct KeyMap))
-            error = IOERR_BADLENGTH;
-        else if (ioreq->io_Unit == (struct Unit *)CONU_LIBRARY)
-            CopyMem(AskKeyMapDefault(), ioreq->io_Data,
-                sizeof(struct KeyMap));
-        else
-        {
-            ObtainSemaphoreShared(&ConsoleDevice->unitListLock);
-            CopyMem(&((struct ConUnit *)ioreq->io_Unit)->cu_KeyMapStruct,
-                ioreq->io_Data, sizeof(struct KeyMap));
-            ReleaseSemaphore(&ConsoleDevice->unitListLock);
-        }
-        break;
     case CD_SETKEYMAP:
-        if (ioreq->io_Length < sizeof(struct KeyMap))
-            error = IOERR_BADLENGTH;
-        else if (ioreq->io_Unit == (struct Unit *)CONU_LIBRARY)
-            error = IOERR_NOCMD;
-        else
-        {
-            ObtainSemaphore(&ConsoleDevice->unitListLock);
-            CopyMem(ioreq->io_Data,
-                &((struct ConUnit *)ioreq->io_Unit)->cu_KeyMapStruct,
-                sizeof(struct KeyMap));
-            ReleaseSemaphore(&ConsoleDevice->unitListLock);
-        }
-        break;
     case CD_ASKDEFAULTKEYMAP:
-        if (ioreq->io_Length < sizeof(struct KeyMap))
-            error = IOERR_BADLENGTH;
-        else
-            CopyMem(AskKeyMapDefault(), ioreq->io_Data,
-                sizeof(struct KeyMap));
-        break;
     case CD_SETDEFAULTKEYMAP:
         if (ioreq->io_Length < sizeof(struct KeyMap))
             error = IOERR_BADLENGTH;
-        else
+        else if (ioreq->io_Command == CD_SETDEFAULTKEYMAP)
             SetKeyMapDefault((struct KeyMap *)ioreq->io_Data);
+        else if (ioreq->io_Command == CD_ASKDEFAULTKEYMAP ||
+            (ioreq->io_Command == CD_ASKKEYMAP &&
+                ioreq->io_Unit == (struct Unit *)CONU_LIBRARY))
+            /* The library unit has no keymap of its own */
+            CopyMem(AskKeyMapDefault(), ioreq->io_Data,
+                sizeof(struct KeyMap));
+        else if (ioreq->io_Unit == (struct Unit *)CONU_LIBRARY)
+            /* CD_SETKEYMAP */
+            error = IOERR_NOCMD;
+        else
+        {
+            /* Read or replace the keymap of a console unit */
+            APTR from = &((struct ConUnit *)ioreq->io_Unit)->cu_KeyMapStruct;
+            APTR to = ioreq->io_Data;
+
+            if (ioreq->io_Command == CD_ASKKEYMAP)
+                ObtainSemaphoreShared(&ConsoleDevice->unitListLock);
+            else
+            {
+                to = from;
+                from = ioreq->io_Data;
+                ObtainSemaphore(&ConsoleDevice->unitListLock);
+            }
+            CopyMem(from, to, sizeof(struct KeyMap));
+            ReleaseSemaphore(&ConsoleDevice->unitListLock);
+        }
         break;
 
     default:

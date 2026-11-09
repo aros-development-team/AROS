@@ -65,107 +65,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    LONG width, height, absdx, absdy;
-
     FIX_GFXCOORD(xMin);
     FIX_GFXCOORD(yMin);
     FIX_GFXCOORD(xMax);
     FIX_GFXCOORD(yMax);
 
-    if((xMin > xMax) || (yMin > yMax)) return;
-
-    /*
-       This function will simply call ScrollRaster() and fill the empty
-       space with calls to EraseRect()
-     */
-
-    /*
-       adjust xMax and yMax in case the lower right corner would be outside
-       the rastport
-    */
-    /* Is it a window's rastport ? */
-    if(NULL != rp->Layer) {
-        struct Layer *L = rp->Layer;
-
-        if(xMax > (L->bounds.MaxX - L->bounds.MinX))
-            xMax = (L->bounds.MaxX - L->bounds.MinX) ;
-
-        if(yMax > (L->bounds.MaxY - L->bounds.MinY))
-            yMax = (L->bounds.MaxY - L->bounds.MinY) ;
-
-    } else {
-        /* this one belongs to a screen */
-        struct BitMap *bm = rp->BitMap;
-
-        ULONG width  = GetBitMapAttr(bm, BMA_WIDTH);
-        ULONG height = GetBitMapAttr(bm, BMA_HEIGHT);
-
-        if((ULONG)xMax >= width)
-            xMax = width - 1;
-
-        if((ULONG)yMax >= height)
-            yMax = height - 1;
-    }
-
-    absdx = (dx >= 0) ? dx : -dx;
-    absdy = (dy >= 0) ? dy : -dy;
-
-    width  = xMax - xMin + 1;
-    height = yMax - yMin + 1;
-
-    if((width < 1) || (height < 1)) return;
-
-    if((absdx >= width) || (absdy >= height)) {
-        EraseRect(rp, xMin, yMin, xMax, yMax);
-        return;
-    }
-
-
-    if(!MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE, GfxBase))
-        return;
-
-    /*
-       The raster is scrolled and I fill the empty area with the
-       EraseRect()
-     */
-
-    /* was it scrolled left or right? */
-    if(0 != dx) {
-        if(dx > 0) {
-            /* scrolled towards left, clearing on the right */
-            EraseRect(rp,
-                      xMax - dx + 1,
-                      yMin,
-                      xMax,
-                      yMax);
-        } else {
-            /* scrolled towards right, clearing on the left */
-            EraseRect(rp,
-                      xMin,
-                      yMin,
-                      xMin - dx - 1,  /* a scroll by -1 should only erase a row of width 1 */
-                      yMax);
-        }
-    }
-
-    if(0 != dy) {
-        if(dy > 0) {
-            /* scrolled up, clearing on the bottom */
-            EraseRect(rp,
-                      xMin,
-                      yMax - dy + 1,
-                      xMax,
-                      yMax);
-        } else {
-            /* scrolled down, clearing on the top */
-            EraseRect(rp,
-                      xMin,
-                      yMin,
-                      xMax,
-                      yMin - dy - 1);
-        }
-    }
-
+    internal_ScrollRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* ScrollRasterBF */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include "extstrings.h"
@@ -29,15 +29,6 @@ UBYTE length, i=0;
             return 1;
         i++;
     } while (capitalch(*str1++,flags)==capitalch(*str2++,flags));
-    return 0;
-}
-
-LONG StrCmp(CONST_STRPTR str1, CONST_STRPTR str2) {
-    do
-    {
-        if ((*str1==0) && (*str2==0))
-            return 1;
-    } while ((*str1++==*str2++));
     return 0;
 }
 

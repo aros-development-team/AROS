@@ -23,19 +23,30 @@ struct inpcb;
 tcp_seq	tcp_new_isn(struct inpcb *inp);
 
 /*
- * ISN hash primitive (Murmur-style keyed hash).
+ * RFC 7323 section 5.4: a per-connection timestamp offset, from a key of
+ * its own (tcp_ts_key).
  */
-u_int32_t tcp_isn_hash(u_int32_t, u_int32_t, u_int32_t, u_int32_t,
-	    u_int32_t *);
+u_int32_t tcp_new_tsoff(struct inpcb *inp);
+extern u_int32_t tcp_ts_key[];
+
+/*
+ * The keyed hash of a connection (SipHash-2-4), and what it is for.
+ */
+#define TCPH_ISN	1
+#define TCPH_COOKIE	2
+#define TCPH_SYNCACHE	3
+#define TCPH_TSOFF	4
+u_int32_t tcp_conn_hash(const u_int32_t *, int, int, const void *,
+	    const void *, u_int16_t, u_int16_t, u_int32_t);
 
 /*
  * SYN cookie support (RFC 4987).
  */
 extern int tcp_syncookies;
 extern u_int32_t tcp_secret_key[];
-tcp_seq	 tcp_syncookie_generate(struct in_addr, struct in_addr,
+tcp_seq	 tcp_syncookie_generate(int, const void *, const void *,
 	    u_int16_t, u_int16_t, u_int16_t);
-u_int16_t tcp_syncookie_validate(struct in_addr, struct in_addr,
+u_int16_t tcp_syncookie_validate(int, const void *, const void *,
 	    u_int16_t, u_int16_t, tcp_seq);
 
 /*
@@ -59,7 +70,7 @@ void in6_pcbdisconnect(struct inpcb *);
 void in6_setsockaddr(struct inpcb *, struct mbuf *);
 void in6_setpeeraddr(struct inpcb *, struct mbuf *);
 struct inpcb *in6_pcblookup(struct inpcbhead *, struct in6_addr *, u_int,
-	    struct in6_addr *, u_int);
+	    struct in6_addr *, u_int, const struct ifnet *);
 
 /* IPv6 output path (netinet6/ip6_output.c, netinet6/in6.c). */
 extern int  ip6_defhlim;		/* default IPv6 hop limit */
@@ -72,6 +83,6 @@ extern int  ip6_output(void *, ...);	/* (m, opt, ro, flags, im6o, ifpp, inp) */
  */
 struct ip6_moptions;
 int  tcp_v6output(struct mbuf *, struct in6_addr *, struct in6_addr *,
-	    int hlim, int tlen, struct inpcb *);
+                  int, int, int, struct inpcb *);
 
 #endif

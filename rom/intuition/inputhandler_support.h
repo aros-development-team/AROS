@@ -2,7 +2,7 @@
 #define INPUTHANDLER_SUPPORT_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -19,9 +19,6 @@ void notify_newprefs(struct IntuitionBase * IntuitionBase);
 
 void send_intuimessage(struct IntuiMessage *imsg,
                        struct Window *w,
-                       struct IntuitionBase *IntuitionBase);
-
-void free_intuimessage(struct IntuiMessage *imsg,
                        struct IntuitionBase *IntuitionBase);
 
 struct IntuiMessage *alloc_intuimessage(struct Window *w,
@@ -93,6 +90,9 @@ BOOL InsideGadget(struct Screen *scr, struct Window *win, struct Requester *req,
 struct Gadget *DoActivateGadget(struct Window *win, struct Requester *req,
                             	struct Gadget *gad, struct IntuitionBase *IntuitionBase);
 
+void AbortActiveGadget(struct Gadget *gadget, struct IIHData *iihdata,
+                       struct IntuitionBase *IntuitionBase);
+
 struct Gadget *FindCycleGadget(struct Window *win, struct Requester *req,
                                struct Gadget *gad, WORD direction);
 
@@ -112,12 +112,11 @@ struct Screen *FindActiveScreen(struct IntuitionBase *IntuitionBase);
 struct Window *FindActiveWindow(struct InputEvent *ie, struct Screen *scr, ULONG *stitlebarhit,
                     	    	struct IntuitionBase *IntuitionBase);
 
-struct Window *FindDesktopWindow(struct Screen *screen,struct IntuitionBase *IntuitionBase);
-
 /*********************************************************************/
 
 struct InputEvent *AllocInputEvent(struct IIHData *iihdata);
 void FreeGeneratedInputEvents(struct IIHData *iihdata);
+UQUAD EventTicks(const struct InputEvent *ie);
 
 /*********************************************************************/
 

@@ -2,7 +2,7 @@
 #define _GADGETS_H_
 
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -55,8 +55,6 @@ void GetGadgetDomain(struct Gadget *gad, struct Screen *scr, struct Window *win,
 
 WORD GetGadgetLeft(struct Gadget *gad, struct Screen *scr, struct Window *win, struct Requester *req);
 WORD GetGadgetTop(struct Gadget *gad, struct Screen *scr, struct Window *win, struct Requester *req);
-WORD GetGadgetWidth(struct Gadget *gad, struct Screen *scr, struct Window *win, struct Requester *req);
-WORD GetGadgetHeight(struct Gadget *gad, struct Screen *scr, struct Window *win, struct Requester *req);
 
 /* gadget box in screen coords */
 void GetScrGadgetIBox(struct Gadget *gad, struct Screen *scr, struct Window *win,
@@ -90,6 +88,10 @@ void RenderDisabledPattern(struct RastPort *rp, struct DrawInfo *dri, WORD x1, W
 
 /* GetGadgetState returns IDS_? */
 ULONG GetGadgetState(struct Window *window, struct Gadget *gadget);
+
+/* Send GM_RENDER to a BOOPSI gadget. Returns FALSE if no RastPort was available */
+BOOL DoGadgetRender(struct Gadget *gad, struct GadgetInfo *gi, ULONG redraw,
+                    struct IntuitionBase *IntuitionBase);
 
 #endif /* _GADGETS_H_ */
 

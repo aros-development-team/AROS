@@ -207,6 +207,7 @@ struct gfxsoftrast_data {
     OOP_AttrBase                hiddGfxAttrBase;
     OOP_AttrBase                hiddDisplayAttrBase;
     OOP_AttrBase                hiddDMEnumAttrBase;
+    OOP_AttrBase                hiddCompositorAttrBase;
 };
 
 #define GFXPRIVATE_SOFTRASTDATA(x)  ((struct gfxsoftrast_data *)(x))
@@ -223,6 +224,7 @@ struct gfxsoftrast_data {
 #define __IHidd_Gfx         	CDD(GfxBase)->hiddGfxAttrBase
 #define __IHidd_Display     	CDD(GfxBase)->hiddDisplayAttrBase
 #define __IHidd_DMEnum      	CDD(GfxBase)->hiddDMEnumAttrBase
+#define __IHidd_Compositor  	CDD(GfxBase)->hiddCompositorAttrBase
 
 /* Hashtable sizes. Must be powers of two */
 #define GFXASSOCIATE_HASHSIZE   8
@@ -397,6 +399,9 @@ extern BOOL pattern_pen(struct RastPort *rp
                         , ULONG apen, ULONG bpen
                         , ULONG *pixval_ptr
                         , struct GfxBase *GfxBase);
+
+/* The "not implemented" report of the functions that are still stubs (graphics_misc.c) */
+void gfx_NotImplemented(CONST_STRPTR name, struct GfxBase *GfxBase);
 
 /* function for area opeartions */
 BOOL areafillpolygon(struct RastPort   *rp,

@@ -45,15 +45,6 @@ Object *GTArrow__OM_NEW(Class * cl, Object * o, struct opSet *msg)
 {
      struct DrawInfo    *dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, (IPTR) NULL, msg->ops_AttrList);
      Object             *frame = NULL, *arrowimage = NULL;
-     struct TagItem     fitags[] =
-     {
-         {IA_Width      , 0UL                   },
-         {IA_Height     , 0UL                   },
-         {IA_Resolution , 0UL                   },
-         {IA_FrameType  , FRAME_BUTTON          },
-         {TAG_DONE                              }
-     };
-
     struct TagItem      itags[] =
     {
          {SYSIA_Which     , 0                   },
@@ -76,13 +67,14 @@ Object *GTArrow__OM_NEW(Class * cl, Object * o, struct opSet *msg)
  
     EnterFunc(bug("Arrow::New()\n"));
     
-    fitags[0].ti_Data = itags[4].ti_Data = GetTagData(GA_Width, 0, msg->ops_AttrList);
-    fitags[1].ti_Data = itags[5].ti_Data = GetTagData(GA_Height, 0, msg->ops_AttrList);
-    fitags[2].ti_Data = (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y;
+    itags[4].ti_Data = GetTagData(GA_Width, 0, msg->ops_AttrList);
+    itags[5].ti_Data = GetTagData(GA_Height, 0, msg->ops_AttrList);
 
     D(bug("Arrow::New(): create dims=(%d, %d, %d, %d)\n",itags[2].ti_Data,itags[3].ti_Data,itags[4].ti_Data,itags[5].ti_Data));
     
-    frame = NewObjectA(NULL, FRAMEICLASS, fitags);
+    frame = gt_newframe(GadToolsBase, itags[4].ti_Data, itags[5].ti_Data,
+                        (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y,
+                        FRAME_BUTTON, TAG_DONE);
     if (!frame)
         return NULL;
 

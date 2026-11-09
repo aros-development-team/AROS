@@ -1,0 +1,77 @@
+# Types the AROS port of the Rust libc crate defines (src/unix/aros/mod.rs),
+# checked against the AROS C headers by abicheck.sh: size and alignment
+# must match, or Rust code passes C a buffer of the wrong size (a stale
+# pthread_attr_t once made every std::thread::spawn overwrite its caller's
+# frame).
+#
+# <rust type> | <C type> | <headers> [| opaque | rust]
+# The Rust type is looked up as libc::<rust type>. Add a line for every
+# type the libc patch adds or changes.
+#   opaque  Rust models the type as an opaque block (only handled through
+#           pointers, sized for the largest AROS build): Rust's size and
+#           alignment must be at least C's, not equal.
+#   rust    the layout is the Rust side's own (the crosstool's libc converts
+#           to and from the C one, e.g. getaddrinfo()): listed, not compared.
+
+stat                | struct stat           | sys/stat.h
+dirent              | struct dirent         | dirent.h
+sigset_t            | sigset_t              | signal.h
+sigaction           | struct sigaction      | signal.h
+stack_t             | stack_t               | signal.h
+siginfo_t           | siginfo_t             | signal.h
+fd_set              | fd_set                | sys/select.h
+passwd              | struct passwd         | pwd.h
+tm                  | struct tm             | time.h
+flock               | struct flock          | fcntl.h
+termios             | struct termios        | termios.h
+lconv               | struct lconv          | locale.h
+statvfs             | struct statvfs        | sys/statvfs.h
+timespec            | struct timespec       | time.h
+timeval             | struct timeval        | sys/time.h
+sched_param         | struct sched_param    | sched.h
+cpu_set_t           | cpu_set_t             | sched.h
+pthread_attr_t      | pthread_attr_t        | pthread.h
+pthread_mutexattr_t | pthread_mutexattr_t   | pthread.h
+pthread_condattr_t  | pthread_condattr_t    | pthread.h
+pthread_rwlockattr_t| pthread_rwlockattr_t  | pthread.h
+pthread_once_t      | pthread_once_t        | pthread.h
+pthread_mutex_t     | pthread_mutex_t       | pthread.h | opaque
+pthread_cond_t      | pthread_cond_t        | pthread.h | opaque
+pthread_rwlock_t    | pthread_rwlock_t      | pthread.h | opaque
+pthread_t           | pthread_t             | pthread.h
+pthread_key_t       | pthread_key_t         | pthread.h
+sem_t               | sem_t                 | semaphore.h | opaque
+sockaddr            | struct sockaddr       | sys/socket.h
+sockaddr_in         | struct sockaddr_in    | netinet/in.h
+sockaddr_in6        | struct sockaddr_in6   | netinet/in.h
+sockaddr_un         | struct sockaddr_un    | sys/un.h
+sockaddr_storage    | struct sockaddr_storage | sys/socket.h
+in_addr             | struct in_addr        | netinet/in.h
+ip_mreq             | struct ip_mreq        | netinet/in.h
+addrinfo            | struct addrinfo       | netdb.h | rust
+msghdr              | struct msghdr         | sys/socket.h
+cmsghdr             | struct cmsghdr        | sys/socket.h
+linger              | struct linger         | sys/socket.h
+# Dl_info: no <dlfcn.h> in the AROS SDK yet, nothing to compare against
+utsname             | struct utsname        | sys/utsname.h
+off_t               | off_t                 | sys/types.h
+time_t              | time_t                | time.h
+clock_t             | clock_t               | time.h
+clockid_t           | clockid_t             | time.h
+dev_t               | dev_t                 | sys/types.h
+ino_t               | ino_t                 | sys/types.h
+mode_t              | mode_t                | sys/types.h
+nlink_t             | nlink_t               | sys/types.h
+uid_t               | uid_t                 | sys/types.h
+gid_t               | gid_t                 | sys/types.h
+pid_t               | pid_t                 | sys/types.h
+blkcnt_t            | blkcnt_t              | sys/types.h
+blksize_t           | blksize_t             | sys/types.h
+suseconds_t         | suseconds_t           | sys/time.h
+socklen_t           | socklen_t             | sys/socket.h
+sa_family_t         | sa_family_t           | sys/socket.h
+# nfds_t, pollfd: poll() comes from the Rust side, no <poll.h> in the SDK
+speed_t             | speed_t               | termios.h
+tcflag_t            | tcflag_t              | termios.h
+rlim_t              | rlim_t                | sys/resource.h
+wchar_t             | wchar_t               | stddef.h

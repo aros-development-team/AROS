@@ -100,9 +100,11 @@ extern ULONG extcol_render(struct extcol_render_data *ecrd,
     if (vHidd_ColorModel_Palette == colmod)
     {
         ecrd.pixel = Colour;
+        ecrd.mask  = ~(HIDDT_Pixel)0;
     }
     else
     {
+        IPTR r = 0, g = 0, b = 0, a = 0;
         HIDDT_Color col;
 
         col.alpha = (Colour >> 16) & 0x0000FF00;
@@ -111,6 +113,17 @@ extern ULONG extcol_render(struct extcol_render_data *ecrd,
         col.blue  = (Colour << 8) & 0x0000FF00;
 
         ecrd.pixel = HIDD_BM_MapColor(HIDD_BM_OBJ(RastPort->BitMap), &col);
+
+        /*
+         * Only the bits of the colour components count: the pad byte of a
+         * 32 bit format without alpha (0RGB32, BGR032, ...) is undefined.
+         */
+        OOP_GetAttr(pf, aHidd_PixFmt_RedMask,   &r);
+        OOP_GetAttr(pf, aHidd_PixFmt_GreenMask, &g);
+        OOP_GetAttr(pf, aHidd_PixFmt_BlueMask,  &b);
+        OOP_GetAttr(pf, aHidd_PixFmt_AlphaMask, &a);
+        ecrd.mask = (HIDDT_Pixel)(r | g | b | a);
+        ecrd.pixel &= ecrd.mask;
     }
 
     ecrd.destbm       = SingleMap;

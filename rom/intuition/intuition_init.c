@@ -6,6 +6,7 @@
 /****************************************************************************************/
 
 #define DEBUG 0
+#include <stddef.h>
 #include <aros/debug.h>
 
 #include <proto/graphics.h>
@@ -103,6 +104,23 @@ static CONST UWORD IntuitionBusyPointer[] =
     0x0000, 0x0000              /* sprite terminator words */
 };
 
+/* The offsets of the semaphores embedded in the library base, see IntuitionInit() */
+_Static_assert(sizeof(struct IntIntuitionBase) <= 0xFFFF, "semaphore offsets must fit a UWORD");
+
+static const UWORD ibase_semaphores[] =
+{
+    offsetof(struct IntIntuitionBase, WinDecorSem),
+    offsetof(struct IntIntuitionBase, ScrDecorSem),
+    offsetof(struct IntIntuitionBase, MenuDecorSem),
+    offsetof(struct IntIntuitionBase, PubScrListLock),
+    offsetof(struct IntIntuitionBase, ScreenNotificationListLock),
+    offsetof(struct IntIntuitionBase, GadgetLock),
+    offsetof(struct IntIntuitionBase, MenuLock),
+    offsetof(struct IntIntuitionBase, WindowLock),
+    offsetof(struct IntIntuitionBase, IntuiActionLock),
+    offsetof(struct IntIntuitionBase, InputHandlerLock),
+};
+
 static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 {
     struct Library *OOPBase;
@@ -168,9 +186,12 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 
     InitSemaphore(GetPrivIBase(LIBBASE)->IBaseLock);
 
-    InitSemaphore(&GetPrivIBase(LIBBASE)->WinDecorSem);
-    InitSemaphore(&GetPrivIBase(LIBBASE)->ScrDecorSem);
-    InitSemaphore(&GetPrivIBase(LIBBASE)->MenuDecorSem);
+    {
+        WORD i;
+
+        for (i = 0; i < sizeof(ibase_semaphores) / sizeof(ibase_semaphores[0]); i++)
+            InitSemaphore((struct SignalSemaphore *)((UBYTE *)LIBBASE + ibase_semaphores[i]));
+    }
 
     /* Initialize global stringgadget edit hook */
     GetPrivIBase(LIBBASE)->DefaultEditHook.h_Entry  = (APTR)AROS_ASMSYMNAME(GlobalEditFunc);
@@ -181,19 +202,10 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 
     GetPrivIBase(LIBBASE)->DefaultPubScreen = NULL;
     NEWLIST(&GetPrivIBase(LIBBASE)->PubScreenList);
-    InitSemaphore(&GetPrivIBase(LIBBASE)->PubScrListLock);
 
-    InitSemaphore(&GetPrivIBase(LIBBASE)->ScreenNotificationListLock);
     NEWLIST(&GetPrivIBase(LIBBASE)->ScreenNotificationList);
 
     NEWLIST(&GetPrivIBase(LIBBASE)->Decorations);
-
-
-    InitSemaphore(&GetPrivIBase(LIBBASE)->GadgetLock);
-    InitSemaphore(&GetPrivIBase(LIBBASE)->MenuLock);
-    InitSemaphore(&GetPrivIBase(LIBBASE)->WindowLock);
-    InitSemaphore(&GetPrivIBase(LIBBASE)->IntuiActionLock);
-    InitSemaphore(&GetPrivIBase(LIBBASE)->InputHandlerLock);
 
 #ifdef SKINS
     InitSemaphore(&GetPrivIBase(LIBBASE)->DataTypesSem);

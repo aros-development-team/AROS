@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: PCI utility functions
 */
@@ -65,14 +65,43 @@ void getPCIClassDesc( UBYTE class, UBYTE sub, UBYTE prgif, STRPTR *cdesc, STRPTR
  * Size a base register
  * Return size of the base register area
  */
-ULONG sizePCIBaseReg(OOP_Object *driver, struct pci_staticdata *psd, struct DeviceData *device, UBYTE bus, UBYTE dev, UBYTE func, UBYTE basenum )
+IPTR sizePCIBaseReg(OOP_Object *driver, struct pci_staticdata *psd, struct DeviceData *device, UBYTE bus, UBYTE dev, UBYTE func, UBYTE basenum )
 {
     ULONG bak,sz;
+    ULONG bakhi,szhi = 0;
+    BOOL is64;
+    UWORD cmd;
 
-    bak = HIDD_PCIDriver_ReadConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + (basenum << 2));
-    HIDD_PCIDriver_WriteConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + (basenum << 2), ~0);
-    sz = HIDD_PCIDriver_ReadConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + (basenum << 2));
-    HIDD_PCIDriver_WriteConfigLong(driver, (OOP_Object *)device, bus, dev, func, PCICS_BAR0 + (basenum << 2), bak);
+    /*
+     * Sizing writes all-ones to the BAR, so turn decoding off meanwhile,
+     * as Linux does. Host bridges are left alone.
+     */
+    cmd = HIDD_PCIDriver_ReadConfigWord(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_COMMAND);
+    if (device->Class == 0x06 && device->SubClass == 0x00)
+        cmd = 0;
+    if (cmd & (PCICMF_IODECODE | PCICMF_MEMDECODE))
+        HIDD_PCIDriver_WriteConfigWord(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_COMMAND,
+            cmd & ~(PCICMF_IODECODE | PCICMF_MEMDECODE));
+
+    bak = HIDD_PCIDriver_ReadConfigLong(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_BAR0 + (basenum << 2));
+    HIDD_PCIDriver_WriteConfigLong(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_BAR0 + (basenum << 2), ~0);
+    sz = HIDD_PCIDriver_ReadConfigLong(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_BAR0 + (basenum << 2));
+    HIDD_PCIDriver_WriteConfigLong(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_BAR0 + (basenum << 2), bak);
+
+    /* A 64-bit memory BAR keeps the upper half of its size mask in the next slot */
+    is64 = ((bak & PCIBAR_MASK_TYPE) == PCIBAR_TYPE_MMAP) &&
+           ((bak & PCIBAR_MEMTYPE_MASK) == PCIBAR_MEMTYPE_64BIT) &&
+           (basenum + 1 < (device->isBridge ? 2 : 6));
+    if (is64)
+    {
+        bakhi = HIDD_PCIDriver_ReadConfigLong(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_BAR0 + ((basenum + 1) << 2));
+        HIDD_PCIDriver_WriteConfigLong(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_BAR0 + ((basenum + 1) << 2), ~0);
+        szhi = HIDD_PCIDriver_ReadConfigLong(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_BAR0 + ((basenum + 1) << 2));
+        HIDD_PCIDriver_WriteConfigLong(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_BAR0 + ((basenum + 1) << 2), bakhi);
+    }
+
+    if (cmd & (PCICMF_IODECODE | PCICMF_MEMDECODE))
+        HIDD_PCIDriver_WriteConfigWord(driver, PCIDEV_OBJECT(psd, device), bus, dev, func, PCICS_COMMAND, cmd);
 
     if ((sz & PCIBAR_MASK_TYPE) == PCIBAR_TYPE_IO)
     {
@@ -87,6 +116,46 @@ ULONG sizePCIBaseReg(OOP_Object *driver, struct pci_staticdata *psd, struct Devi
     {
         /* This is memory mapped */
         sz &= PCIBAR_MASK_MEM;
+        if (is64)
+        {
+            /*
+             * The size is the lowest set bit of the combined mask, which must
+             * be a contiguous run of ones from there to the top of the decoded
+             * width: bit 31 when the upper dword reads back zero, bit 63
+             * otherwise. Any other mask cannot be sized: return 0.
+             */
+#if (__WORDSIZE == 64)
+            IPTR mask = (((IPTR)szhi << 32) | sz);
+            IPTR ones = ~0;
+            IPTR size;
+
+            if (szhi == 0)
+                ones = (IPTR)0xFFFFFFFFu;   /* upper half reads zeroes: decoded width is 32 bits */
+
+            size = mask & (~mask + 1);
+
+            if (mask != (~ (size - 1) & ones))
+                return 0;
+            return size;
+#else
+            if (szhi != 0 && szhi != ~0)
+                return 0;
+            /*
+             * Rule at this width, same shape test for both upper-dword cases
+             * (reads back zeroes or all ones): the low dword mask must be a
+             * contiguous run of ones from its lowest set bit to bit 31, the
+             * size is that lowest set bit. sz == 0 with szhi == ~0 is a size
+             * of 4 GB or more, not representable here: return 0.
+             */
+            {
+                IPTR size = (IPTR)sz & ((~(IPTR)sz) + 1);
+
+                if (size == 0 || (IPTR)sz != ~ (size - 1))
+                    return 0;
+                return size;
+            }
+#endif
+        }
         sz = ~sz;
         sz++;
     }

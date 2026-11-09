@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -49,7 +49,8 @@
 
     struct DosInfo *di = BADDR(DOSBase->dl_Root->rn_Info);
     struct DosList *dl = (struct DosList *)&di->di_DevInfo;
-    ULONG DevSem = FALSE, EntrySem = FALSE, DelSem = FALSE;
+    ULONG got = 0;
+    int i;
 
     D(bug("AttemptLockDosList: flags = $%lx\n", flags));
 
@@ -58,34 +59,17 @@
         (flags & ~(LDF_READ|LDF_WRITE|LDF_DEVICES|LDF_VOLUMES|LDF_ASSIGNS|LDF_ENTRY|LDF_DELETE)))
         return NULL;
 
-    if (flags & LDF_ALL)
+    for (i = 0; i < 3; i++)
     {
-        if (flags & LDF_WRITE)
-            DevSem = AttemptSemaphore(&di->di_DevLock);
-        else
-            DevSem = AttemptSemaphoreShared(&di->di_DevLock);
-        if (!DevSem)
-            dl = NULL;
-    }
+        if (flags & Dos_ListLockFlags[i])
+        {
+            struct SignalSemaphore *sem = &(&di->di_DevLock)[i];
 
-    if (flags & LDF_ENTRY)
-    {
-        if (flags & LDF_WRITE)
-            EntrySem = AttemptSemaphore(&di->di_EntryLock);
-        else
-            EntrySem = AttemptSemaphoreShared(&di->di_EntryLock);
-        if (!EntrySem)
-            dl = NULL;
-    }
-
-    if (flags & LDF_DELETE)
-    {
-        if (flags & LDF_WRITE)
-            DelSem = AttemptSemaphore(&di->di_DeleteLock);
-        else
-            DelSem = AttemptSemaphoreShared(&di->di_DeleteLock);
-        if (!DelSem)
-            dl = NULL;
+            if (!((flags & LDF_WRITE) ? AttemptSemaphore(sem) : AttemptSemaphoreShared(sem)))
+                dl = NULL;
+            else
+                got |= 1 << i;
+        }
     }
 
 /* This came from MorphOS source code, however looks strange.
@@ -93,12 +77,11 @@
     if (dl)
         Forbid(); */
     if (!dl) {
-        if (DevSem)
-            ReleaseSemaphore(&di->di_DevLock);
-        if (EntrySem)
-            ReleaseSemaphore(&di->di_EntryLock);
-        if (DelSem)
-            ReleaseSemaphore(&di->di_DeleteLock);
+        for (i = 0; i < 3; i++)
+        {
+            if (got & (1 << i))
+                ReleaseSemaphore(&(&di->di_DevLock)[i]);
+        }
     }
 
     D(bug("AttemptLockDosList: result = $%lx\n", dl));

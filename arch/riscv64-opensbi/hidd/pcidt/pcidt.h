@@ -41,6 +41,9 @@ enum pcidt_access
 
 #define PCIDT_MAX_BRIDGES 8
 
+/* Regions out of a bridge's 64-bit window that are remembered */
+#define PCIDT_MAX_REGIONS 32
+
 /*
  * How a device's legacy interrupt pin becomes a controller source.
  *
@@ -77,6 +80,7 @@ struct pcidt_intmap
 
 struct pcidt_bridge
 {
+    fdt_node_t          node;           /* FDT_NONE when found through ACPI */
     IPTR                cfgBase;        /* ECAM window, or DWC viewport */
     IPTR                cfgSize;
     IPTR                dbiBase;        /* DesignWare register block   */
@@ -118,6 +122,21 @@ struct pcidt_bridge
     IPTR                ioSize;
 
     /*
+     * The regions assigned out of the 64-bit window, as found when the
+     * bridge came up and as moved since. A region is resized and placed
+     * by checking against these, which are sized already - sizing a base
+     * register again would disturb a device that is in use.
+     */
+    struct pcidt_region
+    {
+        UQUAD           addr;           /* on the bus */
+        UQUAD           size;
+        UBYTE           bus, dev, sub;
+        UBYTE           reg;            /* config offset of the register */
+    }                   mem64Regions[PCIDT_MAX_REGIONS];
+    ULONG               mem64RegionCount;
+
+    /*
      * The controller's own message interrupt. Everything signalled by
      * a message arrives on this one source and is told apart by the
      * status register, so a device asking for a vector is given a bit
@@ -137,6 +156,26 @@ struct pcidt_bridge
     ULONG               msiVectors;
 };
 
+/*
+ * Where the firmware describes something on a bridge: a node of the
+ * device tree, or one of the ACPI namespace. The objects made for the
+ * bridge and for its devices name these as their firmware nodes (see
+ * PCIDT_DeclareFirmwareNodes()).
+ */
+struct pcidt_fwnode
+{
+    struct MinNode      node;
+    APTR                acpi;           /* ACPI_HANDLE, NULL for a tree node */
+    fdt_node_t          dt;
+    UBYTE               bridge;         /* index into psd->bridges */
+    UBYTE               bus, dev, sub;
+};
+
+/* In dev: the node describes the bridge itself */
+#define PCIDT_FWNODE_HOST   0xff
+/* In sub: the node stands for every function of the device */
+#define PCIDT_FWNODE_ANYSUB 0xff
+
 struct pcidt_staticdata
 {
     struct Library      *OOPBase;
@@ -149,6 +188,9 @@ struct pcidt_staticdata
     OOP_AttrBase         hidd_PCIDeviceAB;
 
     OOP_MethodID         hidd_PCIDeviceMB;
+    OOP_MethodID         hiddMB;
+
+    struct MinList       fwNodes;       /* struct pcidt_fwnode */
 
     OOP_Class           *pcidtDriverClass;
     OOP_Class           *pcidtDeviceClass;
@@ -187,7 +229,9 @@ struct PCIDTDeviceData
 #undef HiddAttrBase
 #undef HiddPCIDeviceAttrBase
 #undef HiddPCIDeviceBase
+#undef HiddBase
 
+#define HiddBase                (PSD(cl)->hiddMB)
 #define HiddPCIDriverAttrBase   (PSD(cl)->hiddPCIDriverAB)
 #define HiddAttrBase            (PSD(cl)->hiddAB)
 #define HiddPCIDeviceAttrBase   (PSD(cl)->hidd_PCIDeviceAB)
@@ -229,6 +273,20 @@ BOOL  PCIDT_MapAt(struct pcidt_staticdata *psd, IPTR va, IPTR pa, IPTR size);
  */
 ULONG PCIDT_DiscoverACPI(struct pcidt_staticdata *psd);
 
+/*
+ * The firmware's description of the bridges and of what sits on them.
+ * PCIDT_ScanACPINodes() collects the ACPI side of it for every bridge
+ * the MCFG table knows, however the bridge was found; PCIDT_ACPIPath()
+ * gives the full name of a node it recorded.
+ */
+void  PCIDT_RecordFirmwareNode(struct pcidt_staticdata *psd, APTR acpi,
+                               fdt_node_t dt, ULONG bridge, UBYTE bus,
+                               UBYTE dev, UBYTE sub);
+void  PCIDT_ScanACPINodes(struct pcidt_staticdata *psd);
+BOOL  PCIDT_ACPIPath(APTR handle, STRPTR buf, ULONG size);
+void  PCIDT_DeclareFirmwareNodes(OOP_Class *cl, OOP_Object *o, ULONG bridge,
+                                 UBYTE bus, UBYTE dev, UBYTE sub);
+
 /* Config access, shared by the driver class methods */
 ULONG PCIDT_ReadConfig(struct pcidt_bridge *b, UBYTE bus, UBYTE dev,
                        UBYTE sub, UWORD reg);
@@ -237,6 +295,16 @@ void  PCIDT_WriteConfig(struct pcidt_bridge *b, UBYTE bus, UBYTE dev,
 void  PCIDT_DropBootCfgWindows(struct pcidt_bridge *b);
 void  PCIDT_SetupOutboundWindows(struct pcidt_bridge *b);
 void  PCIDT_EnableDMA(struct pcidt_bridge *b, IPTR base, IPTR size);
+/*
+ * Make sure the controller forwards a span of the 64-bit window, adding
+ * outbound windows where none covers it. Returns the regions it enabled,
+ * as a mask for PCIDT_DropOutbound(), or ~0 if the span cannot be
+ * forwarded (nothing is left enabled then). Bridges that need no address
+ * translation forward everything and return 0.
+ */
+ULONG PCIDT_ForwardOutbound(struct pcidt_bridge *b, IPTR cpu, IPTR pci,
+                            IPTR size);
+void  PCIDT_DropOutbound(struct pcidt_bridge *b, ULONG regions);
 void  PCIDT_DumpLinkState(struct pcidt_bridge *b);
 void  PCIDT_DisableMSI(struct pcidt_bridge *b, UBYTE bus, UBYTE dev,
                        UBYTE sub);

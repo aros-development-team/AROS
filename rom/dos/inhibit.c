@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 #include <proto/exec.h>
 
@@ -52,7 +52,7 @@
     if (!getdevpacketinfo(DOSBase, name, NULL, &phs))
         return DOSFALSE;
  
-    status = dopacket1(DOSBase, NULL, phs.port, ACTION_INHIBIT, onoff);
+    status = dopacket1n(DOSBase, phs.port, ACTION_INHIBIT, onoff);
 
     freepacketinfo(DOSBase, &phs);
     

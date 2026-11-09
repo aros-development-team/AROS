@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Internal GadTools string class.
 */
@@ -116,20 +116,8 @@ IPTR GTString__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     if ((msg->MethodID == OM_NEW) && (retval != NULL))
     {
         struct StringData *data = INST_DATA(cl, retval);
-        struct TagItem fitags[] =
-        {
-            {IA_Width           , 0UL           },
-            {IA_Height          , 0UL           },
-            {IA_Resolution      , 0UL           },
-            {IA_FrameType       , FRAME_RIDGE   },
-            {IA_EdgesOnly       , TRUE          },
-            {TAG_DONE           , 0UL           }
-        };
-        
-        fitags[0].ti_Data = retval->Width;
-        fitags[1].ti_Data = retval->Height;
-        fitags[2].ti_Data = (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y;
-        
+        IPTR resolution = (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y;
+
         data->labelplace = labelplace;
         data->frame = NULL;
         data->font  = NULL;
@@ -137,7 +125,8 @@ IPTR GTString__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         
         D(bug("Creating frame image"));
         
-        data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
+        data->frame = gt_newframe(GadToolsBase, retval->Width, retval->Height,
+                                  resolution, FRAME_RIDGE, IA_EdgesOnly);
 
         D(bug("Created frame image: %p", data->frame));
         if (!data->frame)

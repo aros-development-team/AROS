@@ -18,7 +18,12 @@
 
 /****************************************************************************************/
 
-static const ULONG size_checks[] = {
+/* Kept in bytes: each of the structures is smaller than 256 bytes */
+_Static_assert(sizeof(struct DisplayInfo) < 256 && sizeof(struct DimensionInfo) < 256 &&
+               sizeof(struct MonitorInfo) < 256 && sizeof(struct NameInfo) < 256,
+               "size_checks[] entries are UBYTE");
+
+static const UBYTE size_checks[] = {
     sizeof(struct DisplayInfo),
     sizeof(struct DimensionInfo),
     sizeof(struct MonitorInfo),

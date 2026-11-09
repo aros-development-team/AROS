@@ -145,6 +145,39 @@ static int seek_forward(BPTR fd, ULONG count, SIPTR *funcarray, struct SRBuffer 
     return err;
 }
 
+/* What every read of the loader needs besides the destination */
+struct HunkReader
+{
+    BPTR               fh;
+    SIPTR             *funcarray;
+    struct SRBuffer   *srb;
+    struct DosLibrary *DOSBase;
+};
+
+/* Read size bytes of the file. Returns 0 on success, 1 on failure. */
+static int hunk_read(struct HunkReader *hr, APTR buffer, ULONG size)
+{
+    return read_block_buffered(hr->fh, buffer, size, hr->funcarray, hr->srb, hr->DOSBase);
+}
+
+/* Read one longword, as stored in the file (big endian) */
+static int hunk_long(struct HunkReader *hr, ULONG *value)
+{
+    return hunk_read(hr, value, sizeof(ULONG));
+}
+
+/* Read one word, as stored in the file (big endian) */
+static int hunk_word(struct HunkReader *hr, UWORD *value)
+{
+    return hunk_read(hr, value, sizeof(UWORD));
+}
+
+/* Skip count longwords of the file */
+static int hunk_skip(struct HunkReader *hr, ULONG count)
+{
+    return seek_forward(hr->fh, count, hr->funcarray, hr->srb, hr->DOSBase);
+}
+
 BPTR InternalLoadSeg_AOS(BPTR fh,
                          BPTR table,
                          SIPTR * funcarray,
@@ -166,6 +199,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
   ULONG tmp, req;
   SIPTR dummy;
   struct SRBuffer srbbuf, *srb;
+  struct HunkReader hr;
 #ifndef __mc68000
   struct HunkRelocList relocacc = { NULL, 0, 0, NULL, 0, 0, FALSE };
 #endif
@@ -183,22 +217,26 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
   }
   srb = &srbbuf;
   srb->buffer = NULL;
+  hr.fh = fh;
+  hr.funcarray = funcarray;
+  hr.srb = srb;
+  hr.DOSBase = DOSBase;
 
   curhunk = lasthunk = 0; /* keep GCC quiet */
   /* start point is HUNK_HEADER + 4 */
   while (1)
   {
-    if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
+    if (hunk_long(&hr, &lcount))
       goto end;
     if (lcount == 0L)
       break;
     lcount = AROS_BE2LONG(lcount);
     lcount *= 4;
-    if (read_block_buffered(fh, name_buf, lcount, funcarray, srb, DOSBase))
+    if (hunk_read(&hr, name_buf, lcount))
       goto end;
     D(bug("\tlibname: \"%.*s\"\n", lcount, name_buf));
   }
-  if (read_block_buffered(fh, &numhunks, sizeof(numhunks), funcarray, srb, DOSBase))
+  if (hunk_long(&hr, &numhunks))
     goto end;
 
   numhunks = AROS_BE2LONG(numhunks);
@@ -211,14 +249,14 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       ERROR(ERROR_NO_FREE_STORE);
   }
 
-  if (read_block_buffered(fh, &first, sizeof(first), funcarray, srb, DOSBase))
+  if (hunk_long(&hr, &first))
     goto end;
 
   first = AROS_BE2LONG(first);
 
   D(bug("\tFirst hunk: %ld\n", first));
   curhunk = first;
-  if (read_block_buffered(fh, &last, sizeof(last), funcarray, srb, DOSBase))
+  if (hunk_long(&hr, &last))
     goto end;
 
   last = AROS_BE2LONG(last);
@@ -234,7 +272,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       continue;
     }
 
-    if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
+    if (hunk_long(&hr, &lcount))
       goto end;
 
     lcount = AROS_BE2LONG(lcount);
@@ -243,7 +281,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
     D(bug("\tHunk %d size: 0x%06lx bytes in ", i, lcount*4));
     req = MEMF_CLEAR | MEMF_PUBLIC;
     if (tmp == (HUNKF_FAST | HUNKF_CHIP)) {
-      if (read_block_buffered(fh, &req, sizeof(req), funcarray, srb, DOSBase))
+      if (hunk_long(&hr, &req))
         goto end;
       req = AROS_BE2LONG(req);
       D(bug("FLAGS=%08x", req));
@@ -284,7 +322,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
     prevhunk = hunktab[i];
   }
 
-  while(!read_block_buffered(fh, &hunktype, sizeof(hunktype), funcarray, srb, DOSBase))
+  while(!hunk_long(&hr, &hunktype))
   {
     hunktype = AROS_BE2LONG(hunktype);
     D(bug("Hunk Type: %d\n", hunktype & 0xFFFFFF));
@@ -307,24 +345,24 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
              --------------------   */
 
         D(bug("HUNK_SYMBOL (skipping)\n"));
-          while(!read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase) && lcount)
+          while(!hunk_long(&hr, &lcount) && lcount)
           {
             lcount = AROS_BE2LONG(lcount) ;
 
-            if (seek_forward(fh, lcount+1, funcarray, srb, DOSBase))
+            if (hunk_skip(&hr, lcount+1))
               goto end;
           }
       break;
 
       case HUNK_UNIT:
 
-        if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
+        if (hunk_long(&hr, &lcount))
           goto end;
 
         lcount = AROS_BE2LONG(lcount) ;
 
         lcount *= 4;
-        if (read_block_buffered(fh, name_buf, lcount, funcarray, srb, DOSBase))
+        if (hunk_read(&hr, name_buf, lcount))
           goto end;
         D(bug("HUNK_UNIT: \"%.*s\"\n", lcount, name_buf));
         break;
@@ -333,7 +371,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       case HUNK_DATA:
       case HUNK_BSS:
 
-        if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
+        if (hunk_long(&hr, &lcount))
           goto end;
 
         lcount = AROS_BE2LONG(lcount);
@@ -343,7 +381,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
         if ((hunktype & 0xFFFFFF) != HUNK_BSS && lcount)
         {
-          if (read_block_buffered(fh, GETHUNKPTR(curhunk), lcount*4, funcarray, srb, DOSBase))
+          if (hunk_read(&hr, GETHUNKPTR(curhunk), lcount*4))
             goto end;
 
         }
@@ -359,7 +397,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           ULONG *addr, val;
           ULONG offset;
 
-          if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
+          if (hunk_long(&hr, &lcount))
             goto end;
           if (lcount == 0L)
             break;
@@ -367,7 +405,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           lcount = AROS_BE2LONG(lcount);
 
           i = lcount;
-          if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
+          if (hunk_long(&hr, &lcount))
             goto end;
 
           lcount = AROS_BE2LONG(lcount);
@@ -376,7 +414,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           NOTE_GROUP(lasthunk, lcount, HUNKRELOC_ABS, i);
           while (i > 0)
           {
-            if (read_block_buffered(fh, &offset, sizeof(offset), funcarray, srb, DOSBase))
+            if (hunk_read(&hr, &offset, sizeof(offset)))
               goto end;
 
             offset = AROS_BE2LONG(offset);
@@ -397,71 +435,24 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       break;
 
       case HUNK_RELRELOC32:
-        {
-          ULONG Wordcount = 0;
-          D(bug("HUNK_RELRELOC32:\n"));
-          while (1)
-          {
-            ULONG *addr, val;
-            UWORD offset;
-
-            Wordcount++;
-            if (read_block_buffered(fh, &wcount, sizeof(wcount), funcarray, srb, DOSBase))
-              goto end;
-            if (wcount == 0L)
-              break;
-
-            wcount = AROS_BE2WORD(wcount);
-
-            i = wcount;
-            Wordcount++;
-            if (read_block_buffered(fh, &wcount, sizeof(wcount), funcarray, srb, DOSBase))
-              goto end;
-
-            wcount = AROS_BE2WORD(wcount);
-
-            D(bug("\tHunk #%ld:\n", wcount));
-            NOTE_GROUP(lasthunk, wcount, HUNKRELOC_BASE, i);
-            while (i > 0)
-            {
-              Wordcount++;
-              if (read_block_buffered(fh, &offset, sizeof(offset), funcarray, srb, DOSBase))
-                goto end;
-
-              offset = AROS_BE2WORD(offset);
-
-              //D(bug("\t\t0x%06lx\n", offset));
-              addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
-              NOTE_OFFSET(offset);
-
-              val = AROS_BE2LONG(*addr) + (IPTR)(GETHUNKPTR(wcount) - GETHUNKPTR(lasthunk));
-
-              *addr = (ULONG)AROS_LONG2BE(val);
-
-              --i;
-            }
-          }
-          /* if the amount of words read was odd, then skip the following
-           16-bit word   */
-          if (0x1 == (Wordcount & 0x1)) {
-            read_block_buffered(fh, &wcount, sizeof(wcount), funcarray, srb, DOSBase);
-          }
-        }
-      break;
-
       case HUNK_ABSRELOC16:
       case HUNK_DREL32: /* For compatibility with V37 */
       case HUNK_RELOC32SHORT:
         {
+          /* These hunks share one layout: groups of 16-bit count, 16-bit
+             target hunk and 16-bit offsets. They differ in what is added
+             to the longword at each offset. */
+          ULONG reltype = hunktype & 0xFFFFFF;
           ULONG Wordcount = 0;
 
+          D(if (reltype == HUNK_RELRELOC32) bug("HUNK_RELRELOC32:\n"));
           while (1)
           {
             ULONG *addr, val;
             ULONG offset;
 
             Wordcount++;
-            if (read_block_buffered(fh, &wcount, sizeof(wcount), funcarray, srb, DOSBase))
+            if (hunk_word(&hr, &wcount))
               goto end;
             if (wcount == 0L)
               break;
@@ -470,38 +461,44 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
             i = wcount;
             Wordcount++;
-            if (read_block_buffered(fh, &wcount, sizeof(wcount), funcarray, srb, DOSBase))
+            if (hunk_word(&hr, &wcount))
               goto end;
 
             wcount = AROS_BE2WORD(wcount);
 
             lcount = wcount;
-            D(bug("\tHunk #%ld @%p: %ld relocations\n", lcount, GETHUNKPTR(lasthunk), i));
+            D(if (reltype == HUNK_RELRELOC32)
+                bug("\tHunk #%ld:\n", lcount);
+              else
+                bug("\tHunk #%ld @%p: %ld relocations\n", lcount, GETHUNKPTR(lasthunk), i));
             NOTE_GROUP(lasthunk, lcount,
-                       ((hunktype & 0xFFFFFF) == HUNK_ABSRELOC16) ? HUNKRELOC_REL : HUNKRELOC_ABS, i);
+                       (reltype == HUNK_RELRELOC32) ? HUNKRELOC_BASE :
+                       (reltype == HUNK_ABSRELOC16) ? HUNKRELOC_REL : HUNKRELOC_ABS, i);
             while (i > 0)
             {
               /* read a 16bit number (2 bytes) */
               Wordcount++;
-              if (read_block_buffered(fh, &wcount, sizeof(wcount), funcarray, srb, DOSBase))
+              if (hunk_word(&hr, &wcount))
                 goto end;
 
-              /* offset now contains the byte offset in it`s 16 highest bits.
-                 These 16 highest bits have to become the 16 lowest bits so
-                 we get the word we need.  */
               offset = AROS_BE2WORD(wcount);
 
-              D(bug("\t\t0x%06lx += 0x%lx\n", offset, GETHUNKPTR(lcount)));
+              D(if (reltype != HUNK_RELRELOC32)
+                  bug("\t\t0x%06lx += 0x%lx\n", offset, GETHUNKPTR(lcount)));
               addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
               NOTE_OFFSET(offset);
 
-              if ((hunktype & 0xFFFFFF) == HUNK_ABSRELOC16)
+              /* The address of the target hunk ... */
+              val = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(lcount);
+              if (reltype == HUNK_RELRELOC32)
               {
-                val = (AROS_BE2LONG(*addr) - ((IPTR)GETHUNKPTR(lasthunk) + offset)) + (IPTR)GETHUNKPTR(lcount);
+                /* ... relative to this hunk */
+                val -= (IPTR)GETHUNKPTR(lasthunk);
               }
-              else
+              else if (reltype == HUNK_ABSRELOC16)
               {
-                val = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(lcount);
+                /* ... relative to the relocated longword */
+                val -= (IPTR)GETHUNKPTR(lasthunk) + offset;
               }
               *addr = (ULONG)AROS_LONG2BE(val);
 
@@ -512,7 +509,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           /* if the amount of words read was odd, then skip the following
            16-bit word   */
           if (0x1 == (Wordcount & 0x1)) {
-            read_block_buffered(fh, &wcount, sizeof(wcount), funcarray, srb, DOSBase);
+            hunk_word(&hr, &wcount);
           }
         }
       break;
@@ -546,13 +543,13 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         ERROR(ERROR_BAD_HUNK);
 
       case HUNK_DEBUG:
-        if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
+        if (hunk_long(&hr, &lcount))
           goto end;
 
         lcount = AROS_BE2LONG(lcount);
 
         D(bug("HUNK_DEBUG (%x Bytes)\n",lcount));
-        if (seek_forward(fh, lcount, funcarray, srb, DOSBase))
+        if (hunk_skip(&hr, lcount))
           goto end;
         break;
 
@@ -561,7 +558,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         D(bug("HUNK_OVERLAY:\n"));
         if (table) /* overlay inside overlay? */
           ERROR(ERROR_BAD_HUNK);
-        if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
+        if (hunk_long(&hr, &lcount))
           goto end;
         lcount = AROS_BE2LONG(lcount);
         D(bug("Overlay table size: %d\n", lcount));
@@ -571,7 +568,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         overlaytable = ilsAllocVec(lcount, MEMF_CLEAR | MEMF_31BIT);
         if (overlaytable == NULL)
           ERROR(ERROR_NO_FREE_STORE);
-        if (read_block_buffered(fh, overlaytable, lcount - sizeof(ULONG), funcarray, srb, DOSBase))
+        if (hunk_read(&hr, overlaytable, lcount - sizeof(ULONG)))
             goto end;
         goto done;
       }
@@ -585,10 +582,10 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       default:
         if (hunktype & HUNKF_ADVISORY) {
           D(bug("Unknown hunk 0x%06x with advisory flag skipped\n", hunktype & 0xFFFFFF));
-          if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
+          if (hunk_long(&hr, &lcount))
             goto end;
           lcount = AROS_BE2LONG(lcount);
-          if (seek_forward(fh, lcount * 4, funcarray, srb, DOSBase))
+          if (hunk_skip(&hr, lcount * 4))
             goto end;
         } else {
           bug("Hunk type 0x%06x not implemented\n", hunktype & 0xFFFFFF);

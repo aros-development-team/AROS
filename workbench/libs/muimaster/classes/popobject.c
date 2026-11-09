@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <graphics/gfx.h>
@@ -15,6 +15,187 @@
 #include "muimaster_intern.h"
 #include "support.h"
 #include "debug.h"
+
+/****** Popobject.mui/MUIC_Popobject ************
+*
+*   NAME
+*       MUIC_Popobject
+*
+*   SUPERCLASS
+*       Popstring.mui
+*
+*   DESCRIPTION
+*       Place a caller-supplied object in a reusable popup window. Follow, Light
+*       and Volatile default TRUE; conversion/window hooks default NULL.
+*       Construction installs internal Popstring OpenHook/CloseHook and forces
+*       Toggle TRUE after processing caller tags.
+*       The popup object is owned by this arrangement. Before any window exists,
+*       Dispose disposes the object directly. Once created, the window owns its
+*       contents and is added to the application; this class does not remove or
+*       dispose that window in its own Dispose. Keep its ownership and callback
+*       lifetimes coordinated with application teardown.
+*
+*   METHODS
+*       An open creates the window if needed, calls StrObjHook if supplied,
+*       calls WindowHook, then requests a window below the Popobject at its
+*       current width. A false StrObjHook result aborts this attempt but retains
+*       an already-created window. WindowHook runs on every accepted open
+*       attempt, not just initial creation. Its changes to left/top/width are
+*       followed by the class's own settings. Actual Window_Open success is not
+*       checked: popped becomes TRUE and the internal open hook returns one.
+*       The queued close hook closes the retained window, clears popped and
+*       calls ObjStrHook only for a nonzero result. Hide closes a popped window
+*       only when Volatile; it preserves popped. Show reopens a remembered
+*       closed window with Activate FALSE, without conversion/window hooks. Draw
+*       implements Follow with ChangeWindowBox, preserving current height.
+*
+*   NOTES
+*       The popup needs a live application and parent window while opening or
+*       following. Close inherits Popstring's deferred execution and lifetime
+*       requirements. A window can remain application-owned after Popobject
+*       disposal with notifications still targeting it; disposal alone is not
+*       callback detachment. Do not replace internal Popstring hooks when
+*       relying on this class's lifecycle.
+*       Light is initialize/get only here despite its header set annotation.
+*       Object is initialize/get; the other local attributes support
+*       initialize/set/get. No hooks or hook data are copied or freed.
+*
+*/
+/****** Popobject.mui/MUIA_Popobject_Object ************
+*
+*   NAME
+*       MUIA_Popobject_Object
+*
+*   FUNCTION
+*       Supply or retrieve the popup contents object.
+*
+*   INPUTS
+*       Initialize and get, Object pointer. No replacement setter; no default
+*       popup object is created.
+*
+*   NOTES
+*       Supply a valid object suitable as WindowContents. It is disposed
+*       directly if no popup window exists at Popobject disposal; otherwise the
+*       application-owned popup window owns it. Get returns a borrowed pointer,
+*       not independent ownership. Keep the object stable for conversion hooks
+*       and window lifetime.
+*
+*/
+/****** Popobject.mui/MUIA_Popobject_Light ************
+*
+*   NAME
+*       MUIA_Popobject_Light
+*
+*   FUNCTION
+*       Choose borderless popup construction.
+*
+*   INPUTS
+*       Initialize and get, BOOL; default TRUE. No local setter despite the
+*       header annotation.
+*
+*   NOTES
+*       TRUE creates a borderless window with close, size, depth and drag
+*       gadgets disabled. FALSE omits these override tags and uses Window
+*       defaults. It affects initial window construction, not an existing
+*       window. WindowHook may configure window attributes afterward.
+*
+*/
+/****** Popobject.mui/MUIA_Popobject_Follow ************
+*
+*   NAME
+*       MUIA_Popobject_Follow
+*
+*   FUNCTION
+*       Follow the parent position and Popobject width during Draw.
+*
+*   INPUTS
+*       Initialize, set and get, BOOL; default TRUE.
+*
+*   NOTES
+*       After superclass Draw, a live popup and parent window are repositioned
+*       with ChangeWindowBox to Popobject left/bottom plus parent window
+*       position, at Popobject width and current popup height. The setter only
+*       stores the flag. Initial Open positions the window regardless of Follow.
+*       This is draw-driven behavior, not a separately registered movement
+*       listener.
+*
+*/
+/****** Popobject.mui/MUIA_Popobject_Volatile ************
+*
+*   NAME
+*       MUIA_Popobject_Volatile
+*
+*   FUNCTION
+*       Hide a popped window when this object is hidden.
+*
+*   INPUTS
+*       Initialize, set and get, BOOL; default TRUE.
+*
+*   NOTES
+*       Hide closes the window when popped and Volatile but retains popped
+*       state. Show reopens a remembered closed popup with Activate FALSE and no
+*       conversion/window hooks, even before returning a failed superclass Show
+*       result. A real Close clears popped and prevents this reopening. Set only
+*       changes the stored flag; it does not immediately open or close a window.
+*
+*/
+/****** Popobject.mui/MUIA_Popobject_StrObjHook ************
+*
+*   NAME
+*       MUIA_Popobject_StrObjHook
+*
+*   FUNCTION
+*       Initialize popup contents from the string before opening.
+*
+*   INPUTS
+*       Initialize, set and get, borrowed pointer to struct Hook; default NULL.
+*
+*   NOTES
+*       Called as CallHookPkt(hook, popupObject, stringObject). Return nonzero
+*       to continue, zero to reject opening. It runs after lazy window creation,
+*       before WindowHook and geometry/open settings. Rejection retains the
+*       window and its application membership. Keep hook, data and passed
+*       objects live through use; Get returns the borrowed hook pointer.
+*
+*/
+/****** Popobject.mui/MUIA_Popobject_ObjStrHook ************
+*
+*   NAME
+*       MUIA_Popobject_ObjStrHook
+*
+*   FUNCTION
+*       Copy accepted popup contents to the string.
+*
+*   INPUTS
+*       Initialize, set and get, borrowed pointer to struct Hook; default NULL.
+*
+*   NOTES
+*       Called as CallHookPkt(hook, popupObject, stringObject) from the deferred
+*       close hook after closing the window, only with nonzero Close result.
+*       Return value is ignored. No automatic string update or Acknowledge
+*       occurs; the hook implements any transfer. Keep hook, data and passed
+*       objects live through use; Get returns the borrowed hook pointer.
+*
+*/
+/****** Popobject.mui/MUIA_Popobject_WindowHook ************
+*
+*   NAME
+*       MUIA_Popobject_WindowHook
+*
+*   FUNCTION
+*       Configure the popup window before an open attempt.
+*
+*   INPUTS
+*       Initialize, set and get, borrowed pointer to struct Hook; default NULL.
+*
+*   NOTES
+*       Called as CallHookPkt(hook, popupObject, windowObject) after a
+*       successful StrObjHook, on every normal open attempt. Return value is
+*       ignored. The class then sets left, top, width and Open. Show-based
+*       reappearance does not invoke this hook. Keep hook, data and passed
+*       objects live through use; Get returns the borrowed hook pointer.
+*
+*/
 
 extern struct Library *MUIMasterBase;
 
@@ -33,128 +214,21 @@ struct Popobject_DATA
     Object *wnd;
 };
 
-/****** Popobject.mui/MUIA_Popobject_Follow **********************************
-*
-*   NAME
-*       MUIA_Popobject_Follow -- (V7) [ISG], BOOL
-*
-*   FUNCTION
-*       Specifies whether the pop-up window should update its position and
-*       width to match the position and width of its string gadget when the
-*       parent window is moved or resized, i.e. if it should look like it is
-*       attached to the string gadget, or should be more like a floating
-*       object. Defaults to TRUE.
-*
-******************************************************************************
-*
-*/
-
-/****** Popobject.mui/MUIA_Popobject_Light ***********************************
-*
-*   NAME
-*       MUIA_Popobject_Light -- (V7) [ISG], BOOL
-*
-*   FUNCTION
-*       Specifies whether the pop-up window should be drawn without a border.
-*       Defaults to TRUE.
-*
-******************************************************************************
-*
-*/
-
-/****** Popobject.mui/MUIA_Popobject_Object **********************************
-*
-*   NAME
-*       MUIA_Popobject_Object -- (V7) [I.G], Object *
-*
-*   FUNCTION
-*       The object to pop up.
-*
-******************************************************************************
-*
-*/
-
-/****** Popobject.mui/MUIA_Popobject_ObjStrHook ******************************
-*
-*   NAME
-*       MUIA_Popobject_ObjStrHook -- (V7) [ISG], struct Hook *
-*
-*   FUNCTION
-*       This hook is called to update the string gadget when the pop-up is
-*       closed with a TRUE success value. For example, it can set the string
-*       to the name of the item selected from a Listview pop-up.
-*
-*       The hook receives pointers to the pop-up object and the string gadget
-*       as its second and third arguments respectively.
-*
-*   SEE ALSO
-*       MUIA_Popobject_StrObjHook
-*
-******************************************************************************
-*
-*/
-
-/****** Popobject.mui/MUIA_Popobject_StrObjHook ******************************
-*
-*   NAME
-*       MUIA_Popobject_StrObjHook -- (V7) [ISG], struct Hook *
-*
-*   FUNCTION
-*       This hook is called whenever the pop-up object is opened to initialise
-*       or update the pop-up object according to the contents of the string
-*       gadget. For example, it can pre-select an item in a Listview pop-up
-*       that matches the current string.
-*
-*       The hook receives pointers to the pop-up object and the string gadget
-*       as its second and third arguments respectively.
-*
-*   SEE ALSO
-*       MUIA_Popobject_ObjStrHook
-*
-******************************************************************************
-*
-*/
-
-/****** Popobject.mui/MUIA_Popobject_Volatile ********************************
-*
-*   NAME
-*       MUIA_Popobject_Volatile -- (V7) [ISG], BOOL
-*
-*   FUNCTION
-*       Specifies whether the pop-up window should be hidden when the portion
-*       of the Popobject residing in the parent window is hidden. This would
-*       normally be desirable if the Popobject is in a page group for
-*       example. If the pop-up window is on display when the Popobject is
-*       hidden, it will reappear as soon as the Popobject is reshown.
-*       Defaults to TRUE.
-*
-******************************************************************************
-*
-*/
-
-/****** Popobject.mui/MUIA_Popobject_WindowHook ******************************
-*
-*   NAME
-*       MUIA_Popobject_WindowHook -- (V9) [ISG], struct Hook *
-*
-*   FUNCTION
-*       This hook is called just before the pop-up window is opened.
-*
-*       The hook receives pointers to the pop-up object and the window object
-*       as its second and third arguments respectively.
-*
-*   SEE ALSO
-*       MUIA_Popobject_ObjStrHook
-*
-*   INTERNALS
-*       It is unclear whether this hook should be called every time the window
-*       is opened or only the first time.
-*
-******************************************************************************
-*
-*/
 
 
+
+
+
+
+
+
+/*
+ * Use borrowed instance hook data and message word zero as String. Lazily
+ * create application-owned popup, run conversion/window hooks, request
+ * geometry/open and mark popped. Return zero on creation or conversion
+ * rejection, otherwise one without checking actual window open. Requires
+ * live parent/application and stable popup contents.
+ */
 AROS_UFH3(ULONG, Popobject_Open_Function,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(Object *, obj, A2),
@@ -213,6 +287,12 @@ AROS_UFH3(ULONG, Popobject_Open_Function,
 }
 
 
+/*
+ * Use message words String and result; close retained window and clear
+ * popped. For nonzero result invoke borrowed ObjStrHook, ignoring its
+ * return. Return zero. Runs after queuing, so instance, contents and
+ * callback resources must remain live.
+ */
 AROS_UFH3(ULONG, Popobject_Close_Function,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(Object *, obj, A2),
@@ -237,6 +317,12 @@ AROS_UFH3(ULONG, Popobject_Close_Function,
     AROS_USERFUNC_EXIT
 }
 
+/*
+ * Construct Popstring, store popup object and borrowed hooks, set defaults
+ * TRUE and install embedded Open/Close hooks with Toggle TRUE. Return
+ * object or zero on superclass failure. Ownership of contents follows lazy
+ * window creation and application lifecycle.
+ */
 IPTR Popobject__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Popobject_DATA *data;
@@ -302,6 +388,12 @@ IPTR Popobject__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Dispose contents directly only if no popup window exists, then return
+ * Popstring disposal result. Existing window remains application-owned;
+ * notifications and queued callbacks must no longer target this instance.
+ * No local window detachment or queue cancellation.
+ */
 IPTR Popobject__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Popobject_DATA *data = INST_DATA(cl, obj);
@@ -312,6 +404,12 @@ IPTR Popobject__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
+/*
+ * Store Follow, Volatile and borrowed conversion/window hooks; return
+ * Popstring result. Light/Object have no local setter. Does not immediately
+ * reposition, hide or recreate a window; callback lifetimes remain caller-
+ * owned.
+ */
 IPTR Popobject__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Popobject_DATA *data = INST_DATA(cl, obj);
@@ -349,6 +447,11 @@ IPTR Popobject__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 
+/*
+ * Handle OM_GET despite function name: write local flags or borrowed
+ * object/hook pointers and return TRUE; delegate other attributes to
+ * Popstring. Requires valid caller storage and grants no ownership.
+ */
 IPTR Popobject__MUIM_Get(struct IClass *cl, Object *obj,
     struct opGet *msg)
 {
@@ -388,6 +491,11 @@ IPTR Popobject__MUIM_Get(struct IClass *cl, Object *obj,
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Call Popstring Show, reopen remembered closed popup without activation or
+ * hooks, then return superclass result even if it failed. Requires retained
+ * live popup; no ownership transfer.
+ */
 IPTR Popobject__MUIM_Show(struct IClass *cl, Object *obj,
     struct MUIP_Show *msg)
 {
@@ -411,6 +519,11 @@ IPTR Popobject__MUIM_Show(struct IClass *cl, Object *obj,
     return rc;
 }
 
+/*
+ * Hide popped window only when Volatile, retaining popped state for Show,
+ * then return Popstring result. Does not execute conversion hooks or clear
+ * logical Popstring open state; requires live window.
+ */
 IPTR Popobject__MUIM_Hide(struct IClass *cl, Object *obj,
     struct MUIP_Hide *msg)
 {
@@ -423,6 +536,12 @@ IPTR Popobject__MUIM_Hide(struct IClass *cl, Object *obj,
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Call Popstring Draw, query popup native window and apply Follow geometry
+ * when both windows exist, preserving height. Return zero. Requires valid
+ * parent geometry and retained popup; no explicit local flag gate or
+ * allocation.
+ */
 IPTR Popobject__MUIM_Draw(struct IClass *cl, Object *obj,
    struct MUIP_Draw *msg)
 {
@@ -444,6 +563,12 @@ IPTR Popobject__MUIM_Draw(struct IClass *cl, Object *obj,
     return 0;
 }
 
+/*
+ * Dispatch local overrides and return their results; delegate other
+ * messages to superclass. Requires ABI-correct message and live object
+ * except construction. Deferred callbacks and resource ownership follow the
+ * class lifecycle contract.
+ */
 BOOPSI_DISPATCHER(IPTR, Popobject_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)

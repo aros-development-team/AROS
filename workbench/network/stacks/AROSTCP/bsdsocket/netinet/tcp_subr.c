@@ -56,11 +56,14 @@
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <netinet/ip6.h>
+#include <netinet6/in6_var.h>
 #include <netinet/in_pcb.h>
 #include <netinet/in_var.h>
 #include <netinet/ip_var.h>
 #include <netinet/ip_icmp.h>
+#include <stddef.h>		/* offsetof */
 #include <netinet/in_cksum_protos.h>
+#include <protos/net/route_protos.h>
 #include <netinet/tcp.h>
 #include <netinet/tcp_fsm.h>
 #include <netinet/tcp_seq.h>
@@ -78,6 +81,7 @@
 #include <kern/amiga_includes.h>
 
 #include <kern/kern_subr_protos.h>
+#include <protos/kern/kern_random_protos.h>
 
 /*
  * Dual-stack helper: true if the socket bound to this PCB is an AF_INET6
@@ -115,7 +119,7 @@ tcp_isipv6(struct inpcb *inp)
  */
 int
 tcp_v6output(struct mbuf *m, struct in6_addr *laddr, struct in6_addr *faddr,
-    int hlim, int tlen, struct inpcb *inp)
+    int hlim, int tlen, int tclass, struct inpcb *inp)
 {
     struct ip6_hdr *ip6;
     struct tcphdr  *th;
@@ -136,8 +140,8 @@ tcp_v6output(struct mbuf *m, struct in6_addr *laddr, struct in6_addr *faddr,
             return (ENOBUFS);
     }
     ip6 = mtod(m, struct ip6_hdr *);
-    ip6->ip6_flow = 0;
-    ip6->ip6_vfc  = IPV6_VERSION;	/* must follow ip6_flow (they overlap) */
+    /* version 6 and the traffic class; no flow label */
+    ip6->ip6_flow = htonl(0x60000000 | ((u_int32_t)(tclass & 0xff) << 20));
     ip6->ip6_plen = htons((u_short)tlen);
     ip6->ip6_nxt  = IPPROTO_TCP;
     ip6->ip6_hlim = (hlim > 0) ? (u_int8_t)hlim : (u_int8_t)ip6_defhlim;
@@ -155,20 +159,93 @@ tcp_v6output(struct mbuf *m, struct in6_addr *laddr, struct in6_addr *faddr,
 #endif /* INET6 */
 u_int32_t tcp_secret_key[4];
 
-/* Mix-based hash for ISN generation (Murmur-style) */
-u_int32_t
-tcp_isn_hash(u_int32_t a, u_int32_t b, u_int32_t c, u_int32_t d,
-    u_int32_t *key)
+/*
+ * The keyed hash of a connection: SipHash-2-4 (Aumasson and Bernstein) over
+ * its addresses - all 128 bits for IPv6 - its ports, a word of the
+ * caller's, and a byte that keeps the uses apart (TCPH_*). The ISN (RFC
+ * 6528), the SYN cookies (RFC 4987), the SYN cache buckets and the timestamp
+ * offsets need a function no one can compute without the key, which RFC
+ * 6528 asks for; Linux uses SipHash for them.
+ */
+#define SIP_ROTL(x, b)  (((x) << (b)) | ((x) >> (64 - (b))))
+#define SIP_ROUND(v0, v1, v2, v3) do { \
+        v0 += v1; v1 = SIP_ROTL(v1, 13); v1 ^= v0; v0 = SIP_ROTL(v0, 32); \
+        v2 += v3; v3 = SIP_ROTL(v3, 16); v3 ^= v2; \
+        v0 += v3; v3 = SIP_ROTL(v3, 21); v3 ^= v0; \
+        v2 += v1; v1 = SIP_ROTL(v1, 17); v1 ^= v2; v2 = SIP_ROTL(v2, 32); \
+    } while(0)
+
+/* n (0..8) bytes at p as a little-endian word */
+static uint64_t
+sip_le64(const u_char *p, size_t n)
 {
-	u_int32_t h = key[0];
-	h ^= a; h = (h << 13) | (h >> 19); h *= 0x5bd1e995;
-	h ^= b; h = (h << 13) | (h >> 19); h *= 0x5bd1e995;
-	h ^= c; h = (h << 13) | (h >> 19); h *= 0x5bd1e995;
-	h ^= d; h = (h << 13) | (h >> 19); h *= 0x5bd1e995;
-	h ^= key[1]; h ^= key[2]; h ^= key[3];
-	h ^= h >> 16;
-	return h;
+    uint64_t m = 0;
+
+    while(n--)
+        m |= (uint64_t)p[n] << (8 * n);
+    return m;
 }
+
+static uint64_t
+tcp_siphash(const u_int32_t *key, const u_char *p, size_t len)
+{
+    uint64_t k0 = key[0] | (uint64_t)key[1] << 32;
+    uint64_t k1 = key[2] | (uint64_t)key[3] << 32;
+    uint64_t v0 = k0 ^ 0x736f6d6570736575ULL, v1 = k1 ^ 0x646f72616e646f6dULL;
+    uint64_t v2 = k0 ^ 0x6c7967656e657261ULL, v3 = k1 ^ 0x7465646279746573ULL;
+    uint64_t m;
+    size_t left = len;
+
+    for(; left >= 8; p += 8, left -= 8) {
+        m = sip_le64(p, 8);
+        v3 ^= m;
+        SIP_ROUND(v0, v1, v2, v3);
+        SIP_ROUND(v0, v1, v2, v3);
+        v0 ^= m;
+    }
+    m = sip_le64(p, left) | (uint64_t)len << 56;
+    v3 ^= m;
+    SIP_ROUND(v0, v1, v2, v3);
+    SIP_ROUND(v0, v1, v2, v3);
+    v0 ^= m;
+    v2 ^= 0xff;
+    SIP_ROUND(v0, v1, v2, v3);
+    SIP_ROUND(v0, v1, v2, v3);
+    SIP_ROUND(v0, v1, v2, v3);
+    SIP_ROUND(v0, v1, v2, v3);
+    return v0 ^ v1 ^ v2 ^ v3;
+}
+
+/* laddr and faddr: struct in6_addr if isipv6, else struct in_addr */
+u_int32_t
+tcp_conn_hash(const u_int32_t *key, int use, int isipv6, const void *laddr,
+    const void *faddr, u_int16_t lport, u_int16_t fport, u_int32_t extra)
+{
+    u_char buf[1 + 2 * sizeof(struct in6_addr) + 2 * sizeof(u_int16_t) + sizeof(u_int32_t)];
+    size_t alen = isipv6 ? sizeof(struct in6_addr) : sizeof(struct in_addr), n = 0;
+
+    buf[n++] = (u_char)use;
+    bcopy(laddr, buf + n, alen);
+    n += alen;
+    bcopy(faddr, buf + n, alen);
+    n += alen;
+    bcopy(&lport, buf + n, sizeof(lport));
+    n += sizeof(lport);
+    bcopy(&fport, buf + n, sizeof(fport));
+    n += sizeof(fport);
+    bcopy(&extra, buf + n, sizeof(extra));
+    n += sizeof(extra);
+    return (u_int32_t)tcp_siphash(key, buf, n);
+}
+
+/* inp's family and addresses, for tcp_conn_hash() */
+#if INET6
+#define INP_HASHADDRS(inp) tcp_isipv6(inp), \
+        tcp_isipv6(inp) ? (const void *)&(inp)->inp_laddr6 : (const void *)&(inp)->inp_laddr, \
+        tcp_isipv6(inp) ? (const void *)&(inp)->inp_faddr6 : (const void *)&(inp)->inp_faddr
+#else
+#define INP_HASHADDRS(inp) 0, (const void *)&(inp)->inp_laddr, (const void *)&(inp)->inp_faddr
+#endif
 
 /*
  * Generate a per-connection ISN per RFC 6528:
@@ -178,41 +255,35 @@ tcp_isn_hash(u_int32_t a, u_int32_t b, u_int32_t c, u_int32_t d,
 tcp_seq
 tcp_new_isn(struct inpcb *inp)
 {
-	u_int32_t hash;
+	return ((tcp_seq)tcp_iss + tcp_conn_hash(tcp_secret_key, TCPH_ISN,
+	    INP_HASHADDRS(inp), inp->inp_lport, inp->inp_fport, 0));
+}
 
-#if INET6
-	if(tcp_isipv6(inp)) {
-		u_int32_t *la = (u_int32_t *)&inp->inp_laddr6;
-		u_int32_t *fa = (u_int32_t *)&inp->inp_faddr6;
-		hash = tcp_isn_hash(
-		    la[0] ^ la[1] ^ la[2] ^ la[3],
-		    (u_int32_t)inp->inp_lport,
-		    fa[0] ^ fa[1] ^ fa[2] ^ fa[3],
-		    (u_int32_t)inp->inp_fport,
-		    tcp_secret_key);
-		return ((tcp_seq)tcp_iss + hash);
-	}
-#endif
+/*
+ * The timestamp offset of a connection (RFC 7323 section 5.4): its TSval is
+ * tcp_now plus a hash of its addresses and ports (tcp_conn_hash()), so that the TSval tells
+ * neither the time since the stack started nor how two connections relate,
+ * as FreeBSD and Linux do. The key is not the ISN's: with the same one,
+ * ISN - TSval would give the ISN clock away.
+ */
+u_int32_t tcp_ts_key[4];
 
-	hash = tcp_isn_hash(
-	    inp->inp_laddr.s_addr,
-	    (u_int32_t)inp->inp_lport,
-	    inp->inp_faddr.s_addr,
-	    (u_int32_t)inp->inp_fport,
-	    tcp_secret_key);
-
-	return ((tcp_seq)tcp_iss + hash);
+u_int32_t
+tcp_new_tsoff(struct inpcb *inp)
+{
+	return tcp_conn_hash(tcp_ts_key, TCPH_TSOFF, INP_HASHADDRS(inp),
+	    inp->inp_lport, inp->inp_fport, 0);
 }
 
 /*
  * SYN cookie support (RFC 4987).
  *
  * Cookie = ISN encoding:
- *   bits 31..8: hash(src_ip, src_port, dst_ip, dst_port, secret, counter)
+ *   bits 31..8: tcp_conn_hash(secret, addresses, ports, counter)
  *   bits  7..5: MSS index (8 common MSS values)
  *   bits  4..0: counter mod 32 (to validate freshness)
  *
- * The counter is tcp_iss / TCP_ISSINCR (approximately a slow-timer tick count).
+ * The counter is tcp_iss / TCP_ISSINCR, which advances once a second.
  */
 
 /* Common MSS values for encoding (3 bits = 8 entries) */
@@ -236,8 +307,8 @@ tcp_sc_mss_encode(u_int16_t mss)
 }
 
 tcp_seq
-tcp_syncookie_generate(struct in_addr src, struct in_addr dst,
-    u_int16_t sport, u_int16_t dport, u_int16_t mss)
+tcp_syncookie_generate(int isipv6, const void *laddr, const void *faddr,
+    u_int16_t lport, u_int16_t fport, u_int16_t mss)
 {
 	u_int32_t counter;
 	u_int32_t hash;
@@ -246,17 +317,16 @@ tcp_syncookie_generate(struct in_addr src, struct in_addr dst,
 	counter = (u_int32_t)(tcp_iss / TCP_ISSINCR);
 	mss_idx = tcp_sc_mss_encode(mss);
 
-	hash = tcp_isn_hash(src.s_addr, dst.s_addr,
-	    ((u_int32_t)sport << 16) | dport,
-	    counter, tcp_secret_key);
+	hash = tcp_conn_hash(tcp_secret_key, TCPH_COOKIE, isipv6, laddr, faddr,
+	    lport, fport, counter);
 
 	return ((hash & 0xFFFFFF00) |
 	    ((mss_idx & 0x7) << 5) | (counter & 0x1F));
 }
 
 u_int16_t
-tcp_syncookie_validate(struct in_addr src, struct in_addr dst,
-    u_int16_t sport, u_int16_t dport, tcp_seq ack_seq)
+tcp_syncookie_validate(int isipv6, const void *laddr, const void *faddr,
+    u_int16_t lport, u_int16_t fport, tcp_seq ack_seq)
 {
 	tcp_seq cookie = ack_seq - 1;
 	u_int32_t counter_now;
@@ -273,14 +343,13 @@ tcp_syncookie_validate(struct in_addr src, struct in_addr dst,
 
 	diff = (counter_now & 0x1F) - counter_then;
 	if(diff < 0) diff += 32;
-	if(diff > 6) /* ~3 seconds window */
+	if(diff > 6) /* about 6 s: the counter advances once a second */
 		return 0;
 
 	/* Try current counter epoch */
 	try_counter = (counter_now & ~0x1F) | counter_then;
-	hash = tcp_isn_hash(src.s_addr, dst.s_addr,
-	    ((u_int32_t)sport << 16) | dport,
-	    try_counter, tcp_secret_key);
+	hash = tcp_conn_hash(tcp_secret_key, TCPH_COOKIE, isipv6, laddr, faddr,
+	    lport, fport, try_counter);
 	expected = (hash & 0xFFFFFF00) |
 	    ((mss_idx & 0x7) << 5) | (counter_then & 0x1F);
 	if(expected == cookie)
@@ -289,9 +358,8 @@ tcp_syncookie_validate(struct in_addr src, struct in_addr dst,
 	/* Try previous epoch in case counter wrapped */
 	if(try_counter >= 32) {
 		try_counter -= 32;
-		hash = tcp_isn_hash(src.s_addr, dst.s_addr,
-		    ((u_int32_t)sport << 16) | dport,
-		    try_counter, tcp_secret_key);
+		hash = tcp_conn_hash(tcp_secret_key, TCPH_COOKIE, isipv6, laddr,
+		    faddr, lport, fport, try_counter);
 		expected = (hash & 0xFFFFFF00) |
 		    ((mss_idx & 0x7) << 5) | (counter_then & 0x1F);
 		if(expected == cookie)
@@ -304,13 +372,28 @@ tcp_syncookie_validate(struct in_addr src, struct in_addr dst,
 /* patchable/settable parameters for tcp */
 int	ip_defttl = 60;				  /* default time to live for TCP segs */
 int 	tcp_mssdflt = 1460;			  /* Ethernet MSS (1500 - 40) */
-int 	tcp_rttdflt = TCPTV_SRTTDFLT / PR_SLOWHZ;
+/* IPv6: the minimum link MTU less the IPv6 and TCP headers (1280 - 60); the
+ * MSS to assume when a peer sends none (RFC 9293 section 3.7.1) and the most
+ * to use towards a destination off the link with no path MTU known */
+int 	tcp_v6mssdflt = 1220;
+int 	tcp_rttdflt = TCPTV_RTOBASE;	/* initial RTO, s (net.inet.tcp.rttdflt) */
+/* The retransmission timeout is never below this (ms; net.inet.tcp.rexmit_min).
+ * RFC 6298 section 2.4 says it SHOULD be at least 1 s; FreeBSD and Linux use
+ * about 200 ms, and so does this stack. */
+int	tcp_rexmit_min = TCPTV_REXMTMIN_MS;
 int	tcp_do_rfc1323 = 1;
-int	tcp_do_rfc1644 = 1;
+int	tcp_do_rfc1644 = 0;	/* T/TCP (RFC 1644) - off: Historic, RFC 6247 */
 int	tcp_do_sack = 1;	/* enable SACK (RFC 2018) */
 int	tcp_do_newreno = 1;	/* enable NewReno (RFC 3782) */
-int	tcp_do_ecn = 0;		/* enable ECN (RFC 3168) - off by default */
-int	tcp_do_prr = 0;		/* enable PRR (RFC 6937) - off by default */
+/* ECN (RFC 3168): 0 off, 1 ask for it and accept it, 2 accept it when the
+ * peer asks (the default of Linux, FreeBSD and Windows) */
+int	tcp_do_ecn = 2;
+/* PRR (RFC 6937) in loss recovery with SACK: off until a measurement shows
+ * it helps here; sysctl net.inet.tcp.prr */
+int	tcp_do_prr = 0;
+int	tcp_do_pmtud = 1;	/* IPv4 path MTU discovery: DF on (RFC 1191) */
+/* path MTU black-hole detection (RFC 2923 section 2.1): on, as in XNU */
+int	tcp_do_pmtud_blackhole = 1;
 static	void tcp_cleartaocache(void);
 
 extern u_char inetctlerrmap[];
@@ -331,31 +414,12 @@ void
 tcp_init()
 {
     /*
-     * Seed the ISN secret key and initial sequence number from
-     * available entropy (system time, task pointer).
+     * The ISN secret key (RFC 6528), also the SYN cookies' (tcp_syncookie_*),
+     * and the start of the ISN clock, from arc4random_buf() (kern_random.c).
      */
-    {
-        struct timeval tv;
-        APTR task;
-        u_int32_t seed;
-
-        GetSysTime(&tv);
-        task = FindTask(NULL);
-        seed = (u_int32_t)tv.tv_secs ^ ((u_int32_t)tv.tv_micro << 16)
-             ^ (u_int32_t)(IPTR)task;
-
-        /* Fill secret key with mixed entropy */
-        tcp_secret_key[0] = seed * 0x5bd1e995;
-        seed ^= seed >> 16;
-        tcp_secret_key[1] = seed * 0x85ebca6b;
-        seed ^= seed >> 13;
-        tcp_secret_key[2] = seed * 0xc2b2ae35;
-        seed ^= seed >> 16;
-        tcp_secret_key[3] = seed * 0xcc9e2d51;
-
-        /* Start tcp_iss at an unpredictable value */
-        tcp_iss = (int)(tcp_secret_key[0] ^ tcp_secret_key[2]);
-    }
+    kern_random(tcp_secret_key, sizeof(tcp_secret_key));
+    kern_random(tcp_ts_key, sizeof(tcp_ts_key));        /* RFC 7323 5.4 */
+    tcp_iss = (tcp_seq)kern_random32();
     tcp_ccgen = 1;
     tcp_cc_init();
     tcp_cleartaocache();
@@ -526,7 +590,7 @@ struct in6_addr *laddr6, *faddr6;
         m->m_data       += sizeof(struct ipovly);
         m->m_len         = t6;
         m->m_pkthdr.len  = t6;
-        (void) tcp_v6output(m, laddr6, faddr6, hlim, t6,
+        (void) tcp_v6output(m, laddr6, faddr6, hlim, t6, 0,
                             tp ? tp->t_inpcb : NULL);
         return;
     }
@@ -586,24 +650,49 @@ struct inpcb *inp;
     tp->snd_ecn_recover = 0;
     tp->t_inpcb = inp;
     /*
-     * Init srtt to TCPTV_SRTTBASE (0), so we can tell that we have no
-     * rtt estimate.  Set rttvar so that srtt + 2 * rttvar gives
-     * reasonable initial retransmit time.
+     * No RTT estimate yet (srtt 0): the RTO is tcp_rttdflt, 1 s (RFC 6298
+     * section 2.1), until the first measurement. rttvar is seeded so that
+     * TCP_REXMTVAL() gives it, as in 4.4BSD and FreeBSD: a SYN that times
+     * out is then resent after 1, 2, 4 s... (section 5.5), not after the
+     * 200 ms floor.
      */
     tp->t_srtt = TCPTV_SRTTBASE;
-    tp->t_rttvar = tcp_rttdflt * PR_SLOWHZ << 2;
-    tp->t_rttmin = TCPTV_MIN;
-    TCPT_RANGESET(tp->t_rxtcur,
-                  ((TCPTV_SRTTBASE >> 2) + (TCPTV_SRTTDFLT << 2)) >> 1,
-                  TCPTV_MIN, TCPTV_REXMTMAX);
+    tp->t_rttvar = (tcp_rttdflt * 1000 << TCP_RTTVAR_SHIFT) / 4;
+    tp->t_rttmin = tcp_rexmit_min;
+    TCPT_RANGESET(tp->t_rxtcur, TCP_REXMTVAL(tp),
+                  tp->t_rttmin, TCPTV_REXMTMAX_MS);
     tp->snd_cwnd = TCP_MAXWIN << TCP_MAX_WINSHIFT;
     tp->snd_ssthresh = TCP_MAXWIN << TCP_MAX_WINSHIFT;
     /* Initialize congestion control algorithm */
     tp->t_cc_algo = tcp_cc_default;
     CC_INIT(tp);
+    tcp_hystart_init(tp);
     inp->inp_ip.ip_ttl = ip_defttl;
     inp->inp_ppcb = (caddr_t)tp;
     return (tp);
+}
+
+/*
+ * tcp_ifgone - interface ifp is going away. A connection bound to it (an
+ * IPv6 zone, SO_BINDTODEVICE) has lost its link: it is closed with ENXIO,
+ * without a reset, which could only leave by another link. A listening
+ * socket bound to it hears nothing more (in_pcbifgone()).
+ */
+void
+tcp_ifgone(struct ifnet *ifp)
+{
+    struct inpcb *inp, *next;
+
+    for(inp = tcb.lh_first; inp != NULL; inp = next) {
+        struct tcpcb *tp = intotcpcb(inp);
+
+        next = inp->inp_list.le_next;
+        if(inp->inp_boundif != ifp || tp == NULL || tp->t_state == TCPS_LISTEN)
+            continue;
+        inp->inp_socket->so_error = ENXIO;
+        tcp_close(tp);
+    }
+    in_pcbifgone(&tcb, ifp);
 }
 
 /*
@@ -665,8 +754,7 @@ register struct tcpcb *tp;
         register u_long i = 0;
 
         if((rt->rt_rmx.rmx_locks & RTV_RTT) == 0) {
-            i = tp->t_srtt *
-                (RTM_RTTUNIT / (PR_SLOWHZ * TCP_RTT_SCALE));
+            i = ((u_long)tp->t_srtt * (RTM_RTTUNIT / 1000)) >> TCP_RTT_SHIFT;
             if(rt->rt_rmx.rmx_rtt && i)
                 /*
                  * filter this update to half the old & half
@@ -680,8 +768,7 @@ register struct tcpcb *tp;
                 rt->rt_rmx.rmx_rtt = i;
         }
         if((rt->rt_rmx.rmx_locks & RTV_RTTVAR) == 0) {
-            i = tp->t_rttvar *
-                (RTM_RTTUNIT / (PR_SLOWHZ * TCP_RTTVAR_SCALE));
+            i = ((u_long)tp->t_rttvar * (RTM_RTTUNIT / 1000)) >> TCP_RTTVAR_SHIFT;
             if(rt->rt_rmx.rmx_rttvar && i)
                 rt->rt_rmx.rmx_rttvar =
                     (rt->rt_rmx.rmx_rttvar + i) / 2;
@@ -773,6 +860,8 @@ int error;
     sowwakeup(so);
 }
 
+void tcp_mtudisc(struct tcpcb *, u_int32_t);
+
 void
 tcp_ctlinput(cmd, sa, arg)
 int cmd;
@@ -782,6 +871,34 @@ void *arg;
     register struct ip *ip = arg;
     void (*notify) __P((struct inpcb *, int)) = tcp_notify;
 
+    if(cmd == PRC_MSGSIZE) {
+        /*
+         * "Fragmentation needed" (RFC 1191) about a segment of a
+         * connection under way: icmp_input() has put the path MTU on the
+         * route and in the message (icmp_mtudisc()). Only for a segment
+         * still unacknowledged - anything else is old, or forged blind
+         * (RFC 5927 section 7.2) - the connection sends smaller ones.
+         */
+        const struct icmp *icp;
+        struct tcphdr *th;
+        struct inpcb *inp;
+        struct tcpcb *tp;
+        tcp_seq seq;
+
+        if(ip == NULL)
+            return;
+        icp = (const struct icmp *)((caddr_t)ip - offsetof(struct icmp, icmp_ip));
+        th = (struct tcphdr *)((caddr_t)ip + (ip->ip_hl << 2));
+        inp = in_pcblookup(&tcb, ip->ip_dst, th->th_dport, ip->ip_src,
+                           th->th_sport, 0);
+        if(inp == NULL || (tp = intotcpcb(inp)) == NULL)
+            return;
+        seq = ntohl(th->th_seq);
+        if(SEQ_LT(seq, tp->snd_una) || SEQ_GEQ(seq, tp->snd_max))
+            return;
+        tcp_mtudisc(tp, ntohs(icp->icmp_nextmtu));
+        return;
+    }
     if(cmd == PRC_QUENCH)
         notify = tcp_quench;
     else if(!PRC_IS_REDIRECT(cmd) &&
@@ -794,6 +911,152 @@ void *arg;
                      cmd, notify);
     } else
         in_pcbnotify(&tcb, sa, 0, zeroin_addr, 0, cmd, notify);
+}
+
+#if INET6
+
+/*
+ * tcp6_ctlinput - an ICMPv6 error about a TCP/IPv6 segment we sent
+ * (icmp6_notify_error()): sa is its destination, arg an ip6ctlparam with
+ * its source and ports. tcp_notify() keeps it as a soft error; a Packet
+ * Too Big (PRC_MSGSIZE) about a segment still unacknowledged makes the
+ * connection send smaller ones (tcp_mtudisc()).
+ */
+void
+tcp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
+{
+    struct ip6ctlparam *ip6cp = arg;
+
+    if(cmd == PRC_MSGSIZE) {
+        /* a Packet Too Big about a segment of a connection under way */
+        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+        struct inpcb *inp;
+        struct tcpcb *tp;
+
+        if(ip6cp == NULL || !ip6cp->ip6c_haveseq)
+            return;
+        inp = in6_pcblookup(&tcb, &sin6->sin6_addr, ip6cp->ip6c_dport,
+                            &ip6cp->ip6c_src, ip6cp->ip6c_sport, NULL);
+        if(inp == NULL || (tp = intotcpcb(inp)) == NULL)
+            return;
+        /* only for a segment that is still unacknowledged: anything else
+         * is old, or forged blind (RFC 5927 section 7.2) */
+        if(SEQ_LT(ip6cp->ip6c_seq, tp->snd_una) ||
+                SEQ_GEQ(ip6cp->ip6c_seq, tp->snd_max))
+            return;
+        tcp_mtudisc(tp, ip6cp->ip6c_mtu);
+        return;
+    }
+    if(ip6cp != NULL)
+        in6_pcbnotify(&tcb, (struct sockaddr_in6 *)sa, ip6cp->ip6c_dport,
+                      &ip6cp->ip6c_src, ip6cp->ip6c_sport, cmd, tcp_notify);
+    else
+        in6_pcbnotify(&tcb, (struct sockaddr_in6 *)sa, 0, NULL, 0, cmd,
+                      tcp_notify);
+}
+#endif
+
+/*
+ * tcp_setmtu - send segments of at most mtu bytes, headers included, to tp's
+ * peer: t_maxopd and t_maxseg as tcp_mss() sets them. Only ever lowers them;
+ * returns whether it did. With mtu 0, the MTU is the connection's route's.
+ */
+static int
+tcp_setmtu(struct tcpcb *tp, u_int32_t mtu)
+{
+    int hdrs = sizeof(struct tcpiphdr), mss;
+
+#if INET6
+    if(tcp_isipv6(tp->t_inpcb))
+        hdrs = sizeof(struct ip6_hdr) + sizeof(struct tcphdr);
+    else
+#endif
+    if(mtu == 0) {
+        struct rtentry *rt = tp->t_inpcb->inp_route.ro_rt;
+
+        if(rt == NULL)
+            return 0;
+        mtu = rt->rt_rmx.rmx_mtu ? rt->rt_rmx.rmx_mtu :
+              rt->rt_ifp ? rt->rt_ifp->if_mtu : 0;
+    }
+    mss = (int)mtu - hdrs;
+
+    if(mss <= 0 || mss >= tp->t_maxopd)
+        return 0;
+    tp->t_maxopd = mss;
+    if((tp->t_flags & (TF_REQ_TSTMP | TF_NOOPT)) == TF_REQ_TSTMP &&
+            (tp->t_flags & TF_RCVD_TSTMP) == TF_RCVD_TSTMP)
+        mss -= TCPOLEN_TSTAMP_APPA;
+    if(mss >= tp->t_maxseg)
+        return 0;
+    tp->t_maxseg = mss;
+    return 1;
+}
+
+/*
+ * tcp_mtudisc - the path to tp's peer takes packets of at most mtu bytes
+ * (RFC 1191, RFC 8201 section 5.2): send segments that fit, and resend
+ * what was not acknowledged, as FreeBSD's tcp_mtudisc() does. With mtu 0,
+ * the MTU is the connection's route's (IPv4, after ip_output() said
+ * EMSGSIZE).
+ */
+void
+tcp_mtudisc(struct tcpcb *tp, u_int32_t mtu)
+{
+    if(!tcp_setmtu(tp, mtu))
+        return;
+    tp->t_rtttime = 0;              /* do not time the resent segment */
+    tp->snd_nxt = tp->snd_una;
+    (void)tcp_output(tp);
+}
+
+/*
+ * tcp_pmtud_blackhole - called by the retransmission timer, t_rxtshift just
+ * raised. A path that drops large packets without telling us (ICMP
+ * filtered: RFC 2923 section 2.1) loses every full-sized segment, so after
+ * the 2nd timeout in a row with one unacknowledged, try segments that fit
+ * the IPv6 minimum MTU (1280) or, for IPv4, 1240 bytes; after the 4th, an
+ * IPv4 connection stops setting DF, so routers fragment again. After the
+ * 6th, it was not the path: the MSS and DF come back. A lowered MSS that
+ * gets through is kept, as a learned path MTU is. FreeBSD's
+ * tcp_timer_rexmt() does the same, with the same steps.
+ */
+void
+tcp_pmtud_blackhole(struct tcpcb *tp)
+{
+    u_int32_t mtu = 1240;               /* IPv4 */
+
+    if(!tcp_do_pmtud_blackhole ||
+            (tp->t_state != TCPS_ESTABLISHED && tp->t_state != TCPS_CLOSE_WAIT))
+        return;
+#if INET6
+    if(tcp_isipv6(tp->t_inpcb))
+        mtu = IPV6_MMTU;
+    else
+#endif
+    if(!tcp_do_pmtud)                   /* no DF: routers fragment */
+        return;
+
+    if(tp->t_rxtshift >= 6) {
+        if(tp->t_flagsext & TF_PMTUD_BH) {
+            tp->t_maxseg = tp->t_pmtud_saved_maxseg;
+            tp->t_maxopd = tp->t_pmtud_saved_maxopd;
+            tp->t_flagsext &= ~(TF_PMTUD_BH | TF_PMTUD_NODF);
+        }
+        return;
+    }
+    if(tp->t_rxtshift < 2 || (tp->t_rxtshift & 1) ||
+            (u_long)(tp->snd_max - tp->snd_una) < tp->t_maxseg)
+        return;
+
+    if(!(tp->t_flagsext & TF_PMTUD_BH)) {
+        tp->t_pmtud_saved_maxseg = tp->t_maxseg;
+        tp->t_pmtud_saved_maxopd = tp->t_maxopd;
+    }
+    if(tcp_setmtu(tp, mtu))
+        tp->t_flagsext |= TF_PMTUD_BH;
+    else if(tp->t_flagsext & TF_PMTUD_BH)
+        tp->t_flagsext |= TF_PMTUD_NODF;    /* only IPv4 output reads it */
 }
 
 /*
@@ -840,6 +1103,28 @@ struct inpcb *inp;
     }
     return rt;
 }
+
+#if INET6
+/*
+ * tcp_rtlookup6 - the route to an IPv6 connection's peer. inp_route has no
+ * room for an IPv6 destination, so the route is looked up each time and
+ * comes back with a reference the caller drops with rtfree(). NULL if there
+ * is no peer or no route.
+ */
+struct rtentry *
+tcp_rtlookup6(struct inpcb *inp)
+{
+    struct sockaddr_in6 dst;
+
+    if(IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6))
+        return NULL;
+    bzero(&dst, sizeof(dst));
+    dst.sin6_family = AF_INET6;
+    dst.sin6_len    = sizeof(dst);
+    dst.sin6_addr   = inp->inp_faddr6;
+    return rtalloc1((struct sockaddr *)&dst, 1);
+}
+#endif
 
 /*
  * Return a pointer to the cached information about the remote host.

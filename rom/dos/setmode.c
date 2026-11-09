@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Set the current mode of a console device.
 */
@@ -52,7 +52,7 @@
     struct FileHandle *afh = BADDR(fh);
     LONG status;
     
-    status = dopacket1(DOSBase, NULL, afh->fh_Type, ACTION_SCREEN_MODE, mode);
+    status = dopacket1n(DOSBase, afh->fh_Type, ACTION_SCREEN_MODE, mode);
     
     return status;
 

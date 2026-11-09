@@ -60,6 +60,7 @@
 #include "in_var.h"
 #include <netinet/ip_var.h>
 #include <netinet/ip_output_protos.h>
+#include <protos/kern/kern_random_protos.h>
 #if INET6
 #include <netinet6/in6_var.h>
 #endif
@@ -67,6 +68,56 @@
 extern u_char inetctlerrmap[];
 
 struct	in_addr zeroin_addr;
+
+/*
+ * Ephemeral ports (RFC 6056): a random one from the IANA dynamic range
+ * (RFC 6335 section 6), else the next free one after it - algorithm 1,
+ * section 3.3.1 - so that an off-path attacker cannot guess the port of
+ * the next connection or query. The range keeps clear of the registered
+ * ports services listen on.
+ */
+#define EPHEMERAL_FIRST	49152
+#define EPHEMERAL_LAST	65535
+
+/* The random start of the search: arc4random_buf(), through kern_random.c. */
+static u_int32_t
+in_pcbrandom(void)
+{
+    return kern_random32();
+}
+
+/*
+ * Pick an ephemeral port for inp that taken() says is free; arg is passed
+ * on to it. The port is stored in network byte order in *lportp. Returns
+ * EADDRNOTAVAIL if every port in the range is taken.
+ */
+int
+in_pcbpickport(struct inpcb *inp, int (*taken)(struct inpcb *, u_short, void *),
+               void *arg, u_short *lportp)
+{
+    u_int32_t num = EPHEMERAL_LAST - EPHEMERAL_FIRST + 1, offset, count;
+
+    offset = in_pcbrandom() % num;
+    for(count = num; count > 0; count--) {
+        u_short lport = htons((u_short)(EPHEMERAL_FIRST + offset));
+
+        if(!taken(inp, lport, arg)) {
+            *lportp = lport;
+            return 0;
+        }
+        offset = (offset + 1) % num;
+    }
+    return EADDRNOTAVAIL;
+}
+
+/* Whether lport is in use for inp's local address; arg is the wildcard
+ * flag for in_pcblookup(). */
+static int
+in_porttaken(struct inpcb *inp, u_short lport, void *arg)
+{
+    return in_pcblookup(inp->inp_pcbinfo->listhead, zeroin_addr, 0,
+                        inp->inp_laddr, lport, *(int *)arg) != NULL;
+}
 
 /*
  * IPv4 and IPv6 PCBs share one list, and an IPv6 PCB leaves the IPv4
@@ -151,7 +202,6 @@ struct mbuf *nam;
 {
     register struct socket *so = inp->inp_socket;
     struct inpcbhead *head = inp->inp_pcbinfo->listhead;
-    unsigned short *lastport = &inp->inp_pcbinfo->lastport;
     struct sockaddr_in *sin;
 //	struct proc *p = curproc;		/* XXX */
     u_short lport = 0;
@@ -208,15 +258,14 @@ struct mbuf *nam;
         }
         inp->inp_laddr = sin->sin_addr;
     }
-    if(lport == 0)
-        do {
-            ++*lastport;
-            if(*lastport < IPPORT_RESERVED ||
-                    *lastport > IPPORT_USERRESERVED)
-                *lastport = IPPORT_RESERVED;
-            lport = htons(*lastport);
-        } while(in_pcblookup(head,
-                             zeroin_addr, 0, inp->inp_laddr, lport, wild));
+    if(lport == 0) {
+        int error = in_pcbpickport(inp, in_porttaken, &wild, &lport);
+
+        if(error) {
+            inp->inp_laddr.s_addr = INADDR_ANY;
+            return (error);
+        }
+    }
     inp->inp_lport = lport;
     in_pcbrehash(inp);
     return (0);
@@ -374,8 +423,8 @@ struct mbuf *nam;
                         inp->inp_lport) != NULL)
         return (EADDRINUSE);
     if(inp->inp_laddr.s_addr == INADDR_ANY) {
-        if(inp->inp_lport == 0)
-            (void)in_pcbbind(inp, (struct mbuf *)0);
+        if(inp->inp_lport == 0 && (error = in_pcbbind(inp, (struct mbuf *)0)) != 0)
+            return (error);
         inp->inp_laddr = ifaddr->sin_addr;
     }
     inp->inp_faddr = sin->sin_addr;
@@ -394,6 +443,34 @@ struct inpcb *inp;
     in_pcbrehash(inp);
     if(inp->inp_socket->so_state & SS_NOFDREF)
         in_pcbdetach(inp);
+}
+
+/*
+ * in_pcbifgone - interface ifp is going away (if_detach()), and with it
+ * the struct ifnet the PCBs of head may name: no socket may go on doing
+ * so. A socket bound to it (SO_BINDTODEVICE, or an IPv6 zone) stays bound
+ * to it gone, INP_BOUNDGONE: what it sends fails with ENXIO and it hears
+ * nothing, as a Linux socket bound to a device that went away does, until
+ * it is bound again. A multicast interface chosen for it is forgotten: it
+ * was a preference, and the default applies again.
+ */
+void
+in_pcbifgone(const struct inpcbhead *head, const struct ifnet *ifp)
+{
+    struct inpcb *inp;
+
+    for(inp = head->lh_first; inp != NULL; inp = inp->inp_list.le_next) {
+        if(inp->inp_boundif == ifp) {
+            inp->inp_boundif = NULL;
+            inp->inp_flags |= INP_BOUNDGONE;
+        }
+        if(inp->inp_moptions && inp->inp_moptions->imo_multicast_ifp == ifp)
+            inp->inp_moptions->imo_multicast_ifp = NULL;
+#if INET6
+        if(inp->in6p_moptions && inp->in6p_moptions->im6o_multicast_ifp == ifp)
+            inp->in6p_moptions->im6o_multicast_ifp = NULL;
+#endif
+    }
 }
 
 void
@@ -479,7 +556,8 @@ void (*notify) __P((struct inpcb *, int));
     u_short fport = fport_arg, lport = lport_arg;
     int _errno, s;
 
-    if((unsigned)cmd > PRC_NCMDS || dst->sa_family != AF_INET)
+    /* only an IPv4 destination: an IPv6 one goes to in6_pcbnotify() */
+    if((unsigned)cmd >= PRC_NCMDS || dst == NULL || dst->sa_family != AF_INET)
         return;
     faddr = ((struct sockaddr_in *)dst)->sin_addr;
     if(faddr.s_addr == INADDR_ANY)

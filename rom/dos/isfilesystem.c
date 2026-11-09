@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Check if a device is a filesystem.
 */
@@ -79,7 +79,7 @@
 
     if ((dvp = GetDeviceProc(devicename, dvp))) {
         if (dvp->dvp_Port != NULL) // No port? Not a filesystem
-            code = dopacket0(DOSBase, NULL, dvp->dvp_Port, ACTION_IS_FILESYSTEM);
+            code = dopacket0n(DOSBase, dvp->dvp_Port, ACTION_IS_FILESYSTEM);
         FreeDeviceProc(dvp);
     } else {
         SetIoErr(err);

@@ -3,7 +3,10 @@
 
     CUnit tests for bsdsocket.library TCP (IPv4) over the loopback interface:
     handshake, names, echo, large transfer (window scaling), multiple
-    simultaneous connections (SYN cache), half-close, refused connect and MSS.
+    simultaneous connections (SYN cache), half-close, refused connect and MSS;
+    and, over IPv4 and IPv6, closing a connection with data still unread
+    resets it (RFC 9293 section 3.6.1), while closing one with all data read
+    ends it with a FIN.
 */
 
 #include "socktest.h"
@@ -193,6 +196,62 @@ void testMAXSEG(void)
     CloseSocket(s);
 }
 
+/* Close the server end of a connection after the client's data arrived,
+ * having read it (or not); returns what the client's recv() then gives,
+ * with *err its errno. */
+static int close_server(int family, int read_first, int *err)
+{
+    int c = -1, s = -1, r = -2;
+    char buf[8];
+
+    *err = 0;
+    if (st_tcp_pair(family, &c, &s) != 0)
+        return -2;
+    if (send(c, "AB", 2, 0) == 2 && sock_wait(s, 0, 3) > 0 &&
+            (!read_first || recv(s, buf, sizeof(buf), 0) == 2)) {
+        CloseSocket(s);
+        s = -1;
+        if (sock_wait(c, 0, 3) > 0) {
+            r = recv(c, buf, sizeof(buf), 0);
+            if (r < 0)
+                *err = Errno();
+        }
+    }
+    if (s >= 0)
+        CloseSocket(s);
+    CloseSocket(c);
+    return r;
+}
+
+/* Closed with data unread, the connection is reset: the peer learns the
+ * data was lost (RFC 9293 section 3.6.1, RFC 2525 section 2.17). */
+void testCLOSE_UNREAD(void)
+{
+    int err;
+    CU_ASSERT_EQUAL(close_server(AF_INET, 0, &err), -1);
+    CU_ASSERT_EQUAL(err, ECONNRESET);
+}
+
+void testCLOSE_UNREAD6(void)
+{
+    int err;
+    CU_ASSERT_EQUAL(close_server(AF_INET6, 0, &err), -1);
+    CU_ASSERT_EQUAL(err, ECONNRESET);
+}
+
+/* Closed with everything read, the connection ends with a FIN. */
+void testCLOSE_READ(void)
+{
+    int err;
+    CU_ASSERT_EQUAL(close_server(AF_INET, 1, &err), 0);
+}
+
+void testCLOSE_READ6(void)
+{
+    int err;
+    CU_ASSERT_EQUAL(close_server(AF_INET6, 1, &err), 0);
+}
+
 int main(void)
 {
     CU_pSuite p;
@@ -215,7 +274,11 @@ int main(void)
         !CU_add_test(p, "multiple connections (SYN cache)", testMULTI) ||
         !CU_add_test(p, "half-close (shutdown)", testHALFCLOSE) ||
         !CU_add_test(p, "connect refused", testREFUSED) ||
-        !CU_add_test(p, "TCP_MAXSEG", testMAXSEG))
+        !CU_add_test(p, "TCP_MAXSEG", testMAXSEG) ||
+        !CU_add_test(p, "close with data unread resets", testCLOSE_UNREAD) ||
+        !CU_add_test(p, "close with data unread resets (IPv6)", testCLOSE_UNREAD6) ||
+        !CU_add_test(p, "close with all data read sends FIN", testCLOSE_READ) ||
+        !CU_add_test(p, "close with all data read sends FIN (IPv6)", testCLOSE_READ6))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

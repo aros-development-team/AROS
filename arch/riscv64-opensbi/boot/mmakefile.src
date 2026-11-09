@@ -122,11 +122,11 @@ BSP_HIDDS     := hiddclass inputclass gfx efifbgfx keyboard mouse bus pci pcidt 
 #
 # Bootable layout.
 #
-# The UEFI stub opens aros-bsp.pkg and aros.cmd from the root of the
-# volume it was loaded from, so both live at the top of the tree next
-# to the usual AROS directories. A firmware that boots its default path
-# finds EFI/BOOT/BOOTRISCV64.EFI without being told; startup.nsh covers
-# being dropped at an EFI shell instead.
+# The UEFI stub opens aros-bsp.pkg from this target's boot directory
+# ($(AROS_DIR_BOOTARCH), where the package is built) and aros.cmd from
+# the root of the volume it was loaded from. A firmware that boots its
+# default path finds EFI/BOOT/BOOTRISCV64.EFI without being told;
+# startup.nsh covers being dropped at an EFI shell instead.
 #
 BOOTIMAGE       := $(OSGENDIR)/boot/Image
 EFI_BOOTDIR     := $(AROSDIR)/EFI/BOOT
@@ -134,8 +134,7 @@ EFI_AROSDIR     := $(AROSDIR)/EFI/AROS
 BOOT_CMDLINE    :=
 
 BOOTFILES       := $(EFI_BOOTDIR)/BOOTRISCV64.EFI $(EFI_AROSDIR)/Image \
-                   $(AROSDIR)/aros-bsp.pkg $(AROSDIR)/aros.cmd \
-                   $(AROSDIR)/startup.nsh
+                   $(AROSDIR)/aros.cmd $(AROSDIR)/startup.nsh
 
 #MM- boot-opensbi-riscv64 : kernel-opensbi-riscv64 kernel-bsp-opensbi-riscv64 workbench-backdrop
 
@@ -158,10 +157,6 @@ $(EFI_BOOTDIR)/BOOTRISCV64.EFI : $(BOOTIMAGE)
 $(EFI_AROSDIR)/Image : $(BOOTIMAGE)
 	@$(ECHO) "Creating   $@"
 	%mkdirs_q $(EFI_AROSDIR)
-	@$(CP) $< $@
-
-$(AROSDIR)/aros-bsp.pkg : $(AROSARCHDIR)/aros-bsp.pkg
-	@$(ECHO) "Creating   $@"
 	@$(CP) $< $@
 
 $(AROSDIR)/aros.cmd :

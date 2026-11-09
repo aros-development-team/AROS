@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <stdlib.h>
@@ -25,6 +25,10 @@
 
 extern struct Library *MUIMasterBase;
 
+/* RawDoFmt output callback. Write one byte through strPtrPtr and advance
+ * it. The caller supplies sufficient writable output space; no bounds check
+ * is made. The callback has no return value or retained state.
+ */
 AROS_UFH2S(void, cpy_func,
     AROS_UFHA(UBYTE, chr, D0),
     AROS_UFHA(STRPTR *, strPtrPtr, A3))
@@ -36,6 +40,10 @@ AROS_UFH2S(void, cpy_func,
     AROS_USERFUNC_EXIT
 }
 
+/* RawDoFmt counting callback. Increment the caller-owned LONG counter for
+ * each emitted byte, including the terminator. The caller must keep the
+ * count within LONG range; chr is unused.
+ */
 AROS_UFH2S(void, len_func,
     AROS_UFHA(UBYTE, chr, D0),
     AROS_UFHA(LONG *, lenPtr, A3))
@@ -48,39 +56,236 @@ AROS_UFH2S(void, len_func,
 }
 
 
-/*
- * Notify class is superclass of all other MUI classes.
- */
+/****** Notify.mui/MUIC_Notify ************
+*
+*   NAME
+*       MUIC_Notify
+*
+*   SUPERCLASS
+*       rootclass
+*
+*   DESCRIPTION
+*       Provide attributes, synchronous notifications, user-data matching, and
+*       utility methods for Zune objects. This class has no child traversal;
+*       container subclasses may extend the user-data methods.
+*       Construction allocates private attribute storage and returns NULL if
+*       allocation or superclass construction fails. Omitted HelpLine, ObjectID,
+*       and UserData values start at zero; HelpNode, AppMessage, parent, and
+*       global-info pointers start at NULL. Disposal frees local notification
+*       records and attribute storage. It does not dispose of notification
+*       destinations or free borrowed strings and messages.
+*       Serialize access to the object and its notification list. Notifications
+*       execute in the calling task during attribute setting; this class
+*       provides no locking, queue, or cancellation timeout.
+*
+*   NOTES
+*       All method entries describe the Notify implementation. A subclass may
+*       override its behavior or return values. Version and Revision both return
+*       1 here; they are class values, not muimaster.library version numbers.
+*       An OM_SET first stores recognized attributes, then examines the supplied
+*       tags for notifications in tag order and registration order. Unchanged
+*       values can still trigger a notification. Attributes not stored by Notify
+*       can still be trigger attributes when their tags reach this method.
+*       Notify returns zero from OM_SET and does not forward it to rootclass.
+*
+*   BUGS
+*       Notification dispatch does not protect its current list node against
+*       deletion by a callback. Do not dispose of the source object or remove
+*       active notification records during notification dispatch. Suppression of
+*       recursive delivery for one active record is not a lifetime guard.
+*
+*   EXAMPLE
+*       Copy each UserData tag value to ObjectID on the same object:
+*       DoMethod(obj, MUIM_Notify, MUIA_UserData, MUIV_EveryTime,
+*                MUIV_Notify_Self, 3, MUIM_Set, MUIA_ObjectID,
+*                MUIV_TriggerValue);
+*       Register outside notification dispatch; check the returned BOOL.
+*
+*/
 
-/*
-MUIA_ApplicationObject [..G]   done
-MUIA_AppMessage [..G]          done
-MUIA_HelpLine [ISG]            done
-MUIA_HelpNode [ISG]            done
-MUIA_NoNotify [.S.]            done
-MUIA_ObjectID [ISG]            done
-MUIA_Parent [..G]              done
-MUIA_Revision [..G]            done
-MUIA_UserData [ISG]            done
-MUIA_Version [..G]             done
+/****** Notify.mui/MUIA_ApplicationObject ************
+*
+*   NAME
+*       MUIA_ApplicationObject
+*
+*   FUNCTION
+*       Return the application pointer from the current global-info structure,
+*       or NULL if that structure is absent. The returned object is borrowed.
+*
+*   INPUTS
+*       Object pointer; get only.
+*
+*   NOTES
+*       DisconnectParent does not clear global info in this implementation. A
+*       non-NULL result is not proof that the application is still alive.
+*
+*/
 
-MUIM_CallHook                  done
-MUIM_Export                    dummy & redefine in subclasses w/ children
-MUIM_FindUData                 redefine in subclasses w/ children
-MUIM_GetConfigItem
-MUIM_GetUData                  redefine in subclasses w/ children
-MUIM_Import                    dummy & redefine in subclasses w/ children
-MUIM_KillNotify                done
-MUIM_KillNotifyObj             done (semantic ?)
-MUIM_MultiSet                  done
-MUIM_NoNotifySet               done
-MUIM_Notify                    done
-MUIM_Set                       done
-MUIM_SetAsString               done
-MUIM_SetUData                  redefine in subclasses w/ children
-MUIM_SetUDataOnce              redefine in subclasses w/ children
-MUIM_WriteLong                 done
-MUIM_WriteString               done
+/****** Notify.mui/MUIA_AppMessage ************
+*
+*   NAME
+*       MUIA_AppMessage
+*
+*   FUNCTION
+*       Return the last message pointer stored by OM_SET. The constructor
+*       ignores this tag. Initial value is NULL.
+*
+*   INPUTS
+*       Pointer to struct AppMessage; declared get only.
+*
+*   NOTES
+*       AROS also accepts this tag in OM_SET despite the header access flags.
+*       The pointer is borrowed: Notify neither copies, replies to, nor frees
+*       the message. Keep it valid while accessing it; storage here does not
+*       extend its lifetime.
+*
+*/
+
+/****** Notify.mui/MUIA_HelpLine ************
+*
+*   NAME
+*       MUIA_HelpLine
+*
+*   FUNCTION
+*       Store a help-line value; the initial value is zero. Notify stores and
+*       returns it without validation.
+*
+*   INPUTS
+*       LONG; initialize, set, get.
+*
+*   NOTES
+*       Notify does not display help or interpret this value.
+*
+*/
+
+/****** Notify.mui/MUIA_HelpNode ************
+*
+*   NAME
+*       MUIA_HelpNode
+*
+*   FUNCTION
+*       Store a borrowed help-node string pointer; the initial value is NULL.
+*
+*   INPUTS
+*       STRPTR; initialize, set, get.
+*
+*   NOTES
+*       The string is not copied or freed. Keep its storage valid while the
+*       attribute refers to it. Notify does not open or interpret the help node.
+*
+*/
+
+/****** Notify.mui/MUIA_NoNotify ************
+*
+*   NAME
+*       MUIA_NoNotify
+*
+*   FUNCTION
+*       Suppress this OM_SET call's entire notification pass if any supplied
+*       MUIA_NoNotify tag has the value TRUE. Attribute storage still takes
+*       place.
+*
+*   INPUTS
+*       BOOL; set only.
+*
+*   NOTES
+*       The flag is local to one call and is not stored. A FALSE tag later in
+*       the same list does not cancel suppression. The comparison is exactly
+*       against TRUE, not against any nonzero value. Notify has no getter for
+*       this attribute.
+*
+*/
+
+/****** Notify.mui/MUIA_ObjectID ************
+*
+*   NAME
+*       MUIA_ObjectID
+*
+*   FUNCTION
+*       Store an object identifier; the initial value is zero. Values are
+*       converted to ULONG.
+*
+*   INPUTS
+*       ULONG; initialize, set, get.
+*
+*   NOTES
+*       Notify does not enforce uniqueness or persist data under this
+*       identifier. Its Import and Export methods are stubs; persistence depends
+*       on subclasses.
+*
+*/
+
+/****** Notify.mui/MUIA_Parent ************
+*
+*   NAME
+*       MUIA_Parent
+*
+*   FUNCTION
+*       Return the stored parent pointer, initially NULL. The pointer is
+*       borrowed.
+*
+*   INPUTS
+*       Object pointer; get only.
+*
+*   NOTES
+*       Notify's ConnectParent and DisconnectParent do not update this field.
+*       Containers maintain it separately. Do not infer ownership or continued
+*       parent lifetime solely from a non-NULL value.
+*
+*/
+
+/****** Notify.mui/MUIA_UserData ************
+*
+*   NAME
+*       MUIA_UserData
+*
+*   FUNCTION
+*       Store an uninterpreted application value, initially zero. Pointer-sized
+*       values are preserved by Notify.
+*
+*   INPUTS
+*       IPTR storage; initialize, set, get.
+*
+*   NOTES
+*       The header annotation says ULONG, but mnd_UserData and the setter/getter
+*       use IPTR. No referenced memory is owned or freed. MUIM_GetUData is an
+*       exception: its declared udata input is ULONG; other Notify user-data
+*       search/set messages use IPTR.
+*
+*/
+
+/****** Notify.mui/MUIA_Version ************
+*
+*   NAME
+*       MUIA_Version
+*
+*   FUNCTION
+*       Return 1 for Notify itself.
+*
+*   INPUTS
+*       LONG; get only.
+*
+*   NOTES
+*       Subclasses can override this attribute. Do not use it to infer the
+*       muimaster.library version or availability of methods on another class.
+*
+*/
+
+/****** Notify.mui/MUIA_Revision ************
+*
+*   NAME
+*       MUIA_Revision
+*
+*   FUNCTION
+*       Return 1 for Notify itself.
+*
+*   INPUTS
+*       LONG; get only.
+*
+*   NOTES
+*       Subclasses can override this attribute. This value describes the class,
+*       not the library.
+*
 */
 
 static const int __version = 1;
@@ -115,6 +320,12 @@ typedef struct NotifyNodeIX
     IX ix;
 } *NNodeIX;
 
+/* Allocate an owned notification node and copies of FollowParams message
+ * words. Parse an input-event expression when required. Return NULL on
+ * parse or allocation failure, releasing partial node storage. data is
+ * unused. The caller validates the count and must prevent size overflow;
+ * pointed-to argument data remains borrowed.
+ */
 static struct NotifyNode *CreateNNode(struct MUI_NotifyData *data,
     struct MUIP_Notify *msg)
 {
@@ -186,6 +397,11 @@ static struct NotifyNode *CreateNNode(struct MUI_NotifyData *data,
     return NULL;
 }
 
+/* Free a valid owned notification node and its parameter allocation. The
+ * caller must unlink it first if registered and ensure that no dispatch
+ * still uses it. data is unused; destinations and pointed-to arguments are
+ * not freed.
+ */
 static void DeleteNNode(struct MUI_NotifyData *data,
     struct NotifyNode *nnode)
 {
@@ -194,10 +410,18 @@ static void DeleteNNode(struct MUI_NotifyData *data,
 }
 
 
+/* Forward declaration of the attribute-store and synchronous-notification
+ * handler defined below. It requires a valid tag list and returns zero.
+ */
 IPTR Notify__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg);
 
 /*
  * OM_NEW
+ */
+/* Construct the rootclass object and private attributes; initialize
+ * recognized tags without sending notifications. Return the object or zero
+ * on failure, disposing the partially constructed object if attribute
+ * allocation fails. String pointers are borrowed.
  */
 IPTR Notify__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -247,6 +471,10 @@ IPTR Notify__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 /*
  * OM_DISPOSE
  */
+/* After all use and notification dispatch have ended, free private
+ * attributes and registered nodes, then dispose through rootclass and
+ * return its result. Borrowed data and destination objects are not freed.
+ */
 IPTR Notify__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MinNode *node, *tmp;
@@ -268,6 +496,12 @@ IPTR Notify__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
+/* Match one tag against a live registered node and synchronously deliver
+ * its copied message. Resolve supported destination selectors and
+ * substitute EveryTime arguments. Skip an already active node. The caller
+ * must keep the node, source and destination alive through return;
+ * callbacks must not delete them. No result is returned.
+ */
 static void check_notify(NNode nnode, Object *obj, struct TagItem *tag)
 {
     IPTR *params;
@@ -394,6 +628,10 @@ static void check_notify(NNode nnode, Object *obj, struct TagItem *tag)
 /*
  * OM_SET
  */
+/* Store recognized tags, then notify in tag and registration order unless
+ * any NoNotify tag equals TRUE. NoNotify is per call. Return zero even
+ * after successful storage; do not forward OM_SET to rootclass.
+ */
 IPTR Notify__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
@@ -459,6 +697,11 @@ IPTR Notify__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 /*
  * OM_GET
  */
+/* Store recognized attribute values through a writable opg_Storage and
+ * return TRUE; forward unrecognized attributes to rootclass. Returned
+ * pointers are borrowed. A NULL global-info pointer yields a NULL
+ * ApplicationObject.
+ */
 IPTR Notify__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 /* small macro to simplify return value storage */
@@ -513,10 +756,32 @@ IPTR Notify__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 
 
-/*
- * MUIM_CallHook : Call a standard amiga callback hook, defined by a Hook
- * structure.
- */
+/****** Notify.mui/MUIM_CallHook ************
+*
+*   NAME
+*       MUIM_CallHook
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_CallHook, (IPTR)hook, param1);
+*
+*   FUNCTION
+*       Invoke the hook synchronously with obj as the hook object and the
+*       address of param1 as its message.
+*
+*   INPUTS
+*       hook - Non-NULL readable Hook structure.
+*       param1 - First IPTR of the hook-specific message; append further
+*       arguments as required by the hook.
+*
+*   RESULT
+*       The hook result, or FALSE if h_Entry is NULL.
+*
+*   NOTES
+*       No argument storage is copied or retained. The hook must not retain
+*       pointers into the transient method message. A NULL hook pointer is not
+*       checked.
+*
+*/
 IPTR Notify__MUIM_CallHook(struct IClass *cl, Object *obj,
     struct MUIP_CallHook *msg)
 {
@@ -527,15 +792,30 @@ IPTR Notify__MUIM_CallHook(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_Export : to export an object's "contents" to a dataspace object.
- */
 /* nothing to export */
 
-/*
- * MUIM_FindUData : tests if the MUIA_UserData of the object
- * contains the given <udata> and returns the object pointer in this case.
- */
+/****** Notify.mui/MUIM_FindUData ************
+*
+*   NAME
+*       MUIM_FindUData
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_FindUData, udata);
+*
+*   FUNCTION
+*       Compare this object's MUIA_UserData with udata.
+*
+*   INPUTS
+*       udata - IPTR value to match.
+*
+*   RESULT
+*       The borrowed object pointer on equality; zero otherwise.
+*
+*   NOTES
+*       Only this object is examined. A container subclass may also search
+*       children. The result does not transfer ownership or retain the object.
+*
+*/
 IPTR Notify__MUIM_FindUData(struct IClass *cl, Object *obj,
     struct MUIP_FindUData *msg)
 {
@@ -549,11 +829,32 @@ IPTR Notify__MUIM_FindUData(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_GetUData : This method tests if the MUIA_UserData of the object
- * contains the given <udata> and gets <attr> to <storage> for itself
- * in this case.
- */
+/****** Notify.mui/MUIM_GetUData ************
+*
+*   NAME
+*       MUIM_GetUData
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_GetUData, udata, attr, (IPTR)storage);
+*
+*   FUNCTION
+*       If UserData matches, request attr from this object into storage.
+*
+*   INPUTS
+*       udata - ULONG comparison value in struct MUIP_GetUData.
+*       attr - Attribute identifier.
+*       storage - Writable IPTR result location, required on a match.
+*
+*   RESULT
+*       TRUE for a UserData match, FALSE otherwise. The attribute getter's
+*       success result is ignored.
+*
+*   NOTES
+*       No match leaves storage untouched. On a match, an unsupported getter may
+*       also leave it unchanged; TRUE is not proof of a valid attribute result.
+*       Only this object is examined.
+*
+*/
 IPTR Notify__MUIM_GetUData(struct IClass *cl, Object *obj,
     struct MUIP_GetUData *msg)
 {
@@ -568,14 +869,37 @@ IPTR Notify__MUIM_GetUData(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_Import : to import an object's "contents" from a dataspace object.
- */
 /* nothing to import */
 
-/*
- * MUIM_KillNotify : kills previously given notifications on specific attributes.
- */
+/****** Notify.mui/MUIM_KillNotify ************
+*
+*   NAME
+*       MUIM_KillNotify
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_KillNotify, TrigAttr);
+*
+*   FUNCTION
+*       Remove and free the first registered notification whose trigger
+*       attribute matches TrigAttr.
+*
+*   INPUTS
+*       TrigAttr - ULONG trigger-attribute identifier.
+*
+*   RESULT
+*       1 if a record was removed; 0 if none matched or no notification list
+*       exists.
+*
+*   NOTES
+*       It does not remove all matching records. Repeat outside notification
+*       dispatch if all matches must be removed. The destination object remains
+*       caller-owned.
+*
+*   BUGS
+*       Removing an active record, or disposing of its source during a callback,
+*       can invalidate notification dispatch's pointers.
+*
+*/
 IPTR Notify__MUIM_KillNotify(struct IClass *cl, Object *obj,
     struct MUIP_KillNotify *msg)
 {
@@ -601,10 +925,35 @@ IPTR Notify__MUIM_KillNotify(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_KillNotifyObj : originally undocumented !
- * Supposed to kill a notification with a given attr and a given dest.
- */
+/****** Notify.mui/MUIM_KillNotifyObj ************
+*
+*   NAME
+*       MUIM_KillNotifyObj
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_KillNotifyObj, TrigAttr, (IPTR)dest);
+*
+*   FUNCTION
+*       Remove the first notification with both the specified trigger attribute
+*       and stored destination.
+*
+*   INPUTS
+*       TrigAttr - ULONG trigger-attribute identifier.
+*       dest - The exact destination value supplied at registration.
+*
+*   RESULT
+*       1 if a record was removed; 0 if no record matched.
+*
+*   NOTES
+*       Destination comparison uses the stored value, not its resolved target.
+*       For a Self registration, use MUIV_Notify_Self, not the object pointer.
+*       Only one record is removed; no destination object is disposed of.
+*
+*   BUGS
+*       Do not remove notification records during notification dispatch; its
+*       list traversal is not protected against deletion.
+*
+*/
 IPTR Notify__MUIM_KillNotifyObj(struct IClass *cl, Object *obj,
     struct MUIP_KillNotifyObj *msg)
 {
@@ -631,9 +980,35 @@ IPTR Notify__MUIM_KillNotifyObj(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_MultiSet : Set an attribute for multiple objects.
- */
+/****** Notify.mui/MUIM_MultiSet ************
+*
+*   NAME
+*       MUIM_MultiSet
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_MultiSet, attr, val, (IPTR)first, ...,
+*       (IPTR)NULL);
+*
+*   FUNCTION
+*       Set one attribute on each object in a NULL-terminated list, in list
+*       order.
+*
+*   INPUTS
+*       attr - Attribute identifier.
+*       val - IPTR value.
+*       first, ... - Live destination object pointers followed by NULL. A NULL
+*       first entry gives an empty list.
+*
+*   RESULT
+*       Always TRUE after traversing the list, including an empty list.
+*       Individual setter return values are ignored.
+*
+*   NOTES
+*       The call can synchronously trigger notifications on every destination.
+*       It does not retain the objects or copy data referenced by val. A missing
+*       terminator causes reads beyond the method message.
+*
+*/
 IPTR Notify__MUIM_MultiSet(struct IClass *cl, Object *obj,
     struct MUIP_MultiSet *msg)
 {
@@ -646,9 +1021,32 @@ IPTR Notify__MUIM_MultiSet(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_NoNotifySet : Acts like MUIM_Set but doesn't trigger any notification.
- */
+/****** Notify.mui/MUIM_NoNotifySet ************
+*
+*   NAME
+*       MUIM_NoNotifySet
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_NoNotifySet, attr, val);
+*
+*   FUNCTION
+*       Call SetAttrs with MUIA_NoNotify set to TRUE and the requested
+*       attribute/value pair.
+*
+*   INPUTS
+*       attr - Attribute identifier.
+*       val - IPTR attribute value.
+*
+*   RESULT
+*       The SetAttrs result. Notify's own OM_SET returns zero even when it
+*       stores the value.
+*
+*   NOTES
+*       Suppression applies to Notify's notification pass for this set call.
+*       Subclass behavior and setter side effects still apply; this is not a
+*       persistent notification-disable switch.
+*
+*/
 IPTR Notify__MUIM_NoNotifySet(struct IClass *cl, Object *obj,
     struct MUIP_NoNotifySet *msg)
 {
@@ -657,9 +1055,58 @@ IPTR Notify__MUIM_NoNotifySet(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_Notify : Add a notification event handler to an object.
- */
+/****** Notify.mui/MUIM_Notify ************
+*
+*   NAME
+*       MUIM_Notify
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Notify, TrigAttr, TrigVal,
+*       (IPTR)DestObj, FollowParams, ...);
+*
+*   FUNCTION
+*       Append a notification that sends a copied method message when a matching
+*       tag reaches Notify's OM_SET.
+*
+*   INPUTS
+*       TrigAttr - ULONG attribute identifier.
+*       TrigVal - IPTR value to match, or MUIV_EveryTime. For
+*       MUIA_Window_InputEvent with a non-EveryTime value, supply a readable
+*       ParseIX description string instead.
+*       DestObj - Live object pointer, MUIV_Notify_Self,
+*       MUIV_Notify_Application, or MUIV_Notify_Window.
+*       FollowParams - Number of following IPTR words, including the destination
+*       MethodID; must be at least 1. Supply exactly that many words.
+*       ... - Destination MethodID followed by its arguments.
+*
+*   RESULT
+*       TRUE if the notification was registered; FALSE for fewer than one follow
+*       word, allocation failure, or an invalid input-event description. No
+*       destination call is made during registration.
+*
+*   NOTES
+*       The method words are copied; pointed-to objects and data are not. Keep
+*       those live until no registered notification can use them. Duplicate
+*       registrations are accepted and run in registration order. Sizes must fit
+*       the ULONG allocation calculation; there is no overflow check.
+*       For MUIV_EveryTime only, argument words after MethodID equal to
+*       MUIV_TriggerValue or MUIV_NotTriggerValue are replaced with the current
+*       tag value or its logical negation. An ordinary fixed-value notification
+*       does not substitute these markers.
+*       Self resolves to the source object. Application requires live global
+*       info. Window requires an Area-compatible object with valid render-info
+*       storage; delivery is skipped when that pointer is NULL. A record already
+*       executing is skipped on recursive delivery; other records may still run.
+*       Destination method results are ignored.
+*
+*   BUGS
+*       MUIV_Notify_Parent is declared in the header but has no special handling
+*       in this implementation. It falls through as a literal destination
+*       pointer and must not be used as a selector. Application resolution does
+*       not check global info for NULL. Do not remove active records or dispose
+*       of the source from a notification callback.
+*
+*/
 IPTR Notify__MUIM_Notify(struct IClass *cl, Object *obj,
     struct MUIP_Notify *msg)
 {
@@ -685,18 +1132,71 @@ IPTR Notify__MUIM_Notify(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_Set : Set an attribute to a value, useful within a MUIM_Notify method.
- */
+/****** Notify.mui/MUIM_Set ************
+*
+*   NAME
+*       MUIM_Set
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Set, attr, val);
+*
+*   FUNCTION
+*       Set one attribute on this object through the normal setter.
+*
+*   INPUTS
+*       attr - Attribute identifier.
+*       val - IPTR attribute value.
+*
+*   RESULT
+*       The setter result. Notify's OM_SET returns zero even after storing
+*       recognized attributes.
+*
+*   NOTES
+*       This can deliver notifications synchronously. Ownership and copying of
+*       data referenced by val depend on the target attribute.
+*
+*/
 IPTR Notify__MUIM_Set(struct IClass *cl, Object *obj,
     struct MUIP_Set *msg)
 {
     return set(obj, msg->attr, msg->val);
 }
 
-/*
- * MUIM_SetAsString : Set a (text kind) attribute to a string.
- */
+/****** Notify.mui/MUIM_SetAsString ************
+*
+*   NAME
+*       MUIM_SetAsString
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_SetAsString, attr, (IPTR)format, val,
+*       ...);
+*
+*   FUNCTION
+*       Format a temporary string with RawDoFmt, set attr to its pointer, then
+*       immediately free the string.
+*
+*   INPUTS
+*       attr - String attribute whose setter consumes or copies the string
+*       during the call.
+*       format - Readable RawDoFmt format string.
+*       val, ... - Arguments in the RawDoFmt data-stream layout required by the
+*       format and target ABI; not a printf va_list.
+*
+*   RESULT
+*       FALSE if temporary-string allocation fails; otherwise TRUE. The
+*       attribute setter's result is ignored.
+*
+*   NOTES
+*       The format is processed twice, first to count output bytes and then to
+*       write them. Keep the format and arguments valid and consistent across
+*       both passes. The final length must fit LONG and the allocation size.
+*
+*   BUGS
+*       Do not use this method with an attribute that merely borrows the
+*       supplied string, including Notify's MUIA_HelpNode: the stored pointer
+*       would refer to freed memory after return.
+*
+*/
 IPTR Notify__MUIM_SetAsString(struct IClass *cl, Object *obj,
     struct MUIP_SetAsString *msg)
 {
@@ -725,10 +1225,32 @@ IPTR Notify__MUIM_SetAsString(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_SetUData : This method tests if the MUIA_UserData of the object
- * contains the given <udata> and sets <attr> to <val> for itself in this case.
- */
+/****** Notify.mui/MUIM_SetUData ************
+*
+*   NAME
+*       MUIM_SetUData
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_SetUData, udata, attr, val);
+*
+*   FUNCTION
+*       Set attr to val if this object's MUIA_UserData matches udata.
+*
+*   INPUTS
+*       udata - IPTR comparison value.
+*       attr - Attribute identifier.
+*       val - IPTR attribute value.
+*
+*   RESULT
+*       TRUE on a UserData match, FALSE otherwise. The setter result is ignored.
+*
+*   NOTES
+*       Notify examines only itself and uses the same implementation for
+*       SetUData and SetUDataOnce. A container may override these methods to
+*       visit all matches or stop after the first match. Normal setter
+*       notifications can run synchronously.
+*
+*/
 IPTR Notify__MUIM_SetUData(struct IClass *cl, Object *obj,
     struct MUIP_SetUData *msg)
 {
@@ -743,9 +1265,30 @@ IPTR Notify__MUIM_SetUData(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_WriteLong : This method simply writes a longword somewhere to memory.
- */
+/****** Notify.mui/MUIM_WriteLong ************
+*
+*   NAME
+*       MUIM_WriteLong
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_WriteLong, val, (IPTR)memory);
+*
+*   FUNCTION
+*       Write val to the ULONG location addressed by memory.
+*
+*   INPUTS
+*       val - ULONG value.
+*       memory - Non-NULL, suitably aligned, writable ULONG pointer.
+*
+*   RESULT
+*       Always TRUE after the write.
+*
+*   NOTES
+*       This writes one ULONG, not an IPTR-sized value on 64-bit targets. No
+*       bounds, alignment, or NULL checks are performed. Ownership of memory
+*       does not change.
+*
+*/
 IPTR Notify__MUIM_WriteLong(struct IClass *cl, Object *obj,
     struct MUIP_WriteLong *msg)
 {
@@ -754,9 +1297,30 @@ IPTR Notify__MUIM_WriteLong(struct IClass *cl, Object *obj,
 }
 
 
-/*
- * MUIM_WriteString : This method simply copies a string somewhere to memory.
- */
+/****** Notify.mui/MUIM_WriteString ************
+*
+*   NAME
+*       MUIM_WriteString
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_WriteString, (IPTR)str, (IPTR)memory);
+*
+*   FUNCTION
+*       Copy the complete NUL-terminated string with strcpy.
+*
+*   INPUTS
+*       str - Readable NUL-terminated source string.
+*       memory - Writable destination with room for the string and its
+*       terminating NUL; source and destination must not overlap.
+*
+*   RESULT
+*       Always TRUE after the copy.
+*
+*   NOTES
+*       No size or NULL checks are performed. The caller retains both buffers;
+*       the method neither allocates nor frees storage.
+*
+*/
 IPTR Notify__MUIM_WriteString(struct IClass *cl, Object *obj,
     struct MUIP_WriteString *msg)
 {
@@ -764,9 +1328,30 @@ IPTR Notify__MUIM_WriteString(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/**************************************************************************
- MUIM_ConnectParent
-**************************************************************************/
+/****** Notify.mui/MUIM_ConnectParent ************
+*
+*   NAME
+*       MUIM_ConnectParent
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_ConnectParent, (IPTR)parent);
+*
+*   FUNCTION
+*       Copy the parent's global-info pointer into this object.
+*
+*   INPUTS
+*       parent - Non-NULL live object with Notify-compatible instance data.
+*
+*   RESULT
+*       Always TRUE after copying the pointer.
+*
+*   NOTES
+*       This borrows the global-info structure; it does not retain the parent or
+*       application. Notify does not set MUIA_Parent, insert the object into a
+*       container, or propagate the connection to children. Containers provide
+*       those operations separately.
+*
+*/
 IPTR Notify__MUIM_ConnectParent(struct IClass *cl, Object *obj,
     struct MUIP_ConnectParent *msg)
 {
@@ -780,9 +1365,30 @@ IPTR Notify__MUIM_ConnectParent(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/**************************************************************************
- MUIM_DisconnectParent
-**************************************************************************/
+/****** Notify.mui/MUIM_DisconnectParent ************
+*
+*   NAME
+*       MUIM_DisconnectParent
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_DisconnectParent);
+*
+*   FUNCTION
+*       Return without changing this object's connection fields.
+*
+*   INPUTS
+*       No arguments beyond MethodID.
+*
+*   RESULT
+*       Always zero; no disconnection work is performed by Notify.
+*
+*   NOTES
+*       AROS deliberately retains the global-info pointer here. This method also
+*       leaves MUIA_Parent unchanged. Container methods may clear their parent
+*       field separately. The retained pointer does not keep the application or
+*       configuration object alive.
+*
+*/
 IPTR Notify__MUIM_DisconnectParent(struct IClass *cl, Object *obj,
     struct MUIP_DisconnectParent *msg)
 {
@@ -795,9 +1401,38 @@ IPTR Notify__MUIM_DisconnectParent(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/**************************************************************************
- MUIM_GetConfigItem
-**************************************************************************/
+/****** Notify.mui/MUIM_GetConfigItem ************
+*
+*   NAME
+*       MUIM_GetConfigItem
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_GetConfigItem, id, (IPTR)storage);
+*
+*   FUNCTION
+*       Look up id with MUIM_Dataspace_Find on the configuration object
+*       referenced by this object's global info.
+*
+*   INPUTS
+*       id - ULONG record identifier.
+*       storage - Writable IPTR location for the payload pointer.
+*       obj - Object with live global info and a valid mgi_Configdata object.
+*
+*   RESULT
+*       TRUE and a borrowed payload pointer in storage if found; FALSE with
+*       storage unchanged otherwise.
+*
+*   NOTES
+*       No payload length is returned. Do not free the pointer.
+*       Configuration-record replacement, removal, or disposal can invalidate
+*       it; coordinate its use with changes to the configuration dataspace.
+*
+*   BUGS
+*       The method dereferences global info without checking for NULL. It is not
+*       safe on an unconnected object merely because the object supports Notify
+*       methods.
+*
+*/
 IPTR Notify__MUIM_GetConfigItem(struct IClass *cl, Object *obj,
     struct MUIP_GetConfigItem *msg)
 {
@@ -817,6 +1452,86 @@ IPTR Notify__MUIM_GetConfigItem(struct IClass *cl, Object *obj,
 }
 
 
+/****** Notify.mui/MUIM_Import ************
+*
+*   NAME
+*       MUIM_Import
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Import, (IPTR)dataspace);
+*
+*   FUNCTION
+*       Return TRUE without reading or writing any state. Notify implements this
+*       method as a stub in its dispatcher.
+*
+*   INPUTS
+*       dataspace - Declared Dataspace object argument; ignored by Notify.
+*
+*   RESULT
+*       Always TRUE. This does not mean that state was transferred.
+*
+*   NOTES
+*       Subclasses must implement their own persistence. Notify does not
+*       traverse children or use MUIA_ObjectID here.
+*
+*/
+
+/****** Notify.mui/MUIM_Export ************
+*
+*   NAME
+*       MUIM_Export
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Export, (IPTR)dataspace);
+*
+*   FUNCTION
+*       Return TRUE without reading or writing any state. Notify implements this
+*       method as a stub in its dispatcher.
+*
+*   INPUTS
+*       dataspace - Declared Dataspace object argument; ignored by Notify.
+*
+*   RESULT
+*       Always TRUE. This does not mean that state was transferred.
+*
+*   NOTES
+*       Subclasses must implement their own persistence. Notify does not
+*       traverse children or use MUIA_ObjectID here.
+*
+*/
+
+/****** Notify.mui/MUIM_SetUDataOnce ************
+*
+*   NAME
+*       MUIM_SetUDataOnce
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_SetUDataOnce, udata, attr, val);
+*
+*   FUNCTION
+*       Set attr to val if this object's MUIA_UserData matches udata.
+*
+*   INPUTS
+*       udata - IPTR comparison value.
+*       attr - Attribute identifier.
+*       val - IPTR attribute value.
+*
+*   RESULT
+*       TRUE on a UserData match, FALSE otherwise. The setter result is ignored.
+*
+*   NOTES
+*       Notify examines only itself and uses the same implementation for
+*       SetUData and SetUDataOnce. A container may override these methods to
+*       visit all matches or stop after the first match. Normal setter
+*       notifications can run synchronously.
+*
+*/
+
+/* Dispatch supported Notify messages and return their handler result.
+ * Import and Export return TRUE without work; SetUDataOnce shares SetUData.
+ * Forward all other messages to rootclass. The caller supplies a live
+ * object and a correctly sized message.
+ */
 BOOPSI_DISPATCHER(IPTR, Notify_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)

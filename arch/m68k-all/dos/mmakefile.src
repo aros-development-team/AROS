@@ -18,6 +18,13 @@ USER_CPPFLAGS := -D__DOS_NOLIBBASE__
 
 USER_AFLAGS := -I$(GENINCDIR)
 
+# SysBase is the absolute address 4 in the amiga-m68k ROM link (see
+# rom/dos/mmakefile.src)
+ifeq ($(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU),amiga-m68k)
+USER_CFLAGS += -Wa,--defsym,SysBase=4
+USER_AFLAGS += -Wa,--defsym,SysBase=4
+endif
+
 %build_archspecific \
   mainmmake=kernel-dos maindir=rom/dos arch=m68k \
   files="$(CFILES)" asmfiles="$(AFILES)" modname=dos

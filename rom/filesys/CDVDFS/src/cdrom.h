@@ -19,6 +19,17 @@
 
 #include <inttypes.h>
 
+/*
+ * Storage class for small static helpers used by several code paths. On
+ * m68k the handler lives in the Kickstart ROM, so keep one out of line copy;
+ * elsewhere inline them into every caller as the open coded original was.
+ */
+#if defined(__mc68000__)
+#define CDVDFS_SHARED static __attribute__((noinline))
+#else
+#define CDVDFS_SHARED static inline __attribute__((always_inline))
+#endif
+
 #define VERSION "CDROM-Handler 1.15 (03.11.94)"
 
 #define SCSI_BUFSIZE 2048
@@ -108,8 +119,11 @@ int Read_Chunk(CDROM *p_cd, long p_sector);
 int Read_File_Chunk(CDROM *p_cd, long p_sector);
 void Cleanup_CDROM(CDROM *p_cd);
 int Test_Unit_Ready(CDROM *p_cd);
+#ifndef AROS_KERNEL
+/* only used by the stand-alone test program */
 int Mode_Select(CDROM *p_cd, int p_on, int p_block_length);
 int Inquire(CDROM *p_cd, t_inquiry_data *p_data);
+#endif
 t_toc_data *Read_TOC
 	(
 		CDROM *p_cd,

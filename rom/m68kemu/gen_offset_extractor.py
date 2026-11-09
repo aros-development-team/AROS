@@ -4,7 +4,7 @@
 """Scan NDK headers, generate C that emits offsets — recurse into embedded structs."""
 import re, os
 
-NDK = "/opt/amiga/m68k-amigaos/ndk-include"
+NDK = os.environ.get("NDK", "/opt/amiga/m68k-amigaos/ndk-include")
 DIRS = ["exec","dos","intuition","graphics","utility","workbench",
         "devices","libraries","resources","datatypes"]
 SKIP_HEADERS = {"libraries/bsdsocket.h","libraries/miami.h","libraries/usergroup.h",
@@ -67,19 +67,25 @@ for d in DIRS:
                 line = re.sub(r'/\*.*?\*/', '', line).strip()
                 line = re.sub(r'//.*$', '', line).strip()
                 line = line.rstrip(";").strip()
-                # Match: [qualifiers] type [*]name [array]
+                # Match: [qualifiers] type declarator[, declarator...]
+                # where a declarator is [*]name[array] ("WORD MouseX, MouseY")
                 fm = re.match(
                     r"(?:(?:unsigned|signed|const|volatile)\s+)*"
-                    r"(?:(struct|enum)\s+)?(\w+)\s+(\*?)(\w+)(?:\[(\d+)\])?$",
+                    r"(?:(struct|enum)\s+)?(\w+)\s*(.*)$",
                     line)
-                if fm:
-                    fname = fm.group(4)
+                if not fm or not fm.group(3):
+                    continue
+                for decl in fm.group(3).split(","):
+                    dm = re.match(r"\s*(\*?)\s*(\w+)\s*(?:\[(\w+)\])?\s*$", decl)
+                    if not dm:
+                        break
+                    fname = dm.group(2)
                     if fname in SKIP_FIELDS:
                         continue
                     is_struct = fm.group(1) == "struct"
                     type_name = fm.group(2)
-                    is_pointer = fm.group(3) == "*"
-                    is_array = fm.group(5) is not None
+                    is_pointer = dm.group(1) == "*"
+                    is_array = dm.group(3) is not None
                     fields.append((type_name, fname, is_pointer, is_array, is_struct))
             if fields:
                 structs[sname] = (hdr, fields)
@@ -102,6 +108,32 @@ def get_leaf_fields(sname, prefix, depth=0):
             yield (fname, access)
 
 
+# ONLY=<offsets file>: probe just the structs that file names (and the
+# structs they embed), e.g. to regenerate an existing set from other headers
+only = os.environ.get("ONLY")
+if only:
+    wanted = set()
+    for line in open(only):
+        parts = line.split("|")
+        if len(parts) > 2 and parts[0] in ("OFF", "SIZ"):
+            wanted.add(parts[1])
+    keep = set()
+    todo = [n for n in wanted if n in structs]
+    while todo:
+        n = todo.pop()
+        if n in keep:
+            continue
+        keep.add(n)
+        for type_name, _, is_pointer, is_array, is_struct in structs[n][1]:
+            if is_struct and not is_pointer and type_name in structs:
+                todo.append(type_name)
+    for n in list(structs):
+        if n not in keep:
+            del structs[n]
+    output = wanted
+else:
+    output = set(structs)
+
 # Generate C code
 print('#include <stddef.h>')
 headers = set(hdr for hdr, _ in structs.values())
@@ -109,7 +141,7 @@ for h in sorted(headers):
     print(f'#include <{h}>')
 print('\nvoid dummy(void) {')
 
-for sname in sorted(structs.keys()):
+for sname in sorted(n for n in structs if n in output):
     seen_names = set()
     for display_name, access_path in get_leaf_fields(sname, ""):
         # Avoid duplicate field names within the same struct

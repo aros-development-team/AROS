@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Open a file with the specified mode.
 */
@@ -19,7 +19,7 @@
 #include "dos_intern.h"
 
 static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
-    struct FileHandle *handle, LONG soft_nesting, struct DosLibrary *DOSBase);
+    APTR fhp, LONG soft_nesting, struct DosLibrary *DOSBase);
 
 #define MAX_SOFT_LINK_NESTING 16 /* Maximum level of soft links nesting */
 
@@ -110,7 +110,7 @@ static LONG dupHandle(struct FileHandle *fh, BPTR lock, struct DosLibrary *DOSBa
     fl = BADDR(lock);
     port = fl->fl_Task;
 
-    err = dopacket2(DOSBase, NULL, port, ACTION_FH_FROM_LOCK, MKBADDR(fh), lock);
+    err = dopacket2n(DOSBase, port, ACTION_FH_FROM_LOCK, MKBADDR(fh), lock);
 
     if (err != DOSFALSE) {
         fh->fh_Type = port;
@@ -125,10 +125,12 @@ static LONG dupHandle(struct FileHandle *fh, BPTR lock, struct DosLibrary *DOSBa
 
 
 /* Try to open name recursively calling itself in case it's a soft link.
-   Store result in handle. Return boolean value indicating result. */
+   Store result in the FileHandle fhp. Return boolean value indicating result.
+   The type is that of a SoftlinkFunc (see FollowSoftlink()). */
 static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
-    struct FileHandle *handle, LONG soft_nesting, struct DosLibrary *DOSBase)
+    APTR fhp, LONG soft_nesting, struct DosLibrary *DOSBase)
 {
+    struct FileHandle *handle = fhp;
     /* Get pointer to process structure */
     struct Process *me = (struct Process *)FindTask(NULL);
     LONG ret = DOSFALSE;
@@ -223,36 +225,7 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
         }
 
         if (error == ERROR_IS_SOFT_LINK)
-        {
-            STRPTR softname = ResolveSoftlink(cur, dvp, name, DOSBase);
-
-            if (softname)
-            {
-                /* All OK */
-                BPTR olddir = BNULL;
-
-                if (dvp)
-                {
-                    olddir = me->pr_CurrentDir;
-                    error = RootDir(dvp, DOSBase);
-                }
-                else
-                    error = 0;
-
-                if (!error)
-                {
-                    ret = InternalOpen(softname, accessMode, handle, soft_nesting - 1, DOSBase);
-                    error = ret ? 0 : IoErr();
-
-                    if (olddir)
-                        UnLock(CurrentDir(olddir));
-                }
-
-                FreeVec(softname);
-            }
-            else
-                error = IoErr();
-        }
+            error = FollowSoftlink(cur, dvp, name, InternalOpen, accessMode, handle, soft_nesting, DOSBase);
 
         FreeDeviceProc(dvp);
     }

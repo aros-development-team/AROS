@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     
     Desc: p96 RTG support code.
 */
@@ -60,9 +60,43 @@ WORD P96GFXRTG__GetDepth(ULONG rgbformat)
     return 0;
 }
 
-ULONG P96GFXRTG__GetFormat(struct p96gfx_staticdata *csd, struct p96gfx_carddata *cid, OOP_Object *pixfmt)
+/*
+ * What tells the RGB formats apart, in the order they are tried. swap is
+ * the pixel format's SwapPixelBytes if it matters (SWAP_ANY if not), and
+ * blue is set where the blue mask has to be 0x0000f800 as well.
+ */
+#define SWAP_ANY 2
+
+struct RTGFormatKey
+{
+    ULONG redmask;
+    UBYTE depth;
+    UBYTE rgbformat;
+    UBYTE swap;
+    UBYTE blue;
+};
+
+static const struct RTGFormatKey formatkeys[] =
+{
+    { 0x00007c00, 15, RGBFB_R5G5B5,   FALSE,    FALSE },
+    { 0x00007c00, 15, RGBFB_R5G5B5PC, TRUE,     FALSE },
+    { 0x0000003e, 15, RGBFB_B5G5R5PC, SWAP_ANY, TRUE  },
+    { 0x0000f800, 16, RGBFB_R5G6B5,   FALSE,    FALSE },
+    { 0x0000f800, 16, RGBFB_R5G6B5PC, TRUE,     FALSE },
+    { 0x0000001f, 16, RGBFB_B5G6R5PC, SWAP_ANY, TRUE  },
+    { 0x0000ff00, 32, RGBFB_B8G8R8A8, SWAP_ANY, FALSE },
+    { 0xff000000, 32, RGBFB_R8G8B8A8, SWAP_ANY, FALSE },
+    { 0x000000ff, 32, RGBFB_A8B8G8R8, SWAP_ANY, FALSE },
+    { 0x00ff0000, 32, RGBFB_A8R8G8B8, SWAP_ANY, FALSE },
+    { 0x000000ff, 24, RGBFB_B8G8R8,   SWAP_ANY, FALSE },
+    { 0x00ff0000, 24, RGBFB_R8G8B8,   SWAP_ANY, FALSE },
+};
+_Static_assert(RGBFB_MaxFormats <= 256, "RGB formats must fit a byte");
+
+ULONG P96GFXRTG__GetFormat(struct p96gfx_staticdata *csd, OOP_Object *pixfmt)
 {
     IPTR depth, redmask, bluemask, endianswitch;
+    const struct RTGFormatKey *key;
 
     OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
     OOP_GetAttr(pixfmt, aHidd_PixFmt_RedMask, &redmask);
@@ -71,42 +105,19 @@ ULONG P96GFXRTG__GetFormat(struct p96gfx_staticdata *csd, struct p96gfx_carddata
 
     if (depth == 8)
         return RGBFB_CLUT;
-    if (depth == 15) {
-        if (redmask == 0x00007c00 && !endianswitch)
-            return RGBFB_R5G5B5;
-        if (redmask == 0x00007c00 && endianswitch)
-            return RGBFB_R5G5B5PC;
-        if (redmask == 0x0000003e && bluemask == 0x0000f800)
-            return RGBFB_B5G5R5PC;
-    }
-    if (depth == 16) {
-        if (redmask == 0x0000f800 && !endianswitch)
-            return RGBFB_R5G6B5;
-        if (redmask == 0x0000f800 && endianswitch)
-            return RGBFB_R5G6B5PC;
-        if (redmask == 0x0000001f && bluemask == 0x0000f800)
-            return RGBFB_B5G6R5PC;
-    }
-    if (depth == 32) {
-        if (redmask == 0x0000ff00)
-           return RGBFB_B8G8R8A8;
-        if (redmask == 0xff000000)
-           return RGBFB_R8G8B8A8;
-        if (redmask == 0x000000ff)
-           return RGBFB_A8B8G8R8;
-        if (redmask == 0x00ff0000)
-           return RGBFB_A8R8G8B8;
-    } else if (depth == 24) {
-        if (redmask == 0x000000ff)
-           return RGBFB_B8G8R8;
-        if (redmask == 0x00ff0000)
-           return RGBFB_R8G8B8;
+
+    for (key = formatkeys; key < &formatkeys[sizeof(formatkeys) / sizeof(formatkeys[0])]; key++)
+    {
+        if ((key->depth == depth) && (key->redmask == redmask) &&
+            ((key->swap == SWAP_ANY) || (key->swap == (endianswitch != 0))) &&
+            (!key->blue || (bluemask == 0x0000f800)))
+            return key->rgbformat;
     }
     D(bug("P96GFXRTG__GetFormat RGBFB_NONE!? %d %08x %08x\n", depth, redmask, bluemask));
     return RGBFB_NONE;
 }
 
-void P96GFXRTG__MakeRenderInfo(struct p96gfx_staticdata *csd, struct p96gfx_carddata *cid, struct RenderInfo *ri, struct P96GfxBitMapData *bm)
+void P96GFXRTG__MakeRenderInfo(struct RenderInfo *ri, struct P96GfxBitMapData *bm)
 {
     ri->Memory = bm->VideoData;
     ri->BytesPerRow = bm->bytesperline;

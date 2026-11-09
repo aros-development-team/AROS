@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Retrieve the full pathname from a lock or a filehandle.
 */
@@ -53,7 +53,7 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
     {
         /* Reset each round, so a failed Examine leaves no lock to unlock below */
         parentlock = BNULL;
-        error = dopacket2(DOSBase, NULL, port, ACTION_EXAMINE_OBJECT, lock, MKBADDR(fib)) == 0;
+        error = dopacket2n(DOSBase, port, ACTION_EXAMINE_OBJECT, lock, MKBADDR(fib)) == 0;
         //bug("name='%s'\n", fib->fib_FileName);
         if (!error) {
             parentlock = (BPTR)dopacket1(DOSBase, &code, port, ACTION_PARENT, lock);

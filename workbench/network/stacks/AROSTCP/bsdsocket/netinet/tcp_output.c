@@ -80,6 +80,9 @@
 #include <netinet/in_cksum_protos.h>
 #include "tcp_compat.h"
 
+extern int tcp_do_pmtud;
+void tcp_mtudisc(struct tcpcb *, u_int32_t);
+
 #ifdef notyet
 extern struct mbuf *m_copypack();
 #endif
@@ -117,7 +120,7 @@ register struct tcpcb *tp;
      * to send, then transmit; otherwise, investigate further.
      */
     idle = (tp->snd_max == tp->snd_una);
-    if(idle && tp->t_idle >= tp->t_rxtcur) {
+    if(idle && tp->t_idle * TCP_SLOWHZ_MS >= tp->t_rxtcur) {
         /*
          * We have been idle for "a while" and no acks are
          * expected to clock out any data we send --
@@ -314,6 +317,7 @@ again:
             tp->t_timer[TCPT_PERSIST] == 0) {
         tp->t_rxtshift = 0;
         tcp_setpersist(tp);
+        TCP_UTO_START(tp);          /* data waits on the window */
     }
 
     /*
@@ -382,7 +386,7 @@ send:
 
         /* Form timestamp option as shown in appendix A of RFC 1323. */
         *lp++ = htonl(TCPOPT_TSTAMP_HDR);
-        *lp++ = htonl(tcp_now);
+        *lp++ = htonl(tcp_ms() + tp->t_ts_offset);
         *lp   = htonl(tp->ts_recent);
         optlen += TCPOLEN_TSTAMP_APPA;
     }
@@ -661,7 +665,12 @@ skip_sack:
      *        If peer needs us to echo congestion, set ECE.
      */
     if(tp->t_flagsext & TF_ECN_PERMIT) {
-        if(tp->t_flagsext & TF_ECN_SND_CWR) {
+        /* a SYN-ACK resent from SYN-RECEIVED agrees again (FreeBSD) */
+        if((flags & (TH_SYN | TH_ACK)) == (TH_SYN | TH_ACK))
+            ti->ti_flags |= TH_ECE;
+        /* CWR goes on the first new data after the reduction (6.1.2) */
+        if((tp->t_flagsext & TF_ECN_SND_CWR) && len > 0 &&
+                SEQ_GEQ(tp->snd_nxt, tp->snd_max)) {
             ti->ti_flags |= TH_CWR;
             tp->t_flagsext &= ~TF_ECN_SND_CWR;
             tcpstat.tcps_ecn_cwr++;
@@ -675,17 +684,19 @@ skip_sack:
             ti->ti_flags |= TH_ECE;
             tcpstat.tcps_ecn_ece++;
         }
-    } else if(flags & TH_SYN) {
+    } else if((flags & (TH_SYN | TH_ACK)) == TH_SYN) {
         /*
-         * Not yet negotiated: propose ECN in outgoing SYN.
-         * Client sends ECE+CWR; server sends ECE only.
+         * Not yet negotiated: ask for ECN in our SYN with ECE+CWR, in mode
+         * 1 only, and not after the SYN was resent twice: a path that
+         * drops it may be dropping ECN-setup SYNs (RFC 3168 section
+         * 6.1.1.1; FreeBSD's net.inet.tcp.ecn.maxretries). The SYN-ACK of
+         * a passive open comes from the syncache.
          */
-        if(tcp_do_ecn) {
-            if(!(flags & TH_ACK))
-                ti->ti_flags |= TH_ECE | TH_CWR; /* SYN */
-            else if(tp->t_flagsext & TF_ECN_PERMIT)
-                ti->ti_flags |= TH_ECE; /* SYN-ACK */
-        }
+        if(tcp_do_ecn == 1 && tp->t_rxtshift <= 1) {
+            ti->ti_flags |= TH_ECE | TH_CWR;
+            tp->t_flagsext |= TF_ECN_SYN;
+        } else
+            tp->t_flagsext &= ~TF_ECN_SYN;
     }
     /*
      * Calculate receive window.  Don't shrink window,
@@ -768,8 +779,9 @@ skip_sack:
              * Time this transmission if not a retransmission and
              * not currently timing anything.
              */
-            if(tp->t_rtt == 0) {
-                tp->t_rtt = 1;
+            if(tp->t_rtttime == 0) {
+                if((tp->t_rtttime = tcp_ms()) == 0)
+                    tp->t_rtttime = 1;      /* 0 is "not timing" */
                 tp->t_rtseq = startseq;
                 tcpstat.tcps_segstimed++;
             }
@@ -778,14 +790,14 @@ skip_sack:
         /*
          * Set retransmit timer if not currently set,
          * and not doing an ack or a keep-alive probe.
-         * Initial value for retransmit timer is smoothed
-         * round-trip time + 2 * round-trip time variance.
+         * Its value is t_rxtcur (ms), on the fast timeout.
          * Initialize shift counter which is used for backoff
          * of retransmit time.
          */
         if(tp->t_timer[TCPT_REXMT] == 0 &&
                 tp->snd_nxt != tp->snd_una) {
-            tp->t_timer[TCPT_REXMT] = tp->t_rxtcur;
+            tp->t_timer[TCPT_REXMT] = TCPT_REXMT_ARM(tp);
+            TCP_UTO_START(tp);      /* data waits for its ACK */
             if(tp->t_timer[TCPT_PERSIST]) {
                 tp->t_timer[TCPT_PERSIST] = 0;
                 tp->t_rxtshift = 0;
@@ -840,14 +852,24 @@ skip_sack:
         D(bug("[AROSTCP:TCP] %s: SEND6 mbuf=0x%p plen=%d\n",
               __func__, m, tlen));
 
+        /* the socket's IPV6_TCLASS; the ECN field is TCP's, as for IPv4 */
+        int tclass = inp->in6p_tclass & ~IPTOS_ECN_MASK;
+
+        if((tp->t_flagsext & TF_ECN_PERMIT) && ecn_ect &&
+                !(flags & (TH_SYN | TH_RST)))
+            tclass |= IPTOS_ECN_ECT0;
         error = tcp_v6output(m, &inp->inp_laddr6, &inp->inp_faddr6,
-                             inp->in6p_hops, tlen, inp);
+                             inp->in6p_hops, tlen, tclass, inp);
     } else
 #endif /* INET6 */
     {
         ((struct ip *)ti)->ip_len = m->m_pkthdr.len;
         ((struct ip *)ti)->ip_ttl = tp->t_inpcb->inp_ip.ip_ttl;	/* XXX */
-        ((struct ip *)ti)->ip_tos = tp->t_inpcb->inp_ip.ip_tos;	/* XXX */
+        /* the ECN field is TCP's (RFC 3168 section 6.1), not IP_TOS's */
+        ((struct ip *)ti)->ip_tos = tp->t_inpcb->inp_ip.ip_tos & ~IPTOS_ECN_MASK;
+        if(tcp_do_pmtud &&	/* path MTU discovery (RFC 1191) */
+                !(tp->t_flagsext & TF_PMTUD_NODF))
+            ((struct ip *)ti)->ip_off |= IP_DF;
         /*
          * ECN (RFC 3168): Set the ECT(0) codepoint in the IP header
          * for ECN-capable connections, but only on freshly transmitted
@@ -885,6 +907,12 @@ out:
             }
             return (0);
         }
+        if(error == EMSGSIZE && !isipv6) {
+            /* DF set, and larger than the path MTU the route now has
+             * (RFC 1191): resend in segments that fit */
+            tcp_mtudisc(tp, 0);
+            return (0);
+        }
         if((error == EHOSTUNREACH || error == ENETDOWN)
                 && TCPS_HAVERCVDSYN(tp->t_state)) {
             tp->t_softerror = error;
@@ -913,7 +941,9 @@ void
 tcp_setpersist(tp)
 register struct tcpcb *tp;
 {
-    register int t = ((tp->t_srtt >> 2) + tp->t_rttvar) >> 1;
+    /* srtt + 2 * rttvar, in slow ticks: the persist timer runs on them */
+    register int t = TCP_MS_TO_STICKS((tp->t_srtt >> TCP_RTT_SHIFT) +
+                                      (tp->t_rttvar >> (TCP_RTTVAR_SHIFT - 1)));
 
     if(tp->t_timer[TCPT_REXMT])
         panic("tcp_output REXMT");

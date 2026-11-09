@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Open a file from a lock
 */
@@ -59,7 +59,7 @@
     if (fh) {
         struct MsgPort *port = fl->fl_Task;
 
-        err = dopacket2(DOSBase, NULL, port, ACTION_FH_FROM_LOCK, MKBADDR(fh), lock);
+        err = dopacket2n(DOSBase, port, ACTION_FH_FROM_LOCK, MKBADDR(fh), lock);
 
         if (err == DOSFALSE) {
             FreeDosObject(DOS_FILEHANDLE, fh);

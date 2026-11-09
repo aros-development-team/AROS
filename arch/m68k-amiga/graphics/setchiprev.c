@@ -8,6 +8,7 @@
 #include <hardware/custom.h>
 
 #include "graphics_intern.h"
+#include "amigagfx_intern.h"
 
 #include <interface/HW.h>
 #include <hidd/amigavideo.h>
@@ -87,7 +88,7 @@ AROS_LH1(ULONG, SetChipRev,
             ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
 
             if (amigagfxhidd) {
-                OOP_MethodID HiddAmigaGfxBase = OOP_GetMethodID(IID_Hidd_AmigaGfx, 0);
+                OOP_MethodID HiddAmigaGfxBase = gfx_AmigaGfxBase(GfxBase);
                 HIDD_AMIGAGFX_EnableAGA(amigagfxhidd);
             }
         }

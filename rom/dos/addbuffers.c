@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Add or remove cache memory from a filesystem.
 */
@@ -70,7 +70,7 @@
         return DOSFALSE;
     }
 
-    ret = dopacket1(DOSBase, NULL, dvp->dvp_Port, ACTION_MORE_CACHE, numbuffers);
+    ret = dopacket1n(DOSBase, dvp->dvp_Port, ACTION_MORE_CACHE, numbuffers);
 
     if (ret > 0)
     {

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Create a hard or soft link.
 */
@@ -60,18 +60,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct PacketHelperStruct phs;
-    LONG status;
-
-    status = DOSFALSE;
-    if (getpacketinfo(DOSBase, name, &phs))
-    {
-        status = dopacket4(DOSBase, NULL, phs.port, ACTION_MAKE_LINK,
-            phs.lock, phs.name, (SIPTR)dest, soft ? LINK_SOFT: LINK_HARD);
-        freepacketinfo(DOSBase, &phs);
-    }
-
-    return status;
+    return pathpacket(DOSBase, name, ACTION_MAKE_LINK, FALSE, (SIPTR)dest, soft ? LINK_SOFT : LINK_HARD);
 
     AROS_LIBFUNC_EXIT
 } /* MakeLink */

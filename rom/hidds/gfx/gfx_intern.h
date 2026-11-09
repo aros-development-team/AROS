@@ -51,9 +51,40 @@ struct HWGfxData
 
 #define SWAPBYTES_WORD(x) ((((x) >> 8) & 0x00FF) | (((x) & 0x00FF) << 8))
 
+/*
+ * Storage class for static helpers shared by several code paths. On m68k
+ * the module lives in the Kickstart ROM, so keep one out of line copy;
+ * elsewhere inline them into every caller as the open coded original was.
+ */
+#if defined(__mc68000__)
+#define GFX_SHARED static __attribute__((noinline))
+#else
+#define GFX_SHARED static inline __attribute__((always_inline))
+#endif
+
+/*
+ * The per pixel size variants of the bitmap memory methods (CopyMemBox8,
+ * CopyMemBox16, ...) have consecutive IDs and, except for FillMemRect, the
+ * same message, so callers dispatch them with a method ID computed from the
+ * bytes per pixel. Check that a variant directly follows the previous one.
+ */
+#define GFX_ASSERT_NEXT_ID(prev, next)                                          \
+    _Static_assert(moHidd_BitMap_##next == moHidd_BitMap_##prev + 1,            \
+                   "moHidd_BitMap_" #next " must follow " #prev)
+#define GFX_ASSERT_NEXT_METHOD(prev, next)                                      \
+    GFX_ASSERT_NEXT_ID(prev, next);                                             \
+    _Static_assert(sizeof(struct pHidd_BitMap_##next) ==                        \
+                   sizeof(struct pHidd_BitMap_##prev),                          \
+                   "pHidd_BitMap_" #next " must match " #prev)
+#define GFX_ASSERT_BPP_METHODS(name)                                            \
+    GFX_ASSERT_NEXT_METHOD(name##8, name##16);                                  \
+    GFX_ASSERT_NEXT_METHOD(name##16, name##24);                                 \
+    GFX_ASSERT_NEXT_METHOD(name##24, name##32)
+
 struct colormap_data
 {
     HIDDT_ColorLUT clut;
+    struct SignalSemaphore palette_lock;
 };
 
 struct pixfmt_data
@@ -149,6 +180,7 @@ struct mode_db {
     
     struct mode_bm orig_mode_bm;	/* Original as supplied by subclass */
     struct mode_bm checked_mode_bm;	/* After applying monitor refresh rate checks etc. */
+    struct mode_bm soft_mode_bm;       /* Software-only modes; never native scanout. */
     
 };
 
@@ -193,6 +225,13 @@ struct DecodeInstance
 #define DECODEINST_DATA(inst)   ((APTR)(&(inst)->vec + 1))
 #define DECODEINST_FROM(iface)  ((struct DecodeInstance *)((UBYTE *)(iface) - offsetof(struct DecodeInstance, vec) - sizeof(struct HIDD_DecodeInterface)))
 
+/* A {func, Class} pair of struct HIDDBitMapData's direct method calls */
+struct BMFastMethod
+{
+    OOP_MethodFunc         func;
+    OOP_Class             *Class;
+};
+
 struct HIDDBitMapData
 {
     struct _hidd_bitmap_protected prot;
@@ -227,7 +266,8 @@ struct HIDDBitMapData
     OOP_Object            *gc;            /* Shared GC for copy operations                 */
     HIDDT_ModeID           modeid;        /* Display mode ID		                   */
 
-    /* Optimize these method calls */
+    /* Optimize these method calls. BM__Root__New() sets them up as an array of
+       struct BMFastMethod, from putpixel on, keep them consecutive. */
 #if USE_FAST_PUTPIXEL
     OOP_MethodFunc         putpixel;
     OOP_Class 	          *putpixel_Class;
@@ -300,7 +340,7 @@ struct HiddBMHistogramData
 };
 
 #define NUM_ATTRBASES   14
-#define NUM_METHODBASES 9
+#define NUM_METHODBASES 10
 
 struct class_static_data
 {
@@ -374,6 +414,7 @@ struct class_static_data
 #undef HiddColorMapBase
 #undef HWBase
 #undef HiddCompositorBase
+#undef HiddBase
 #define HiddBitMapBase	    (csd->methodBases[0])
 #define HiddBMHistogramBase (csd->methodBases[1])
 #define HiddGfxBase	    (csd->methodBases[2])
@@ -383,6 +424,7 @@ struct class_static_data
 #define HiddColorMapBase    (csd->methodBases[6])
 #define HWBase              (csd->methodBases[7])
 #define HiddCompositorBase  (csd->methodBases[8])
+#define HiddBase            (csd->methodBases[9])
 
 /* Library base */
 
@@ -676,5 +718,8 @@ static inline APTR BMHADDCOLOR(OOP_Class *cl, OOP_Object *o, HIDDT_Color *color,
 #else
 #define BMHADDCOLOR(cl, obj, color, count) HIDD_BMHISTOGRAM_AddColorEntry(obj, color, count)
 #endif
+
+#include "gfx_palette.h"
+#include "gfx_softmodes.h"
 
 #endif /* GFX_HIDD_INTERN_H */

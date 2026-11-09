@@ -1,5 +1,26 @@
 
 /*
+ * Helpers that several files use on drawing paths. On m68k these bodies are
+ * inlined into enough callers to matter for the 512 KiB ROM bank, so there
+ * they are compiled once, out of line, in gfxfuncsupport.c (which defines
+ * GFX_GETDRIVERDATA_IMPL) and the other files see only the prototypes. Each
+ * is called once per drawing operation or clip rectangle, ahead of the far
+ * costlier driver method call. Other targets keep them inline.
+ */
+#if defined(__mc68000__) && !defined(GFX_GETDRIVERDATA_IMPL)
+OOP_Object *SelectDriverObject(struct BitMap *srcbm, OOP_Object *dstbm_obj, struct GfxBase *GfxBase);
+OOP_Object *GetDriverData(struct RastPort *rp, struct GfxBase *GfxBase);
+void internal_BltBitMapRastPort(struct BitMap *srcBitMap, WORD xSrc, WORD ySrc, struct RastPort *destRP,
+                                WORD xDest, WORD yDest, WORD xSize, WORD ySize, ULONG minterm,
+                                RENDERFUNC render_func, PLANEPTR mask, struct GfxBase *GfxBase);
+#else
+#if defined(__mc68000__)
+#define GFX_INLINE_SHARED
+#else
+#define GFX_INLINE_SHARED static inline
+#endif
+
+/*
  * Select a driver to call for operations between struct BitMap (source) and OOP_Object (destination).
  * Used by BltBitMapRastPort() and BltMaskBitMapRastPort().
  *
@@ -9,7 +30,7 @@
  * 2. If one of drivers is our default software bitmap driver,
  *    we use another one, which can be an accelerated video driver.
  */
-static inline OOP_Object *SelectDriverObject(struct BitMap *srcbm, OOP_Object *dstbm_obj, struct GfxBase *GfxBase)
+GFX_INLINE_SHARED OOP_Object *SelectDriverObject(struct BitMap *srcbm, OOP_Object *dstbm_obj, struct GfxBase *GfxBase)
 {
     struct gfxdisplay_data *driver  = GET_BM_DRIVERDATA(srcbm);
 
@@ -61,20 +82,7 @@ static inline OOP_Object *SelectDriverObject(struct BitMap *srcbm, OOP_Object *d
     return gfxhidd;
 }
 
-/*
- * On m68k this body is inlined into enough callers to matter for the 512 KiB
- * ROM bank, so it is compiled once, out of line, in gfxfuncsupport.c (which
- * defines GFX_GETDRIVERDATA_IMPL). It is called once per drawing operation,
- * ahead of the far costlier driver method call. Other targets keep it inline.
- */
-#if defined(__mc68000__) && !defined(GFX_GETDRIVERDATA_IMPL)
-OOP_Object *GetDriverData(struct RastPort *rp, struct GfxBase *GfxBase);
-#else
-#if defined(__mc68000__)
-OOP_Object *GetDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
-#else
-static inline OOP_Object *GetDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
-#endif
+GFX_INLINE_SHARED OOP_Object *GetDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
 {
     /*
      * Here we do a little bit of hacky-wacky magic.
@@ -138,6 +146,47 @@ static inline OOP_Object *GetDriverData(struct RastPort *rp, struct GfxBase *Gfx
 
     OOP_OCLASS(gc) = CDD(GfxBase)->gcClass;	/* Set class pointer			*/
     return gc;					/* Our handmade object is ready to use!	*/
+}
+
+/*
+ * The body of BltBitMapRastPort() and BltMaskBitMapRastPort(): render_func
+ * does the copy of each piece, mask is the mask of BltMaskBitMapRastPort().
+ */
+GFX_INLINE_SHARED void internal_BltBitMapRastPort(struct BitMap *srcBitMap, WORD xSrc, WORD ySrc,
+                                                  struct RastPort *destRP, WORD xDest, WORD yDest,
+                                                  WORD xSize, WORD ySize, ULONG minterm,
+                                                  RENDERFUNC render_func, PLANEPTR mask,
+                                                  struct GfxBase *GfxBase)
+{
+    struct bitmap_render_data   brd;
+    struct Rectangle            rr;
+    OOP_Object                  *gc;
+    Point                       src;
+
+    brd.srcbm_obj = OBTAIN_HIDD_BM(srcBitMap);
+    if(NULL == brd.srcbm_obj) {
+        return;
+    }
+
+    brd.minterm = minterm;
+    brd.srcbm   = srcBitMap;
+    brd.mask    = mask;
+
+    /* Get RastPort's GC and set the correct ROP */
+    gc = GetDriverData(destRP, GfxBase);
+    GC_DRMD(gc) = MINTERM_TO_GCDRMD(minterm);
+
+    rr.MinX = xDest;
+    rr.MinY = yDest;
+    rr.MaxX = xDest + xSize - 1;
+    rr.MaxY = yDest + ySize - 1;
+
+    src.x = xSrc;
+    src.y = ySrc;
+
+    do_render_with_gc(destRP, &src, &rr, render_func, &brd, gc, TRUE, TRUE, GfxBase);
+
+    RELEASE_HIDD_BM(brd.srcbm_obj, srcBitMap);
 }
 #endif /* __mc68000__ && !GFX_GETDRIVERDATA_IMPL */
 

@@ -71,11 +71,10 @@
   LockLayers(l->LayerInfo);
 
   {
-    struct Region r, cutoldshape, rtmp, cutnewshape;
+    struct Region r, cutoldshape, cutnewshape;
     struct Layer * lparent, * _l, * lfirst = NULL;
     int behind_l = FALSE;
     InitRegion(&r);
-    InitRegion(&rtmp);
     InitRegion(&cutoldshape);
     InitRegion(&cutnewshape);
 
@@ -226,7 +225,6 @@
         _l = _l->back;
       } /* while(1) */
 
-      ClearRegion(&rtmp);
       ClearRegion(&r);
 
       if (!IS_EMPTYREGION(&cutoldshape))

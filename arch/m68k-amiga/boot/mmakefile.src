@@ -153,7 +153,7 @@ kick_modfiles = \
 	$(addprefix $(AROS_DIR_DEVS)/,$(addsuffix .resource,$(5)))
 
 KLIBS   := exec aros dos utility oop expansion partition debug \
-           keymap
+           keymap mathieeesingbas
 KDEVS   := timer input keyboard console trackdisk gameport
 KHNDLRS := con afs ram
 KHIDDS  := amigakbd amigamouse amigavideo ata_gayle gfx hiddclass inputclass keyboard mouse
@@ -183,7 +183,7 @@ AFILES  := ext_entry
 
 KLIBS   :=  graphics layers intuition gadtools icon workbench \
             freeanim nonvolatile nvdisk \
-            mathffp mathieeesingbas \
+            mathffp \
             setpatch lowlevel
 KDEVS   := cd cd32mpeg ata ramdrive audio
 KHNDLRS := cdrom

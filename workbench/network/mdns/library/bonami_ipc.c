@@ -31,6 +31,29 @@ copy_text(char *to, LONG size, CONST_STRPTR from)
     to[n] = '\0';
 }
 
+/* A subtype is carried as one complete DNS label. Unlike the older text
+ * tags it must not be silently truncated, because that would advertise a
+ * different subtype from the one the caller requested. */
+static BOOL
+copy_subtype(char *to, CONST_STRPTR from)
+{
+    LONG n = 0;
+
+    if (from == NULL) {
+        return FALSE;
+    }
+    while (n <= MDNS_MAX_SUBTYPE && from[n] != '\0') {
+        to[n] = from[n];
+        n++;
+    }
+    if (n == 0 || n > MDNS_MAX_SUBTYPE) {
+        to[0] = '\0';
+        return FALSE;
+    }
+    to[n] = '\0';
+    return TRUE;
+}
+
 /* Is mdnsd there? It may still go away before the next call. */
 LONG
 bonamiEngineThere(void)
@@ -85,6 +108,14 @@ bonamiTagsToMsg(struct TagItem *tags, struct MDNSIPCMsg *msg)
                 return MDNSERR_BADPARAM;
             }
             msg->mi_TTL = (ULONG)tag->ti_Data;
+            break;
+        case MDNS_ServiceSubtype:
+            if (msg->mi_SubtypeCount >= MDNS_MAX_SUBTYPES ||
+                !copy_subtype(msg->mi_Subtypes[msg->mi_SubtypeCount],
+                    (CONST_STRPTR)tag->ti_Data)) {
+                return MDNSERR_BADPARAM;
+            }
+            msg->mi_SubtypeCount++;
             break;
         case MDNS_TXTRecord:
             copy_text(msg->mi_TXT, (LONG)sizeof(msg->mi_TXT),

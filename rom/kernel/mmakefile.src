@@ -56,9 +56,14 @@ FUNCS := spininit spinislocked spintrylock spinlock spinunlock addexceptionhandl
 FUNCS += \
          registersymresolver unregistersymresolver backtracefromframe printbacktrace
 
+# The TLSF allocator is entered only through krnCreateTLSFMemHeader() and
+# krnConvertMemHeaderToTLSF(). A platform whose startup code calls neither
+# can set KERNEL_ALLOCATOR_FILES to nothing in its kernel/make.opts.
+KERNEL_ALLOCATOR_FILES ?= tlsf
+
 FILES := kernel_init cpu_init kernel_debug kernel_panic                                         \
 	     kernel_cpu kernel_intr kernel_interruptcontroller                                      \
-	     kernel_memory kernel_romtags kernel_scheduler kernel_globals tlsf
+	     kernel_memory kernel_romtags kernel_scheduler kernel_globals $(KERNEL_ALLOCATOR_FILES)
 
 MMU_FILES := kernel_mm
 # You can replace this with own algorithm

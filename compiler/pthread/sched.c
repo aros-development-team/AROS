@@ -111,9 +111,9 @@
         Always returns 0. No error is reported.
 
     NOTES
-        On AROS, temporarily sets the calling Exec task's priority to -10
-        and then restores its previous priority. The call does not
-        guarantee that another task runs before it returns.
+        On AROS the kernel's scheduler is run (KrnSchedule()); the task's
+        priority is not changed. The call does not guarantee that another
+        task runs before it returns.
 
     SEE ALSO
         sched_get_priority_max(),
@@ -130,15 +130,22 @@
 #endif
     Permit();
 #else
-    BYTE oldpri;
-    struct Task *task;
+    /*
+     * A reschedule that keeps the task's priority. Lowering it to -10 and
+     * restoring it afterwards (the old way) left the task at -10 whenever a
+     * task of its old priority was ready: that one ran instead, and the
+     * restore never got the CPU back (two GL programs starved each other in
+     * turn, 2026-11-07). SetTaskPri() to the same priority does not
+     * reschedule, so the kernel is asked directly.
+     */
+    static APTR KernelBase;
 
     D(bug("%s()\n", __FUNCTION__));
 
-    task = FindTask(NULL);
-    // changing the priority will trigger a reschedule
-    oldpri = SetTaskPri(task, -10);
-    SetTaskPri(task, oldpri);
+    if (!KernelBase)
+        KernelBase = OpenResource("kernel.resource");
+    if (KernelBase)
+        KrnSchedule();
 #endif
 
     return 0;

@@ -94,8 +94,25 @@ static struct AssignList *deviceproc_nextassignlock(struct AssignList *al, BPTR 
     return al;
 }
 
+/* Describe the filesystem a lock (or, without one, the boot volume) is on */
+static void deviceproc_fromlock(struct DosLibrary *DOSBase, struct DevProc *dp, BPTR lock)
+{
+    if (lock) {
+        struct FileLock *fl = BADDR(lock);
+        dp->dvp_Port = fl->fl_Task;
+        dp->dvp_Lock = lock;
+        dp->dvp_DevNode = BADDR(fl->fl_Volume);
+    } else {
+        dp->dvp_Port = DOSBase->dl_Root->rn_BootProc;
+        dp->dvp_Lock = BNULL;
+        dp->dvp_DevNode = NULL;
+    }
+    dp->dvp_Flags = 0;
+}
+
 static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STRPTR name, struct DevProc *dp)
 {
+    LONG err = 0;
     struct Process *pr = (struct Process *)FindTask(NULL);
     struct DosList *dl = NULL;
     char vol[32];
@@ -103,7 +120,6 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     BPTR lock = BNULL;
     BOOL res;
     CONST_STRPTR origname = name;
-    struct FileLock *fl;
 
     ASSERT_VALID_PROCESS(pr);
 
@@ -120,9 +136,7 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
             if (dp->dvp_Flags & DVPF_UNLOCK)
                 UnLock(dp->dvp_Lock);
 
-            FreeMem(dp, sizeof(struct DevProc));
-            SetIoErr(ERROR_NO_MORE_ENTRIES);
-            return NULL;
+            goto no_more_entries;
         }
 
         /* it's fine, we'll start from here */
@@ -153,17 +167,7 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
              * non-NULL PROGDIR: handle even if pr_HomeDir is cleared */
             if (!lock)
                 lock = pr->pr_CurrentDir;
-            if (lock) {
-                fl = BADDR(lock);
-                dp->dvp_Port = fl->fl_Task;
-                dp->dvp_Lock = lock;
-                dp->dvp_DevNode = BADDR(fl->fl_Volume);
-            } else {
-                dp->dvp_Port = DOSBase->dl_Root->rn_BootProc;
-                dp->dvp_Lock = BNULL;
-                dp->dvp_DevNode = NULL;
-            }
-            dp->dvp_Flags = 0;
+            deviceproc_fromlock(DOSBase, dp, lock);
             return dp;
         }
 
@@ -174,22 +178,12 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
         if (len <= 1) {
             lock = pr->pr_CurrentDir;
             /* if we got NULL, then it's relative to the system root lock */
-            if (lock != BNULL) {
-                fl = BADDR(lock);
-                dp->dvp_Port = fl->fl_Task;
-                dp->dvp_Lock = lock;
-                dp->dvp_DevNode = BADDR(fl->fl_Volume);
-            } else {
-                dp->dvp_Port = DOSBase->dl_Root->rn_BootProc;
-                dp->dvp_Lock = BNULL;
-                dp->dvp_DevNode = NULL;
-            }
+            deviceproc_fromlock(DOSBase, dp, lock);
 
             /* Jump to the root directory if name[0] == ':' */
             if (name[0] == ':')
                 dp->dvp_Lock = (dp->dvp_DevNode) ? dp->dvp_DevNode->dol_Lock : BNULL;
 
-            dp->dvp_Flags = 0;
             return dp;
         }
  
@@ -202,10 +196,8 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
             if (dl == NULL) {
                 UnLockDosList(LDF_ALL | LDF_READ);
 
-                if (ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_INSERT, (IPTR)vol, NULL) == DOSTRUE) {
-                    FreeMem(dp, sizeof(struct DevProc));
-                    return NULL;
-                }
+                if (ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_INSERT, (IPTR)vol, NULL) == DOSTRUE)
+                    goto fail;
             }
         } while(dl == NULL);
     }
@@ -223,11 +215,8 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
         lock = dl->dol_Lock ? BNULL : Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
 
         /* didn't find the target */
-        if (lock == BNULL && dl->dol_Lock == BNULL) {
-            UnLockDosList(LDF_ALL | LDF_READ);
-            FreeMem(dp, sizeof(struct DevProc));
-            return NULL;
-        }
+        if (lock == BNULL && dl->dol_Lock == BNULL)
+            goto fail_unlock;
 
         /* Directly change assign type without calling AssignXXX(),
          * mimics AOS behavior, AOS programs assume it is safe to
@@ -289,10 +278,8 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
             struct TagItem tags[] = { { secT_BufferSize, USERPATH_MAX }, { TAG_DONE, 0 } };
 
             if (copy == NULL) {
-                UnLockDosList(LDF_ALL | LDF_READ);
-                FreeMem(dp, sizeof(struct DevProc));
-                SetIoErr(ERROR_NO_FREE_STORE);
-                return NULL;
+                err = ERROR_NO_FREE_STORE;
+                goto fail_unlock;
             }
             /* the expansion asks the security server: not with the list held */
             CopyMem((APTR)target, copy, tlen);
@@ -314,33 +301,25 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
                 lock = BNULL;
             FreeVec(copy);
 
-            if (lock == BNULL) {
-                FreeMem(dp, sizeof(struct DevProc));
-                return NULL;
-            }
-            dp->dvp_Port = ((struct FileLock *) BADDR(lock))->fl_Task;
-            dp->dvp_Lock = lock;
-            dp->dvp_Flags = DVPF_UNLOCK;
-            dp->dvp_DevNode = dl;
-            return dp;
+            if (lock == BNULL)
+                goto fail;
+            goto nonbinding_done;
         }
 
         lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
 
         /* didn't find the target; Lock() has set IoErr() */
-        if (lock == BNULL) {
-            UnLockDosList(LDF_ALL | LDF_READ);
-            FreeMem(dp, sizeof(struct DevProc));
-            return NULL;
-        }
+        if (lock == BNULL)
+            goto fail_unlock;
 
+        UnLockDosList(LDF_ALL | LDF_READ);
+
+nonbinding_done:
         /* just fill out the dp and return */
         dp->dvp_Port = ((struct FileLock *) BADDR(lock))->fl_Task;
         dp->dvp_Lock = lock;
         dp->dvp_Flags = DVPF_UNLOCK;   /* remember to unlock in FreeDeviceNode() */
         dp->dvp_DevNode = dl;
-
-        UnLockDosList(LDF_ALL | LDF_READ);
 
         return dp;
     }
@@ -367,9 +346,8 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
                 newhandler = RunHandler((struct DeviceNode *)dl, origname, DOSBase);
                 if (!newhandler)
                 {
-                    FreeMem(dp, sizeof(struct DevProc));
-                    SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-                    return NULL;
+                    err = ERROR_DEVICE_NOT_MOUNTED;
+                    goto fail;
                 }
 
                 LockDosList(LDF_ALL | LDF_READ);
@@ -387,10 +365,8 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
 
             if (!res)
             {
-                UnLockDosList(LDF_ALL | LDF_READ);
-                FreeMem(dp, sizeof(struct DevProc));
-                SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-                return NULL;
+                err = ERROR_DEVICE_NOT_MOUNTED;
+                goto fail_unlock;
             }
         }
 
@@ -440,13 +416,8 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     if (dp->dvp_Lock == dl->dol_Lock) {
         struct AssignList *al = dl->dol_misc.dol_assign.dol_List;
         al = deviceproc_nextassignlock(al, dp->dvp_Lock);
-        if (al == NULL) {
-            UnLockDosList(LDF_ALL | LDF_READ);
-            FreeMem(dp, sizeof(struct DevProc));
-
-            SetIoErr(ERROR_NO_MORE_ENTRIES);
-            return NULL;
-        }
+        if (al == NULL)
+            goto no_more_entries_unlock;
         dp->dvp_Lock = al->al_Lock;
     /* otherwise we're finding the next */
     } else {
@@ -461,13 +432,8 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
         }
 
         /* Check if we reached the end */
-        if (al == NULL) {
-            UnLockDosList(LDF_ALL | LDF_READ);
-            FreeMem(dp, sizeof(struct DevProc));
-
-            SetIoErr(ERROR_NO_MORE_ENTRIES);
-            return NULL;
-        }
+        if (al == NULL)
+            goto no_more_entries_unlock;
 
         /* fill out the lock from the new entry */
         dp->dvp_Lock = al->al_Lock;
@@ -482,4 +448,19 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     /* phew */
     SetIoErr(0);
     return dp;
+
+no_more_entries_unlock:
+    UnLockDosList(LDF_ALL | LDF_READ);
+no_more_entries:
+    err = ERROR_NO_MORE_ENTRIES;
+    goto fail;
+
+fail_unlock:
+    UnLockDosList(LDF_ALL | LDF_READ);
+fail:
+    FreeMem(dp, sizeof(struct DevProc));
+    /* without an error of our own, IoErr() is what the failed call left */
+    if (err)
+        SetIoErr(err);
+    return NULL;
 }

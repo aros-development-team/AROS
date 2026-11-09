@@ -85,7 +85,7 @@ sleep_init(void)
 }
 
 void
-tsleep_send_timeout(struct SocketBase *p,
+tsleep_send_timeout(struct SocketWaiter *p,
                     const struct timeval *time_out)
 {
 #if defined(__AROS__)
@@ -101,22 +101,22 @@ tsleep_send_timeout(struct SocketBase *p,
     /*
      * Make sure that the timer message is back from the timer device
      */
-    if(p->tsleep_timer->tr_node.io_Message.mn_Node.ln_Type != NT_UNKNOWN) {
+    if(p->timer->tr_node.io_Message.mn_Node.ln_Type != NT_UNKNOWN) {
         /*
          * abort previous timeout if it has not been completed yet
          */
-        if(p->tsleep_timer->tr_node.io_Message.mn_Node.ln_Type != NT_REPLYMSG) {
-            AbortIO((struct IORequest *)(p->tsleep_timer));
+        if(p->timer->tr_node.io_Message.mn_Node.ln_Type != NT_REPLYMSG) {
+            AbortIO((struct IORequest *)(p->timer));
         }
         /*
          * Remove timerequest from reply port.
          */
-        WaitIO((struct IORequest *)p->tsleep_timer);
+        WaitIO((struct IORequest *)p->timer);
         /*
          * Set the node type to NT_UNKNOWN to mark that it is referenced only by
-         * the p->tsleep_timer.
+         * the p->timer.
          */
-        p->tsleep_timer->tr_node.io_Message.mn_Node.ln_Type = NT_UNKNOWN;
+        p->timer->tr_node.io_Message.mn_Node.ln_Type = NT_UNKNOWN;
 #if 0
         /*
          * Make sure the signal gets cleared.
@@ -134,8 +134,8 @@ tsleep_send_timeout(struct SocketBase *p,
         /*
          * set the timeout
          */
-        p->tsleep_timer->tr_time.tv_secs = time_out->tv_sec;
-        p->tsleep_timer->tr_time.tv_micro = time_out->tv_usec;
+        p->timer->tr_time.tv_secs = time_out->tv_sec;
+        p->timer->tr_time.tv_micro = time_out->tv_usec;
         /*
          * Enable signalling again
          */
@@ -143,12 +143,12 @@ tsleep_send_timeout(struct SocketBase *p,
         /*
          * send the request to the timer device
          */
-        BeginIO((struct IORequest *)(p->tsleep_timer));
+        BeginIO((struct IORequest *)(p->timer));
     }
 }
 
 void
-tsleep_abort_timeout(struct SocketBase *p,
+tsleep_abort_timeout(struct SocketWaiter *p,
                      const struct timeval *time_out)
 {
 #if defined(__AROS__)
@@ -161,7 +161,7 @@ tsleep_abort_timeout(struct SocketBase *p,
 }
 
 void
-tsleep_enter(struct SocketBase *p,
+tsleep_enter(struct SocketWaiter *p,
              caddr_t chan,		/* 'channel' to wait on */
              const char *wmesg)		/* reason to sleep */
 {
@@ -182,20 +182,20 @@ tsleep_enter(struct SocketBase *p,
 
     /*
      * The sleep_semaphore protects the sleep queues and
-     * p_ fields in SocketBases.
+     * sleep fields of the waiters.
      *
-     * When the process is in a sleep queue its p_wchan field is nonzero.
+     * When the process is in a sleep queue its wchan field is nonzero.
      */
     ObtainSemaphore(&sleep_semaphore);
-    p->p_wchan = chan;
-    p->p_wmesg = wmesg;
+    p->wchan = chan;
+    p->wmesg = wmesg;
     q = &sleep_queue[SLEEP_HASH(chan)];
-    queue_enter(q, p, struct SocketBase *, p_sleep_link);
+    queue_enter(q, p, struct SocketWaiter *, sleep_link);
     ReleaseSemaphore(&sleep_semaphore);
 }
 
 int
-tsleep_main(struct SocketBase *p, ULONG wakemask)
+tsleep_main(struct SocketBase *base, struct SocketWaiter *p, ULONG wakemask)
 {
     ULONG sigmask, bmask, timermask;
     struct timerequest *timerReply;
@@ -208,7 +208,7 @@ tsleep_main(struct SocketBase *p, ULONG wakemask)
      * Set the signal mask for the wait
      */
     timermask = 1 << p->timerPort->mp_SigBit;
-    sigmask = timermask | p->sigIntrMask | wakemask;
+    sigmask = timermask | base->sigIntrMask | wakemask;
 
     for(;;) {
         /*
@@ -219,7 +219,7 @@ tsleep_main(struct SocketBase *p, ULONG wakemask)
         /*
          * Check if we were interrupted
          */
-        if(bmask & p->sigIntrMask & ~wakemask) {
+        if(bmask & base->sigIntrMask & ~wakemask) {
             result = EINTR;
             break;
         }
@@ -235,24 +235,24 @@ tsleep_main(struct SocketBase *p, ULONG wakemask)
         /*
          * check if we were woken up.
          *
-         * If p->p_wchan is zero then the wakener has removed us from
+         * If p->wchan is zero then the wakener has removed us from
          * the sleep queue.
          *
          * Wait() may return for the timer or another signal while wakeup()
-         * runs on another CPU. wakeup() clears p_wchan before it signals
-         * p->thisTask through p->timerPort, so read it under the same
+         * runs on another CPU. wakeup() clears wchan before it signals
+         * p->task through p->timerPort, so read it under the same
          * semaphore: once it reads zero here, wakeup() is done with this
-         * base and the caller may close it.
+         * waiter and the caller may close or return it.
          */
         ObtainSemaphore(&sleep_semaphore);
-        awakened = (p->p_wchan == 0);
+        awakened = (p->wchan == 0);
         ReleaseSemaphore(&sleep_semaphore);
         if(awakened) {
             /*
              * Set back the signals which interrupted us so that user program can
              * detect them
              */
-            bmask &= p->sigIntrMask | wakemask;
+            bmask &= base->sigIntrMask | wakemask;
             if(bmask)
                 SetSignal(bmask, bmask);
 
@@ -264,12 +264,12 @@ tsleep_main(struct SocketBase *p, ULONG wakemask)
          */
         if(bmask & timermask &&
                 (timerReply = (struct timerequest *)GetMsg(p->timerPort))) {
-            if(timerReply == p->tsleep_timer) { /* sanity check */
+            if(timerReply == p->timer) { /* sanity check */
                 /*
                  * timeout expired.
                  *
                  * Set the node type to NT_UNKNOWN to mark that it is referenced only by
-                 * the p->tsleep_timer.
+                 * the p->timer.
                  */
                 timerReply->tr_node.io_Message.mn_Node.ln_Type = NT_UNKNOWN;
 
@@ -293,7 +293,7 @@ tsleep_main(struct SocketBase *p, ULONG wakemask)
      * Set back the signals which interrupted us so that user program can
      * detect them
      */
-    bmask &= p->sigIntrMask | wakemask;
+    bmask &= base->sigIntrMask | wakemask;
     if(bmask)
         SetSignal(bmask, bmask);
 
@@ -305,10 +305,10 @@ tsleep_main(struct SocketBase *p, ULONG wakemask)
      * If p_chan is nonzero then we still are on the sleep queue and
      * need to be removed from there.
      */
-    if(p->p_wchan != 0) {
-        q = &sleep_queue[SLEEP_HASH(p->p_wchan)];
-        p->p_wchan = (char *)0;
-        queue_remove(q, p, struct SocketBase *, p_sleep_link);
+    if(p->wchan != 0) {
+        q = &sleep_queue[SLEEP_HASH(p->wchan)];
+        p->wchan = (char *)0;
+        queue_remove(q, p, struct SocketWaiter *, sleep_link);
     }
     ReleaseSemaphore(&sleep_semaphore);
 
@@ -332,6 +332,7 @@ tsleep(struct SocketBase *p,  /* Library base through which this call came */
 {
     int result;
     spl_t old_spl;
+    struct SocketWaiter *w;
 #if defined(__AROS__)
     D(bug("[AROSTCP](kern_synch.c) tsleep()\n"));
 #endif
@@ -358,9 +359,20 @@ tsleep(struct SocketBase *p,  /* Library base through which this call came */
     }
 #endif
 
-    tsleep_send_timeout(p, time_out);
+    /*
+     * A shared base being closed: its threads leave rather than sleep, and
+     * only the closing task sleeps in it (a lingering close).
+     */
+    if(p->closing && p->shared && FindTask(NULL) != p->closer)
+        return (EBADF);
 
-    tsleep_enter(p, chan, wmesg);
+    /* the opener's waiter, or one lent to this thread of a shared base */
+    if((w = waiter_obtain(p)) == NULL)
+        return (ENOMEM);
+
+    tsleep_send_timeout(w, time_out);
+
+    tsleep_enter(w, chan, wmesg);
 
     /*
      * release spl-level while in sleep.
@@ -371,7 +383,7 @@ tsleep(struct SocketBase *p,  /* Library base through which this call came */
     old_spl = spl0();
     ReleaseSemaphore(&syscall_semaphore);	                     /* XXX */
 
-    result = tsleep_main(p, 0);
+    result = tsleep_main(p, w, 0);
 
     /*
      * return old spl-level
@@ -383,7 +395,9 @@ tsleep(struct SocketBase *p,  /* Library base through which this call came */
      * abort the timeout request if necessary
      */
     if(result != EWOULDBLOCK)
-        tsleep_abort_timeout(p, time_out);
+        tsleep_abort_timeout(w, time_out);
+
+    waiter_release(p, w);
 
     return (result);
 }
@@ -392,7 +406,7 @@ void
 wakeup(caddr_t chan)
 {
     register queue_t q;
-    struct SocketBase *p, *next;
+    struct SocketWaiter *p, *next;
 #if defined(__AROS__)
     D(bug("[AROSTCP](kern_synch.c) wakeup()\n"));
 #endif
@@ -407,24 +421,41 @@ wakeup(caddr_t chan)
     ObtainSemaphore(&sleep_semaphore);
     q = &sleep_queue[SLEEP_HASH(chan)];
 
-    p = (struct SocketBase *)queue_first(q);
+    p = (struct SocketWaiter *)queue_first(q);
     while(!queue_end(q, (queue_entry_t)p)) {
-        next = (struct SocketBase *)queue_next(&p->p_sleep_link);
-        if(p->p_wchan == chan) {
+        next = (struct SocketWaiter *)queue_next(&p->sleep_link);
+        if(p->wchan == chan) {
             /*
              * mark sleeper as woken up
              */
-            p->p_wchan = NULL;
+            p->wchan = NULL;
             /*
              * remove sleeper from the sleep queue
              */
-            queue_remove(q, p, struct SocketBase *, p_sleep_link);
+            queue_remove(q, p, struct SocketWaiter *, sleep_link);
             /*
              * signal process to take attention
              */
-            Signal(p->thisTask, 1 << p->timerPort->mp_SigBit);
+            Signal(p->task, 1 << p->timerPort->mp_SigBit);
         }
         p = next;
+    }
+    ReleaseSemaphore(&sleep_semaphore);
+}
+
+/*
+ * Wakes one waiter, whatever it sleeps on: a shared base being closed gets
+ * its threads out of their sleeps.
+ */
+void
+wakeup_waiter(struct SocketWaiter *p)
+{
+    ObtainSemaphore(&sleep_semaphore);
+    if(p->wchan != NULL) {
+        queue_remove(&sleep_queue[SLEEP_HASH(p->wchan)], p,
+                     struct SocketWaiter *, sleep_link);
+        p->wchan = NULL;
+        Signal(p->task, 1 << p->timerPort->mp_SigBit);
     }
     ReleaseSemaphore(&sleep_semaphore);
 }

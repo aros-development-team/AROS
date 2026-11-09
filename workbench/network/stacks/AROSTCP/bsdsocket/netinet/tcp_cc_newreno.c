@@ -85,10 +85,10 @@ newreno_on_ack(struct tcpcb *tp, u_int acked)
     u_int incr = tp->t_maxseg;
     u_long max_cwnd = (u_long)TCP_MAXWIN << tp->snd_scale;
 
-    (void)acked;
-
     if(cw > tp->snd_ssthresh)
         incr = incr * incr / cw;
+    else
+        incr = tcp_ss_incr(tp, acked);  /* slow start (tcp_ss.c) */
 
     tp->snd_cwnd = MIN(cw + incr, max_cwnd);
 }

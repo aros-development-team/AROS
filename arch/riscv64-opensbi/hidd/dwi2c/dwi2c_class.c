@@ -52,7 +52,7 @@ OOP_Object *DWI2C__Root__New(OOP_Class *cl, OOP_Object *o,
 {
     struct dwi2c_staticdata *psd = PSD(cl);
     struct pRoot_New superMsg;
-    struct TagItem superTags[2];
+    struct TagItem superTags[3];
     OOP_Object *busObj;
     IPTR unit;
 
@@ -98,8 +98,11 @@ OOP_Object *DWI2C__Root__New(OOP_Class *cl, OOP_Object *o,
      */
     superTags[0].ti_Tag  = aHidd_I2C_Name;
     superTags[0].ti_Data = (IPTR)psd->ctrl[unit].name;
-    superTags[1].ti_Tag  = TAG_MORE;
-    superTags[1].ti_Data = (IPTR)msg->attrList;
+    /* The bus is the controller the device tree describes at this node */
+    superTags[1].ti_Tag  = psd->ctrl[unit].path[0] ? aHidd_DevicePath : TAG_IGNORE;
+    superTags[1].ti_Data = (IPTR)psd->ctrl[unit].path;
+    superTags[2].ti_Tag  = TAG_MORE;
+    superTags[2].ti_Data = (IPTR)msg->attrList;
 
     superMsg.mID      = msg->mID;
     superMsg.attrList = superTags;

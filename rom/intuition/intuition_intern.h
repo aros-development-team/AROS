@@ -647,6 +647,7 @@ struct IntIntuitionBase
 #if defined(__AROSEXEC_SMP__)
     void *                       ExecLockBase;
 #endif
+    struct SignalSemaphore      *GfxFontSem;    /* graphics.library/TextFonts, found on first use (misc.c, all builds) */
 };
 
 struct SharedPointer
@@ -1123,6 +1124,8 @@ void FireScreenNotifyMessageCode(IPTR data, ULONG flag, ULONG code, struct Intui
 /* misc.c */
 extern void SetActiveMonPointerPos(struct IntuitionBase *IntuitionBase);
 extern BOOL ResetPointer(struct IntuitionBase *IntuitionBase);
+extern void SetScreenPointer(struct IntScreen *scr, struct Window *window, Object *pointer,
+                             struct IntuitionBase *IntuitionBase);
 extern void ActivateMonitor(Object *newmonitor, WORD x, WORD y, struct IntuitionBase *IntuitionBase);
 extern struct Screen *FindFirstScreen(Object *monitor, struct IntuitionBase *IntuitionBase);
 extern struct RastPort *MyCreateRastPort(struct IntuitionBase *IntuitionBase);

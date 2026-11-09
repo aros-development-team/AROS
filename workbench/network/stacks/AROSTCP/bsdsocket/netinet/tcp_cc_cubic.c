@@ -180,9 +180,9 @@ cubic_on_ack(struct tcpcb *tp, u_int acked)
     if(mss == 0)
         return;
 
-    /* Slow start: standard exponential growth (RFC 8312 §5.1) */
+    /* Slow start, by the bytes acknowledged (tcp_ss.c) */
     if(cwnd <= tp->snd_ssthresh) {
-        tp->snd_cwnd = MIN(cwnd + mss, max_cwnd);
+        tp->snd_cwnd = MIN(cwnd + tcp_ss_incr(tp, acked), max_cwnd);
         return;
     }
 
@@ -194,7 +194,11 @@ cubic_on_ack(struct tcpcb *tp, u_int acked)
             u_long delta_mss = (cs->origin_point - cwnd) / mss;
             cs->k = tcp_cubic_root(delta_mss * 1024 / 51);
         } else {
+            /* at or above W_max, or no W_max yet (slow start ended by
+             * HyStart++, without a loss): K = 0 and W_max = cwnd, so the
+             * curve starts where cwnd is (RFC 9438 section 4.10) */
             cs->k = 0;
+            cs->origin_point = cwnd;
         }
         cs->tcp_cwnd = cwnd;
         cs->w_est = cwnd;

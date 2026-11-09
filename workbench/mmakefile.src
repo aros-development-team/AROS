@@ -35,10 +35,10 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-drivers :          \
 #MM    workbench-hidds-vmwaresvga \
-#MM    workbench-hidds-nvidia	  \
+#MM    workbench-hidds-amdgpu     \
 #MM    workbench-hidds-radeon	  \
 #MM    devs-monitors-intelgma     \
-#MM    workbench-hidds-nouveau
+#MM    workbench-hidds-nvgfx
 
 WBSTARTUPDIR := $(AROSDIR)/WBStartup
 WBSTORAGEDIR := $(AROSDIR)/Storage

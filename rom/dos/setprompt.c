@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Sets the prompt for the current CLI.
 */
@@ -49,26 +49,10 @@
 {
     AROS_LIBFUNC_INIT
     struct CommandLineInterface *cli = NULL;
-    CONST_STRPTR s;
-    STRPTR bs;
-    ULONG namelen;
 
     if ((cli = Cli()) == NULL)
         return DOSFALSE;
 
-    s = name;
-    while(*s++)
-        ;
-    namelen = s - name - 1;
-
-    if (namelen > 255)
-        return DOSFALSE;
-
-    bs = AROS_BSTR_ADDR(cli->cli_Prompt);
-
-    AROS_BSTR_setstrlen(cli->cli_Prompt, namelen);
-    CopyMem((APTR)name, bs, namelen);
-
-    return DOSTRUE;
+    return internal_SetCliString(cli->cli_Prompt, name) ? DOSTRUE : DOSFALSE;
     AROS_LIBFUNC_EXIT
 } /* SetPrompt */

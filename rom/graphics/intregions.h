@@ -195,6 +195,22 @@ BOOL _DoOperationBandBand
 
 extern BandOperation _OrBandBand, _AndBandBand, _ClearBandBand;
 
+/*
+ * The steps the region functions have in common. R1 and R2 are the operands
+ * in the order the band operation takes them (for _ClearBandBand R1 is what
+ * gets cleared out of R2).
+ */
+void _RectToRegion(struct Rectangle *Rect, struct Region *R, struct RegionRectangle *rr);
+BOOL _RegionOp(BandOperation *Operation, struct Region *R1, struct Region *R2,
+               struct Region *Res, struct GfxBase *GfxBase);
+BOOL _RegionOpInPlace(BandOperation *Operation, struct Region *R1, struct Region *R2,
+                      struct Region *Dst, struct GfxBase *GfxBase);
+struct Region *_RegionOpND(BandOperation *Operation, struct Region *R1, struct Region *R2,
+                           struct Region *Res, struct GfxBase *GfxBase);
+struct Region *_CopyRegionND(struct Region *R, struct Region *Res, struct GfxBase *GfxBase);
+BOOL _XorRegions(struct Region *R1, struct Region *R2, struct Region *R3, struct GfxBase *GfxBase);
+
+
 #endif
 
 #endif /* !INTREGIONS_H */

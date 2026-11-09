@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Delete a file or directory.
 */
@@ -50,17 +50,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    LONG status = 0;
-    struct PacketHelperStruct phs;
-
     D(bug("[DeleteFile] '%s'\n", name));
 
-    if (getpacketinfo(DOSBase, name, &phs)) {
-        status = dopacket2(DOSBase, NULL, phs.port, ACTION_DELETE_OBJECT, phs.lock, phs.name);
-        freepacketinfo(DOSBase, &phs);
-    }
-    
-    return status;
+    return pathpacket(DOSBase, name, ACTION_DELETE_OBJECT, FALSE, 0, 0);
 
     AROS_LIBFUNC_EXIT
 } /* DeleteFile */

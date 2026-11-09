@@ -30,6 +30,7 @@
 
 #include "vcgfx_hidd.h"
 #include "vcgfx_hardware.h"
+#include "vcgfx_decode.h"
 #include "vcgfx_hvs5.h"
 
 /*
@@ -380,6 +381,9 @@ struct hvs5_src
     ULONG yuv;              /* HVS YUV format, 0 = RGB */
     ULONG cphys[2], cpitch; /* its chroma: CbCr, or Cb then Cr */
     ULONG csc[3];
+    ULONG sand;             /* SAND128: column height in rows, 0 = linear */
+    BOOL  sand10;           /* SAND128: 10-bit, three samples per word */
+    ULONG sx, sy;           /* SAND128: the source origin, phys the buffer */
 };
 
 /* The plane's screen rectangle. FALSE when empty. */
@@ -466,6 +470,7 @@ static void hvs5_write_yuv(struct vc4_hvs_state *st, ULONG base, ULONG words,
     ULONG ptr = s->phys & ~HVS5_PTR_BUS_ALIAS;
     ULONG c0 = s->cphys[0] & ~HVS5_PTR_BUS_ALIAS, c1 = s->cphys[1] & ~HVS5_PTR_BUS_ALIAS;
     ULONG srcw = s->srcw, srch = s->srch, ssk, i, n = 1;
+    ULONG sx = s->sx, sy = s->sy, pitch = s->pitch, cpitch = s->cpitch;
     LONG ox, oy;
     ULONG ow, oh;
 
@@ -488,6 +493,7 @@ static void hvs5_write_yuv(struct vc4_hvs_state *st, ULONG base, ULONG words,
         ptr += ssk;
         c0 += ssk / 2 * cbytes;
         c1 += ssk / 2;
+        sx += ssk;
         srcw -= ssk;
         ow -= skip;
         ox = left;
@@ -500,9 +506,32 @@ static void hvs5_write_yuv(struct vc4_hvs_state *st, ULONG base, ULONG words,
         ptr += ssk * s->pitch;
         c0 += ssk / 2 * s->cpitch;
         c1 += ssk / 2 * s->cpitch;
+        sy += ssk;
         srch -= ssk;
         oh -= skip;
         oy = top;
+    }
+
+    /* SAND128: the first sample's column, row and byte; the HVS walks on
+     * into the next column itself. Both pitches are the column height. */
+    if (s->sand && s->sand10)
+    {
+        /* 96 samples a column; the low nibble picks the sample in a 16-byte word */
+        ULONG col = (sx / 96) * s->pitch, r = sx % 96;
+
+        ctl0 = (ctl0 & ~HVS5_CTL0_PXF_MASK) | HVS5_PXF_YUV10 | HVS5_CTL0_SAND128;
+        ptr = (s->phys & ~HVS5_PTR_BUS_ALIAS) + col + sy * 128 + (r / 12) * 16 + r % 12;
+        c0 = (s->cphys[0] & ~HVS5_PTR_BUS_ALIAS) + col + (sy / 2) * 128 + (r / 12) * 16 + ((r % 12) & ~1UL);
+        pitch = cpitch = s->sand;
+    }
+    else if (s->sand)
+    {
+        ULONG col = (sx / 128) * s->pitch;
+
+        ctl0 = (ctl0 & ~HVS5_CTL0_PXF_MASK) | HVS_PXF_H264 | HVS5_CTL0_SAND128;
+        ptr = (s->phys & ~HVS5_PTR_BUS_ALIAS) + col + sy * 128 + sx % 128;
+        c0 = (s->cphys[0] & ~HVS5_PTR_BUS_ALIAS) + col + (sy / 2) * 128 + ((sx % 128) & ~1UL);
+        pitch = cpitch = s->sand;
     }
     if (ox + (LONG)ow > right)
     {
@@ -536,10 +565,10 @@ static void hvs5_write_yuv(struct vc4_hvs_state *st, ULONG base, ULONG words,
         hvs5_dl_set(base + n++, HVS5_PTR_BUS_ALIAS | c1);
     for (i = 0; i < planes; i++)
         hvs5_dl_set(base + n++, 0);
-    hvs5_dl_set(base + n++, s->pitch);
-    hvs5_dl_set(base + n++, s->cpitch);
+    hvs5_dl_set(base + n++, pitch);
+    hvs5_dl_set(base + n++, cpitch);
     if (planes == 3)
-        hvs5_dl_set(base + n++, s->cpitch);
+        hvs5_dl_set(base + n++, cpitch);
     for (i = 0; i < 3; i++)
         hvs5_dl_set(base + n++, s->csc[i]);
     hvs5_dl_set(base + n++, lbm);
@@ -687,6 +716,7 @@ static void hvs5_fb_src(struct vc4_hvs_state *st, struct hvs5_src *s)
     s->x     = 0;
     s->y     = 0;
     s->yuv   = 0;
+    s->sand  = 0;
 }
 
 /* The fb plane, verbatim but for its pointer - or our own buffer. */
@@ -730,7 +760,22 @@ static void hvs5_plane_src(struct VideoCoreGfx_staticdata *xsd, struct vcgfx_pla
     s->cw    = xsd->vcsd_DispW;
     s->ch    = xsd->vcsd_DispH;
     s->yuv   = pl->pl_Yuv;
-    if (s->yuv)
+    s->sand  = 0;
+    if (d->dectgt)
+    {
+        ULONG chroma;
+
+        /* A decode target: SAND128, addressed by column in hvs5_write_yuv() */
+        s->sand10   = vcgfx_dectgt_sand(d->dectgt, &s->pitch, &chroma);
+        s->phys     = (ULONG)(IPTR)d->VideoData;
+        s->cphys[0] = s->phys + chroma;
+        s->cpitch   = s->pitch;
+        s->sand     = s->pitch / 128;
+        s->sx       = pl->pl_SrcX;
+        s->sy       = pl->pl_SrcY;
+        vcgfx_yuv_csc(d->colorspace, d->colorrange, s->csc);
+    }
+    else if (s->yuv)
     {
         ULONG base = (ULONG)(IPTR)d->VideoData, cx = pl->pl_SrcX / 2, cy = pl->pl_SrcY / 2;
 
@@ -738,7 +783,7 @@ static void hvs5_plane_src(struct VideoCoreGfx_staticdata *xsd, struct vcgfx_pla
         s->cphys[0] = base + d->planeoff[0] + cy * d->cpitch
                     + cx * ((s->yuv == HVS_PXF_YUV420_2PLANE) ? 2 : 1);
         s->cphys[1] = base + d->planeoff[1] + cy * d->cpitch + cx;
-        vcgfx_yuv_csc(d->colorspace, s->csc);
+        vcgfx_yuv_csc(d->colorspace, d->colorrange, s->csc);
     }
 }
 
@@ -811,7 +856,8 @@ static ULONG hvs5_emit_planes(struct VideoCoreGfx_staticdata *xsd,
         need = lb;
         swords[i] = words;
 
-        bottom = vcgfx_plane_occlude(px, py, pw, ph, left, top, right, bottom);
+        if (!pl->pl_Alpha)  /* a blended plane hides nothing behind it */
+            bottom = vcgfx_plane_occlude(px, py, pw, ph, left, top, right, bottom);
     }
 
     if (bottom > top)
@@ -826,7 +872,7 @@ static ULONG hvs5_emit_planes(struct VideoCoreGfx_staticdata *xsd,
             continue;
 
         hvs5_plane_src(xsd, pl, &s);
-        hvs5_init_plane(base + n, HVS5_ALPHA_FIXED, swords[i]);
+        hvs5_init_plane(base + n, pl->pl_Alpha ? HVS5_ALPHA_PERPIXEL : HVS5_ALPHA_FIXED, swords[i]);
         hvs5_write_src(st, base + n, swords[i], slbm[i], &s, left, top, right, cb);
         n += swords[i];
     }

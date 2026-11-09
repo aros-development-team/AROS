@@ -43,7 +43,7 @@ APTR KernelBase;
 
 #define STACKSIZE   16384
 #define RUN_TICKS   100             /* busy window per core (~2s at 50Hz) */
-#define NO_CPU      (~0UL)          /* w_Cpu sentinel: "never scheduled" */
+#define NO_CPU      ((ULONG)~0)     /* w_Cpu sentinel: "never scheduled" */
 
 struct Worker
 {

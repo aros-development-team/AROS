@@ -19,7 +19,8 @@
 #include <bonami/mdns.h>
 
 #define MDNS_IPC_PORT       "BonAmi"
-#define MDNS_IPC_VERSION    5
+#define MDNS_IPC_VERSION    6
+#define MDNS_MAX_BROWSE_TYPE 127
 
 #define MDNS_IPC_BROWSE     4
 #define MDNS_IPC_STOPBROWSE 5
@@ -54,7 +55,10 @@ struct MDNSIPCMsg
     APTR            mi_Handle;      /* the registration */
     ULONG           mi_Flags;
     char            mi_Name[MDNS_MAX_NAME + 1];
-    char            mi_ServiceType[MDNS_MAX_TYPE + 1];
+    char            mi_ServiceType[MDNS_MAX_BROWSE_TYPE + 1];
+    UWORD           mi_SubtypeCount;
+    UWORD           mi_SubtypePad;
+    char            mi_Subtypes[MDNS_MAX_SUBTYPES][MDNS_MAX_SUBTYPE + 1];
     char            mi_Domain[MDNS_MAX_DOMAIN + 1];
     char            mi_HostName[MDNS_MAX_HOST + 1];
     char            mi_TXT[MDNS_MAX_TXT + 1];

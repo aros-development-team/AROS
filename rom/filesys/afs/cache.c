@@ -98,22 +98,6 @@ void clearCleanCache(struct Volume *volume)
         }
 }
 
-void clearCache(struct AFSBase *afsbase, struct BlockCache *cache) {
-
-        while (cache != NULL)
-        {
-                if ((cache->flags & BCF_WRITE) == 0)
-                {
-                        cache->blocknum = 0;
-                        cache->newness = 0;
-                        cache->flags = 0;
-                }
-                else
-                        showText(afsbase, "You MUST re-insert ejected volume");
-                cache = cache->next;
-        }
-}
-
 BOOL cacheDirty(struct Volume *volume)
 {
         struct BlockCache *block;
@@ -307,33 +291,6 @@ struct BlockCache *cache;
         }
         return cache;
 }
-
-void checkCache(struct AFSBase *afsbase, struct Volume *volume) {
-struct BlockCache *bc;
-
-        bc = volume->blockcache;
-        while (bc != NULL)
-        {
-                if (((bc->flags & BCF_USED) != 0) && (bc->blocknum != volume->rootblock))
-                {
-                        showText(afsbase, "Unreleased block: %lu!", bc->blocknum);
-                }
-                bc = bc->next;
-        }
-}
-
-#ifdef DEBUG
-void umpBlock(struct AFSBase *afsbase, struct BlockCache *block) {
-UWORD i,j;
-
-        for (i=0; i<=31; i++) {
-                D(bug("0x%x: ",i*16));
-                for (j=0; j<=3; j++)
-                        D(bug(" %x", OS_BE2LONG(block->buffer[i*4+j])));
-                D(bug("\n"));
-        }
-}
-#endif
 
 /* A buffer that speculative read-ahead may fill, or NULL.
  *

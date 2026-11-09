@@ -25,7 +25,7 @@
 
 int _pthread_cond_broadcast(pthread_cond_t *cond, BOOL onlyfirst)
 {
-    CondWaiter *waiter;
+    CondWaiter *waiter, *next;
 
     DB2(bug("%s(%p, %d)\n", __FUNCTION__, cond, onlyfirst));
 
@@ -36,10 +36,14 @@ int _pthread_cond_broadcast(pthread_cond_t *cond, BOOL onlyfirst)
     if (SemaphoreIsInvalid(&cond->semaphore))
         pthread_cond_init(cond, NULL);
 
-    // signal the waiting threads 
+    // signal the waiting threads, taking each off the list: a waiter only
+    // leaves it once it has the mutex back, so one left in place would take
+    // every following signal too while the other waiters slept on
     ObtainSemaphore(&cond->semaphore);
-    ForeachNode(&cond->waiters, waiter)
+    ForeachNodeSafe(&cond->waiters, waiter, next)
     {
+        Remove((struct Node *)waiter);
+        waiter->signalled = TRUE;
         Signal(waiter->task, 1 << waiter->sigbit);
         if (onlyfirst) break;
     }

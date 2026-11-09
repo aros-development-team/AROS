@@ -54,6 +54,7 @@ struct hostgl_context
     ULONG                       visible_rp_height;
     ULONG                      top, bottom;
     ULONG                      left, right;
+    int                        swap_interval;   /* glASwapInterval(): kept, swaps are copies */
 };
 
 #define SWAPBUFFER_BPP  (4) /* Swap buffer always has 4 bytes per pixel, even on 16bpp screens */

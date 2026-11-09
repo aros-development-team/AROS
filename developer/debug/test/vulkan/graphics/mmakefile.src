@@ -1,0 +1,13 @@
+include $(SRCDIR)/config/aros.cfg
+
+# vktorusknot - draws through the Vulkan graphics pipeline directly (no GL)
+%build_prog mmake=test-vulkan-torusknot \
+    progname=vktorusknot \
+    files=vktorusknot \
+    targetdir=$(AROS_TESTS)/graphics/vulkan \
+    uselibs="vulkan"
+
+#MM- test : test-vulkan-torusknot
+#MM test-vulkan-torusknot : includes linklibs hidd-vulkan-loader
+
+%common

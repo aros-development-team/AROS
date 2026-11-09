@@ -22,6 +22,7 @@ names = ['CDCacheLowMemHandler', 'Sector_Buffer', 'IO_Buffer',
 functions = []
 for name in names:
     pattern = (r'(?:static )?(?:AROS_INTH1\(' + name + r'[^\n]*\)|'
+               r'AROS_UFH3\(\w+,\s*' + name + r',[^{;]*\)|'
                r'(?:void|int|UBYTE \*)\s*' + name + r'\s*\([^;]*?\))\s*\{')
     match = re.search(pattern, text)
     if not match:

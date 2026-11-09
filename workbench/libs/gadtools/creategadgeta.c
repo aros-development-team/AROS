@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: gadtools.library function CreateGadgetA()
 */
@@ -9,6 +9,30 @@
 #include <intuition/gadgetclass.h>
 #include <proto/utility.h>
 #include "gadtools_intern.h"
+
+_Static_assert(GENERIC_KIND == 0 && BUTTON_KIND == 1 && CHECKBOX_KIND == 2 && INTEGER_KIND == 3 &&
+               LISTVIEW_KIND == 4 && MX_KIND == 5 && NUMBER_KIND == 6 && CYCLE_KIND == 7 &&
+               PALETTE_KIND == 8 && SCROLLER_KIND == 9 && SLIDER_KIND == 11 && STRING_KIND == 12 &&
+               TEXT_KIND == 13 && NUM_KINDS == 14, "gt_makefuncs[] is indexed by the gadget kind");
+
+/* The function that creates the gadget(s) of each kind */
+static gt_makefunc * const gt_makefuncs[NUM_KINDS] =
+{
+    makegeneric,    /* GENERIC_KIND  */
+    makebutton,     /* BUTTON_KIND   */
+    makecheckbox,   /* CHECKBOX_KIND */
+    makestring,     /* INTEGER_KIND  */
+    makelistview,   /* LISTVIEW_KIND */
+    makemx,         /* MX_KIND       */
+    maketext,       /* NUMBER_KIND   */
+    makecycle,      /* CYCLE_KIND    */
+    makepalette,    /* PALETTE_KIND  */
+    makescroller,   /* SCROLLER_KIND */
+    NULL,           /* 10            */
+    makeslider,     /* SLIDER_KIND   */
+    makestring,     /* STRING_KIND   */
+    maketext        /* TEXT_KIND     */
+};
 
 /*********************************************************************
 
@@ -162,115 +186,22 @@
     else if ((ng->ng_Flags & PLACETEXT_IN ))
     	stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_In;
 
-    switch(kind)
+    if (kind == LISTVIEW_KIND)
     {
-        case BUTTON_KIND:
-            gad = makebutton(GTB(GadToolsBase),
-                             stdgadtags,
-                             VI(ng->ng_VisualInfo),
-                             taglist);
-            break;
+        /* correction values are based on a visual comparison between AmigaOS and ApolloOS */
+        LV_HeightCorrection = (ng->ng_TextAttr) ? ((ng->ng_TextAttr)->ta_YSize)-4 : 7;
+        stdgadtags[TAG_Height].ti_Data = stdgadtags[TAG_Height].ti_Data - LV_HeightCorrection;
+    }
 
-        case CHECKBOX_KIND:
-            gad = makecheckbox(GTB(GadToolsBase),
-                               stdgadtags,
-                               VI(ng->ng_VisualInfo),
-                               taglist);
-            break;
-
-        case CYCLE_KIND:
-            gad = makecycle(GTB(GadToolsBase),
-                            stdgadtags,
-                            VI(ng->ng_VisualInfo),
-                            ng->ng_TextAttr,
-                            taglist);
-            break;
-
-        case MX_KIND:
-            gad = makemx(GTB(GadToolsBase),
-                         stdgadtags,
-                         VI(ng->ng_VisualInfo),
-                         ng->ng_TextAttr,
-                         taglist);
-            break;
-
-        case PALETTE_KIND:
-            gad = makepalette(GTB(GadToolsBase),
-                              stdgadtags,
-                              VI(ng->ng_VisualInfo),
-                              taglist);
-            break;
-
-        case TEXT_KIND:
-            gad = maketext(GTB(GadToolsBase),
-                           stdgadtags,
-                           VI(ng->ng_VisualInfo),
-                           ng->ng_TextAttr,
-                           taglist);
-            break;
-
-        case NUMBER_KIND:
-            gad = makenumber(GTB(GadToolsBase),
-                             stdgadtags,
-                             VI(ng->ng_VisualInfo),
-                             ng->ng_TextAttr,
-                             taglist);
-            break;
-
-        case SLIDER_KIND:
-            gad = makeslider(GTB(GadToolsBase),
-                             stdgadtags,
-                             VI(ng->ng_VisualInfo),
-                             ng->ng_TextAttr,
-                             taglist);
-
-            break;
-
-        case SCROLLER_KIND:
-            gad = makescroller(GTB(GadToolsBase),
-                               stdgadtags,
-                               VI(ng->ng_VisualInfo),
-                               taglist);
-            break;
-
-        case STRING_KIND:
-            gad = makestring(GTB(GadToolsBase),
-                             stdgadtags,
-                             VI(ng->ng_VisualInfo),
-                             ng->ng_TextAttr,
-                             taglist);
-            break;
-
-        case INTEGER_KIND:
-            gad = makeinteger(GTB(GadToolsBase),
-                              stdgadtags,
-                              VI(ng->ng_VisualInfo),
-                              ng->ng_TextAttr,
-                              taglist);
-            break;
-
-        case LISTVIEW_KIND:
-
-            /* correction values are based on a visual comparison between AmigaOS and ApolloOS */
-            LV_HeightCorrection = (ng->ng_TextAttr) ? ((ng->ng_TextAttr)->ta_YSize)-4 : 7;
-            stdgadtags[TAG_Height].ti_Data = stdgadtags[TAG_Height].ti_Data - LV_HeightCorrection;
-
-            gad = makelistview(GTB(GadToolsBase),
-                               stdgadtags,
-                               VI(ng->ng_VisualInfo),
-                               ng->ng_TextAttr,
-                               taglist);
-            break;
-        
-        case GENERIC_KIND:
-            gad = makegeneric(GTB(GadToolsBase),
-                              stdgadtags,
-                              VI(ng->ng_VisualInfo),
-                              ng->ng_TextAttr,
-                              taglist);
-            break;
-            
-    } /* switch(kind) */
+    if ((kind < NUM_KINDS) && gt_makefuncs[kind])
+    {
+        gad = gt_makefuncs[kind](GTB(GadToolsBase),
+                                 stdgadtags,
+                                 VI(ng->ng_VisualInfo),
+                                 ng->ng_TextAttr,
+                                 taglist,
+                                 kind);
+    }
 
     if (gad)
     {

@@ -17,6 +17,34 @@
 #include "layers_intern.h"
 
 /*
+ * The tags CreateLayerTagList() understands. Their values are collected in
+ * an array indexed by LATAG_xxx; latags[] maps each index to its tag.
+ */
+enum
+{
+  LATAG_BackfillHook, LATAG_SuperBitMap, LATAG_ChildOf, LATAG_InFrontOf, LATAG_Behind,
+  LATAG_Hidden, LATAG_ShapeRegion, LATAG_ShapeHook, LATAG_WindowPtr, LATAG_Composited,
+  LATAG_Opacity, LATAG_AlphaSurface, LATAG_InputShape, LATAG_COUNT
+};
+
+static const Tag latags[LATAG_COUNT] =
+{
+  [LATAG_BackfillHook] = LA_BackfillHook,
+  [LATAG_SuperBitMap]  = LA_SuperBitMap,
+  [LATAG_ChildOf]      = LA_ChildOf,
+  [LATAG_InFrontOf]    = LA_InFrontOf,
+  [LATAG_Behind]       = LA_Behind,
+  [LATAG_Hidden]       = LA_Hidden,
+  [LATAG_ShapeRegion]  = LA_ShapeRegion,
+  [LATAG_ShapeHook]    = LA_ShapeHook,
+  [LATAG_WindowPtr]    = LA_WindowPtr,
+  [LATAG_Composited]   = LA_Composited,
+  [LATAG_Opacity]      = LA_Opacity,
+  [LATAG_AlphaSurface] = LA_AlphaSurface,
+  [LATAG_InputShape]   = LA_InputShape
+};
+
+/*
  * LA_InFrontOf and LA_Behind are intentionally left
  * because they allow to implement AmigaOS4-compatible functionality.
  */
@@ -24,79 +52,51 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
                                  LONG x1, LONG y1, LONG flags, int priority, struct TagItem *tagList,
                                  struct LayersBase *LayersBase)
 {
-  struct BitMap * superbitmap = NULL;
-  struct Hook * hook = NULL, *shapehook = NULL;
-  APTR win = 0;
-  int visible = TRUE;
-  int composited = FALSE, alphasurface = FALSE;
+  struct BitMap * superbitmap;
+  struct Hook * hook, *shapehook;
+  APTR win;
+  int visible;
+  int composited, alphasurface;
   ULONG alphaformat = (ULONG)-1;
-  ULONG opacity = 0xFF;
-  struct Layer * behind = NULL, * infrontof = NULL, * parent = NULL;
+  ULONG opacity;
+  struct Layer * behind, * infrontof, * parent;
   struct Layer * l;
-  struct Region * layershape = NULL, *shape;
-  struct Region * inputshape = NULL;
+  struct Region * layershape, *shape;
+  struct Region * inputshape;
   struct TagItem *tag, *tstate = tagList;
-  
+  IPTR tv[LATAG_COUNT];
+  int i;
+
+  for (i = 0; i < LATAG_COUNT; i++)
+    tv[i] = 0;
+  tv[LATAG_Opacity] = 0xFF;
+
   while((tag = NextTagItem(&tstate)))
   {
-    switch (tag->ti_Tag)
+    for (i = 0; i < LATAG_COUNT; i++)
     {
-    case LA_BackfillHook:
-        hook = (struct Hook *)tag->ti_Data;
+      if (tag->ti_Tag == latags[i])
+      {
+        tv[i] = tag->ti_Data;
         break;
-
-    case LA_SuperBitMap:
-        superbitmap = (struct BitMap *)tag->ti_Data;
-        break;
-
-    case LA_ChildOf:
-        parent = (struct Layer *)tag->ti_Data;
-        break;
-
-    case LA_InFrontOf:
-        infrontof = (struct Layer *)tag->ti_Data;
-        break;
-
-    case LA_Behind:
-        behind = (struct Layer *)tag->ti_Data;
-        break;
-
-    case LA_Hidden:
-        visible = !tag->ti_Data;
-        break;
-
-    case LA_ShapeRegion:
-        layershape = (struct Region *)tag->ti_Data;
-        break;
-
-    case LA_ShapeHook:
-        shapehook = (struct Hook *)tag->ti_Data;
-        break;
-
-    case LA_WindowPtr:
-        win = (APTR)tag->ti_Data;
-        break;
-
-    case LA_Composited:
-        composited = tag->ti_Data ? TRUE : FALSE;
-        break;
-
-    case LA_Opacity:
-        opacity = (tag->ti_Data > 0xFF) ? 0xFF : tag->ti_Data;
-        break;
-
-    case LA_AlphaSurface:
-        alphasurface = tag->ti_Data ? TRUE : FALSE;
-        break;
-
-    case LA_InputShape:
-        inputshape = (struct Region *)tag->ti_Data;
-        break;
-
+      }
     }
-
   } /* while((tag = NextTagItem(&tstate))) */
-  
+
+  hook         = (struct Hook *)tv[LATAG_BackfillHook];
+  superbitmap  = (struct BitMap *)tv[LATAG_SuperBitMap];
+  parent       = (struct Layer *)tv[LATAG_ChildOf];
+  infrontof    = (struct Layer *)tv[LATAG_InFrontOf];
+  behind       = (struct Layer *)tv[LATAG_Behind];
+  visible      = !tv[LATAG_Hidden];
+  layershape   = (struct Region *)tv[LATAG_ShapeRegion];
+  shapehook    = (struct Hook *)tv[LATAG_ShapeHook];
+  win          = (APTR)tv[LATAG_WindowPtr];
+  composited   = tv[LATAG_Composited] ? TRUE : FALSE;
+  opacity      = (tv[LATAG_Opacity] > 0xFF) ? 0xFF : tv[LATAG_Opacity];
+  alphasurface = tv[LATAG_AlphaSurface] ? TRUE : FALSE;
+  inputshape   = (struct Region *)tv[LATAG_InputShape];
+
   if ((flags & LAYERSUPER) && (NULL == superbitmap))
     return NULL;
 
@@ -137,12 +137,14 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
          * InstallLayerInfoHook() may already have set before any layer
          * existed (Intuition installs SA_BackFill right after InitLayers()).
          */
-        struct TagItem tags[] =
-        {
-            {LA_Hidden      , TRUE                  },
-            {LA_BackfillHook, (IPTR)li->BlankHook   },
-            {TAG_DONE                               }
-        };
+        struct TagItem tags[3];
+
+        tags[0].ti_Tag  = LA_Hidden;
+        tags[0].ti_Data = TRUE;
+        tags[1].ti_Tag  = LA_BackfillHook;
+        tags[1].ti_Data = (IPTR)li->BlankHook;
+        tags[2].ti_Tag  = TAG_DONE;
+        tags[2].ti_Data = 0;
 
         if (!(CreateLayerTagList(li,
                                  bm,
@@ -439,8 +441,6 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
       /*
        * layer is to be visible
        */
-      struct Layer * _l = l->back;
-      struct Layer * lparent = l->parent;
 
       /*
        * Does this layer have a layer in front of it?
@@ -462,22 +462,7 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
        * back up their parts that the new layer will
        * be hiding.
        */
-      while (1)
-      {
-        if (IS_VISIBLE(_l) && !IS_TRANSLUCENT(l) && DO_OVERLAP(&l->shape->bounds, &_l->shape->bounds))
-          _BackupPartsOfLayer(_l, OCCLUDESHAPE(l), 0, FALSE, LayersBase);
-        else
-          ClearRegionRegion(OCCLUDESHAPE(l), _l->VisibleRegion);
-        
-        if (_l == lparent)
-        {
-          if (IS_VISIBLE(_l) || (NULL == lparent->parent))
-            break;
-          else
-            lparent = lparent->parent;
-        }
-        _l = _l->back;
-      }
+      _HideLayersBehind(l, OCCLUDESHAPE(l), &l->shape->bounds, LayersBase);
 
     }
     /*

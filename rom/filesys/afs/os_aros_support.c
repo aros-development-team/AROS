@@ -442,11 +442,6 @@ BOOL diskWritable(struct AFSBase *afsbase, struct IOHandle *ioh)
         return ioh->ioreq->iotd_Req.io_Actual == 0;
 }
 
-ULONG sectorSize(struct AFSBase *afsbase, struct IOHandle *ioh)
-{
-        return ioh->sectorsize;
-}
-
 struct IOHandle *openBlockDevice(struct AFSBase *afsbase, struct IOHandle *ioh)
 {
 
@@ -530,6 +525,7 @@ LONG prepareMediumCache(struct AFSBase *afsbase, struct Volume *volume)
 void checkDeviceFlags(struct AFSBase *afsbase) {
 struct Volume *volume;
 struct IOHandle *ioh;
+UBYTE present;
 
         volume = (struct Volume *)afsbase->device_list.lh_Head;
         while (volume->ln.ln_Succ != NULL)
@@ -538,37 +534,30 @@ struct IOHandle *ioh;
                 if ((ioh->ioflags & IOHF_MEDIA_CHANGE) && (!volume->inhibitcounter))
                 {
                         D(bug("[afs 0x%08lX] Media change signalled\n", volume));
-                        if (diskPresent(afsbase, ioh))
+                        present = diskPresent(afsbase, ioh);
+
+                        /* A direct disk swap may deliver only one change event,
+                         * and no writes or updates may go to an absent medium. */
+                        clearCleanCache(volume);
+                        volume->cachepending = cacheDirty(volume) || volume->writefailed;
+                        remDosVolume(afsbase, volume);
+                        if (present)
                         {
-                            if (!volume->inhibitcounter)
-                            {
                                 D(bug("[afs 0x%08lX] Media inserted\n", volume));
-                                /* A direct disk swap may deliver only one change event. */
-                                clearCleanCache(volume);
-                                volume->cachepending = cacheDirty(volume) || volume->writefailed;
-                                remDosVolume(afsbase, volume);
                                 ioh->ioflags |= IOHF_DISK_IN;
                                 if (newMedium(afsbase, volume) != 0 && volume->cachepending)
                                 {
                                         ioh->ioflags &= ~IOHF_DISK_IN;
                                         showText(afsbase, "Re-insert the previous volume to save pending changes");
                                 }
-                            }
                         }
                         else
                         {
-                            if (!volume->inhibitcounter)
-                            {
-                                /* Do not issue writes or update to an absent medium. */
-                                clearCleanCache(volume);
-                                volume->cachepending = cacheDirty(volume) || volume->writefailed;
-                                remDosVolume(afsbase, volume);
                                 if (volume->cachepending && showPtrArgsText(afsbase,
                                         "Re-insert the previous volume to save pending changes. Continue to discard them, or Cancel to retain them",
                                         Req_ContinueCancel, NULL) == 1)
                                         discardCache(volume);
-                            }
-                            ioh->ioflags &= ~IOHF_DISK_IN;
+                                ioh->ioflags &= ~IOHF_DISK_IN;
                         }
                         ioh->ioflags &= ~IOHF_MEDIA_CHANGE;
                 }

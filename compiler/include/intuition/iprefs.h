@@ -2,7 +2,7 @@
 #define INTUITION_IPREFS_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PRIVATE/TOP SECRET!!! Communication between IPrefs program and Intuition
@@ -32,6 +32,11 @@
 #define IPREFS_TYPE_PALETTE_V39    8
 #define IPREFS_TYPE_PENS_V39       9
 #define IPREFS_TYPE_POINTER_ALPHA 10
+
+/* Public semaphore owned by IPrefs. It is held exclusively while IPrefs
+   applies the saved preferences. Obtain it shared, then release it, to
+   wait for that to finish. It does not exist if IPrefs was never run. */
+#define IPREFS_SEMAPHORE_NAME "\xAB IPrefs \xBB"
 
 /* backwards compatibility */
 #define IPREFS_TYPE_SCREENMODE IPREFS_TYPE_SCREENMODE_V37

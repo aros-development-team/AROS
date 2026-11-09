@@ -1504,12 +1504,15 @@ void PatCopy(STRPTR name, struct CopyData *cd)
 
         if (retval && retval != ERROR_NO_MORE_ENTRIES)
         {
-            LONG ioerr = IoErr();
+            LONG ioerr = retval;
 #if USE_ALWAYSVERBOSE
             cd->Flags |= COPYFLAG_VERBOSE;
 #endif
-            Printf("%s - ", APath->ap_Info.fib_FileName);
-            PrintFault(ioerr, NULL);
+            if (!(cd->Flags & COPYFLAG_QUIET))
+            {
+                Printf("%s - ", APath->ap_Info.fib_FileName);
+                PrintFault(ioerr, NULL);
+            }
             cd->IoErr = ioerr;
 
             cd->RetVal2 = RETURN_FAIL;
@@ -1575,18 +1578,21 @@ LONG IsPattern(STRPTR name, struct CopyData *cd)
 LONG IsMatchPattern(STRPTR name, struct CopyData *cd)
 {
     struct AnchorPath ap;
-    LONG ret = -1;
+    LONG ret = -1, error;
 
     ap.ap_BreakBits = 0;
-    ap.ap_Flags     = APF_DOWILD;
+    ap.ap_Flags     = 0;
     ap.ap_Strlen    = 0;
 
-    if (MatchFirst(name, &ap) == 0)
+    if ((error = MatchFirst(name, &ap)) == 0)
     {
         ret = (ap.ap_Flags & APF_ITSWILD) ? TRUE : FALSE;
-
-        MatchEnd(&ap);
     }
+
+    /* A failed first match can still own directory locks and chain nodes. */
+    MatchEnd(&ap);
+    if (error != 0)
+        SetIoErr(error);
 
     return ret;
 }

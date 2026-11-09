@@ -32,6 +32,7 @@ LIBRARY_SOURCES = \
                 hostgl_glamakecurrent \
                 hostgl_glasetrast \
                 hostgl_glaswapbuffers \
+                hostgl_glaswapinterval \
                 x11_hostlib \
                 glx_hostlib
 

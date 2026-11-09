@@ -221,6 +221,7 @@ static struct CDVDBase *AllocCDVDBase(void)
 {
     struct CDVDBase *cdvd = NULL;
 
+    /* Start-up code relies on every field it does not set being zero/NULL. */
     cdvd = AllocMem(sizeof(*cdvd), MEMF_CLEAR | MEMF_PUBLIC);
     if (!cdvd)
         return NULL;
@@ -244,7 +245,6 @@ ULONG signals;
     struct CDVDBase *global = AllocCDVDBase();
 
     D(bug("[CDVDFS] In handler, cdvd=0x%08lx\n", (IPTR)global));
-    global->playing = FALSE;
 
     /*
      *  Initialize all global variables. SysBase MUST be initialized before
@@ -259,7 +259,6 @@ ULONG signals;
     DOSBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_DOS);
     UtilityBase = (APTR)TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
 #endif
-    CodesetsBase = NULL;
 
     global->Dback = CreateMsgPort();
 
@@ -275,9 +274,6 @@ ULONG signals;
     if (DOSBase && global->Dback)
         dbinit(global);
 #endif
-    global->DevList = NULL;
-    global->PrefsProc = NULL;
-    global->uniCodeset = NULL;
 
     WaitPort(&global->DosProc->pr_MsgPort);         /*  Get Startup Packet  */
     msg = GetMsg(&global->DosProc->pr_MsgPort);
@@ -336,8 +332,6 @@ ULONG signals;
         return 0;                       /*  exit process                */
     }
 
-    global->g_inhibited = 0;
-
     BUG2(dbprintf (global, "g_cd = %08lx\n", global->g_cd);)
     D(bug("%d std buffers, %d file buffers\n",
                  global->g_std_buffers, global->g_file_buffers));
@@ -345,7 +339,6 @@ ULONG signals;
     global->g_changeint_signumber = AllocSignal(-1);
     global->g_changeint_sigbit = 1L << global->g_changeint_signumber;
     /* Initialize timer: */
-    global->g_timer_sigbit = 0;
     if (Open_Timer_Device (global)) {
       Send_Timer_Request (global);
       global->g_scan_time = global->g_scan_interval;
@@ -1291,6 +1284,15 @@ int Check_For_Volume_Name_Prefix (struct CDVDBase *global, char *p_pathname)
   return pos ? (pos - p_pathname) + 1 : 0;
 }
 
+/* Convert seconds since 1-Jan-1978 into a DateStamp. */
+
+CDVDFS_SHARED void Seconds_To_DateStamp (ULONG p_seconds, struct DateStamp *p_stamp)
+{
+        p_stamp->ds_Days   = p_seconds / (24 * 60 * 60);
+        p_stamp->ds_Minute = (p_seconds % (24 * 60 * 60)) / 60;
+        p_stamp->ds_Tick   = (p_seconds % 60) * TICKS_PER_SECOND;
+}
+
 /*
  * Fills a FileInfoBlock with the information contained in the
  * directory record of a CD-ROM directory or file.
@@ -1357,9 +1359,7 @@ static void Fill_FileInfoBlock (struct CDVDBase *global, FIB *p_fib, CDROM_INFO 
         p_fib->fib_Protection = p_info->protection;
         p_fib->fib_Size = p_info->file_length;
         p_fib->fib_NumBlocks = p_info->file_length >> 11;
-        p_fib->fib_Date.ds_Days   = p_info->date / (24 * 60 * 60);
-        p_fib->fib_Date.ds_Minute = (p_info->date % (24 * 60 * 60)) / 60;
-        p_fib->fib_Date.ds_Tick   = (p_info->date % 60) * TICKS_PER_SECOND;
+        Seconds_To_DateStamp (p_info->date, &p_fib->fib_Date);
 
         dest = p_fib->fib_Comment;
         len = p_info->comment_length;
@@ -1394,9 +1394,7 @@ static void Create_Volume_Node (struct CDVDBase *global, LONG p_disk_type, ULONG
                 global->DevList = dl = (struct DeviceList *)MakeDosEntry(global->g_vol_name+1, DLT_VOLUME);
                 dl->dl_Task = &global->DosProc->pr_MsgPort;
                 dl->dl_DiskType = p_disk_type;
-                dl->dl_VolumeDate.ds_Days = p_volume_date / (24 * 60 * 60);
-                dl->dl_VolumeDate.ds_Minute = (p_volume_date % (24 * 60 * 60)) / 60;
-                dl->dl_VolumeDate.ds_Tick = (p_volume_date % 60) * TICKS_PER_SECOND;
+                Seconds_To_DateStamp (p_volume_date, &dl->dl_VolumeDate);
                 D(bug("Name to add: <0x%08lX> %b\n", dl->dl_Name, dl->dl_Name));
                 AddDosEntry((struct DosList *)dl);
                 D(bug("Added name: <0x%08lX> %b\n", dl->dl_Name, dl->dl_Name));

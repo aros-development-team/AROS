@@ -111,7 +111,7 @@
                                   0x0c0, GfxBase);
 
                 CurVSprite->Flags |= BACKSAVED;
-            } else kprintf("NOT SAVING BACKGROUND!\n");
+            }
 
             if(0 == (CurVSprite->Flags & VSPRITE) &&
                     BOBSAWAY == (CurVSprite->VSBob->Flags & BOBSAWAY)) {

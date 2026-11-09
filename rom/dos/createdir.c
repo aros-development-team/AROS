@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Create a new directory.
 */
@@ -51,17 +51,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    BPTR lock = BNULL;
-    struct PacketHelperStruct phs;
-
     D(bug("[CreateDir] '%s'\n", name));
 
-    if (getpacketinfo(DOSBase, name, &phs)) {
-        lock = (BPTR)dopacket2(DOSBase, NULL, phs.port, ACTION_CREATE_DIR, phs.lock, phs.name);
-        freepacketinfo(DOSBase, &phs);
-    }
-
-    return lock;
+    return (BPTR)pathpacket(DOSBase, name, ACTION_CREATE_DIR, FALSE, 0, 0);
 
     AROS_LIBFUNC_EXIT
 } /* CreateDir */

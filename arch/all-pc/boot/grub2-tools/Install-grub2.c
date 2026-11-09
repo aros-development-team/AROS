@@ -104,6 +104,7 @@ struct Volume
     UWORD SizeBlock;
     UBYTE flags;
     BYTE partnum;
+    UBYTE subpartnum;
     ULONG *blockbuffer;
     ULONG dos_id;
 };
@@ -360,6 +361,63 @@ static BOOL isKnownFs(ULONG dos_id)
     return FALSE;
 }
 
+/* GRUB numbers RDB partitions in on-disk PART chain order, not by
+ * boot priority or by the lowest cylinder. The library preserves that order
+ * when opening an RDB table. */
+static LONG findRDBPartition(struct Volume *volume,
+                            struct PartitionHandle *root, UQUAD offset)
+{
+    struct PartitionHandle *partition;
+    LONG index = 0;
+
+    ForeachNode(&root->table->list, partition)
+    {
+        UQUAD start = offset + (UQUAD)partition->de.de_LowCyl
+            * partition->de.de_Surfaces * partition->de.de_BlocksPerTrack;
+
+        /* 0xff denotes no partition in GRUB's boot-device encoding. */
+        if (index == 255)
+            break;
+        if (start == volume->startblock)
+            return index;
+        index++;
+    }
+    return -1;
+}
+
+static BOOL findSubPartition(struct PartitionBase *PartitionBase,
+                             struct Volume *volume,
+                             struct PartitionHandle *partition, UQUAD offset)
+{
+    UQUAD start = offset + (UQUAD)partition->de.de_LowCyl
+        * partition->de.de_Surfaces * partition->de.de_BlocksPerTrack;
+    BOOL found = FALSE;
+
+    if (OpenPartitionTable(partition) == 0)
+    {
+        ULONG type = 0;
+        LONG index;
+
+        GetPartitionTableAttrsTags(partition, PTT_TYPE, (IPTR)&type, TAG_DONE);
+        if (type == PHPTT_RDB)
+        {
+            index = findRDBPartition(volume, partition, start);
+            if (index >= 0)
+            {
+                volume->subpartnum = index;
+                found = TRUE;
+            }
+        }
+        ClosePartitionTable(partition);
+    }
+    else
+    {
+        /* A filesystem directly in an MBR partition has no RDB child. */
+        found = volume->startblock == start;
+    }
+    return found;
+}
+
 BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
                        ULONG unit)
 {
@@ -399,6 +457,7 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
         volume->dos_id = dos_id;
 
     volume->partnum = -1;
+    volume->subpartnum = 0xff;
 
     PartitionBase =
         (struct PartitionBase *) OpenLibrary((CONST_STRPTR)
@@ -456,7 +515,7 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
                         tags[1].ti_Tag = TAG_DONE;
                         GetPartitionAttrs(pn, tags);
                         volume->partnum = (UBYTE) ppos;
-                        retval = TRUE;
+                        retval = findSubPartition(PartitionBase, volume, pn, 0);
                         D(bug
                           ("[install] Primary partition found: partnum=%d\n",
                            volume->partnum));
@@ -504,7 +563,10 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
                                     GetPartitionAttrs(pn, tags);
                                     volume->partnum =
                                         MBR_MAX_PARTITIONS + (UBYTE) ppos;
-                                    retval = TRUE;
+                                    retval = findSubPartition(PartitionBase, volume, pn,
+                                        (UQUAD)extph->de.de_LowCyl
+                                        * extph->de.de_Surfaces
+                                        * extph->de.de_BlocksPerTrack);
                                     D(bug
                                       ("[install] Logical partition found: partnum=%d\n",
                                        (int) volume->partnum));
@@ -514,16 +576,41 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
                         }
                     }
                 }
+                else if (ttype == PHPTT_GPT)
+                {
+                    struct PartitionHandle *pn;
+                    ForeachNode(&ph->table->list, pn)
+                    {
+                        UQUAD first = 0, last = 0;
+                        ULONG position = 0;
+                        GetPartitionAttrsTags(pn,
+                            PT_STARTBLOCK, (IPTR)&first,
+                            PT_ENDBLOCK, (IPTR)&last,
+                            PT_POSITION, (IPTR)&position, TAG_DONE);
+                        if (volume->startblock >= first &&
+                            volume->startblock <= last && position < 255)
+                        {
+                            volume->partnum = position;
+                            retval = findSubPartition(PartitionBase, volume, pn, 0);
+                            break;
+                        }
+                    }
+                }
                 else
                 {
                     if (ttype == PHPTT_RDB)
                     {
-                        /* just use whole hard disk */
-                        retval = TRUE;
+                        /* A whole-disk RDB has just one partition level. */
+                        LONG index = findRDBPartition(volume, ph, 0);
+                        if (index >= 0)
+                        {
+                            volume->partnum = index;
+                            retval = TRUE;
+                        }
                     }
                     else
                         Printf
-                            ("only MBR and RDB partition tables are supported\n");
+                            ("only MBR, GPT and RDB partition tables are supported\n");
                 }
                 ClosePartitionTable(ph);
             }
@@ -649,7 +736,7 @@ BOOL isvalidPartition(CONST_STRPTR device, ULONG unit, LONG * pnum,
                     tags[0].ti_Tag = PTT_TYPE;
                     tags[0].ti_Data = (STACKIPTR) & type;
                     GetPartitionTableAttrs(ph, tags);
-                    if ((type == PHPTT_MBR) || (type == PHPTT_RDB))
+                    if ((type == PHPTT_MBR) || (type == PHPTT_GPT) || (type == PHPTT_RDB))
                     {
                         tags[0].ti_Tag = PT_DOSENVEC;
                         tags[0].ti_Data = (STACKIPTR) de;
@@ -658,7 +745,7 @@ BOOL isvalidPartition(CONST_STRPTR device, ULONG unit, LONG * pnum,
                     }
                     else
                         Printf
-                            ("partition table type must be either MBR or RDB\n");
+                            ("partition table type must be MBR, GPT or RDB\n");
                 }
                 ClosePartitionTable(ph);
             }
@@ -1239,14 +1326,14 @@ BOOL writeCoreIMG(BPTR fh, UBYTE *buffer, struct Volume *volume)
                         if (Read(fh, buffer, 512) == 512)
                         {
                                 /* set partition number where core.img is on */
-                        /* FIXME: set RDB part number of DH? */
+                        /* Outer partition and optional nested RDB child. */
                         UBYTE *install_boot_device =
                     buffer + GRUB_DECOMPRESSOR_I386_PC_BOOT_DEVICE;
 
                         D(bug("[install] set dos part = %d\n", volume->partnum));
 
                         install_boot_device[0] = 0;
-                        install_boot_device[1] = 0;
+                        install_boot_device[1] = volume->subpartnum;
                         install_boot_device[2] = volume->partnum;
 
                                 /* write second core.img block back */
@@ -1385,7 +1472,7 @@ int main(int argc, char **argv)
     struct Volume *grubvol;
     struct Volume *bbvol;
     struct FileSysStartupMsg *fssm;
-    int ret = RETURN_OK;
+    int ret = RETURN_FAIL;
 
     D(bug("[install] main()\n"));
 
@@ -1426,9 +1513,9 @@ int main(int argc, char **argv)
                             bbvol = getBBVolume(bootDevice, unit, partnum);
                             if (bbvol)
                             {
-                                    if (!installGrubFiles(grubvol, grubpath,
-                                                           fssm->fssm_Unit, bbvol))
-                                        ret = RETURN_ERROR;
+                                    ret = installGrubFiles(grubvol, grubpath,
+                                                           fssm->fssm_Unit, bbvol)
+                                        ? RETURN_OK : RETURN_ERROR;
 
                                     uninitVolume(bbvol);
                             }
@@ -1448,12 +1535,8 @@ int main(int argc, char **argv)
                         ret = RETURN_ERROR;
                 }
             }
-            else if (fssm)
-            {
+            else
                 Printf("kernel path must begin with a device name\n");
-                FreeArgs(rdargs);
-                ret = RETURN_ERROR;
-            }
 
             FreeArgs(rdargs);
     }

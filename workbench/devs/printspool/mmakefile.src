@@ -1,0 +1,13 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-devs-common: workbench-devs-printspool
+
+#MM- workbench-devs-quick: workbench-devs-printspool-quick
+
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-devs-printspool \
+  modname=printspool modtype=device \
+  files=printspool
+
+%common

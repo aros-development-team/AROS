@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -25,14 +25,13 @@
 LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqType type, RAWARG args)
 {
         LONG answer = 0;
-        char* options[] =
+        static const char * const options[] =
         {
                 "Cancel",
                 "Retry|Cancel",
                 "Check disk|Cancel",
                 "Continue|Cancel",
-                "Continue",
-                NULL
+                "Continue"
         };
         struct EasyStruct es={sizeof (struct EasyStruct),0,"AFFS",0,options[type]};
         struct IntuitionBase *IntuitionBase;

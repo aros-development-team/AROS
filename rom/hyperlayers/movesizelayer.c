@@ -66,12 +66,11 @@
   AROS_LIBFUNC_INIT
 
   struct Layer * first, *_l, *lparent;
-  struct Region * newshape, * oldshape, r, rtmp, cutnewshape, cutocclude;
+  struct Region * newshape, * oldshape, r, cutnewshape, cutocclude;
   struct Region *clipregion, *olddamage = NULL;
   struct Rectangle rectw, recth;
 
   InitRegion(&r);
-  InitRegion(&rtmp);
   InitRegion(&cutnewshape);
   InitRegion(&cutocclude);
 
@@ -94,7 +93,7 @@
     }
   }
   
-  clipregion = _InternalInstallClipRegion(l, NULL, 0, 0, LayersBase);
+  clipregion = _InternalInstallClipRegion(l, NULL, 0, LayersBase);
 
   /* There's a little problem with CopyClipRectsToClipRects(). It
      may call the backfill hook for the whole DamageList region.
@@ -230,29 +229,7 @@
    */
 
         
-  lparent = l->parent;
-  _l = l->back;
-
-#if 0
-kprintf("\t\t%s: Backing up parts of layers that are behind the layer!\n",
-        __FUNCTION__);
-#endif
-  while (1)
-  {
-    if (IS_VISIBLE(_l) && !IS_TRANSLUCENT(l) && DO_OVERLAP(&cutocclude.bounds, &_l->shape->bounds))
-      _BackupPartsOfLayer(_l, &cutocclude, 0, FALSE, LayersBase);
-    else
-      ClearRegionRegion(&cutocclude, _l->VisibleRegion);
-
-    if (_l == lparent)
-    {
-      if (IS_VISIBLE(_l) || (NULL == lparent->parent))
-        break;
-      else
-        lparent = lparent->parent;
-    }
-    _l = _l->back;
-  }
+  _HideLayersBehind(l, &cutocclude, &cutocclude.bounds, LayersBase);
 
   SetRegion(&cutnewshape, l->visibleshape);
   ClearRegion(&cutnewshape);
@@ -369,48 +346,8 @@ kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED (children)!\n",
   {
     SetRegion(l->VisibleRegion, &r);
     ClearRegionRegion(OCCLUDESHAPE(l), &r);
-    _l = l->back;
-    lparent = l->parent;
+    lparent = _ShowLayersBehind(l, &r, oldshape, &l->visibleshape->bounds, &oldshape->bounds, FALSE, LayersBase);
 
-    while (1)
-    {
-#if 0
-kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
-          __FUNCTION__);
-#endif
-      if (IS_VISIBLE(_l) &&
-         (  DO_OVERLAP(&l->visibleshape->bounds, &_l->shape->bounds) ||
-            DO_OVERLAP(   &oldshape->bounds, &_l->shape->bounds) ))
-      {
-        ClearRegion(_l->VisibleRegion);
-        _ShowPartsOfLayer(_l, &r, LayersBase);
-      }
-      else
-        SetRegion(&r, _l->VisibleRegion);
-
-      if (IS_VISIBLE(_l) || IS_ROOTLAYER(_l))
-        AndRegionRegion(_l->VisibleRegion, oldshape);
-
-#if 0
-      if (IS_ROOTLAYER(_l))
-        kprintf("root reached! %p\n",_l);
-#endif
-      
-      if (_l == lparent)
-      {
-        if (IS_VISIBLE(_l) || (NULL == lparent->parent))
-          break;
-        else
-          lparent = lparent->parent;
-      }
-      
-      if (IS_VISIBLE(_l))
-        ClearRegionRegion(OCCLUDESHAPE(_l), &r);
-
-      _l = _l->back;
-    }
-
-    ClearRegion(&rtmp);
     
     /*
      * Now I need to clear the old layer at its previous place..
@@ -462,7 +399,7 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
   }
   
   if (clipregion)
-    _InternalInstallClipRegion(l, clipregion, 0, 0, LayersBase);
+    _InternalInstallClipRegion(l, clipregion, 0, LayersBase);
 
   UPDATE_SURFACES(l->LayerInfo);
 

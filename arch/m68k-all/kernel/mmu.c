@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -187,29 +187,6 @@ static void enable_mmu030(ULONG *levela)
         : : "m" (levela) : "d0", "d1", "a4", "a6");
 }
 
-static void disable_mmu030(void)
-{
-    asm volatile (
-        ".chip 68030\n"
-        "move.l %%a5,%%a4\n"
-        "move.l 4.w,%%a6\n"
-        "lea    .dsuper030(%%pc),%%a5\n"
-        "jsr    -0x1e(%%a6)\n"
-        "bra.s  0f\n"
-        ".dsuper030:\n"
-        /* Do not interrupt us */
-        "or     #0x0700,%%sr\n"
-        /* Disable MMU */
-        "subq.l #4,%%a7\n"
-        "clr.l  %%a7@\n"
-        "pmove  %%a7@,%%tc\n"
-        "addq.l #4,%%a7\n"
-        "rte\n"
-        "0:\n"
-        "move.l %%a4,%%a5\n"
-        : : : "d0", "d1", "a4", "a6");
-}
-
 void *getphysaddr_mmu040(void *virt)
 {
     return virt;
@@ -264,28 +241,6 @@ static void enable_mmu040(ULONG *levela, UBYTE cpu060, UBYTE *zeropagedescriptor
         : : "m" (levela), "m" (cpu060), "m" (zeropagedescriptor) : "d0", "d1", "a1", "a4", "a6");
 }
 
-static void disable_mmu040(void)
-{
-    asm volatile (
-        ".chip 68060\n"
-        "move.l %%a5,%%a4\n"
-        "move.l 4.w,%%a6\n"
-        "lea    .dsuper040(%%pc),%%a5\n"
-        "jsr    -0x1e(%%a6)\n"
-        "bra.s  0f\n"
-        ".dsuper040:\n"
-        /* Do not interrupt us */
-        "or     #0x0700,%%sr\n"
-        /* Disable MMU */
-        "moveq  #0,%%d0\n"
-        "movec  %%d0,%%tc\n"
-        "pflusha\n"
-        "rte\n"
-        "0:\n"
-        "move.l %%a4,%%a5\n"
-        : : : "d0", "d1", "a4", "a6");
-}
-
 void enable_mmu(struct KernelBase *kb)
 {
         if (!kb->kb_PlatformData->mmu_type)
@@ -295,16 +250,6 @@ void enable_mmu(struct KernelBase *kb)
                 enable_mmu030(kb->kb_PlatformData->MMU_Level_A);
         else
                 enable_mmu040(kb->kb_PlatformData->MMU_Level_A, kb->kb_PlatformData->mmu_type == MMU060, kb->kb_PlatformData->zeropagedescriptor);
-}
-
-void disable_mmu(struct KernelBase *kb)
-{
-        if (!kb->kb_PlatformData->mmu_type)
-                return;
-        if (kb->kb_PlatformData->mmu_type == MMU030)
-                disable_mmu030();
-        else
-                disable_mmu040();
 }
 
 #if DEBUG
@@ -458,8 +403,3 @@ BOOL map_region(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, B
         return map_region2(kb, addr, physaddr, size, invalid, writeprotect, supervisor, cachemode);
 }
 
-BOOL unmap_region(struct KernelBase *kb, void *addr, ULONG size)
-{
-        D(bug("unmap_region(%p, %08x)\n", addr, size));
-        return map_region2(kb, addr, NULL, size, TRUE, FALSE, FALSE, 0);
-}

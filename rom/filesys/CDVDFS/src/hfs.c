@@ -96,6 +96,15 @@ void Convert_HFS_Spaces (char *p_buf, int p_buf_len)
       *cp = '_';
 }
 
+/* Apply the MACTOISO and CONVERTSPACES options to a name. */
+static void HFS_Convert_Name (struct CDVDBase *global, char *p_buf, int p_buf_len)
+{
+  if (global->g_convert_hfs_filenames)
+    Convert_Mac_Characters (p_buf, p_buf_len);
+  if (global->g_convert_hfs_spaces)
+    Convert_HFS_Spaces (p_buf, p_buf_len);
+}
+
 t_uchar *Read_Block(CDROM *p_cdrom, t_ulong p_block) {
 	if (!Read_Chunk(p_cdrom, p_block >> 2))
 		return NULL;
@@ -114,7 +123,7 @@ t_ulong AB_to_Block (VOLUME *p_volume, t_ulong p_alloc_block)
 
 /* HFS disk integers are big-endian and may only be word-aligned.
  * Decode into native values without modifying the shared sector cache. */
-t_ushort HFS_Get16(const void *data)
+static t_ushort HFS_Get16(const void *data)
 {
 	const t_uchar *p = data;
 	return ((t_ushort)p[0] << 8) | p[1];
@@ -474,16 +483,10 @@ t_ulong next_node;
 				int start, end;
 				const t_uchar *idx;
 				if (!HFS_Record_Bounds(node, i, &start, &end))
-				{
-					global->iso_errno = ISOERR_INTERNAL;
-					return FALSE;
-				}
+					goto internal_error;
 				idx = node + start;
 				if (idx[0] != 0 && end - start < 42)
-				{
-					global->iso_errno = ISOERR_INTERNAL;
-					return FALSE;
-				}
+					goto internal_error;
 				if (idx[0] != 0)
 				{
 					if (HFS_Get32(idx + 2) >= p_parent_id)
@@ -498,16 +501,10 @@ t_ulong next_node;
 			break;
 		}
 		else
-		{
-			global->iso_errno = ISOERR_INTERNAL;
-			return FALSE;
-		}
+			goto internal_error;
 
 		if (next_node == -1)
-		{
-			global->iso_errno = ISOERR_INTERNAL;
-			return FALSE;
-		}
+			goto internal_error;
 
 		if (!HFS_Advance_Node(p_volume, p_leaf, next_node))
 			return FALSE;
@@ -523,10 +520,7 @@ t_ulong next_node;
 	p_leaf->node = this_node;
 	p_leaf->record = 0;
 	if (!HFS_Load_Leaf(p_leaf, node))
-	{
-		global->iso_errno = ISOERR_INTERNAL;
-		return FALSE;
-	}
+		goto internal_error;
 
 	/* walk forwards until the same key is found: */
 	for (;;)
@@ -534,16 +528,10 @@ t_ulong next_node;
 		if (p_leaf->leaf_rec.parent_id == p_parent_id)
 			break;
 		if (p_leaf->leaf_rec.parent_id > p_parent_id)
-		{
-			global->iso_errno = ISOERR_INTERNAL;
-			return FALSE;
-		}
+			goto internal_error;
 
 		if (!HFS_Find_Next_Leaf(p_volume, p_leaf))
-		{
-			global->iso_errno = ISOERR_INTERNAL;
-			return FALSE;
-		}
+			goto internal_error;
 
 	}
 
@@ -554,6 +542,10 @@ t_ulong next_node;
 	}
 
 	return TRUE;
+
+internal_error:
+	global->iso_errno = ISOERR_INTERNAL;
+	return FALSE;
 }
 
 static t_handler const g_hfs_handler;
@@ -685,10 +677,7 @@ t_bool data_fork = FALSE;
 			CopyMem(leaf.leaf_rec.name, name, leaf.leaf_rec.name_length);
 			name[leaf.leaf_rec.name_length] = 0;
 
-			if (global->g_convert_hfs_filenames)
-				Convert_Mac_Characters (name, leaf.leaf_rec.name_length);
-			if (global->g_convert_hfs_spaces)
-				Convert_HFS_Spaces (name, leaf.leaf_rec.name_length);
+			HFS_Convert_Name (global, name, leaf.leaf_rec.name_length);
 
 			if (type == 1)
 			{
@@ -760,10 +749,7 @@ t_leaf_record_pos leaf;
 		char buf[50];
 			CopyMem(leaf.cat_rec.dt.CName, buf, leaf.cat_rec.dt.CNameLen);
 			buf[leaf.cat_rec.dt.CNameLen] = 0;
-			if (global->g_convert_hfs_filenames)
-				Convert_Mac_Characters (buf, leaf.cat_rec.dt.CNameLen);
-			if (global->g_convert_hfs_spaces)
-				Convert_HFS_Spaces (buf, leaf.cat_rec.dt.CNameLen);
+			HFS_Convert_Name (global, buf, leaf.cat_rec.dt.CNameLen);
 			return HFS_Open_Object(p_obj->volume, buf, leaf.cat_rec.dt.ParID);
 		}
 		if (!HFS_Find_Next_Leaf(p_obj->volume, &leaf))
@@ -1032,10 +1018,7 @@ short fork = 3;
 	p_info->directory_f = (leaf.cat_rec.d.type == 1);
 	p_info->name_length = leaf.leaf_rec.name_length;
 	CopyMem(leaf.leaf_rec.name, p_info->name, leaf.leaf_rec.name_length);
-	if (global->g_convert_hfs_filenames)
-		Convert_Mac_Characters (p_info->name, p_info->name_length);
-	if (global->g_convert_hfs_spaces)
-		Convert_HFS_Spaces (p_info->name, p_info->name_length);
+	HFS_Convert_Name (global, p_info->name, p_info->name_length);
 	if (p_info->directory_f)
 	{
 		p_info->file_length = 0;
@@ -1043,28 +1026,22 @@ short fork = 3;
 	}
 	else
 	{
+		char *ext;
+		int extlen;
+
 		if (fork == 0)
 		{
-			CopyMem
-				(
-					global->g_data_fork_extension,
-					p_info->name + p_info->name_length,
-      	      StrLen (global->g_data_fork_extension)
-				);
-			p_info->name_length += StrLen (global->g_data_fork_extension);
+			ext = global->g_data_fork_extension;
 			p_info->file_length = leaf.cat_rec.f.LgLen;
 		}
 		else
 		{
-			CopyMem
-				(
-					global->g_resource_fork_extension,
-					p_info->name + p_info->name_length,
-      	      StrLen (global->g_resource_fork_extension)
-				);
-			p_info->name_length += StrLen (global->g_resource_fork_extension);
+			ext = global->g_resource_fork_extension;
 			p_info->file_length = leaf.cat_rec.f.RLgLen;
 		}
+		extlen = StrLen (ext);
+		CopyMem(ext, p_info->name + p_info->name_length, extlen);
+		p_info->name_length += extlen;
 		p_info->date = leaf.cat_rec.f.CrDat - TIME_DIFF;
 	}
 	p_info->suppl_info = NULL;
@@ -1129,10 +1106,7 @@ int len = p_buf_length - 1;
 	CopyMem(VOL(p_volume,mdb).VolName, p_buf, len);
 	p_buf[len] = 0;
 
-	if (global->g_convert_hfs_filenames)
-		Convert_Mac_Characters (p_buf, len);
-	if (global->g_convert_hfs_spaces)
-		Convert_HFS_Spaces (p_buf, len);
+	HFS_Convert_Name (global, p_buf, len);
 }
 
 t_ulong HFS_Location (CDROM_OBJ *p_obj)

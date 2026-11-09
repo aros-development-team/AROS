@@ -79,6 +79,10 @@ struct PartitionType
 #define PTT_STARTBLOCK	   (TAG_USER | 34L) /* ULONG - Absolute number of starting block of this logical disk */
 
 
+/* Inclusive usable range, excluding both copies of table metadata. */
+#define PTT_FIRSTUSABLE   (TAG_USER | 35L) /* UQUAD * - first usable block */
+#define PTT_LASTUSABLE    (TAG_USER | 36L) /* UQUAD * - last usable block */
+
 /* Tags for partitions */
 #define PT_GEOMETRY   (TAG_USER |  1L) /* struct DriveGeometry * - geometry of partition */
 #define PT_DOSENVEC   (TAG_USER |  2L) /* struct DosEnvec * - partition layout info */

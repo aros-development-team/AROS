@@ -2,7 +2,7 @@
 #define INPUTHANDLER_ACTIONS_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -34,6 +34,9 @@ void CheckLayers(struct Screen *screen, struct IntuitionBase *IntuitionBase);
 void DoMoveSizeWindow(struct Window *targetwindow, LONG NewLeftEdge, LONG NewTopEdge,
                       LONG NewWidth, LONG NewHeight, BOOL send_newsize,
                       struct IntuitionBase *IntuitionBase);
+
+void MoveRequesterLayers(struct Window *w, LONG winleft, LONG wintop, LONG winwidth, LONG winheight,
+                         struct IntuitionBase *IntuitionBase);
 
 void WindowSizeHasChanged(struct Window *targetwindow, WORD dx, WORD dy,
                                  BOOL is_sizewindow, struct IntuitionBase *IntuitionBase);

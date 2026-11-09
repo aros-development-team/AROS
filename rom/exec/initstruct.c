@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Initialize a structure.
 */
@@ -76,9 +76,14 @@
 
     LONG  cnt;
     ULONG offset=0;
-    QUAD src;
-    UBYTE *it,*dst;
+    UBYTE *it,*dst,*src;
     int   s,t;
+    UWORD n,total;
+    IPTR  align;
+
+    /* Size and alignment of an element, indexed by the size field of a command */
+    static const UBYTE elemSize[4]  = { sizeof(LONG), sizeof(WORD), sizeof(BYTE), sizeof(QUAD) };
+    static const UBYTE elemAlign[4] = { AROS_LONGALIGN, AROS_WORDALIGN, 1, AROS_QUADALIGN };
 
     DCREATELIBRARY("InitStruct(0x%p, 0x%p, %lu)", initTable, memory, size);
 
@@ -134,116 +139,34 @@
         }
 
         /* Align source and destination pointers */
-        switch(s)
+        align = elemAlign[s] - 1;
+        it =(UBYTE *)(((IPTR)it +align)&~align);
+        dst=(UBYTE *)(((IPTR)dst+align)&~align);
+
+        /* Element size and number of bytes to write */
+        n = elemSize[s];
+        total = n * (UWORD)(cnt + 1);
+
+        /* Action is: Add offset then copy */
+        if (t >= 2)
+            dst=(BYTE *)memory+offset;
+
+        /*
+            Action is either: Repeat the next element <cnt> times, which takes
+            one element from the table, or: Copy the next <cnt> elements to the
+            current location.
+        */
+        src = it;
+        it += (t == 1) ? n : total;
+
+        do
         {
-            case 0:
-                /* Align pointer to LONG requirements */
-                it =(UBYTE *)(((IPTR)it +AROS_LONGALIGN-1)&~(AROS_LONGALIGN-1));
-                dst=(UBYTE *)(((IPTR)dst+AROS_LONGALIGN-1)&~(AROS_LONGALIGN-1));
-                break;
-            case 1:
-                /* Same for WORDs */
-                it =(UBYTE *)(((IPTR)it +AROS_WORDALIGN-1)&~(AROS_WORDALIGN-1));
-                dst=(UBYTE *)(((IPTR)dst+AROS_WORDALIGN-1)&~(AROS_WORDALIGN-1));
-                break;
-            case 2:
-                /* Nothing to do for bytes */
-                break;
-            case 3:
-                /* Align pointer to QUAD requirements */
-                it =(UBYTE *)(((IPTR)it +AROS_QUADALIGN-1)&~(AROS_QUADALIGN-1));
-                dst=(UBYTE *)(((IPTR)dst+AROS_QUADALIGN-1)&~(AROS_QUADALIGN-1));
-                break;
-        }
+            *dst++ = *src++;
 
-        /* Switch over action */
-        switch(t)
-        {
-            case 2:
-            case 3:
-                /* Action is: Add offset then copy */
-                dst=(BYTE *)memory+offset;
-
-                /* Fall through */
-            case 0:
-                /* Action is: Copy the next <cnt> elements to the current location */
-                switch(s)
-                {
-                    case 0:
-                        /* Copy loop */
-                        do
-                        {
-                            *(LONG *)dst=*(LONG *)it;
-                            dst+=sizeof(LONG);
-                            it +=sizeof(LONG);
-                        }while(--cnt>=0);
-                        break;
-                    case 1:
-                        do
-                        {
-                            *(WORD *)dst=*(WORD *)it;
-                            dst+=sizeof(WORD);
-                            it +=sizeof(WORD);
-                        }while(--cnt>=0);
-                        break;
-                    case 2:
-                        do
-                            *dst++=*it++;
-                        while(--cnt>=0);
-                        break;
-                    case 3:
-                        do
-                        {
-                            *(QUAD *)dst=*(QUAD *)it;
-                            dst+=sizeof(QUAD);
-                            it +=sizeof(QUAD);
-                        }while(--cnt>=0);
-                        break;
-                }
-                break;
-            case 1:
-                /* Action is: Repeat the next element <cnt> times */
-                switch(s)
-                {
-                    case 0:
-                        /* Get source */
-                        src=*(LONG *)it;
-                        it +=sizeof(LONG);
-
-                        /* And write it. */
-                        do
-                        {
-                            *(LONG *)dst=src;
-                            dst+=sizeof(LONG);
-                        }while(--cnt>=0);
-                        break;
-                    case 1:
-                        src=*(WORD *)it;
-                        it +=sizeof(WORD);
-                        do
-                        {
-                            *(WORD *)dst=src;
-                            dst+=sizeof(WORD);
-                        }while(--cnt>=0);
-                        break;
-                    case 2:
-                        src=*it++;
-                        do
-                            *dst++=src;
-                        while(--cnt>=0);
-                        break;
-                    case 3:
-                        src=*(QUAD *)it;
-                        it +=sizeof(QUAD);
-                        do
-                        {
-                            *(QUAD *)dst=src;
-                            dst+=sizeof(QUAD);
-                        }while(--cnt>=0);
-                        break;
-                }
-                break;
-        }
+            /* When repeating start with the same element again */
+            if (t == 1 && src == it)
+                src -= n;
+        }while(--total);
 
         /* Align next instruction byte */
         it=(UBYTE *)(((IPTR)it+AROS_WORDALIGN-1)&~(AROS_WORDALIGN-1));

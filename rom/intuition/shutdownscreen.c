@@ -50,6 +50,25 @@ static VOID ShowShutdownScreen()
     return;
 }
 
+/* Best 640 pixel wide display mode of the given height and depth */
+static ULONG FinalModeID(UWORD height, BYTE MinDepth, struct GfxBase *GfxBase)
+{
+    return BestModeID(BIDTAG_DesiredWidth, 640, BIDTAG_DesiredHeight, height,
+        BIDTAG_Depth, MinDepth, TAG_DONE);
+}
+
+/* Draw a filled box, 41 lines high, with a message centred in it */
+static VOID ShowBox(struct RastPort *rp, WORD boxpen, WORD textpen, WORD x, WORD y, WORD width,
+    const char *message, WORD len, struct GfxBase *GfxBase)
+{
+    SetAPen(rp, boxpen);
+    RectFill(rp, x, y, x + width - 1, y + 40);
+    SetAPen(rp, textpen);
+    Move(rp, x + (width - TextLength(rp, message, len)) / 2,
+        y + (41 - rp->TxHeight) / 2 + rp->TxBaseline);
+    Text(rp, message, len);
+}
+
 static struct Screen *OpenFinalScreen(BYTE MinDepth, BOOL squarePixels,
     struct IntuitionBase *IntuitionBase)
 {
@@ -61,15 +80,13 @@ static struct Screen *OpenFinalScreen(BYTE MinDepth, BOOL squarePixels,
     struct SharedPointer *shared_pointer;
 
     height = 480;
-    mode = BestModeID(BIDTAG_DesiredWidth, 640, BIDTAG_DesiredHeight, height,
-        BIDTAG_Depth, MinDepth, TAG_DONE);
+    mode = FinalModeID(height, MinDepth, GfxBase);
     if (mode == INVALID_ID)
         /* An NTSC-only display database (Amiga chipset without a PAL
            monitor) has no 480-line mode, so probe again with the smallest
            standard height. The result is only used to detect the monitor
            type; the real height is picked below. */
-        mode = BestModeID(BIDTAG_DesiredWidth, 640, BIDTAG_DesiredHeight, 200,
-            BIDTAG_Depth, MinDepth, TAG_DONE);
+        mode = FinalModeID(200, MinDepth, GfxBase);
     if (mode == INVALID_ID)
         Alert(AN_SysScrnType);
 
@@ -88,8 +105,7 @@ static struct Screen *OpenFinalScreen(BYTE MinDepth, BOOL squarePixels,
 
     /* We want the screen to occupy the whole display, so we find the best
        matching mode ID and then open a screen with that mode */
-    mode = BestModeID(BIDTAG_DesiredWidth, 640, BIDTAG_DesiredHeight, height,
-        BIDTAG_Depth, MinDepth, TAG_DONE);
+    mode = FinalModeID(height, MinDepth, GfxBase);
 
     /* Reset to default decorator. The one installed by C:Decoration may try
      * to load images from disk while opening the screen, which isn't a good
@@ -135,7 +151,6 @@ static VOID ShowPic(struct Screen *scr, struct IntuitionBase *IntuitionBase)
     struct RastPort *rp = &scr->RastPort;
     WORD xoff = ((WORD)scr->Width - 640) / 2;
     WORD yoff = ((WORD)scr->Height - 480) / 2;
-    WORD y, x;
 
     SetRGB32(&scr->ViewPort, 0, 0xffffffff, 0xffffffff, 0xffffffff);
     SetRGB32(&scr->ViewPort, 1, 0x00000000, 0x5d5d5d5d, 0xb7b7b7b7);
@@ -145,21 +160,6 @@ static VOID ShowPic(struct Screen *scr, struct IntuitionBase *IntuitionBase)
     SetAPen(rp, 0);
     RectFill(rp, 0, 0, scr->Width - 1, scr->Height - 1);
 
-    SetAPen(rp, 1);
-    RectFill(rp, xoff + 54, yoff + 165, xoff + 506, yoff + 205);
-    SetAPen(rp, 0);
-    x = xoff + 54 + (453 - TextLength(rp, message1,
-        sizeof(message1) - 1)) / 2;
-    y = yoff + 165 + (41 - rp->TxHeight) / 2 + rp->TxBaseline;
-    Move(rp, x, y);
-    Text(rp, message1, sizeof(message1) - 1);
-
-    SetAPen(rp, 2);
-    RectFill(rp, xoff + 153, yoff + 230, xoff + 606, yoff + 270);
-    SetAPen(rp, 1);
-    x = xoff + 153 + (454 - TextLength(rp, message2,
-        sizeof(message2) - 1)) / 2;
-    y = yoff + 230 + (41 - rp->TxHeight) / 2 + rp->TxBaseline;
-    Move(rp, x, y);
-    Text(rp, message2, sizeof(message2) - 1);
+    ShowBox(rp, 1, 0, xoff + 54, yoff + 165, 453, message1, sizeof(message1) - 1, GfxBase);
+    ShowBox(rp, 2, 1, xoff + 153, yoff + 230, 454, message2, sizeof(message2) - 1, GfxBase);
 }

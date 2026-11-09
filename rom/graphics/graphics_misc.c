@@ -4,6 +4,7 @@
     Desc: Code for miscellaneous operations needed bz graphics
 */
 
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <clib/macros.h>
@@ -84,4 +85,9 @@ BOOL pattern_pen(struct RastPort *rp, WORD x, WORD y, ULONG apen, ULONG bpen, UL
         *pixval_ptr = pixval;
 
     return set_pixel;
+}
+
+void gfx_NotImplemented(CONST_STRPTR name, struct GfxBase *GfxBase)
+{
+    aros_print_not_implemented(name);
 }

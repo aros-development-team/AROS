@@ -1,0 +1,51 @@
+include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
+
+# nouveau.nvdd: the nvgfx driver's gallium part (Mesa's nv30, nv50 and
+# nvc0 drivers) as a disk library, opened by the driver the first time its
+# display is asked for a gallium object (include/nvdd/nvdd.h). It carries
+# its own copy of libdrm_nouveau (libdrm/nouveau/nouveau.c) over the
+# driver's DRM entry table (nvdd_drm.c): a DRM client of its own per screen.
+
+GALLIUM_PATH = $(top_srcdir)/src/gallium
+NOUVEAU_DIR  = $(SRCDIR)/workbench/hidds/nvgfx
+
+#MM- hidd-nvgfx : hidd-nvgfx-nouveau
+#MM hidd-nvgfx-nouveau : hidd-nvgfx-gallium hidd-gallium mesa3dgl-linklibs
+
+GALLIUM_NVDD_SOURCES := \
+            nouveau_gallium \
+            nvdd_drm \
+            $(NOUVEAU_DIR)/libdrm/nouveau/nouveau \
+            $(NOUVEAU_DIR)/arosc_emul \
+            $(SRCDIR)/workbench/libs/mesa/emul_arosc
+
+USER_INCLUDES := \
+            -I$(NOUVEAU_DIR)/include \
+            -I$(NOUVEAU_DIR)/include/uapi \
+            -I$(NOUVEAU_DIR)/drm/nouveau/include \
+            -iquote $(SRCDIR)/$(CURDIR) \
+            -iquote $(NOUVEAU_DIR)/include/libdrm/nouveau \
+            -iquote $(NOUVEAU_DIR)/libdrm \
+            -I$(NOUVEAU_DIR)/include/libdrm/nouveau \
+            -I$(top_srcdir)/src/nouveau/headers \
+            -iquote $(top_srcdir)/src \
+            -iquote $(top_builddir)/src \
+            -iquote $(top_builddir)/src/util \
+            -iquote $(GALLIUM_PATH)/auxiliary \
+            -iquote $(GALLIUM_PATH)/include \
+            -iquote $(top_srcdir)/include \
+            -I$(top_srcdir)/include \
+            -iquote $(GALLIUM_PATH)/drivers/nouveau
+
+USER_CPPFLAGS := $(MESA_COMPILEFLAGS) $(MESA_DEBUG) \
+            -DPACKAGE_VERSION=\"$(MESAGLVERSION)\" -DNOUVEAU_USE_UTIL_LIST
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_STRICT_ALIASING)
+USER_CFLAGS := $(NOWARN_FLAGS) $(CFLAGS_GNU11)
+
+USER_LDFLAGS := -L$(top_libdir)
+
+%build_module mmake=hidd-nvgfx-nouveau modname=nouveau modtype=library modsuffix=nvdd \
+    moduledir=Devs/Drivers conffile=nouveau.conf \
+    files="$(GALLIUM_NVDD_SOURCES)" alwayscxxlink=yes \
+    uselibs="oop gallium_nouveau galliumauxiliary mesautil compiler pthread hiddstubs stdcio stdc"

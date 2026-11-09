@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Waits for a character to arrive at a filehandle.
 */
@@ -59,7 +59,7 @@
     if(file == BNULL)
         return 0;
 
-    status = dopacket1(DOSBase, NULL, fh->fh_Type, ACTION_WAIT_CHAR, timeout);
+    status = dopacket1n(DOSBase, fh->fh_Type, ACTION_WAIT_CHAR, timeout);
     return status;
 
     AROS_LIBFUNC_EXIT

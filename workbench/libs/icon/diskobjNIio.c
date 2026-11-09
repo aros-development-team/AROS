@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /****************************************************************************************/
@@ -34,7 +34,8 @@ static STRPTR RemoveToolType(STRPTR *tt)
 
 /****************************************************************************************/
 
-static char *DecodeNI(struct DiskObject *icon, STRPTR *tt, UBYTE *outbuffer, LONG bits, LONG entries, WORD which, BOOL is_palette, APTR IconBase)
+/* Returns FALSE if the NewIcon data is truncated or invalid */
+static BOOL DecodeNI(struct DiskObject *icon, STRPTR *tt, UBYTE *outbuffer, LONG bits, LONG entries, WORD which, BOOL is_palette, APTR IconBase)
 {
     LONG   numbits = 0, curentry = 0, bitbuf = 0, loop = 0, mask, val;
     UBYTE  byte;
@@ -69,7 +70,7 @@ static char *DecodeNI(struct DiskObject *icon, STRPTR *tt, UBYTE *outbuffer, LON
                 src = *tt;
                 if(!src || src[0] != 'I' || src[1] != 'M' || src[2] != '1' + which || src[3] != '=')
                 {
-                    return "NewIcon data truncated";
+                    return FALSE;
                 }
                 else
                 {
@@ -82,7 +83,7 @@ static char *DecodeNI(struct DiskObject *icon, STRPTR *tt, UBYTE *outbuffer, LON
             
             if(!byte)
             {
-                return "NewIcon data invalid";
+                return FALSE;
             }
             else if(byte < 0xA0)
             {
@@ -113,7 +114,7 @@ static char *DecodeNI(struct DiskObject *icon, STRPTR *tt, UBYTE *outbuffer, LON
         }
     }
     
-    return 0;
+    return TRUE;
 }
 
 /****************************************************************************************/

@@ -2,7 +2,7 @@
 #define _EXEC_UTIL_H
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Utility functions for exec.
@@ -137,9 +137,21 @@ void Exec_DoResetCallbacks(struct IntExecBase *SysBase, UBYTE action);
 APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutChProc,
 		      APTR PutChData, va_list VaListStream);
 
+/*
+ * The varargs NewRawDoFmt() of <defines/exec.h> is a static inline function
+ * that the compiler cannot inline, so each file using it would get its own
+ * copy. Exec's own code shares this one instead; it makes the same
+ * VNewRawDoFmt() call.
+ */
+STRPTR Exec_NewRawDoFmt(struct ExecBase *SysBase, CONST_STRPTR FormatString,
+                        VOID_FUNC PutChProc, APTR PutChData, ...);
+#undef NewRawDoFmt
+#define NewRawDoFmt(fmt, put, ...) Exec_NewRawDoFmt(SysBase, (fmt), (put), __VA_ARGS__)
+
 IPTR *InternalFindResident(const UBYTE *name, IPTR *list);
 
 void FastPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase);
+void InternalPutMsgType(struct MsgPort *port, struct Message *message, UBYTE type, struct ExecBase *SysBase);
 void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase);
 
 LONG AllocTaskSignal(struct Task *ThisTask, LONG signalNum, struct ExecBase *SysBase);

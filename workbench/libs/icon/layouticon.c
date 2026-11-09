@@ -350,7 +350,6 @@ static void ScaleRect(ULONG *Target, const ULONG *Source, int SrcWidth, int SrcH
             ret = FALSE;
             goto exit;
         }
-        CopyMem(image->ImageData, idata, height * width);
         for (x = 0; x < (height * width); x++) {
             idata[x] = image->Pen[image->ImageData[x]];
         }
@@ -432,15 +431,6 @@ rescale:
 #endif
                         bsa.bsa_SrcBitMap = &src;
                         bsa.bsa_DestBitMap = &dst;
-                        bsa.bsa_SrcX = 0,
-                        bsa.bsa_SrcY = 0,
-                        bsa.bsa_SrcWidth = width,
-                        bsa.bsa_SrcHeight = height,
-                        bsa.bsa_XSrcFactor = scaleXsrc,
-                        bsa.bsa_XDestFactor = scaleXdst,
-                        bsa.bsa_YSrcFactor = scaleYsrc,
-                        bsa.bsa_YDestFactor = scaleYdst,
-
                         BitMapScale(&bsa);
                         FreeVec(image->BitMask);
                         image->BitMask = dst_mask;

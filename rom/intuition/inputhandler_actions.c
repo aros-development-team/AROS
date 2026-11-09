@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2017, The AROS Development Team. All rights reserved.
+    Copyright  1995-2026, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
 
     Responsible for executing deferred Intuition actions like MoveWindow,
@@ -118,10 +118,40 @@ void CheckLayers(struct Screen *screen, struct IntuitionBase *IntuitionBase)
     UNLOCK_REFRESH(screen);
 }
 
+/*******************************************************************************************************/
+
+/* A window is about to grow: mark its old right (bottom = FALSE) or bottom
+   border as damaged on its locked layer L and erase it. */
+
+static void EraseOldBorder(struct Window *targetwindow, struct Layer *L, BOOL bottom,
+                           struct Rectangle *final_innerrect, struct IntuitionBase *IntuitionBase)
+{
+    struct GfxBase  *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct Rectangle rect;
+
+    rect.MinX = 0;
+    rect.MinY = 0;
+    rect.MaxX = targetwindow->Width - 1;
+    rect.MaxY = targetwindow->Height - 1;
+    if (bottom)
+        rect.MinY = targetwindow->Height - targetwindow->BorderBottom;
+    else
+        rect.MinX = targetwindow->Width - targetwindow->BorderRight;
+
+    OrRectRegion(L->DamageList, &rect);
+    L->Flags |= LAYERREFRESH;
+
+    if (!AVOID_WINBORDERERASE(IntuitionBase) || AndRectRect(&rect, final_innerrect, &rect))
+    {
+        EraseRect(targetwindow->BorderRPort, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
+    }
+}
+
+/*******************************************************************************************************/
+
 void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
                                  struct IntuitionBase *IntuitionBase)
 {
-    struct GfxBase   *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Rectangle *clipto = NULL;
     struct Rectangle  final_innerrect;
@@ -144,9 +174,7 @@ void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
     if ( ((dx > 0) && (targetwindow->BorderRight  > 0)) ||
         ((dy > 0) && (targetwindow->BorderBottom > 0)) )
     {
-        struct RastPort     *rp = targetwindow->BorderRPort;
         struct Layer        *L = (BLAYER(targetwindow)) ? BLAYER(targetwindow) : WLAYER(targetwindow);
-        struct Rectangle     rect;
         struct Region       *oldclipregion;
         WORD                 ScrollX;
         WORD                 ScrollY;
@@ -169,36 +197,14 @@ void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
 
         if ((dx > 0) && (targetwindow->BorderRight > 0))
         {
-            rect.MinX = targetwindow->Width - targetwindow->BorderRight;
-            rect.MinY = 0;
-            rect.MaxX = targetwindow->Width - 1;
-            rect.MaxY = targetwindow->Height - 1;
-
-            OrRectRegion(L->DamageList, &rect);
-            L->Flags |= LAYERREFRESH;
-
-            if (!AVOID_WINBORDERERASE(IntuitionBase) || AndRectRect(&rect, &final_innerrect, &rect))
-            {
-                EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
-            }
+            EraseOldBorder(targetwindow, L, FALSE, &final_innerrect, IntuitionBase);
 
         }
 
         if ((dy > 0) && (targetwindow->BorderBottom > 0))
 
         {
-            rect.MinX = 0;
-            rect.MinY = targetwindow->Height - targetwindow->BorderBottom;
-            rect.MaxX = targetwindow->Width - 1;
-            rect.MaxY = targetwindow->Height - 1;
-
-            OrRectRegion(L->DamageList, &rect);
-            L->Flags |= LAYERREFRESH;
-
-            if (!AVOID_WINBORDERERASE(IntuitionBase) || AndRectRect(&rect, &final_innerrect, &rect))
-            {
-                EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
-            }
+            EraseOldBorder(targetwindow, L, TRUE, &final_innerrect, IntuitionBase);
             
         }
 
@@ -403,6 +409,54 @@ void WindowSizeHasChanged(struct Window *targetwindow, WORD dx, WORD dy,
 
 /*******************************************************************************************************/
 
+/* Move the layers of a window's requesters to where they belong when the
+   window is at the given position with the given size. Each requester layer
+   is clipped to the window. */
+
+void MoveRequesterLayers(struct Window *w, LONG winleft, LONG wintop, LONG winwidth, LONG winheight,
+                         struct IntuitionBase *IntuitionBase)
+{
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
+    struct Requester  *req;
+
+    for (req = w->FirstRequest; req; req = req->OlderRequest)
+    {
+        struct Layer *layer = req->ReqLayer;
+
+        if (layer)
+        {
+            int dx, dy, dw, dh;
+            int left, top, right, bottom;
+
+            left = winleft + req->LeftEdge;
+            top = wintop + req->TopEdge;
+            right = left + req->Width - 1;
+            bottom = top + req->Height - 1;
+
+            if (left > winleft + winwidth - 1)
+                left = winleft + winwidth - 1;
+
+            if (top > wintop + winheight - 1)
+                top = wintop + winheight - 1;
+
+            if (right > winleft + winwidth - 1)
+                right = winleft + winwidth - 1;
+
+            if (bottom > wintop + winheight - 1)
+                bottom = wintop + winheight - 1;
+
+            dx = left - layer->bounds.MinX;
+            dy = top - layer->bounds.MinY;
+            dw = right - left - layer->bounds.MaxX + layer->bounds.MinX;
+            dh = bottom - top - layer->bounds.MaxY + layer->bounds.MinY;
+
+            MoveSizeLayer(layer, dx, dy, dw, dh);
+        }
+    }
+}
+
+/*******************************************************************************************************/
+
 void DoMoveSizeWindow(struct Window *targetwindow, LONG NewLeftEdge, LONG NewTopEdge,
                       LONG NewWidth, LONG NewHeight, BOOL send_newsize, struct IntuitionBase *IntuitionBase)
 {
@@ -410,7 +464,6 @@ void DoMoveSizeWindow(struct Window *targetwindow, LONG NewLeftEdge, LONG NewTop
     struct IIHData      *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
   //struct IntWindow    *w       = (struct IntWindow *)targetwindow;
     struct Layer        *targetlayer = WLAYER(targetwindow)/*, *L*/;
-    struct Requester    *req;
     struct InputEvent   *ie;
     LONG                 OldLeftEdge  = targetwindow->LeftEdge;
     LONG                 OldTopEdge   = targetwindow->TopEdge;
@@ -461,40 +514,7 @@ void DoMoveSizeWindow(struct Window *targetwindow, LONG NewLeftEdge, LONG NewTop
 
         MoveSizeLayer(targetlayer, pos_dx, pos_dy, size_dx, size_dy);
 
-        for (req = targetwindow->FirstRequest; req; req = req->OlderRequest)
-        {
-            struct Layer *layer = req->ReqLayer;
-
-            if (layer)
-            {
-                int dx, dy, dw, dh;
-                int left, top, right, bottom;
-
-                left = NewLeftEdge + req->LeftEdge;
-                top = NewTopEdge + req->TopEdge;
-                right = left + req->Width - 1;
-                bottom = top + req->Height - 1;
-
-                if (left > NewLeftEdge + NewWidth - 1)
-                    left = NewLeftEdge + NewWidth - 1;
-
-                if (top > NewTopEdge + NewHeight - 1)
-                    top = NewTopEdge + NewHeight - 1;
-
-                if (right > NewLeftEdge + NewWidth - 1)
-                    right = NewLeftEdge + NewWidth - 1;
-
-                if (bottom > NewTopEdge + NewHeight - 1)
-                    bottom = NewTopEdge + NewHeight - 1;
-
-                dx = left - layer->bounds.MinX;
-                dy = top - layer->bounds.MinY;
-                dw = right - left - layer->bounds.MaxX + layer->bounds.MinX;
-                dh = bottom - top - layer->bounds.MaxY + layer->bounds.MinY;
-
-                MoveSizeLayer(layer, dx, dy, dw, dh);
-            }
-        }
+        MoveRequesterLayers(targetwindow, NewLeftEdge, NewTopEdge, NewWidth, NewHeight, IntuitionBase);
 
 #if 0
         if (w->ZipLeftEdge != ~0) w->ZipLeftEdge = OldLeftEdge;
@@ -701,9 +721,12 @@ void HandleIntuiActions(struct IIHData *iihdata,
 
         if (am->task)
         {
+            /* am is on the waiter's stack; done = TRUE lets it go */
+            struct Task *waiter = am->task;
+
             Forbid();
             am->done = TRUE;
-            Signal(am->task, SIGF_INTUITION);
+            Signal(waiter, SIGF_INTUITION);
             Permit();
         }
         else

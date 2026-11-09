@@ -84,6 +84,15 @@ struct StdCIntBase
 
     /* malloc.c: pool shared per program */
     struct __stdc_memctx        *memctx;
+
+    /* __stdc_startup.c: the task whose stack exit_jmpbuf belongs to, and
+       how exit() ends any other task (__stdc_set_taskexit()) */
+    struct Task                 *startup_task;
+    void                        (*taskexit)(int);
+
+    /* __stdc_threaderrno.c: the task that opened this base (NULL for the
+       root base) */
+    struct Task                 *opener_task;
 };
 
 /* Make a distinction between exit() and abort() */

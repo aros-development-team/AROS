@@ -12,12 +12,17 @@ EXEDIR := $(AROS_TESTS)/printer
 USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 #MM- test: test-printer
+#MM- test-printer : test-printer-commands test-printer-unitlock
 
-#MM test-printer : includes includes-copy
+#MM test-printer-commands : includes includes-copy
+#MM test-printer-unitlock : includes includes-copy linklibs
 
-%build_progs mmake=test-printer \
+%build_progs mmake=test-printer-commands \
     files=$(TESTFILES) targetdir=$(EXEDIR) \
     usestartup=no
+
+%build_progs mmake=test-printer-unitlock \
+    files=unitlock targetdir=$(EXEDIR)
 
 
 %common

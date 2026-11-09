@@ -71,25 +71,14 @@
                 Rect->MaxX >= MaxX(Reg) &&
                 Rect->MaxY >= MaxY(Reg)) {
             /* The rectangle completely covers the region. Make a plain copy. */
-            if(_CopyRegionRectangles(Reg, Res, GfxBase))
-                return Res;
+            return _CopyRegionND(Reg, Res, GfxBase);
         } else {
+            struct Region R;
             struct RegionRectangle rr;
 
-            rr.bounds = *Rect;
-            rr.Next   = NULL;
-            rr.Prev   = NULL;
-
-            if(_DoOperationBandBand(_AndBandBand,
-                                    MinX(Reg), 0, MinY(Reg), 0,
-                                    Reg->RegionRectangle, &rr, &Res->RegionRectangle, &Res->bounds, GfxBase)) {
-                _TranslateRegionRectangles(Res->RegionRectangle, -MinX(Res), -MinY(Res));
-
-                return Res;
-            }
+            _RectToRegion(Rect, &R, &rr);
+            return _RegionOpND(_AndBandBand, Reg, &R, Res, GfxBase);
         }
-
-        DisposeRegion(Res);
     }
 
     return NULL;

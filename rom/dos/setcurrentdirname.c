@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Set the name of the current directory.
 */
@@ -51,26 +51,10 @@
     AROS_LIBFUNC_INIT
 
     struct CommandLineInterface *cli = NULL;
-    CONST_STRPTR s;
-    STRPTR bs;
-    ULONG namelen;
 
     if ((cli = Cli()) == NULL)
         return DOSFALSE;
 
-    s = name;
-    while(*s++)
-        ;
-    namelen = s - name - 1;
-
-    if (namelen > 255)
-        return DOSFALSE;
-
-    bs = AROS_BSTR_ADDR(cli->cli_SetName);
-
-    AROS_BSTR_setstrlen(cli->cli_SetName, namelen);
-    CopyMem((APTR)name, bs, namelen);
-
-    return DOSTRUE;
+    return internal_SetCliString(cli->cli_SetName, name) ? DOSTRUE : DOSFALSE;
     AROS_LIBFUNC_EXIT
 } /* SetCurrentDirName */

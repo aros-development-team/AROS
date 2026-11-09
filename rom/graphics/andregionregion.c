@@ -53,38 +53,9 @@
     if(!R1->RegionRectangle || !R2->RegionRectangle || !overlap(R1->bounds, R2->bounds)) {
         ClearRegion(R2);
         return TRUE;
-    } else {
-        struct Region R3;
-
-        InitRegion(&R3);
-
-        if
-        (
-            _DoOperationBandBand
-            (
-                _AndBandBand,
-                MinX(R1),
-                MinX(R2),
-                MinY(R1),
-                MinY(R2),
-                R1->RegionRectangle,
-                R2->RegionRectangle,
-                &R3.RegionRectangle,
-                &R3.bounds,
-                GfxBase
-            )
-        ) {
-            ClearRegion(R2);
-
-            *R2 = R3;
-
-            _TranslateRegionRectangles(R3.RegionRectangle, -MinX(&R3), -MinY(&R3));
-
-            return TRUE;
-        }
     }
 
-    return FALSE;
+    return _RegionOpInPlace(_AndBandBand, R1, R2, R2, GfxBase);
 
     AROS_LIBFUNC_EXIT
 }

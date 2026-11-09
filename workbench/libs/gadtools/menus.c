@@ -101,42 +101,6 @@ void appendmenu(struct Menu * firstmenu,
 
 /**************************************************************************************************/
 
-void appenditem(struct Menu * curmenu,
-                struct MenuItem * item)
-{
-    struct MenuItem * mi = curmenu->FirstItem;
-
-    if (NULL == mi)
-        curmenu->FirstItem = item;
-    else
-    {
-        while (NULL != mi->NextItem)
-            mi = mi->NextItem;
-
-        mi->NextItem = item;
-    }
-}
-
-/**************************************************************************************************/
-
-void appendsubitem(struct MenuItem * curitem,
-                   struct MenuItem * cursubitem)
-{
-    struct MenuItem *mi = curitem->SubItem;
-
-    if (NULL == mi)
-        curitem->SubItem = cursubitem;
-    else
-    {
-        while (NULL != mi->NextItem)
-            mi = mi->NextItem;
-
-        mi->NextItem = cursubitem;
-    }
-}
-
-/**************************************************************************************************/
-
 #if NEWMENUCODE
 struct Menu * makemenutitle(struct NewMenu * newmenu,
                             UBYTE               **MyMenuMemPtr,

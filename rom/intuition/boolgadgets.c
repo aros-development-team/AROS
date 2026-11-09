@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
  
     Routines for BOOL Gadgets
@@ -108,6 +108,35 @@ static void RenderBoolLabel(struct RastPort *rp, struct Gadget *gadget, struct B
 
 /****************************************************************************************/
 
+/* The complement highlighting of a selected GFLG_GADGHCOMP or GFLG_GADGHBOX
+   gadget: the select box, and for GFLG_GADGHBOX also a frame around it */
+static void RenderBoolHighlight(struct RastPort *rp, struct Gadget *gadget, struct BBox *bbox,
+                                struct IntuitionBase *IntuitionBase)
+{
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    UWORD           highlight = gadget->Flags & GFLG_GADGHIGHBITS;
+
+    if ((highlight == GFLG_GADGHCOMP) || (highlight == GFLG_GADGHBOX))
+    {
+        SetDrMd (rp, COMPLEMENT);
+
+        if (highlight == GFLG_GADGHBOX)
+        {
+            RectFill (rp, bbox->Left - BOXSIZEX,
+                      bbox->Top  - BOXSIZEY,
+                      bbox->Left + bbox->Width  - 1 + BOXSIZEX,
+                      bbox->Top  + bbox->Height - 1 + BOXSIZEY);
+        }
+
+        RectFill (rp, bbox->Left,
+                  bbox->Top,
+                  bbox->Left + bbox->Width - 1,
+                  bbox->Top + bbox->Height - 1);
+    }
+}
+
+/****************************************************************************************/
+
 void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
                         struct Requester * requester, struct IntuitionBase * IntuitionBase)
 {
@@ -135,59 +164,19 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 
     SetDrMd (rp, JAM1);
 
-    switch (gadget->Flags & GFLG_GADGHIGHBITS)
-    {
-        case GFLG_GADGHIMAGE:
-            render = GETRENDER(gadget);
-            RENDERGADGET(window,gadget,render);
-            break;
-
-        case GFLG_GADGHCOMP:
-        case GFLG_GADGHNONE:
-        case GFLG_GADGHBOX:
-            render = gadget->GadgetRender;
-            RENDERGADGET(window,gadget,render);
-            break;
-
-    } /* switch GadgetHighlightMethod */
+    /* GFLG_GADGHIMAGE uses the select image while selected; GFLG_GADGHCOMP,
+       GFLG_GADGHNONE and GFLG_GADGHBOX always use the normal one */
+    render = gadget->GadgetRender;
+    if ((gadget->Flags & GFLG_GADGHIGHBITS) == GFLG_GADGHIMAGE)
+        render = GETRENDER(gadget);
+    RENDERGADGET(window,gadget,render);
 
     RenderBoolLabel(rp, gadget, &bbox, dri, IntuitionBase);
 
     if ((bbox.Width >= 1) && (bbox.Height >= 1))
     {
-        switch (gadget->Flags & GFLG_GADGHIGHBITS)
-        {
-            case GFLG_GADGHCOMP:
-                if (gadget->Flags & GFLG_SELECTED)
-                {
-                    SetDrMd (rp, COMPLEMENT);
-
-                    RectFill (rp, bbox.Left,
-                              bbox.Top,
-                              bbox.Left + bbox.Width - 1,
-                              bbox.Top + bbox.Height - 1);
-                }
-                break;
-
-            case GFLG_GADGHBOX:
-                if (gadget->Flags & GFLG_SELECTED)
-                {
-                    SetDrMd (rp, COMPLEMENT);
-
-                    RectFill (rp, bbox.Left - BOXSIZEX,
-                              bbox.Top  - BOXSIZEY,
-                              bbox.Left + bbox.Width  - 1 + BOXSIZEX,
-                              bbox.Top  + bbox.Height - 1 + BOXSIZEY);
-
-                    RectFill (rp, bbox.Left,
-                              bbox.Top,
-                              bbox.Left + bbox.Width - 1,
-                              bbox.Top + bbox.Height - 1);
-                }
-
-                break;
-
-        } /* Highlight after contents have been drawn */
+        if (gadget->Flags & GFLG_SELECTED)
+            RenderBoolHighlight(rp, gadget, &bbox, IntuitionBase);
 
         if ( gadget->Flags & GFLG_DISABLED )
         {
@@ -253,32 +242,7 @@ void RefreshBoolGadgetState(struct Gadget * gadget, struct Window * window,
 
     if ((bbox.Width >= 1) && (bbox.Height >= 1))
     {
-        switch (gadget->Flags & GFLG_GADGHIGHBITS)
-        {
-            case GFLG_GADGHCOMP:
-                SetDrMd (rp, COMPLEMENT);
-
-                RectFill (rp, bbox.Left,
-                          bbox.Top,
-                          bbox.Left + bbox.Width - 1,
-                          bbox.Top + bbox.Height - 1);
-                break;
-
-            case GFLG_GADGHBOX:
-                SetDrMd (rp, COMPLEMENT);
-
-                RectFill (rp, bbox.Left - BOXSIZEX,
-                          bbox.Top  - BOXSIZEY,
-                          bbox.Left + bbox.Width  - 1 + BOXSIZEX,
-                          bbox.Top  + bbox.Height - 1 + BOXSIZEY);
-
-                RectFill (rp, bbox.Left,
-                          bbox.Top,
-                          bbox.Left + bbox.Width - 1,
-                          bbox.Top + bbox.Height - 1);
-                break;
-
-        } /* switch (gadget->Flags & GFLG_GADGHIGHBITS) */
+        RenderBoolHighlight(rp, gadget, &bbox, IntuitionBase);
 
     } /* if ((bbox.Width >= 1) && (bbox.Height >= 1)) */
 

@@ -7,6 +7,7 @@
 */
 #include "m68kemu_intern.h"
 #include "m68kemu_thunks.h"
+#include "m68kemu_host_stubs.inc"
 
 /* Stub thunk tables */
 const struct M68KThunkEntry m68kemu_thunks_exec[] = { { 0, nullptr } };
@@ -20,7 +21,7 @@ ULONG M68KEmu_GetA(void *, int) { return 0; }
 void  M68KEmu_SetD(void *, int, ULONG) {}
 void  M68KEmu_SetA(void *, int, ULONG) {}
 ULONG M68KEmu_OpenLibrary(struct M68KEmuContext *, const char *) { return 0; }
-ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *, const char *) { return 0; }
+ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *, const char *, ULONG) { return 0; }
 }
 
 /* Include memory manager source */
@@ -99,17 +100,22 @@ struct HeapFixture
         bytes.fill(0xA5);
         ctx.mem = bytes.data();
         ctx.mem_size = bytes.size();
-        ctx.heap_start = ctx.heap_free = 0x1000;
+        ctx.heap_start = 0x1000;
         ctx.heap_end = ctx.heap_start + size;
-        m68k_write32(&ctx, ctx.heap_start, size);
-        m68k_write32(&ctx, ctx.heap_start + 4, 0);
+        /* 0x1000 is in the Chip RAM region (below M68KEMU_CHIP_END) */
+        ctx.rgn[RGN_CHIP].start = ctx.rgn[RGN_CHIP].free = ctx.heap_start;
+        ctx.rgn[RGN_CHIP].end = ctx.heap_end;
+        ctx.rgn[RGN_CHIP].avail = size;
+        m68k_write32(&ctx, ctx.heap_start, 0);
+        m68k_write32(&ctx, ctx.heap_start + 4, size);
     }
+    ULONG heap_free() const { return ctx.rgn[RGN_CHIP].free; }
     bool restored() const
     {
         auto *c = const_cast<M68KEmuContext *>(&ctx);
-        return ctx.heap_free == ctx.heap_start &&
-            m68k_read32(c, ctx.heap_start) == ctx.heap_end - ctx.heap_start &&
-            m68k_read32(c, ctx.heap_start + 4) == 0;
+        return heap_free() == ctx.heap_start &&
+            m68k_read32(c, ctx.heap_start + FB_SIZE) == ctx.heap_end - ctx.heap_start &&
+            m68k_read32(c, ctx.heap_start + FB_NEXT) == 0;
     }
 };
 
@@ -130,13 +136,13 @@ void t_heap_overflow()
         {
             HeapFixture f;
             const auto before = f.bytes;
-            const ULONG head = f.ctx.heap_free;
+            const ULONG head = f.heap_free();
             const ULONG result = M68KEmu_HeapAlloc(&f.ctx, size, requirements);
-            if (result || f.ctx.heap_free != head || f.bytes != before)
+            if (result || f.heap_free() != head || f.bytes != before)
             {
                 std::printf("\n    size %08x flags %08x -> %08x, changed=%d",
                             unsigned(size), unsigned(requirements), unsigned(result),
-                            f.ctx.heap_free != head || f.bytes != before);
+                            f.heap_free() != head || f.bytes != before);
                 ok = false;
             }
         }
@@ -185,7 +191,7 @@ void t_heap_zero_and_coalescence()
         const ULONG zero = M68KEmu_HeapAlloc(&f.ctx, 0, 0);
         CHK(zero == f.ctx.heap_end && m68k_read32(&f.ctx, zero - M68KEMU_HEAP_HDR) == M68KEMU_HEAP_HDR,
             "internal zero payload still reserves its header");
-        CHK(m68k_read32(&f.ctx, f.ctx.heap_start) == 256 - M68KEMU_HEAP_HDR,
+        CHK(m68k_read32(&f.ctx, f.ctx.heap_start + FB_SIZE) == 256 - M68KEMU_HEAP_HDR,
             "zero consumes only the header");
         M68KEmu_HeapFree(&f.ctx, zero, 0);
         CHK(f.restored(), "internal zero is still freeable");

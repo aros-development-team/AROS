@@ -3,8 +3,6 @@
 
 */
 
-#define RDB_WRITE 1
-
 #include <aros/config.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
@@ -17,7 +15,8 @@
 #include <libraries/partition.h>
 #include <resources/filesysres.h>
 
-#include "partition_support.h"
+#include "partitionrdb.h"
+#include "partition_types.h"
 #include "platform.h"
 
 #ifndef DEBUG
@@ -27,34 +26,16 @@
 
 #include <string.h>
 
-struct RDBData {
-    struct RigidDiskBlock rdb;
-    UBYTE rdbblock; /* the block rdb was read from */
-    struct List badblocklist;
-    struct List fsheaderlist;
-};
-
-struct BadBlockNode {
-    struct Node ln;
-    struct BadBlockBlock bbb;
-};
-
-struct FileSysNode
+static ULONG PartitionRDBFileSysPayload(struct FileSysNode *fn, ULONG block)
 {
-    struct FileSysHandle h;
-
-    struct FileSysHeaderBlock fhb;
-    struct LoadSegBlock *filesystem; /* the FS in LSEG blocks */
-    ULONG fsblocks;                  /* nr of LSEG blocks for FS */
-};
-
-#define LSEGDATASIZE (123 * sizeof(ULONG))
+    return (AROS_BE2LONG(PartitionRDBFileSysBlock(fn, block)->lsb_SummedLongs) - 5) * sizeof(ULONG);
+}
 
 struct FileSysReader
 {
     ULONG count;
     ULONG offset;
-    ULONG size;
+    ULONG position;
     struct FileSysNode *fsn;
 };
 
@@ -70,22 +51,24 @@ static AROS_UFH4(LONG, ReadFunc,
     ULONG outsize = 0;
     UBYTE *outbuf = buffer;
 
-    while (length > 0) {
+    while (length > 0 && fsr->count < fsr->fsn->fsblocks) {
         ULONG size = length;
+        ULONG payload = PartitionRDBFileSysPayload(fsr->fsn, fsr->count);
 
-        if (size + fsr->offset > fsr->size)
-            size = fsr->size - fsr->offset;
+        if (size > payload - fsr->offset)
+            size = payload - fsr->offset;
         if (size > 0) {
-            UBYTE *inbuf = (UBYTE*)(fsr->fsn->filesystem[fsr->count].lsb_LoadData) + fsr->offset;
+            UBYTE *inbuf = (UBYTE*)PartitionRDBFileSysBlock(fsr->fsn, fsr->count)->lsb_LoadData + fsr->offset;
             CopyMem(inbuf, outbuf, size);
         }
 
         outsize += size;
+        fsr->position += size;
         fsr->offset += size;
         length -= size;
         outbuf += size;
 
-        if (fsr->offset == fsr->size) {
+        if (fsr->offset == payload) {
             fsr->offset = 0;
             fsr->count++;
             if (fsr->count == fsr->fsn->fsblocks)
@@ -108,19 +91,45 @@ static AROS_UFH4(LONG, SeekFunc,
     AROS_USERFUNC_INIT
 
     struct FileSysReader *fsr = (struct FileSysReader*)file;
-    LONG oldpos = fsr->offset;
+    ULONG size = fsr->fsn->filesize;
+    LONG oldpos = fsr->position;
+    ULONG base, newpos;
 
     switch (mode) {
-    case OFFSET_BEGINNING: break;
-    case OFFSET_END:       pos = fsr->size - pos; break;
-    case OFFSET_CURRENT:   pos = fsr->offset + pos; break;
+    case OFFSET_BEGINNING: base = 0; break;
+    case OFFSET_END:       base = size; break;
+    case OFFSET_CURRENT:   base = oldpos; break;
     default: return -1;
     }
 
-    if (pos < 0 || pos >= fsr->size)
-        return -1;
+    /* Filesize is capped at LONG_MAX when loading. Check before adding so
+     * signed offsets, including LONG_MIN, need no 64-bit arithmetic. */
+    if (pos < 0)
+    {
+        ULONG back = 0 - (ULONG)pos;
+        if (back > base)
+            return -1;
+        newpos = base - back;
+    }
+    else
+    {
+        if ((ULONG)pos > size - base)
+            return -1;
+        newpos = base + pos;
+    }
 
-    fsr->offset = pos;
+    fsr->position = newpos;
+    fsr->count = 0;
+    fsr->offset = newpos;
+    while (fsr->count < fsr->fsn->fsblocks)
+    {
+        ULONG payload = PartitionRDBFileSysPayload(fsr->fsn, fsr->count);
+
+        if (fsr->offset < payload)
+            break;
+        fsr->offset -= payload;
+        fsr->count++;
+    }
 
     return oldpos;
 
@@ -132,12 +141,13 @@ static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
 {
     LONG_FUNC FunctionArray[4];
     struct FileSysReader fakefile;
+    BPTR seglist;
 
-#ifndef __mc68000
-    /* Prevent loading hunk files on non-m68k */
-    if (AROS_BE2LONG(node->filesystem[0].lsb_LoadData[0]) == 0x000003f3)
+    SetIoErr(ERROR_NOT_EXECUTABLE);
+
+    if (!node->filesystem || !node->fsblocks || node->filesize < sizeof(ULONG))
         return BNULL;
-#endif
+
 
     FunctionArray[0] = (LONG_FUNC)ReadFunc;
     FunctionArray[1] = (LONG_FUNC)__AROS_GETVECADDR(SysBase,33); /* AllocMem() */
@@ -147,32 +157,62 @@ static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
     /* Initialize our stream */
     fakefile.count      = 0;
     fakefile.offset     = 0;
-    fakefile.size       = LSEGDATASIZE;
+    fakefile.position   = 0;
     fakefile.fsn        = node;
+
+#ifndef __mc68000
+    /* Skip empty payloads when checking the executable's format word. */
+    {
+        ULONG first = 0;
+
+        while (first < node->fsblocks && PartitionRDBFileSysPayload(node, first) == 0)
+            first++;
+        if (first == node->fsblocks ||
+            AROS_BE2LONG(PartitionRDBFileSysBlock(node, first)->lsb_LoadData[0]) == 0x000003f3)
+            return BNULL;
+    }
+#endif
 
     /* InternalLoadSeg((BPTR)&fakefile, BNULL, FunctionArray, NULL);
      * with A6 = NULL. Check internalloadseg.c for more information
      */
 
-    return AROS_CALL4(BPTR, __AROS_GETVECADDR(DOSBase, 126),
+    seglist = AROS_CALL4(BPTR, __AROS_GETVECADDR(DOSBase, 126),
         AROS_LCA(BPTR, (BPTR)&fakefile, D0),
         AROS_LCA(BPTR, BNULL, A0),
         AROS_LCA(LONG_FUNC*, FunctionArray, A1),
         AROS_LCA(LONG*, NULL, A2),
         struct Library*, NULL);
+    if (seglist)
+        SetIoErr(0);
+    return seglist;
 }
 
-static ULONG calcChkSum(ULONG *ptr, ULONG size)
+static BOOL PartitionRDBValidChecksum(const void *buffer, ULONG minimum, ULONG bytes)
 {
-  ULONG i;
-  ULONG sum=0;
+    const ULONG *words = buffer;
+    ULONG count = AROS_BE2LONG(words[1]);
 
-  for (i=0;i<size;i++)
-  {
-    sum += AROS_BE2LONG(*ptr);
-    ptr++;
-  }
-  return sum;
+    return count >= minimum && count <= bytes / sizeof(ULONG) &&
+        calcChkSum((ULONG *)buffer, count) == 0;
+}
+
+/* Probe and open must select the same first valid header. */
+static LONG PartitionRDBFindHeader(struct Library *PartitionBase,
+    struct PartitionHandle *root, void *buffer)
+{
+    struct RigidDiskBlock *rdb = buffer;
+    ULONG i;
+
+    for (i = 0; i < RDB_LOCATION_LIMIT; i++)
+    {
+        if (readBlock(PartitionBase, root, i, buffer) != 0)
+            break;
+        if (rdb->rdb_ID == AROS_BE2LONG(IDNAME_RIGIDDISK) &&
+            PartitionRDBValidChecksum(rdb, 64, root->de.de_SizeBlock << 2))
+            return i;
+    }
+    return -1;
 }
 
 LONG PartitionRDBCheckPartitionTable
@@ -181,42 +221,39 @@ LONG PartitionRDBCheckPartitionTable
         struct PartitionHandle *root
     )
 {
-UBYTE i;
-struct RigidDiskBlock *rdb = (struct RigidDiskBlock *)root->buffer;
 struct PartitionType type;
 struct TagItem tags[] = {{PT_TYPE, (IPTR)&type}, {TAG_DONE, 0}};
 
-    if (sizeof(root->buffer) < (root->de.de_SizeBlock << 2))
+    if (root->de.de_SizeBlock < 128 ||
+        root->de.de_SizeBlock > sizeof(root->buffer) / 4)
         return 0;
 
     if (root->root != NULL)
     {
         GetPartitionAttrs(root, tags);
-        if (
-            (root->root->table->type != PHPTT_MBR &&
-             root->root->table->type != PHPTT_EBR) ||
-            (type.id[0] != 0x30 && type.id[0] != 0x76)
-            )
+        if (root->root->table->type == PHPTT_GPT)
         {
-            return 0;
+            UQUAD end = 0;
+            GetPartitionAttrsTags(root, PT_ENDBLOCK, (IPTR)&end, TAG_DONE);
+            if (end >= 0xffffffffULL)
+                return 0;
+            if (type.id_len != sizeof(GPT_Type_AROS_RDB) ||
+                memcmp(type.id, &GPT_Type_AROS_RDB, sizeof(GPT_Type_AROS_RDB)))
+                return 0;
         }
-    }
-    for (i=0;i<RDB_LOCATION_LIMIT; i++)
-    {
-        if (readBlock(PartitionBase, root, i, rdb) != 0)
+        else if ((root->root->table->type != PHPTT_MBR &&
+                  root->root->table->type != PHPTT_EBR) ||
+                 (type.id[0] != 0x30 && type.id[0] != 0x76))
             return 0;
-        if (rdb->rdb_ID == AROS_BE2LONG(IDNAME_RIGIDDISK))
-            break;
     }
-    if (i != RDB_LOCATION_LIMIT)
-    {
-        if (calcChkSum((ULONG *)rdb, AROS_BE2LONG(rdb->rdb_SummedLongs))==0)
-            return 1;
-    }
-    return 0;
+    return PartitionRDBFindHeader(PartitionBase, root, root->buffer) >= 0;
 }
 
-void CopyBE2HostDosEnvec(LONG *src, SIPTR *dst, ULONG size) {
+#if AROS_BIG_ENDIAN && (__WORDSIZE == 32)
+/* Same layout and byte order: a plain copy */
+#define CopyBE2HostDosEnvec(src, dst, size) CopyMem((src), (dst), (size) * sizeof(ULONG))
+#else
+static void CopyBE2HostDosEnvec(LONG *src, SIPTR *dst, ULONG size) {
 ULONG count=0;
 
     while (count != size)
@@ -226,19 +263,7 @@ ULONG count=0;
         count++;
     }
 }
-
-void CopyHost2BEDosEnvec(SIPTR *src, ULONG *dst, ULONG size) {
-
-    ULONG count=0;
-
-    while (count != size)
-    {
-        *dst++ = AROS_LONG2BE(*src);
-        src++;
-        count++;
-    }
-
-}
+#endif
 
 struct BadBlockNode *PartitionRDBNewBadBlock
     (
@@ -251,13 +276,13 @@ struct BadBlockNode *bn;
 
     if (
             (AROS_BE2LONG(buffer->bbb_ID) == IDNAME_BADBLOCK) &&
-            (calcChkSum((ULONG *)buffer, AROS_BE2LONG(buffer->bbb_SummedLongs))==0)
+            (PartitionRDBValidChecksum(buffer, 6, root->de.de_SizeBlock << 2))
         )
     {
-        bn = AllocMem(sizeof(struct BadBlockNode), MEMF_PUBLIC | MEMF_CLEAR);
+        bn = AllocMem(sizeof(struct BadBlockNode) + (root->de.de_SizeBlock << 2) - sizeof(struct BadBlockBlock), MEMF_PUBLIC | MEMF_CLEAR);
         if (bn)
         {
-            CopyMem(buffer, &bn->bbb, sizeof(struct BadBlockBlock));
+            CopyMem(buffer, &bn->bbb, root->de.de_SizeBlock << 2);
             return bn;
         }
     }
@@ -276,36 +301,29 @@ struct PartitionHandle *ph;
 
     if (
             (AROS_BE2LONG(buffer->pb_ID) == IDNAME_PARTITION) &&
-            (calcChkSum((ULONG *)buffer, AROS_BE2LONG(buffer->pb_SummedLongs))==0)
+            (PartitionRDBValidChecksum(buffer, 64, root->de.de_SizeBlock << 2))
         )
     {
-        ph = AllocMem(sizeof(struct PartitionHandle), MEMF_PUBLIC | MEMF_CLEAR);
+        ph = PartitionRDBAllocHandle(root);
         if (ph)
         {
-            ph->ln.ln_Name = AllocVec(32, MEMF_PUBLIC | MEMF_CLEAR);
-            if (ph->ln.ln_Name)
-            {
-                pblock = AllocMem(sizeof(struct PartitionBlock), MEMF_PUBLIC);
-                if (pblock)
-                {
-                    CopyMem(buffer, pblock, sizeof(struct PartitionBlock));
-                    ph->root = root;
-                    ph->bd = root->bd;
-                    ph->data = pblock;
-                    CopyMem(pblock->pb_DriveName+1, ph->ln.ln_Name, pblock->pb_DriveName[0]);
-                    ph->ln.ln_Name[pblock->pb_DriveName[0]]=0;
-                    CopyBE2HostDosEnvec(pblock->pb_Environment, (SIPTR *)&ph->de, AROS_BE2LONG(pblock->pb_Environment[DE_TABLESIZE])+1);
-                    ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
-                    ph->dg.dg_SectorSize = ph->de.de_SizeBlock<<2;
-                    ph->dg.dg_Heads = ph->de.de_Surfaces;
-                    ph->dg.dg_TrackSectors = ph->de.de_BlocksPerTrack;
-                    ph->dg.dg_Cylinders = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
-                    ph->dg.dg_BufMemType = ph->de.de_BufMemType;
+                    pblock = ph->data;
+                    CopyMem(buffer, pblock, root->de.de_SizeBlock << 2);
+                    ULONG nameLength = pblock->pb_DriveName[0];
+                    if (nameLength >= sizeof(pblock->pb_DriveName))
+                        nameLength = sizeof(pblock->pb_DriveName) - 1;
+                    CopyMem(pblock->pb_DriveName+1, ph->ln.ln_Name, nameLength);
+                    ph->ln.ln_Name[nameLength]=0;
+                    /* Keep the full disk block, but expose only fields AROS knows. */
+                    ULONG tableSize = AROS_BE2LONG(pblock->pb_Environment[DE_TABLESIZE]);
+                    if (tableSize >= sizeof(ph->de) / sizeof(IPTR))
+                        tableSize = sizeof(ph->de) / sizeof(IPTR) - 1;
+                    CopyBE2HostDosEnvec(pblock->pb_Environment, (SIPTR *)&ph->de, tableSize + 1);
+                    ph->de.de_TableSize = tableSize;
+                    if (ph->de.de_TableSize >= DE_BOOTPRI)
+                        ph->de.de_BootPri = (LONG)AROS_BE2LONG(pblock->pb_Environment[DE_BOOTPRI]);
+                    PartitionRDBUpdateGeometry(ph);
                     return ph;
-                }
-                FreeVec(ph->ln.ln_Name);
-            }
-            FreeMem(ph, sizeof(struct PartitionHandle));
         }
     }
     return NULL;
@@ -322,16 +340,19 @@ struct FileSysNode *fn;
 
     if (
             (AROS_BE2LONG(buffer->fhb_ID) == IDNAME_FILESYSHEADER) &&
-            (calcChkSum((ULONG *)buffer, AROS_BE2LONG(buffer->fhb_SummedLongs))==0)
+            (PartitionRDBValidChecksum(buffer, 20, root->de.de_SizeBlock << 2))
         )
     {
-        fn = AllocMem(sizeof(struct FileSysNode), MEMF_PUBLIC | MEMF_CLEAR);
+        fn = AllocMem(sizeof(struct FileSysNode) + (root->de.de_SizeBlock << 2) - sizeof(struct FileSysHeaderBlock), MEMF_PUBLIC | MEMF_CLEAR);
         if (fn)
         {
-            CopyMem(buffer, &fn->fhb, sizeof(struct FileSysHeaderBlock));
+            fn->blockbytes = root->de.de_SizeBlock << 2;
+            CopyMem(buffer, &fn->fhb, fn->blockbytes);
 
             /* Fill in common part of the handle */
-            fn->h.ln.ln_Name = fn->fhb.fhb_FileSysName;
+            CopyMem(fn->fhb.fhb_FileSysName, fn->name, sizeof(fn->fhb.fhb_FileSysName));
+            fn->name[sizeof(fn->fhb.fhb_FileSysName)] = 0;
+            fn->h.ln.ln_Name = fn->name;
             fn->h.ln.ln_Pri  = 0;
             fn->h.handler    = &FilesystemRDB;
 
@@ -346,7 +367,50 @@ static void PartitionRDBFreeFileSystem(struct FileSysHandle *fsh)
     struct FileSysNode *fn = (struct FileSysNode *)fsh;
 
     FreeVec(fn->filesystem);
-    FreeMem(fn, sizeof(struct FileSysNode));
+    FreeMem(fn, sizeof(*fn) + fn->blockbytes - sizeof(fn->fhb));
+}
+
+/* Track one chain in constant space, without rereading blocks from the device. */
+struct RDBChain
+{
+    ULONG anchor;
+    ULONG power;
+    ULONG length;
+    UQUAD blocks;
+};
+
+static BOOL PartitionRDBChainBlock(struct PartitionHandle *root, struct RDBChain *chain, ULONG block)
+{
+    if (!chain->power)
+        chain->blocks = PartitionMulQ(root->de.de_HighCyl - root->de.de_LowCyl + 1,
+            root->de.de_Surfaces, root->de.de_BlocksPerTrack);
+    if (block >= chain->blocks)
+        return FALSE;
+    if (!chain->power)
+    {
+        chain->anchor = block;
+        chain->power = 1;
+    }
+    else
+    {
+        if (block == chain->anchor)
+            return FALSE;
+        if (++chain->length == chain->power)
+        {
+            chain->anchor = block;
+            /* A chain has at most ULONG_MAX non-terminal block addresses. */
+            chain->power = chain->power <= 0x7fffffff ? chain->power * 2 : (ULONG)-1;
+            chain->length = 0;
+        }
+    }
+    return TRUE;
+}
+
+/* LSEG (or BOOT) block of fn's chain with a valid checksum */
+static BOOL PartitionRDBValidLSEG(struct FileSysNode *fn, struct LoadSegBlock *lsb, ULONG bytes)
+{
+    return AROS_BE2LONG(lsb->lsb_ID) == (fn->segmentid ? fn->segmentid : IDNAME_LOADSEG) &&
+        PartitionRDBValidChecksum(lsb, 5, bytes);
 }
 
 ULONG PartitionRDBCalcFSSize
@@ -359,18 +423,18 @@ ULONG PartitionRDBCalcFSSize
 {
 ULONG size;
 ULONG block;
+struct RDBChain chain = {0};
 
     size = 0;
     block = AROS_BE2LONG(fn->fhb.fhb_SegListBlocks);
     while (block != (ULONG)-1)
     {
+        if (!PartitionRDBChainBlock(root, &chain, block))
+            return 0;
         size++;
         if (readBlock(PartitionBase, root, block, buffer) !=0)
             return 0;
-        if (
-                (AROS_BE2LONG(buffer->lsb_ID) != IDNAME_LOADSEG) ||
-                (calcChkSum((ULONG *)buffer, AROS_BE2LONG(buffer->lsb_SummedLongs)))
-            )
+        if (!PartitionRDBValidLSEG(fn, buffer, root->de.de_SizeBlock << 2))
             return 0;
         block = AROS_BE2LONG(buffer->lsb_Next);
     }
@@ -389,23 +453,79 @@ ULONG size;
 ULONG block;
 
     size = PartitionRDBCalcFSSize(PartitionBase, root, fn, buffer);
-    if (size)
+    fn->blockbytes = root->de.de_SizeBlock << 2;
+    if (!size || size > (ULONG)-1 / fn->blockbytes)
+        return;
+
+    fn->filesystem = AllocVec(size * fn->blockbytes, MEMF_PUBLIC);
+    if (fn->filesystem)
     {
-        fn->fsblocks = size;
-        fn->filesystem = AllocVec(size*512, MEMF_PUBLIC);
-        if (fn->filesystem)
+        ULONG i;
+        ULONG bytes = 0;
+        struct RDBChain chain = {0};
+
+        block = AROS_BE2LONG(fn->fhb.fhb_SegListBlocks);
+        for (i = 0; i < size && block != (ULONG)-1; i++)
         {
-            size = 0;
-            block = AROS_BE2LONG(fn->fhb.fhb_SegListBlocks);
-            while (block != (ULONG)-1)
-            {
-                if (readBlock(PartitionBase, root, block, &fn->filesystem[size]) !=0)
-                    return;
-                block = AROS_BE2LONG(fn->filesystem[size].lsb_Next);
-                size++;
-            }
+            struct LoadSegBlock *lsb = PartitionRDBFileSysBlock(fn, i);
+            ULONG payload;
+
+            if (!PartitionRDBChainBlock(root, &chain, block) ||
+                readBlock(PartitionBase, root, block, lsb) != 0 ||
+                !PartitionRDBValidLSEG(fn, lsb, fn->blockbytes))
+                break;
+            payload = (AROS_BE2LONG(lsb->lsb_SummedLongs) - 5) * sizeof(ULONG);
+            if (payload > 0x7fffffff - bytes)
+                break;
+            bytes += payload;
+            block = AROS_BE2LONG(lsb->lsb_Next);
         }
+        if (i == size && block == (ULONG)-1)
+        {
+            fn->fsblocks = size;
+            fn->filesize = bytes;
+            return;
+        }
+        FreeVec(fn->filesystem);
+        fn->filesystem = NULL;
     }
+}
+
+/* Drive initialisation and OS4 boot code use the same chained block layout,
+ * but are not filesystems to register with DOS. Preserve them on a rewrite. */
+static struct FileSysNode *PartitionRDBReadCode(struct Library *PartitionBase,
+    struct PartitionHandle *root, ULONG block, ULONG id, void *buffer)
+{
+    struct RDBData *data = root->table->data;
+    struct FileSysNode *fn;
+    ULONG bytes = root->de.de_SizeBlock << 2;
+
+    if (block == (ULONG)-1)
+        return NULL;
+    /* Older tools leave these optional pointers zero. Block zero can also
+     * genuinely contain boot code, so inspect its ID before ignoring it. */
+    if (block == 0)
+    {
+        LONG error = readBlock(PartitionBase, root, 0, buffer);
+        if (error)
+        {
+            data->readerror = ERROR_NOT_A_DOS_DISK;
+            return NULL;
+        }
+        if (AROS_BE2LONG(((struct LoadSegBlock *)buffer)->lsb_ID) != id)
+            return NULL;
+    }
+    fn = AllocMem(sizeof(*fn) + bytes - sizeof(fn->fhb), MEMF_PUBLIC | MEMF_CLEAR);
+    if (!fn)
+    {
+        data->readerror = ERROR_NO_FREE_STORE;
+        return NULL;
+    }
+    fn->blockbytes = bytes;
+    fn->segmentid = id;
+    fn->fhb.fhb_SegListBlocks = AROS_LONG2BE(block);
+    PartitionRDBReadFileSys(PartitionBase, root, fn, buffer);
+    return fn;
 }
 
 LONG PartitionRDBOpenPartitionTable
@@ -416,29 +536,33 @@ LONG PartitionRDBOpenPartitionTable
 {
 UBYTE *buffer;
 struct RDBData *data;
-UBYTE i;
+LONG i;
+
+    if (root->de.de_SizeBlock < 128 || root->de.de_SizeBlock > sizeof(root->buffer) / 4)
+        return ERROR_BAD_NUMBER;
 
     buffer = AllocVec(root->de.de_SizeBlock << 2, MEMF_PUBLIC);
     if (!buffer)
         return 1;
-    data = AllocMem(sizeof(struct RDBData), MEMF_PUBLIC);
+    i = PartitionRDBFindHeader(PartitionBase, root, buffer);
+    if (i < 0)
+    {
+        FreeVec(buffer);
+        return 1;
+    }
+    data = AllocMem(sizeof(struct RDBData) + (root->de.de_SizeBlock << 2) - sizeof(struct RigidDiskBlock), MEMF_PUBLIC);
     if (data)
     {
-        for (i=0;i<RDB_LOCATION_LIMIT; i++)
-        {
-            if (readBlock(PartitionBase, root, i, buffer) != 0) {
-                FreeVec(buffer);
-                return 1;
-            }
-            CopyMem(buffer, &data->rdb, sizeof(struct RigidDiskBlock));
-            if (data->rdb.rdb_ID == AROS_BE2LONG(IDNAME_RIGIDDISK))
-                break;
-        }
-        if (i != RDB_LOCATION_LIMIT)
+        CopyMem(buffer, &data->rdb, root->de.de_SizeBlock << 2);
         {
             ULONG block;
+            int kind;
 
             data->rdbblock = i;
+            data->newtable = FALSE;
+            data->readerror = 0;
+            data->driveinit = NULL;
+            data->bootcode = NULL;
             NEWLIST(&root->table->list);
             NEWLIST(&data->badblocklist);
             NEWLIST(&data->fsheaderlist);
@@ -456,86 +580,54 @@ UBYTE i;
             root->dg.dg_CylSectors   = root->dg.dg_TrackSectors * root->dg.dg_Heads;
             root->dg.dg_TotalSectors = root->dg.dg_CylSectors * root->dg.dg_Cylinders;
 
-            /* read bad blocks */
-            block = AROS_BE2LONG(data->rdb.rdb_BadBlockList);
-            while (block != (ULONG)-1)
+            /* read bad block, partition and filesystem header chains */
+            for (kind = 0; kind < 3; kind++)
             {
-            struct BadBlockNode *bn;
+                struct RDBChain chain = {0};
 
-                if (readBlock(PartitionBase, root, block, buffer)==0)
+                block = AROS_BE2LONG((&data->rdb.rdb_BadBlockList)[kind]);
+                while (block != (ULONG)-1)
                 {
-                    bn = PartitionRDBNewBadBlock(PartitionBase, root, (struct BadBlockBlock *)buffer);
-                    if (bn != NULL)
-                    {
-                        AddTail(&data->badblocklist, &bn->ln);
-                        block = AROS_BE2LONG(bn->bbb.bbb_Next);
-                    }
-                    else
-                        break;
-                }
-                else
-                    break;
-            }
-            /* read partition blocks */
-            block = AROS_BE2LONG(data->rdb.rdb_PartitionList);
-            while (block != (ULONG)-1)
-            {
-            struct PartitionHandle *ph;
-                if (readBlock(PartitionBase, root, block, buffer)==0)
-                {
-                    ph = PartitionRDBNewHandle(PartitionBase, root, (struct PartitionBlock *)buffer);
-                    if (ph != NULL)
-                    {
-                        AddTail(&root->table->list, &ph->ln);
-                        block = AROS_BE2LONG(((struct PartitionBlock *)ph->data)->pb_Next);
-                    }
-                    else
-                        break;
-                }
-                else
-                    break;
-            }
-            /* read filesystem blocks */
-            block = AROS_BE2LONG(data->rdb.rdb_FileSysHeaderList);
-            while (block != (ULONG)-1)
-            {
-            struct FileSysNode *fn;
+                    struct Node *n = NULL;
+                    ULONG next;
 
-                if (readBlock(PartitionBase, root, block, buffer)==0)
-                {
-                    fn = PartitionRDBNewFileSys(PartitionBase, root, (struct FileSysHeaderBlock *)buffer);
-                    if (fn != NULL)
+                    if (PartitionRDBChainBlock(root, &chain, block) &&
+                        readBlock(PartitionBase, root, block, buffer) == 0)
                     {
-                        AddTail(&data->fsheaderlist, &fn->h.ln);
-                        PartitionRDBReadFileSys(PartitionBase, root, fn, (struct LoadSegBlock *)buffer);
-                        block = AROS_BE2LONG(fn->fhb.fhb_Next);
+                        /* every RDB record keeps its Next link in longword 4 */
+                        next = AROS_BE2LONG(((ULONG *)buffer)[4]);
+                        if (kind == 0)
+                            n = (struct Node *)PartitionRDBNewBadBlock(PartitionBase, root, (struct BadBlockBlock *)buffer);
+                        else if (kind == 1)
+                            n = (struct Node *)PartitionRDBNewHandle(PartitionBase, root, (struct PartitionBlock *)buffer);
+                        else
+                            n = (struct Node *)PartitionRDBNewFileSys(PartitionBase, root, (struct FileSysHeaderBlock *)buffer);
+                        if (n)
+                        {
+                            AddTail(kind == 0 ? &data->badblocklist : kind == 1 ? &root->table->list : &data->fsheaderlist, n);
+                            if (kind == 2)
+                                PartitionRDBReadFileSys(PartitionBase, root, (struct FileSysNode *)n, (struct LoadSegBlock *)buffer);
+                        }
                     }
-                    else
+                    if (!n)
+                    {
+                        data->readerror = ERROR_NOT_A_DOS_DISK;
                         break;
+                    }
+                    block = next;
                 }
-                else
-                    break;
             }
+            data->driveinit = PartitionRDBReadCode(PartitionBase, root,
+                AROS_BE2LONG(data->rdb.rdb_DriveInit), IDNAME_LOADSEG, buffer);
+            /* rdb_Reserved1[0] is rdb_BootBlockList on OS4/Parthenope disks. */
+            data->bootcode = PartitionRDBReadCode(PartitionBase, root,
+                AROS_BE2LONG(data->rdb.rdb_Reserved1[0]), IDNAME_BOOT, buffer);
             FreeVec(buffer);
             return 0;
         }
-        FreeMem(data, sizeof(struct RDBData));
     }
     FreeVec(buffer);
     return 1;
-}
-
-void PartitionRDBFreeHandle
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *ph
-    )
-{
-    ClosePartitionTable(ph);
-    Remove(&ph->ln);
-    FreeMem(ph->data, sizeof(struct PartitionBlock));
-    FreeVec(ph->ln.ln_Name);
-    FreeMem(ph, sizeof(struct PartitionHandle));
 }
 
 void PartitionRDBClosePartitionTable
@@ -553,7 +645,7 @@ struct RDBData *data;
         PartitionRDBFreeHandle(PartitionBase, ph);
     data = (struct RDBData *)root->table->data;
     while ((bn = (struct BadBlockNode *)RemTail(&data->badblocklist)))
-        FreeMem(bn, sizeof(struct BadBlockNode));
+        FreeMem(bn, sizeof(*bn) + (root->de.de_SizeBlock << 2) - sizeof(bn->bbb));
 
     while ((fn = (struct FileSysNode *)RemTail(&data->fsheaderlist)))
     {
@@ -561,202 +653,11 @@ struct RDBData *data;
         if (!fn->h.boot)
             PartitionRDBFreeFileSystem(&fn->h);
     }
-    FreeMem(data, sizeof(struct RDBData));
-}
-
-ULONG PartitionRDBWriteFileSys
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *root,
-        struct FileSysNode *fn,
-        ULONG block
-    )
-{
-ULONG size;
-
-    if (fn->filesystem)
-    {
-        size = 0;
-        while (size != fn->fsblocks)
-        {
-            fn->filesystem[size].lsb_Next = (size+1) != fn->fsblocks ? AROS_LONG2BE(block+1) : (ULONG)-1;
-            fn->filesystem[size].lsb_ChkSum = 0;
-            fn->filesystem[size].lsb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)&fn->filesystem[size], AROS_LONG2BE(fn->filesystem[size].lsb_SummedLongs)));
-#if RDB_WRITE
-            if (writeBlock(PartitionBase, root, block++, &fn->filesystem[size]) != 0)
-                return block;
-#else
-            kprintf("RDB-write: block=%ld, type=LSEG\n", block);
-            block++;
-#endif
-            size++;
-        }
-    }
-    return block;
-}
-
-static LONG PartitionRDBWritePartitionTable(struct Library *PartitionBase, struct PartitionHandle *root)
-{
-    struct RDBData *data;
-    struct PartitionHandle *ph;
-    struct PartitionBlock *pblock;
-    struct BadBlockNode *bn;
-    struct FileSysNode *fn;
-    ULONG block;
-
-    if (sizeof(root->buffer) < (root->de.de_SizeBlock << 2))
-        return 0;
-
-    data = root->table->data;
-    block = data->rdbblock+1; /* RDB will be written at the end */
-
-    SetMem(root->buffer, 0, root->de.de_SizeBlock << 2);
-
-    /* write bad blocks */
-    bn = (struct BadBlockNode *)data->badblocklist.lh_Head;
-    if (bn->ln.ln_Succ)
-        data->rdb.rdb_BadBlockList = block;
-    else
-        data->rdb.rdb_BadBlockList = (ULONG)-1;
-    while (bn->ln.ln_Succ)
-    {
-        bn->bbb.bbb_Next = bn->ln.ln_Succ->ln_Succ ? AROS_LONG2BE(block+1) : (ULONG)-1;
-        bn->bbb.bbb_ChkSum = 0;
-        bn->bbb.bbb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)&bn->bbb, AROS_BE2LONG(bn->bbb.bbb_SummedLongs)));
-        CopyMem(&bn->bbb, root->buffer, sizeof(struct BadBlockBlock));
-#if RDB_WRITE
-        writeBlock(PartitionBase, root, block++, root->buffer);
-#else
-        kprintf("RDB-write: block=%ld, type=BADB\n", block);
-        block++;
-#endif
-
-        bn = (struct BadBlockNode *)bn->ln.ln_Succ;
-    }
-
-    /* write partition blocks */
-    ph = (struct PartitionHandle *)root->table->list.lh_Head;
-    if (ph->ln.ln_Succ)
-        data->rdb.rdb_PartitionList = AROS_LONG2BE(block);
-    else
-        data->rdb.rdb_PartitionList = (ULONG)-1;
-    while (ph->ln.ln_Succ)
-    {
-        pblock = (struct PartitionBlock *)ph->data;
-        pblock->pb_Next = ph->ln.ln_Succ->ln_Succ ? AROS_LONG2BE(block+1) : (ULONG)-1;
-        pblock->pb_ChkSum = 0;
-        pblock->pb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)pblock, AROS_BE2LONG(pblock->pb_SummedLongs)));
-        CopyMem(pblock, root->buffer, sizeof(struct PartitionBlock));
-#if RDB_WRITE
-        writeBlock(PartitionBase, root, block++, root->buffer);
-#else
-        kprintf("RDB-write: block=%ld, type=PART\n", block);
-        block++;
-#endif
-        ph = (struct PartitionHandle *)ph->ln.ln_Succ;
-    }
-
-    /* write filesystem blocks */
-    fn = (struct FileSysNode *)data->fsheaderlist.lh_Head;
-    if (fn->h.ln.ln_Succ)
-        data->rdb.rdb_FileSysHeaderList = AROS_LONG2BE(block);
-    else
-        data->rdb.rdb_FileSysHeaderList = (ULONG)-1;
-    while (fn->h.ln.ln_Succ)
-    {
-    ULONG fshblock;
-    struct FileSysHeaderBlock *fsb;
-
-        fshblock = block;
-        block++; /* header block will be written later */
-        fn->fhb.fhb_SegListBlocks = AROS_LONG2BE(block);
-        /* write filesystem LSEG blocks */
-        block = PartitionRDBWriteFileSys(PartitionBase, root, fn, block);
-        fn->fhb.fhb_Next = fn->h.ln.ln_Succ->ln_Succ ? AROS_LONG2BE(block) : (ULONG)-1;
-        fn->fhb.fhb_ChkSum = 0;
-        CopyMem(&fn->fhb, root->buffer, sizeof(struct FileSysHeaderBlock));
-        fsb = (struct FileSysHeaderBlock *)root->buffer;
-        fsb->fhb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)root->buffer, AROS_BE2LONG(fn->fhb.fhb_SummedLongs)));
-#if RDB_WRITE
-        writeBlock(PartitionBase, root, fshblock, root->buffer);
-#else
-        kprintf("RDB-write: block=%ld, type=FSHD\n", fshblock);
-#endif
-        fn = (struct FileSysNode *)fn->h.ln.ln_Succ;
-    }
-    data->rdb.rdb_HighRDSKBlock = AROS_LONG2BE(block-1);
-    data->rdb.rdb_ChkSum = 0;
-    data->rdb.rdb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)&data->rdb, AROS_BE2LONG(data->rdb.rdb_SummedLongs)));
-    CopyMem(&data->rdb, root->buffer, sizeof(struct RigidDiskBlock));
-#if RDB_WRITE
-    writeBlock(PartitionBase, root, data->rdbblock, root->buffer);
-#else
-    kprintf("RDB-write: block=%ld, type=RDSK\n", data->rdbblock);
-#endif
-    return 0;
-}
-
-LONG PartitionRDBCreatePartitionTable(struct Library *PartitionBase, struct PartitionHandle *ph)
-{
-    struct RDBData *data;
-    ULONG i;
-
-    data = AllocMem(sizeof(struct RDBData), MEMF_PUBLIC | MEMF_CLEAR);
-    if (data)
-    {
-        /* Get number of reserved sectors to place the partition table. By default we reserve 2 cylinders. */
-        ULONG rdbsize = ph->dg.dg_CylSectors << 1;
-
-        /*
-         * Modern machines love LBA, so container partition may be not cylinder-aligned. In this case we will
-         * likely use flat LBA to describe own placement, with Heads == TrackSectors == 1. This will give us
-         * just two sectors for the RDB, which is horribly small.
-         * Here we detect this situation and increase rdbsize by two until it reaches a minimum of 256 blocks.
-         * This way we keep it aligned to our (virtual) CylSectors value, which allows to set correct LoCylinder
-         * value.
-         */
-        while (rdbsize < 256)
-            rdbsize <<= 1;
-
-        ph->table->data = data;
-
-        data->rdb.rdb_ID                = AROS_LONG2BE(IDNAME_RIGIDDISK);
-        data->rdb.rdb_SummedLongs       = AROS_LONG2BE(sizeof(struct RigidDiskBlock)/4);
-        data->rdb.rdb_BlockBytes        = AROS_LONG2BE(ph->dg.dg_SectorSize);
-        data->rdb.rdb_BadBlockList      = (ULONG)-1;
-        data->rdb.rdb_PartitionList     = (ULONG)-1;
-        data->rdb.rdb_FileSysHeaderList = (ULONG)-1;
-        data->rdb.rdb_DriveInit         = (ULONG)-1;
-        for (i = 0; i < 6; i++)
-            data->rdb.rdb_Reserved1[i]  = (ULONG)-1;
-        data->rdb.rdb_Cylinders         = AROS_LONG2BE(ph->dg.dg_Cylinders);
-        data->rdb.rdb_Sectors           = AROS_LONG2BE(ph->dg.dg_TrackSectors);
-        data->rdb.rdb_Heads             = AROS_LONG2BE(ph->dg.dg_Heads);
-
-        data->rdb.rdb_Park              = data->rdb.rdb_Cylinders;
-        data->rdb.rdb_WritePreComp      = data->rdb.rdb_Cylinders;
-        data->rdb.rdb_ReducedWrite      = data->rdb.rdb_Cylinders;
-        /* StepRate */
-        data->rdb.rdb_RDBBlocksLo       = AROS_LONG2BE(1); /* leave a block for PC */
-        data->rdb.rdb_RDBBlocksHi       = AROS_LONG2BE(rdbsize - 1);
-        data->rdb.rdb_LoCylinder        = AROS_LONG2BE(rdbsize / ph->dg.dg_CylSectors);
-        data->rdb.rdb_HiCylinder        = AROS_LONG2BE(ph->dg.dg_Cylinders-1);
-        data->rdb.rdb_CylBlocks         = AROS_LONG2BE(ph->dg.dg_CylSectors);
-        /* AutoParkSeconds */
-        /* DiskVendor */
-        /* DiskProduct */
-        /* DiskRevision */
-        /* ControllerVendor */
-        /* ControllerProduct */
-        /* ControllerRevision */
-
-        data->rdbblock = 1;
-        NEWLIST(&data->badblocklist);
-        NEWLIST(&data->fsheaderlist);
-        NEWLIST(&ph->table->list);
-        return 0;
-    }
-    return 1;
+    if (data->driveinit)
+        PartitionRDBFreeFileSystem(&data->driveinit->h);
+    if (data->bootcode)
+        PartitionRDBFreeFileSystem(&data->bootcode->h);
+    FreeMem(data, sizeof(*data) + (root->de.de_SizeBlock << 2) - sizeof(data->rdb));
 }
 
 static LONG PartitionRDBGetPartitionTableAttr(struct Library *PartitionBase,
@@ -798,132 +699,6 @@ static LONG PartitionRDBGetPartitionAttr(struct Library *PartitionBase,
     return 0;
 }
 
-static LONG PartitionRDBSetPartitionAttrs(struct Library *PartitionBase, struct PartitionHandle *ph, const struct TagItem *taglist)
-{
-    struct TagItem *tag;
-    struct PartitionBlock *data = (struct PartitionBlock *)ph->data;
-
-    while ((tag = NextTagItem((struct TagItem **)&taglist)))
-    {
-        switch (tag->ti_Tag)
-        {
-        case PT_DOSENVEC:
-            {
-            struct DosEnvec *de = (struct DosEnvec *)tag->ti_Data;
-
-                CopyMem(de, &ph->de, (de->de_TableSize+1)*sizeof(IPTR));
-                CopyHost2BEDosEnvec((SIPTR *)de, data->pb_Environment, de->de_TableSize+1);
-            }
-            break;
-        case PT_TYPE:
-            {
-            struct PartitionType *ptype=(struct PartitionType *)tag->ti_Data;
-            ULONG dt;
-
-                CopyMem(ptype->id, &dt, 4);
-                ph->de.de_DosType = AROS_BE2LONG(dt);
-                data->pb_Environment[DE_DOSTYPE] = dt;
-            }
-            break;
-        case PT_NAME:
-            {
-            STRPTR name = (STRPTR)tag->ti_Data;
-            ULONG len = strlen(name);
-
-                CopyMem(name, ph->ln.ln_Name, len+1);
-                CopyMem(name, data->pb_DriveName+1, len);
-                data->pb_DriveName[len+1] = 0;
-                data->pb_DriveName[0] = len;
-            }
-            break;
-        case PT_BOOTABLE:
-            if (tag->ti_Data)
-                data->pb_Flags = AROS_LONG2BE(AROS_BE2LONG(data->pb_Flags) | PBFF_BOOTABLE);
-            else
-                data->pb_Flags = AROS_LONG2BE(AROS_BE2LONG(data->pb_Flags) & ~PBFF_BOOTABLE);
-            break;
-        case PT_AUTOMOUNT:
-            if (tag->ti_Data)
-                data->pb_Flags = AROS_LONG2BE(AROS_BE2LONG(data->pb_Flags) & ~PBFF_NOMOUNT);
-            else
-                data->pb_Flags = AROS_LONG2BE(AROS_BE2LONG(data->pb_Flags) | PBFF_NOMOUNT);
-            break;
-        }
-    }
-    return 0;
-}
-
-struct PartitionHandle *PartitionRDBAddPartition(struct Library *PartitionBase, struct PartitionHandle *root, const struct TagItem *taglist)
-{
-    if (FindTagItem(PT_DOSENVEC, taglist) != NULL)
-    {
-        struct PartitionBlock *pblock;
-        struct PartitionHandle *ph;
-        struct PartitionHandle *oph;
-
-        ph = AllocMem(sizeof(struct PartitionHandle), MEMF_PUBLIC | MEMF_CLEAR);
-        if (ph)
-        {
-            ph->ln.ln_Name = AllocVec(32, MEMF_PUBLIC | MEMF_CLEAR);
-            if (ph->ln.ln_Name)
-            {
-                pblock = AllocMem(sizeof(struct PartitionBlock), MEMF_PUBLIC | MEMF_CLEAR);
-                if (pblock)
-                {
-                    ph->root = root;
-                    ph->bd = root->bd;
-                    ph->data = pblock;
-                    pblock->pb_ID = AROS_LONG2BE(IDNAME_PARTITION);
-                    pblock->pb_SummedLongs = AROS_LONG2BE(sizeof(struct PartitionBlock)/4);
-                    PartitionRDBSetPartitionAttrs(PartitionBase, ph, taglist);
-                    oph = (struct PartitionHandle *)root->table->list.lh_Head;
-                    while (oph->ln.ln_Succ)
-                    {
-                        if (ph->de.de_LowCyl<oph->de.de_LowCyl)
-                            break;
-                        oph = (struct PartitionHandle *)oph->ln.ln_Succ;
-                    }
-                    if (oph->ln.ln_Succ)
-                    {
-                        oph = (struct PartitionHandle *)oph->ln.ln_Pred;
-                        if (oph->ln.ln_Pred)
-                        {
-                            Insert(&root->table->list, &ph->ln, &oph->ln);
-                        }
-                        else
-                            AddHead(&root->table->list, &ph->ln);
-                    }
-                    else
-                        AddTail(&root->table->list, &ph->ln);
-                    if (FindTagItem(PT_DOSENVEC, taglist) == NULL)
-                    {
-                        ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
-                        ph->dg.dg_SectorSize = ph->de.de_SizeBlock<<2;
-                        ph->dg.dg_Heads = ph->de.de_Surfaces;
-                        ph->dg.dg_TrackSectors = ph->de.de_BlocksPerTrack;
-                        ph->dg.dg_Cylinders = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
-                        ph->dg.dg_BufMemType = ph->de.de_BufMemType;
-                    }
-                    return ph;
-                }
-                FreeVec(ph->ln.ln_Name);
-            }
-            FreeMem(ph, sizeof(struct PartitionHandle));
-        }
-    }
-    return NULL;
-}
-
-void PartitionRDBDeletePartition
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *ph
-    )
-{
-
-    PartitionRDBFreeHandle(PartitionBase, ph);
-}
-
 const struct PartitionAttribute PartitionRDBPartitionTableAttrs[]=
 {
     {PTT_TYPE,     PLAM_READ},
@@ -943,27 +718,6 @@ const struct PartitionAttribute PartitionRDBPartitionAttrs[]=
     {TAG_DONE,      0}
 };
 
-ULONG PartitionRDBDestroyPartitionTable
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *root
-    )
-{
-struct RDBData *data;
-struct RigidDiskBlock *rdb;
-
-    if (sizeof(root->buffer) < (root->de.de_SizeBlock << 2))
-            return 0;
-
-    data = root->table->data;
-    CopyMem(&data->rdb, root->buffer, sizeof(struct RigidDiskBlock));
-    rdb = (struct RigidDiskBlock *)root->buffer;
-    rdb->rdb_ID = 0;
-    if (writeBlock(PartitionBase, root, data->rdbblock, root->buffer))
-        return 1;
-    return 0;
-}
-
 struct Node *PartitionRDBFindFileSystem(struct Library *PartitionBase, struct PartitionHandle *ph, const struct TagItem *tags)
 {
     struct RDBData *data = (struct RDBData *)ph->table->data;
@@ -976,13 +730,13 @@ struct Node *PartitionRDBFindFileSystem(struct Library *PartitionBase, struct Pa
     {
         if (idTag)
         {
-            if (fn->fhb.fhb_DosType != idTag->ti_Data)
+            if (AROS_BE2LONG(fn->fhb.fhb_DosType) != idTag->ti_Data)
                 continue;
         }
 
         if (nameTag)
         {
-            if (strcmp(fn->fhb.fhb_FileSysName, (char *)nameTag->ti_Data))
+            if (strcmp(fn->h.ln.ln_Name, (char *)nameTag->ti_Data))
                 continue;
         }
 
@@ -1012,7 +766,7 @@ static LONG PartitionRDBGetFileSystemAttr(struct Library *PartitionBase, struct 
         return TRUE;
 
     case FST_NAME:
-        *((STRPTR *)tag->ti_Data) = fhb->fhb_FileSysName;
+        *((STRPTR *)tag->ti_Data) = fn->ln.ln_Name;
         return TRUE;
 
     case FST_FSENTRY:
@@ -1057,17 +811,10 @@ const struct PTFunctionTable PartitionRDB =
     PartitionRDBCheckPartitionTable,
     PartitionRDBOpenPartitionTable,
     PartitionRDBClosePartitionTable,
-    PartitionRDBWritePartitionTable,
-    PartitionRDBCreatePartitionTable,
-    PartitionRDBAddPartition,
-    PartitionRDBDeletePartition,
     PartitionRDBGetPartitionTableAttr,
-    NULL,
     PartitionRDBGetPartitionAttr,
-    PartitionRDBSetPartitionAttrs,
     PartitionRDBPartitionTableAttrs,
     PartitionRDBPartitionAttrs,
-    PartitionRDBDestroyPartitionTable,
     PartitionRDBFindFileSystem
 };
 
@@ -1077,3 +824,4 @@ const struct FSFunctionTable FilesystemRDB =
     PartitionRDBGetFileSystemAttr,
     PartitionRDBFreeFileSystem
 };
+

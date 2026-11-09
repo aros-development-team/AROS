@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Internal GadTools scroller class.
 */
@@ -131,22 +131,12 @@ STATIC IPTR scroller_set(Class * cl, Object * o, struct opSet * msg, int newobj)
                     
                     if (data->arrow1)
                     {
-                        if (msg->ops_GInfo)
-                        {
-                            SetGadgetAttrsA(data->arrow1, msg->ops_GInfo->gi_Window, 0, set_tags);
-                        } else {
-                            SetAttrsA((Object *)data->arrow1, set_tags);
-                        }
+                        gt_setattrs(GadToolsBase, (Object *)data->arrow1, msg->ops_GInfo, set_tags);
                     }
                     
                     if (data->arrow2)
                     {
-                        if (msg->ops_GInfo)
-                        {
-                            SetGadgetAttrsA(data->arrow2, msg->ops_GInfo->gi_Window, 0, set_tags);
-                        } else {
-                            SetAttrsA((Object *)data->arrow2, set_tags);
-                        }
+                        gt_setattrs(GadToolsBase, (Object *)data->arrow2, msg->ops_GInfo, set_tags);
                     }
                 }
                 break;
@@ -207,16 +197,6 @@ IPTR GTScroller__OM_NEW(Class * cl, Object * o, struct opSet *msg)
 {
     struct ScrollerData *data;
     struct DrawInfo     *dri;
-    struct TagItem      fitags[] =
-    {
-        {IA_Width       , 0UL           },
-        {IA_Height      , 0UL           },
-        {IA_Resolution  , 0UL           },
-        {IA_FrameType   , FRAME_BUTTON  },
-        {IA_EdgesOnly   , TRUE          },
-        {TAG_DONE                       }
-    };
-    
     EnterFunc(bug("Scroller::New()\n"));
     
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
@@ -226,11 +206,11 @@ IPTR GTScroller__OM_NEW(Class * cl, Object * o, struct opSet *msg)
         
         dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, 0, msg->ops_AttrList);
         
-        fitags[0].ti_Data = GetTagData(GA_Width, 0, msg->ops_AttrList) + BORDERPROPSPACINGX * 2;
-        fitags[1].ti_Data = GetTagData(GA_Height, 0, msg->ops_AttrList) + BORDERPROPSPACINGY * 2;
-        fitags[2].ti_Data = (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y;
-
-        data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
+        data->frame = gt_newframe(GadToolsBase,
+                                  GetTagData(GA_Width, 0, msg->ops_AttrList) + BORDERPROPSPACINGX * 2,
+                                  GetTagData(GA_Height, 0, msg->ops_AttrList) + BORDERPROPSPACINGY * 2,
+                                  (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y,
+                                  FRAME_BUTTON, IA_EdgesOnly);
         if (data->frame)
         {
             scroller_set(cl, o, msg, 1);
@@ -297,17 +277,7 @@ IPTR GTScroller__OM_SET(Class *cl, Object *o, struct opSet *msg)
         struct GadgetInfo *gi = msg->ops_GInfo;
         if (gi)
         {
-            struct RastPort *rp = ObtainGIRPort(gi);
-            if (rp)
-            {
-                struct gpRender rmsg;
-                rmsg.MethodID = GM_RENDER;
-                rmsg.gpr_GInfo = gi;
-                rmsg.gpr_RPort = rp;
-                rmsg.gpr_Redraw = GREDRAW_REDRAW;
-                DoMethodA(o, &rmsg);
-                ReleaseGIRPort(rp);
-            } /* if */
+            gt_render(GadToolsBase, o, gi, GREDRAW_REDRAW);
         } /* if */
     } /* if */
     

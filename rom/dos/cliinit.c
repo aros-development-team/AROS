@@ -634,12 +634,22 @@ static LONG internalBootCliHandler(void)
         Alert(AT_DeadEnd | AG_BadParm | AN_DOSLib);
     }
 
-    AddBootAssign("SYS:C",                "C", DOSBase);
-    AddBootAssign("SYS:Libs",             "LIBS", DOSBase);
-    AddBootAssign("SYS:Devs",             "DEVS", DOSBase);
-    AddBootAssign("SYS:L",                "L", DOSBase);
-    AddBootAssign("SYS:S",                "S", DOSBase);
-    AddBootAssign("SYS:Fonts",            "FONTS", DOSBase);
+    {
+        /* path, assign name */
+        static const char * const bootassigns[][2] =
+        {
+            { "SYS:C",     "C"     },
+            { "SYS:Libs",  "LIBS"  },
+            { "SYS:Devs",  "DEVS"  },
+            { "SYS:L",     "L"     },
+            { "SYS:S",     "S"     },
+            { "SYS:Fonts", "FONTS" },
+        };
+        int i;
+
+        for (i = 0; i < sizeof(bootassigns) / sizeof(bootassigns[0]); i++)
+            AddBootAssign(bootassigns[i][0], bootassigns[i][1], DOSBase);
+    }
 
     /* Let hidds in DRIVERS: directory be found by OpenLibrary.
      * An assign owns its locks and unlocks them when it is removed or

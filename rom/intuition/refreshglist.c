@@ -18,7 +18,9 @@
 
 BOOL qualifygadget(struct Gadget *gadgets,LONG mustbe, LONG mustnotbe,struct IntuitionBase *IntuitionBase);
 void rendergadget(struct Gadget *gadgets,struct Window *window, struct Requester *requester,struct IntuitionBase *IntuitionBase);
+#ifdef GADTOOLSCOMPATIBLE
 struct Gadget *findprevgadget(struct Gadget *gadget,struct Window *window,struct IntuitionBase *IntuitionBase);
+#endif
 
 /*****************************************************************************
 
@@ -266,6 +268,7 @@ void rendergadget(struct Gadget *gadgets,struct Window *window, struct Requester
     } /* switch GadgetType */
 }
 
+#ifdef GADTOOLSCOMPATIBLE
 struct Gadget *findprevgadget(struct Gadget *gadget,struct Window *window,struct IntuitionBase *IntuitionBase)
 {
     struct Gadget *prevgad = 0, *gad;
@@ -278,4 +281,5 @@ struct Gadget *findprevgadget(struct Gadget *gadget,struct Window *window,struct
     
     return 0;
 }
+#endif
 

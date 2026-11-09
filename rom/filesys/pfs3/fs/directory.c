@@ -1206,7 +1206,7 @@ static ULONG FillInData(struct ExAllData *buffer, LONG type,
 			break;
 
 		case ED_OWNER:
-#if defined(__MORPHOS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
 			size = offsetof(struct ExAllData, ed_Size64);
 			break;
 
@@ -1245,7 +1245,7 @@ static ULONG FillInData(struct ExAllData *buffer, LONG type,
 	buffer->ed_Next = NULL;
 	switch (type)
 	{
-#if defined(__MORPHOS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
 		case ED_SIZE64:
 #if ROLLOVER
 			if (direntry->type == ST_ROLLOVERFILE)
@@ -1317,7 +1317,7 @@ BOOL ExamineAll(lockentry_t *object, UBYTE *buffer, ULONG buflen,
 	}
 
 	/* check type field */
-#if defined(__MORPHOS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
 	if (type > ED_SIZE64 || type < ED_NAME)
 #else
 	if (type > ED_OWNER || type < ED_NAME)
@@ -3585,7 +3585,7 @@ static BOOL MakeDirEntry(BYTE type, UBYTE *name, UBYTE *entrybuffer, globaldata 
 #if MULTIUSER
 	if (g->muFS_ready)
 	{
-		extrafields.link = 0;
+		memset(&extrafields, 0, sizeof(extrafields));
 		/* a task owned by nobody has no muExtOwner (g->user is NULL) */
 		extrafields.uid = g->user ? g->user->uid : muNOBODY_UID;
 		extrafields.gid = g->user ? g->user->gid : muNOBODY_GID;
@@ -4298,7 +4298,7 @@ static ULONG FillInDDEData(struct ExAllData *buffer, LONG type,
 			size = offsetof(struct ExAllData, ed_OwnerUID);
 			break;
 		case ED_OWNER:
-#if defined(__MORPHOS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
 			size = offsetof(struct ExAllData, ed_Size64);
 			break;
 		case ED_SIZE64:
@@ -4330,7 +4330,7 @@ static ULONG FillInDDEData(struct ExAllData *buffer, LONG type,
 	buffer->ed_Next = NULL;
 	switch (type)
 	{
-#if defined(__MORPHOS__)
+#if defined(__MORPHOS__) || defined(__AROS__)
 		case ED_SIZE64:
 			buffer->ed_Size64 = GetDDFileSize(dde, g);
 #endif

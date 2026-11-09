@@ -5,6 +5,8 @@
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
+#include <proto/processor.h>
+#include <resources/processor.h>
 
 #include <hidd/hidd.h>
 #include <hidd/usb.h>
@@ -77,6 +79,22 @@ static BOOL XHCIController__Init(struct PCIController *hc)
         return FALSE;
     }
     hc->hc_CPrivate = xhcic;
+
+#if defined(XHCI_NONCOHERENT_DMA)
+    {
+        struct Library *ProcessorBase = OpenResource(PROCESSORNAME);
+        ULONG line = 0;
+
+        if(ProcessorBase) {
+            struct TagItem tags[] = {
+                { GCIT_CacheLineSize, (IPTR)&line },
+                { TAG_DONE, 0 }
+            };
+            GetCPUInfo(tags);
+        }
+        xhcic->xhc_DMALine = (line > XHCI_DMA_LINE) ? line : XHCI_DMA_LINE;
+    }
+#endif
 
     /* Initialize hardware... */
     {
@@ -198,9 +216,12 @@ takeownership:
                 (void)*capreg;
             }
 
-            /* Clear the SMI control bits */
+            /* disable the SMI sources, acknowledge latched events (RW1C bits 29-31) */
             volatile ULONG *smictl = (volatile ULONG *)((IPTR)capreg + 4);
-            *smictl = AROS_LONG2LE(0);
+            ULONG smival = AROS_LE2LONG(*smictl);
+            smival &= ((0x7 << 1) | (0xff << 5) | (0x7 << 17));
+            smival |= (0x7UL << 29);
+            *smictl = AROS_LONG2LE(smival);
             (void)*smictl;
         } else if(capid == XHCI_EXT_CAP_ID_SUPPORTED_PROTOCOL) {
             ULONG caprev   = AROS_LE2LONG(*(capreg + 0));  /* DWORD0: revision */

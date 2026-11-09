@@ -75,42 +75,42 @@ static void setLong(OOP_Class *cl, OOP_Object *o, ULONG reg, ULONG value)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
     
-    HIDD_PCIDriver_WriteConfigLong(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, reg, value);
+    HIDD_PCIDriver_WriteConfigLong(dev->driver, o, dev->bus, dev->dev, dev->sub, reg, value);
 }
 
 static void setWord(OOP_Class *cl, OOP_Object *o, ULONG reg, UWORD value)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
-    HIDD_PCIDriver_WriteConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, reg, value);
+    HIDD_PCIDriver_WriteConfigWord(dev->driver, o, dev->bus, dev->dev, dev->sub, reg, value);
 }
 
 static void setByte(OOP_Class *cl, OOP_Object *o, ULONG reg, UBYTE value)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
-    HIDD_PCIDriver_WriteConfigByte(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, reg, value);
+    HIDD_PCIDriver_WriteConfigByte(dev->driver, o, dev->bus, dev->dev, dev->sub, reg, value);
 }
 
 static ULONG getLong(OOP_Class *cl, OOP_Object *o, ULONG reg)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
-    return HIDD_PCIDriver_ReadConfigLong(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, reg);
+    return HIDD_PCIDriver_ReadConfigLong(dev->driver, o, dev->bus, dev->dev, dev->sub, reg);
 }
 
 static UWORD getWord(OOP_Class *cl, OOP_Object *o, ULONG reg)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
-    return HIDD_PCIDriver_ReadConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, reg);
+    return HIDD_PCIDriver_ReadConfigWord(dev->driver, o, dev->bus, dev->dev, dev->sub, reg);
 }
 
 static UBYTE getByte(OOP_Class *cl, OOP_Object *o, ULONG reg)
 {
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
 
-    return HIDD_PCIDriver_ReadConfigByte(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, reg);
+    return HIDD_PCIDriver_ReadConfigByte(dev->driver, o, dev->bus, dev->dev, dev->sub, reg);
 }
 
 /* Returns offset of capability area in config area or 0 if capability is not present */
@@ -172,12 +172,12 @@ void PCIDev__Hidd_PCIDevice__SetMSIEnabled(OOP_Class *cl, OOP_Object *o, struct 
     {
         tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
         UWORD msiflags;
-        msiflags = HIDD_PCIDriver_ReadConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsi + PCIMSI_FLAGS);
+        msiflags = HIDD_PCIDriver_ReadConfigWord(dev->driver, o, dev->bus, dev->dev, dev->sub, capmsi + PCIMSI_FLAGS);
         msiflags &= ~PCIMSIF_ENABLE;
         if (msg->val)
             msiflags |= PCIMSIF_ENABLE;
         D(bug("[PCIDevice] %s: MSI flags = %04x\n", __func__, msiflags);)
-        HIDD_PCIDriver_WriteConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsi + PCIMSI_FLAGS, msiflags);
+        HIDD_PCIDriver_WriteConfigWord(dev->driver, o, dev->bus, dev->dev, dev->sub, capmsi + PCIMSI_FLAGS, msiflags);
     }
 }
 
@@ -189,10 +189,10 @@ void PCIDev__Hidd_PCIDevice__ClearAndSetMSIXFlags(OOP_Class *cl, OOP_Object *o, 
     {
         tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
         UWORD msixflags;
-        msixflags = HIDD_PCIDriver_ReadConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsix + PCIMSIX_FLAGS);
+        msixflags = HIDD_PCIDriver_ReadConfigWord(dev->driver, o, dev->bus, dev->dev, dev->sub, capmsix + PCIMSIX_FLAGS);
         msixflags &= ~msg->clear;
         msixflags |= msg->set;
-        HIDD_PCIDriver_WriteConfigWord(dev->driver, (OOP_Object *)dev, dev->bus, dev->dev, dev->sub, capmsix + PCIMSIX_FLAGS, msixflags);
+        HIDD_PCIDriver_WriteConfigWord(dev->driver, o, dev->bus, dev->dev, dev->sub, capmsix + PCIMSIX_FLAGS, msixflags);
     }
 }
 
@@ -325,6 +325,152 @@ VOID PCIDev__Hidd_PCIDevice__ReleaseVectors(OOP_Class *cl, OOP_Object *o, struct
 {
     D(bug("[PCIDevice] %s()\n", __func__);)
     return;
+}
+
+/* Read the base addresses back after the driver has moved them */
+static void refreshBaseAddresses(OOP_Class *cl, OOP_Object *o)
+{
+    tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
+    ULONG count = dev->isBridge ? 2 : 6;
+    ULONG i;
+
+    for (i = 0; i < count; i++)
+    {
+        ULONG lo = getLong(cl, o, PCICS_BAR0 + (i << 2));
+
+        dev->BaseReg[i].addr = lo;
+        if (((lo & PCIBAR_MASK_TYPE) == PCIBAR_TYPE_MMAP) &&
+            ((lo & PCIBAR_MEMTYPE_MASK) == PCIBAR_MEMTYPE_64BIT) &&
+            (i + 1 < count))
+        {
+#if (__WORDSIZE == 64)
+            dev->BaseReg[i].addr |= (IPTR)getLong(cl, o, PCICS_BAR0 + ((i + 1) << 2)) << 32;
+#else
+            if (getLong(cl, o, PCICS_BAR0 + ((i + 1) << 2)))
+                dev->BaseReg[i].addr = 0;
+#endif
+            i++;
+        }
+    }
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_PCIDevice_ResizeBAR
+
+    SYNOPSIS
+        IPTR OOP_DoMethod(OOP_Object *obj, struct pHidd_PCIDevice_ResizeBAR *Msg);
+
+        IPTR HIDD_PCIDevice_ResizeBAR(OOP_Object *obj, UBYTE bar, IPTR size);
+
+    LOCATION
+        CLID_Hidd_PCIDevice
+
+    FUNCTION
+        Make a memory base address register larger, through the device's
+        PCI Express Resizable BAR capability.
+
+        The largest size the device supports that is not above the
+        request is tried first, then the smaller ones in turn, until the
+        host bridge driver manages to place one or none are left. The
+        register only ever grows: a request at or below the current size
+        changes nothing.
+
+        The region moves to a new address, and its contents (whatever the
+        device decodes there) are not preserved across the change. Call
+        it before the device's memory is used - the driver of the device
+        must not hold mappings of it, and nothing else may be accessing
+        it.
+
+    INPUTS
+        obj  - Pointer to the device object.
+        bar  - Index of the base address register (0-5).
+        size - The size wanted, in bytes. ~0 asks for the largest size the
+               device supports.
+
+    RESULT
+        The size of the register afterwards, in bytes. The aoHidd_PCIDevice
+        Base and Size attributes describe the new region. When the device
+        has no Resizable BAR capability for this register, or no larger
+        size could be placed, the current size is returned and nothing has
+        changed.
+
+    NOTES
+        Placing the region is the host bridge driver's work
+        (moHidd_PCIDriver_ResizeBAR); with a driver that does not
+        implement it, nothing ever changes.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHidd_PCIDriver_ResizeBAR
+
+    INTERNALS
+
+*****************************************************************************************/
+IPTR PCIDev__Hidd_PCIDevice__ResizeBAR(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ResizeBAR *msg)
+{
+    tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
+    UWORD rebar;
+    ULONG ctrl, sizes = 0, pairs, i;
+    LONG cur = -1, n;
+
+    if (dev->isBridge || msg->bar >= 6)
+        return 0;
+
+    /* Extended capabilities only exist behind an express capability */
+    if (!findCapabilityOffset(cl, o, PCICAP_PCIE))
+        return dev->BaseReg[msg->bar].size;
+
+    rebar = findExpressExtendedCapabilityOffset(cl, o, PCIEECAP_REBAR);
+    if (!rebar)
+        return dev->BaseReg[msg->bar].size;
+
+    ctrl = getLong(cl, o, rebar + PCIREBAR_CTRL(0));
+    pairs = (ctrl & PCIREBAR_CTRL_NBAR_MASK) >> PCIREBAR_CTRL_NBAR_SHIFT;
+    if (pairs > 6)
+        pairs = 6;
+
+    for (i = 0; i < pairs; i++)
+    {
+        ctrl = getLong(cl, o, rebar + PCIREBAR_CTRL(i));
+        if ((ctrl & PCIREBAR_CTRL_BAR_MASK) == msg->bar)
+        {
+            sizes = getLong(cl, o, rebar + PCIREBAR_CAP(i)) >> PCIREBAR_CAP_SIZES_SHIFT;
+            cur = (ctrl & PCIREBAR_CTRL_SIZE_MASK) >> PCIREBAR_CTRL_SIZE_SHIFT;
+            break;
+        }
+    }
+
+    D(bug("[PCIDevice] %02x.%02x.%x BAR%u: resizable, sizes %07x (2^n MiB), now 2^%d MiB, %p wanted\n",
+          dev->bus, dev->dev, dev->sub, msg->bar, sizes, cur, (APTR)msg->size);)
+
+    /* n is 2^n MiB; sizes above the address width cannot be described */
+    for (n = 27; n > cur; n--)
+    {
+        IPTR bytes;
+
+        if (!(sizes & (1UL << n)) || (n + 20) >= (LONG)(sizeof(IPTR) * 8))
+            continue;
+        bytes = (IPTR)1 << (n + 20);
+        if (bytes > msg->size)
+            continue;
+
+        if (HIDD_PCIDriver_ResizeBAR(dev->driver, o, msg->bar, bytes))
+        {
+            refreshBaseAddresses(cl, o);
+            dev->BaseReg[msg->bar].size = bytes;
+            D(bug("[PCIDevice] %02x.%02x.%x BAR%u: now %p at %p\n",
+                  dev->bus, dev->dev, dev->sub, msg->bar, (APTR)bytes,
+                  (APTR)dev->BaseReg[msg->bar].addr);)
+            break;
+        }
+    }
+
+    return dev->BaseReg[msg->bar].size;
 }
 
 BOOL PCIDev__Hidd_PCIDevice__HasExtendedConfig(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_HasExtendedConfig *msg)
@@ -1091,6 +1237,16 @@ void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     {
         switch(idx)
         {
+            case aoHidd_Producer:
+                handled = TRUE;
+                *msg->storage = dev->VendorID;
+                break;
+
+            case aoHidd_Product:
+                handled = TRUE;
+                *msg->storage = dev->ProductID;
+                break;
+
             case aoHidd_HardwareName:
                 {
                     UWORD subclass = HIDD_PCIDevice_ReadConfigWord(o, PCIBR_SUBCLASS);

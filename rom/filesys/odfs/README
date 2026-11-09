@@ -1,0 +1,46 @@
+ODFileSystem for AROS
+====================
+
+The source/ directory is a Git submodule of
+https://github.com/reinauer/ODFileSystem.git, pinned to a specific commit.
+The external filesystem retains its BSD-2-Clause license; see
+source/LICENSE. The build wrapper and module configuration belong to AROS.
+
+Initialize the source before configuring or building AROS:
+
+    git submodule update --init rom/filesys/odfs/source
+
+Build the resident, disk-loadable handler:
+
+    make kernel-fs-odfs
+
+The result is L/ODFileSystem-handler. This is an optional handler: the
+normal build dependencies, boot packages and existing DOSDrivers continue
+to use the existing filesystems. This module registers only CD01 and its
+own ODFileSystem resident name, without legacy filesystem aliases.
+
+To try it, build the target above and copy ODF0 to Storage/DOSDrivers.
+Adjust Device and Unit in that file for the drive or image device, then
+mount it explicitly. Choose an unused DOS device name and avoid mounting
+the same medium through two handlers at once. The example's 32768-byte
+stack request is conservative, not a measured minimum.
+
+Keep the upstream revision pinned for reproducible builds. Contributions
+back to ODFileSystem are encouraged so fixes can be shared across targets.
+The BSD-2-Clause license also permits AROS to modify and maintain its own
+copy, subject to the license's notice requirements.
+
+ODFileSystem supports ISO 9660/High Sierra, Rock Ridge, Joliet, UDF, HFS,
+HFS+, multisession data discs, and audio tracks as WAV or AIFF files.
+It is read-only. Control supports LOWERCASE, NOROCKRIDGE, NOJOLIET,
+HFSFIRST, UDF, AIFF, FILEBUFFERS and METACACHE; see source/README.md.
+
+Run the portable parser/cache unit tests with:
+
+    make test-filesys-odfs
+
+See source/docs/testing.md for format fixtures, malformed images, fuzzing,
+and source/tests/aros/check_abi.sh for isolated x86_64 AROS packet-layout
+checks. The Linux packet harness makes no Exec/DOS calls. Successful
+cross-builds and host tests do not prove AROS device I/O, media-change
+interrupts, or boot behavior on any target.

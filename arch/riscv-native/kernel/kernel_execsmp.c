@@ -14,8 +14,6 @@
 #include <exec/memory.h>
 #include <exec/tasks.h>
 
-#include <aros/riscv64/cpucontext.h>
-
 #define __KERNEL_NOLIBBASE__
 #include <proto/kernel.h>
 #include <proto/exec.h>

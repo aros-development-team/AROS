@@ -11,6 +11,8 @@
  * ----------------------------------------------------------------------
  * History:
  *
+ * 03-Nov-26 aros    Declare the low-memory handler with exec's memory
+ *                   handler arguments.
  * 29-Oct-26 aros    Recover small file caches after memory pressure eases.
  * 28-Dec-12 neil    Pass corrected TOC length back from Read_TOC instead of
  *                   the raw TOC header. Errors in the length field of this
@@ -97,9 +99,12 @@ AROS_INTH1(CDChangeHandler, struct CDVDBase *, global)
     AROS_INTFUNC_EXIT
 }
 
-static AROS_INTH1(CDCacheLowMemHandler, CDROM *, cd)
+static AROS_UFH3(LONG, CDCacheLowMemHandler,
+    AROS_UFHA(struct MemHandlerData *, mhd, A0),
+    AROS_UFHA(CDROM *, cd, A1),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
-    AROS_INTFUNC_INIT
+    AROS_USERFUNC_INIT
 
     if (!cd->cache_io_busy &&
         cd->global->DosProc->pr_Task.tc_State == TS_WAIT)
@@ -147,7 +152,7 @@ static AROS_INTH1(CDCacheLowMemHandler, CDROM *, cd)
 
     return MEM_DID_NOTHING;
 
-    AROS_INTFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /*
@@ -648,6 +653,8 @@ int Test_Unit_Ready(CDROM *p_cd)
     return TRUE;
 }
 
+#ifndef AROS_KERNEL
+/* only used by the stand-alone test program */
 int Mode_Select
         (
                 CDROM *p_cd,
@@ -690,7 +697,13 @@ int Inquire (CDROM *p_cd, t_inquiry_data *p_data)
     CopyMem(buf, p_data, sizeof (*p_data));
     return 1;
 }
+#endif /* !AROS_KERNEL */
 
+/* t_toc_data is packed: fetch the unaligned address field in one place */
+CDVDFS_SHARED uint32_t TOC_Address(const t_toc_data *p_toc)
+{
+    return p_toc->address;
+}
 
 t_toc_data *Read_TOC
         (
@@ -826,7 +839,7 @@ int Data_Tracks(CDROM *p_cd, uint32_t** p_buf)
     {
         if ((99 >= toc[i].track_number) &&
             (0  != (toc[i].flags & 4)))
-            (*p_buf)[j++] = toc[i].address;
+            (*p_buf)[j++] = TOC_Address(&toc[i]);
     }
 
     return cnt;
@@ -874,7 +887,7 @@ int Start_Play_Audio(CDROM *p_cd)
         if ((99 >= toc[i].track_number) &&
             (0  == (toc[i].flags & 4)))
         {
-            start=toc[i].address;
+            start=TOC_Address(&toc[i]);
             break;
         }
     }
@@ -894,7 +907,7 @@ int Start_Play_Audio(CDROM *p_cd)
             (0  != (toc[i].flags & 4)))
             break;
     }
-    end=toc[i].address;
+    end=TOC_Address(&toc[i]);
 
     /*
      * fill up request and send

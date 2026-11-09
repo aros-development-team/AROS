@@ -232,7 +232,7 @@ static int __exit_memslot(struct StdCIntBase *StdCBase)
         AROS_LHA(int, inherit, D0),
 
 /*  LOCATION */
-        struct StdCIntBase *, StdCBase, 527, StdC)
+        struct StdCIntBase *, StdCBase, 22, StdC)
 
 /*  FUNCTION
         Decide which pool the stdc.library bases this task opens from now

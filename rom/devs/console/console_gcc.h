@@ -268,8 +268,6 @@ struct cdihData
 *****************/
 
 struct Interrupt *initCDIH(struct ConsoleBase *ConsoleDevice);
-VOID cleanupCDIH(struct Interrupt *cdihandler,
-    struct ConsoleBase *ConsoleDevice);
 
 VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice);
 
@@ -287,9 +285,6 @@ Class *makeSnipMapConClass(struct ConsoleBase *ConsoleDevice);
 
 VOID con_inject(struct ConsoleBase *ConsoleDevice, struct ConUnit *cu,
     const UBYTE *data, LONG size);
-
-VOID printstring(STRPTR string, ULONG len,
-    struct ConsoleBase *ConsoleDevice);
 
 VOID setabpen(struct Library *GfxBase, struct RastPort *rp, UBYTE tflags,
     UBYTE FgPen, UBYTE BgPen);

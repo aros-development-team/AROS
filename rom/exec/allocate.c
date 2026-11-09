@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Allocate memory from a specific MemHeader.
 */
@@ -46,6 +46,24 @@
     NOTES
         The memory is aligned to sizeof(struct MemChunk). All requests
         are rounded up to a multiple of that size.
+
+        A private region may end with fewer bytes than that alignment.
+        These bytes remain in mh_Free but cannot satisfy an allocation;
+        no free-chunk header is written past the end of the region.
+
+        Calls on an unmanaged region are serialised against other tasks.
+        These calls preserve task-switch nesting and do not explicitly
+        reschedule on exit. This does not mask interrupts: an owner sharing
+        a region between a task and an interrupt must exclude concurrent
+        access (for example with Disable()/Enable() on a single CPU).
+        The owner must also synchronise initialisation and destruction of
+        the region, and must not manipulate its free list during a call.
+
+        mh_Lower is informational for a private region. Its first free
+        chunk and the allocation units covered by Deallocate() must be
+        backed by storage owned by the caller, including any prefix before
+        an unaligned mh_Lower. Deallocate() does not treat mh_Lower as
+        a lower-bound check; the caller must validate region ownership.
 
         On SMP builds this function serialises through the header's
         embedded spinlock (mh_SpinLock), so a hand-built MemHeader MUST

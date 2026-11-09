@@ -27,16 +27,6 @@
 /*                                 BLITTER                                 */
 /***************************************************************************/
 
-void BltRPtoCR(struct RastPort *    rp,
-               struct ClipRect *    cr,
-               ULONG                Mode,
-               struct LayersBase  * LayersBase);
-
-void BltCRtoRP(struct RastPort *    rp,
-               struct ClipRect *    cr,
-               ULONG                Mode,
-               struct LayersBase  * LayersBase);
-
 /***************************************************************************/
 /*                                  HOOK                                   */
 /***************************************************************************/
@@ -48,6 +38,22 @@ void _CallLayerHook(struct Hook * h,
                     WORD offsetx,
                     WORD offsety,
                     struct LayersBase * LayersBase);
+
+/* The RastPort a hook renders into a bitmap other than the application's
+   through - see _ObtainHookRastPort() */
+struct HookRastPort
+{
+#if defined(__AROSEXEC_SMP__)
+    struct RastPort   rp;
+#else
+    struct RastPort * rp;
+    struct BitMap   * bm;
+#endif
+};
+
+struct RastPort *_ObtainHookRastPort(struct HookRastPort *h, struct RastPort *rp,
+                                     struct BitMap *bm, struct LayersBase *LayersBase);
+void _ReleaseHookRastPort(struct HookRastPort *h, struct LayersBase *LayersBase);
 
 
 /***************************************************************************/
@@ -130,7 +136,6 @@ void CopyAndFreeClipRectsClipRects(struct Layer * L,
 int _CopyClipRectsToClipRects(struct Layer * l,
                               struct ClipRect * oldcr,
                               struct ClipRect * newcr,
-                              int srcdx,
 			      int destdx,
                               int backupmode,
                               int freelist,
@@ -173,6 +178,13 @@ int _ShowPartsOfLayer(struct Layer * l,
                       struct LayersBase *);
 
 int _ShowLayer(struct Layer * l, struct LayersBase *LayersBase);
+void _AndShapeRegion(struct Layer *l, struct Region *r, struct LayersBase *LayersBase);
+struct Layer *_ShowLayersBehind(struct Layer *l, struct Region *r, struct Region *clear,
+                                struct Rectangle *ovl1, struct Rectangle *ovl2, int visshape,
+                                struct LayersBase *LayersBase);
+
+void _HideLayersBehind(struct Layer *l, struct Region *hide, struct Rectangle *ovl, struct LayersBase *LayersBase);
+
 
 struct Layer * _FindFirstFamilyMember(struct Layer * l);
 
@@ -191,6 +203,7 @@ BOOL _EnsureSurfaceSize(struct Layer *l, WORD w, WORD h, struct LayersBase *Laye
 
 void _SetCompositedClipRects(struct Layer *l, struct LayersBase *LayersBase);
 void _UpdateSurfaces(struct Layer_Info *li, struct LayersBase *LayersBase);
+void _UpdateSurfacesIfAny(struct Layer_Info *li, struct LayersBase *LayersBase);
 BOOL _IsLayerHitAt(struct Layer *l, LONG x, LONG y, struct LayersBase *LayersBase);
 void _UncompositeLayer(struct Layer *l, struct LayersBase *LayersBase);
 
@@ -208,6 +221,6 @@ struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
 					     struct LayersBase *LayersBase);
 
 struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region,
-    	    	    	    	    	  WORD srcdx, WORD destdx,
+    	    	    	    	    	  WORD destdx,
     	    	    	    	    	  struct LayersBase *LayersBase);
 

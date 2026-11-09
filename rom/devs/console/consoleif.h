@@ -1,7 +1,7 @@
 #ifndef CONSOLEIF_H
 #define CONSOLEIF_H
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the console class
@@ -13,6 +13,12 @@
 #endif
 #ifndef PROTO_INTUITION_H
 #   include <proto/intuition.h>
+#endif
+#ifndef PROTO_ALIB_H
+#   include <proto/alib.h>
+#endif
+#ifndef DEVICES_INPUTEVENT_H
+#   include <devices/inputevent.h>
 #endif
 
 enum
@@ -136,82 +142,88 @@ struct P_Console_GetColorPen
     UBYTE *PenPtr;
 };
 
-#define Console_DoCommand(o, cmd, numparams, params)	\
-({							\
-	struct P_Console_DoCommand p;			\
-	p.MethodID = M_Console_DoCommand;		\
-	p.Command = cmd;				\
-	p.NumParams = numparams;			\
-	p.Params = (IPTR *)params;			\
-	DoMethodA((o), (Msg)&p);			\
-})
+/*
+ * Method stubs. Each builds the message for one method of the console
+ * classes and sends it to the object; the result is that of the method.
+ */
 
-#define Console_Left(o, num)		\
-({					\
-    struct P_Console_Left p;		\
-    p.MethodID	= M_Console_Left;	\
-    p.Num	= num;			\
-    DoMethodA((o), (Msg)&p);		\
-})
+/* Pass a method on to the superclass of cl */
+static inline IPTR Console_Super(Class *cl, Object *o, Msg msg)
+{
+    return DoSuperMethodA(cl, o, msg);
+}
 
+static inline IPTR Console_DoCommand(Object *o, BYTE cmd, UBYTE numparams,
+    APTR params)
+{
+    struct P_Console_DoCommand p;
 
-#define Console_Right(o, num)		\
-({					\
-    struct P_Console_Right p;		\
-    p.MethodID	= M_Console_Right;	\
-    p.Num	= num;			\
-    DoMethodA((o), (Msg)&p);		\
-})
+    p.MethodID = M_Console_DoCommand;
+    p.Command = cmd;
+    p.NumParams = numparams;
+    p.Params = (IPTR *)params;
+    return DoMethodA(o, (Msg)&p);
+}
 
-#define Console_Up(o, num)		\
-({					\
-    struct P_Console_Up p;		\
-    p.MethodID	= M_Console_Up;		\
-    p.Num	= num;			\
-    DoMethodA((o), (Msg)&p);		\
-})
+/*
+ * M_Console_Left, M_Console_Right, M_Console_Up and M_Console_Down take
+ * the same message, so one stub sends any of them.
+ */
+_Static_assert(sizeof(struct P_Console_Right) == sizeof(struct P_Console_Left)
+    && sizeof(struct P_Console_Up) == sizeof(struct P_Console_Left)
+    && sizeof(struct P_Console_Down) == sizeof(struct P_Console_Left),
+    "the cursor movement messages must have the same layout");
 
-#define Console_Down(o, num)		\
-({					\
-    struct P_Console_Down p;		\
-    p.MethodID	= M_Console_Down;	\
-    p.Num	= num;			\
-    DoMethodA((o), (Msg)&p);		\
-})
+static inline IPTR Console_Move(Object *o, ULONG mid, IPTR num)
+{
+    struct P_Console_Left p;
 
-#define Console_GetDefaultParams(o, cmd, params)	\
-({							\
-    struct P_Console_GetDefaultParams p;		\
-    p.MethodID	= M_Console_GetDefaultParams;		\
-    p.Command	= cmd;					\
-    p.Params	= params;				\
-    DoMethodA((o), (Msg)&p);				\
-})
+    p.MethodID = mid;
+    p.Num = num;
+    return DoMethodA(o, (Msg)&p);
+}
 
+#define Console_Left(o, num)    Console_Move((o), M_Console_Left, (num))
+#define Console_Right(o, num)   Console_Move((o), M_Console_Right, (num))
+#define Console_Up(o, num)      Console_Move((o), M_Console_Up, (num))
+#define Console_Down(o, num)    Console_Move((o), M_Console_Down, (num))
 
-#define Console_GetColorPen(o, coloridx, penptr)	\
-({							\
-    struct P_Console_GetColorPen p;		        \
-    p.MethodID	= M_Console_GetColorPen;		\
-    p.ColorIdx = coloridx;		                \
-    p.PenPtr = penptr;		                        \
-    DoMethodA((o), (Msg)&p);				\
-})
+static inline IPTR Console_GetDefaultParams(Object *o, BYTE cmd, IPTR *params)
+{
+    struct P_Console_GetDefaultParams p;
 
+    p.MethodID = M_Console_GetDefaultParams;
+    p.Command = cmd;
+    p.Params = params;
+    return DoMethodA(o, (Msg)&p);
+}
 
-#define Console_RenderCursor(o)			\
-({						\
-    struct P_Console_RenderCursor p;		\
-    p.MethodID	= M_Console_RenderCursor;	\
-    DoMethodA((o), (Msg)&p);			\
-})
+static inline IPTR Console_GetColorPen(Object *o, UWORD coloridx,
+    UBYTE *penptr)
+{
+    struct P_Console_GetColorPen p;
 
-#define Console_UnRenderCursor(o)		\
-({						\
-    struct P_Console_UnRenderCursor p;		\
-    p.MethodID	= M_Console_UnRenderCursor;	\
-    DoMethodA((o), (Msg)&p);			\
-})
+    p.MethodID = M_Console_GetColorPen;
+    p.ColorIdx = coloridx;
+    p.PenPtr = penptr;
+    return DoMethodA(o, (Msg)&p);
+}
+
+static inline IPTR Console_RenderCursor(Object *o)
+{
+    struct P_Console_RenderCursor p;
+
+    p.MethodID = M_Console_RenderCursor;
+    return DoMethodA(o, (Msg)&p);
+}
+
+static inline IPTR Console_UnRenderCursor(Object *o)
+{
+    struct P_Console_UnRenderCursor p;
+
+    p.MethodID = M_Console_UnRenderCursor;
+    return DoMethodA(o, (Msg)&p);
+}
 
 #define Console_ClearCell(o, x, y)		\
 ({						\
@@ -222,20 +234,22 @@ struct P_Console_GetColorPen
     DoMethodA((o), (Msg)&p);			\
 })
 
-#define Console_NewWindowSize(o)		\
-({						\
-    struct P_Console_NewWindowSize p;		\
-    p.MethodID	= M_Console_NewWindowSize;	\
-    DoMethodA((o), (Msg)&p);			\
-})
+static inline IPTR Console_NewWindowSize(Object *o)
+{
+    struct P_Console_NewWindowSize p;
 
-#define Console_HandleGadgets(o, e)	       	\
-({						\
-    struct P_Console_HandleGadgets p;		\
-    p.MethodID	= M_Console_HandleGadgets;	\
-    p.Event = e;	      			\
-    DoMethodA((o), (Msg)&p);			\
-})
+    p.MethodID = M_Console_NewWindowSize;
+    return DoMethodA(o, (Msg)&p);
+}
+
+static inline IPTR Console_HandleGadgets(Object *o, struct InputEvent *e)
+{
+    struct P_Console_HandleGadgets p;
+
+    p.MethodID = M_Console_HandleGadgets;
+    p.Event = e;
+    return DoMethodA(o, (Msg)&p);
+}
 
 #define Console_Copy(o)	       	\
 ({						\

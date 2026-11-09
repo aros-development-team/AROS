@@ -58,6 +58,9 @@ void in_pcbsetv4mapped(struct inpcb *);
 #include <kern/amiga_includes.h>
 #include <kern/uipc_socket2_protos.h>
 
+extern int tcp_v6mssdflt;
+extern int tcp_do_pmtud;
+int tcp_mssopt6(const struct ifnet *, const struct in6_addr *);
 extern int ip_defttl;			/* default TTL for TCP segments */
 
 /* Negotiated/observed options carried for a half-open connection. */
@@ -77,6 +80,7 @@ struct syncache {
     tcp_seq         sc_irs;		/* initial received seq (peer ISN) */
     tcp_seq         sc_iss;		/* initial send seq (our ISN) */
     u_int32_t       sc_ts_recent;	/* peer timestamp value to echo */
+    u_int32_t       sc_tsoff;		/* our TSval offset (RFC 7323 5.4) */
     u_int16_t       sc_peer_mss;	/* peer's advertised MSS */
     u_int16_t       sc_wnd;		/* our advertised window (16-bit field) */
     u_int8_t        sc_requested_s_scale; /* peer's window scale shift */
@@ -119,16 +123,10 @@ syncache_key(struct sc_key *k, struct tcpiphdr *ti, int isipv6,
     }
 }
 
-/* Fold a 128-bit IPv6 address to 32 bits for the (v4-shaped) cookie hash. */
-static struct in_addr
-syncache_v6fold(struct in6_addr *a6)
-{
-    struct in_addr r;
-    u_int32_t *w = (u_int32_t *)a6;
-
-    r.s_addr = w[0] ^ w[1] ^ w[2] ^ w[3];
-    return (r);
-}
+/* a key's family and addresses, for tcp_conn_hash() */
+#define SCK_HASHADDRS(k) (k)->isipv6, \
+        (k)->isipv6 ? (const void *)&(k)->laddr6 : (const void *)&(k)->laddr, \
+        (k)->isipv6 ? (const void *)&(k)->faddr6 : (const void *)&(k)->faddr
 
 LIST_HEAD(sc_head, syncache);
 
@@ -141,7 +139,9 @@ struct syncache_bucket {
 #define SYNCACHE_HASHSIZE	512	/* number of buckets (power of two) */
 #define SYNCACHE_BUCKETLIMIT	30	/* max entries per bucket */
 #define SYNCACHE_MAXREXMTS	3	/* SYN-ACK retransmits before giving up */
-#define SYNCACHE_RXTBASE	6	/* base retransmit interval (slow ticks) */
+/* base retransmit interval (slow ticks): the initial RTO, 1 s (RFC 6298
+ * section 2.1), doubled for each retransmission, as FreeBSD's */
+#define SYNCACHE_RXTBASE	(TCPTV_RTOBASE * PR_SLOWHZ)
 #define SYNCOOKIE_PAUSE		30	/* cookie-only window after overflow */
 
 static struct syncache_bucket	*tcp_syncache_tbl;
@@ -159,18 +159,8 @@ int tcp_syncookiesonly = 0;		/* force SYN cookies for every SYN */
 static u_int32_t
 syncache_hashidx(struct sc_key *k)
 {
-    u_int32_t h, fa, la;
-
-    if(k->isipv6) {
-        fa = syncache_v6fold(&k->faddr6).s_addr;
-        la = syncache_v6fold(&k->laddr6).s_addr;
-    } else {
-        fa = k->faddr.s_addr;
-        la = k->laddr.s_addr;
-    }
-    h = tcp_isn_hash(fa, la,
-        ((u_int32_t)k->fport << 16) | k->lport, 0, tcp_secret_key);
-    return (h & tcp_syncache_hashmask);
+    return (tcp_conn_hash(tcp_secret_key, TCPH_SYNCACHE, SCK_HASHADDRS(k),
+        k->lport, k->fport, 0) & tcp_syncache_hashmask);
 }
 
 /*
@@ -318,11 +308,19 @@ syncache_respond(struct syncache *sc)
     u_char opt[TCP_MAXOLEN];
     int optlen, tlen, win;
 
-    /* MSS option (we advertise the Ethernet default; no per-SYN route work). */
+    /* MSS option: the Ethernet default for IPv4; for IPv6, the MTU of the
+     * peer's link less the IPv6 and TCP headers (RFC 6691), as a SYN of ours
+     * would say (tcp_mssopt6()) */
     opt[0] = TCPOPT_MAXSEG;
     opt[1] = TCPOLEN_MAXSEG;
     {
-        u_int16_t mss = htons((u_int16_t)tcp_mssdflt);
+        u_int16_t mss;
+#if INET6
+        if (sc->sc_isipv6)
+            mss = htons((u_int16_t)tcp_mssopt6(NULL, &sc->sc_faddr6));
+        else
+#endif
+            mss = htons((u_int16_t)tcp_mssdflt);
         bcopy(&mss, opt + 2, sizeof(mss));
     }
     optlen = TCPOLEN_MAXSEG;
@@ -342,7 +340,7 @@ syncache_respond(struct syncache *sc)
     if (sc->sc_flags & SCF_TIMESTAMP) {
         u_int32_t *lp = (u_int32_t *)(opt + optlen);
         *lp++ = htonl(TCPOPT_TSTAMP_HDR);
-        *lp++ = htonl(tcp_now);
+        *lp++ = htonl(tcp_ms() + sc->sc_tsoff);
         *lp = htonl(sc->sc_ts_recent);
         optlen += TCPOLEN_TSTAMP_APPA;
     }
@@ -395,7 +393,7 @@ syncache_respond(struct syncache *sc)
         m->m_len        = t6;
         m->m_pkthdr.len = t6;
         (void) tcp_v6output(m, &sc->sc_laddr6, &sc->sc_faddr6,
-                            sc->sc_ip_ttl, t6, NULL);
+                            sc->sc_ip_ttl, t6, 0, NULL);
         return (0);
     }
 #endif /* INET6 */
@@ -404,6 +402,8 @@ syncache_respond(struct syncache *sc)
     ti->ti_sum = in_cksum(m, tlen);
     ((struct ip *)ti)->ip_len = tlen;
     ((struct ip *)ti)->ip_ttl = sc->sc_ip_ttl ? sc->sc_ip_ttl : ip_defttl;
+    if(tcp_do_pmtud)            /* path MTU discovery (RFC 1191) */
+        ((struct ip *)ti)->ip_off |= IP_DF;
 
 #ifdef ENABLE_MULTICAST
     (void) ip_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
@@ -436,6 +436,8 @@ syncache_fill(struct syncache *sc, struct socket *lso, struct sc_key *k,
     }
     sc->sc_fport = k->fport;
     sc->sc_lport = k->lport;
+    sc->sc_tsoff = tcp_conn_hash(tcp_ts_key, TCPH_TSOFF, SCK_HASHADDRS(k),
+        k->lport, k->fport, 0);
     sc->sc_irs = ti->ti_seq;
     sc->sc_peer_mss = peer_mss;
     sc->sc_flags = flags;
@@ -470,7 +472,6 @@ syncache_add(struct socket *lso, struct tcpiphdr *ti,
     struct syncache_bucket *sch;
     struct syncache *sc;
     struct sc_key key;
-    struct in_addr fa, la;
     u_int16_t peer_mss = 0;
     u_int8_t scflags, s_scale = 0;
     u_int32_t ts = 0;
@@ -486,19 +487,11 @@ syncache_add(struct socket *lso, struct tcpiphdr *ti,
         return;
 
     syncache_key(&key, ti, isipv6, src6, dst6);
-    /* v4 / folded-v6 addresses used for the keyed ISN and cookie hashes. */
-    if (isipv6) {
-        fa = syncache_v6fold(&key.faddr6);
-        la = syncache_v6fold(&key.laddr6);
-    } else {
-        fa = key.faddr;
-        la = key.laddr;
-    }
 
     scflags = syncache_parse(optp, optlen, ti->ti_flags,
         &peer_mss, &s_scale, &ts);
-    if (peer_mss == 0)
-        peer_mss = tcp_mssdflt;
+    if (peer_mss == 0)                  /* RFC 9293 section 3.7.1 defaults */
+        peer_mss = isipv6 ? tcp_v6mssdflt : tcp_mssdflt;
 
     /* Honour the locally enabled feature set, as the legacy path does. */
     if (!tcp_do_rfc1323)
@@ -541,7 +534,7 @@ syncache_add(struct socket *lso, struct tcpiphdr *ti,
         struct syncache scs;
         bzero((caddr_t)&scs, sizeof(scs));
         syncache_fill(&scs, lso, &key, ti, peer_mss, 0, 0, 0);
-        scs.sc_iss = tcp_syncookie_generate(la, fa,
+        scs.sc_iss = tcp_syncookie_generate(SCK_HASHADDRS(&key),
             key.lport, key.fport, peer_mss);
         tcpstat.tcps_sc_sendcookie++;
         (void) syncache_respond(&scs);
@@ -556,7 +549,7 @@ syncache_add(struct socket *lso, struct tcpiphdr *ti,
             struct syncache scs;
             bzero((caddr_t)&scs, sizeof(scs));
             syncache_fill(&scs, lso, &key, ti, peer_mss, 0, 0, 0);
-            scs.sc_iss = tcp_syncookie_generate(la, fa,
+            scs.sc_iss = tcp_syncookie_generate(SCK_HASHADDRS(&key),
                 key.lport, key.fport, peer_mss);
             tcpstat.tcps_sc_sendcookie++;
             (void) syncache_respond(&scs);
@@ -567,10 +560,9 @@ syncache_add(struct socket *lso, struct tcpiphdr *ti,
 
     bzero((caddr_t)sc, sizeof(*sc));
     syncache_fill(sc, lso, &key, ti, peer_mss, scflags, s_scale, ts);
-    sc->sc_iss = (tcp_seq)tcp_iss + tcp_isn_hash(la.s_addr,
-        (u_int32_t)key.lport, fa.s_addr,
-        (u_int32_t)key.fport, tcp_secret_key);
-    sc->sc_rxttick = tcp_now + SYNCACHE_RXTBASE;
+    sc->sc_iss = (tcp_seq)tcp_iss + tcp_conn_hash(tcp_secret_key, TCPH_ISN,
+        SCK_HASHADDRS(&key), key.lport, key.fport, 0);
+    sc->sc_rxttick = tcp_now + 1 + SYNCACHE_RXTBASE;   /* a tick more: never early */
 
     LIST_INSERT_HEAD(&sch->sch_bucket, sc, sc_hash);
     sch->sch_length++;
@@ -689,6 +681,7 @@ syncache_socket(struct syncache *sc, struct socket *lso, struct tcpiphdr *ti)
         tp->t_flags |= TF_RCVD_TSTMP;
         tp->ts_recent = sc->sc_ts_recent;
         tp->ts_recent_age = tcp_now;
+        tp->t_ts_offset = sc->sc_tsoff;
     } else
         tp->t_flags &= ~TF_REQ_TSTMP;
     if (sc->sc_flags & SCF_SACK)
@@ -704,8 +697,28 @@ syncache_socket(struct syncache *sc, struct socket *lso, struct tcpiphdr *ti)
     /* Compute t_maxseg/t_maxopd (and the initial window) from the peer MSS. */
     tcp_mss(tp, sc->sc_peer_mss);
 
+    /* a SYN-ACK retransmitted: 3 s until an RTT is measured (RFC 6298 5.7) */
+    if (sc->sc_rxmits > 0) {
+        tp->t_rxtshift = 1;
+        tcp_rto_after_syn(tp);
+    }
+
+    /* the listening socket's keepalive values (as FreeBSD's syncache) and
+     * user timeout */
+    {
+        const struct tcpcb *ltp = intotcpcb(sotoinpcb(lso));
+
+        if (ltp != NULL) {
+            tp->t_keepinit = ltp->t_keepinit;
+            tp->t_keepidle = ltp->t_keepidle;
+            tp->t_keepintvl = ltp->t_keepintvl;
+            tp->t_keepcnt = ltp->t_keepcnt;
+            tp->t_uto_ms = ltp->t_uto_ms;   /* as Linux */
+        }
+    }
+
     tp->t_flags |= TF_ACKNOW;
-    tp->t_timer[TCPT_KEEP] = tcp_keepidle;
+    tp->t_timer[TCPT_KEEP] = TP_KEEPIDLE(tp);
 
     tcpstat.tcps_accepts++;
     tcpstat.tcps_connects++;
@@ -731,11 +744,18 @@ syncache_expand(struct socket *lso, struct tcpiphdr *ti,
     sc = syncache_lookup(sch, &key);
 
     if (sc != NULL) {
-        /* The ACK must acknowledge our SYN-ACK and be in sequence. */
-        if (ti->ti_ack != sc->sc_iss + 1 ||
-                ti->ti_seq != sc->sc_irs + 1) {
+        /*
+         * The ACK must acknowledge our SYN-ACK - else a reset, as RFC 9293
+         * section 3.10.7.3 has it for SYN-RECEIVED - and be in sequence,
+         * else it is dropped. The entry stays either way, for the right ACK.
+         */
+        if (ti->ti_ack != sc->sc_iss + 1) {
             splx(s);
-            return (0);			/* leave entry; silent drop */
+            return (0);
+        }
+        if (ti->ti_seq != sc->sc_irs + 1) {
+            splx(s);
+            return (-1);
         }
         LIST_REMOVE(sc, sc_hash);
         sch->sch_length--;
@@ -745,7 +765,7 @@ syncache_expand(struct socket *lso, struct tcpiphdr *ti,
         if (so == NULL) {
             tcpstat.tcps_sc_aborted++;
             splx(s);
-            return (0);
+            return (-1);
         }
         tcpstat.tcps_sc_completed++;
         *sop = so;
@@ -758,17 +778,9 @@ syncache_expand(struct socket *lso, struct tcpiphdr *ti,
      * handshake (sent while the cache was overflowing).
      */
     if (tcp_syncookies || tcp_syncookiesonly) {
-        struct in_addr fa, la;
         u_int16_t mss;
 
-        if (isipv6) {
-            fa = syncache_v6fold(&key.faddr6);
-            la = syncache_v6fold(&key.laddr6);
-        } else {
-            fa = key.faddr;
-            la = key.laddr;
-        }
-        mss = tcp_syncookie_validate(la, fa,
+        mss = tcp_syncookie_validate(SCK_HASHADDRS(&key),
             key.lport, key.fport, ti->ti_ack);
         if (mss > 0) {
             struct syncache scs;
@@ -790,7 +802,7 @@ syncache_expand(struct socket *lso, struct tcpiphdr *ti,
             so = syncache_socket(&scs, lso, ti);
             if (so == NULL) {
                 splx(s);
-                return (0);
+                return (-1);
             }
             tcpstat.tcps_sc_recvcookie++;
             tcpstat.tcps_sc_completed++;
@@ -852,7 +864,7 @@ syncache_timer(void)
             }
             sc->sc_rxmits++;
             sc->sc_rxttick = tcp_now +
-                (SYNCACHE_RXTBASE << sc->sc_rxmits);
+                1 + (SYNCACHE_RXTBASE << sc->sc_rxmits);
             tcpstat.tcps_sc_retransmitted++;
             (void) syncache_respond(sc);
         }

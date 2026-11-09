@@ -24,6 +24,7 @@
 
 #include <clib/macros.h>
 
+#include <stddef.h>
 #include <string.h>
 
 #include <proto/exec.h>
@@ -45,6 +46,86 @@ struct ICData;
 
 /****************************************************************************/
 
+/*
+ * Many gadget attributes do no more than store one coordinate and/or change
+ * one bit in Flags, Activation or GadgetType. They are described by the table
+ * below, which is indexed by (tag - GA_Dummy) and used by both OM_SET and
+ * OM_GET:
+ *
+ *  - OM_SET stores the value in the coordinate, if the row names one, and
+ *    sets or clears the bit, if the row names one.
+ *  - OM_GET returns the coordinate if the row names one, otherwise TRUE or
+ *    FALSE depending on the bit.
+ *
+ * A row with gad_How == 0 is an attribute that is not handled this way.
+ */
+struct GadgetAttrDesc
+{
+    UBYTE gad_Coord;    /* offset of the WORD the value is stored in, or 0 */
+    UBYTE gad_Word;     /* offset of the UWORD that holds gad_Bit, or 0 */
+    UWORD gad_Bit;      /* GFLG_, GACT_ or GTYP_ bit */
+    UBYTE gad_How;      /* GAD_ flags */
+};
+
+/* What OM_SET does with gad_Bit */
+#define GAD_SET     0x01    /* always sets it */
+#define GAD_CLEAR   0x02    /* always clears it */
+#define GAD_BOOL    0x03    /* sets it if ti_Data is non-zero, clears it otherwise */
+#define GAD_OPMASK  0x03
+/* OM_SET reports a visual change */
+#define GAD_VISUAL  0x04
+
+#define GAD_ROW(tag)    [(tag) - GA_Dummy]
+#define GAD_OFFSET(m)   offsetof(struct ExtGadget, m)
+#define GAD_NOWORD      0, 0
+
+static const struct GadgetAttrDesc gadgetattrs[] =
+{
+    /*      attribute           coordinate              flag word                   bit                 OM_SET */
+    GAD_ROW(GA_Left)        = { GAD_OFFSET(LeftEdge),   GAD_NOWORD,                                     GAD_VISUAL              },
+    GAD_ROW(GA_Top)         = { GAD_OFFSET(TopEdge),    GAD_NOWORD,                                     GAD_VISUAL              },
+    GAD_ROW(GA_Width)       = { GAD_OFFSET(Width),      GAD_OFFSET(Flags),          GFLG_RELWIDTH,      GAD_CLEAR | GAD_VISUAL  },
+    GAD_ROW(GA_Height)      = { GAD_OFFSET(Height),     GAD_OFFSET(Flags),          GFLG_RELHEIGHT,     GAD_CLEAR | GAD_VISUAL  },
+    GAD_ROW(GA_RelRight)    = { GAD_OFFSET(LeftEdge),   GAD_OFFSET(Flags),          GFLG_RELRIGHT,      GAD_SET | GAD_VISUAL    },
+    GAD_ROW(GA_RelBottom)   = { GAD_OFFSET(TopEdge),    GAD_OFFSET(Flags),          GFLG_RELBOTTOM,     GAD_SET | GAD_VISUAL    },
+    GAD_ROW(GA_RelWidth)    = { GAD_OFFSET(Width),      GAD_OFFSET(Flags),          GFLG_RELWIDTH,      GAD_SET | GAD_VISUAL    },
+    GAD_ROW(GA_RelHeight)   = { GAD_OFFSET(Height),     GAD_OFFSET(Flags),          GFLG_RELHEIGHT,     GAD_SET | GAD_VISUAL    },
+    GAD_ROW(GA_RelSpecial)  = { 0,                      GAD_OFFSET(Flags),          GFLG_RELSPECIAL,    GAD_BOOL | GAD_VISUAL   },
+    GAD_ROW(GA_Selected)    = { 0,                      GAD_OFFSET(Flags),          GFLG_SELECTED,      GAD_BOOL | GAD_VISUAL   },
+    GAD_ROW(GA_Disabled)    = { 0,                      GAD_OFFSET(Flags),          GFLG_DISABLED,      GAD_BOOL | GAD_VISUAL   },
+    GAD_ROW(GA_TabCycle)    = { 0,                      GAD_OFFSET(Flags),          GFLG_TABCYCLE,      GAD_BOOL                },
+    GAD_ROW(GA_GZZGadget)   = { 0,                      GAD_OFFSET(GadgetType),     GTYP_GZZGADGET,     GAD_BOOL                },
+    GAD_ROW(GA_SysGadget)   = { 0,                      GAD_OFFSET(GadgetType),     GTYP_SYSGADGET,     GAD_BOOL                },
+    GAD_ROW(GA_EndGadget)   = { 0,                      GAD_OFFSET(Activation),     GACT_ENDGADGET,     GAD_BOOL                },
+    GAD_ROW(GA_Immediate)   = { 0,                      GAD_OFFSET(Activation),     GACT_IMMEDIATE,     GAD_BOOL                },
+    GAD_ROW(GA_RelVerify)   = { 0,                      GAD_OFFSET(Activation),     GACT_RELVERIFY,     GAD_BOOL                },
+    GAD_ROW(GA_FollowMouse) = { 0,                      GAD_OFFSET(Activation),     GACT_FOLLOWMOUSE,   GAD_BOOL                },
+    GAD_ROW(GA_RightBorder) = { 0,                      GAD_OFFSET(Activation),     GACT_RIGHTBORDER,   GAD_BOOL                },
+    GAD_ROW(GA_LeftBorder)  = { 0,                      GAD_OFFSET(Activation),     GACT_LEFTBORDER,    GAD_BOOL                },
+    GAD_ROW(GA_TopBorder)   = { 0,                      GAD_OFFSET(Activation),     GACT_TOPBORDER,     GAD_BOOL                },
+    GAD_ROW(GA_BottomBorder)= { 0,                      GAD_OFFSET(Activation),     GACT_BOTTOMBORDER,  GAD_BOOL                },
+    GAD_ROW(GA_ToggleSelect)= { 0,                      GAD_OFFSET(Activation),     GACT_TOGGLESELECT,  GAD_BOOL                },
+};
+
+#define NUM_GADGETATTRS (sizeof(gadgetattrs) / sizeof(gadgetattrs[0]))
+
+/* The offsets are kept in bytes, and 0 stands for "none" */
+_Static_assert(sizeof(struct ExtGadget) <= 256, "gadget member offsets must fit a byte");
+_Static_assert(GAD_OFFSET(LeftEdge) != 0 && GAD_OFFSET(Flags) != 0, "offset 0 means no member");
+
+/* Returns the table row of an attribute, or NULL if it has none */
+static const struct GadgetAttrDesc *gadgetattr(ULONG attrid)
+{
+    ULONG idx = attrid - GA_Dummy;
+
+    if ((idx < NUM_GADGETATTRS) && gadgetattrs[idx].gad_How)
+        return &gadgetattrs[idx];
+
+    return NULL;
+}
+
+/****************************************************************************/
+
 /* set gadget attributes
 */
 static ULONG set_gadgetclass(Class *cl, struct ExtGadget *eg, struct opSet *msg)
@@ -52,6 +133,7 @@ static ULONG set_gadgetclass(Class *cl, struct ExtGadget *eg, struct opSet *msg)
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct TagItem *tag, *tstate = msg->ops_AttrList;
+    const struct GadgetAttrDesc *desc;
     IPTR                  tidata;
     ULONG                 retval = 0UL; /* set to non-zero to signal visual changes */
 
@@ -59,68 +141,54 @@ static ULONG set_gadgetclass(Class *cl, struct ExtGadget *eg, struct opSet *msg)
     {
         tidata = tag->ti_Data;
 
-        switch(tag->ti_Tag)
+        desc = gadgetattr(tag->ti_Tag);
+        if (desc)
         {
-            case GA_Left:
-                eg->LeftEdge = (WORD)tidata;
-                //eg->Flags &= ~GFLG_RELRIGHT;
-                retval = 1UL;
-                break;
+            if (desc->gad_Coord)
+            {
+                *(WORD *)((UBYTE *)eg + desc->gad_Coord) = (WORD)tidata;
+            }
 
-            case GA_Top:
-                eg->TopEdge = (WORD)tidata;
-                //eg->Flags &= ~GFLG_RELBOTTOM;
-                retval = 1UL;
-                break;
+            if (desc->gad_Word)
+            {
+                UWORD *word = (UWORD *)((UBYTE *)eg + desc->gad_Word);
+                BOOL   set;
 
-            case GA_Width:
-                eg->Width = (WORD)tidata;
-                eg->Flags &= ~GFLG_RELWIDTH;
-                retval = 1UL;
-                break;
-
-            case GA_Height:
-                eg->Height = (WORD)tidata;
-                eg->Flags &= ~GFLG_RELHEIGHT;
-                retval = 1UL;
-                break;
-
-            case GA_RelRight:
-                eg->LeftEdge = (WORD)tidata;
-                eg->Flags |= GFLG_RELRIGHT;
-                retval = 1UL;
-                break;
-
-            case GA_RelBottom:
-                eg->TopEdge = (WORD)tidata;
-                eg->Flags |= GFLG_RELBOTTOM;
-                retval = 1UL;
-                break;
-
-            case GA_RelWidth:
-                eg->Width = (WORD)tidata;
-                eg->Flags |= GFLG_RELWIDTH;
-                retval = 1UL;
-                break;
-
-            case GA_RelHeight:
-                eg->Height = (WORD)tidata;
-                eg->Flags |= GFLG_RELHEIGHT;
-                retval = 1UL;
-                break;
-
-            case GA_RelSpecial:
-                if (tidata)
+                switch (desc->gad_How & GAD_OPMASK)
                 {
-                    eg->Flags |= GFLG_RELSPECIAL;
+                    case GAD_SET:
+                        set = TRUE;
+                        break;
+
+                    case GAD_CLEAR:
+                        set = FALSE;
+                        break;
+
+                    default: /* GAD_BOOL */
+                        set = (tidata != 0);
+                        break;
+                }
+
+                if (set)
+                {
+                    *word |= desc->gad_Bit;
                 }
                 else
                 {
-                    eg->Flags &= ~GFLG_RELSPECIAL;
+                    *word &= ~desc->gad_Bit;
                 }
-                retval = 1UL;
-                break;
+            }
 
+            if (desc->gad_How & GAD_VISUAL)
+            {
+                retval = 1UL;
+            }
+
+            continue;
+        }
+
+        switch(tag->ti_Tag)
+        {
             case GA_Bounds:
                 if (tidata)
                 {
@@ -216,162 +284,6 @@ static ULONG set_gadgetclass(Class *cl, struct ExtGadget *eg, struct opSet *msg)
 
             case GA_SpecialInfo:
                 eg->SpecialInfo = (APTR)tidata;
-                break;
-
-            case GA_GZZGadget:
-                if ( tidata != FALSE )
-                {
-                    eg->GadgetType |= GTYP_GZZGADGET;
-                }
-                else
-                {
-                    eg->GadgetType &= ~GTYP_GZZGADGET;
-                }
-                break;
-
-            case GA_SysGadget:
-                if ( tidata != FALSE )
-                {
-                    eg->GadgetType |= GTYP_SYSGADGET;
-                }
-                else
-                {
-                    eg->GadgetType &= ~GTYP_SYSGADGET;
-                }
-                break;
-
-            case GA_Selected:
-                if ( tidata != FALSE )
-                {
-                    eg->Flags |= GFLG_SELECTED;
-                }
-                else
-                {
-                    eg->Flags &= ~GFLG_SELECTED;
-                }
-                retval = 1UL;
-                break;
-
-            case GA_Disabled:
-                if ( tidata != FALSE )
-                {
-                    eg->Flags |= GFLG_DISABLED;
-                }
-                else
-                {
-                    eg->Flags &= ~GFLG_DISABLED;
-                }
-                retval = 1UL;
-                break;
-
-            case GA_EndGadget:
-                if ( tidata != FALSE )
-                {
-                    eg->Activation |= GACT_ENDGADGET;
-                }
-                else
-                {
-                    eg->Activation &= ~GACT_ENDGADGET;
-                }
-                break;
-
-            case GA_Immediate:
-                if ( tidata != FALSE )
-                {
-                    eg->Activation |= GACT_IMMEDIATE;
-                }
-                else
-                {
-                    eg->Activation &= ~GACT_IMMEDIATE;
-                }
-                break;
-
-            case GA_RelVerify:
-                if ( tidata != FALSE )
-                {
-                    eg->Activation |= GACT_RELVERIFY;
-                }
-                else
-                {
-                    eg->Activation &= ~GACT_RELVERIFY;
-                }
-                break;
-
-            case GA_FollowMouse:
-                if ( tidata != FALSE )
-                {
-                    eg->Activation |= GACT_FOLLOWMOUSE;
-                }
-                else
-                {
-                    eg->Activation &= ~GACT_FOLLOWMOUSE;
-                }
-                break;
-
-            case GA_RightBorder:
-                if ( tidata != FALSE )
-                {
-                    eg->Activation |= GACT_RIGHTBORDER;
-                }
-                else
-                {
-                    eg->Activation &= ~GACT_RIGHTBORDER;
-                }
-                break;
-
-            case GA_LeftBorder:
-                if ( tidata != FALSE )
-                {
-                    eg->Activation |= GACT_LEFTBORDER;
-                }
-                else
-                {
-                    eg->Activation &= ~GACT_LEFTBORDER;
-                }
-                break;
-
-            case GA_TopBorder:
-                if ( tidata != FALSE )
-                {
-                    eg->Activation |= GACT_TOPBORDER;
-                }
-                else
-                {
-                    eg->Activation &= ~GACT_TOPBORDER;
-                }
-                break;
-
-            case GA_BottomBorder:
-                if ( tidata != FALSE )
-                {
-                    eg->Activation |= GACT_BOTTOMBORDER;
-                }
-                else
-                {
-                    eg->Activation &= ~GACT_BOTTOMBORDER;
-                }
-                break;
-
-            case GA_ToggleSelect:
-                if (tidata)
-                {
-                    eg->Activation |= GACT_TOGGLESELECT;
-                }
-                else
-                {
-                    eg->Activation &= ~GACT_TOGGLESELECT;
-                }
-                break;
-
-            case GA_TabCycle:
-                if (tidata)
-                {
-                    eg->Flags |= GFLG_TABCYCLE;
-                }
-                else
-                {
-                    eg->Flags &= ~GFLG_TABCYCLE;
-                }
                 break;
 
             case GA_Highlight:
@@ -482,148 +394,84 @@ IPTR GadgetClass__OM_DISPOSE(Class *cl, struct GadgetData *gd, Msg msg)
  */
 IPTR GadgetClass__OM_GET(Class *cl, struct ExtGadget *eg, struct opGet *msg)
 {
-    ULONG retval = 1UL;
+    const struct GadgetAttrDesc *desc = gadgetattr(msg->opg_AttrID);
+    IPTR val;
+
+    if (desc)
+    {
+        if (desc->gad_Coord)
+        {
+            val = (IPTR) *(WORD *)((UBYTE *)eg + desc->gad_Coord);
+        }
+        else
+        {
+            val = (IPTR)((*(UWORD *)((UBYTE *)eg + desc->gad_Word) & desc->gad_Bit) ? TRUE : FALSE);
+        }
+
+        *msg->opg_Storage = val;
+        return 1UL;
+    }
 
     switch (msg->opg_AttrID)
     {
-        case GA_Left:
-        case GA_RelRight:
-            *msg->opg_Storage = (IPTR) eg->LeftEdge;
-            break;
-
-        case GA_Top:
-        case GA_RelBottom:
-            *msg->opg_Storage = (IPTR) eg->TopEdge;
-            break;
-
-        case GA_Width:
-        case GA_RelWidth:
-            *msg->opg_Storage = (IPTR) eg->Width;
-            break;
-
-        case GA_Height:
-        case GA_RelHeight:
-            *msg->opg_Storage = (IPTR) eg->Height;
-            break;
-
-        case GA_Selected:
-            *msg->opg_Storage = (IPTR)((eg->Flags & GFLG_SELECTED) != 0);
-            break;
-
-        case GA_Disabled:
-            *msg->opg_Storage = (IPTR)((eg->Flags & GFLG_DISABLED) != 0);
-            break;
-
         case GA_ID:
-            *msg->opg_Storage = (IPTR)eg->GadgetID;
+            val = (IPTR)eg->GadgetID;
             break;
 
         case GA_UserData:
-            *msg->opg_Storage = (IPTR)eg->UserData;
-            break;
-
-        case GA_RelSpecial:
-            *msg->opg_Storage = (IPTR)(eg->Flags & GFLG_RELSPECIAL) ? TRUE : FALSE;
+            val = (IPTR)eg->UserData;
             break;
 
         case GA_GadgetHelp:
-            *msg->opg_Storage = (IPTR)(eg->MoreFlags & GMORE_GADGETHELP) ? TRUE : FALSE;
+            val = (IPTR)(eg->MoreFlags & GMORE_GADGETHELP) ? TRUE : FALSE;
             break;
 
         case GA_Next:
-            *msg->opg_Storage = (IPTR)eg->NextGadget;
+            val = (IPTR)eg->NextGadget;
             break;
 
         case GA_IntuiText:
-            *msg->opg_Storage = (IPTR)(((eg->Flags & GFLG_LABELMASK) == GFLG_LABELITEXT) ? eg->GadgetText : 0);
+            val = (IPTR)(((eg->Flags & GFLG_LABELMASK) == GFLG_LABELITEXT) ? eg->GadgetText : 0);
             break;
 
         case GA_Text:
-            *msg->opg_Storage = (IPTR)((eg->Flags & GFLG_LABELSTRING) ? eg->GadgetText : 0);
+            val = (IPTR)((eg->Flags & GFLG_LABELSTRING) ? eg->GadgetText : 0);
             break;
 
         case GA_LabelImage:
-            *msg->opg_Storage = (IPTR)((eg->Flags & GFLG_LABELIMAGE) ? eg->GadgetText : 0);
+            val = (IPTR)((eg->Flags & GFLG_LABELIMAGE) ? eg->GadgetText : 0);
             break;
 
         case GA_Image:
-            *msg->opg_Storage = (IPTR)((eg->Flags & GFLG_GADGIMAGE) ? eg->GadgetRender : 0);
+            val = (IPTR)((eg->Flags & GFLG_GADGIMAGE) ? eg->GadgetRender : 0);
             break;
 
         case GA_Border:
-            *msg->opg_Storage = (IPTR)((eg->Flags & GFLG_GADGIMAGE) ? 0 : eg->GadgetRender);
+            val = (IPTR)((eg->Flags & GFLG_GADGIMAGE) ? 0 : eg->GadgetRender);
             break;
 
         case GA_SelectRender:
-            *msg->opg_Storage = (IPTR)(((eg->Flags & GFLG_GADGHIGHBITS) == GFLG_GADGHIMAGE) ? eg->SelectRender : 0);
+            val = (IPTR)(((eg->Flags & GFLG_GADGHIGHBITS) == GFLG_GADGHIMAGE) ? eg->SelectRender : 0);
             break;
 
         case GA_SpecialInfo:
-            *msg->opg_Storage = (IPTR)eg->SpecialInfo;
-            break;
-
-        case GA_GZZGadget:
-            *msg->opg_Storage = (IPTR)((eg->GadgetType & GTYP_GZZGADGET) ? TRUE : FALSE);
-            break;
-
-        case GA_SysGadget:
-            *msg->opg_Storage = (IPTR)((eg->GadgetType & GTYP_SYSGADGET) ? TRUE : FALSE);
-            break;
-
-        case GA_EndGadget:
-            *msg->opg_Storage = (IPTR)((eg->Activation & GACT_ENDGADGET) ? TRUE : FALSE);
-            break;
-
-        case GA_Immediate:
-            *msg->opg_Storage = (IPTR)((eg->Activation & GACT_IMMEDIATE) ? TRUE : FALSE);
-            break;
-
-        case GA_RelVerify:
-            *msg->opg_Storage = (IPTR)((eg->Activation & GACT_RELVERIFY) ? TRUE : FALSE);
-            break;
-
-        case GA_FollowMouse:
-            *msg->opg_Storage = (IPTR)((eg->Activation & GACT_FOLLOWMOUSE) ? TRUE : FALSE);
-            break;
-
-        case GA_RightBorder:
-            *msg->opg_Storage = (IPTR)((eg->Activation & GACT_RIGHTBORDER) ? TRUE : FALSE);
-            break;
-
-        case GA_LeftBorder:
-            *msg->opg_Storage = (IPTR)((eg->Activation & GACT_LEFTBORDER) ? TRUE : FALSE);
-            break;
-
-        case GA_TopBorder:
-            *msg->opg_Storage = (IPTR)((eg->Activation & GACT_TOPBORDER) ? TRUE : FALSE);
-            break;
-
-        case GA_BottomBorder:
-            *msg->opg_Storage = (IPTR)((eg->Activation & GACT_BOTTOMBORDER) ? TRUE : FALSE);
-            break;
-
-        case GA_ToggleSelect:
-            *msg->opg_Storage = (IPTR)((eg->Activation & GACT_TOGGLESELECT) ? TRUE : FALSE);
-            break;
-
-        case GA_TabCycle:
-            *msg->opg_Storage = (IPTR)((eg->Flags & GFLG_TABCYCLE) ? TRUE : FALSE);
+            val = (IPTR)eg->SpecialInfo;
             break;
 
         case GA_Highlight:
-            *msg->opg_Storage = (IPTR)((eg->Flags & GFLG_GADGHIGHBITS) ? TRUE : FALSE);
+            val = (IPTR)((eg->Flags & GFLG_GADGHIGHBITS) ? TRUE : FALSE);
             break;
 
         case GA_SysGType:
-            *msg->opg_Storage = (IPTR)(eg->GadgetType & GTYP_SYSTYPEMASK);
+            val = (IPTR)(eg->GadgetType & GTYP_SYSTYPEMASK);
             break;
 
         case ICA_TARGET:
-            *msg->opg_Storage = (IPTR)((struct GadgetData *)eg)->IC.ic_Target;
+            val = (IPTR)((struct GadgetData *)eg)->IC.ic_Target;
             break;
 
         case ICA_MAP:
-            *msg->opg_Storage = (IPTR)((struct GadgetData *)eg)->IC.ic_Mapping;
+            val = (IPTR)((struct GadgetData *)eg)->IC.ic_Mapping;
             break;
 
         case GA_Bounds:
@@ -636,22 +484,23 @@ IPTR GadgetClass__OM_GET(Class *cl, struct ExtGadget *eg, struct opGet *msg)
                 ibox->Width = eg->BoundsWidth;
                 ibox->Height = eg->BoundsHeight;
             }
-            break;
+            return 1UL;
 
 
         default:
         #if 0
             /* DONT DO THIS!! For example BGUI propclass relies on this not happening!! */
 
-            *msg->opg_Storage = (IPTR)NULL;
+            val = (IPTR)NULL;
             */
         #endif
-            retval = 0UL;
-            break;
+            return 0UL;
 
     } /* switch attrid) */
 
-    return(retval);
+    *msg->opg_Storage = val;
+
+    return 1UL;
 }
 
 /* test if we should try to activate this gadget...

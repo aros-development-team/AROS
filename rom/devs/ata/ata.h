@@ -62,6 +62,20 @@
 #define SCSI_STATUS_CHECK_CONDITION 0x02
 #define SCSI_STATUS_BUSY            0x08
 
+/* Media state reported by atapi_TestUnitOK() */
+#define ATAPI_MEDIA_PRESENT         0   /* unit ready, or a sense other than NOT READY */
+#define ATAPI_MEDIA_ABSENT          1   /* NOT READY, other than becoming ready */
+#define ATAPI_MEDIA_BECOMING_READY  2   /* NOT READY, LOGICAL UNIT IS IN PROCESS OF BECOMING READY */
+#define ATAPI_MEDIA_UNKNOWN         3   /* command failed without usable sense data */
+
+/*
+ * How long ata_Identify() waits for a drive that reports BECOMING READY
+ * (e.g. still spinning up the boot disc after the bus reset), so the
+ * initial media state is known before the unit is published.
+ */
+#define ATAPI_SPINUP_POLLS          20
+#define ATAPI_SPINUP_DELAY          500000  /* microseconds per poll */
+
 /*
    Don't blame me for information redundance here!
 
@@ -114,6 +128,7 @@ struct ataBase
     OOP_AttrBase                busAttrBase;
     OOP_AttrBase                atabusAttrBase;
     OOP_AttrBase                sunitAttrBase;
+    OOP_AttrBase                hiddAttrBase;
 #endif
 #if defined(__OOP_NOMETHODBASES__)
     OOP_MethodID                hwMethodBase;
@@ -131,6 +146,8 @@ struct ataBase
 #undef HiddATABusAB
 #undef HiddATAUnitAB
 #undef HiddStorageUnitAB
+#undef HiddAttrBase
+#define HiddAttrBase                    (ATABase->hiddAttrBase)
 #define HWAttrBase                      (ATABase->hwAttrBase)
 #define HiddBusAB                       (ATABase->busAttrBase)
 #define HiddATABusAB                    (ATABase->atabusAttrBase)
@@ -219,6 +236,9 @@ struct ata_Bus
 
 /*
    DriveIdent structure as returned by ATA_IDENTIFY_[DEVICE|ATAPI]
+
+   Every field starts on a word boundary and the block is always allocated
+   word aligned, which the alignment attribute tells the compiler.
    */
 struct DriveIdent {
    UWORD       id_General;             // 0
@@ -294,7 +314,11 @@ struct DriveIdent {
    UWORD       pad15[47];              // 170 - 216
    UWORD       id_NominalMediaRotationRate; // 217
    UWORD       pad16[38];              // 218 - 255
-} __attribute__((packed));
+} __attribute__((packed, aligned(2)));
+
+/* The block is addressed by word number in places; it must stay 256 words */
+_Static_assert(sizeof(struct DriveIdent) == 256 * sizeof(UWORD),
+               "struct DriveIdent must match the 512 byte IDENTIFY block");
 
 typedef struct
 {

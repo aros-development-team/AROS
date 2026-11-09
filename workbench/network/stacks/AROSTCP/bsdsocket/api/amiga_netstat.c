@@ -59,24 +59,40 @@ long __QueryInterfaceTagList(STRPTR name, const struct TagItem *tags, struct Soc
                 memcpy((void *)tag->ti_Data, &ifp->if_data.ifi_aros_ontime, sizeof(struct timeval));
                 break;
             }
-            case IFQ_Address: {
-//				log(LOG_CRIT, "IFQ_Address is not implemented");
-                *(STRPTR)tag->ti_Data = 0;
-                break;
-            }
-            case IFQ_DestinationAddress: {
-//				log(LOG_CRIT, "IFQ_DestinationAddress is not implemented");
-                *(STRPTR)tag->ti_Data = 0;
-                break;
-            }
-            case IFQ_BroadcastAddress: {
-//				log(LOG_CRIT, "IFQ_BroadcastAddress is not implemented");
-                *(STRPTR)tag->ti_Data = 0;
-                break;
-            }
+            /*
+             * The interface's first IPv4 address, and its destination
+             * (point-to-point), broadcast address and netmask: a struct
+             * sockaddr_in at ti_Data, all zero but the family and length
+             * when the interface has none. ifa_broadaddr is ifa_dstaddr,
+             * so which one it is comes from the flags, as for the SIOCGIF*
+             * ioctls: the other stays zero.
+             */
+            case IFQ_Address:
+            case IFQ_DestinationAddress:
+            case IFQ_BroadcastAddress:
             case IFQ_NetMask: {
-//				log(LOG_CRIT, "IFQ_NetMask is not implemented");
-                *(STRPTR)tag->ti_Data = 0;
+                struct sockaddr_in *sin = (struct sockaddr_in *)tag->ti_Data;
+                struct ifaddr *ifa;
+
+                bzero(sin, sizeof(*sin));
+                sin->sin_len = sizeof(*sin);
+                sin->sin_family = AF_INET;
+                for(ifa = ifp->if_addrlist; ifa; ifa = ifa->ifa_next) {
+                    struct sockaddr *sa;
+
+                    if(ifa->ifa_addr == NULL || ifa->ifa_addr->sa_family != AF_INET)
+                        continue;
+                    sa = tag->ti_Tag == IFQ_Address ? ifa->ifa_addr :
+                         tag->ti_Tag == IFQ_NetMask ? ifa->ifa_netmask :
+                         tag->ti_Tag == IFQ_DestinationAddress ?
+                             ((ifp->if_flags & IFF_POINTOPOINT) ? ifa->ifa_dstaddr : NULL) :
+                         ((ifp->if_flags & IFF_BROADCAST) ? ifa->ifa_broadaddr : NULL);
+                    /* a netmask's sa_len may stop before its zero bytes */
+                    if(sa != NULL && sa->sa_len > 4)
+                        bcopy(&((struct sockaddr_in *)sa)->sin_addr, &sin->sin_addr,
+                              sa->sa_len - 4 < 4 ? sa->sa_len - 4 : 4);
+                    break;
+                }
                 break;
             }
             case IFQ_Metric: {

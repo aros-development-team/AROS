@@ -113,12 +113,7 @@
     AndRegionRegion(l->visibleshape, visible_damage_region);
   }
   
-  if (l->shaperegion)
-  {
-    _TranslateRect(&visible_damage_region->bounds, -l->bounds.MinX, -l->bounds.MinY);
-    AndRegionRegion(l->shaperegion, visible_damage_region);
-    _TranslateRect(&visible_damage_region->bounds, l->bounds.MinX, l->bounds.MinY);
-  }
+  _AndShapeRegion(l, visible_damage_region, LayersBase);
 
   l->ClipRect = _CreateClipRectsFromRegion(visible_damage_region,
                                            l,
@@ -133,7 +128,6 @@
       _CopyClipRectsToClipRects(l,
                                 l->cr2,
                                 l->ClipRect,
-                                0,
                                 0,
                                 FALSE,
                                 FALSE,

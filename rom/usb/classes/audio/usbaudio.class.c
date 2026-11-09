@@ -2744,6 +2744,20 @@ AROS_UFH3(void, nInDoneHook,
 }
 /* \\\ */
 
+/* /// "nStopRTIso()" */
+/* Stops the mode's stream if it is running: Poseidon counts each successful
+   start as busy device IO until the matching stop, so a stream that never
+   started, or was stopped already, must not be stopped again. */
+static void nStopRTIso(struct NepAudioMode *nam)
+{
+    if(nam->nam_RTIsoRunning)
+    {
+        psdStopRTIso(nam->nam_RTIso);
+        nam->nam_RTIsoRunning = FALSE;
+    }
+}
+/* \\\ */
+
 /* /// "nReleaseHook()" */
 AROS_UFH3(void, nReleaseHook,
           AROS_UFHA(struct Hook *, hook, A0),
@@ -2755,7 +2769,7 @@ AROS_UFH3(void, nReleaseHook,
     struct NepAudioMode *nam = (struct NepAudioMode *) hook->h_Data;
     struct NepClassAudio *nch = nam->nam_Unit;
 
-    psdStopRTIso(nam->nam_RTIso);
+    nStopRTIso(nam);
     if(nam->nam_IsInput)
     {
         // we can only stop recording, we still need to call the player func until audio is done
@@ -3228,6 +3242,7 @@ BOOL nSelectAudioMode(struct NepAudioMode *nam)
                                               RTA_ReleaseHook, &nam->nam_ReleaseHook,
                                               TAG_END);
     }
+    nam->nam_RTIsoRunning = FALSE;
     if(!nam->nam_RTIso)
     {
         psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname, "Could not allocate RT Iso Handler!");
@@ -3324,6 +3339,39 @@ AROS_LH2(ULONG, subLibAllocAudio,
     {
         return AHISF_ERROR;
     }
+    /* The device is told the rate it will be fed (SET_CUR in
+       nSelectAudioMode()), so pick a rate it supports first. */
+    for(cnt = 0; cnt < nam->nam_NumFrequencies; cnt++)
+    {
+        if(audioctrl->ahiac_MixFreq == nam->nam_FreqArray[cnt])
+        {
+            break;
+        }
+    }
+    if(cnt == nam->nam_NumFrequencies)
+    {
+        // need rate adaption
+        ULONG target = audioctrl->ahiac_MixFreq;
+        ULONG diff = 100000;
+        for(cnt = 0; cnt < nam->nam_NumFrequencies; cnt++)
+        {
+            if(nam->nam_FreqArray[cnt] > target)
+            {
+                if(nam->nam_FreqArray[cnt] - target < diff)
+                {
+                    diff = nam->nam_FreqArray[cnt] - target;
+                    audioctrl->ahiac_MixFreq = nam->nam_FreqArray[cnt];
+                }
+            } else {
+                if(target - nam->nam_FreqArray[cnt] < diff)
+                {
+                    diff = target - nam->nam_FreqArray[cnt];
+                    audioctrl->ahiac_MixFreq = nam->nam_FreqArray[cnt];
+                }
+            }
+        }
+    }
+
     KPRINTF(10, ("SelectAudioMode\n"));
     if(!(nSelectAudioMode(nam)))
     {
@@ -3371,37 +3419,6 @@ AROS_LH2(ULONG, subLibAllocAudio,
        for, not the device's output channel count - AHI sizes its per-channel
        data by it. The device's layout is reported via AHISF_KNOWSTEREO. */
     /*audioctrl->ahiac_BuffType = nam->nam_SampleType; */
-
-    for(cnt = 0; cnt < nam->nam_NumFrequencies; cnt++)
-    {
-        if(audioctrl->ahiac_MixFreq == nam->nam_FreqArray[cnt])
-        {
-            break;
-        }
-    }
-    if(cnt == nam->nam_NumFrequencies)
-    {
-        // need rate adaption
-        ULONG target = audioctrl->ahiac_MixFreq;
-        ULONG diff = 100000;
-        for(cnt = 0; cnt < nam->nam_NumFrequencies; cnt++)
-        {
-            if(nam->nam_FreqArray[cnt] > target)
-            {
-                if(nam->nam_FreqArray[cnt] - target < diff)
-                {
-                    diff = nam->nam_FreqArray[cnt] - target;
-                    audioctrl->ahiac_MixFreq = nam->nam_FreqArray[cnt];
-                }
-            } else {
-                if(target - nam->nam_FreqArray[cnt] < diff)
-                {
-                    diff = target - nam->nam_FreqArray[cnt];
-                    audioctrl->ahiac_MixFreq = nam->nam_FreqArray[cnt];
-                }
-            }
-        }
-    }
 
     // buffer for 100 ms max
     audioctrl->ahiac_BuffSamples = (audioctrl->ahiac_MixFreq * nam->nam_Interval) / 10;
@@ -3591,7 +3608,7 @@ AROS_LH1(void, subLibFreeAudio,
     {
         if(sibnam->nam_RTIso)
         {
-            psdStopRTIso(sibnam->nam_RTIso);
+            nStopRTIso(sibnam);
             psdFreeRTIsoHandler(sibnam->nam_RTIso);
             sibnam->nam_RTIso = NULL;
         }
@@ -3625,7 +3642,7 @@ AROS_LH1(void, subLibFreeAudio,
     }
     if(nam->nam_RTIso)
     {
-        psdStopRTIso(nam->nam_RTIso);
+        nStopRTIso(nam);
         psdFreeRTIsoHandler(nam->nam_RTIso);
         nam->nam_RTIso = NULL;
     }
@@ -3725,10 +3742,19 @@ AROS_LH2(ULONG, subLibStart,
         {
             nam->nam_TimerMsgPort.mp_Flags = PA_SOFTINT;
             Cause(&nam->nam_PlayerInt);
+            res = AHIE_OK;
         } else {
-            psdStartRTIso(nam->nam_RTIso);
+            LONG ioerr = psdStartRTIso(nam->nam_RTIso);
+            if(ioerr)
+            {
+                psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                               "Could not start playback stream: %s (%ld)!",
+                               psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                return AHIE_UNKNOWN;
+            }
+            nam->nam_RTIsoRunning = TRUE;
+            res = AHIE_OK;
         }
-        res = AHIE_OK;
     }
     if(flags & AHISF_RECORD)
     {
@@ -3736,7 +3762,15 @@ AROS_LH2(ULONG, subLibStart,
         if(sibnam)
         {
             sibnam->nam_SampleFrac = ((audioctrl->ahiac_MixFreq<<16) / 1000) * sibnam->nam_Interval;
-            psdStartRTIso(sibnam->nam_RTIso);
+            LONG ioerr = psdStartRTIso(sibnam->nam_RTIso);
+            if(ioerr)
+            {
+                psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname,
+                               "Could not start recording stream: %s (%ld)!",
+                               psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                return AHIE_UNKNOWN;
+            }
+            sibnam->nam_RTIsoRunning = TRUE;
             res = AHIE_OK;
         } else {
             res = AHIE_UNKNOWN;
@@ -3796,12 +3830,12 @@ AROS_LH2(ULONG, subLibStop,
             nam->nam_TimerMsgPort.mp_Flags = PA_IGNORE;
             AbortIO((struct IORequest *) nam->nam_TimerIOReq);
         } else {
-            psdStopRTIso(nam->nam_RTIso);
+            nStopRTIso(nam);
         }
     }
     if((flags & AHISF_RECORD) && nam->nam_Sibling)
     {
-        psdStopRTIso(nam->nam_Sibling->nam_RTIso);
+        nStopRTIso(nam->nam_Sibling);
     }
     return AHIE_OK;
     

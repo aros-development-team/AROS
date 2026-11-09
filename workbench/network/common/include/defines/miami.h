@@ -13,8 +13,8 @@
 #include <exec/types.h>
 #include <aros/preprocessor/variadic/cast2iptr.hpp>
 
-#define __MiamiSysCtl_WB(__MiamiBase) \
-        AROS_LC7NR(void, MiamiSysCtl, \
+#define __MiamiSysCtl_WB(__MiamiBase, __arg1, __arg2, __arg3, __arg4, __arg5, __arg6, __arg7) \
+        AROS_LC7(int, MiamiSysCtl, \
                   AROS_LCA(LONG *, (__arg1), A0), \
                   AROS_LCA(ULONG, (__arg2), D0), \
                   AROS_LCA(void *, (__arg3), A1), \

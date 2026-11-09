@@ -2,7 +2,7 @@
 #define FILEHANDLES3_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,7 +11,6 @@
 
 LONG sameLock(struct AfsHandle *, struct AfsHandle *);
 ULONG examine(struct AFSBase *, struct AfsHandle *, struct ExAllData *, ULONG, ULONG, IPTR *);
-ULONG examineAll(struct AFSBase *, struct AfsHandle *, struct ExAllData *, struct ExAllControl *, ULONG, ULONG);
 ULONG examineNext(struct AFSBase *, struct AfsHandle *, struct FileInfoBlock *);
 
 #endif
