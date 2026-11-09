@@ -73,24 +73,7 @@
      * Make the layer visible
      * Back up all layers behind this layer.
      */
-    lparent = l->parent;
-    _l = l->back;
-    while (1)
-    {
-      if (IS_VISIBLE(_l) && !IS_TRANSLUCENT(l) && DO_OVERLAP(&l->visibleshape->bounds, &_l->shape->bounds))
-        _BackupPartsOfLayer(_l, OCCLUDESHAPE(l), 0, FALSE, LayersBase);
-      else
-        ClearRegionRegion(OCCLUDESHAPE(l), _l->VisibleRegion);
-        
-      if (_l == lparent)
-      {
-        if (IS_VISIBLE(_l) || (NULL == lparent->parent))
-          break;
-        else
-          lparent = lparent->parent;
-      }
-      _l = _l->back;
-    }
+    _HideLayersBehind(l, OCCLUDESHAPE(l), &l->visibleshape->bounds, LayersBase);
     
     /*
      * For the layer to become visible I must recalculate its
@@ -166,39 +149,7 @@
      * Walk through all the layers behind this layer and
      * make them (more) visible...
      */
-    lparent = l->parent;
-    _l = l->back;
-    while (1)
-    {
-      if (IS_VISIBLE(_l) && DO_OVERLAP(&l->visibleshape->bounds, &_l->visibleshape->bounds))
-      {
-        ClearRegion(_l->VisibleRegion);
-        _ShowPartsOfLayer(_l, &r, LayersBase);
-      }
-      else
-        SetRegion(&r, _l->VisibleRegion);
-
-      if (IS_VISIBLE(_l) || IS_ROOTLAYER(_l))
-        AndRegionRegion(_l->VisibleRegion, &clearr);
-
-      if (_l == lparent)
-      {
-        if (IS_VISIBLE(_l) || (NULL == lparent->parent))
-          break;
-        else
-          lparent = lparent->parent;
-      }
-
-      /*
-       * Take the shape of the current layer out of
-       * the visible region that will be applied to the
-       * layer behind this one.
-       */
-      if (IS_VISIBLE(_l))
-        ClearRegionRegion(OCCLUDESHAPE(_l), &r);
-
-      _l = _l->back;
-    }
+    lparent = _ShowLayersBehind(l, &r, &clearr, &l->visibleshape->bounds, NULL, TRUE, LayersBase);
 
     if (!IS_EMPTYREGION(&clearr))
     {

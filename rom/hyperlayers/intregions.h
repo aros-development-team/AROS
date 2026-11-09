@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Some common macros for rectangles and regions.
 */
@@ -29,21 +29,25 @@
 #define _TranslateRect(rect, dx, dy) \
 do                                   \
 {                                    \
-    (rect)->MinX += dx;              \
-    (rect)->MinY += dy;              \
-    (rect)->MaxX += dx;              \
-    (rect)->MaxY += dy;              \
+    WORD _trdx = (dx), _trdy = (dy); \
+    (rect)->MinX += _trdx;           \
+    (rect)->MinY += _trdy;           \
+    (rect)->MaxX += _trdx;           \
+    (rect)->MaxY += _trdy;           \
 } while(0)
 
-#define InitRegion(region)            \
-do                                    \
-{                                     \
-    (region)->bounds.MinX = 0;	      \
-    (region)->bounds.MinY = 0;        \
-    (region)->bounds.MaxX = 0;        \
-    (region)->bounds.MaxY = 0;        \
-    (region)->RegionRectangle = NULL; \
+/* Empty a region: clear its bounds and its rectangle list */
+#define InitRegion(region)                \
+do                                        \
+{                                         \
+    ULONG *_ir = (ULONG *)&(region)->bounds; \
+    _ir[0] = 0;                           \
+    _ir[1] = 0;                           \
+    (region)->RegionRectangle = NULL;     \
 } while (0)
+
+_Static_assert(sizeof(struct Rectangle) == 2 * sizeof(ULONG),
+               "InitRegion() clears struct Rectangle as two longwords");
 
 static inline struct Region *_NewRectRegion(WORD MinX, WORD MinY, WORD MaxX, WORD MaxY, struct GfxBase *GfxBase)
 {

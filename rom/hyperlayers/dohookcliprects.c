@@ -164,6 +164,7 @@
                                that _ObtainHookRastPort() provides for it */
                             struct HookRastPort hrp;
                             struct BitMap *hbm;
+                            WORD tx, ty;
 
                             /* it's a smart layer -: */
                             if (0 != (L->Flags & LAYERSUPER))
@@ -173,10 +174,8 @@
                                 D(bug("[Layers] %s:   SuperBitMap\n", __func__));
 
                                 /* superbitmap coordinates are rastport coordinates */
-                                bounds.MinX = bounds.MinX - L->bounds.MinX + L->Scroll_X;
-                                bounds.MinY = bounds.MinY - L->bounds.MinY + L->Scroll_Y;
-                                bounds.MaxX = bounds.MaxX - L->bounds.MinX + L->Scroll_X;
-                                bounds.MaxY = bounds.MaxY - L->bounds.MinY + L->Scroll_Y;
+                                tx = L->Scroll_X - L->bounds.MinX;
+                                ty = L->Scroll_Y - L->bounds.MinY;
                                 hbm = L->SuperBitMap;
                             }
                             else
@@ -190,13 +189,12 @@
 
                                 D(bug("[Layers] %s:   Hidden\n", __func__));
 
-                                bounds.MinX = bounds.MinX - CR->bounds.MinX + CR_BMOFFX(CR);
-                                bounds.MinY = bounds.MinY - CR->bounds.MinY + CR_BMOFFY(CR);
-                                bounds.MaxX = bounds.MaxX - CR->bounds.MinX + CR_BMOFFX(CR);
-                                bounds.MaxY = bounds.MaxY - CR->bounds.MinY + CR_BMOFFY(CR);
+                                tx = CR_BMOFFX(CR) - CR->bounds.MinX;
+                                ty = CR_BMOFFY(CR) - CR->bounds.MinY;
 
                                 hbm = CR->BitMap;
                             }
+                            _TranslateRect(&bounds, tx, ty);
                             _CallLayerHook(hook, _ObtainHookRastPort(&hrp, rport, hbm, LayersBase),
                                            rport->Layer, &bounds, offsetX, offsetY, LayersBase);
                             _ReleaseHookRastPort(&hrp, LayersBase);

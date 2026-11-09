@@ -65,7 +65,6 @@
                                 l->ClipRect,
                                 l->cr2,
                                 0,
-                                0,
                                 FALSE,
                                 TRUE,
                                 FALSE,

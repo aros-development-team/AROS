@@ -27,6 +27,61 @@ struct CollectPixelsMsg
         struct Rectangle * rect;
 };
 
+/*
+ * Call the hook for the parts of region _r that the ClipRects of layer l
+ * hold. A simple refresh layer has its pixels (as far as it has any) in
+ * the screen's bitmap; a smart refresh layer has the hidden ones in the
+ * ClipRects' bitmaps.
+ */
+static void _CollectLayerPixels(struct Layer *l, struct Region *_r, struct Hook *callback,
+                                       BOOL simple, struct LayersBase *LayersBase)
+{
+        struct RegionRectangle * _rr = _r->RegionRectangle;
+
+        while (NULL != _rr) {
+                struct Rectangle _rect;
+                struct ClipRect * cr;
+
+                _rect = _rr->bounds;
+                _rect.MinX += _r->bounds.MinX;
+                _rect.MinY += _r->bounds.MinY;
+                _rect.MaxX += _r->bounds.MinX;
+                _rect.MaxY += _r->bounds.MinY;
+
+                cr = l->ClipRect;
+                while (NULL != cr) {
+                        struct Rectangle intersect;
+                        /*
+                         * Check for overlap with _rect
+                         * Call callback with overlapping area!
+                         */
+                        if (AndRectRect(&_rect,&cr->bounds,&intersect)) {
+                                struct CollectPixelsLayerMsg cplm;
+
+                                /* Take data from sceen's bitmap... */
+                                cplm.xSrc  = intersect.MinX;
+                                cplm.ySrc  = intersect.MinY;
+                                cplm.width = intersect.MaxX - intersect.MinX + 1;
+                                cplm.height= intersect.MaxY - intersect.MinY + 1;
+                                cplm.xDest = intersect.MinX;
+                                cplm.yDest = intersect.MinY;
+                                cplm.bm    = l->rp->BitMap;
+                                if (!simple && NULL != cr->lobs) {
+                                        /* ...or, hidden, from the ClipRect's bitmap */
+                                        cplm.xSrc  = intersect.MinX - cr->bounds.MinX + CR_BMOFFX(cr);
+                                        cplm.ySrc  = intersect.MinY - cr->bounds.MinY + CR_BMOFFY(cr);
+                                        cplm.bm    = cr->BitMap;
+                                }
+                                cplm.layer   = l;
+                                cplm.minterm = simple ? 0x0 : 0x0c0;
+                                CallHookPkt(callback,l,&cplm);
+                        }
+                        cr = cr->Next;
+                }
+                _rr = _rr->Next;
+        }
+}
+
 /*****************************************************************************
 
     NAME */
@@ -102,129 +157,10 @@ struct CollectPixelsMsg
                                  * bitmap that are relevant to call the callback hook
                                  */
                                 if (IS_SIMPLEREFRESH(l)) {
-                                    struct RegionRectangle * _rr;
-                                        D(bug("SIMPLEFRESH layer found! %d/%d - %d/%d\n",
-                                              l->bounds.MinX,
-                                              l->bounds.MinY,
-                                              l->bounds.MaxX,
-                                              l->bounds.MaxY));
-                                        _rr = _r->RegionRectangle;
-                                        while (NULL != _rr) {
-                                                struct Rectangle _rect;
-                                                struct ClipRect * cr = l->ClipRect;
-
-                                                _rect = _rr->bounds;
-                                                _rect.MinX += _r->bounds.MinX;
-                                                _rect.MinY += _r->bounds.MinY;
-                                                _rect.MaxX += _r->bounds.MinX;
-                                                _rect.MaxY += _r->bounds.MinY;
-
-                                                cr = l->ClipRect;
-                                                while (NULL != cr) {
-                                                        struct Rectangle intersect;
-                                                        /*
-                                                         * Check for overlap with _rect
-                                                         * Call callback with overlapping area!
-                                                         */
-                                                        if (AndRectRect(&_rect,&cr->bounds,&intersect))
-                                                        {
-                                                                struct CollectPixelsLayerMsg cplm;
-
-                                                                cplm.xSrc    = intersect.MinX;
-                                                                cplm.ySrc    = intersect.MinY;
-                                                                cplm.width   = intersect.MaxX - intersect.MinX + 1;
-                                                                cplm.height  = intersect.MaxY - intersect.MinY + 1;
-                                                                cplm.xDest   = intersect.MinX;
-                                                                cplm.yDest   = intersect.MinY;
-                                                                cplm.bm      = l->rp->BitMap;
-                                                                cplm.layer   = l;
-                                                                cplm.minterm = 0x0;
-                                                                D(bug("SimpleRefresh: Calling callback now! bm=%p\n",cplm.bm));
-                                                                CallHookPkt(callback,l,&cplm);
-                                                                D(bug("Returned from callback!\n"));
-                                                        }
-
-                                                        cr  = cr->Next;
-                                                }
-
-                                                _rr = _rr->Next;
-                                        }
+                                        _CollectLayerPixels(l, _r, callback, TRUE, LayersBase);
                                 } else
                                 if (IS_SMARTREFRESH(l)) {
-                                        struct RegionRectangle * _rr = _r->RegionRectangle;
-                                        D(bug("SMARTREFRESH layer found!\n"));
-                                        while (NULL != _rr) {
-                                                struct Rectangle _rect;
-                                                struct ClipRect * cr;
-
-                                                _rect = _rr->bounds;
-                                                _rect.MinX += _r->bounds.MinX;
-                                                _rect.MinY += _r->bounds.MinY;
-                                                _rect.MaxX += _r->bounds.MinX;
-                                                _rect.MaxY += _r->bounds.MinY;
-                                                //Following does not work for some reason!
-                                                //_TranslateRect(&_rect,_r->bounds.MinX,_r->bounds.MinY);
-                                                /*
-                                                 * Compare this rr against all hidden cliprects...
-                                                 */
-                                                cr = l->ClipRect;
-                                                while (NULL != cr) {
-                                                        struct Rectangle intersect;
-                                                        /*
-                                                         * Check for overlap with _rect
-                                                         * Call callback with overlapping area!
-                                                         */
-                                                        if (AndRectRect(&_rect,&cr->bounds,&intersect)) {
-                                                                struct CollectPixelsLayerMsg cplm;
-                                                                D(bug("Overlapping: %d/%d-%d/%d\n",
-                                                                      intersect.MinX,
-                                                                      intersect.MinY,
-                                                                      intersect.MaxX,
-                                                                      intersect.MaxY));
-                                                                D(bug("CR: %d/%d-%d/%d\n",
-                                                                      cr->bounds.MinX,
-                                                                      cr->bounds.MinY,
-                                                                      cr->bounds.MaxX,
-                                                                      cr->bounds.MaxY));
-                                                                D(bug("Rect: %d/%d-%d/%d\n",
-                                                                      _rect.MinX,
-                                                                      _rect.MinY,
-                                                                      _rect.MaxX,
-                                                                      _rect.MaxY));
-                                                                D(bug("Visible: %s\n",
-                                                                      (NULL == cr->lobs) ? "TRUE"
-                                                                                         : "FALSE" ));
-
-                                                                if (NULL == cr->lobs) {
-                                                                        /*
-                                                                         * Take data from sceen's bitmap
-                                                                         */
-                                                                        cplm.xSrc  = intersect.MinX;
-                                                                        cplm.ySrc  = intersect.MinY;
-                                                                        cplm.width = intersect.MaxX - intersect.MinX + 1;
-                                                                        cplm.height= intersect.MaxY - intersect.MinY + 1;
-                                                                        cplm.xDest = intersect.MinX;
-                                                                        cplm.yDest = intersect.MinY;
-                                                                        cplm.bm    = l->rp->BitMap;
-                                                                } else {
-                                                                        cplm.xSrc  = intersect.MinX - cr->bounds.MinX + CR_BMOFFX(cr);
-                                                                        cplm.ySrc  = intersect.MinY - cr->bounds.MinY + CR_BMOFFY(cr);
-                                                                        cplm.width = intersect.MaxX - intersect.MinX + 1;
-                                                                        cplm.height= intersect.MaxY - intersect.MinY + 1;
-                                                                        cplm.xDest = intersect.MinX;
-                                                                        cplm.yDest = intersect.MinY;
-                                                                        cplm.bm    = cr->BitMap;
-                                                                }
-                                                                cplm.layer   = l;
-                                                                cplm.minterm = 0x0c0;
-                                                                D(bug("SmartRefresh: Calling callback now! bm=%p\n",cplm.bm));
-                                                                CallHookPkt(callback,l,&cplm);
-
-                                                        }
-                                                        cr = cr->Next;
-                                                }
-                                                _rr = _rr->Next;
-                                        }
+                                        _CollectLayerPixels(l, _r, callback, FALSE, LayersBase);
                                 } else
                                 if (IS_SUPERREFRESH(l)) {
                                 }

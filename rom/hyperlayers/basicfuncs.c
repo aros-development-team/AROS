@@ -51,52 +51,7 @@
 #define CR2NR_NOBITMAP 0
 #define CR2NR_BITMAP   1
 
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
-/*
- * These functions cause the infamous "fixed or forbidden register was spilled"
- * bug/feature in m68k gcc, so these were written straight in asm. They can be
- * found in config/m68k-native/layers, for the m68k AROSfA target. Other targets,
- * that use stack passing, can use these versions.
- */
 
-void BltRPtoCR(struct RastPort *    rp,
-               struct ClipRect *    cr,
-               ULONG                Mode,
-               struct LayersBase *  LayersBase)
-{
-    BltBitMap(rp->BitMap,
-              cr->bounds.MinX,
-              cr->bounds.MinY,
-              cr->BitMap,
-              CR_BMOFFX(cr), CR_BMOFFY(cr),
-              cr->bounds.MaxX - cr->bounds.MinX + 1,
-              cr->bounds.MaxY - cr->bounds.MinY + 1,
-              Mode,
-              ~0,
-              NULL);
-
-}
-
-void BltCRtoRP(struct RastPort *   rp,
-               struct ClipRect *   cr,
-               ULONG               Mode,
-               struct LayersBase  * LayersBase)
-{
-    BltBitMap(cr->BitMap,
-              CR_BMOFFX(cr),
-              CR_BMOFFY(cr),
-              rp->BitMap,
-              cr->bounds.MinX,
-              cr->bounds.MinY,
-              cr->bounds.MaxX - cr->bounds.MinX + 1,
-              cr->bounds.MaxY - cr->bounds.MinY + 1,
-              Mode,
-              ~0,
-              NULL);
-
-}
-
-#endif /* if !native */
 
 /***************************************************************************/
 /*                                  HOOK                                   */
@@ -427,26 +382,20 @@ struct ClipRect * _AllocClipRect(struct Layer * L, struct LayersBase *LayersBase
    /* I want to access the list of free ClipRects alone */
     L->SuperSaveClipRects = CR->Next;
     L->SuperSaveClipRectCounter--;
-
-    CR->Flags  = 0;
-    CR->Next   = NULL;
-    CR->lobs   = NULL;
-    CR->BitMap = NULL;
-    CR->_p1    = NULL;
-    CR->_p2    = NULL;
-    return CR;
   }
-
-  CR = AllocPooled(LayersBase->lb_ClipRectPool, sizeof(struct ClipRect));
-  if (NULL != CR)
+  else
   {
-    CR->Flags  = 0;
-    CR->Next   = NULL;
-    CR->lobs   = NULL;
-    CR->BitMap = NULL;
-    CR->_p1    = NULL;
-    CR->_p2    = NULL;
+    CR = AllocPooled(LayersBase->lb_ClipRectPool, sizeof(struct ClipRect));
+    if (NULL == CR)
+      return NULL;
   }
+
+  CR->Flags  = 0;
+  CR->Next   = NULL;
+  CR->lobs   = NULL;
+  CR->BitMap = NULL;
+  CR->_p1    = NULL;
+  CR->_p2    = NULL;
   return CR;
 }
 
@@ -883,6 +832,12 @@ void _UpdateSurfaces(struct Layer_Info *li, struct LayersBase *LayersBase)
   LayerSurfacesChanged(lie->lie_ScreenBM, head);
 }
 
+void _UpdateSurfacesIfAny(struct Layer_Info *li, struct LayersBase *LayersBase)
+{
+  if (NULL != LIE(li) && (0 != LIE(li)->lie_NumComposited || NULL != LIE(li)->lie_Surfaces))
+    _UpdateSurfaces(li, LayersBase);
+}
+
 /*
  * Backfill a (screen relative) region of a composited layer into its surface.
  */
@@ -1032,10 +987,43 @@ struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
 }
 
 
+/*
+ * A (screen relative) rectangle of the layer got exposed in the screen
+ * bitmap. A superbitmap layer has no backfill: the area shows the
+ * superbitmap (rastport coordinates, shown from Scroll_X/Y). Any other
+ * layer gets its backfill hook called.
+ */
+static void _ExposeRect(struct Layer *l, struct Rectangle *rect, struct LayersBase *LayersBase)
+{
+  if (IS_SUPERREFRESH(l))
+  {
+    BltBitMap(l->SuperBitMap,
+              rect->MinX - l->bounds.MinX + l->Scroll_X,
+              rect->MinY - l->bounds.MinY + l->Scroll_Y,
+              l->rp->BitMap,
+              rect->MinX,
+              rect->MinY,
+              rect->MaxX - rect->MinX + 1,
+              rect->MaxY - rect->MinY + 1,
+              0x0c0,
+              0xff,
+              NULL);
+  }
+  else
+  {
+    _CallLayerHook(l->BackFill,
+                   l->rp,
+                   l,
+                   rect,
+                   rect->MinX,
+                   rect->MinY,
+                   LayersBase);
+  }
+}
+
 int _CopyClipRectsToClipRects(struct Layer * l,
                               struct ClipRect * oldcr,
                               struct ClipRect * newcr,
-                              int srcdx,
                               int destdx,
                               int backupmode,
                               int freelist,
@@ -1592,7 +1580,7 @@ int _BackupPartsOfLayer(struct Layer * l,
    * area of the layer.
    */
 
-  clipregion = _InternalInstallClipRegion(l, NULL, 0, 0, LayersBase);
+  clipregion = _InternalInstallClipRegion(l, NULL, 0, LayersBase);
 
   ClearRegionRegion(hide_region,l->VisibleRegion);
 
@@ -1614,7 +1602,6 @@ int _BackupPartsOfLayer(struct Layer * l,
          _CopyClipRectsToClipRects(l,
                                    l->ClipRect /* source */,
                                    newcr  /* destination */,
-                                   0,
                                    dx,
                                    backupsimplerefresh,
                                    TRUE,
@@ -1633,7 +1620,7 @@ int _BackupPartsOfLayer(struct Layer * l,
    * regular list of cliprects is still maintained.
    */
   if (clipregion)
-    _InternalInstallClipRegion(l, clipregion, dx, dx, LayersBase);
+    _InternalInstallClipRegion(l, clipregion, dx, LayersBase);
 
   return TRUE;
 }
@@ -1686,7 +1673,6 @@ int _ShowPartsOfLayer(struct Layer * l,
                                 l->ClipRect /* source */,
                                 newcr /* destination */,
                                 0,
-                                0,
                                 FALSE,
                                 TRUE,
                                 FALSE,
@@ -1700,6 +1686,83 @@ int _ShowPartsOfLayer(struct Layer * l,
     InstallClipRegion(l, clipregion);
 
   return TRUE;
+}
+
+
+/*
+ * A layer l (or its new shape) starts hiding 'hide' from the layers behind
+ * it: walk from l->back to the first visible parent, back up what they lose
+ * (only where 'ovl' overlaps their shape) or just take it out of their
+ * VisibleRegion.
+ */
+void _HideLayersBehind(struct Layer *l, struct Region *hide, struct Rectangle *ovl, struct LayersBase *LayersBase)
+{
+  struct Layer * lparent = l->parent;
+  struct Layer * _l = l->back;
+
+  while (1)
+  {
+    if (IS_VISIBLE(_l) && !IS_TRANSLUCENT(l) && DO_OVERLAP(ovl, &_l->shape->bounds))
+      _BackupPartsOfLayer(_l, hide, 0, FALSE, LayersBase);
+    else
+      ClearRegionRegion(hide, _l->VisibleRegion);
+
+    if (_l == lparent)
+    {
+      if (IS_VISIBLE(_l) || (NULL == lparent->parent))
+        break;
+      else
+        lparent = lparent->parent;
+    }
+    _l = _l->back;
+  }
+}
+
+
+/*
+ * A layer l stops hiding things from the layers behind it: walk from
+ * l->back to the first visible parent, r being the VisibleRegion handed
+ * down. A visible layer whose (visible)shape overlaps ovl1 or ovl2 is shown
+ * from it, the others just get it as their VisibleRegion. 'clear' collects
+ * what nobody showed. Returns the parent the walk ended at.
+ */
+struct Layer *_ShowLayersBehind(struct Layer *l, struct Region *r, struct Region *clear,
+                                struct Rectangle *ovl1, struct Rectangle *ovl2, int visshape,
+                                struct LayersBase *LayersBase)
+{
+  struct Layer * lparent = l->parent;
+  struct Layer * _l = l->back;
+
+  while (1)
+  {
+    struct Rectangle * lb = visshape ? &_l->visibleshape->bounds : &_l->shape->bounds;
+
+    if (IS_VISIBLE(_l) &&
+        (DO_OVERLAP(ovl1, lb) || (NULL != ovl2 && DO_OVERLAP(ovl2, lb))))
+    {
+      ClearRegion(_l->VisibleRegion);
+      _ShowPartsOfLayer(_l, r, LayersBase);
+    }
+    else
+      SetRegion(r, _l->VisibleRegion);
+
+    if (IS_VISIBLE(_l) || IS_ROOTLAYER(_l))
+      AndRegionRegion(_l->VisibleRegion, clear);
+
+    if (_l == lparent)
+    {
+      if (IS_VISIBLE(_l) || (NULL == lparent->parent))
+        break;
+      else
+        lparent = lparent->parent;
+    }
+
+    if (IS_VISIBLE(_l))
+      ClearRegionRegion(OCCLUDESHAPE(_l), r);
+
+    _l = _l->back;
+  }
+  return lparent;
 }
 
 int _ShowLayer(struct Layer * l, struct LayersBase *LayersBase)
@@ -1770,30 +1833,7 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
          l->rp->BitMap
          );
 #endif
-        if (IS_SUPERREFRESH(l))
-        {
-          BltBitMap(l->SuperBitMap,
-                    cr->bounds.MinX - l->bounds.MinX + l->Scroll_X,
-                    cr->bounds.MinY - l->bounds.MinY + l->Scroll_Y,
-                    l->rp->BitMap,
-                    cr->bounds.MinX,
-                    cr->bounds.MinY,
-                    cr->bounds.MaxX - cr->bounds.MinX + 1,
-                    cr->bounds.MaxY - cr->bounds.MinY + 1,
-                    0x0c0,
-                    0xff,
-                    NULL);
-        }
-        else
-        {
-          _CallLayerHook(l->BackFill,
-                         l->rp,
-                         l,
-                         &cr->bounds,
-                         cr->bounds.MinX,
-                         cr->bounds.MinY,
-                         LayersBase);
-        }
+        _ExposeRect(l, &cr->bounds, LayersBase);
       }
       else
       {
@@ -1846,6 +1886,20 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
   DisposeRegion(r);
 
   return TRUE;
+}
+
+/*
+ * Limit a (screen relative) region to the layer's shaperegion, if it has
+ * one. The shaperegion is layer relative.
+ */
+void _AndShapeRegion(struct Layer *l, struct Region *r, struct LayersBase *LayersBase)
+{
+  if (l->shaperegion)
+  {
+    _TranslateRect(&r->bounds, -l->bounds.MinX, -l->bounds.MinY);
+    AndRegionRegion(l->shaperegion, r);
+    _TranslateRect(&r->bounds, l->bounds.MinX, l->bounds.MinY);
+  }
 }
 
 /*
@@ -1925,25 +1979,13 @@ kprintf("%s: Adding %d/%d-%d/%d to damagelist!\n",
   if (IS_COMPOSITED(l))
   {
     /* The whole area, covered or not: the layer is complete in its surface */
-    if (l->shaperegion)
-    {
-      _TranslateRect(&r->bounds, -l->bounds.MinX, -l->bounds.MinY);
-      AndRegionRegion(l->shaperegion, r);
-      _TranslateRect(&r->bounds, l->bounds.MinX, l->bounds.MinY);
-    }
+    _AndShapeRegion(l, r, LayersBase);
     _BackFillSurface(l, r, LayersBase);
     return;
   }
 
   AndRegionRegion(l->VisibleRegion, r);
-  if (l->shaperegion)
-  {
-    /* shaperegion is layer relative, while r is screen relative */
-    
-    _TranslateRect(&r->bounds, -l->bounds.MinX, -l->bounds.MinY);
-    AndRegionRegion(l->shaperegion, r);
-    _TranslateRect(&r->bounds, l->bounds.MinX, l->bounds.MinY);
-  }
+  _AndShapeRegion(l, r, LayersBase);
   
   RR  = r->RegionRectangle;
   /* check if a region is empty */
@@ -1962,40 +2004,14 @@ kprintf("\t\t: %s Clearing rect : %d/%d-%d/%d  layer: %p, hook: %p, bitmap: %p\n
         l->BackFill,
         l->rp->BitMap);
 #endif
-     if (IS_SUPERREFRESH(l))
-     {
-       /*
-        * A superbitmap layer has no backfill: the newly exposed area
-        * shows the superbitmap (rastport coordinates, shown from
-        * Scroll_X/Y).
-        */
-       BltBitMap(l->SuperBitMap,
-                 RR->bounds.MinX - l->bounds.MinX + l->Scroll_X,
-                 RR->bounds.MinY - l->bounds.MinY + l->Scroll_Y,
-                 l->rp->BitMap,
-                 RR->bounds.MinX,
-                 RR->bounds.MinY,
-                 RR->bounds.MaxX - RR->bounds.MinX + 1,
-                 RR->bounds.MaxY - RR->bounds.MinY + 1,
-                 0x0c0,
-                 0xff,
-                 NULL);
-     }
-     else
-     _CallLayerHook(l->BackFill,
-                    l->rp,
-                    l,
-                    &RR->bounds,
-                    RR->bounds.MinX,
-                    RR->bounds.MinY,
-                    LayersBase);
+     _ExposeRect(l, &RR->bounds, LayersBase);
     RR = RR->Next;
   }
 
 }
 
 struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region,
-                                          WORD srcdx, WORD destdx,
+                                          WORD destdx,
                                           struct LayersBase *LayersBase)
 {
   struct Region * OldRegion;
@@ -2028,7 +2044,6 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
           _CopyClipRectsToClipRects(l,
                                     l->ClipRect,
                                     l->_cliprects,
-                                    srcdx,
                                     destdx,
                                     FALSE,
                                     TRUE,
@@ -2076,7 +2091,6 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
       _CopyClipRectsToClipRects(l,
                                 l->_cliprects,
                                 l->ClipRect,
-                                srcdx,
                                 destdx,
                                 FALSE,
                                 FALSE,
