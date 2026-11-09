@@ -92,22 +92,21 @@ tcp_ms(void)
 }
 
 /*
- * Fast timeout routine, every fast tick: the retransmission timers whose
- * deadline has come (so that the RTO is not rounded to the 500 ms of the
- * slow one), then the delayed ACKs.
+ * The connections whose retransmission deadline (RTO or loss probe) has
+ * come, from the deadline timer (kern/amiga_time.c) or the fast tick. The
+ * earliest deadline still set, *any set if there is one.
  */
-void
-tcp_fasttimo()
+u_int32_t
+tcp_rexmt_due(int *any)
 {
     register struct inpcb *inp, *inpnxt;
     register struct tcpcb *tp;
+    u_int32_t now, next = 0;
     int s;
 
-    u_int32_t now;
-
+    *any = 0;
     s = splnet();
     now = tcp_ms();
-
     for(inp = tcb.lh_first; inp != NULL; inp = inpnxt) {
         inpnxt = inp->inp_list.le_next;
         if((tp = (struct tcpcb *)inp->inp_ppcb) == NULL)
@@ -117,6 +116,34 @@ tcp_fasttimo()
             if((tp = tcp_timers(tp, TCPT_REXMT)) == NULL)
                 continue;       /* dropped */
         }
+        if(tp->t_timer[TCPT_REXMT] && (!*any || (int)(tp->t_rexmt_at - next) < 0)) {
+            next = tp->t_rexmt_at;
+            *any = 1;
+        }
+    }
+    splx(s);
+    return next;
+}
+
+/*
+ * Fast timeout routine, every fast tick: the retransmission deadlines
+ * that have come (should the deadline timer be late), then the delayed
+ * ACKs.
+ */
+void
+tcp_fasttimo()
+{
+    register struct inpcb *inp, *inpnxt;
+    int s, any;
+
+    (void) tcp_rexmt_due(&any);
+    s = splnet();
+    for(inp = tcb.lh_first; inp != NULL; inp = inpnxt) {
+        register struct tcpcb *tp;
+
+        inpnxt = inp->inp_list.le_next;
+        if((tp = (struct tcpcb *)inp->inp_ppcb) == NULL)
+            continue;
         if(tp->t_flags & TF_DELACK) {
             tp->t_flags &= ~TF_DELACK;
             tp->t_flags |= TF_ACKNOW;
@@ -254,6 +281,7 @@ tcp_tlp_arm(struct tcpcb *tp)
         pto = tp->t_rxtcur;             /* the probe takes the RTO's place */
     tp->t_rexmt_at = tcp_ms() + pto;
     tp->t_flagsext |= TF_PTO;
+    tcp_timer_want(tp->t_rexmt_at);
 }
 
 /*

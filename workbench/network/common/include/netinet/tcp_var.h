@@ -668,6 +668,8 @@ u_long	 tcp_autobuf_pool __P((void));
 u_long	 tcp_autobuf_one __P((void));
 void	 tcp_autobuf_release __P((struct tcpcb *));
 void	 tcp_tlp_arm __P((struct tcpcb *));
+void	 tcp_timer_want __P((u_int32_t));
+u_int32_t tcp_rexmt_due __P((int *));
 int	 tcp_rack_on __P((const struct tcpcb *));
 void	 tcp_rack_init __P((void));
 void	 tcp_rack_attach __P((struct tcpcb *));

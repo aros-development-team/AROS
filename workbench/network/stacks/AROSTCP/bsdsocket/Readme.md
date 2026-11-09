@@ -413,9 +413,11 @@ SHOULD be 1 s, FreeBSD and Linux use about 200 ms, and so does this stack) and 6
 each timeout. Before the first sample it is `net.inet.tcp.rttdflt`, 1 s (section 2.1; 4.4BSD had
 6 s), and 3 s once a connection is established with no sample after its SYN or SYN-ACK was
 retransmitted (section 5.7); the SYN cache resends a SYN-ACK after 1, 2, 4 and 8 s. The
-retransmission timer is a deadline (`t_rexmt_at`) checked on every fast tick, so it fires within
-50 ms after the RTO, never before. On the bench (`tests/tcp/rto_probe.py` in aros-matter) the RTO
-after a lost tail is 0.20-0.24 s at an RTT of 0.4 ms, 0.26 s at 200 ms and 0.56 s at 500 ms, where
+retransmission timer is a deadline (`t_rexmt_at`, also the loss probe's): a timer.device request
+of its own waits for the earliest deadline of all connections (`tcp_timer_want()`,
+`kern/amiga_time.c`, brought forward when a sooner one is set) and runs the due ones
+(`tcp_rexmt_due()`), so it fires on time, not on the next 50 ms tick; the fast tick checks them too. On the bench (`tests/tcp/rto_probe.py` in aros-matter) the RTO
+after a lost tail is 0.200 s at an RTT of 0.4 ms and at 50 ms, 0.25 s at 200 ms and 0.55 s at 500 ms, where
 the 500 ms clock gave 1.2-2.4 s.
 
 The retransmission timer also detects a path MTU black hole (RFC 2923 section 2.1): a path that
