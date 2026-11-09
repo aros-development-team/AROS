@@ -275,6 +275,17 @@ void testTCPINFO_MSS_FLOOR(void)
 void testTCPINFO_ROUTE_SSTHRESH6(void) { route_ssthresh(AF_INET6); }
 
 /* The pure ACKs the stack has sent (net.inet.tcp.stats), or -1. */
+static long tcpstat_field(size_t off)
+{
+    LONG name[4] = { CTL_NET, PF_INET, IPPROTO_TCP, TCPCTL_STATS };
+    struct tcpstat st;
+    LONG len = sizeof(st);
+
+    if (MiamiSysCtl(name, 4, &st, &len, NULL, 0, 0) != 0)
+        return -1;
+    return (long)*(u_long *)((char *)&st + off);
+}
+
 static long sent_acks(void)
 {
     LONG name[4] = { CTL_NET, PF_INET, IPPROTO_TCP, TCPCTL_STATS };
@@ -653,6 +664,34 @@ void testTCPINFO_ACK_WAR(void)
     CloseSocket(s);
 }
 
+/* One write leaves in full-sized segments: the socket layer hands TCP a
+ * cluster at a time, and with TCP_NODELAY on an idle connection each one
+ * used to end in a segment of its own, part of a segment (as FreeBSD's
+ * PRUS_MORETOCOME, TCP now waits for the rest of the write). 10000 bytes
+ * on a connection with nothing in flight: ceil(10000 / MSS) segments. */
+void testTCPINFO_WRITE_SEGMENTS(void)
+{
+    static char buf[10000];
+    struct tcp_info ti;
+    long p0, p1, want;
+    int c, s, on = 1, n, got = 0;
+
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    setsockopt(c, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on));
+    CU_ASSERT_EQUAL(info(c, &ti, NULL), 0);
+    want = (sizeof(buf) + ti.tcpi_snd_mss - 1) / ti.tcpi_snd_mss;
+    p0 = tcpstat_field(offsetof(struct tcpstat, tcps_sndpack));
+    CU_ASSERT_EQUAL(send(c, buf, sizeof(buf), 0), sizeof(buf));
+    while (got < (int)sizeof(buf) && (n = recv(s, buf, sizeof(buf), 0)) > 0)
+        got += n;
+    p1 = tcpstat_field(offsetof(struct tcpstat, tcps_sndpack));
+    printf("\n    10000 bytes, MSS %lu: %ld data segments (least %ld)\n",
+           (unsigned long)ti.tcpi_snd_mss, p1 - p0, want);
+    CU_ASSERT_EQUAL(p1 - p0, want);
+    CloseSocket(c);
+    CloseSocket(s);
+}
+
 /* The accepted side of a connection has an RTT from the handshake (the
  * timestamp its SYN-ACK carried, echoed in the final ACK), before any
  * data; it used to have none until it sent some. */
@@ -810,6 +849,7 @@ int main(int argc, char **argv)
         !CU_add_test(p, "socket buffers grow unless the application sized them", testTCPINFO_AUTOSIZE) ||
         !CU_add_test(p, "with the ceilings at 0 no buffer grows", testTCPINFO_AUTOSIZE_OFF) ||
         !CU_add_test(p, "two ends out of step do not answer each other for ever", testTCPINFO_ACK_WAR) ||
+        !CU_add_test(p, "one write leaves in full-sized segments", testTCPINFO_WRITE_SEGMENTS) ||
         !CU_add_test(p, "a listening socket reports LISTEN", testTCPINFO_LISTEN))
     {
         CU_cleanup_registry();

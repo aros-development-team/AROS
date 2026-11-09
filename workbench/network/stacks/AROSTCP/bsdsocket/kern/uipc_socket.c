@@ -605,6 +605,10 @@ nopages:
 #endif
             if(dontroute)
                 so->so_options |= SO_DONTROUTE;
+            /* more of this write follows at once (FreeBSD's
+             * PRUS_MORETOCOME): TCP sends no part of a segment meanwhile */
+            if(!atomic && resid > 0 && space > 0)
+                so->so_snd.sb_flags |= SB_MORETOCOME;
             s = splnet();				/* XXX */
             error = (*so->so_proto->pr_usrreq)(so,
                                                (flags & MSG_OOB) ? PRU_SENDOOB : //PRU_SEND,
@@ -619,6 +623,7 @@ nopages:
                                                PRU_SEND_EOF : PRU_SEND,
                                                top, addr, control);
             splx(s);
+            so->so_snd.sb_flags &= ~SB_MORETOCOME;
             if(dontroute)
                 so->so_options &= ~SO_DONTROUTE;
             clen = 0;

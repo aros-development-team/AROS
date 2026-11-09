@@ -242,7 +242,8 @@ again:
 
     /*
      * Sender silly window avoidance.  If connection is idle
-     * and can send all data, a maximum segment,
+     * and can send all data (and no more of the same write is about
+     * to come, SB_MORETOCOME), a maximum segment,
      * at least a maximum default-size segment do it,
      * or are forced, do it; otherwise don't bother.
      * If peer's buffer is tiny, then send
@@ -255,6 +256,7 @@ again:
             goto send;
         if((idle || tp->t_flags & TF_NODELAY) &&
                 (tp->t_flags & TF_NOPUSH) == 0 &&
+                !(so->so_snd.sb_flags & SB_MORETOCOME) &&
                 len + off >= so->so_snd.sb_cc)
             goto send;
         if(tp->t_force)

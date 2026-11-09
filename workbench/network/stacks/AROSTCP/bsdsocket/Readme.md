@@ -246,7 +246,10 @@ and the TCP state machine are shared, and only the family-specific edges branch 
   `m_data` past IP+TCP+options, and locates the PCB.
 - **`tcp_output`** copies `tp->t_template` into the mbuf, fills the TCP fields/options, then calls
   IPv4 `ip_output` or IPv6 `tcp_v6output`. It panics if `tp->t_template == 0`, so `tcp_connect` and
-  `syncache_socket` build the template before the first send.
+  `syncache_socket` build the template before the first send. `sosend()` hands a write to TCP a
+  cluster at a time; while more of the same write follows, the send buffer is marked
+  `SB_MORETOCOME` (FreeBSD's `PRUS_MORETOCOME`) and `tcp_output` sends no part of a segment, so a
+  write leaves in full-sized segments even with `TCP_NODELAY` (10000 bytes: 7 segments, not 10).
 - **`tcp_subr`** provides `tcp_template` (per-connection `tcpiphdr` template), `tcp_respond`
   (RST/ACK/keep-alive; dual-stack), `tcp_v6output` (shared IPv6 sender), `tcp_newtcpcb`/`tcp_close`,
   and the SYN-cookie generate/validate helpers.
