@@ -194,6 +194,10 @@ struct CAMDFunctionBlockInfoV1 {
     ULONG FirstGroup;
     ULONG GroupCount;
     char Name[CAMD_TOPOLOGY_NAME_BYTES];
+    /* UMP Function Block Info fields. Zero means that MIDI-CI is not
+     * supported/not known, or that SysEx8 is not supported, respectively. */
+    ULONG MIDICIVersion;
+    ULONG MaxSysEx8Streams;
 };
 
 /* ------------------------------------------------------------------------
@@ -415,7 +419,7 @@ CAMD_RECORD_SIZE(CAMDEndpointWatchEventV1, 36);
 CAMD_RECORD_SIZE(CAMDMIDI1EventV1, 32);
 CAMD_RECORD_SIZE(CAMDUMPEventV1, 44);
 CAMD_RECORD_SIZE(CAMDGroupInfoV1, 100);
-CAMD_RECORD_SIZE(CAMDFunctionBlockInfoV1, 104);
+CAMD_RECORD_SIZE(CAMDFunctionBlockInfoV1, 112);
 CAMD_RECORD_SIZE(CAMDSessionRequestV1, 52);
 CAMD_RECORD_SIZE(CAMDSessionInfoV1, 28);
 CAMD_RECORD_SIZE(CAMDSessionStatsV1, 24);

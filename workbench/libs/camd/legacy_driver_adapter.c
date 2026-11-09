@@ -422,6 +422,8 @@ enum CAMDRegistryResult camd_legacy_driver_adapter_set_topology(
     struct CAMDFunctionBlockInfoV1 *blocks, size_t block_count)
 {
     struct legacy_port *port;
+    unsigned char *block_bytes = (unsigned char *)blocks;
+    size_t block_stride = block_count ? blocks[0].Size : 0;
     size_t i;
 
     if (!adapter || port_index >= adapter->port_count ||
@@ -432,8 +434,17 @@ enum CAMDRegistryResult camd_legacy_driver_adapter_set_topology(
         return CAMD_REGISTRY_RETIRED;
     for (i = 0; i < group_count; ++i)
         groups[i].EndpointID = port->info.ID;
-    for (i = 0; i < block_count; ++i)
-        blocks[i].EndpointID = port->info.ID;
+    if (block_count && (block_stride < 104 ||
+                        block_stride % sizeof(uint32_t) != 0))
+        return CAMD_REGISTRY_INVALID;
+    for (i = 0; i < block_count; ++i) {
+        struct CAMDFunctionBlockInfoV1 *block =
+            (struct CAMDFunctionBlockInfoV1 *)(block_bytes +
+                                                i * block_stride);
+        if (block->Size != block_stride)
+            return CAMD_REGISTRY_INVALID;
+        block->EndpointID = port->info.ID;
+    }
     return camd_registry_replace(adapter->registry, port->owner_lease,
                                  &port->info, groups, group_count, blocks,
                                  block_count);

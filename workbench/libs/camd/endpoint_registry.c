@@ -184,8 +184,8 @@ typedef char endpoint_size_must_be_360[
     sizeof(struct CAMDEndpointInfoV1) == 360 ? 1 : -1];
 typedef char group_size_must_be_100[
     sizeof(struct CAMDGroupInfoV1) == 100 ? 1 : -1];
-typedef char block_size_must_be_104[
-    sizeof(struct CAMDFunctionBlockInfoV1) == 104 ? 1 : -1];
+typedef char block_size_must_be_112[
+    sizeof(struct CAMDFunctionBlockInfoV1) == 112 ? 1 : -1];
 typedef char handle_size_must_be_8[
     sizeof(struct CAMDHandleV1) == 8 ? 1 : -1];
 typedef char watch_event_size_must_be_36[
@@ -284,14 +284,20 @@ static enum CAMDRegistryResult copy_topology(
     struct CAMDGroupInfoV1 **group_copy,
     struct CAMDFunctionBlockInfoV1 **block_copy)
 {
+    const size_t block_min_size = 104;
+    const unsigned char *block_bytes = (const unsigned char *)blocks;
+    size_t block_stride = block_count ? blocks[0].Size : 0;
     size_t i, j;
 
     *group_copy = NULL;
     *block_copy = NULL;
     if ((group_count && !groups) || (block_count && !blocks))
         return CAMD_REGISTRY_INVALID;
+    if (block_count && (block_stride < block_min_size ||
+                        block_stride % sizeof(uint32_t) != 0))
+        return CAMD_REGISTRY_INVALID;
     if (group_count > SIZE_MAX / sizeof(*groups) ||
-        block_count > SIZE_MAX / sizeof(*blocks))
+        (block_count && block_count > SIZE_MAX / block_stride))
         return CAMD_REGISTRY_RANGE;
 
     for (i = 0; i < group_count; ++i) {
@@ -307,18 +313,27 @@ static enum CAMDRegistryResult copy_topology(
     }
 
     for (i = 0; i < block_count; ++i) {
-        if (blocks[i].Size != sizeof(blocks[i]) || blocks[i].Version != 1 ||
-            blocks[i].FirstGroup > 15 || blocks[i].GroupCount == 0 ||
-            blocks[i].GroupCount > 16 - blocks[i].FirstGroup ||
-            (blocks[i].Flags & ~CAMD_BLOCK_FLAGS_ALL) != 0 ||
-            ((blocks[i].Flags & CAMD_BLOCK_FLAG_MIDI1_31250) != 0 &&
-             (blocks[i].Flags & CAMD_BLOCK_FLAG_MIDI1) == 0) ||
-            !id_equal(&blocks[i].EndpointID, &endpoint->ID) ||
-            !memchr(blocks[i].Name, '\0', sizeof(blocks[i].Name)))
+        const struct CAMDFunctionBlockInfoV1 *block =
+            (const struct CAMDFunctionBlockInfoV1 *)(block_bytes +
+                                                      i * block_stride);
+        if (block->Size != block_stride || block->Version != 1 ||
+            block->FirstGroup > 15 || block->GroupCount == 0 ||
+            block->GroupCount > 16 - block->FirstGroup ||
+            (block->Flags & ~CAMD_BLOCK_FLAGS_ALL) != 0 ||
+            ((block->Flags & CAMD_BLOCK_FLAG_MIDI1_31250) != 0 &&
+             (block->Flags & CAMD_BLOCK_FLAG_MIDI1) == 0) ||
+            !id_equal(&block->EndpointID, &endpoint->ID) ||
+            !memchr(block->Name, '\0', sizeof(block->Name)) ||
+            (block_stride >= 108 && block->MIDICIVersion > 0xff) ||
+            (block_stride >= 112 && block->MaxSysEx8Streams > 0xff))
             return CAMD_REGISTRY_INVALID;
-        for (j = 0; j < i; ++j)
-            if (blocks[j].Number == blocks[i].Number)
+        for (j = 0; j < i; ++j) {
+            const struct CAMDFunctionBlockInfoV1 *previous =
+                (const struct CAMDFunctionBlockInfoV1 *)(block_bytes +
+                                                          j * block_stride);
+            if (previous->Number == block->Number)
                 return CAMD_REGISTRY_DUPLICATE;
+        }
     }
 
     if (group_count) {
@@ -334,7 +349,15 @@ static enum CAMDRegistryResult copy_topology(
             *group_copy = NULL;
             return CAMD_REGISTRY_NOMEM;
         }
-        memcpy(*block_copy, blocks, block_count * sizeof(**block_copy));
+        for (i = 0; i < block_count; ++i) {
+            size_t copy_size = block_stride < sizeof(**block_copy)
+                                   ? block_stride
+                                   : sizeof(**block_copy);
+            memset(&(*block_copy)[i], 0, sizeof((*block_copy)[i]));
+            memcpy(&(*block_copy)[i], block_bytes + i * block_stride,
+                   copy_size);
+            (*block_copy)[i].Size = sizeof((*block_copy)[i]);
+        }
     }
     return CAMD_REGISTRY_OK;
 }
