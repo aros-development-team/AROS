@@ -215,7 +215,14 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
             unit->info.DeviceLevel = 0;
             unit->info.AddrFieldSize = 48;
             unit->info.MTU = unit->mtu;
-            unit->info.BPS = 10000000;
+            /*
+             * A host tap is no 10 Mbit/s wire: it delivers as fast as the host
+             * does. A stack sizes its read requests by this (AROSTCP posts 16
+             * per protocol up to 10 Mbit/s, 128 from 100 Mbit/s), and a burst
+             * from the host larger than that found no request and was dropped
+             * here (tap_receive(): an orphan).
+             */
+            unit->info.BPS = 1000000000;
             unit->info.HardwareType = S2WireType_Ethernet;
 
             /* create a random hardware address */
