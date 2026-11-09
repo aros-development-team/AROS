@@ -115,6 +115,7 @@ static BOOL tap_offline(struct IOSana2Req *req, struct tap_unit *unit) {
 
 static BOOL tap_read(struct IOSana2Req *req, struct tap_unit *unit) {
     struct tap_opener *opener;
+    ULONG i, held;
 
     if (!(unit->flags & tu_ONLINE)) {
         D(bug("[tap] [%d] not online\n", unit->num));
@@ -128,7 +129,20 @@ static BOOL tap_read(struct IOSana2Req *req, struct tap_unit *unit) {
     opener = req->ios2_BufferManagement;
 
     req->ios2_Req.io_Flags &= ~IOF_QUICK;
+    Disable();
+    /* a type an opener reads: a frame of it is held, not dropped, while
+     * no request waits for it */
+    for (i = 0; i < unit->nrxtypes && unit->rxtypes[i] != req->ios2_PacketType; i++)
+        ;
+    if (i == unit->nrxtypes && i < TAP_RXTYPES)
+        unit->rxtypes[unit->nrxtypes++] = req->ios2_PacketType;
     PutMsg(&(opener->read_pending), (struct Message *) req);
+    held = unit->rxheld;
+    Enable();
+
+    /* the I/O task may hold a frame this request takes */
+    if (held)
+        Signal(unit->iotask, 1 << unit->io_signal);
 
     D(bug("[tap] [%d] queued read request\n", unit->num));
 
