@@ -104,6 +104,8 @@ struct sdcard_Bus
     ULONG                               sdcb_ADMABounceSize;
     APTR                                sdcb_ADMAData;       /* caller's buffer, for the copy back */
     ULONG                               sdcb_ADMALen;
+    IPTR                                sdcb_DMAOffset;      /* bus address = physical + this */
+    UQUAD                               sdcb_DMALimit;       /* first bus address out of reach */
 
     /* Bus Instance Private/Internal */
     IPTR                                sdcb_Private;

@@ -8,6 +8,7 @@
 #include <proto/exec.h>
 #include <proto/mbox.h>
 #include <proto/kernel.h>
+#include <proto/openfirmware.h>
 
 #include <hardware/mmc.h>
 #include <hardware/sdhc.h>
@@ -25,6 +26,58 @@
 
 extern APTR     MBoxBase;
 extern IPTR     __arm_periiobase;
+
+/* A node's cell count property, or def where it has none. */
+static ULONG FNAME_BCMSDC(OFCells)(APTR OpenFirmwareBase, void *key, char *name, ULONG def)
+{
+    void *prop = key ? OF_FindProperty(key, name) : NULL;
+
+    return (prop && (OF_GetPropLen(prop) == sizeof(ULONG)))
+        ? AROS_BE2LONG(*(ULONG *)OF_GetPropValue(prop)) : def;
+}
+
+/*
+ * Where the controller sees RAM, from the first dma-ranges entry of its bus
+ * node. The BCM2711 B0 gives EMMC2 the first GB at 0xC0000000; on a C0 the
+ * firmware rewrites it to plain physical addresses.
+ */
+static void FNAME_BCMSDC(DMAWindow)(struct sdcard_Bus *bus, char *busnode)
+{
+    APTR OpenFirmwareBase = OpenResource("openfirmware.resource");
+    void *key, *prop;
+    const ULONG *cell;
+    ULONG ac, pac, sc, i;
+    UQUAD child = 0, parent = 0, size = 0;
+
+    if (!OpenFirmwareBase || !(key = OF_OpenKey(busnode)) ||
+        !(prop = OF_FindProperty(key, "dma-ranges")))
+        return;
+
+    ac  = FNAME_BCMSDC(OFCells)(OpenFirmwareBase, key, "#address-cells", 2);
+    sc  = FNAME_BCMSDC(OFCells)(OpenFirmwareBase, key, "#size-cells", 1);
+    pac = FNAME_BCMSDC(OFCells)(OpenFirmwareBase, OF_OpenKey("/"), "#address-cells", 2);
+
+    /* Empty (one to one) or not understood: keep the defaults */
+    if ((ac > 2) || (pac > 2) || (sc > 2) ||
+        (OF_GetPropLen(prop) < (ac + pac + sc) * sizeof(ULONG)))
+        return;
+
+    cell = (const ULONG *)OF_GetPropValue(prop);
+    for (i = 0; i < ac; i++)
+        child = (child << 32) | AROS_BE2LONG(*cell++);
+    for (i = 0; i < pac; i++)
+        parent = (parent << 32) | AROS_BE2LONG(*cell++);
+    for (i = 0; i < sc; i++)
+        size = (size << 32) | AROS_BE2LONG(*cell++);
+
+    if (!size || (child + size > 0x100000000ULL))
+        return;
+
+    bus->sdcb_DMAOffset = (IPTR)(child - parent);
+    bus->sdcb_DMALimit  = child + size;
+    bug("[SDCard--] %s: DMA window 0x%08x..0x%08x at bus 0x%08x\n", busnode,
+        (unsigned)parent, (unsigned)(parent + size - 1), (unsigned)child);
+}
 
 /* Does the controller in this window report a card in the slot? */
 static BOOL FNAME_BCMSDC(CardPresent)(IPTR base)
@@ -349,6 +402,11 @@ bcminit_clock:
 
             DINIT(bug("[SDCard--] %s: SDHC Base Clock Rate : %dMHz\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMax / 1000000));
             DINIT(bug("[SDCard--] %s: SDHC Min Clock Rate : %dHz (hardcoded)\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMin));
+
+            __BCM2708Bus->sdcb_DMAOffset = 0;
+            __BCM2708Bus->sdcb_DMALimit  = 0x100000000ULL;
+            if (__arm_periiobase == BCM2711_PERIIOBASE)
+                FNAME_BCMSDC(DMAWindow)(__BCM2708Bus, isEMMC2 ? "/emmc2bus" : "/soc");
 
             FNAME_SDCBUS(ADMAAlloc)(__BCM2708Bus);
 

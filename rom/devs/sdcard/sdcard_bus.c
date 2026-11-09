@@ -660,16 +660,16 @@ void FNAME_SDCBUS(SetPowerLevel)(ULONG supportedlvls, BOOL lowest, struct sdcard
 /********** ADMA2 **************/
 
 /*
- * The address the controller puts on the bus. The EMMC2 block is an ARM side
- * master and sees plain physical addresses, unlike the VideoCore DMA engine
- * the SDHOST driver drives, which needs the 0xC0000000 alias. A controller
- * that needs a different view should have it applied here and nowhere else.
+ * The address the controller puts on the bus: physical plus the bus's
+ * sdcb_DMAOffset. EMMC2 on a BCM2711 C0 sees plain physical addresses, on a
+ * B0 only the first GB at 0xC0000000. Any such view is applied here and
+ * nowhere else.
  */
 static IPTR FNAME_SDCBUS(ADMAPhys)(struct sdcard_Bus *bus, APTR virt)
 {
     struct SDCardBase *SDCardBase = bus->sdcb_DeviceBase;
 
-    return (IPTR)KrnVirtualToPhysical(virt);
+    return (IPTR)KrnVirtualToPhysical(virt) + bus->sdcb_DMAOffset;
 }
 
 BOOL FNAME_SDCBUS(ADMAAlloc)(struct sdcard_Bus *bus)
@@ -704,6 +704,21 @@ BOOL FNAME_SDCBUS(ADMAAlloc)(struct sdcard_Bus *bus)
     bus->sdcb_ADMADesc = (APTR)(((IPTR)desc + 63) & ~63);
     bus->sdcb_ADMABounce = (APTR)(((IPTR)bounce + 63) & ~63);
     bus->sdcb_ADMABounceSize = ADMA2_BOUNCE_SIZE;
+
+    /* Below 2GB is not always within the bus's DMA window */
+    if (((UQUAD)FNAME_SDCBUS(ADMAPhys)(bus, bus->sdcb_ADMADesc)
+            + (ADMA2_MAX_DESC * sizeof(struct sdcard_ADMADesc)) > bus->sdcb_DMALimit)
+        || ((UQUAD)FNAME_SDCBUS(ADMAPhys)(bus, bus->sdcb_ADMABounce)
+            + ADMA2_BOUNCE_SIZE > bus->sdcb_DMALimit))
+    {
+        bug("[SDBus%02u] ADMA2 buffers out of the DMA window, transfers will use PIO\n",
+            bus->sdcb_BusNum);
+        FreeMem(desc, (ADMA2_MAX_DESC * sizeof(struct sdcard_ADMADesc)) + 64);
+        FreeMem(bounce, ADMA2_BOUNCE_SIZE + 64);
+        bus->sdcb_ADMADesc = bus->sdcb_ADMABounce = NULL;
+        return FALSE;
+    }
+
     bus->sdcb_BusFlags |= AF_Bus_DMA;
 
     D(bug("[SDBus%02u] ADMA2 descriptors @ 0x%p, bounce @ 0x%p\n", bus->sdcb_BusNum,
@@ -780,7 +795,7 @@ retry:
         }
 
         /* Out of the controller's reach, or too fragmented to describe. */
-        if ((n >= ADMA2_MAX_DESC) || (((UQUAD)phys + run) > 0x100000000ULL))
+        if ((n >= ADMA2_MAX_DESC) || (((UQUAD)phys + run) > bus->sdcb_DMALimit))
         {
             DTRANS(bug("[SDBus%02u] %s: buffer needs PIO (desc %d, phys 0x%p)\n",
                        bus->sdcb_BusNum, __PRETTY_FUNCTION__, n, (APTR)phys));
