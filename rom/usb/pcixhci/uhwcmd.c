@@ -1632,18 +1632,11 @@ WORD cmdStartRTIso(struct IOUsbHWReq *ioreq,
         return(UHIOERR_BADPARAMS);
     }
 
-    UWORD prefill = (rtn->rtn_PTDCount > 1) ? 2 : 1;
-    for(UWORD cnt = 0; cnt < prefill; cnt++) {
-        WORD queueresult = RC_OK;
-        queueresult = xhciQueueIsochIO(hc, rtn);
-        if(queueresult != RC_OK) {
-            Enable();
-            return queueresult;
-        }
+    if(!xhciRefillIsochIO(hc, rtn, TRUE)) {
+        /* not one request could be prepared */
+        Enable();
+        return UHIOERR_NAKTIMEOUT;
     }
-
-    for(UWORD cnt = 0; cnt < prefill; cnt++)
-        xhciStartIsochIO(hc, rtn);
 
     Enable();
 

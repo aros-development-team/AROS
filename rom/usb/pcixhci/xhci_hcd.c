@@ -2741,20 +2741,7 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
                 if(ptd)
                     ptd->ptd_Flags &= ~(PTDF_ACTIVE | PTDF_BUFFER_VALID);
 
-                UWORD pending = 0;
-                UWORD target = (rtn->rtn_PTDCount > 1) ? 2 : 1;
-                for(UWORD idx = 0; idx < rtn->rtn_PTDCount; idx++) {
-                    struct PTDNode *scan = rtn->rtn_PTDs[idx];
-                    if(scan && (scan->ptd_Flags & (PTDF_ACTIVE | PTDF_BUFFER_VALID)))
-                        pending++;
-                }
-
-                while(pending < target) {
-                    if(xhciQueueIsochIO(hc, rtn) != RC_OK)
-                        break;
-                    xhciStartIsochIO(hc, rtn);
-                    pending++;
-                }
+                xhciRefillIsochIO(hc, rtn, FALSE);
                 ioreq = nextioreq;
                 continue;
             }

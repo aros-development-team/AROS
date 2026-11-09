@@ -186,7 +186,8 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
 WORD xhciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 WORD xhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 void xhciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
-void xhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
+BOOL xhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
+UWORD xhciRefillIsochIO(struct PCIController *hc, struct RTIsoNode *rtn, BOOL starting);
 void xhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 
 // xhcihw.c

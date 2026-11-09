@@ -87,6 +87,17 @@ struct PTDNode {
 
 #define PCIUSB_ISO_PTD_COUNT    8
 
+/*
+ * How much output an RT isochronous stream keeps queued with the controller.
+ * The stream is refilled from the event ring task when a transfer completes;
+ * whatever keeps that task from running for longer than the queue lasts
+ * leaves the endpoint's ring empty (Ring Underrun) and a gap on the wire.
+ * Two transfers, as queued until now, last one service interval.
+ * The price is latency: the client's request hook runs this far ahead of
+ * the bus, and its buffer has to stay untouched for as long.
+ */
+#define XHCI_RTISO_OUT_QUEUE_USEC   8000
+
 struct RTIsoNode {
     struct MinNode              rtn_Node;
     struct IOUsbHWRTIso         *rtn_RTIso;
