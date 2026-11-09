@@ -882,47 +882,8 @@ VOID AmigaVideoBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
         {
             case vHidd_StdPixFmt_Native:
             {
-                UBYTE *src = pixarray;
-        
-                plane = data->pbm->Planes;
-
-                for(d = 0; d < data->depth; d++)
-                {
-                    ULONG dmask = 1L << d;
-                    ULONG pmask = 0x80 >> (msg->x & 7);
-                    UBYTE *pl = *plane;
-
-                    if (pl == (UBYTE *)-1) continue;
-                    if (pl == NULL) continue;
-
-                    pl += planeoffset;
-
-                    for(x = 0; x < msg->width; x++)
-                    {
-                        if (src[x] & dmask)
-                        {
-                            *pl |= pmask;
-                        }
-                        else
-                        {
-                            *pl &= ~pmask;
-                        }
-
-                        if (pmask == 0x1)
-                        {
-                            pmask = 0x80;
-                            pl++;
-                        }
-                        else
-                        {
-                            pmask >>= 1;
-                        }
-
-                    } /* for(x = 0; x < msg->width; x++) */
-
-                    plane++;
-
-                } /* for(d = 0; d < data->depth; d++) */
+                /* the same loop PutImageLUT uses for its unaligned pixels */
+                unaligned_c2p(data, pixarray, planeoffset, msg->x & 7, 0, msg->width);
 
                 pixarray += msg->modulo;
                 planeoffset += data->bytesperrow;

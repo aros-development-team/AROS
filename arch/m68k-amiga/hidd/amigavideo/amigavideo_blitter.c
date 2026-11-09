@@ -65,6 +65,12 @@ static BOOL blitmodulo(LONG modulo, UWORD height)
     return height == 1 || modulo == (WORD)modulo;
 }
 
+/* size and both modulos of a blit are within what the hardware takes */
+static BOOL blitfits(struct amigavideo_staticdata *data, UWORD w, UWORD h, LONG mod1, LONG mod2)
+{
+    return blitsize(data, w, h) && blitmodulo(mod1, h) && blitmodulo(mod2, h);
+}
+
 static void startblitter(struct amigavideo_staticdata *data, UWORD w, UWORD h)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
@@ -77,18 +83,8 @@ static void startblitter(struct amigavideo_staticdata *data, UWORD w, UWORD h)
         custom->bltsize = (h << 6) | (w & 63);
     }
 }
-static const UWORD leftmask[] = {
-    0xffff, 0x7fff, 0x3fff, 0x1fff,
-    0x0fff, 0x07ff, 0x03ff, 0x01ff,
-    0x00ff, 0x007f, 0x003f, 0x001f,
-    0x000f, 0x0007, 0x0003, 0x0001
-};
-static const UWORD rightmask[] = {
-    0x8000, 0xc000, 0xe000, 0xf000,
-    0xf800, 0xfc00, 0xfe00, 0xff00,
-    0xff80, 0xffc0, 0xffe0, 0xfff0,
-    0xfff8, 0xfffc, 0xfffe, 0xffff
-};
+#define LEFTMASK(x)  ((UWORD)(0xffffU >> (x)))
+#define RIGHTMASK(x) ((UWORD)(0xffffU << (15 - (x))))
 
 static const UBYTE copy_minterm[] = { 0xff, 0x8a, 0x00, 0xca, 0x00, 0x00, 0x00, 0xea, 0x00, 0x00, 0xff, 0x00, 0x3a, 0x00, 0x00, 0xff };
 /* Every entry carries /AC (NABC | NANBC = 0x0a), which is what leaves the
@@ -206,8 +202,8 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
         dstx = srcx;
         dstx2 = srcx2;
     }
-    afwm = leftmask[dstx];
-    alwm = rightmask[dstx2];
+    afwm = LEFTMASK(dstx);
+    alwm = RIGHTMASK(dstx2);
     if (reverse) {
         UWORD tmp = afwm;
         afwm = alwm;
@@ -216,13 +212,10 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct BitMap *srcbm, stru
         dstoffset += (width - 1) * 2;
     }
 
-    if (!blitsize(data, width, h))
-        return FALSE;
-
     /* Opposite row traversal only occurs within the same bitmap. */
     srcmod = (opposite_rows ? -srcbm->BytesPerRow : srcbm->BytesPerRow) - width * 2;
     dstmod = opposite_rows ? srcmod : dstbm->BytesPerRow - width * 2;
-    if (!blitmodulo(srcmod, h) || !blitmodulo(dstmod, h))
+    if (!blitfits(data, width, h, srcmod, dstmod))
         return FALSE;
 
     /* Select the first row independently of the horizontal direction. */
@@ -345,45 +338,29 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct BitMap *srcbm,
         }
 
     bltshift = shift << 12;
-    if (reverse) {
-        if (dstwidth > srcwidth) {
-            width = dstwidth;
-            alwm = leftmask[srcx];
-            if (srcwidth == 1 && srcx2 > srcx) {
-                // source is single word
-                alwm &= rightmask[srcx2];
-                afwm = 0xffff;
-            } else {
-                afwm = rightmask[srcx2];
-            }
-        } else {
-            width = srcwidth;
-            alwm = leftmask[srcx];
-            afwm = rightmask[srcx2];
+    /* masks in source order; a descending blit meets them the other way round */
+    afwm = LEFTMASK(srcx);
+    alwm = RIGHTMASK(srcx2);
+    if (dstwidth > srcwidth) {
+        width = dstwidth;
+        if (srcwidth == 1 && srcx2 > srcx) {
+            // source is single word
+            afwm &= alwm;
+            alwm = 0xffff;
         }
     } else {
-        if (dstwidth > srcwidth) {
-            width = dstwidth;
-            afwm = leftmask[srcx];
-            if (srcwidth == 1 && srcx2 > srcx) {
-                // source is single word
-                afwm &= rightmask[srcx2];
-                alwm = 0xffff;
-            } else {
-                alwm = rightmask[srcx2];
-            }
-        } else {
-            width = srcwidth;
-            afwm = leftmask[srcx];
-            alwm = rightmask[srcx2];
-        }
+        width = srcwidth;
+    }
+    if (reverse) {
+        UWORD tmp = afwm;
+        afwm = alwm;
+        alwm = tmp;
     }
 
     /* The temporary mask, when needed, has this same width and height. */
     srcmod = srcbm->BytesPerRow - width * 2;
     dstmod = dstbm->BytesPerRow - width * 2;
-    if (!blitsize(data, width, h) ||
-        !blitmodulo(srcmod, h) || !blitmodulo(dstmod, h))
+    if (!blitfits(data, width, h, srcmod, dstmod))
         return FALSE;
 
     if (reverse) {
@@ -517,14 +494,14 @@ BOOL blit_fillrect(struct amigavideo_staticdata *data, struct BitMap *bm, WORD x
     height = y2 - y1 + 1;
 
     modulo = bm->BytesPerRow - width * 2;
-    if (!blitsize(data, width, height) || !blitmodulo(modulo, height))
+    if (!blitfits(data, width, height, modulo, modulo))
         return FALSE;
 
     OwnBlitter();
     WaitBlit();
 
-    custom->bltafwm = leftmask[x1 & 15];
-    custom->bltalwm = rightmask[x2 & 15];
+    custom->bltafwm = LEFTMASK(x1 & 15);
+    custom->bltalwm = RIGHTMASK(x2 & 15);
     custom->bltcmod = modulo;
     custom->bltdmod = modulo;
     custom->bltcon1 = 0x0000;
@@ -569,6 +546,34 @@ struct pHidd_BitMap_PutTemplate
     BOOL            inverttemplate;
 };
 #endif
+
+/*
+ * Minterm of a template or pattern blit for one plane, indexed by
+ * (type << 2) | (fg << 1) | bg. type: 0 JAM1, 2 COMPLEMENT, 4 JAM2, plus 1
+ * for INVERSVID. fg and bg are the plane's bit of the two pens. Every entry
+ * carries /AC, which leaves the destination alone outside the mask.
+ */
+#define MT_KEEP (NABC | NANBC)
+static const UBYTE fill_minterms[] = {
+    /* JAM1: the pattern's ones take the foreground pen */
+    MT_KEEP | ANBC, MT_KEEP | ANBC,
+    MT_KEEP | ABC | ABNC | ANBC, MT_KEEP | ABC | ABNC | ANBC,
+    /* JAM1 | INVERSVID: the pattern's zeros take the foreground pen */
+    MT_KEEP | ABC, MT_KEEP | ABC,
+    MT_KEEP | ANBC | ANBNC | ABC, MT_KEEP | ANBC | ANBNC | ABC,
+    /* COMPLEMENT */
+    MT_KEEP | ANBC | ABNC, MT_KEEP | ANBC | ABNC,
+    MT_KEEP | ANBC | ABNC, MT_KEEP | ANBC | ABNC,
+    /* COMPLEMENT | INVERSVID */
+    MT_KEEP | ABC | ANBNC, MT_KEEP | ABC | ANBNC,
+    MT_KEEP | ABC | ANBNC, MT_KEEP | ABC | ANBNC,
+    /* JAM2: ones take the foreground pen, zeros the background pen */
+    MT_KEEP, MT_KEEP | ANBC | ANBNC,
+    MT_KEEP | ABC | ABNC, MT_KEEP | ABC | ABNC | ANBC | ANBNC,
+    /* JAM2 | INVERSVID: the pens exchanged */
+    MT_KEEP, MT_KEEP | ABC | ABNC,
+    MT_KEEP | ANBC | ANBNC, MT_KEEP | ABC | ABNC | ANBC | ANBNC
+};
 
 // A-DAT = edge masking
 // B     = template
@@ -629,45 +634,32 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct BitMap *bm, str
  
     D(bug("[AmigaVideo:Blitter] %s: shift=%d srcwidth=%d dstwidth=%d\n", __func__, shift, srcwidth, dstwidth));
  
-    if (shift < 0) {
-        reverse = TRUE;
+    reverse = shift < 0;
+    if (reverse)
         shift = -shift;
-        if (dstwidth >= srcwidth) {
-            width = dstwidth;
-            shifta = 0;
-            shiftb = shift << 12;
-            alwm = leftmask[dstx];
-            afwm = rightmask[dstx2];
-        } else {
-            width = srcwidth;
-            shifta = shift << 12;
-            shiftb = shift << 12;
-            alwm = leftmask[srcx];
-            afwm = rightmask[srcx2];
-        }
+    shiftb = shift << 12;
+    if (dstwidth >= srcwidth) {
+        width = dstwidth;
+        shifta = 0;
+        afwm = LEFTMASK(dstx);
+        alwm = RIGHTMASK(dstx2);
+    } else {
+        width = srcwidth;
+        shifta = shiftb;
+        afwm = LEFTMASK(srcx);
+        alwm = RIGHTMASK(srcx2);
+    }
+    if (reverse) {
+        UWORD tmp = afwm;
+        afwm = alwm;
+        alwm = tmp;
         srcoffset += tmpl->modulo * (height - 1) + (width - 1) * 2;
         dstoffset += bm->BytesPerRow * (height - 1) + (width - 1) * 2;
-    } else {
-        reverse = FALSE;
-        if (dstwidth >= srcwidth) {
-            width = dstwidth;
-            shifta = 0;
-            shiftb = shift << 12;
-            afwm = leftmask[dstx];
-            alwm = rightmask[dstx2];
-        } else {
-           width = srcwidth;
-           shifta = shift << 12;
-           shiftb = shift << 12;
-           afwm = leftmask[srcx];
-           alwm = rightmask[srcx2];
-        }
     }
 
     srcmod = tmpl->modulo - width * 2;
     dstmod = bm->BytesPerRow - width * 2;
-    if (!blitsize(data, width, height) ||
-        !blitmodulo(srcmod, height) || !blitmodulo(dstmod, height))
+    if (!blitfits(data, width, height, srcmod, dstmod))
         return FALSE;
 
     OwnBlitter();
@@ -683,7 +675,7 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct BitMap *bm, str
     for (i = 0; i < bm->Depth; i++) {
         UBYTE minterm;
         UWORD chmask, shiftbv;
-        UBYTE fg, bg, tg;
+        UBYTE fg, bg;
 
         fg = fgpen & 1;
         bg = bgpen & 1;
@@ -701,44 +693,16 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct BitMap *bm, str
         chmask = USEB | USEC | USED;
         shiftbv = shiftb;
  
-        /* not guaranteed to be correct, last time I played with minterms
-         * was something like 20 years ago..
-         */
-        switch (type)
-        {
-            case 0: // JAM1:
-            minterm = (NABC | NANBC) | (fg ? ABC | ABNC | ANBC : ANBC);
-            break;
-            case 1: // JAM1 | INVERSVID
-            minterm = (NABC | NANBC) | (fg ? ANBC | ANBNC | ABC : ABC);
-            break;
-            case 2: // COMPLEMENT:
-            minterm = (NABC | NANBC) | (ANBC | ABNC);
-            break;
-            case 3: // COMPLEMENT | INVERSVID:
-            minterm = (NABC | NANBC) | (ABC | ANBNC);
-            break;
-            case 5: // JAM2 | INVERSVID
-            tg = fg;
-            fg = bg;
-            bg = tg;
-            case 4: // JAM2
-            if (fg && bg) {
+        minterm = fill_minterms[(type << 2) | (fg << 1) | bg];
+        if (type >= 4 && fg == bg) {
+            /* JAM2 with both pens alike in this plane: a solid fill, so the
+               template is not fetched */
+            if (fg)
                 minterm = (NABC | NANBC) | (ABC | ABNC);
-                chmask = USEC | USED;
-                shiftbv = 0;
-            } else if (!fg && !bg) {
-                minterm = (NABC | NANBC);
-                chmask = USEC | USED;
-                shiftbv = 0;
-            } else if (fg) {
-                minterm = (NABC | NANBC) | (ABC | ABNC);
-            } else {
-                minterm = (NABC | NANBC) | (ANBC | ANBNC);
-            }
-            break;
+            chmask = USEC | USED;
+            shiftbv = 0;
         }
-        
+ 
         WaitBlit();
         custom->bltcon0 = shifta | chmask | minterm;
         custom->bltcon1 = (reverse ? 0x0002 : 0x0000) | shiftbv;
@@ -753,44 +717,6 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct BitMap *bm, str
     DisownBlitter();
 
     return TRUE;
-}
-
-static UBYTE getminterm(UBYTE type, UBYTE fg, UBYTE bg)
-{
-        UBYTE minterm = 0, tg;
-        switch (type)
-        {
-            case 0: // JAM1:
-            minterm = (NABC | NANBC) | (fg ? ABC | ABNC | ANBC : ANBC);
-            break;
-            case 1: // JAM1 | INVERSVID
-            minterm = (NABC | NANBC) | (fg ? ANBC | ANBNC | ABC : ABC);
-            break;
-            case 2: // COMPLEMENT:
-            minterm = (NABC | NANBC) | (ANBC | ABNC);
-            break;
-            case 3: // COMPLEMENT | INVERSVID:
-            minterm = (NABC | NANBC) | (ABC | ANBNC);
-            break;
-            case 5: // JAM2 | INVERSVID
-            tg = fg;
-            fg = bg;
-            bg = tg;
-            case 4: // JAM2
-            if (fg && bg) {
-                /* Both pens set this plane, so the fill is solid: the pattern
-                   selects between two pens that agree here. */
-                minterm = (NABC | NANBC) | (ABC | ABNC | ANBC | ANBNC);
-            } else if (!fg && !bg) {
-                minterm = (NABC | NANBC);
-            } else if (fg) {
-                minterm = (NABC | NANBC) | (ABC | ABNC);
-            } else {
-                minterm = (NABC | NANBC) | (ANBC | ANBNC);
-            }
-            break;
-        }
-        return minterm;
 }
 
 BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struct pHidd_BitMap_PutPattern *pat)
@@ -850,8 +776,8 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
     shifta = 0;
     shiftb = 0;
     width = dstwidth;
-    afwm = leftmask[dstx];
-    alwm = rightmask[dstx2];
+    afwm = LEFTMASK(dstx);
+    alwm = RIGHTMASK(dstx2);
 
     if (pat->mask) {
         WORD maskx = pat->masksrcx;
@@ -882,11 +808,11 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
 
         if (shift < 0) {
             reverse = TRUE;
-            afwm = rightmask[maskx2];
-            alwm = width > maskwidth ? 0 : leftmask[maskx];
+            afwm = RIGHTMASK(maskx2);
+            alwm = width > maskwidth ? 0 : LEFTMASK(maskx);
         } else {
-            afwm = leftmask[maskx];
-            alwm = width > maskwidth ? 0 : rightmask[maskx2];
+            afwm = LEFTMASK(maskx);
+            alwm = width > maskwidth ? 0 : RIGHTMASK(maskx2);
         }
     }
 
@@ -895,15 +821,14 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
     maxheight = (UWORD)(height - 1) / (UWORD)pat->patternheight + 1;
     dststep = bm->BytesPerRow * (UWORD)pat->patternheight;
     dstmod = dststep - width * 2;
-    if (!blitsize(csd, width, maxheight) || !blitmodulo(dstmod, maxheight))
+    if (!blitfits(csd, width, maxheight, dstmod, dstmod))
         return FALSE;
     if (pat->mask) {
         maskstep = pat->maskmodulo * pat->patternheight;
         maskmod = maskstep - width * 2;
         /* Check the unmultiplied stride too, so a large product cannot
          * wrap back into range. Signed negative strides remain valid. */
-        if (!blitmodulo(pat->maskmodulo - width * 2, maxheight) ||
-            !blitmodulo(maskmod, maxheight))
+        if (!blitfits(csd, width, maxheight, pat->maskmodulo - width * 2, maskmod))
             return FALSE;
     }
 
@@ -939,7 +864,7 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct BitMap *bm, struc
            memory: enable A only when there is a mask to read. */
         chmask = pat->mask ? (USEA | USEC | USED) : (USEC | USED);
  
-        minterm = getminterm(type, fg, bg);
+        minterm = fill_minterms[(type << 2) | (fg << 1) | bg];
  
         WaitBlit();
         custom->bltcon0 = shifta | chmask | minterm;
