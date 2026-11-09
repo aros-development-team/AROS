@@ -590,6 +590,8 @@ BOOL MNAME_BM(LockBuffer)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Lock
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
+    /* A page a NoWait swap displaced is written once off the display */
+    vcgfx_plane_page_free(cl, o, msg->buffer);
     if (data->dectgt)
         return vcgfx_dectgt_lock(data->dectgt, msg);
     if (!data->nbufs || (msg->buffer >= data->nbufs) || !msg->addressReturn || !msg->pitchReturn)

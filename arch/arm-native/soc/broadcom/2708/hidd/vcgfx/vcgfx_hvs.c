@@ -1398,6 +1398,29 @@ void vc4_hvs_latch_wait(struct VideoCoreGfx_staticdata *xsd)
         hvs_latch_wait(&xsd->vcsd_HVS);
 }
 
+/* The latch the last commit armed, to be waited for later with
+ * vc4_hvs_latch_wait_for(): a page flipped away from is free after it. */
+ULONG vc4_hvs_latch_token(struct VideoCoreGfx_staticdata *xsd)
+{
+    if (!hvs_hw_known(xsd) && !hvs_have_hvs5(xsd) && (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6))
+        return vc4_hvs6_latch_token(xsd);
+    return xsd->vcsd_HVS.hvs_FlipArmed;
+}
+
+void vc4_hvs_latch_wait_for(struct VideoCoreGfx_staticdata *xsd, ULONG token)
+{
+    if (!hvs_hw_known(xsd))
+    {
+        if (hvs_have_hvs5(xsd))
+            vc4_hvs5_latch_wait_for(xsd, token);
+        else if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+            vc4_hvs6_latch_wait_for(xsd, token);
+        return;
+    }
+    if (xsd->vcsd_HVS.hvs_Active)
+        hvs_latch_until(&xsd->vcsd_HVS, token);
+}
+
 void vc4_hvs_update_cursor(struct VideoCoreGfx_staticdata *xsd)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;

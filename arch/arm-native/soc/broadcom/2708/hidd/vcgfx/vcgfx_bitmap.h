@@ -77,6 +77,9 @@ struct BitmapData {
 	ULONG               cpitch;                 /* Video: chroma bytes per row */
 	ULONG               modew, modeh;           /* Screen: its mode's display size */
 	struct vcgfx_dectgt *dectgt;                /* Decode target (vcgfx_decode.c) */
+	BOOL                flippending;            /* Scan-out: flipbuf still shown until fliptoken */
+	UBYTE               flipbuf;                /* Scan-out: the page a NoWait swap displaced */
+	ULONG               fliptoken;              /* vc4_hvs_latch_token() of that swap */
 };
 
 #endif /* _VIDEOCOREGFX_BITMAP_H */
