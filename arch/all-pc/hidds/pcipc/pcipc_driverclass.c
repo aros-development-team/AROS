@@ -109,6 +109,9 @@ OOP_Object *PCIPC__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
                 ADDTAIL(&data->irqRoutingTable, tmp1);
             }
         }
+
+        /* The buses we operate start at the host bridges the firmware describes */
+        PCIPC_DeclareFirmwareNodes(cl, controllerObj, 0, PCIPC_ACPINODE_HOST, 0);
     }
     D(bug("[PCIPC:Driver] %s: returning 0x%p\n", __func__, controllerObj);)
 
@@ -406,6 +409,91 @@ static void FindIRQRouting(struct pcipc_staticdata *psd, struct acpiHostBridge *
     return;
 }
 
+/*
+ * The driver and device objects tell where in the ACPI namespace they are
+ * described (see PCIPC_DeclareFirmwareNodes()). Collect the host bridges
+ * and the nodes with a PCI address below them. This is kept apart from the
+ * routing table search above, which takes only the host bridges it can
+ * route for.
+ */
+static void ACPIRecordNode(struct pcipc_staticdata *psd, ACPI_HANDLE handle, UBYTE bus, UBYTE dev, UBYTE sub)
+{
+    struct PCIPCACPINode *an = AllocVec(sizeof(struct PCIPCACPINode), MEMF_ANY);
+
+    if (an)
+    {
+        an->handle = handle;
+        an->bus = bus;
+        an->dev = dev;
+        an->sub = sub;
+        ADDTAIL(&psd->pcipc_acpiNodes, &an->node);
+    }
+}
+
+static void ACPIScanBus(struct pcipc_staticdata *psd, ACPI_HANDLE parent, UBYTE bus)
+{
+    ACPI_HANDLE child = NULL;
+
+    while (AcpiGetNextObject(ACPI_TYPE_DEVICE, parent, child, &child) == AE_OK)
+    {
+        ACPI_DEVICE_INFO *info;
+
+        if (ACPI_SUCCESS(AcpiGetObjectInfo(child, &info)))
+        {
+            if (info->Valid & ACPI_VALID_ADR)
+            {
+                UBYTE dev = (info->Address >> 16) & 0xff;
+                UWORD sub = info->Address & 0xffff;     /* 0xffff: every function */
+
+                ACPIRecordNode(psd, child, bus, dev, (sub == 0xffff) ? 0xff : sub);
+
+                if (sub == 0xffff)
+                    sub = 0;
+                /* Carry on behind PCI-PCI bridges */
+                if (ReadConfigWord(psd, bus, dev, sub, PCIBR_SUBCLASS) == 0x0604)
+                {
+                    UBYTE secbus = ReadConfigByte(psd, bus, dev, sub, PCIBR_SECBUS);
+
+                    if (secbus > bus)
+                        ACPIScanBus(psd, child, secbus);
+                }
+            }
+            FreeVec(info);
+        }
+    }
+}
+
+static ACPI_STATUS ACPIScanHostBridge(ACPI_HANDLE handle, ULONG nesting_level,
+    void *context, void **return_value)
+{
+    struct pcipc_staticdata *psd = (struct pcipc_staticdata *)context;
+    struct PCIPCACPINode *an;
+    ACPI_BUFFER buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+    UBYTE bus = 0;
+
+    /* A host bridge is reported once for every ID it matches */
+    ForeachNode(&psd->pcipc_acpiNodes, an)
+    {
+        if (an->handle == handle)
+            return AE_OK;
+    }
+
+    if (ACPI_SUCCESS(AcpiEvaluateObject(handle, "_BBN", NULL, &buffer)) && buffer.Pointer)
+    {
+        ACPI_OBJECT *obj = buffer.Pointer;
+
+        if (obj->Type == ACPI_TYPE_INTEGER)
+            bus = obj->Integer.Value;
+        FreeVec(buffer.Pointer);
+    }
+
+    /* The host bridge itself is what the driver object stands for */
+    ACPIRecordNode(psd, handle, bus, PCIPC_ACPINODE_HOST, 0);
+    ACPIScanBus(psd, handle, bus);
+
+    return AE_OK;
+}
+
 #undef UtilityBase
 #define UtilityBase (psd->utilityBase)
 
@@ -625,9 +713,14 @@ static int PCIPC_InitClass(LIBBASETYPEPTR LIBBASE)
     _psd->WriteConfigLong = WriteConfig1Long;
     PCIPC_ProbeConfMech(&LIBBASE->psd);
 
+    NEWLIST(&_psd->pcipc_acpiNodes);
+
     /* Find ACPI PCI Host Bridges and their routing tables */
     if (ACPICABase)
     {
+        AcpiGetDevices("PNP0A03", ACPIScanHostBridge, _psd, NULL);
+        AcpiGetDevices("PNP0A08", ACPIScanHostBridge, _psd, NULL);
+
         NEWLIST(&acpiHBridges);
         status = AcpiGetDevices("PNP0A03", ACPIHostBridgeCallbackA, _psd, (void **)&acpiHBridges);
         if (ACPI_FAILURE(status)) {
