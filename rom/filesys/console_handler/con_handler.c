@@ -129,6 +129,38 @@ enum
 };
 #endif
 
+#if defined(CONSOLE_SHOW_MENU)
+/* The menu of a console window: for every entry its kind, the MEN_CONSOLE_
+   number it reports when picked (0 for titles and separators), its keyboard
+   shortcut and its label. MakeConWindow() builds the gadtools NewMenu array
+   from this. */
+static const struct conmenu
+{
+    UBYTE type;
+    UBYTE id;
+    char key[2];
+    CONST_STRPTR label;
+}
+conmenu[] =
+{
+    { NM_TITLE, 0,                 "",  "Console"        },
+    { NM_ITEM,  0,                 "",  NM_BARLABEL      },
+    { NM_ITEM,  MEN_CONSOLE_ABOUT, "?", "About..."       },
+    { NM_ITEM,  0,                 "",  NM_BARLABEL      },
+    { NM_ITEM,  MEN_CONSOLE_CLOSE, "Q", "Close"          },
+    { NM_TITLE, 0,                 "",  "Edit"           },
+    { NM_ITEM,  0,                 "",  "Clipboard Unit" },
+    { NM_SUB,   MEN_CONSOLE_CLIP0, "0", "0"              },
+    { NM_SUB,   MEN_CONSOLE_CLIP1, "1", "1"              },
+    { NM_SUB,   MEN_CONSOLE_CLIP2, "2", "2"              },
+    { NM_SUB,   MEN_CONSOLE_CLIP3, "3", "3"              },
+    { NM_ITEM,  0,                 "",  NM_BARLABEL      },
+    { NM_ITEM,  MEN_CONSOLE_COPY,  "c", "Copy"           },
+    { NM_ITEM,  MEN_CONSOLE_PASTE, "v", "Paste"          }
+};
+#define NUM_CONMENU (sizeof(conmenu) / sizeof(conmenu[0]))
+#endif
+
 static char *BSTR2C(BSTR srcs)
 {
     int len = AROS_BSTR_strlen(srcs);
@@ -391,24 +423,25 @@ static LONG MakeConWindow(struct filehandle *fh)
             {GTMN_NewLookMenus, TRUE},
             {TAG_DONE               }
         };
-        struct NewMenu newconmenu[] = {
-            { NM_TITLE, "Console",      NULL,   0                               },
-             { NM_ITEM, NM_BARLABEL                                             },
-             { NM_ITEM,  "About...",    "?",    0, 0, (APTR)MEN_CONSOLE_ABOUT   },
-             { NM_ITEM, NM_BARLABEL                                             },
-             { NM_ITEM,  "Close",       "Q",    !(fh->nw.Flags & WFLG_CLOSEGADGET) ? NM_ITEMDISABLED : 0,
-                                                   0, (APTR)MEN_CONSOLE_CLOSE   },
-            { NM_TITLE, "Edit",         NULL,   0                               },
-             { NM_ITEM,  "Clipboard Unit", NULL, 0                              },
-              { NM_SUB,  "0",           "0",    0, 0, (APTR)MEN_CONSOLE_CLIP0   },
-              { NM_SUB,  "1",           "1",    0, 0, (APTR)MEN_CONSOLE_CLIP1   },
-              { NM_SUB,  "2",           "2",    0, 0, (APTR)MEN_CONSOLE_CLIP2   },
-              { NM_SUB,  "3",           "3",    0, 0, (APTR)MEN_CONSOLE_CLIP3   },
-             { NM_ITEM, NM_BARLABEL                                             },
-             { NM_ITEM,  "Copy",        "c",    0, 0, (APTR)MEN_CONSOLE_COPY    },
-             { NM_ITEM,  "Paste",       "v",    0, 0, (APTR)MEN_CONSOLE_PASTE   },
-            { NM_END                                                            }
-        };
+        struct NewMenu newconmenu[NUM_CONMENU + 1];
+        ULONG i;
+
+        /* Build the menu from its description. The entry after the last one
+           stays cleared, which is NM_END. */
+        memset(newconmenu, 0, sizeof(newconmenu));
+        for (i = 0; i < NUM_CONMENU; i++) {
+            newconmenu[i].nm_Type = conmenu[i].type;
+            newconmenu[i].nm_Label = (STRPTR)conmenu[i].label;
+            if (conmenu[i].key[0])
+                newconmenu[i].nm_CommKey = (STRPTR)conmenu[i].key;
+            newconmenu[i].nm_UserData = (APTR)(IPTR)conmenu[i].id;
+
+            /* Without a close gadget there is nothing to close */
+            if (conmenu[i].id == MEN_CONSOLE_CLOSE &&
+                !(fh->nw.Flags & WFLG_CLOSEGADGET))
+                newconmenu[i].nm_Flags = NM_ITEMDISABLED;
+        }
+
         if (fh->gtbase && (fh->winmenu = CreateMenusA(newconmenu, menu_tags))) {
             APTR vi = GetVisualInfoA(fh->window->WScreen, NULL);
             if (vi) {
@@ -584,6 +617,21 @@ static void close_con(struct filehandle *fh)
     FreeVec(fh);
 }
 
+/* Make a message port of the handler task with a signal of its own. The
+   caller presets mp_SigBit to -1, so a port whose signal could not be
+   allocated is recognisable when it is freed. */
+static BOOL init_conport(struct MsgPort *mp, struct Task *task)
+{
+    mp->mp_Node.ln_Type = NT_MSGPORT;
+    mp->mp_Flags = PA_SIGNAL;
+    mp->mp_SigBit = AllocSignal(-1);
+    if (mp->mp_SigBit == (UBYTE)-1)
+        return FALSE;
+    mp->mp_SigTask = task;
+    NEWLIST(&mp->mp_MsgList);
+    return TRUE;
+}
+
 static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
 {
 #if defined(__AROSPLATFORM_SMP__)
@@ -663,13 +711,9 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
        needs neither intuition.library nor input.device. */
     if (!fh->dosbase || !fh->utilbase ||
         (!(fh->flags & FHFLG_DEVICEMODE) && (!fh->intuibase || !fh->inputbase))) {
-        CloseLibrary((APTR) fh->utilbase);
-        CloseLibrary(fh->gtbase);
-        CloseLibrary((APTR) fh->dosbase);
-        CloseLibrary((APTR) fh->intuibase);
-        CloseLibrary((APTR) fh->workbenchbase);
-        CloseLibrary((APTR) fh->iconbase);
-        FreeVec(fh);
+        /* Only the libraries have been opened so far. close_con() closes
+           them and frees fh; everything else it looks at is still NULL. */
+        close_con(fh);
         return NULL;
     }
 
@@ -710,25 +754,11 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
         fh->conwritemp = fh->conreadmp + 1;
         fh->conreadmp->mp_SigBit = (UBYTE)-1;
         fh->conwritemp->mp_SigBit = (UBYTE)-1;
-        fh->conreadmp->mp_Node.ln_Type = NT_MSGPORT;
-        fh->conreadmp->mp_Flags = PA_SIGNAL;
-        fh->conreadmp->mp_SigBit = AllocSignal(-1);
-        if (fh->conreadmp->mp_SigBit == (UBYTE)-1) {
+        if (!init_conport(fh->conreadmp, fh->contask) ||
+            !init_conport(fh->conwritemp, fh->contask)) {
             err = ERROR_NO_FREE_STORE;
             goto out;
         }
-        fh->conreadmp->mp_SigTask = fh->contask;
-        NEWLIST(&fh->conreadmp->mp_MsgList);
-
-        fh->conwritemp->mp_Node.ln_Type = NT_MSGPORT;
-        fh->conwritemp->mp_Flags = PA_SIGNAL;
-        fh->conwritemp->mp_SigBit = AllocSignal(-1);
-        if (fh->conwritemp->mp_SigBit == (UBYTE)-1) {
-            err = ERROR_NO_FREE_STORE;
-            goto out;
-        }
-        fh->conwritemp->mp_SigTask = fh->contask;
-        NEWLIST(&fh->conwritemp->mp_MsgList);
 
         /*
          * A device may expect a larger request than console.device does and
@@ -1272,7 +1302,9 @@ LONG CONMain(struct ExecBase *SysBase)
                     replypkt(dp, DOSTRUE);
                     break;
                 case ACTION_READ:
-                    DACTION(bug("[con:handler] ACTION_READ\n"));
+                case ACTION_WRITE:
+                    DACTION(bug("[con:handler] %s\n",
+                        dp->dp_Type == ACTION_READ ? "ACTION_READ" : "ACTION_WRITE"));
                     if (dp->dp_Arg3 < 0) {
                         replypkt2(dp, -1, ERROR_BAD_NUMBER);
                         break;
@@ -1283,13 +1315,19 @@ LONG CONMain(struct ExecBase *SysBase)
                     }
                     if (!MakeSureWinIsOpen(fh)) {
                         if (fh->flags & FHFLG_NOWINDOW)
-                            replypkt(dp, 0); /* sink: end-of-file */
+                            /* sink: a read sees end-of-file, a write is
+                               swallowed */
+                            replypkt(dp, dp->dp_Type == ACTION_READ ? 0
+                                                                    : dp->dp_Arg3);
                         else
                             replypkt2(dp, -1, ERROR_NO_FREE_STORE);
                         break;
                     }
                     fh->breaktask = dp->dp_Port->mp_SigTask;
-                    if (fh->flags & FHFLG_RAW) {
+                    if (dp->dp_Type == ACTION_WRITE) {
+                        startread(fh);
+                        answer_write_request(fh, dp);
+                    } else if (fh->flags & FHFLG_RAW) {
                         con_read(fh, dp);
                         pump_raw_input(fh);
                         if (fh->conbufferpos >= fh->conbuffersize)
@@ -1298,27 +1336,6 @@ LONG CONMain(struct ExecBase *SysBase)
                         startread(fh);
                         con_read(fh, dp);
                     }
-                    break;
-                case ACTION_WRITE:
-                    DACTION(bug("[con:handler] ACTION_WRITE\n"));
-                    if (dp->dp_Arg3 < 0) {
-                        replypkt2(dp, -1, ERROR_BAD_NUMBER);
-                        break;
-                    }
-                    if (dp->dp_Arg3 == 0) {
-                        replypkt2(dp, 0, 0);
-                        break;
-                    }
-                    if (!MakeSureWinIsOpen(fh)) {
-                        if (fh->flags & FHFLG_NOWINDOW)
-                            replypkt(dp, dp->dp_Arg3); /* sink: swallowed */
-                        else
-                            replypkt2(dp, -1, ERROR_NO_FREE_STORE);
-                        break;
-                    }
-                    fh->breaktask = dp->dp_Port->mp_SigTask;
-                    startread(fh);
-                    answer_write_request(fh, dp);
                     break;
                 case ACTION_SCREEN_MODE:
                     {
