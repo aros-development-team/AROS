@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -47,6 +47,7 @@
 
 #ifndef INTUITION_ICCLASS_H
 #include <intuition/icclass.h>
+#include <intuition/iprefs.h>
 #endif
 
 #ifndef GRAPHICS_GFX_H
@@ -171,7 +172,6 @@
 #define GET_WORD(x) x
 #endif
 
-#define IPREFS_SEM_NAME     "\xAB IPrefs \xBB"
 #define DO_LOCALE_PATCHES   0
 
 struct IPrefsSem
