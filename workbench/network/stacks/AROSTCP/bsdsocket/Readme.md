@@ -880,7 +880,11 @@ addresses the first on the list won, whatever the destination.
 - **UDP** (`udp_usrreq.c`) is the standard datagram path over the shared `udb` table. The default
   UDP receive buffer (`udp_recvspace`, 256 datagrams) and the IP input queue depth
   (`ipqmaxlen = 4·IFQ_MAXLEN`, `ip_input.c`) are sized to absorb short high-rate receive bursts
-  before the owning task drains them, rather than dropping at the ~40-datagram default. `SO_BINDTODEVICE`
+  before the owning task drains them, rather than dropping at the ~40-datagram default. The stack task
+runs the protocols after every 32 replies it takes from the interfaces (`sana_poll()`, as Linux
+NAPI's budget): each read reply posts its request again at once, so while a device kept answering
+the loop would only queue packets, and a burst overflowed the IP input queue. Run in batches the
+protocols keep up, and a device with no read request posted holds what follows. `SO_BINDTODEVICE`
   pins a UDP socket to one interface, so a limited broadcast (`255.255.255.255`) or a reply can be
   directed out a chosen link even on a multi-homed host with no default route. A datagram carries
   the ancillary data its socket asked for - `IP_RECVDSTADDR`, `IP_RECVTOS` (FreeBSD's: the TOS
