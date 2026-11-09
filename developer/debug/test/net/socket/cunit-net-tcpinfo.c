@@ -321,6 +321,32 @@ void testTCPINFO_ACK_EVERY_SECOND(void)
     CloseSocket(s);
 }
 
+/* cwnd grows only while the connection uses it (RFC 7661; Linux's
+ * tcp_is_cwnd_limited(), FreeBSD's CCF_CWND_LIMITED): an application that
+ * sends 1 KB every 40 ms never has half the initial window in flight, so
+ * its 40 ACKs leave cwnd where it was. */
+void testTCPINFO_CWND_APP_LIMITED(void)
+{
+    struct tcp_info a, b;
+    char buf[1000];
+    int c, s, i;
+
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL(info(c, &a, NULL), 0);
+    for (i = 0; i < 40; i++) {
+        CU_ASSERT_EQUAL(send(c, buf, sizeof(buf), 0), sizeof(buf));
+        CU_ASSERT_EQUAL(recv(s, buf, sizeof(buf), MSG_WAITALL), sizeof(buf));
+        Delay(2);
+    }
+    Delay(10);
+    CU_ASSERT_EQUAL(info(c, &b, NULL), 0);
+    printf("\n    40 KB sent 1 KB at a time: cwnd %lu -> %lu\n",
+           (unsigned long)a.tcpi_snd_cwnd, (unsigned long)b.tcpi_snd_cwnd);
+    CU_ASSERT_EQUAL(b.tcpi_snd_cwnd, a.tcpi_snd_cwnd);
+    CloseSocket(c);
+    CloseSocket(s);
+}
+
 /* Data sent and read moves the sequence numbers by its length on both
  * sides, and all of it is acknowledged. */
 void testTCPINFO_SEQUENCE(void)
@@ -628,6 +654,7 @@ int main(int argc, char **argv)
         !CU_add_test(p, "a route's ssthresh reaches a new connection (IPv6)", testTCPINFO_ROUTE_SSTHRESH6) ||
         !CU_add_test(p, "the MSS never goes below net.inet.tcp.minmss", testTCPINFO_MSS_FLOOR) ||
         !CU_add_test(p, "a receiver ACKs at least every second segment", testTCPINFO_ACK_EVERY_SECOND) ||
+        !CU_add_test(p, "an application-limited sender does not grow cwnd", testTCPINFO_CWND_APP_LIMITED) ||
         !CU_add_test(p, "data moves the sequence numbers", testTCPINFO_SEQUENCE) ||
         !CU_add_test(p, "over the loopback the RTO is the floor", testTCPINFO_RTO_FLOOR) ||
         !CU_add_test(p, "an unanswered SYN backs off from 1 s", testTCPINFO_SYN_BACKOFF) ||

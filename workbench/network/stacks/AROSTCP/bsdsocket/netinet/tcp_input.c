@@ -2101,9 +2101,17 @@ process_ACK:
          * Delegate to the pluggable congestion control algorithm
          * which handles both slow start and congestion avoidance.
          *
-         * Do NOT grow cwnd during fast recovery (NewReno/CUBIC).
+         * Do NOT grow cwnd during fast recovery (NewReno/CUBIC), nor while
+         * the connection does not use it (RFC 7661, as Linux's
+         * tcp_is_cwnd_limited() and FreeBSD's CCF_CWND_LIMITED with
+         * newcwv): cwnd above the peer's window, or twice what was in
+         * flight before this ACK, would only grow by ACKs that never tested
+         * it - an application that sends little, or a send buffer that
+         * holds the window back - and a later burst would take all of it.
          */
-        if(!(tp->t_flagsext & TF_IN_FASTRECOV)) {
+        if(!(tp->t_flagsext & TF_IN_FASTRECOV) &&
+                tp->snd_cwnd <= tp->snd_wnd &&
+                tp->snd_cwnd < 2 * (tp->snd_max - tp->snd_una)) {
             CC_ON_ACK(tp, acked);
         }
         if(acked > so->so_snd.sb_cc) {

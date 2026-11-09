@@ -253,7 +253,10 @@ it halves the drops at the end of slow start (100 KB queue: 78-82 against 164-16
 first slow start ends without any loss. When a slow start ends without a loss - by HyStart++, or at an `ssthresh`
 from the route (`RTV_SSTHRESH`) - there is no W_max yet: CUBIC's first epoch starts with K = 0 and
 W_max = cwnd (RFC 9438 section 4.10), so the cubic curve, not only the Reno-friendly one, grows
-cwnd from there.
+cwnd from there. cwnd grows only while the connection uses it (RFC 7661, as Linux's
+`tcp_is_cwnd_limited()`): not above the peer's window, and not past twice what was in flight - an
+application that sends little, or a send buffer that holds the window back, would otherwise grow
+it by ACKs that never tested it (a 128 KB send buffer: cwnd 616 KB, now 255 KB, same throughput).
 
 Loss recovery on a connection with SACK follows RFC 6675, as in FreeBSD and Linux. An ACK that
 SACKs data not SACKed before is a duplicate whatever window it offers (a receiver that grows its
