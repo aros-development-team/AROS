@@ -1101,12 +1101,13 @@ static int bwfm_rx_read(struct BWFMBase *BWFMBase, UBYTE *frame, ULONG framesz,
 
     flen = frmlen - 12;
     rlen = (flen + 3) & ~3UL;
-    if (flen == 0 || 12 + rlen > framesz)
+    if (12 + rlen > framesz)
         return 0;
-    if (bwfm_frame_rw(BWFMBase, frame + 12, rlen, 0))
+    if (flen && bwfm_frame_rw(BWFMBase, frame + 12, rlen, 0))
         return 0;
 
-    BWFMBase->bwfm_txmax = sw->maxseqnr;     /* tx-credit window from every frame */
+    /* tx-credit window from every frame, header-only credit updates too */
+    BWFMBase->bwfm_txmax = sw->maxseqnr;
     *flenp = flen;
     *chanp = sw->chanflag & BWFM_SDIO_SWHDR_CHANNEL_MASK;
     return 1;
@@ -2656,16 +2657,19 @@ AROS_LH3(int, BWFMRxFrame,
 
     static UBYTE frame[2048];
     ULONG flen = 0, ehoff = 0, ethlen = 0;
-    int chan = 0, ret = 0;
+    int chan = 0, ret = 0, skipped = 0;
 
     if (!BWFMBase->bwfm_attached)
         return 0;
 
     ObtainSemaphore(&BWFMBase->bwfm_Sem);
 
-    /* Deliver any queued GLOM sub-frames before pulling more off F2. */
+    /* Deliver any queued GLOM sub-frames before pulling more off F2. Skip
+     * frames with nothing to deliver, so a drained F2 is what ends the
+     * pump's loop - with the card interrupt nothing else would fetch them. */
     ret = bwfm_glom_pop(buf, bufsize, info);
-    if (ret == 0 && bwfm_rx_read(BWFMBase, frame, sizeof(frame), &flen, &chan))
+    while (ret == 0 && skipped++ < 16 &&
+           bwfm_rx_read(BWFMBase, frame, sizeof(frame), &flen, &chan))
     {
         if (BWFMBase->bwfm_evlisten)
             D(bug("[bwfm] rx frame chan %d len %u\n", chan, (unsigned)flen));
@@ -3253,7 +3257,7 @@ AROS_LH5(int, BWFMSetKey,
 
     INPUTS
         task - Live task to notify. The pointer is retained while interrupt
-            delivery is enabled.
+            delivery is enabled. NULL disarms the card interrupt.
         sigmask - Mask of signals allocated to task, not a signal-bit number.
 
     RESULT
@@ -3266,14 +3270,13 @@ AROS_LH5(int, BWFMSetKey,
         interrupt handler. Coordinate changes with the existing consumer;
         there is one shared task/mask registration.
 
-        The handler masks host signalling before notifying the task. Drain
-        received frames, call BWFMClearInt(), then BWFMAckRx() to re-enable
+        The handler masks host signalling before notifying the task. Call
+        BWFMClearInt(), drain received frames, then BWFMAckRx() to re-enable
         signalling. Signals can coalesce and do not count frames.
 
     BUGS
         Registration is not synchronized with the handler and provides no
-        safe unregister-and-drain operation. A NULL task suppresses Signal()
-        but does not disable interrupts. A successful return does not check
+        safe unregister-and-drain operation. A successful return does not check
         whether the SDIO handler was registered successfully.
 
     SEE ALSO
@@ -3328,9 +3331,8 @@ AROS_LH0(void, BWFMAckRx,
 
 /*
  * Clear the chip's SDPCM interrupt status (the func1/card-interrupt source) so
- * DAT1 deasserts. The RX pump calls this before draining + re-arming, so a
- * re-armed card interrupt does not immediately re-fire on a still-asserted
- * line. Mirrors OpenBSD bwfm_sdio_task()'s INTSTATUS read + W1C.
+ * DAT1 deasserts. The RX pump calls this before draining + re-arming.
+ * Mirrors OpenBSD bwfm_sdio_task()'s INTSTATUS read + W1C.
  */
 /*****************************************************************************
     NAME
@@ -3343,8 +3345,10 @@ AROS_LH0(void, BWFMAckRx,
         Acknowledge pending chip mailbox and frame interrupt status.
 
     NOTES
-        Call in task context after draining received frames and before
-        BWFMAckRx(). The call takes the resource semaphore, requests the
+        Call in task context before draining received frames, then
+        BWFMAckRx() once they are drained. A frame arriving after the clear
+        raises the status again, so the re-armed interrupt cannot miss it.
+        The call takes the resource semaphore, requests the
         high-throughput clock when needed, acknowledges a pending host
         mailbox notification and clears the selected latched status bits.
         It does nothing if the resource is not attached.
@@ -3419,11 +3423,8 @@ AROS_LH0(void, BWFMClearInt,
         bwfm_dev_write(BWFMBase, SDPCMD_TOSBMAILBOX, SDPCMD_TOSBMAILBOX_INT_ACK);
     }
 
-    /* W1C the latched status bits (incl. HMB_FRAME_IND). The pump calls us
-     * AFTER draining F2, so clearing the frame-ready bit with the FIFO empty
-     * deasserts DAT1 and lets the next frame re-trigger the edge-sensitive
-     * card interrupt. (The earlier "clearing halts the firmware" was really the
-     * missing event_msgs mask, since fixed - clearing here is correct.) */
+    /* W1C the latched status bits (incl. HMB_FRAME_IND). The pump drains F2
+     * after this, so a frame landing meanwhile sets the bit again. */
     if (ist)
         bwfm_dev_write(BWFMBase, SDPCMD_INTSTATUS, ist);
     ReleaseSemaphore(&BWFMBase->bwfm_Sem);
