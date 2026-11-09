@@ -16,6 +16,7 @@
 #include "vcgfx_hidd.h"
 #include "vcgfx_hardware.h"
 #include "vcgfx_hvs6.h"
+#include "vcgfx_decode.h"
 
 /* 0 = leave the display list to the firmware */
 #define VC4_HVS6_TAKEOVER 1
@@ -909,6 +910,7 @@ struct hvs6_ent
     BOOL  alpha;            /* per-pixel alpha, not fixed */
     ULONG pxf;
     ULONG yuv;              /* HVS YUV format, 0 = RGB */
+    ULONG addr;             /* CTL0 addressing: linear, or SAND128 columns */
     UQUAD cphys[2];         /* its chroma: CbCr, or Cb then Cr */
     ULONG cpitch, cptr0[2], csc;
 };
@@ -1058,7 +1060,9 @@ static LONG hvs6_yuv_ent(struct vc4_hvs6_state *st, struct vcgfx_plane *pl,
     ULONG cbytes = (planes == 2) ? 2 : 1;
     ULONG sx = pl->pl_SrcX & ~1UL, sy = pl->pl_SrcY & ~1UL;
     ULONG sw = pl->pl_SrcW, sh = pl->pl_SrcH, ssk, need, lsize, csize, i;
+    ULONG colpitch = 0, chroma = 0, fetch = 0;
     LONG slot;
+    BOOL ten = FALSE;
     UQUAD base = (UQUAD)(IPTR)d->VideoData;
 
     if (e->x < l)
@@ -1098,8 +1102,23 @@ static LONG hvs6_yuv_ent(struct vc4_hvs6_state *st, struct vcgfx_plane *pl,
 
     e->scaled = (e->w != sw) || (e->h != sh);
     need = hvs6_yuv_lbm(sw, e->w);
-    lsize = hvs6_upm_size(d->bytesperrow, HVS6_UPM_LINES);
-    csize = hvs6_upm_size(d->cpitch, HVS6_UPM_LINES);
+    if (d->dectgt)
+    {
+        /* SAND128: 32-byte words a line fetches, 32 or 24 (10-bit) samples
+         * each; the prefetch line is the width rounded up to a column */
+        ULONG n;
+
+        ten   = vcgfx_dectgt_sand(d->dectgt, &colpitch, &chroma);
+        n     = ten ? 24 : 32;
+        fetch = (sw + sx % n + n - 1) / n;
+        lsize = csize = hvs6_upm_size(ten ? ((d->width + 95) / 96) * 128 : (d->width + 127) & ~127UL,
+                                      HVS6_UPM_LINES);
+    }
+    else
+    {
+        lsize = hvs6_upm_size(d->bytesperrow, HVS6_UPM_LINES);
+        csize = hvs6_upm_size(d->cpitch, HVS6_UPM_LINES);
+    }
     if ((*lbm + need > lbmsize)
         || (e->scaled && (!HVS6_PPF_FITS(sw, e->w) || !HVS6_PPF_FITS(sh, e->h)))
         || (*handle + planes > HVS6_PL_HANDLE_END)
@@ -1108,13 +1127,31 @@ static LONG hvs6_yuv_ent(struct vc4_hvs6_state *st, struct vcgfx_plane *pl,
         return -1;
 
     e->yuv      = pl->pl_Yuv;
+    e->addr     = 0;
     e->sw       = sw;
     e->sh       = sh;
-    e->pitch    = d->bytesperrow;
-    e->cpitch   = d->cpitch;
-    e->phys     = base + sy * e->pitch + sx;
-    e->cphys[0] = base + d->planeoff[0] + (sy / 2) * e->cpitch + (sx / 2) * cbytes;
-    e->cphys[1] = base + d->planeoff[1] + (sy / 2) * e->cpitch + sx / 2;
+    if (d->dectgt)
+    {
+        /* The first sample's column, row and byte; the HVS walks on into the
+         * next column. 10-bit: bits 4:0 pick the sample in a 32-byte word. */
+        ULONG r = sx % (ten ? 96 : 128), col = (sx / (ten ? 96 : 128)) * colpitch;
+        ULONG off = ten ? (r / 24) * 32 + r % 24 : r;
+
+        e->yuv      = ten ? HVS6_PXF_YUV10 : HVS_PXF_YUV420_2PLANE;
+        e->addr     = HVS6_ADDR_COL128;
+        e->phys     = base + col + sy * 128 + off;
+        e->cphys[0] = base + chroma + col + (sy / 2) * 128 + (off & ~1UL);
+        /* PTR2: fetch count - 1 and the column height in rows, both planes */
+        e->pitch    = e->cpitch = ((fetch - 1) << 16) | (colpitch / 128);
+    }
+    else
+    {
+        e->pitch    = d->bytesperrow;
+        e->cpitch   = d->cpitch;
+        e->phys     = base + sy * e->pitch + sx;
+        e->cphys[0] = base + d->planeoff[0] + (sy / 2) * e->cpitch + (sx / 2) * cbytes;
+        e->cphys[1] = base + d->planeoff[1] + (sy / 2) * e->cpitch + sx / 2;
+    }
     e->csc      = hvs6_is_c() ? HVS6_CTL2_CSC_C(slot) : HVS6_CTL2_CSC_D(slot);
 
     *upm -= lsize;
@@ -1140,8 +1177,8 @@ static LONG hvs6_yuv_ent(struct vc4_hvs6_state *st, struct vcgfx_plane *pl,
 static void hvs6_put_yuv(ULONG dst, ULONG fb, const struct hvs6_ent *e)
 {
     ULONG ctl0 = (hvs6_rd(fb + HVS6_ENT_CTL0 * 4)
-                  & ~(HVS6_CTL0_UNITY | HVS6_SCL_MASK | HVS6_CTL0_FORMAT | HVS6_CTL0_ORDER))
-               | e->yuv | (e->scaled ? 0 : HVS6_CTL0_UNITY);
+                  & ~(HVS6_CTL0_UNITY | HVS6_SCL_MASK | HVS6_CTL0_FORMAT | HVS6_CTL0_ORDER | HVS6_CTL0_ADDR))
+               | e->yuv | e->addr | (e->scaled ? 0 : HVS6_CTL0_UNITY);
     ULONG planes = (e->yuv == HVS_PXF_YUV420_3PLANE) ? 3 : 2;
     ULONG n = 1, i;
 

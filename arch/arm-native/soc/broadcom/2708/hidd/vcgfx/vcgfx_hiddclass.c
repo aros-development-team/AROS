@@ -537,8 +537,8 @@ ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Dis
         info.PixFmtMask |= 1 << vHidd_StdPixFmt_RGBA32;     /* the screens' own, with alpha */
     if (vcgfx_yuv_ok(xsd, vHidd_VideoFmt_NV12))
         info.VideoFmtMask = (1 << vHidd_VideoFmt_NV12) | (1 << vHidd_VideoFmt_I420);
-    /* 10-bit decode targets: SAND128 columns only HVS5 reads */
-    if (info.VideoFmtMask && (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5))
+    /* 10-bit decode targets: SAND128 columns HVS5 and HVS6 read */
+    if (info.VideoFmtMask && vcgfx_sand_scanout(xsd))
         info.VideoFmtMask |= 1 << vHidd_VideoFmt_P010;
     vc4_plane_scale(xsd, &info.ScaleMin, &info.ScaleMax);
     info.AlphaModes = (1 << vHidd_CompAlpha_None) | (1 << vHidd_CompAlpha_PerPixel);

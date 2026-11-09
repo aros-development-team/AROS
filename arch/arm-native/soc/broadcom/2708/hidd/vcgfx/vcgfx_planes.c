@@ -311,10 +311,10 @@ BOOL vcgfx_yuv_ok(struct VideoCoreGfx_staticdata *xsd, ULONG videofmt)
         && vcgfx_planes_supported(xsd);
 }
 
-/* SAND128 decode targets: HVS5 only for now */
+/* SAND128 decode targets: the HVS5 and HVS6 YUV path, VideoCore IV has none */
 BOOL vcgfx_sand_scanout(struct VideoCoreGfx_staticdata *xsd)
 {
-    return (xsd->vcsd_HVSGen == VCGFX_HVS_HVS5) && vcgfx_planes_supported(xsd);
+    return (xsd->vcsd_HVSGen != VCGFX_HVS_VC4) && vcgfx_yuv_ok(xsd, vHidd_VideoFmt_NV12);
 }
 
 /* num/den in Q22, rounded; num and den positive */
