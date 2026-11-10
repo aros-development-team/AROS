@@ -1,5 +1,443 @@
 /*
-    Copyright (C) 2017-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2026, The AROS Development Team. All rights reserved.
+*/
+
+/****** Graph.mcc/MUIC_Graph ************
+*
+*   NAME
+*       MUIC_Graph
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       Display one or more sampled value series with filled plots, grid
+*       divisions, and optional centered information text. Sampling uses
+*       caller-supplied hooks and an Application timer handler. The source
+*       configuration declares version 0.9.
+*       Defaults are ValueCeiling 100, ValueStep 10, PeriodCeiling 10000
+*       milliseconds, PeriodStep 1000 milliseconds, and a stored PeriodInterval
+*       of 1000 milliseconds. Periodic sampling is initially disabled. One
+*       source record is requested at construction, but no sample capacity is
+*       allocated by default. Configure valid sample storage and sources before
+*       displaying or sampling; a default object is not a ready-to-draw graph.
+*       The constructor supplies four-pixel inner margins, initializes its
+*       state, then applies caller attributes through OM_SET. Tag order matters.
+*       Setup registers an enabled timer; Cleanup removes it. Hide releases
+*       display pens but does not stop sampling. Timer delivery follows
+*       Application event processing, not elapsed wall-clock measurement.
+*       The class owns source records, sample arrays, and copied
+*       information-text lines. Hooks and RGB source arrays are borrowed.
+*       Complete Hide/Cleanup before disposal; disposal frees data but does not
+*       independently remove the timer or release shown-screen pens.
+*
+*   NOTES
+*       Use positive, representable period/value scales and steps. Keep sample
+*       counts, source counts, values, and display dimensions within the integer
+*       ranges used by drawing. Values are not clamped to ValueCeiling.
+*       Minimum/default sizes are derived from ceiling/step ratios; scale
+*       changes do not themselves request relayout.
+*       For multiple sources, create consecutive indices before obtaining
+*       handles for configuration. Adding a source reallocates the record array,
+*       invalidating earlier handles. Configure stable sources and capacity
+*       before use. Callback code must not dispose the graph or change
+*       source/storage structure while sampling is in progress.
+*       OM_SET returns the number of recognized tags plus the superclass result,
+*       not a reliable success indicator. Source creation, sample allocation,
+*       information-text allocation, pen acquisition, and drawing failures do
+*       not share a checked error-reporting contract.
+*
+*   BUGS
+*       Aggregate stores a flag that neither sampling nor drawing uses. Reset is
+*       a no-op. ManualRefresh does not dynamically add or remove the redraw
+*       notification installed during construction.
+*       Source-array growth initializes only the final new record; skipping
+*       source indices leaves intermediate records uninitialized. Allocation
+*       failure is not checked before GetSourceHandle returns an address.
+*       Entry-array growth and logical capacity updates are not transactional;
+*       shrinking capacity changes the recorded size without resizing
+*       allocations.
+*       Drawing assumes usable source arrays and scale divisors and can access
+*       samples even before a successful read. Unhooked sources are not
+*       automatically populated. The information-text parser dereferences
+*       allocation results without checking them.
+*       Pen handling has lifecycle limits: source pen numbers are not reset on
+*       Hide, and equal line/fill pen numbers share a release path regardless of
+*       how reservations were acquired. SetSourceAttrib's FillPenSrc case writes
+*       the line-pen field instead of the fill RGB pointer. These are existing
+*       implementation limits, not supported alternate behaviors.
+*
+*/
+/****** Graph.mcc/MUIA_Graph_InfoText ************
+*
+*   NAME
+*       MUIA_Graph_InfoText
+*
+*   FUNCTION
+*       Replace the centered text drawn over the graph.
+*
+*   INPUTS
+*       Initialize, set; CONST_STRPTR to a readable NUL-terminated string, or
+*       NULL. Default NULL. No local getter.
+*
+*   NOTES
+*       The parser first frees all old text nodes, then copies text into
+*       per-line allocations. NULL clears the text; source storage is not
+*       retained. Empty strings and consecutive or trailing newlines do not have
+*       a consistent blank-line layout contract. This uses graphics Text, not
+*       MUI text escape processing.
+*       Setting while shown requests an update redraw. Allocation failure is
+*       unchecked and previous text is not restored. Use bounded
+*       application-owned text. The original pointer is forwarded in the
+*       attribute tag; a notification recipient must not assume it points to
+*       retained line storage.
+*
+*/
+/****** Graph.mcc/MUIA_Graph_EntryCount ************
+*
+*   NAME
+*       MUIA_Graph_EntryCount
+*
+*   FUNCTION
+*       Select fixed history capacity or disable fixed-length mode.
+*
+*   INPUTS
+*       Initialize, set, get; IPTR. Initial stored count zero. A positive value
+*       enables fixed-length mode; zero disables that mode.
+*
+*   NOTES
+*       A positive value grows each existing source array only when larger than
+*       the stored count, then records the requested count regardless of
+*       allocation success. Full fixed histories shift older samples before
+*       writing the newest slot. Get reports the stored count, not the number of
+*       populated samples.
+*       Zero clears the fixed-length flag without clearing the count, arrays, or
+*       write position. In nonfixed mode, Timer grows arrays for hooked sources
+*       as needed. There is no public setter for individual samples.
+*       Changing capacity does not reset history. Smaller positive counts do not
+*       resize arrays, yet later copying and freeing use the changed logical
+*       count. Growth failures can leave capacity and allocations inconsistent.
+*       Set a suitable capacity before use; this is not a safe arbitrary resize
+*       or clear operation.
+*
+*/
+/****** Graph.mcc/MUIA_Graph_Aggregate ************
+*
+*   NAME
+*       MUIA_Graph_Aggregate
+*
+*   FUNCTION
+*       Store the aggregate-mode flag.
+*
+*   INPUTS
+*       Initialize, set; BOOL, default FALSE. No local getter.
+*
+*   NOTES
+*       Nonzero enables GRAPHF_AGGR and zero clears it. No code in the sampling
+*       or drawing paths consumes this flag. It does not sum or average the
+*       sources and does not alter displayed series. The setter comment
+*       describes an intention, not implemented aggregation.
+*
+*/
+/****** Graph.mcc/MUIA_Graph_PeriodCeiling ************
+*
+*   NAME
+*       MUIA_Graph_PeriodCeiling
+*
+*   FUNCTION
+*       Set the horizontal time scale.
+*
+*   INPUTS
+*       Initialize, set; IPTR milliseconds, default 10000. No local getter.
+*
+*   NOTES
+*       Drawing scales sample spacing using PeriodInterval/PeriodCeiling;
+*       measurement uses PeriodCeiling/PeriodStep. Supply a positive value with
+*       representable calculations. No validation, redraw, or relayout is
+*       requested by this setter alone.
+*       Changing this value does not recalculate EntryCount. When enabling
+*       PeriodInterval, the setter uses the ceiling already stored at that point
+*       to request ceiling/interval entries. Put PeriodCeiling before
+*       PeriodInterval when configuring both in one tag list.
+*
+*/
+/****** Graph.mcc/MUIA_Graph_PeriodStep ************
+*
+*   NAME
+*       MUIA_Graph_PeriodStep
+*
+*   FUNCTION
+*       Set the horizontal grid and tick-step value.
+*
+*   INPUTS
+*       Initialize, set; IPTR milliseconds, default 1000. No local getter.
+*
+*   NOTES
+*       Measurement divides PeriodCeiling by this value; drawing uses it for
+*       vertical divisions. Timer adds the stored interval to its tick counter
+*       and subtracts PeriodStep once only when the result is greater than
+*       PeriodStep. This is not a general modulo reduction or a wall-clock
+*       timestamp.
+*       Use a positive value and suitable scale ratios. The setter does not
+*       validate divisors or request redraw or relayout. Changing PeriodStep
+*       does not change the Application timer interval or sample capacity.
+*
+*/
+/****** Graph.mcc/MUIA_Graph_PeriodInterval ************
+*
+*   NAME
+*       MUIA_Graph_PeriodInterval
+*
+*   FUNCTION
+*       Enable periodic sampling with the specified interval, or disable it.
+*
+*   INPUTS
+*       Initialize, set, get; IPTR milliseconds. Initial stored interval 1000,
+*       but periodic mode initially disabled. Zero disables periodic mode.
+*
+*   NOTES
+*       A nonzero value enables periodic mode, assigns the timer-node interval,
+*       and sets EntryCount to the integer quotient PeriodCeiling/interval. If
+*       already set up and not registered, it adds the Application handler.
+*       Configure a ceiling and interval that yield a positive, usable capacity.
+*       Zero removes an active handler while set up and clears periodic mode,
+*       but preserves the stored interval. Get therefore returns the previous
+*       interval after disabling; it does not report whether sampling is
+*       enabled.
+*       Changing a nonzero interval while already registered edits the node
+*       without removing and re-adding it. No rescheduling guarantee is
+*       provided. EntryCount updates are nested attribute sets and can notify
+*       separately. Disabling does not clear samples or reset the write
+*       position.
+*
+*/
+/****** Graph.mcc/MUIA_Graph_ValueCeiling ************
+*
+*   NAME
+*       MUIA_Graph_ValueCeiling
+*
+*   FUNCTION
+*       Set the value represented by the full graph height.
+*
+*   INPUTS
+*       Initialize, set, get; IPTR, default 100.
+*
+*   NOTES
+*       Drawing scales samples by object height divided by this ceiling;
+*       measurement divides it by ValueStep. Supply a positive ceiling and
+*       values appropriate to that scale. No clamping, auto-ranging, or
+*       validation occurs.
+*       The getter returns the stored ceiling. Setting it alone requests neither
+*       redraw nor relayout; the next draw uses the new scale. Large
+*       intermediate products and coordinates are not protected against
+*       overflow.
+*
+*/
+/****** Graph.mcc/MUIA_Graph_ValueStep ************
+*
+*   NAME
+*       MUIA_Graph_ValueStep
+*
+*   FUNCTION
+*       Set the spacing of horizontal value divisions.
+*
+*   INPUTS
+*       Initialize, set; IPTR, default 10. No local getter.
+*
+*   NOTES
+*       Measurement derives minimum/default height from ValueCeiling/ValueStep.
+*       Drawing derives grid spacing from object height times ValueStep divided
+*       by ValueCeiling, with a two-pixel lower bound. Supply a positive step
+*       and representable ratios.
+*       This does not round incoming samples or alter stored values. No redraw
+*       or relayout is requested by the setter alone.
+*
+*/
+/****** Graph.mcc/MUIA_Graph_ManualRefresh ************
+*
+*   NAME
+*       MUIA_Graph_ManualRefresh
+*
+*   FUNCTION
+*       Choose whether construction installs the automatic tick-redraw
+*       notification.
+*
+*   INPUTS
+*       Initialize, set; BOOL, default FALSE. No local getter.
+*
+*   NOTES
+*       At the end of construction, FALSE causes a notification on
+*       PeriodicTick=TRUE to call an internal redraw hook. TRUE skips
+*       installation. The flag is writable later, but setting it does not add or
+*       remove that notification. Choose the mode at construction.
+*       Manual refresh does not disable sampling. Request drawing through the
+*       normal MUI redraw mechanism when needed. InfoText changes can still
+*       request redraw directly while shown.
+*
+*/
+/****** Graph.mcc/MUIA_Graph_PeriodicTick ************
+*
+*   NAME
+*       MUIA_Graph_PeriodicTick
+*
+*   FUNCTION
+*       Provide an attribute notification trigger after periodic sampling.
+*
+*   INPUTS
+*       Notification/set tag with BOOL. No stored value or local getter.
+*
+*   NOTES
+*       Timer sends TRUE after its periodic sampling pass. The setter only
+*       counts this recognized tag and forwards it; manually setting it does not
+*       sample data. The constructor normally installs a TRUE-triggered redraw
+*       notification unless ManualRefresh was TRUE.
+*       A tick notification is not evidence that every hook supplied a value or
+*       that storage allocation succeeded. Zero sources still permits the
+*       trigger while periodic mode is enabled. There is no separate accumulated
+*       tick count exposed by this attribute.
+*
+*/
+/****** Graph.mcc/MUIM_Graph_GetSourceHandle ************
+*
+*   NAME
+*       MUIM_Graph_GetSourceHandle
+*
+*   SYNOPSIS
+*       APTR handle = (APTR)DoMethod(obj, MUIM_Graph_GetSourceHandle, SourceNo);
+*
+*   FUNCTION
+*       Return an internal source record, growing the source array when needed.
+*
+*   INPUTS
+*       obj - Live Graph object.
+*       SourceNo - ULONG, zero-based index. The constructor requests source
+*       zero.
+*
+*   RESULT
+*       Borrowed pointer to the requested source record. There is no reliable
+*       NULL-on-allocation-failure contract.
+*
+*   NOTES
+*       The handle is opaque to callers and is intended for SetSourceAttrib.
+*       Never free it. Any later growth of the source array can invalidate every
+*       earlier handle, even when sample buffers remain allocated. Disposal
+*       invalidates all handles.
+*       Create consecutive indices: growth initializes only the last new record,
+*       not skipped indices. Request all needed sources before fetching handles
+*       used for configuration. Avoid source growth while shown or while a
+*       sampling callback is active. The method does not validate allocation
+*       success before forming the returned address.
+*
+*/
+/****** Graph.mcc/MUIM_Graph_SetSourceAttrib ************
+*
+*   NAME
+*       MUIM_Graph_SetSourceAttrib
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Graph_SetSourceAttrib, handle, attrib,
+*       value);
+*
+*   FUNCTION
+*       Assign a read hook or pen setting to an existing source record.
+*
+*   INPUTS
+*       handle - Current source handle belonging to this object; not validated.
+*       attrib - One of MUIV_Graph_Source_ReadHook, PenSrc, Pen, FillPenSrc, or
+*       FillPen.
+*       value - IPTR interpreted according to attrib.
+*
+*   RESULT
+*       Always zero, including unknown selectors. No validation or acquisition
+*       status is returned.
+*
+*   NOTES
+*       ReadHook stores a borrowed struct Hook pointer; NULL disables reading
+*       that source. Timer calls it synchronously with the destination IPTR
+*       sample slot as the hook object and hook->h_Data as the message. Write
+*       the sample through that destination; the hook return value is ignored.
+*       Keep the hook and its data valid, and do not retain the sample-slot
+*       pointer or reconfigure/dispose the graph during the callback.
+*       PenSrc stores a borrowed pointer to three ULONG RGB components used by
+*       Show for the line pen. Each component ranges from zero to 0xffffffff.
+*       The array must remain valid across relevant Show calls. Setting it does
+*       not immediately reacquire a pen or redraw.
+*       Pen and FillPen replace stored WORD pen numbers. If the previous
+*       pen number is not -1, release it against the current screen
+*       colormap before assigning the replacement. Supply an
+*       appropriate acquired reservation for that same screen; the class
+*       releases retained pen numbers during Hide. This is not a
+*       borrowed-color-index API. These setters require usable screen state when
+*       releasing an old pen.
+*       FillPenSrc is incorrectly implemented: it assigns the value to the
+*       line-pen field instead of the fill RGB source pointer, without releasing
+*       the previous line pen. Do not use it to provide RGB storage. No public
+*       working fill-RGB-source assignment is implemented here.
+*       Hide does not reset source pen fields, and equal line/fill numbers are
+*       not released independently. Do not infer arbitrary repeated assignment
+*       or lifecycle safety from these low-level selectors. No setter here
+*       requests redraw.
+*
+*/
+/****** Graph.mcc/MUIM_Graph_Reset ************
+*
+*   NAME
+*       MUIM_Graph_Reset
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Graph_Reset);
+*
+*   FUNCTION
+*       Accept a reset request without changing graph state.
+*
+*   INPUTS
+*       obj - Live Graph object. No payload arguments.
+*
+*   RESULT
+*       Always zero.
+*
+*   NOTES
+*       The implementation is a TODO stub. It does not clear samples, reset the
+*       write position or tick counter, remove sources, change attributes, or
+*       redraw. Recreating the object is distinct from calling this method; no
+*       reset behavior is implemented.
+*
+*/
+/****** Graph.mcc/MUIM_Graph_Timer ************
+*
+*   NAME
+*       MUIM_Graph_Timer
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Graph_Timer);
+*
+*   FUNCTION
+*       Advance the internal tick phase and, when periodic mode is enabled,
+*       sample each hooked source.
+*
+*   INPUTS
+*       obj - Live Graph with valid configured source storage and hooks. No
+*       payload arguments.
+*
+*   RESULT
+*       Always zero; sampling and allocation failures are not returned.
+*
+*   NOTES
+*       Add the stored interval to the internal tick counter and subtract
+*       PeriodStep once when exceeded. When periodic mode is disabled, stop
+*       after that phase update. Manual invocation does not bypass the mode
+*       check or measure elapsed time.
+*       In periodic mode, shift full fixed histories or grow nonfixed hooked
+*       sources as needed, then call each read hook with its destination sample
+*       slot and h_Data. Increment the common write position once per pass, not
+*       once per hook. Unhooked sources are skipped but still share that
+*       position and are still drawn.
+*       Send PeriodicTick=TRUE after the pass. Hooks must write a valid sample
+*       synchronously. No locking, deferred callback queue, source-lifetime
+*       guard, or checked allocation rollback is supplied. Use through the
+*       Application GUI lifecycle and do not mutate graph storage during
+*       callbacks.
+*
 */
 
 #define DEBUG 0
@@ -30,6 +468,13 @@
 #include "graph.h"
 #include "graph_intern.h"
 
+/* Resize the owned source-record array when count changes. Copy the common
+ * prefix and free the old array only after successful allocation. Growth
+ * initializes only the final record and optionally allocates its zeroed
+ * sample array. Return the new/current pointer or NULL on allocation
+ * failure; neither skipped records nor removed-record resources are fully
+ * managed. Existing record handles become stale on successful resize.
+ */
 IPTR Graph__UpdateSourceArray(struct Graph_DATA *data, IPTR count)
 {
     struct Graph_SourceDATA *newSourceArray = data->graph_Sources;
@@ -73,6 +518,13 @@ IPTR Graph__UpdateSourceArray(struct Graph_DATA *data, IPTR count)
     return (IPTR)newSourceArray;
 }
 
+/* For count greater than the shared recorded capacity, select sourceNo and
+ * allocate a larger array. Copy and free the old array using the shared
+ * capacity, then install the replacement if allocation succeeded. New tail
+ * bytes are uninitialized. Return the source record even on allocation
+ * failure, or NULL when no growth was requested. Do not change shared
+ * capacity here.
+ */
 IPTR Graph__UpdateSourceEntries(struct Graph_DATA *data, IPTR sourceNo, IPTR count)
 {
     struct Graph_SourceDATA *dataSource = NULL;
@@ -100,6 +552,10 @@ IPTR Graph__UpdateSourceEntries(struct Graph_DATA *data, IPTR sourceNo, IPTR cou
     return (IPTR)dataSource;
 }
 
+/* Remove and free every owned information-text node, resetting the stored
+ * line count to zero. Require an initialized list in a live instance. No
+ * caller string is freed and no redraw or error result is produced.
+ */
 void Graph__FreeInfoText(Class *cl, Object *obj)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
@@ -116,6 +572,13 @@ void Graph__FreeInfoText(Class *cl, Object *obj)
     data->graph_ITHeight = 0;
 }
 
+/* Discard prior information text, then allocate and copy delimited
+ * fragments of a readable NUL-terminated input. NULL leaves an empty list.
+ * Terminator handling can add empty nodes and consecutive newlines are not
+ * consistently split as blank lines. Allocation results are unchecked.
+ * Return the stored node count; no rollback or reliable allocation error is
+ * provided.
+ */
 IPTR Graph__ParseInfoText(Class *cl, Object *obj, char *infoTxt)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
@@ -152,6 +615,11 @@ IPTR Graph__ParseInfoText(Class *cl, Object *obj, char *infoTxt)
     return data->graph_ITHeight;
 }
 
+/* Sum count readable IPTR entries and divide a positive sum by count,
+ * returning an integer mean rather than a source aggregate. A zero sum
+ * returns zero; count zero performs no reads. Arithmetic is unchecked.
+ * Drawing currently passes span one, so the result is a single sample.
+ */
 IPTR Graph__SumValues(IPTR *start, int count)
 {
     IPTR retVal = 0;
@@ -165,6 +633,11 @@ IPTR Graph__SumValues(IPTR *start, int count)
     return retVal;
 }
 
+/* Receive the installed PeriodicTick notification through the AROS hook ABI
+ * and request MADF_DRAWUPDATE for the supplied object. Ignore hook and
+ * message arguments. No sampling, allocation, or manual-refresh flag test
+ * occurs here; callback lifetime follows the object notification.
+ */
 AROS_UFH3(
     void, Graph__HookFunc_DrawUpdateFunc,
     AROS_UFHA(struct Hook *,    hook,   A0),
@@ -182,6 +655,13 @@ AROS_UFH3(
 }
 
 /*** Methods ****************************************************************/
+/* Create the superclass with default inner margins, initialize
+ * text/state/pens, request source zero, and initialize timer defaults with
+ * periodic mode off. Apply the original tags through SetAttrsA. Install the
+ * tick redraw hook only if automatic refresh is selected at that moment.
+ * Return superclass object or NULL; subordinate allocation failures are not
+ * comprehensively checked.
+ */
 IPTR Graph__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Graph_DATA *data;
@@ -248,6 +728,11 @@ IPTR Graph__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
+/* Free each recorded sample array using shared EntryCount, then the source
+ * array and copied text nodes. Delegate disposal and return its result.
+ * Require prior Hide/Cleanup for pens and timer; this method does not
+ * independently release those resources or repair mismatched capacities.
+ */
 IPTR Graph__OM_DISPOSE(Class *cl, Object *obj, Msg msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
@@ -273,6 +758,12 @@ IPTR Graph__OM_DISPOSE(Class *cl, Object *obj, Msg msg)
 }
 
 
+/* Process recognized tags sequentially and count them. Interval can issue a
+ * nested EntryCount set and register/remove the timer. Text alone marks
+ * direct redraw while shown. Forward original tags and return recognized
+ * count plus superclass result. Allocation failures are not represented by
+ * that total and no change is transactional.
+ */
 IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
@@ -393,6 +884,11 @@ IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 }
 
 
+/* Return ValueCeiling, stored EntryCount, or stored PeriodInterval with
+ * TRUE; delegate all other attributes. Counts do not describe initialized
+ * sample population, and the interval remains stored after disabling
+ * periodic mode. No other Graph attribute has a local getter.
+ */
 IPTR Graph__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
@@ -422,6 +918,11 @@ IPTR Graph__OM_GET(Class *cl, Object *obj, struct opGet *msg)
     return retval;
 }
 
+/* Set up the superclass, returning FALSE on its failure. Register the
+ * Application timer if periodic and not already marked registered, then set
+ * the setup flag. Return TRUE without checking registration success.
+ * Hidden-state transitions do not own this timer.
+ */
 IPTR Graph__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
@@ -442,6 +943,12 @@ IPTR Graph__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 }
 
 
+/* Show the superclass and return FALSE on its failure. Obtain
+ * background/axis/grid pens and source pens from borrowed RGB arrays, then
+ * mark shown. Acquisition failure does not make Show fail. Equal line/fill
+ * source pointers skip fill acquisition without assigning a shared pen
+ * number. Return TRUE.
+ */
 IPTR Graph__MUIM_Show(Class *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
@@ -503,6 +1010,12 @@ IPTR Graph__MUIM_Show(Class *cl, Object *obj, struct MUIP_Setup *msg)
     return TRUE;
 }
 
+/* Clear shown, release background/axis/grid pens and reset their sentinels.
+ * Release source fill pens only when distinct from line pens, then release
+ * line pens; source fields remain unchanged. Delegate Hide. This does not
+ * unregister the sampling timer or reconcile independent equal-index
+ * reservations.
+ */
 IPTR Graph__MUIM_Hide(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
@@ -542,6 +1055,10 @@ IPTR Graph__MUIM_Hide(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
+/* Clear setup and remove the timer only when both periodic and handler
+ * flags are set, then clear the handler flag. Delegate Cleanup and return
+ * its result. Screen pens belong to Hide and are not released here.
+ */
 IPTR Graph__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
@@ -560,6 +1077,11 @@ IPTR Graph__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 }
 
 
+/* Delegate measurement, then add two pixels per ceiling/step division to
+ * minima and ten to defaults, using period for width and value for height.
+ * Set maxima MUI_MAXMAX and return TRUE. Require nonzero steps and
+ * representable products; there is no validation or text-size contribution.
+ */
 IPTR Graph__MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
@@ -578,6 +1100,14 @@ IPTR Graph__MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
     return TRUE;
 }
 
+/* Add a clip region when available, call the superclass, and render
+ * relevant object/update requests. Draw filled series, divisions, frame,
+ * line series, and centered text using configured scales and source
+ * storage. Temporary fill buffers are freed on completed allocation paths.
+ * Remove the added clip and return zero. Allocation failures can skip fill
+ * without an error; usable arrays, positive scale divisors and valid pens
+ * remain preconditions.
+ */
 IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Graph_DATA           *data = INST_DATA(cl, obj);
@@ -846,6 +1376,12 @@ IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     return 0;
 }
 
+/* Grow the source array to SourceNo+1 when needed, then return the indexed
+ * internal record address. Do not check growth success or validate
+ * intermediate initialization. The borrowed handle is invalidated by later
+ * successful array reallocation or disposal; it is not a stable external
+ * identifier.
+ */
 IPTR Graph__MUIM_Graph_GetSourceHandle(Class *cl, Object *obj, struct MUIP_Graph_GetSourceHandle *msg)
 {
     struct Graph_DATA *data;
@@ -862,6 +1398,12 @@ IPTR Graph__MUIM_Graph_GetSourceHandle(Class *cl, Object *obj, struct MUIP_Graph
     return retVal;
 }
 
+/* Assign the selected hook, RGB pointer, or WORD pen directly through an
+ * unchecked source handle. Pen replacements release prior reservations
+ * using the current screen. FillPenSrc incorrectly writes the line-pen
+ * field. Return zero for all selectors without requesting redraw or
+ * reporting failure.
+ */
 IPTR Graph__MUIM_Graph_SetSourceAttrib(Class *cl, Object *obj, struct MUIP_Graph_SetSourceAttrib *msg)
 {
     struct Graph_SourceDATA *dataSource = (struct Graph_SourceDATA *)msg->SourceHandle;
@@ -894,6 +1436,10 @@ IPTR Graph__MUIM_Graph_SetSourceAttrib(Class *cl, Object *obj, struct MUIP_Graph
     return 0;
 }
 
+/* Return zero without changing any instance state. This TODO method does
+ * not clear history, rewind indices, free sources, stop timers, or request
+ * drawing; callers must not interpret its return as successful reset.
+ */
 IPTR Graph__MUIM_Graph_Reset(Class *cl, Object *obj, Msg msg)
 {
     D(bug("[Graph] %s()\n", __func__);)
@@ -903,6 +1449,12 @@ IPTR Graph__MUIM_Graph_Reset(Class *cl, Object *obj, Msg msg)
     return 0;
 }
 
+/* Advance tick phase by the stored interval, with a single strict-greater-
+ * than step subtraction. If periodic, prepare fixed/nonfixed slots, call
+ * each read hook synchronously, advance shared position and send
+ * PeriodicTick TRUE. Storage growth failures are ignored. Return zero;
+ * require stable source/storage lifetimes throughout callbacks.
+ */
 IPTR Graph__MUIM_Graph_Timer(Class *cl, Object *obj, Msg msg)
 {
     struct Graph_DATA *data;
