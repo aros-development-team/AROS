@@ -92,6 +92,16 @@ struct sdcard_Bus
     void                                (*sdcb_SetBusWidth)(UBYTE, struct sdcard_Bus *);  /* Set bus width (1 or 4) */
     void                                (*sdcb_BusInit)(struct sdcard_Bus *);  /* Scan-time HW init (clock, power, bus width) */
     void                                (*sdcb_BusPostIRQInit)(struct sdcard_Bus *);  /* Post-IRQ init (enable interrupts, card detect) */
+    /*
+     * Bus address for a DMA buffer, 0 if the controller cannot reach it.
+     * NULL: plain physical, and anything below 4GB is reachable.
+     */
+    IPTR                                (*sdcb_DMAPhys)(APTR, ULONG, struct sdcard_Bus *);
+    /*
+     * Memory the controller can reach (size, MEMF_ flags), released with
+     * FreeMem(). NULL: AllocMem() below 2GB.
+     */
+    APTR                                (*sdcb_DMAAlloc)(ULONG, ULONG, struct sdcard_Bus *);
 
     /*
      * ADMA2 scatter/gather. The controller masters the transfer itself, so
@@ -104,8 +114,6 @@ struct sdcard_Bus
     ULONG                               sdcb_ADMABounceSize;
     APTR                                sdcb_ADMAData;       /* caller's buffer, for the copy back */
     ULONG                               sdcb_ADMALen;
-    IPTR                                sdcb_DMAOffset;      /* bus address = physical + this */
-    UQUAD                               sdcb_DMALimit;       /* first bus address out of reach */
 
     /* Bus Instance Private/Internal */
     IPTR                                sdcb_Private;

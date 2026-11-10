@@ -660,16 +660,28 @@ void FNAME_SDCBUS(SetPowerLevel)(ULONG supportedlvls, BOOL lowest, struct sdcard
 /********** ADMA2 **************/
 
 /*
- * The address the controller puts on the bus: physical plus the bus's
- * sdcb_DMAOffset. EMMC2 on a BCM2711 C0 sees plain physical addresses, on a
- * B0 only the first GB at 0xC0000000. Any such view is applied here and
- * nowhere else.
+ * The address the controller puts on the bus for len bytes at virt, 0 when
+ * it cannot reach them. A controller with a view of RAM of its own supplies
+ * sdcb_DMAPhys; it is applied here and nowhere else.
  */
-static IPTR FNAME_SDCBUS(ADMAPhys)(struct sdcard_Bus *bus, APTR virt)
+static IPTR FNAME_SDCBUS(ADMAPhys)(struct sdcard_Bus *bus, APTR virt, ULONG len)
 {
     struct SDCardBase *SDCardBase = bus->sdcb_DeviceBase;
+    IPTR phys;
 
-    return (IPTR)KrnVirtualToPhysical(virt) + bus->sdcb_DMAOffset;
+    if (bus->sdcb_DMAPhys)
+        return bus->sdcb_DMAPhys(virt, len, bus);
+
+    phys = (IPTR)KrnVirtualToPhysical(virt);
+    return (((UQUAD)phys + len) > 0x100000000ULL) ? 0 : phys;
+}
+
+static APTR FNAME_SDCBUS(ADMAAllocMem)(struct sdcard_Bus *bus, ULONG size, ULONG flags)
+{
+    if (bus->sdcb_DMAAlloc)
+        return bus->sdcb_DMAAlloc(size, flags, bus);
+
+    return AllocMem(size, flags | MEMF_31BIT);
 }
 
 BOOL FNAME_SDCBUS(ADMAAlloc)(struct sdcard_Bus *bus)
@@ -683,13 +695,13 @@ BOOL FNAME_SDCBUS(ADMAAlloc)(struct sdcard_Bus *bus)
     }
 
     /*
-     * Both live below 2GB because the controller cannot address more, and
-     * both are padded out to whole cache lines: cache maintenance works a
-     * line at a time and would otherwise reach into whatever shares them.
+     * Both live where the controller can reach them, and both are padded out
+     * to whole cache lines: cache maintenance works a line at a time and
+     * would otherwise reach into whatever shares them.
      */
-    desc = AllocMem((ADMA2_MAX_DESC * sizeof(struct sdcard_ADMADesc)) + 64,
-                    MEMF_PUBLIC | MEMF_CLEAR | MEMF_31BIT);
-    bounce = AllocMem(ADMA2_BOUNCE_SIZE + 64, MEMF_PUBLIC | MEMF_31BIT);
+    desc = FNAME_SDCBUS(ADMAAllocMem)(bus, (ADMA2_MAX_DESC * sizeof(struct sdcard_ADMADesc)) + 64,
+                                      MEMF_PUBLIC | MEMF_CLEAR);
+    bounce = FNAME_SDCBUS(ADMAAllocMem)(bus, ADMA2_BOUNCE_SIZE + 64, MEMF_PUBLIC);
 
     if (!desc || !bounce)
     {
@@ -703,15 +715,11 @@ BOOL FNAME_SDCBUS(ADMAAlloc)(struct sdcard_Bus *bus)
 
     bus->sdcb_ADMADesc = (APTR)(((IPTR)desc + 63) & ~63);
     bus->sdcb_ADMABounce = (APTR)(((IPTR)bounce + 63) & ~63);
-    bus->sdcb_ADMABounceSize = ADMA2_BOUNCE_SIZE;
 
-    /* Below 2GB is not always within the bus's DMA window */
-    if (((UQUAD)FNAME_SDCBUS(ADMAPhys)(bus, bus->sdcb_ADMADesc)
-            + (ADMA2_MAX_DESC * sizeof(struct sdcard_ADMADesc)) > bus->sdcb_DMALimit)
-        || ((UQUAD)FNAME_SDCBUS(ADMAPhys)(bus, bus->sdcb_ADMABounce)
-            + ADMA2_BOUNCE_SIZE > bus->sdcb_DMALimit))
+    if (!FNAME_SDCBUS(ADMAPhys)(bus, bus->sdcb_ADMADesc, ADMA2_MAX_DESC * sizeof(struct sdcard_ADMADesc))
+        || !FNAME_SDCBUS(ADMAPhys)(bus, bus->sdcb_ADMABounce, ADMA2_BOUNCE_SIZE))
     {
-        bug("[SDBus%02u] ADMA2 buffers out of the DMA window, transfers will use PIO\n",
+        bug("[SDBus%02u] ADMA2 buffers out of the controller's reach, transfers will use PIO\n",
             bus->sdcb_BusNum);
         FreeMem(desc, (ADMA2_MAX_DESC * sizeof(struct sdcard_ADMADesc)) + 64);
         FreeMem(bounce, ADMA2_BOUNCE_SIZE + 64);
@@ -719,6 +727,7 @@ BOOL FNAME_SDCBUS(ADMAAlloc)(struct sdcard_Bus *bus)
         return FALSE;
     }
 
+    bus->sdcb_ADMABounceSize = ADMA2_BOUNCE_SIZE;
     bus->sdcb_BusFlags |= AF_Bus_DMA;
 
     D(bug("[SDBus%02u] ADMA2 descriptors @ 0x%p, bounce @ 0x%p\n", bus->sdcb_BusNum,
@@ -777,25 +786,29 @@ retry:
     remaining = len;
     while (remaining > 0)
     {
-        IPTR    phys = FNAME_SDCBUS(ADMAPhys)(bus, pos);
         ULONG   run = 4096 - ((ULONG)((IPTR)pos & 4095));
+        IPTR    phys;
 
         if (run > remaining)
             run = remaining;
 
-        while ((run < remaining) && (run < ADMA2_MAX_XFER) &&
-               (FNAME_SDCBUS(ADMAPhys)(bus, pos + run) == (phys + run)))
+        phys = FNAME_SDCBUS(ADMAPhys)(bus, pos, run);
+
+        while (phys && (run < remaining) && (run < ADMA2_MAX_XFER))
         {
             ULONG more = ((remaining - run) > 4096) ? 4096 : (remaining - run);
 
             if ((run + more) > ADMA2_MAX_XFER)
                 more = ADMA2_MAX_XFER - run;
 
+            if (FNAME_SDCBUS(ADMAPhys)(bus, pos + run, more) != (phys + run))
+                break;
+
             run += more;
         }
 
         /* Out of the controller's reach, or too fragmented to describe. */
-        if ((n >= ADMA2_MAX_DESC) || (((UQUAD)phys + run) > bus->sdcb_DMALimit))
+        if ((n >= ADMA2_MAX_DESC) || !phys)
         {
             DTRANS(bug("[SDBus%02u] %s: buffer needs PIO (desc %d, phys 0x%p)\n",
                        bus->sdcb_BusNum, __PRETTY_FUNCTION__, n, (APTR)phys));
@@ -839,7 +852,7 @@ retry:
     CacheClearE(bounced ? bus->sdcb_ADMABounce : data, len, CACRF_ClearD);
 
     bus->sdcb_IOWriteLong(SDHCI_ADMA_ADDRESS,
-        (ULONG)FNAME_SDCBUS(ADMAPhys)(bus, bus->sdcb_ADMADesc), bus);
+        (ULONG)FNAME_SDCBUS(ADMAPhys)(bus, bus->sdcb_ADMADesc, n * sizeof(struct sdcard_ADMADesc)), bus);
 
     sdcHostCtrl = bus->sdcb_IOReadByte(SDHCI_HOST_CONTROL, bus);
     sdcHostCtrl = (sdcHostCtrl & ~SDHCI_HCTRL_DMA_MASK) | SDHCI_HCTRL_ADMA32;
