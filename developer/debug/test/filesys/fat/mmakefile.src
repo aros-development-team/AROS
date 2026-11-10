@@ -38,3 +38,11 @@ USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
 %build_prog mmake=test-fat-parent-rename \
 	files="parent_rename" \
 	progname=parent_rename targetdir=$(AROS_TESTS)/filesys/fat
+
+#MM- test : test-fat-writedate
+#MM- test-quick : test-fat-writedate-quick
+#MM test-fat-writedate : includes linklibs
+
+%build_prog mmake=test-fat-writedate \
+	files="fatwritedate" \
+	progname=fatwritedate targetdir=$(AROS_TESTS)/filesys/fat
