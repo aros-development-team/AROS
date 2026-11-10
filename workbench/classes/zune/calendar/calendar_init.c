@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/types.h>
@@ -23,6 +23,10 @@ struct Device      *TimerBase;
 struct timerequest *TimerIO;
 
 /*** Library startup and shutdown *******************************************/
+/*
+ * Allocate a timerequest and open timer.device UNIT_VBLANK.
+ * Return TRUE on success or release allocations and return FALSE.
+ */
 static int Calendar_Startup(LIBBASETYPEPTR LIBBASE )
 {
     TimerIO    = NULL;
@@ -47,6 +51,10 @@ error:
     return FALSE;
 }
 
+/*
+ * Close timer.device and free request. Not idempotent: globals are
+ * not cleared. Requires no active time readers; returns TRUE.
+ */
 static int Calendar_Shutdown( LIBBASETYPEPTR LIBBASE )
 {
     if( TimerBase != NULL ) CloseDevice( (struct IORequest *) TimerIO );

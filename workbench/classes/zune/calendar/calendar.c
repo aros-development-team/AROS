@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <utility/date.h>
@@ -36,8 +36,162 @@ STRPTR def_daylabels[] =
     "Sat"
 };
 
+/****** Calendar.mcc/MUIC_Calendar ************
+*
+*   NAME
+*       MUIC_Calendar
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       Draws a month grid with the selected day highlighted. Date is
+*       initialized from a copied ClockData or current system time. Keyboard
+*       and mouse selection stays in the current month; no month navigation
+*       or periodic date refresh is provided.
+*
+*   NOTES
+*       Date is copied on input; Get borrows instance data. DayLabels borrows
+*       seven Sunday-first strings, not twelve as the header suggests.
+*       Setup/Cleanup register/remove a Window event handler. Set caps
+*       overlarge day values but does not validate arbitrary months/years.
+*
+*   BUGS
+*       Invalid months are unsafe for Date2Amiga; supply representable dates.
+*       Repeated Setup can increase cell width. Locale label pointers are
+*       retained after CloseLocale. Mouse hit testing requires a valid event
+*       and nonzero rendered cell dimensions.
+*
+*/
+/****** Calendar.mcc/MUIA_Calendar_Date ************
+*
+*   NAME
+*       MUIA_Calendar_Date
+*
+*   FUNCTION
+*       Get or replace the complete ClockData date.
+*
+*   INPUTS
+*       Initialize, set, get; non-NULL ClockData pointer for input.
+*
+*   NOTES
+*       Input is copied; Get borrows the instance address. Set caps an
+*       oversized month day, round-trips through Date2Amiga/Amiga2Date and
+*       recomputes weekday. Invalid month/date values are not safely rejected.
+*       Only date changes redraw; notifications carry original input, not
+*       necessarily normalized data. Mouse/keyboard updates notify MonthDay.
+*
+*/
+/****** Calendar.mcc/MUIA_Calendar_MonthDay ************
+*
+*   NAME
+*       MUIA_Calendar_MonthDay
+*
+*   FUNCTION
+*       Get or set the one-based day of month.
+*
+*   INPUTS
+*       Set, get; UWORD, 1..number of days in month.
+*
+*   NOTES
+*       An oversized value is capped at month end during Set; input is not
+*       otherwise fully validated. No constructor handling. A changed date
+*       redraws; Date and alias notifications are not synthesized.
+*
+*/
+/****** Calendar.mcc/MUIA_Calendar_MonthDay0 ************
+*
+*   NAME
+*       MUIA_Calendar_MonthDay0
+*
+*   FUNCTION
+*       Get or set the zero-based day of month.
+*
+*   INPUTS
+*       Set, get; UWORD, 0..days-in-month minus one.
+*
+*   NOTES
+*       Set adds one; Get subtracts one. Excessive days are capped during
+*       Set; invalid date inputs are not otherwise fully validated. No
+*       constructor handling or synthesized Date/alias notification.
+*
+*/
+/****** Calendar.mcc/MUIA_Calendar_Month ************
+*
+*   NAME
+*       MUIA_Calendar_Month
+*
+*   FUNCTION
+*       Get or set the one-based month.
+*
+*   INPUTS
+*       Set, get; UWORD, 1..12.
+*
+*   NOTES
+*       Day is capped to the selected month length and date reconverted.
+*       Invalid months are unsafe; no complete range validation. No
+*       constructor handling or synthesized Date/alias notification.
+*
+*/
+/****** Calendar.mcc/MUIA_Calendar_Month0 ************
+*
+*   NAME
+*       MUIA_Calendar_Month0
+*
+*   FUNCTION
+*       Get or set the zero-based month.
+*
+*   INPUTS
+*       Set, get; UWORD, 0..11.
+*
+*   NOTES
+*       Set adds one; Get subtracts one. Day is capped to month length
+*       and date reconverted. Invalid months are unsafe; no constructor
+*       handling or synthesized Date/alias notification.
+*
+*/
+/****** Calendar.mcc/MUIA_Calendar_Year ************
+*
+*   NAME
+*       MUIA_Calendar_Year
+*
+*   FUNCTION
+*       Get or set the calendar year.
+*
+*   INPUTS
+*       Set, get; UWORD, representable full year.
+*
+*   NOTES
+*       Day is capped and date reconverted. No general range validation
+*       or constructor handling; no synthesized Date/alias notification.
+*
+*/
+/****** Calendar.mcc/MUIA_Calendar_DayLabels ************
+*
+*   NAME
+*       MUIA_Calendar_DayLabels
+*
+*   FUNCTION
+*       Supply the seven weekday captions.
+*
+*   INPUTS
+*       Initialize only; pointer to seven NUL-terminated strings in
+*       Sunday-to-Saturday order. NULL uses defaults.
+*
+*   NOTES
+*       Array and strings are borrowed and must remain valid while used.
+*       NULL elements are not checked. No local setter/getter. The header
+*       incorrectly specifies 12 entries. Custom labels use Sunday-first
+*       ordering instead of the default locale-based calendar ordering.
+*
+*/
+
 /*** Methods ****************************************************************/
 
+/*
+ * Borrow labels, copy Date or use system time, and prepare Window
+ * event node. Initial Date is not normalized; registration waits for Setup.
+ */
 IPTR Calendar__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Calendar_DATA *data;
@@ -98,11 +252,19 @@ IPTR Calendar__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 }
 
 
+/*
+ * Delegate Area disposal; borrowed label storage remains
+ * caller-owned. Requires prior Cleanup.
+ */
 IPTR Calendar__OM_DISPOSE(Class *cl, Object *obj, Msg msg)
 {
     return DoSuperMethodA(cl, obj, msg);
 }
 
+/*
+ * Count days by advancing a copied date; requires valid month and
+ * representable Date2Amiga arithmetic. No error status.
+ */
 LONG NumMonthDays(struct ClockData *cd)
 {
     struct ClockData    cd2;
@@ -128,6 +290,10 @@ LONG NumMonthDays(struct ClockData *cd)
     return monthday;
 }
 
+/*
+ * Apply date tags, cap oversized day and reconvert. Invalid months
+ * are unsafe. Redraw on date change; notifications carry original tags.
+ */
 IPTR Calendar__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
@@ -211,6 +377,10 @@ IPTR Calendar__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 }
 
 
+/*
+ * Return date components or borrowed ClockData; zero-based getters
+ * subtract one. DayLabels has no getter.
+ */
 IPTR Calendar__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
@@ -252,6 +422,10 @@ IPTR Calendar__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 }
 
 
+/*
+ * Measure labels/grid and register Window event handler after Area
+ * setup. Repeated Setup does not reset cell width.
+ */
 IPTR Calendar__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
@@ -296,6 +470,10 @@ IPTR Calendar__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 }
 
 
+/*
+ * Remove Window event handler and delegate Cleanup. Does not
+ * release borrowed label strings.
+ */
 IPTR Calendar__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
@@ -306,6 +484,10 @@ IPTR Calendar__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 }
 
 
+/*
+ * Size the seven-column grid from measured cells; requires
+ * completed Setup and positive dimensions.
+ */
 IPTR Calendar__MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
@@ -324,6 +506,10 @@ IPTR Calendar__MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg
 }
 
 
+/*
+ * Draw and cache the month grid dimensions for hit testing.
+ * Requires valid Date and graphics state; returns 0.
+ */
 IPTR Calendar__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
@@ -490,6 +676,10 @@ IPTR Calendar__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 }
 
 
+/*
+ * Convert mouse coordinates into a day clamped to current month.
+ * Requires valid event and nonzero drawn cell dimensions.
+ */
 static WORD DayUnderMouse(Object *obj, struct Calendar_DATA *data, struct IntuiMessage *imsg)
 {
     WORD x, y, offx, offy, i;
@@ -529,6 +719,11 @@ static WORD DayUnderMouse(Object *obj, struct Calendar_DATA *data, struct IntuiM
 #define _between(a,x,b) ((x)>=(a) && (x)<=(b))
 
 
+/*
+ * Handle key selection and mouse drag within current month.
+ * Non-key events require a valid imsg and drawn grid; handled key
+ * movements return MUI_EventHandlerRC_Eat, mouse paths return zero.
+ */
 IPTR Calendar__MUIM_HandleEvent(Class *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
