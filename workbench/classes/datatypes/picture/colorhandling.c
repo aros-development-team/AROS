@@ -212,6 +212,7 @@ static void ScaleLineSimple( UBYTE *srcxptr, UBYTE *destxptr, ULONG destwidth, U
     }
     else
     {
+        a = 0xff;       /* a source without alpha is opaque */
         destx = destwidth;
         while( destx-- )
         {
