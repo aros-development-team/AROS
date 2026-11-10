@@ -187,6 +187,7 @@ STATIC AROS_LH3(LONG, OpenDevice,
         DeleteMsgPort(mp);
     }
 
+    io->io_Error = ret;
     return ret;
 
     AROS_LIBFUNC_EXIT
