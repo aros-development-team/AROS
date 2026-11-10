@@ -22,7 +22,8 @@ FILES := \
     compflicker \
     windowinputregion \
     windowinputdrop \
-    strgtextval
+    strgtextval \
+    wanderertitle
 
 EXEDIR := $(AROS_TESTS)/intuition
 

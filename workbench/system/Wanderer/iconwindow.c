@@ -434,6 +434,15 @@ D(bug("[Wanderer:IconWindow]: %s()\n", __PRETTY_FUNCTION__));
 
     isRoot = (BOOL)GetTagData(MUIA_IconWindow_IsRoot, (IPTR)FALSE, message->ops_AttrList);
 
+    if (!isRoot)
+    {
+        _newIconWin__Title = (STRPTR)GetTagData(MUIA_IconWindow_Location,
+                                              (IPTR)NULL, message->ops_AttrList);
+        if (!_newIconWin__Title || !_newIconWin__Title[0] ||
+            strlen(_newIconWin__Title) >= IWD_MAX_DIRECTORYPATHLEN)
+            return NULL;
+    }
+
     actionHook = (struct Hook *)GetTagData(MUIA_IconWindow_ActionHook, (IPTR) NULL, message->ops_AttrList);
     prefs = (Object *)GetTagData(MUIA_Wanderer_Prefs, (IPTR) NULL, message->ops_AttrList);
 
@@ -498,7 +507,6 @@ D(bug("[Wanderer:IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETT
         _newIconWin__WindowWidth = 300;
         _newIconWin__WindowHeight = 300;
 
-        _newIconWin__Title = (STRPTR) GetTagData(MUIA_IconWindow_Location, (IPTR)NULL, message->ops_AttrList);
         _newIconWin__TitleLen = strlen(_newIconWin__Title);
         isVolume = (_newIconWin__Title[_newIconWin__TitleLen - 1] == ':');
 
@@ -727,6 +735,16 @@ D(bug("]\n"));
 
         data->iwd_Screen                                = _newIconWin__Screen;
         data->iwd_Title                                 = _newIconWin__Title;
+
+        if (!isRoot)
+        {
+            /* MUI keeps the title pointer. The opening message's path can be
+             * freed as soon as Wanderer replies, so keep our own copy. */
+            strcpy(data->iwd_DirectoryPath, _newIconWin__Title);
+            data->iwd_Title = data->iwd_DirectoryPath;
+            SET(self, MUIA_Window_Title, (IPTR)data->iwd_Title);
+        }
+
 
         data->iwd_RootViewObj                           = _newIconWin__RootViewObj;
         data->iwd_IconListObj                           = _newIconWin__IconListObj;
