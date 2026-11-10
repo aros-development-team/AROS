@@ -38,6 +38,13 @@
 
 #include "Debug.h"
 
+/* Replace length bytes at valid offset x with ptrn_length readable bytes
+ * from independent text. Require valid ranges and an owned content buffer.
+ * Apply MaxLength truncation, shift following bytes, copy replacement, and
+ * adjust cursor at or after x. Return FALSE for truncation and beep;
+ * allocation failure is not safely propagated. No undo, redraw or
+ * notification is performed here.
+ */
 BOOL OverwriteA(STRPTR text, UWORD x, UWORD length, UWORD ptrn_length, struct InstData *data)
 {
   BOOL result = TRUE;
@@ -79,6 +86,11 @@ BOOL OverwriteA(STRPTR text, UWORD x, UWORD length, UWORD ptrn_length, struct In
   return result;
 }
 
+/* Compute the replacement length with strlen and delegate to OverwriteA,
+ * returning its result. Require non-NULL terminated text independent of the
+ * content buffer and valid offset/replacement ranges. UWORD lengths limit
+ * representable edits; no extra validation is added.
+ */
 BOOL Overwrite(STRPTR text, UWORD x, UWORD length, struct InstData *data)
 {
   BOOL result;
@@ -91,6 +103,11 @@ BOOL Overwrite(STRPTR text, UWORD x, UWORD length, struct InstData *data)
   return result;
 }
 
+/* Scan backward from a valid position in a readable string until a double
+ * quote, greater-than sign, space, equals sign, or offset zero. Return the
+ * start offset without modifying or retaining text. The signed WORD
+ * interface is not a general unbounded path parser.
+ */
 WORD VolumeStart(STRPTR text, WORD pos)
 {
   BOOL searching = TRUE;
@@ -118,6 +135,11 @@ WORD VolumeStart(STRPTR text, WORD pos)
   return pos;
 }
 
+/* Scan backward at or before the valid supplied position for a colon, then
+ * use VolumeStart to locate the preceding token boundary. Return that
+ * offset or the volume-completion sentinel. Borrow the input buffer for
+ * this call only; do not modify it or validate arbitrary offsets.
+ */
 LONG mFileNameStart(struct MUIP_BetterString_FileNameStart *msg)
 {
   STRPTR buffer = msg->buffer;
@@ -137,6 +159,12 @@ LONG mFileNameStart(struct MUIP_BetterString_FileNameStart *msg)
   return pos;
 }
 
+/* Choose the cached directory entry with the requested case-sensitive
+ * lexical rank and replace the current partial name. Require a nonempty
+ * valid completion cache and a rank within FileEntries. Use a bounded
+ * temporary name, append slash for directory type 2 or space otherwise, and
+ * ignore Overwrite result. No redraw or notification is issued here.
+ */
 VOID InsertFileName(UWORD namestart, struct InstData *data)
 {
   struct ExAllData *ead1 = &data->FNCBuffer->buffer;
@@ -185,6 +213,14 @@ VOID InsertFileName(UWORD namestart, struct InstData *data)
   LEAVE();
 }
 
+/* Synchronously complete a DOS path or volume using method-dispatched
+ * FileNameStart. Cycle valid cached entries by direction; otherwise
+ * lock/enumerate a directory or DOS list. Cache directory matches and
+ * replace the partial name. Return whether an edit was reported, not a
+ * complete error status. Several empty-result/allocation paths leave
+ * incomplete state; caller must not treat FALSE as transactional rollback.
+ * No notification or redraw is issued here.
+ */
 BOOL FileNameComplete(Object *obj, BOOL backwards, struct InstData *data)
 {
   BOOL edited = FALSE;
