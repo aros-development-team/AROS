@@ -1,13 +1,3 @@
-
-include $(SRCDIR)/config/aros.cfg
-
-USER_AFLAGS 	:= -I$(GENINCDIR)
-
-#MM- compiler-posixc-riscv64 : includes-asm_h
-
-%build_archspecific \
-  mainmmake=compiler-posixc modname=posixc maindir=compiler/crt/posixc \
-  arch=riscv64 \
-  asmfiles="siglongjmp sigsetjmp vfork vfork_longjmp"
-
-%common
+#MM- compiler-posixc-riscv64 : compiler-posixc-riscv
+#MM- compiler-posixc-riscv64-quick : compiler-posixc-riscv-quick
+#MM- compiler-posixc-riscv64-linklib : compiler-posixc-riscv-linklib

@@ -1,12 +1,3 @@
-
-include $(SRCDIR)/config/aros.cfg
-
-USER_AFLAGS 	:= -I$(GENINCDIR)
-
-%build_archspecific \
-  mainmmake=compiler-stdc \
-  modname=stdc maindir=compiler/crt/stdc \
-  arch=riscv64 \
-  files="fenv" asmfiles="longjmp setjmp"
-
-#MM compiler-stdc-riscv64 : compiler-stdc-includes includes-asm_h-riscv64
+#MM- compiler-stdc-riscv64 : includes-asm_h-riscv64 compiler-stdc-riscv
+#MM- compiler-stdc-riscv64-quick : compiler-stdc-riscv-quick
+#MM- compiler-stdc-riscv64-linklib : compiler-stdc-riscv-linklib

@@ -15,21 +15,15 @@
 #define AROS_RISCV_GENMODULE_H
 
 #include <exec/execbase.h>
+#include <aros/riscv/xlen.h>
 
 /* Register-width load and store, and the frame the stubs below save the
  * argument registers in: fa0-fa7 at 0-56, then a0-a7 and ra in register-width
- * slots from 64. */
-#if (__riscv_xlen == 64)
-#define __AROS_GM_RV_LX     "ld"
-#define __AROS_GM_RV_SX     "sd"
-#define __AROS_GM_RV_SZREG  "8"
-#define __AROS_GM_RV_FRAME  "144"
-#else
-#define __AROS_GM_RV_LX     "lw"
-#define __AROS_GM_RV_SX     "sw"
-#define __AROS_GM_RV_SZREG  "4"
-#define __AROS_GM_RV_FRAME  "112"
-#endif
+ * slots from 64, rounded up to 16 bytes (144 on RV64, 112 on RV32). */
+#define __AROS_GM_RV_LX     __AROS_RV_LX_STR
+#define __AROS_GM_RV_SX     __AROS_RV_SX_STR
+#define __AROS_GM_RV_SZREG  __AROS_RV_SZREG_STR
+#define __AROS_GM_RV_FRAME  "((64+9*" __AROS_GM_RV_SZREG "+15)&~15)"
 /* Integer slot k (a0 = 0 ... a7 = 7, ra = 8) */
 #define __AROS_GM_RV_SLOT(k) "64+" #k "*" __AROS_GM_RV_SZREG "(sp)"
 
