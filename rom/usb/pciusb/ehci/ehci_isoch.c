@@ -398,28 +398,38 @@ void ehciHandleIsochTDs(struct PCIController *hc)
                 /* Hand each completed transaction to the client with its
                    exact length.  An aggregate length cannot describe the
                    per-microframe split when packets are short. */
-                if(urti && urti->urti_InReqHook && urti->urti_InDoneHook && src) {
+                if(urti && urti->urti_InDoneHook && src) {
                     UWORD ti;
                     for(ti = 0; ti < txn_count; ti++) {
                         struct IOUsbHWBufferReq sub;
                         ULONG n = txn_len[ti];
 
-                        if(!n)
-                            continue;
-
+                        /* The received length is made available to the request
+                           hook, like the non-EHCI HCDs and denebusb do, so
+                           clients that only supply a buffer still get data. */
                         sub.ubr_Buffer = NULL;
-                        sub.ubr_Length = 0;
-                        sub.ubr_Frame = 0;
+                        sub.ubr_Length = n;
+                        sub.ubr_Frame = ptd->ptd_FrameIdx;
                         sub.ubr_Flags = 0;
 
-                        CallHookPkt(urti->urti_InReqHook, rtn, &sub);
-                        if(!sub.ubr_Buffer)
-                            continue;
-                        if(n > sub.ubr_Length)
-                            n = sub.ubr_Length;
+                        if(urti->urti_InReqHook)
+                            CallHookPkt(urti->urti_InReqHook, rtn, &sub);
 
-                        CopyMem((APTR)(src + txn_off[ti]), sub.ubr_Buffer, n);
-                        sub.ubr_Length = n;
+                        if(n && sub.ubr_Buffer) {
+                            ULONG copy = n;
+
+                            if(sub.ubr_Length < copy)
+                                copy = sub.ubr_Length;
+                            if(copy)
+                                CopyMem((APTR)(src + txn_off[ti]),
+                                        sub.ubr_Buffer, copy);
+                            sub.ubr_Length = copy;
+                        } else {
+                            /* Zero-length transactions still get a done hook;
+                               some clients use it to finish an image. */
+                            sub.ubr_Length = 0;
+                        }
+
                         sub.ubr_Frame = ptd->ptd_FrameIdx;
                         CallHookPkt(urti->urti_InDoneHook, rtn, &sub);
                     }
@@ -843,7 +853,9 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
         dmabuffer = buffer;
 #if __WORDSIZE == 64
-        if(rtn->rtn_IOReq.iouh_Dir == UHDIR_IN) {
+        if(hw_bw) {
+            /* A high-bandwidth iTD spans 8 microframes; use a low, physically
+               contiguous bounce for the whole frame. */
             dmabuffer = AllocVec(dma_len, MEMF_31BIT|MEMF_PUBLIC);
             if(!dmabuffer) {
                 ehciAbortIsochIO(hc, rtn, UHIOERR_OUTOFMEMORY);
@@ -855,7 +867,7 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
                 ehciAbortIsochIO(hc, rtn, UHIOERR_OUTOFMEMORY);
                 return FALSE;
             }
-            if(dmabuffer != buffer)
+            if(dmabuffer != buffer && rtn->rtn_IOReq.iouh_Dir == UHDIR_OUT)
                 CopyMem(buffer, dmabuffer, len);
         }
 #endif
