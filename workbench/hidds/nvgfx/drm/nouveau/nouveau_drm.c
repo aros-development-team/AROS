@@ -1705,6 +1705,121 @@ nouveau_aros_probe(struct pci_dev *pdev, struct drm_device **pdrm)
 }
 
 /*
+ * One sensor reading for the hidd's telemetry objects, in the units of
+ * nouveau_aros_sensors.h. The conditions are those of nouveau_hwmon.c;
+ * a sensor the card does not have (or that GSP-RM owns) is -ENODEV.
+ */
+#include <nvkm/subdev/iccsense.h>
+#include <nvkm/subdev/therm.h>
+#include <nvkm/subdev/volt.h>
+#include <nouveau_aros_sensors.h>
+
+int
+nouveau_aros_sensor(struct drm_device *dev, int what, long *val)
+{
+	struct nouveau_drm *drm = nouveau_drm(dev);
+	struct nvkm_device *device = nvxx_device(drm);
+	struct nvkm_therm *therm = device ? device->therm : NULL;
+	struct nvkm_volt *volt = device ? device->volt : NULL;
+	struct nvkm_iccsense *iccsense = device ? device->iccsense : NULL;
+	int attr = -1, ret;
+
+	switch (what) {
+	case NVSENSOR_TEMP:
+		if (!therm)
+			return -ENODEV;
+		ret = nvkm_therm_temp_get(therm);
+		if (ret < 0)
+			return ret;
+		*val = (long)ret * 1000;
+		return 0;
+	case NVSENSOR_TEMP_FANBOOST:
+		attr = NVKM_THERM_ATTR_THRS_FAN_BOOST;
+		break;
+	case NVSENSOR_TEMP_DOWNCLOCK:
+		attr = NVKM_THERM_ATTR_THRS_DOWN_CLK;
+		break;
+	case NVSENSOR_TEMP_CRITICAL:
+		attr = NVKM_THERM_ATTR_THRS_CRITICAL;
+		break;
+	case NVSENSOR_TEMP_SHUTDOWN:
+		attr = NVKM_THERM_ATTR_THRS_SHUTDOWN;
+		break;
+	case NVSENSOR_FAN_RPM:
+		if (!therm)
+			return -ENODEV;
+		ret = nvkm_therm_fan_sense(therm);
+		if (ret < 0)
+			return ret;
+		*val = ret;
+		return 0;
+	case NVSENSOR_FAN_DUTY:
+		if (!therm || !therm->fan_get)
+			return -ENODEV;
+		ret = therm->fan_get(therm);
+		if (ret < 0)
+			return ret;
+		*val = ret;
+		return 0;
+	case NVSENSOR_FAN_DUTY_MIN:
+	case NVSENSOR_FAN_DUTY_MAX:
+		if (!therm || !therm->attr_get || !therm->fan_get || therm->fan_get(therm) < 0)
+			return -ENODEV;
+		ret = therm->attr_get(therm, what == NVSENSOR_FAN_DUTY_MIN ?
+				      NVKM_THERM_ATTR_FAN_MIN_DUTY : NVKM_THERM_ATTR_FAN_MAX_DUTY);
+		if (ret < 0)
+			return ret;
+		*val = ret;
+		return 0;
+	case NVSENSOR_VOLT:
+		if (!volt)
+			return -ENODEV;
+		ret = nvkm_volt_get(volt);
+		if (ret < 0)
+			return ret;
+		*val = ret / 1000;
+		return 0;
+	case NVSENSOR_VOLT_MIN:
+	case NVSENSOR_VOLT_MAX:
+		if (!volt || nvkm_volt_get(volt) < 0)
+			return -ENODEV;
+		ret = what == NVSENSOR_VOLT_MIN ? volt->min_uv : volt->max_uv;
+		if (ret <= 0)
+			return -ENODEV;
+		*val = ret / 1000;
+		return 0;
+	case NVSENSOR_POWER:
+		if (!iccsense || !iccsense->data_valid || list_empty(&iccsense->rails))
+			return -ENODEV;
+		ret = nvkm_iccsense_read_all(iccsense);
+		if (ret < 0)
+			return ret;
+		*val = ret / 1000;
+		return 0;
+	case NVSENSOR_POWER_MAX:
+	case NVSENSOR_POWER_CRITICAL:
+		if (!iccsense || !iccsense->data_valid || list_empty(&iccsense->rails))
+			return -ENODEV;
+		ret = what == NVSENSOR_POWER_MAX ? iccsense->power_w_max : iccsense->power_w_crit;
+		if (ret <= 0)
+			return -ENODEV;
+		*val = ret / 1000;
+		return 0;
+	default:
+		return -EINVAL;
+	}
+
+	/* a temperature threshold: only where the temperature itself can be read */
+	if (!therm || !therm->attr_get || nvkm_therm_temp_get(therm) < 0)
+		return -ENODEV;
+	ret = therm->attr_get(therm, attr);
+	if (ret <= 0)
+		return -ENODEV;
+	*val = (long)ret * 1000;
+	return 0;
+}
+
+/*
  * The system is about to reboot. Do what every other port of this stack
  * does on driver unload: tell GSP-RM the driver is going away and let it
  * halt, so its write-protected region is torn down and the next boot's

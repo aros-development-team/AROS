@@ -57,6 +57,12 @@ static IPTR entry_call(APTR func, IPTR a0, IPTR a1, IPTR a2, IPTR a3)
     return ret;
 }
 
+/* A call into the driver for the hidd's own classes, under the same stack rule */
+IPTR HIDDNVGfxDrmCall(APTR func, IPTR a0, IPTR a1, IPTR a2, IPTR a3)
+{
+    return entry_call(func, a0, a1, a2, a3);
+}
+
 static IPTR open_call(IPTR a0, IPTR a1, IPTR a2, IPTR a3)
 {
     return (IPTR)drmOpen("nouveau", "");

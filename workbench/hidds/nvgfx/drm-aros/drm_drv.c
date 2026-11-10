@@ -615,7 +615,16 @@ int nouveau_init(void)
 }
 
 int nouveau_aros_shutdown(struct drm_device *dev);
+int nouveau_aros_sensor(struct drm_device *dev, int what, long *val);
 extern int nouveau_compat_atomic;
+
+/* One reading of the card's sensors (include/nouveau_aros_sensors.h) */
+int nouveau_sensor(int what, long *value)
+{
+    if (!current_drm_device)
+        return -ENODEV;
+    return nouveau_aros_sensor(current_drm_device, what, value);
+}
 
 /*
  * Called from the shutdown reset callback, after display work has been

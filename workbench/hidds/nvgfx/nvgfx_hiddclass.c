@@ -689,6 +689,9 @@ OOP_Object * METHOD(NVGfx, Root, New)
             /* Tells which device this driver runs, see moHidd_AddRelation */
             HIDD_AddRelation(o, vHidd_Relation_Device, (OOP_Object *)pdev->oopdev, NULL);
 
+            /* The card's temperature, fan and power sensors */
+            HIDDNVGfxTelemetryInit(cl, o, (OOP_Object *)pdev->oopdev);
+
             /* Pass local information to class */
             gfxdata->selectedcrtcid = selectedcrtcid;
             gfxdata->selectedmode = NULL;

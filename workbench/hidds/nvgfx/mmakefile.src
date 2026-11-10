@@ -25,7 +25,7 @@ include $(SRCDIR)/$(CURDIR)/sources.drm.mak
 #MM- hidd-nvgfx-i386 : hidd-nvgfx
 #MM- hidd-nvgfx-x86_64 : hidd-nvgfx
 #MM- hidd-nvgfx-riscv64 : hidd-nvgfx
-#MM hidd-nvgfx : hidd-nvgfx-libdrm hidd-nvgfx-drm hidd-nvgfx-gallium hidd-i2c hidd-agp-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) hidd-gallium hidd-vulkan mesa3dgl-linklibs linklibs-libatomic
+#MM hidd-nvgfx : kernel-hidd-telemetry-includes hidd-nvgfx-libdrm hidd-nvgfx-drm hidd-nvgfx-gallium hidd-i2c hidd-agp-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) hidd-gallium hidd-vulkan mesa3dgl-linklibs linklibs-libatomic
 #MM hidd-nvgfx-gallium : mesa3dgl-linklibs
 # Vulkan (NVK) is the library nvk.nvdd, built where the Rust toolchain
 # builds its compiler (NAK): nvk/mmakefile.src.
@@ -314,6 +314,7 @@ NVGFX_HIDD_C_SOURCES := \
             nvgfx_av1grain \
             nvgfx_vp9prob \
             nvgfx_i2cclass \
+            nvgfx_telemetry \
             drm_entry \
             nvgfx_nvdd \
             $(addprefix $(XF86_NOUVEAU_PATH), $(XF86_NOUVEAU_SOURCES))  \
