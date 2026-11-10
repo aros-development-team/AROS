@@ -38,3 +38,12 @@ EXEDIR := $(AROS_TESTS)/Zune
 
 %build_progs mmake=test-zune \
     files=$(FILES) targetdir=$(EXEDIR)
+
+# BetterString's UTF-8 mode: needs the class and unitext.library
+#MM- test-zune : test-zune-betterstringutf8
+#MM test-zune-betterstringutf8 : includes linklibs workbench-classes-zune-betterstring-class \
+#MM     workbench-libs-unitext
+
+%build_prog mmake=test-zune-betterstringutf8 progname=BetterStringUTF8 \
+    files=betterstringutf8 targetdir=$(EXEDIR) \
+    usestartup=yes

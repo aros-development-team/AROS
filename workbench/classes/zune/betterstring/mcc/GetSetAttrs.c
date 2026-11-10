@@ -114,6 +114,14 @@ IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg)
       ti_Data = isFlagSet(data->Flags, FLG_NoNotify) ? TRUE : FALSE;
     break;
 
+    case MUIA_BetterString_UTF8:
+      ti_Data = isFlagSet(data->Flags, FLG_UTF8) ? TRUE : FALSE;
+    break;
+
+    case MUIA_BetterString_UTF8Status:
+      ti_Data = (IPTR)data->Utf8Status;
+    break;
+
     case MUIA_BetterString_InactiveContents:
       ti_Data = (IPTR)data->InactiveContents;
     break;
@@ -203,6 +211,9 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
       case MUIA_String_BufferPos:
       {
         data->BufferPos = (UWORD)ti_Data;
+        // UTF-8: on a cluster boundary, never inside a character
+        if(isFlagSet(data->Flags, FLG_UTF8) && data->UniText != NULL)
+          data->BufferPos = Utf8Snap(data, data->BufferPos);
         clearFlag(data->Flags, FLG_BlockEnabled);
         redraw = TRUE;
       }
@@ -230,6 +241,14 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
       {
         STRPTR new_str = (STRPTR)ti_Data;
         BOOL circular = FALSE;
+
+        // UTF-8: text that is not UTF-8 is refused, the old contents stay
+        if(new_str != NULL && isFlagSet(data->Flags, FLG_UTF8) && data->UniText != NULL &&
+           Utf8Valid(new_str, strlen(new_str)) == FALSE)
+        {
+          tag->ti_Tag = TAG_IGNORE;
+          break;
+        }
 
         if(new_str != NULL)
         {
@@ -260,8 +279,12 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
               data->DisplayPos = 0;
               if(data->MaxLength != 0 && data->BufferPos >= data->MaxLength)
               {
-                data->Contents[data->MaxLength-1] = '\0';
-                data->BufferPos = data->MaxLength-1;
+                ULONG cut = data->MaxLength-1;
+                // UTF-8: cut at a cluster boundary, not inside a character
+                if(isFlagSet(data->Flags, FLG_UTF8) && data->UniText != NULL)
+                  cut = Utf8Cut(data->Contents, strlen(data->Contents), cut);
+                data->Contents[cut] = '\0';
+                data->BufferPos = cut;
               }
 
               // the start of a block cannot be behind the last character

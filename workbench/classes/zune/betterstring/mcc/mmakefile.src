@@ -17,6 +17,7 @@ FILES := \
         InitConfig \
         Pointer \
         PrintString \
+        UTF8 \
         Debug
 
 USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include

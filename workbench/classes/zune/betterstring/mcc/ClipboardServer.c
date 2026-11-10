@@ -55,6 +55,12 @@ struct ServerData
   ULONG sd_Command;
   STRPTR sd_String;
   LONG sd_Length;
+  // UTF-8 mode: on write, the CHRS copy written beside the UTF8 chunk
+  // (sd_String); on read, whether to take a UTF8 chunk and whether one was
+  // taken (else sd_String is CHRS text in the system's set)
+  STRPTR sd_Local;
+  LONG sd_LocalLength;
+  BOOL sd_UTF8;
 };
 
 #define SERVER_SHUTDOWN   0xdeadf00d
@@ -65,6 +71,7 @@ struct ServerData
 #define ID_FTXT    MAKE_ID('F','T','X','T')
 #define ID_CHRS    MAKE_ID('C','H','R','S')
 #define ID_CSET    MAKE_ID('C','S','E','T')
+#define ID_UTF8    MAKE_ID('U','T','F','8')
 
 #ifndef MEMF_SHARED
 #define MEMF_SHARED       MEMF_ANY
@@ -86,6 +93,9 @@ void StringToClipboard(STRPTR str, LONG length)
     sd.sd_Command = SERVER_WRITE;
     sd.sd_String = str;
     sd.sd_Length = (length > 0) ? length : (LONG)strlen(str);
+    sd.sd_Local = NULL;
+    sd.sd_LocalLength = 0;
+    sd.sd_UTF8 = FALSE;
 
     if(sd.sd_Length > 0)
     {
@@ -125,6 +135,7 @@ BOOL ClipboardToString(STRPTR *str, LONG *length)
 
     // set up the data packet
     sd.sd_Command = SERVER_READ;
+    sd.sd_UTF8 = FALSE;
 
     // set up the message, send it and wait for a reply
     msg.mn_Node.ln_Name = (STRPTR)&sd;
@@ -153,10 +164,110 @@ BOOL ClipboardToString(STRPTR *str, LONG *length)
 }
 
 ///
+/// StringToClipboardUTF8
+// UTF-8 mode: the text as a UTF8 chunk and an 8-bit CHRS copy in the
+// system's set (made here, in the caller's task, by unitext.library)
+void StringToClipboardUTF8(STRPTR str, LONG length)
+{
+  ULONG ln = 0;
+  char *local;
+
+  ENTER();
+
+  if(length <= 0)
+    length = strlen(str);
+  if(length > 0 && (local = Utf8LocalCopy(str, length, &ln)) != NULL)
+  {
+    if(AttemptSemaphore(serverLock))
+    {
+      struct ServerData sd;
+
+      sd.sd_Command = SERVER_WRITE;
+      sd.sd_String = str;
+      sd.sd_Length = length;
+      sd.sd_Local = local;
+      sd.sd_LocalLength = ln;
+      sd.sd_UTF8 = TRUE;
+      msg.mn_Node.ln_Name = (STRPTR)&sd;
+      replyPort.mp_SigTask = FindTask(NULL);
+      PutMsg(serverPort, &msg);
+      Remove((struct Node *)WaitPort(&replyPort));
+      ReleaseSemaphore(serverLock);
+    }
+    else
+      DisplayBeep(0);
+    Utf8Free(local, TRUE);
+  }
+  else
+    DisplayBeep(0);
+
+  LEAVE();
+}
+
+///
+/// ClipboardToStringUTF8
+// UTF-8 mode: the clipboard's UTF8 chunk when it is UTF-8, else its CHRS
+// text converted from the system's set; the string must be
+// SharedPoolFree()d (as ClipboardToString's)
+BOOL ClipboardToStringUTF8(STRPTR *str, LONG *length)
+{
+  BOOL success = FALSE;
+
+  ENTER();
+
+  if(AttemptSemaphore(serverLock))
+  {
+    struct ServerData sd;
+
+    sd.sd_Command = SERVER_READ;
+    sd.sd_UTF8 = TRUE;
+    msg.mn_Node.ln_Name = (STRPTR)&sd;
+    replyPort.mp_SigTask = FindTask(NULL);
+    PutMsg(serverPort, &msg);
+    Remove((struct Node *)WaitPort(&replyPort));
+    ReleaseSemaphore(serverLock);
+
+    if(sd.sd_String != NULL)
+    {
+      if(sd.sd_UTF8 == TRUE && Utf8Valid(sd.sd_String, sd.sd_Length) == TRUE)
+      {
+        *str = sd.sd_String;
+        *length = sd.sd_Length;
+        success = TRUE;
+      }
+      else
+      {
+        ULONG n = 0;
+        char *u = Utf8FromLocal(sd.sd_String, sd.sd_UTF8 == TRUE ? 0 : sd.sd_Length, &n);
+        STRPTR copy;
+
+        // a UTF8 chunk that is not UTF-8 is not taken as anything else
+        if(u != NULL && (copy = SharedPoolAlloc(n + 1)) != NULL)
+        {
+          memcpy(copy, u, n + 1);
+          *str = copy;
+          *length = n;
+          success = n > 0;
+          if(!success)
+            SharedPoolFree(copy);
+        }
+        Utf8Free(u, FALSE);
+        SharedPoolFree(sd.sd_String);
+      }
+    }
+  }
+  else
+    DisplayBeep(0);
+
+  RETURN(success);
+  return success;
+}
+
+///
 /// WriteToClipboard
 // write a given string via iffparse.library to the clipboard
 // non-public server side function
-static void WriteToClipboard(STRPTR str, LONG length)
+static void WriteToClipboard(STRPTR str, LONG length, STRPTR local, LONG locallength)
 {
   struct IFFHandle *iff;
 
@@ -170,8 +281,18 @@ static void WriteToClipboard(STRPTR str, LONG length)
       {
         PushChunk(iff, ID_FTXT, ID_FORM, IFFSIZE_UNKNOWN);
         PushChunk(iff, 0, ID_CHRS, IFFSIZE_UNKNOWN);
-        WriteChunkBytes(iff, str, length);
+        if(local != NULL)
+          WriteChunkBytes(iff, local, locallength);
+        else
+          WriteChunkBytes(iff, str, length);
         PopChunk(iff);
+        if(local != NULL)
+        {
+          // UTF-8 mode: the text as it is, for readers of UTF8
+          PushChunk(iff, 0, ID_UTF8, IFFSIZE_UNKNOWN);
+          WriteChunkBytes(iff, str, length);
+          PopChunk(iff);
+        }
         PopChunk(iff);
 
         CloseIFF(iff);
@@ -214,12 +335,14 @@ static void utf8_to_ansi(CONST_STRPTR src, STRPTR dst)
 /// ReadFromClipboard
 // read a string via iffparse.library from the clipboard
 // non-public server side function
-static void ReadFromClipboard(STRPTR *str, LONG *length)
+static void ReadFromClipboard(STRPTR *str, LONG *length, BOOL *utf8)
 {
   struct IFFHandle *iff;
+  BOOL wantUTF8 = *utf8;
 
   *str = NULL;
   *length = 0;
+  *utf8 = FALSE;
 
   if((iff = AllocIFF()) != NULL)
   {
@@ -229,7 +352,8 @@ static void ReadFromClipboard(STRPTR *str, LONG *length)
 
       if(OpenIFF(iff, IFFF_READ) == 0)
       {
-        if(StopChunk(iff, ID_FTXT, ID_CHRS) == 0 && StopChunk(iff, ID_FTXT, ID_CSET) == 0)
+        if(StopChunk(iff, ID_FTXT, ID_CHRS) == 0 && StopChunk(iff, ID_FTXT, ID_CSET) == 0 &&
+           (wantUTF8 == FALSE || StopChunk(iff, ID_FTXT, ID_UTF8) == 0))
         {
           LONG codeset = 0;
 
@@ -255,7 +379,29 @@ static void ReadFromClipboard(STRPTR *str, LONG *length)
                     codeset = 0;
                 }
               }
-              else if(cn->cn_ID == ID_CHRS && cn->cn_Size > 0)
+              else if(cn->cn_ID == ID_UTF8 && cn->cn_Size > 0 && wantUTF8 == TRUE)
+              {
+                // the UTF8 chunk wins over a CHRS chunk of the same text
+                STRPTR buffer;
+
+                if((buffer = SharedPoolAlloc(cn->cn_Size + 1)) != NULL)
+                {
+                  LONG readBytes = ReadChunkBytes(iff, buffer, cn->cn_Size);
+
+                  if(readBytes > 0)
+                  {
+                    buffer[readBytes] = '\0';
+                    if(*str != NULL)
+                      SharedPoolFree(*str);
+                    *str = buffer;
+                    *length = readBytes;
+                    *utf8 = TRUE;
+                  }
+                  else
+                    SharedPoolFree(buffer);
+                }
+              }
+              else if(cn->cn_ID == ID_CHRS && cn->cn_Size > 0 && *utf8 == FALSE)
               {
                 ULONG size = cn->cn_Size;
                 STRPTR buffer;
@@ -280,11 +426,16 @@ static void ReadFromClipboard(STRPTR *str, LONG *length)
                     }
                     #endif
 
+                    if(*str != NULL)
+                      SharedPoolFree(*str);
                     *str = buffer;
                     *length = readBytes;
                   }
                   else
+                  {
                     E(DBF_ALWAYS, "ReadChunkBytes error! (%ld)", readBytes);
+                    SharedPoolFree(buffer);
+                  }
                 }
               }
             }
@@ -365,13 +516,13 @@ static SAVEDS ASM LONG ClipboardServer(UNUSED REG(a0, STRPTR args), UNUSED REG(d
 
             case SERVER_WRITE:
             {
-              WriteToClipboard(sd->sd_String, sd->sd_Length);
+              WriteToClipboard(sd->sd_String, sd->sd_Length, sd->sd_Local, sd->sd_LocalLength);
             }
             break;
 
             case SERVER_READ:
             {
-              ReadFromClipboard(&sd->sd_String, &sd->sd_Length);
+              ReadFromClipboard(&sd->sd_String, &sd->sd_Length, &sd->sd_UTF8);
             }
             break;
           }
