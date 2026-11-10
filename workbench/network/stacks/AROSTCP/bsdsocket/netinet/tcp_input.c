@@ -111,6 +111,50 @@ struct inpcbinfo tcbinfo;
  * Set DELACK for segments received in order, but ack immediately
  * when segments are out of order (so fast retransmit can work).
  */
+/*
+ * An ACK may wait for a second in-order segment, never a third (RFC 1122
+ * section 4.2.3.2, RFC 5681 section 4.2): with one already waiting, ACK
+ * now - as FreeBSD's DELAY_ACK(). 4.4BSD delayed every segment, and the
+ * ACK went out only when the application read or the timer fired: on the
+ * tap, one ACK every 14 segments.
+ */
+#define TCP_DELAY_ACK(tp) do { \
+    if ((tp)->t_flags & TF_DELACK) { \
+        (tp)->t_flags &= ~TF_DELACK; \
+        (tp)->t_flags |= TF_ACKNOW; \
+    } else \
+        (tp)->t_flags |= TF_DELACK; \
+} while (0)
+
+/*
+ * Receive buffer autosizing (as FreeBSD's tcp_autorcvbuf()): count what
+ * arrives in order; when, in half an RTT, more than 3/8 of the buffer has
+ * arrived (3/4 of it per RTT - the buffer is what limits the sender), the
+ * buffer doubles, up to tcp_autorcvbuf_max, while the cluster pool has
+ * room (tcp_autobuf_grow()). The window the next ACK advertises takes the
+ * new space.
+ */
+static void
+tcp_autorcvbuf(struct tcpcb *tp, struct socket *so, int len)
+{
+    u_int32_t now;
+
+    if(!(so->so_rcv.sb_flags & SB_AUTOSIZE) || tp->t_srtt == 0)
+        return;
+    now = tcp_ms();
+    if(tp->t_rfbuf_ts == 0) {
+        tp->t_rfbuf_ts = now ? now : 1;
+        tp->t_rfbuf_cnt = 0;
+    }
+    tp->t_rfbuf_cnt += len;
+    if(now - tp->t_rfbuf_ts < (u_int32_t)(tp->t_srtt >> TCP_RTT_SHIFT) / 2)
+        return;
+    if(tp->t_rfbuf_cnt > so->so_rcv.sb_hiwat / 8 * 3 &&
+            so->so_rcv.sb_hiwat < tcp_autorcvbuf_max)
+        (void)tcp_autobuf_grow(tp, &so->so_rcv, 2 * so->so_rcv.sb_hiwat, tcp_autorcvbuf_max);
+    tp->t_rfbuf_ts = 0;                 /* a new period with the next segment */
+}
+
 #define TCP_REASS(tp, ti, m, so, flags) { \
     if ((ti)->ti_seq == (tp)->rcv_nxt && \
         (tp)->t_segq == NULL && \
@@ -118,11 +162,12 @@ struct inpcbinfo tcbinfo;
         if (ti->ti_flags & TH_PUSH) \
 			tp->t_flags |= TF_ACKNOW; \
 		else \
-			tp->t_flags |= TF_DELACK; \
+			TCP_DELAY_ACK(tp); \
         (tp)->rcv_nxt += (ti)->ti_len; \
         flags = (ti)->ti_flags & TH_FIN; \
         tcpstat.tcps_rcvpack++;\
         tcpstat.tcps_rcvbyte += (ti)->ti_len;\
+        tcp_autorcvbuf((tp), (so), (ti)->ti_len); \
         sbappend(&(so)->so_rcv, (m)); \
         sorwakeup(so); \
     } else { \
@@ -1086,6 +1131,12 @@ findpcb:
                     inp = (struct inpcb *)so->so_pcb;
                     tp = intotcpcb(inp);
                     tiwin = ti->ti_win << tp->snd_scale;
+                    /* the handshake's RTT, from the timestamp our SYN-ACK
+                     * carried (as FreeBSD's tcp_input()): else the
+                     * connection has none until it sends data */
+                    if(optp)
+                        tcp_dooptions(tp, optp, optlen, ti, &to);
+                    tcp_ack_rtt(tp, &to, ti->ti_ack);
                     goto step6;
                 case 0:
                     goto dropwithreset;
@@ -1236,6 +1287,7 @@ findpcb:
             tp->rcv_nxt += ti->ti_len;
             tcpstat.tcps_rcvpack++;
             tcpstat.tcps_rcvbyte += ti->ti_len;
+            tcp_autorcvbuf(tp, so, ti->ti_len);
             /*
              * Add data to socket buffer.
              */
@@ -1247,15 +1299,15 @@ findpcb:
              *	congestion avoidance sender won't send more until
              *	he gets an ACK.
              */
-            if(tiflags & TH_PUSH) {
+            if(tiflags & TH_PUSH)
                 tp->t_flags |= TF_ACKNOW;
-                tcp_output(tp);
-            } else {
-                tp->t_flags |= TF_DELACK;
-            }
+            else
+                TCP_DELAY_ACK(tp);
 #else
-            tp->t_flags |= TF_DELACK;
+            TCP_DELAY_ACK(tp);
 #endif
+            if(tp->t_flags & TF_ACKNOW)
+                (void) tcp_output(tp);  /* the second segment: ACK now */
             return;
         }
     }
@@ -2086,9 +2138,17 @@ process_ACK:
          * Delegate to the pluggable congestion control algorithm
          * which handles both slow start and congestion avoidance.
          *
-         * Do NOT grow cwnd during fast recovery (NewReno/CUBIC).
+         * Do NOT grow cwnd during fast recovery (NewReno/CUBIC), nor while
+         * the connection does not use it (RFC 7661, as Linux's
+         * tcp_is_cwnd_limited() and FreeBSD's CCF_CWND_LIMITED with
+         * newcwv): cwnd above the peer's window, or twice what was in
+         * flight before this ACK, would only grow by ACKs that never tested
+         * it - an application that sends little, or a send buffer that
+         * holds the window back - and a later burst would take all of it.
          */
-        if(!(tp->t_flagsext & TF_IN_FASTRECOV)) {
+        if(!(tp->t_flagsext & TF_IN_FASTRECOV) &&
+                tp->snd_cwnd <= tp->snd_wnd &&
+                tp->snd_cwnd < 2 * (tp->snd_max - tp->snd_una)) {
             CC_ON_ACK(tp, acked);
         }
         if(acked > so->so_snd.sb_cc) {

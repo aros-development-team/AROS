@@ -119,6 +119,7 @@ struct socket {
 #define	SB_NOTIFY	(SB_WAIT|SB_SEL|SB_ASYNC)
 #define	SB_COLL		0x20		/* collision selecting */
 #define	SB_NOINTR	0x40		/* operations not interruptible */
+#define	SB_AUTOSIZE	0x80		/* TCP grows it as needed (no SO_SNDBUF/SO_RCVBUF) */
 
 	u_long	so_eventmask;		/* FD_* event classes to report (SO_EVENTMASK) */
 	caddr_t	so_tpcb;		/* Wisc. protocol control block XXX */

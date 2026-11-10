@@ -1228,6 +1228,8 @@ struct mbuf *m0;
                     error = ENOBUFS;
                     goto bad;
                 }
+                /* the application's size: no autosizing */
+                (optname == SO_SNDBUF ? &so->so_snd : &so->so_rcv)->sb_flags &= ~SB_AUTOSIZE;
                 break;
 
             case SO_SNDLOWAT:

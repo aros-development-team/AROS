@@ -82,6 +82,7 @@
 
 #include <kern/kern_subr_protos.h>
 #include <protos/kern/kern_random_protos.h>
+#include <kern/uipc_socket2_protos.h>
 
 /*
  * Dual-stack helper: true if the socket bound to this PCB is an AF_INET6
@@ -387,6 +388,14 @@ int	tcp_rexmit_min = TCPTV_REXMTMIN_MS;
  * queue for reassembly - thousands of tiny segments, each in an mbuf or a
  * cluster (FreeBSD's tcp_minmss). */
 int	tcp_minmss = TCP_MINMSS;
+/*
+ * Socket buffer autosizing (as FreeBSD's net.inet.tcp.sendbuf_max and
+ * recvbuf_max): a buffer the application did not size (SB_AUTOSIZE) grows
+ * up to these while it is what limits the connection; 0 is off. Set when
+ * the stack starts from the memory free then (tcp_autobuf_init()).
+ */
+u_long	tcp_autosndbuf_max;
+u_long	tcp_autorcvbuf_max;
 int	tcp_do_rfc1323 = 1;
 int	tcp_do_rfc1644 = 0;	/* T/TCP (RFC 1644) - off: Historic, RFC 6247 */
 int	tcp_do_sack = 1;	/* enable SACK (RFC 2018) */
@@ -414,6 +423,122 @@ extern struct in_addr zeroin_addr;
 #endif
 
 /*
+ * Autosizing follows the memory the machine has. The mbuf pool takes its
+ * memory from the system as it needs it and keeps it while the stack runs
+ * (uipc_mbuf.c), up to mbconf.maxmem, which is never below 4 MB however
+ * little memory there is: a buffer that grows is a lasting claim on system
+ * memory. So:
+ * - the ceilings, set when the stack starts: off below TCP_AUTOBUF_MINFREE
+ *   of free memory, else 1/TCP_AUTOBUF_DIV of it, up to TCP_AUTOBUF_MAX
+ *   and to what the budget below gives one buffer (a ceiling no larger
+ *   than the default buffer grows nothing);
+ * - what the pool may use (tcp_autobuf_pool()): what it holds, and what it
+ *   may still take from the system without leaving less than
+ *   TCP_AUTOBUF_MINFREE free, within mbconf.maxmem - free memory read when
+ *   a buffer is to grow, not only once;
+ * - the budget: what autosizing has given all live connections stays
+ *   within 3/8 of that (a byte of buffer counts as two of the pool,
+ *   sb_mbmax: a 1448-byte segment sits in a 2 KB cluster and an mbuf), and
+ *   goes back at tcp_close().
+ */
+#define	TCP_AUTOBUF_MINFREE	(16UL * 1024 * 1024)
+#define	TCP_AUTOBUF_DIV		64
+#define	TCP_AUTOBUF_MAX		(1024UL * 1024)
+
+u_long	tcp_autobuf_used;
+
+void
+tcp_autobuf_init()
+{
+    u_long avail = AvailMem(MEMF_ANY);
+    u_long c = 0;
+
+    if(avail >= TCP_AUTOBUF_MINFREE)
+        c = MIN(MIN(avail / TCP_AUTOBUF_DIV, TCP_AUTOBUF_MAX), tcp_autobuf_one())
+            & ~(TCP_AUTOSNDBUF_INC - 1);
+    tcp_autosndbuf_max = tcp_autorcvbuf_max = c;
+}
+
+u_long
+tcp_autobuf_pool()
+{
+    u_long avail = AvailMem(MEMF_ANY);
+    u_long spare = avail > TCP_AUTOBUF_MINFREE ? avail - TCP_AUTOBUF_MINFREE : 0;
+
+    return MIN((u_long)mbconf.maxmem * 1024, mbstat.m_memused + spare);
+}
+
+/* the most one buffer may grow to: the whole budget, at two bytes of the
+ * pool per byte (also the most the sysctls take) */
+u_long
+tcp_autobuf_one()
+{
+    return tcp_autobuf_pool() / 8 * 3 / 2;
+}
+
+/*
+ * Grow an autosized buffer (SB_AUTOSIZE) of a connection towards want
+ * bytes, no more than max (its ceiling). The pool is shared by every
+ * connection and by the interfaces' receive buffers, and runs out for all
+ * of them at once (mbstat.m_drops): a buffer grows by what is left of the
+ * budget, if less than asked, and nothing grows while half of what the
+ * pool may use is in clusters in use. A buffer sbreserve_max() refuses
+ * stops growing. 1 if it grew.
+ */
+int
+tcp_autobuf_grow(tp, sb, want, max)
+struct tcpcb *tp;
+struct sockbuf *sb;
+u_long want;
+u_long max;
+{
+    u_long old = sb->sb_hiwat;
+    u_long pool, cap, inuse;
+
+    want = MIN(want, max);
+    if(want <= old)
+        return 0;
+    pool = tcp_autobuf_pool();
+    cap = pool / 8 * 3;
+    inuse = (mbstat.m_clusters - mbstat.m_clfree) * mbconf.mclbytes;
+    if(inuse >= pool / 2 || tcp_autobuf_used >= cap)
+        return 0;
+    if((want - old) * 2 > cap - tcp_autobuf_used)
+        want = old + (cap - tcp_autobuf_used) / 2;
+    if(want - old < mbconf.mclbytes)
+        return 0;
+    /* max bounds the buffer, as sb_max does SO_SNDBUF/SO_RCVBUF; its mbuf
+     * storage (sb_mbmax) may be twice the bytes */
+    if(!sbreserve_max(sb, want, 2 * max)) {
+        sb->sb_flags &= ~SB_AUTOSIZE;
+        return 0;
+    }
+    tp->t_autobuf += 2 * (sb->sb_hiwat - old);
+    tcp_autobuf_used += 2 * (sb->sb_hiwat - old);
+    return 1;
+}
+
+/*
+ * The window scale to ask for (RFC 7323 section 2.2): enough for the
+ * receive buffer, or for what autosizing may grow it to (with autosizing
+ * off, a ceiling of 0, the buffer alone); the scale is fixed at the
+ * handshake.
+ */
+int
+tcp_rscale(so)
+struct socket *so;
+{
+    u_long want = so->so_rcv.sb_hiwat;
+    int scale = 0;
+
+    if((so->so_rcv.sb_flags & SB_AUTOSIZE) && tcp_autorcvbuf_max > want)
+        want = tcp_autorcvbuf_max;
+    while(scale < TCP_MAX_WINSHIFT && ((u_long)TCP_MAXWIN << scale) < want)
+        scale++;
+    return scale;
+}
+
+/*
  * Tcp initialization
  */
 void
@@ -433,6 +558,7 @@ tcp_init()
     tcbinfo.listhead = &tcb;
     tcbinfo.hashbase = phashinit(TCBHASHSIZE, M_PCB, &tcbinfo.hashsize);
     syncache_init();
+    tcp_autobuf_init();
     if(max_protohdr < sizeof(struct tcpiphdr))
         max_protohdr = sizeof(struct tcpiphdr);
     if(max_linkhdr + sizeof(struct tcpiphdr) > MHLEN)
@@ -818,6 +944,7 @@ register struct tcpcb *tp;
     }
     if(tp->t_template)
         (void) m_free(dtom(tp->t_template));
+    tcp_autobuf_used -= tp->t_autobuf;  /* autosizing's budget back */
     bsd_free(tp, M_PCB);
     inp->inp_ppcb = 0;
     soisdisconnected(so);

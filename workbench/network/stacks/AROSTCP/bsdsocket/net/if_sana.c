@@ -375,11 +375,22 @@ void sana_remove_unseen(void)
  *  This routine polls SanaPort and processes replied
  *  requests appropriately
  */
+/*
+ * Replies taken from SanaPort before the protocols run (net_poll()), as
+ * Linux NAPI's budget: each read reply posts its request again at once,
+ * so while a device keeps answering, the loop below would only queue
+ * packets, and a burst would overflow ipintrq (ipqmaxlen) and be dropped
+ * there. Run in batches, the protocols keep up, and a device with no
+ * request posted holds what follows (tap.device in the host's queue).
+ */
+#define SANA_POLL_BUDGET 32
+
 BOOL
 sana_poll(void)
 {
     struct IOIPReq *io;
     spl_t s = splnet();
+    int n = 0;
 
     while(io = (struct IOIPReq *)GetMsg(SanaPort)) {
         /* touch the network interface */
@@ -389,6 +400,10 @@ sana_poll(void)
         } else {
             __log(LOG_ERR, "No dispatch function in request for %s\n",
                   io->ioip_if->ss_name);
+        }
+        if(++n == SANA_POLL_BUDGET) {
+            net_poll();
+            n = 0;
         }
     }
 

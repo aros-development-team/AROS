@@ -102,9 +102,8 @@
 
 /*
  * The retransmission timer is a deadline in milliseconds (t_rexmt_at, on
- * tcp_ms()), checked on every fast timeout (PR_FASTHZ, nominally 50 ms;
- * timer.device's UNIT_VBLANK makes it a little longer): it fires within a
- * fast tick after the RTO, never before. t_timer[TCPT_REXMT] only says it
+ * tcp_ms()), checked on every fast timeout (PR_FASTHZ, 50 ms): it fires
+ * within a fast tick after the RTO, never before. t_timer[TCPT_REXMT] only says it
  * is set; the other timers count slow ticks.
  */
 #define	TCP_FASTHZ_MS	(1000 / PR_FASTHZ)	/* 50 ms */

@@ -274,6 +274,79 @@ void testTCPINFO_MSS_FLOOR(void)
 }
 void testTCPINFO_ROUTE_SSTHRESH6(void) { route_ssthresh(AF_INET6); }
 
+/* The pure ACKs the stack has sent (net.inet.tcp.stats), or -1. */
+static long sent_acks(void)
+{
+    LONG name[4] = { CTL_NET, PF_INET, IPPROTO_TCP, TCPCTL_STATS };
+    struct tcpstat st;
+    LONG len = sizeof(st);
+
+    if (MiamiSysCtl(name, 4, &st, &len, NULL, 0, 0) != 0)
+        return -1;
+    return (long)st.tcps_sndacks;
+}
+
+/* A receiver acknowledges at least every second full-sized segment (RFC
+ * 1122 section 4.2.3.2, RFC 5681 section 4.2): 20 segments over the
+ * loopback, read as they come, get at least 9 pure ACKs. */
+void testTCPINFO_ACK_EVERY_SECOND(void)
+{
+    struct tcp_info ti;
+    static char buf[20 * 1448];
+    long a0, a1;
+    int c, s, got, mss;
+
+    if (MiamiBase == NULL) {
+        CU_PASS("miami.library not available - skipping");
+        return;
+    }
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL(info(c, &ti, NULL), 0);
+    mss = ti.tcpi_snd_mss;
+    a0 = sent_acks();
+    CU_ASSERT_EQUAL(send(c, buf, 20 * mss, 0), 20 * mss);
+    for (got = 0; got < 20 * mss; ) {
+        int k = recv(s, buf, sizeof(buf), 0);
+
+        if (k <= 0)
+            break;
+        got += k;
+    }
+    Delay(10);
+    a1 = sent_acks();
+    printf("\n    20 segments: %ld pure ACKs\n", a1 - a0);
+    CU_ASSERT(a0 >= 0 && got == 20 * mss);
+    CU_ASSERT(a1 - a0 >= 9);
+    CloseSocket(c);
+    CloseSocket(s);
+}
+
+/* cwnd grows only while the connection uses it (RFC 7661; Linux's
+ * tcp_is_cwnd_limited(), FreeBSD's CCF_CWND_LIMITED): an application that
+ * sends 1 KB every 40 ms never has half the initial window in flight, so
+ * its 40 ACKs leave cwnd where it was. */
+void testTCPINFO_CWND_APP_LIMITED(void)
+{
+    struct tcp_info a, b;
+    char buf[1000];
+    int c, s, i;
+
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL(info(c, &a, NULL), 0);
+    for (i = 0; i < 40; i++) {
+        CU_ASSERT_EQUAL(send(c, buf, sizeof(buf), 0), sizeof(buf));
+        CU_ASSERT_EQUAL(recv(s, buf, sizeof(buf), MSG_WAITALL), sizeof(buf));
+        Delay(2);
+    }
+    Delay(10);
+    CU_ASSERT_EQUAL(info(c, &b, NULL), 0);
+    printf("\n    40 KB sent 1 KB at a time: cwnd %lu -> %lu\n",
+           (unsigned long)a.tcpi_snd_cwnd, (unsigned long)b.tcpi_snd_cwnd);
+    CU_ASSERT_EQUAL(b.tcpi_snd_cwnd, a.tcpi_snd_cwnd);
+    CloseSocket(c);
+    CloseSocket(s);
+}
+
 /* Data sent and read moves the sequence numbers by its length on both
  * sides, and all of it is acknowledged. */
 void testTCPINFO_SEQUENCE(void)
@@ -539,6 +612,110 @@ void testTCPINFO_WINDOW_NO_SCALE(void)
     CloseSocket(s);
 }
 
+/* The accepted side of a connection has an RTT from the handshake (the
+ * timestamp its SYN-ACK carried, echoed in the final ACK), before any
+ * data; it used to have none until it sent some. */
+void testTCPINFO_PASSIVE_RTT(void)
+{
+    struct tcp_info ti;
+    int c, s;
+
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL(info(s, &ti, NULL), 0);
+    printf("\n    accepted side: rtt %lu us, rto %lu us\n",
+           (unsigned long)ti.tcpi_rtt, (unsigned long)ti.tcpi_rto);
+    CU_ASSERT(ti.tcpi_rtt > 0);
+    CloseSocket(c);
+    CloseSocket(s);
+}
+
+static int bufsize(int s, int opt)
+{
+    int v = 0;
+    socklen_t l = sizeof(v);
+
+    getsockopt(s, SOL_SOCKET, opt, &v, &l);
+    return v;
+}
+
+/* Socket buffer autosizing: the ceilings follow the memory free when the
+ * stack started (off below 16 MB, 1/64 of it, at most 1 MB and what the
+ * budget gives one buffer) and refuse more than that budget; a default send buffer grows when it is
+ * what holds a bulk sender back, and one the application sized stays. */
+void testTCPINFO_AUTOSIZE(void)
+{
+    LONG snd = 0, rcv = 0, big = 64 * 1024 * 1024;
+    int c, s, c2, s2, v = 96 * 1024, n0, n1, r0, r1;
+    unsigned long avail = (unsigned long)AvailMem(MEMF_ANY);
+
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_SENDBUF_MAX, &snd, NULL), 0);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_RECVBUF_MAX, &rcv, NULL), 0);
+    printf("\n    %lu KB free: ceilings %ld, %ld\n", avail / 1024, (long)snd, (long)rcv);
+    CU_ASSERT(snd <= 1024 * 1024 && rcv <= 1024 * 1024);
+    CU_ASSERT(snd % (16 * 1024) == 0 && rcv % (16 * 1024) == 0);
+    CU_ASSERT_NOT_EQUAL(tcpctl(TCPCTL_SENDBUF_MAX, &snd, &big), 0);
+    if (snd <= 128 * 1024 || rcv <= 128 * 1024) {
+        printf("    autosizing off on this machine: nothing to grow\n");
+        return;
+    }
+
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    n0 = bufsize(c, SO_SNDBUF);
+    r0 = bufsize(s, SO_RCVBUF);
+    CU_ASSERT_EQUAL(st_oneway(c, s, 4 * 1024 * 1024), 0);
+    n1 = bufsize(c, SO_SNDBUF);
+    r1 = bufsize(s, SO_RCVBUF);
+    printf("    4 MB over the loopback: send buffer %d -> %d, receive buffer %d -> %d\n",
+           n0, n1, r0, r1);
+    CU_ASSERT(n1 > n0 && n1 <= snd);
+    CU_ASSERT(r1 >= r0 && r1 <= rcv);
+    CloseSocket(c);
+    CloseSocket(s);
+
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c2, &s2), 0);
+    CU_ASSERT_EQUAL(setsockopt(c2, SOL_SOCKET, SO_SNDBUF, &v, sizeof(v)), 0);
+    n0 = bufsize(c2, SO_SNDBUF);
+    CU_ASSERT_EQUAL(st_oneway(c2, s2, 4 * 1024 * 1024), 0);
+    n1 = bufsize(c2, SO_SNDBUF);
+    printf("    with SO_SNDBUF %d: %d -> %d\n", v, n0, n1);
+    CU_ASSERT_EQUAL(n1, n0);
+    CloseSocket(c2);
+    CloseSocket(s2);
+}
+
+/* With the ceilings at 0 nothing grows, and a new connection asks for the
+ * window scale its buffer alone needs, not the ceiling's. */
+void testTCPINFO_AUTOSIZE_OFF(void)
+{
+    struct tcp_info ti;
+    LONG snd = 0, rcv = 0, zero = 0;
+    int c, s;
+
+    CU_ASSERT_EQUAL_FATAL(tcpctl(TCPCTL_SENDBUF_MAX, &snd, &zero), 0);
+    CU_ASSERT_EQUAL_FATAL(tcpctl(TCPCTL_RECVBUF_MAX, &rcv, &zero), 0);
+    if (st_tcp_pair(AF_INET, &c, &s) == 0) {
+        int n0 = bufsize(c, SO_SNDBUF), r0 = bufsize(s, SO_RCVBUF), n1, r1, scale;
+
+        CU_ASSERT_EQUAL(info(c, &ti, NULL), 0);
+        CU_ASSERT_EQUAL(st_oneway(c, s, 4 * 1024 * 1024), 0);
+        n1 = bufsize(c, SO_SNDBUF);
+        r1 = bufsize(s, SO_RCVBUF);
+        printf("\n    ceilings 0, 4 MB over the loopback: send buffer %d -> %d, receive buffer %d -> %d, window scale %u\n",
+               n0, n1, r0, r1, (unsigned)ti.tcpi_rcv_wscale);
+        CU_ASSERT_EQUAL(n1, n0);
+        CU_ASSERT_EQUAL(r1, r0);
+        for (scale = 0; scale < 14 && (65535L << scale) < bufsize(c, SO_RCVBUF); scale++)
+            ;
+        CU_ASSERT_EQUAL(ti.tcpi_rcv_wscale, scale);
+        CloseSocket(c);
+        CloseSocket(s);
+    } else
+        CU_FAIL("no connection");
+    /* the ceilings the stack set take back */
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_SENDBUF_MAX, &zero, &snd), 0);
+    CU_ASSERT_EQUAL(tcpctl(TCPCTL_RECVBUF_MAX, &zero, &rcv), 0);
+}
+
 /* A listening socket reports LISTEN. */
 void testTCPINFO_LISTEN(void)
 {
@@ -580,12 +757,17 @@ int main(int argc, char **argv)
         !CU_add_test(p, "a route's ssthresh reaches a new connection (IPv4)", testTCPINFO_ROUTE_SSTHRESH4) ||
         !CU_add_test(p, "a route's ssthresh reaches a new connection (IPv6)", testTCPINFO_ROUTE_SSTHRESH6) ||
         !CU_add_test(p, "the MSS never goes below net.inet.tcp.minmss", testTCPINFO_MSS_FLOOR) ||
+        !CU_add_test(p, "a receiver ACKs at least every second segment", testTCPINFO_ACK_EVERY_SECOND) ||
+        !CU_add_test(p, "an application-limited sender does not grow cwnd", testTCPINFO_CWND_APP_LIMITED) ||
         !CU_add_test(p, "data moves the sequence numbers", testTCPINFO_SEQUENCE) ||
         !CU_add_test(p, "over the loopback the RTO is the floor", testTCPINFO_RTO_FLOOR) ||
         !CU_add_test(p, "an unanswered SYN backs off from 1 s", testTCPINFO_SYN_BACKOFF) ||
         !CU_add_test(p, "a short buffer gets the start", testTCPINFO_SHORT) ||
         !CU_add_test(p, "a full reassembly queue takes the segment that fills its hole", testTCPINFO_REASS_FULL) ||
         !CU_add_test(p, "without window scaling the window offered is 65535, not its low bits", testTCPINFO_WINDOW_NO_SCALE) ||
+        !CU_add_test(p, "the accepted side has an RTT from the handshake", testTCPINFO_PASSIVE_RTT) ||
+        !CU_add_test(p, "socket buffers grow unless the application sized them", testTCPINFO_AUTOSIZE) ||
+        !CU_add_test(p, "with the ceilings at 0 no buffer grows", testTCPINFO_AUTOSIZE_OFF) ||
         !CU_add_test(p, "a listening socket reports LISTEN", testTCPINFO_LISTEN))
     {
         CU_cleanup_registry();

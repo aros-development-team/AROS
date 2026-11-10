@@ -170,6 +170,36 @@ the stack aborts cleanly instead of running with no mbufs.
 > allocation and fail the operation with `ENOBUFS` rather than dereferencing `NULL` under memory
 > pressure. This invariant must be maintained by new code.
 
+**Socket buffers** default to 128 KB for TCP (`tcp_sendspace`/`tcp_recvspace`; 16 KB on m68k) and
+grow as a connection needs them, as in FreeBSD, unless the application sized them with `SO_SNDBUF`/
+`SO_RCVBUF` (`SB_AUTOSIZE`, inherited by accepted sockets): the send buffer by 16 KB when it is 7/8
+full, the windows would take all of it and the peer's window is larger (`tcp_output()`); the
+receive buffer doubles when more than 3/8 of it arrives in order in half an RTT (`tcp_input()`),
+and the window scale asked for at the handshake covers the ceiling (`tcp_rscale()`; with autosizing
+off, what the buffer alone needs). `SO_SNDBUF`/`SO_RCVBUF` stay bounded by `sb_max` (512 KB, 64 KB
+on m68k); autosizing has its own bound, its ceilings, `net.inet.tcp.sendbuf_max` and `recvbuf_max`
+(`sbreserve_max()`).
+
+Autosizing follows the memory the machine has, since the mbuf pool takes memory from the system as
+it needs it and keeps it while the stack runs, up to `mbconf.maxmem` (never below 4 MB, however
+little memory there is), so a buffer that grows is a lasting claim on system memory:
+- the ceilings are set when the stack starts from the memory free then (`AvailMem()`): **off (0)
+  below 16 MB free**, else 1/64 of it, at most 1 MB (`TCP_AUTOBUF_MINFREE`, `TCP_AUTOBUF_DIV`,
+  `TCP_AUTOBUF_MAX` in `tcp_subr.c`) and what the budget below gives one buffer (768 KB with the
+  4 MB pool); a ceiling no larger than the default buffer grows nothing;
+- what the pool may use is what it holds plus what it may still take without leaving less than
+  16 MB free, within `mbconf.maxmem`, with free memory read each time a buffer is to grow
+  (`tcp_autobuf_pool()`);
+- what autosizing has given all live connections stays within 3/8 of that, a byte of buffer
+  counting as two of the pool (`sb_mbmax`; a 1448-byte segment sits in a 2 KB cluster and an mbuf),
+  and goes back at `tcp_close()`; a buffer grows by what is left, if less than asked, and nothing
+  grows while half of what the pool may use is in clusters in use (`tcp_autobuf_grow()`). Without
+  such a budget, eight connections receiving at 100 ms grew while their buffers were empty, filled
+  them together and ran the pool out.
+
+The sysctls take 0 (off) up to what the budget gives one buffer (`tcp_autobuf_one()`). With the default buffers a connection moved
+128 KB per round trip (10 Mbit/s at 100 ms).
+
 **General allocations** (`kern_malloc.c`, the `MALLOC`/`bsd_malloc` family) come from a single Exec
 memory pool (`CreatePool(MEMF_PUBLIC, …)`) serialized by `malloc_semaphore`; these can also return
 `NULL` and are checked accordingly.
@@ -253,7 +283,10 @@ it halves the drops at the end of slow start (100 KB queue: 78-82 against 164-16
 first slow start ends without any loss. When a slow start ends without a loss - by HyStart++, or at an `ssthresh`
 from the route (`RTV_SSTHRESH`) - there is no W_max yet: CUBIC's first epoch starts with K = 0 and
 W_max = cwnd (RFC 9438 section 4.10), so the cubic curve, not only the Reno-friendly one, grows
-cwnd from there.
+cwnd from there. cwnd grows only while the connection uses it (RFC 7661, as Linux's
+`tcp_is_cwnd_limited()`): not above the peer's window, and not past twice what was in flight - an
+application that sends little, or a send buffer that holds the window back, would otherwise grow
+it by ACKs that never tested it (a 128 KB send buffer: cwnd 616 KB, now 255 KB, same throughput).
 
 Loss recovery on a connection with SACK follows RFC 6675, as in FreeBSD and Linux. An ACK that
 SACKs data not SACKed before is a duplicate whatever window it offers (a receiver that grows its
@@ -307,9 +340,12 @@ computed without the key; Linux uses SipHash for the same values.
 
 ### 5.3 Timers
 
-`tcp_timer.c` runs the fast (`PR_FASTHZ`, nominally 50 ms; timer.device's `UNIT_VBLANK` makes it
-about 60) and slow (500 ms) timers driven from the daemon: retransmit (with exponential backoff),
-persist, keepalive, 2MSL/TIME-WAIT, and delayed-ACK. `tcp_slowtimo` also expires SYN-cache
+`tcp_timer.c` runs the fast (`PR_FASTHZ`, 50 ms) and slow (500 ms) timers driven from the daemon,
+on timer.device's `UNIT_MICROHZ` (`UNIT_VBLANK` rounded the fast one to 60 ms on a 50 Hz display): retransmit (with exponential backoff),
+persist, keepalive, 2MSL/TIME-WAIT, and delayed-ACK. An ACK waits for a second in-order full-sized segment, never a
+third (`TCP_DELAY_ACK()`, RFC 1122 section 4.2.3.2, RFC 5681 section 4.2, as FreeBSD's
+`DELAY_ACK()`); 4.4BSD delayed every segment, and on the tap a bulk transfer got one ACK every
+11-15 segments. `tcp_slowtimo` also expires SYN-cache
 entries, and advances the ISS clock (`tcp_iss`, RFC 6528) and `tcp_now` every tick, whether or not
 there are connections: `tcp_now` paces the IPv4 ICMP error rate limit (§7), PAWS's idle age and the
 SYN cache. Each connection's slow timers are counted down every slow tick, and its idle and
@@ -323,7 +359,9 @@ section 5.4), a keyed hash of its addresses and ports with a key that is not the
 TSval tells neither the time since the stack started nor how two connections relate; the SYN cache
 keeps it (`sc_tsoff`) for the connection it makes. An ACK that takes `snd_una` forward gives an RTT
 sample from the timestamp it echoes, or else from the segment being timed (`t_rtttime`, its send
-time; never a retransmitted one: Karn), the SYN's included. `tcp_xmit_timer()` keeps SRTT and RTTVAR
+time; never a retransmitted one: Karn), the SYN's included. A connection the SYN cache makes takes its
+first sample from the final ACK of the handshake, which echoes its SYN-ACK's timestamp (as FreeBSD):
+one that only receives would otherwise have none. `tcp_xmit_timer()` keeps SRTT and RTTVAR
 as RFC 6298 section 2 and FreeBSD do (scaled by 32 and 16), and the RTO is `SRTT + max(G, 4 *
 RTTVAR)`, G the fast tick, between `net.inet.tcp.rexmit_min` (200 ms; RFC 6298 section 2.4 says it
 SHOULD be 1 s, FreeBSD and Linux use about 200 ms, and so does this stack) and 64 s, doubled on
@@ -331,7 +369,7 @@ each timeout. Before the first sample it is `net.inet.tcp.rttdflt`, 1 s (section
 6 s), and 3 s once a connection is established with no sample after its SYN or SYN-ACK was
 retransmitted (section 5.7); the SYN cache resends a SYN-ACK after 1, 2, 4 and 8 s. The
 retransmission timer is a deadline (`t_rexmt_at`) checked on every fast tick, so it fires within
-one after the RTO, never before. On the bench (`tests/tcp/rto_probe.py` in aros-matter) the RTO
+50 ms after the RTO, never before. On the bench (`tests/tcp/rto_probe.py` in aros-matter) the RTO
 after a lost tail is 0.20-0.24 s at an RTT of 0.4 ms, 0.26 s at 200 ms and 0.56 s at 500 ms, where
 the 500 ms clock gave 1.2-2.4 s.
 
@@ -872,7 +910,11 @@ addresses the first on the list won, whatever the destination.
 - **UDP** (`udp_usrreq.c`) is the standard datagram path over the shared `udb` table. The default
   UDP receive buffer (`udp_recvspace`, 256 datagrams) and the IP input queue depth
   (`ipqmaxlen = 4·IFQ_MAXLEN`, `ip_input.c`) are sized to absorb short high-rate receive bursts
-  before the owning task drains them, rather than dropping at the ~40-datagram default. `SO_BINDTODEVICE`
+  before the owning task drains them, rather than dropping at the ~40-datagram default. The stack task
+runs the protocols after every 32 replies it takes from the interfaces (`sana_poll()`, as Linux
+NAPI's budget): each read reply posts its request again at once, so while a device kept answering
+the loop would only queue packets, and a burst overflowed the IP input queue. Run in batches the
+protocols keep up, and a device with no read request posted holds what follows. `SO_BINDTODEVICE`
   pins a UDP socket to one interface, so a limited broadcast (`255.255.255.255`) or a reply can be
   directed out a chosen link even on a multi-homed host with no default route. A datagram carries
   the ancillary data its socket asked for - `IP_RECVDSTADDR`, `IP_RECVTOS` (FreeBSD's: the TOS

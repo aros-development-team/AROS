@@ -203,7 +203,11 @@ void testSBLOCK_NBIO(void)
     CloseSocket(a);
 }
 
-/* A blocking call waits for the other one, then gets its data. */
+/* A blocking call waits for the other one, then gets its data. The data
+ * comes SEND_DELAY s after the sending helper started, which held() returns
+ * 1 s after starting (TICKS_PER_SECOND / 2 after the receiving one): about
+ * SEND_DELAY - 1 s from t0, less by however late held()'s Delay() returned,
+ * so the call is checked to have waited half of that. */
 void testSBLOCK_BLOCKING_WAITS(void)
 {
     struct DateStamp t0;
@@ -215,7 +219,7 @@ void testSBLOCK_BLOCKING_WAITS(void)
     r = recv(a, &c, 1, 0);
     CU_ASSERT_EQUAL(r, 1);
     CU_ASSERT_EQUAL(c, 'x');
-    CU_ASSERT(ticks_since(&t0) >= (SEND_DELAY - 1) * TICKS_PER_SECOND);
+    CU_ASSERT(ticks_since(&t0) >= (SEND_DELAY - 1) * TICKS_PER_SECOND / 2);
     Delay(2 * TICKS_PER_SECOND);
     CloseSocket(a);
 }
