@@ -383,6 +383,13 @@ static int GM_UNIQUENAME(close)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req) 
     Enable();
     FreeVec(opener);
 
+    /* a frame held for its reads would wait for good: the I/O task drops
+     * it, and the remaining openers record their types again */
+    if (unit->refcount > 0) {
+        unit->rxreset = TRUE;
+        Signal(unit->iotask, 1 << unit->io_signal);
+    }
+
     req->ios2_Req.io_Unit = NULL;
     req->ios2_BufferManagement = NULL;
 

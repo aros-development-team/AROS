@@ -58,6 +58,15 @@ side, unit #1 -> aros1, etc. By default, the driver can handle up to four
 units (ie four seperate virtual networks); this can be increased by changing
 MAX_TAP_UNITS in tap.h.
 
+A frame no read request takes, of a packet type an opener reads, is held, and
+the tap descriptor is not read until the next CMD_READ: what follows waits in
+the host's queue for the interface (its txqueuelen), as on a real wire it would
+wait in the card's receive ring, rather than being dropped. A frame of a type no
+one reads, or one an opener's filter refuses, is dropped as before. A frame is
+held at most 50 ms (TAP_HOLD_MS): then it is dropped, and its type is no longer
+held for until the next CMD_READ of it, so that an opener that stops posting
+reads while it stays open does not stall the other openers' traffic.
+
 To get AROS hosted onto your network, you'll need to look into Linux-side
 tools like iptables, brctl, etc.
 

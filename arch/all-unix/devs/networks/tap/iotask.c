@@ -10,6 +10,7 @@
 #include <hidd/unixio.h>
 
 #include "tap.h"
+#include <devices/timer.h>
 
 #include <signal.h>
 
@@ -26,13 +27,18 @@ static void tap_receive(struct tap_base *TAPBase, struct tap_unit *unit)
     struct tap_opener *opener, *opener_next;
     struct IOSana2Req *req, *req_next;
     BOOL bcast = FALSE, mcast = FALSE;
-    BOOL accepted = 0;
+    BOOL accepted = 0, wanted = FALSE, was_held;
     struct tap_tracker *tracker, *tracker_next;
 
     D(bug("[tap] [io:%d] got a packet\n", unit->num));
 
-    /* Try to read the packet */
-    nread = Hidd_UnixIO_ReadFile(TAPBase->unixio, unit->fd, buf, unit->frame_max, &ioerr);
+    /* the frame held for a read request, else the next one */
+    was_held = unit->rxheld != 0;
+    if (was_held)
+        nread = unit->rxheld;
+    else
+        nread = Hidd_UnixIO_ReadFile(TAPBase->unixio, unit->fd, buf, unit->frame_max, &ioerr);
+    unit->rxheld = 0;
     if (nread == -1)
     {
         D(bug("[tap] [io:%d] read failed (%d)\n", unit->num, ioerr));
@@ -89,6 +95,7 @@ static void tap_receive(struct tap_base *TAPBase, struct tap_unit *unit)
 
             if (req->ios2_PacketType == packet_type) {
                 D(bug("[tap] [io:%d] found a request that wants this packet, sending it\n", unit->num));
+                wanted = TRUE;
 
                 /* record broadcast/multicast status */
                 req->ios2_Req.io_Flags &= ~(SANA2IOF_BCAST | SANA2IOF_MCAST);
@@ -154,6 +161,34 @@ static void tap_receive(struct tap_base *TAPBase, struct tap_unit *unit)
         if (accepted)
             break;
     }
+
+    /* no request for it now (a request that took it, or whose filter
+     * refused it, set wanted), but its type is read: hold it, and read
+     * nothing more until a CMD_READ (tap_read() signals), for at most
+     * TAP_HOLD_MS; then it is dropped, and its type forgotten until a
+     * CMD_READ of it records it again */
+    if (! wanted) {
+        ULONG i;
+
+        Disable();
+        for (i = 0; i < unit->nrxtypes && unit->rxtypes[i] != packet_type; i++)
+            ;
+        if (i < unit->nrxtypes) {
+            if (was_held && unit->rxexpired)
+                unit->rxtypes[i] = unit->rxtypes[--unit->nrxtypes];
+            else
+                unit->rxheld = nread;
+        }
+        Enable();
+        unit->rxexpired = FALSE;
+        if (unit->rxheld) {
+            D(bug("[tap] [io:%d] no request for the packet yet, holding it\n", unit->num));
+            if (! was_held)
+                unit->rxholdseq++;
+            return;
+        }
+    }
+    unit->rxexpired = FALSE;
 
     if (! accepted) {
         D(bug("[tap] [io:%d] no one claimed the packet, orphaning\n", unit->num));
@@ -300,11 +335,13 @@ static void IOHandler(int fd, int mode, void *data)
 
 void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
 {
-    struct MsgPort *reply_port;
+    struct MsgPort *reply_port, *timer_port;
+    struct timerequest *timer;
     struct Message *msg;
-    ULONG write_signal_mask, abort_signal_mask, io_signal_mask, signal_mask;
-    ULONG signaled = 0;
+    ULONG write_signal_mask, abort_signal_mask, io_signal_mask, timer_signal_mask, signal_mask;
+    ULONG signaled = 0, timer_seq = 0;
     short write_flag = 0;
+    BOOL timer_armed = FALSE;
 
     D(bug("[tap] [io:%d] iotask starting up\n", unit->num));
 
@@ -319,8 +356,17 @@ void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
     abort_signal_mask = 1 << unit->abort_signal;
     io_signal_mask    = 1 << unit->io_signal;
 
+    /* a timer for the frame held for a read request (TAP_HOLD_MS) */
+    timer_port = CreateMsgPort();
+    timer = (struct timerequest *) CreateIORequest(timer_port, sizeof(struct timerequest));
+    if (timer != NULL && OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *) timer, 0) != 0) {
+        DeleteIORequest((struct IORequest *) timer);
+        timer = NULL;
+    }
+    timer_signal_mask = timer != NULL ? 1 << timer_port->mp_SigBit : 0;
+
     /* bundle all the signals together */
-    signal_mask = write_signal_mask | abort_signal_mask | io_signal_mask;
+    signal_mask = write_signal_mask | abort_signal_mask | io_signal_mask | timer_signal_mask;
     D(bug("[tap] signal mask 0x%08X\n", signal_mask));
 
     /* start waiting for read events */
@@ -348,7 +394,23 @@ void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
 
         do
         {
-            events = Hidd_UnixIO_Poll(TAPBase->unixio, unit->fd, vHidd_UnixIO_Read | write_flag, NULL);
+            ULONG mode;
+
+            if (unit->rxreset) {
+                unit->rxreset = FALSE;
+                unit->rxheld = 0;
+                unit->nrxtypes = 0;
+            }
+
+            /* a held frame first: a read request may have come for it;
+             * while it stays held, the descriptor is not read */
+            if (unit->rxheld)
+                tap_receive(TAPBase, unit);
+            mode = (unit->rxheld ? 0 : vHidd_UnixIO_Read) | write_flag;
+            if (mode == 0)
+                break;
+
+            events = Hidd_UnixIO_Poll(TAPBase->unixio, unit->fd, mode, NULL);
 
             if (events == -1)
                 continue;
@@ -371,9 +433,40 @@ void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
             }
         } while (events);
 
+        /* one timer per hold: a frame held since timer_seq's hold is
+         * dropped when it fires; without a timer, a frame is not held */
+        if (timer_armed && (! unit->rxheld || timer_seq != unit->rxholdseq)) {
+            AbortIO((struct IORequest *) timer);
+            WaitIO((struct IORequest *) timer);
+            timer_armed = FALSE;
+        }
+        if (unit->rxheld && ! timer_armed) {
+            if (timer != NULL) {
+                timer->tr_node.io_Command = TR_ADDREQUEST;
+                timer->tr_time.tv_secs = 0;
+                timer->tr_time.tv_micro = TAP_HOLD_MS * 1000;
+                SendIO((struct IORequest *) timer);
+                timer_seq = unit->rxholdseq;
+                timer_armed = TRUE;
+            } else {
+                unit->rxexpired = TRUE;
+                continue;
+            }
+        }
+
         D(bug("[tap] [io:%d] waiting for an event\n", unit->num));
 
         signaled = Wait(signal_mask);
+
+        if (timer_armed && (signaled & timer_signal_mask) && CheckIO((struct IORequest *) timer)) {
+            WaitIO((struct IORequest *) timer);
+            timer_armed = FALSE;
+            if (unit->rxheld && timer_seq == unit->rxholdseq) {
+                D(bug("[tap] [io:%d] no read request in %d ms, dropping the held frame\n",
+                      unit->num, TAP_HOLD_MS));
+                unit->rxexpired = TRUE;
+            }
+        }
 
         D(bug("[tap] [io:%d] iotask signaled\n", unit->num));
         if (signaled & write_signal_mask)
@@ -391,6 +484,16 @@ void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
     }
 
     D(bug("[tap] [io:%d] iotask exiting\n", unit->num));
+
+    if (timer != NULL) {
+        if (timer_armed) {
+            AbortIO((struct IORequest *) timer);
+            WaitIO((struct IORequest *) timer);
+        }
+        CloseDevice((struct IORequest *) timer);
+        DeleteIORequest((struct IORequest *) timer);
+    }
+    DeleteMsgPort(timer_port);
 
     Hidd_UnixIO_RemInterrupt(TAPBase->unixio, &unit->irq);
 

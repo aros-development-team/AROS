@@ -70,6 +70,11 @@ extern int rand(void);
 #define TAP_ENV_MTU_FORMAT "SYS/Net/tap/unit%ld/MTU"
 #define TAP_FRAME_MAX(mtu) (ETH_HLEN + (mtu))
 
+/* packet types a unit remembers its openers read (receive backpressure) */
+#define TAP_RXTYPES      8
+/* the longest a frame waits for a read request before it is dropped */
+#define TAP_HOLD_MS      50
+
 
 struct tap_opener {
     struct MinNode              node;
@@ -133,6 +138,26 @@ struct tap_unit
     struct MsgPort              *write_queue;
 
     struct uioInterrupt		irq;
+
+    /*
+     * Receive backpressure. A frame that no read request took, of a type
+     * an opener reads (rxtypes, recorded by CMD_READ), is held in rxbuf
+     * (rxheld bytes) and the descriptor is not read until a CMD_READ
+     * comes: what follows waits in the host's tap queue, as on a real
+     * wire it would wait in the card's ring, instead of being dropped.
+     * A frame is held at most TAP_HOLD_MS (rxexpired, set by the I/O
+     * task's timer): then it is dropped as before, and its type is no
+     * longer held for until a CMD_READ of it records it again, so that an
+     * opener that stops posting reads while it stays open does not stall
+     * the others' traffic. rxholdseq counts the holds (one timer each).
+     * rxreset (an opener closed) drops the held frame and the types.
+     */
+    ULONG                       rxheld;
+    ULONG                       rxtypes[TAP_RXTYPES];
+    ULONG                       nrxtypes;
+    ULONG                       rxholdseq;
+    BOOL                        rxexpired;
+    BOOL                        rxreset;
 };
 
 struct tap_base
