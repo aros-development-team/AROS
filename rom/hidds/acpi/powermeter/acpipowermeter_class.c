@@ -148,7 +148,7 @@ static void ACPIPowerMeter_BuildEntries(struct HWACPIPowerMeterData *data)
 
     if (ACPIPowerMeter_HasMethod(data->acpipm_Handle, "_PMM"))
     {
-        ACPIPowerMeter_AddEntry(data, "Power", "_PMM", vHW_TelemetryUnit_Watts, 1000, 0, TRUE, FALSE);
+        ACPIPowerMeter_AddEntry(data, "Power", "_PMM", vHW_TelemetryUnit_MilliWatts, 1, 0, TRUE, FALSE);
         ACPIPowerMeter_AddEntry(data, "Energy (mWh)", "_PMM", vHW_TelemetryUnit_Raw, 1, 1, TRUE, FALSE);
         hasPower = TRUE;
         hasEnergy = TRUE;
@@ -159,7 +159,7 @@ static void ACPIPowerMeter_BuildEntries(struct HWACPIPowerMeterData *data)
         method = ACPIPowerMeter_FindMethod(data->acpipm_Handle, powerMethods);
         if (method)
         {
-            ACPIPowerMeter_AddEntry(data, "Power", method, vHW_TelemetryUnit_Watts, 1000, 0, FALSE, FALSE);
+            ACPIPowerMeter_AddEntry(data, "Power", method, vHW_TelemetryUnit_MilliWatts, 1, 0, FALSE, FALSE);
             hasPower = TRUE;
         }
     }
@@ -176,7 +176,7 @@ static void ACPIPowerMeter_BuildEntries(struct HWACPIPowerMeterData *data)
     method = ACPIPowerMeter_FindMethod(data->acpipm_Handle, voltageMethods);
     if (method)
     {
-        ACPIPowerMeter_AddEntry(data, "Voltage", method, vHW_TelemetryUnit_Volts, 1000, 0, FALSE, FALSE);
+        ACPIPowerMeter_AddEntry(data, "Voltage", method, vHW_TelemetryUnit_MilliVolts, 1, 0, FALSE, FALSE);
     }
 
     method = ACPIPowerMeter_FindMethod(data->acpipm_Handle, temperatureMethods);

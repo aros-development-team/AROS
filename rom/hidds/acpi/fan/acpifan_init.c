@@ -123,6 +123,7 @@ static int ACPIFan_Init(LIBBASETYPEPTR LIBBASE)
     _csd->hwAB = OOP_ObtainAttrBase(IID_HW);
     _csd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
     _csd->hiddTelemetryAB = OOP_ObtainAttrBase(IID_Hidd_Telemetry);
+    _csd->hiddFanAB = OOP_ObtainAttrBase(IID_Hidd_Fan);
     _csd->hwACPIFanAB = OOP_ObtainAttrBase(IID_HW_ACPIFan);
 
     {

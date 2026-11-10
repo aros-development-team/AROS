@@ -9,6 +9,7 @@
 
 #include <hidd/hidd.h>
 #include <hidd/telemetry.h>
+#include <hidd/fan.h>
 #include <hidd/acpifan.h>
 
 #include <acpica/acnames.h>
@@ -17,7 +18,6 @@
 struct HWACPIFanData
 {
     ACPI_HANDLE                 acpifan_Handle;
-    ULONG                       acpifan_TelemetryCount;
     ULONG                       acpifan_FpsMin;
     ULONG                       acpifan_FpsMax;
     BOOL                        acpifan_HasFps;
@@ -46,6 +46,7 @@ struct acpifanclass_staticdata
     OOP_AttrBase                hwAB;
     OOP_AttrBase                hiddAB;
     OOP_AttrBase                hiddTelemetryAB;
+    OOP_AttrBase                hiddFanAB;
     OOP_AttrBase                hwACPIFanAB;
 };
 
@@ -63,6 +64,7 @@ struct HWACPIFanIntBase
 #define __IHW                 (_csd->hwAB)
 #define __IHidd               (_csd->hiddAB)
 #define __IHidd_Telemetry     (_csd->hiddTelemetryAB)
+#define __IHidd_Fan           (_csd->hiddFanAB)
 
 #define OOPBase                 (_csd->cs_OOPBase)
 

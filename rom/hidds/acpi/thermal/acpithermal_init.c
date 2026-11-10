@@ -89,6 +89,7 @@ static int ACPIThermal_Init(LIBBASETYPEPTR LIBBASE)
     _csd->hwAB = OOP_ObtainAttrBase(IID_HW);
     _csd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
     _csd->hiddTelemetryAB = OOP_ObtainAttrBase(IID_Hidd_Telemetry);
+    _csd->hiddThermalAB = OOP_ObtainAttrBase(IID_Hidd_Thermal);
     _csd->hwACPIThermalAB = OOP_ObtainAttrBase(IID_HW_ACPIThermal);
 
     {
