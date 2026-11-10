@@ -10,6 +10,7 @@
 
 #include <exec/types.h>
 #include <hardware/usb/ehci.h>
+#include <devices/usbhardware.h>
 #include "hccommon.h"
 
 #define EHCI_QH_POOLSIZE         128
@@ -23,8 +24,12 @@ struct PTDNode;
 
 struct EhciPTDPrivate
 {
+    struct IOUsbHWBufferReq     ptd_BufferReq;  /* per-PTD RT-ISO buffer (cf. OHCI) */
+    APTR                        ptd_BounceBuffer;
+    BOOL                        ptd_BounceOwned; /* AllocVec'd whole-frame bounce */
     ULONG           ptd_NextPhys;
     UWORD           ptd_PktCount;
+    UWORD           ptd_MfStep;
     UWORD           ptd_PktLength[8];
 };
 
@@ -55,12 +60,19 @@ struct EhciITD
     ULONG           itd_Self;
 #if __WORDSIZE == 64
     ULONG           itd_Unused0;
+    /* Pad so the hardware iTD starts on a 32-byte boundary. */
+    ULONG           itd_Pad0[4];
+#else
+    ULONG           itd_Pad0[6];
 #endif
+    /* aligned to 32 bytes */
     ULONG           itd_Next;
     ULONG           itd_Transaction[8];
     ULONG           itd_BufferPtr[7];
 #if __WORDSIZE == 64
     ULONG           itd_ExtBufferPtr[7];
+    /* Keep sizeof(struct EhciITD) a multiple of 32. */
+    ULONG           itd_Pad1[1];
 #endif
 };
 

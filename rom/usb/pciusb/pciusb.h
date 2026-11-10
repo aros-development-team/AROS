@@ -99,6 +99,8 @@ struct RTIsoNode
 };
 
 #define RTISO_FLAG_EXPLICIT_FRAME (1 << 0)
+/* A valid cadence is stored in rtn_NextFrame; frame 0 is also valid. */
+#define RTISO_FLAG_CADENCE_VALID  (1 << 1)
 
 static inline struct IOUsbHWReq *pciusbIsoGetIOReq(struct RTIsoNode *rtn)
 {
