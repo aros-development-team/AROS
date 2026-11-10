@@ -775,6 +775,9 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         APTR dmabuffer;
         IPTR phys;
         ULONG len;
+        ULONG multi = 1;
+        ULONG dma_len;
+        BOOL hw_bw = FALSE;
         ULONG slot;
         ULONG framemask = ehcihcp->ehc_FrameListMask;
         UWORD pktlen;
@@ -823,10 +826,25 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
             continue;
         }
 
+        dma_len = len;
+        if(!(ptd->ptd_Flags & PTDF_SITD)) {
+            if(rtn->rtn_IOReq.iouh_Flags & UHFF_MULTI_3)
+                multi = 3;
+            else if(rtn->rtn_IOReq.iouh_Flags & UHFF_MULTI_2)
+                multi = 2;
+
+            /* High-bandwidth IN: the client requests one microframe's worth
+               (Multi * max packet); an iTD covers eight microframes. */
+            if(multi > 1 && rtn->rtn_IOReq.iouh_Dir == UHDIR_IN) {
+                hw_bw = TRUE;
+                dma_len = (ULONG)rtn->rtn_IOReq.iouh_MaxPktSize * multi * 8;
+            }
+        }
+
         dmabuffer = buffer;
 #if __WORDSIZE == 64
         if(rtn->rtn_IOReq.iouh_Dir == UHDIR_IN) {
-            dmabuffer = AllocVec(len, MEMF_31BIT|MEMF_PUBLIC);
+            dmabuffer = AllocVec(dma_len, MEMF_31BIT|MEMF_PUBLIC);
             if(!dmabuffer) {
                 ehciAbortIsochIO(hc, rtn, UHIOERR_OUTOFMEMORY);
                 return FALSE;
@@ -897,7 +915,14 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
             CacheClearE(sitd, sizeof(*sitd), CACRF_ClearD);
         } else {
             itd = (struct EhciITD *) ptd->ptd_Descriptor;
-            {
+            ULONG per_mf = (ULONG)rtn->rtn_IOReq.iouh_MaxPktSize * multi;
+
+            if(hw_bw) {
+                pktcnt = 8;
+                ptdpriv->ptd_MfStep = 1;
+                for(pktidx = 0; pktidx < 8; pktidx++)
+                    ptdpriv->ptd_PktLength[pktidx] = (UWORD)per_mf;
+            } else {
                 ULONG mfstep = 8;
                 ULONG maxtxn;
 
@@ -922,16 +947,16 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
                     pktcnt = (UWORD)maxtxn;
 
                 ptdpriv->ptd_MfStep = (UWORD)mfstep;
-            }
 
-            /* Buffer pointer page 2 bits 1:0 carry Multi (transactions per
-               microframe).  Zero is reserved/undefined, so default to 1 and
-               follow the endpoint's high-bandwidth multiplier if set. */
-            ULONG multi = 1;
-            if(rtn->rtn_IOReq.iouh_Flags & UHFF_MULTI_3)
-                multi = 3;
-            else if(rtn->rtn_IOReq.iouh_Flags & UHFF_MULTI_2)
-                multi = 2;
+                pktoffset = phys & EITM_BUFFER_OFFSET;
+                for(pktidx = 0; pktidx < pktcnt; pktidx++) {
+                    pktlen = (len > rtn->rtn_IOReq.iouh_MaxPktSize) ?
+                             rtn->rtn_IOReq.iouh_MaxPktSize : len;
+                    ptdpriv->ptd_PktLength[pktidx] = pktlen;
+                    len -= pktlen;
+                    pktoffset += pktlen;
+                }
+            }
 
             ehciSetPointer(ehcihcp, itd->itd_BufferPtr[0], itd->itd_ExtBufferPtr[0],
                            ((IPTR)phys & ~(IPTR)EITM_BUFFER_OFFSET) |
@@ -949,14 +974,6 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
             ehciSetPointer(ehcihcp, itd->itd_BufferPtr[5], itd->itd_ExtBufferPtr[5], ((IPTR)phys + 20480) & ~(IPTR)EITM_BUFFER_OFFSET);
             ehciSetPointer(ehcihcp, itd->itd_BufferPtr[6], itd->itd_ExtBufferPtr[6], ((IPTR)phys + 24576) & ~(IPTR)EITM_BUFFER_OFFSET);
 
-            pktoffset = phys & EITM_BUFFER_OFFSET;
-            for(pktidx = 0; pktidx < pktcnt; pktidx++) {
-                pktlen = (len > rtn->rtn_IOReq.iouh_MaxPktSize) ? rtn->rtn_IOReq.iouh_MaxPktSize : len;
-                ptdpriv->ptd_PktLength[pktidx] = pktlen;
-                len -= pktlen;
-                pktoffset += pktlen;
-            }
-
             if (!ehciIsoBandwidthAvailable(ehcihcp, slot, FALSE, ptdpriv->ptd_PktLength, pktcnt, 0, 0, 0))
                 break;
 
@@ -969,10 +986,18 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
                 ULONG trans;
                 UWORD mfidx = (UWORD)(pktidx * ptdpriv->ptd_MfStep);
                 pktlen = ptdpriv->ptd_PktLength[pktidx];
-                trans = EITF_STATUS_ACTIVE |
-                        ((pktoffset >> 12) << EITF_PAGESELECT_SHIFT) |
-                        (pktoffset & EITM_BUFFER_OFFSET) |
-                        ((pktlen & EITF_LENGTH_MASK) << EITF_LENGTH_SHIFT);
+                {
+                    /* EHCI transaction Length is per transaction; the
+                       endpoint's Multi field repeats it per microframe.
+                       The buffer span per microframe still advances by the
+                       full mult*max_packet. */
+                    UWORD tlen = hw_bw ? (UWORD)rtn->rtn_IOReq.iouh_MaxPktSize
+                                       : pktlen;
+                    trans = EITF_STATUS_ACTIVE |
+                            ((pktoffset >> 12) << EITF_PAGESELECT_SHIFT) |
+                            (pktoffset & EITM_BUFFER_OFFSET) |
+                            ((tlen & EITF_LENGTH_MASK) << EITF_LENGTH_SHIFT);
+                }
                 /* RT-ISO clients rely on the completion interrupt to run
                    ehciHandleIsochTDs().  Without IOC on the last transaction
                    the controller never raises USBINT and no request hook /
