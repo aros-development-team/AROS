@@ -5997,7 +5997,8 @@ void bCheckReset(struct BTHidBinding *nhb)
                             while(node->ln_Succ)
                             {
                                 KPRINTF(20, ("Kicking %s\n", node->ln_Name));
-                                Cause((struct Interrupt *) node);
+                                AROS_INTC1(((struct Interrupt *) node)->is_Code,
+                                           ((struct Interrupt *) node)->is_Data);
                                 haskbh = TRUE;
                                 node = node->ln_Succ;
                             }

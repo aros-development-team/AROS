@@ -560,7 +560,8 @@ void nParseKeys(struct NepClassHid *nch, UBYTE *buf)
                             while(node->ln_Succ)
                             {
                                 KPRINTF(20, ("Kicking %s\n", node->ln_Name));
-                                Cause((struct Interrupt *) node);
+                                AROS_INTC1(((struct Interrupt *) node)->is_Code,
+                                           ((struct Interrupt *) node)->is_Data);
                                 node = node->ln_Succ;
                             }
                             KPRINTF(20, ("Done... awaiting doom\n"));
