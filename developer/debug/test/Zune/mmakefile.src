@@ -28,13 +28,14 @@ FILES  := test             \
           listinsertactive \
           mui4test         \
           flextest         \
-          rexxunknown
+          rexxunknown      \
+          linktext
 
 USER_CFLAGS := -I $(SRCDIR)/workbench/system/Wanderer/Classes
 
 EXEDIR := $(AROS_TESTS)/Zune
 
-#MM test-zune : includes linklibs workbench-classes-zune-busy workbench-classes-zune-flexgroup
+#MM test-zune : includes linklibs workbench-classes-zune-busy workbench-classes-zune-flexgroup workbench-classes-zune-linktext
 
 %build_progs mmake=test-zune \
     files=$(FILES) targetdir=$(EXEDIR)
