@@ -1,0 +1,14 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- test : test-hidd-telemetry
+#MM- test-quick : test-hidd-telemetry-quick
+
+#MM test-hidd-telemetry : includes linklibs kernel-hidd-telemetry-includes
+
+%build_prog mmake=test-hidd-telemetry \
+    files=telemetry targetdir=$(AROS_TESTS)/hidds \
+    progname=telemetry
+
+%common
