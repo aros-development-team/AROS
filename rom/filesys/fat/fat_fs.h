@@ -122,13 +122,6 @@ struct ExtFileLock
 
     BOOL                do_notify;      /* if set, send notification on file close (ACTION_END) */
     struct FSSuper      *sb;            /* pointer to sb, for unlocking when volume is removed */
-
-    /* Kept last: a handler adopting a volume from another handler instance
-       patches the fields above in that instance's locks */
-    BOOL                date_set;       /* write_date/write_time below were stored
-                                           by a change made through this lock */
-    UWORD               write_date;     /* that modification date (FAT format) */
-    UWORD               write_time;
 };
 
 struct GlobalLock

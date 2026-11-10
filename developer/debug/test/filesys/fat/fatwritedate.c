@@ -16,18 +16,24 @@
           current. The volume is then stopped and mounted again and the
           dates are checked once more against what was written (a handler
           that does not write its cache when inhibited, as before #2132,
-          loses the files there and fails this part). At the end
+          loses the files there and fails this part). Last, a file is locked
+          under the FIRST handler, the volume is stopped and mounted with the
+          HANDLER one, which adopts the lock from the other instance
+          (DoDiskInsert()). Examine() through the adopted lock, SetFileDate()
+          on the file while it is held and UnLock() must work, and a later
+          write must date the file. At the end
           the volume is dismounted and its files are deleted, so the test
           can be run again.
 
           Needs fdsk.device and about 41 MB of free memory (the image is
           kept in RAM:).
 
-    Usage: fatwritedate [HANDLER <path>]
+    Usage: fatwritedate [HANDLER <path>] [FIRST <path>]
 
           HANDLER mounts the image with that handler file instead of the
           system's FAT handler, to check a newly built one without
-          installing it.
+          installing it. FIRST is the handler file that creates the lock
+          the HANDLER instance adopts (default: the system's FAT handler).
 */
 
 #include <dos/dos.h>
@@ -179,9 +185,9 @@ static LONG run(CONST_STRPTR command)
     return SystemTags(command, SYS_Output, BNULL, TAG_END);
 }
 
-static BOOL mount(void)
+static BOOL mount(CONST_STRPTR handler)
 {
-    return run("Mount " VOLUME " FROM " MOUNTLIST) == 0 && exists(VOLUME);
+    return write_mountlist(handler) && run("Mount " VOLUME " FROM " MOUNTLIST) == 0 && exists(VOLUME);
 }
 
 /*
@@ -377,14 +383,102 @@ static LONG check(LONG i, CONST_STRPTR when)
     return 0;
 }
 
-static int test(CONST_STRPTR handler);
+#define ADOPTED VOLUME "adopted"
+
+/* Locks ADOPTED under the first handler, stops it and mounts the volume with
+   the second, which adopts the lock (DoDiskInsert), uses the lock, sets the
+   file's date while it is held, releases it and writes the file. 0 or the
+   number of failures */
+static LONG adopted(CONST_STRPTR first, CONST_STRPTR handler)
+{
+    struct FileInfoBlock *fib;
+    BPTR lock, fh;
+    LONG t0, t1, d, fails = 0;
+    BOOL ok;
+
+    if (!mount(first))
+    {
+        printf("FAIL: adopted lock: cannot mount " VOLUME " with the first handler\n");
+        return 1;
+    }
+    if (!put(ADOPTED, "ABCDEFGHIJKLMNOP") || !(lock = Lock(ADOPTED, SHARED_LOCK)))
+    {
+        printf("FAIL: adopted lock: cannot prepare " ADOPTED ": error %ld\n", (long)IoErr());
+        unmount();
+        return 1;
+    }
+    unmount();
+    if (!mount(handler))
+    {
+        /* The lock belongs to a stopped handler: it cannot be released */
+        printf("FAIL: adopted lock: cannot mount " VOLUME " with the second handler\n");
+        return 1;
+    }
+
+    fib = AllocDosObject(DOS_FIB, NULL);
+    if (!fib || !Examine(lock, fib) || strcmp((char *)fib->fib_FileName, "adopted") != 0)
+    {
+        printf("FAIL: adopted lock: Examine() through it failed: error %ld\n", (long)IoErr());
+        fails++;
+    }
+    if (fib)
+        FreeDosObject(DOS_FIB, fib);
+    if (!set_old_date(ADOPTED))
+    {
+        printf("FAIL: adopted lock: SetFileDate() while it is held failed: error %ld\n", (long)IoErr());
+        fails++;
+    }
+    else
+    {
+        d = file_date(ADOPTED);
+        if (d < old_date - SLACK || d > old_date + SLACK)
+        {
+            printf("FAIL: adopted lock: the date set while it is held is %ld s off\n", (long)(d - old_date));
+            fails++;
+        }
+    }
+    UnLock(lock);
+
+    t0 = now();
+    ok = (fh = Open(ADOPTED, MODE_READWRITE)) != BNULL;
+    if (ok)
+    {
+        ok = write_at(fh, 0, OFFSET_BEGINNING, "abcd");
+        if (!Close(fh))
+            ok = FALSE;
+    }
+    t1 = now();
+    if (!ok)
+    {
+        printf("FAIL: adopted lock: writing the file after releasing it failed: error %ld\n", (long)IoErr());
+        unmount();
+        return fails + 1;
+    }
+    d = file_date(ADOPTED);
+    unmount();
+    if (d >= old_date - SLACK && d <= old_date + SLACK)
+    {
+        printf("FAIL: written after an adopted lock: date not updated, still the one set %ld days before\n",
+            (long)OLD_DAYS);
+        fails++;
+    }
+    else if (d < t0 - SLACK || d > t1 + SLACK)
+    {
+        printf("FAIL: written after an adopted lock: date %ld s from the time of the change\n",
+            (long)(d < t0 ? d - t0 : d - t1));
+        fails++;
+    }
+    return fails;
+}
+
+static int test(CONST_STRPTR handler, CONST_STRPTR first);
 
 int main(void)
 {
     struct Process *me = (struct Process *)FindTask(NULL);
     APTR window = me->pr_WindowPtr;
-    IPTR args[1] = { 0 };
-    struct RDArgs *rda = ReadArgs("HANDLER/K", args, NULL);
+    IPTR args[2] = { 0, 0 };
+    struct RDArgs *rda = ReadArgs("HANDLER/K,FIRST/K", args, NULL);
     int rc;
 
     if (!rda)
@@ -394,13 +488,13 @@ int main(void)
     }
     /* No "insert volume" requesters while probing for the volume */
     me->pr_WindowPtr = (APTR)-1;
-    rc = test((CONST_STRPTR)args[0]);
+    rc = test((CONST_STRPTR)args[0], (CONST_STRPTR)args[1]);
     me->pr_WindowPtr = window;
     FreeArgs(rda);
     return rc;
 }
 
-static int test(CONST_STRPTR handler)
+static int test(CONST_STRPTR handler, CONST_STRPTR first)
 {
     LONG fails = 0, i;
     BPTR lock;
@@ -413,18 +507,18 @@ static int test(CONST_STRPTR handler)
     lock = CreateDir(DIR);
     if (lock)
         UnLock(lock);
-    if (handler && !exists(handler))
+    if ((handler && !exists(handler)) || (first && !exists(first)))
     {
-        printf("FAIL: handler %s not found\n", handler);
+        printf("FAIL: handler %s not found\n", handler && !exists(handler) ? handler : first);
         return RETURN_FAIL;
     }
-    if (!write_image() || !write_mountlist(handler))
+    if (!write_image())
     {
         printf("FAIL: cannot write the image to " DIR " (needs about 41 MB)\n");
         run("Delete " DIR " ALL QUIET");
         return RETURN_FAIL;
     }
-    if (run("Assign FDSK: " DIR) != 0 || !mount())
+    if (run("Assign FDSK: " DIR) != 0 || !mount(handler))
     {
         printf("FAIL: cannot mount " VOLUME " through fdsk.device\n");
         run("Assign FDSK: REMOVE");
@@ -456,7 +550,7 @@ static int test(CONST_STRPTR handler)
     /* The same against what was written: stop the handler, which must write
        its cache first, and mount again */
     unmount();
-    if (!mount())
+    if (!mount(handler))
     {
         printf("FAIL: cannot mount " VOLUME " again\n");
         fails++;
@@ -467,6 +561,7 @@ static int test(CONST_STRPTR handler)
             if (done[i])
                 fails += check(i, "after mounting again");
         unmount();
+        fails += adopted(first, handler);
     }
 
     run("Assign FDSK: REMOVE");

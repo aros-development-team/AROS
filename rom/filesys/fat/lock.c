@@ -293,7 +293,6 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access,
     fl->pos = 0;
 
     fl->do_notify = FALSE;
-    fl->date_set = FALSE;
 
     fl->gl = gl;
     fl->sb = glob->sb;
@@ -339,7 +338,6 @@ LONG LockRoot(LONG access, struct ExtFileLock **lock, struct Globals *glob)
     fl->pos = 0;
 
     fl->do_notify = FALSE;
-    fl->date_set = FALSE;
 
     if (IsListEmpty(&glob->sb->info->root_lock.locks))
         ADDTAIL(&glob->sb->info->locks, &glob->sb->info->root_lock);

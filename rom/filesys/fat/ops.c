@@ -120,10 +120,7 @@ static LONG MoveToSubdir(struct DirHandle *dh, UBYTE **pname,
 }
 
 /* Changing a file's contents or length sets its modification date to the
- * current time, as other AROS filesystems do. The dir entry is rewritten
- * for this only when the date in FAT's two-second resolution differs from
- * the one last stored through the same lock, so a run of writes costs at
- * most one entry update per two seconds. */
+ * current time, in FAT's two-second resolution. */
 static void CurrentWriteDate(UWORD *wdate, UWORD *wtime, struct Globals *glob)
 {
     struct DateStamp ds;
@@ -132,32 +129,11 @@ static void CurrentWriteDate(UWORD *wdate, UWORD *wtime, struct Globals *glob)
     ConvertDOSDate(&ds, wdate, wtime, glob);
 }
 
-static void SetWriteDate(struct DirEntry *de, struct Globals *glob)
+static void SetWriteDate(struct DirEntry *de, UWORD wdate, UWORD wtime)
 {
-    UWORD wdate, wtime;
-
-    CurrentWriteDate(&wdate, &wtime, glob);
     de->e.entry.write_date = wdate;
     de->e.entry.write_time = wtime;
     de->e.entry.last_access_date = wdate;
-}
-
-/* Called once the entry filled by SetWriteDate has been written */
-static void NoteWriteDate(struct ExtFileLock *lock, struct DirEntry *de)
-{
-    lock->write_date = de->e.entry.write_date;
-    lock->write_time = de->e.entry.write_time;
-    lock->date_set = TRUE;
-}
-
-static BOOL WriteDateOutdated(struct ExtFileLock *lock, struct Globals *glob)
-{
-    UWORD wdate, wtime;
-
-    if (!lock->date_set)
-        return TRUE;
-    CurrentWriteDate(&wdate, &wtime, glob);
-    return wdate != lock->write_date || wtime != lock->write_time;
 }
 
 LONG OpLockFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
@@ -267,6 +243,7 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     struct ExtFileLock *lock;
     struct DirHandle dh;
     struct DirEntry de;
+    UWORD wdate, wtime;
 
     D(
         bug("[fat] opening file '");
@@ -355,7 +332,8 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
         de.e.entry.first_cluster_lo = de.e.entry.first_cluster_hi = 0;
         de.e.entry.file_size = 0;
         de.e.entry.attr |= ATTR_ARCHIVE;
-        SetWriteDate(&de, glob);
+        CurrentWriteDate(&wdate, &wtime, glob);
+        SetWriteDate(&de, wdate, wtime);
         err = UpdateDirEntry(&de, glob);
         ReleaseDirHandle(&dh, glob);
         if (err != 0)
@@ -363,7 +341,7 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
             FreeLock(lock, glob);
             return err;
         }
-        NoteWriteDate(lock, &de);
+        lock->gl->attr |= ATTR_ARCHIVE;
 
         D(bug("[fat] set first cluster and size to 0 in directory entry\n"));
 
@@ -1049,6 +1027,7 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want,
     BOOL update_entry = FALSE;
     struct DirHandle dh;
     struct DirEntry de;
+    UWORD wdate, wtime;
 
     D(bug("[fat] request to write %ld bytes to file pos %ld\n", want,
         lock->pos));
@@ -1106,33 +1085,31 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want,
             update_entry = TRUE;
         }
 
-        /* Force an update if the file hasn't already got an archive bit. This
-         * will happen if this was the first write to an existing file that
-         * didn't cause it to grow */
-        else if (!(lock->gl->attr & ATTR_ARCHIVE))
-            update_entry = TRUE;
-
-        /* Or if the stored modification date is no longer current */
-        else if (WriteDateOutdated(lock, glob))
-            update_entry = TRUE;
-
         D(bug("[fat] wrote %ld bytes, new file pos is %ld, size is %ld\n",
             *written, lock->pos, size));
+
+        /* The entry is also rewritten when it lacks the archive bit or its
+         * modification date is no longer the current one. It is in a cached
+         * sector, and the date changes at most every two seconds, so a run of
+         * writes costs at most one extra entry update per two seconds */
+        InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh, FALSE, glob);
+        err = GetDirEntry(&dh, lock->gl->dir_entry, &de, glob);
+        if (err != 0)
+        {
+            ReleaseDirHandle(&dh, glob);
+            return err;
+        }
+        CurrentWriteDate(&wdate, &wtime, glob);
+        if (!(de.e.entry.attr & ATTR_ARCHIVE)
+            || de.e.entry.write_date != wdate
+            || de.e.entry.write_time != wtime)
+            update_entry = TRUE;
 
         if (update_entry)
         {
             D(bug("[fat] updating dir entry, first cluster is %ld,"
                 " size is %ld\n",
                 lock->ioh.first_cluster, size));
-
-            InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh,
-                FALSE, glob);
-            err = GetDirEntry(&dh, lock->gl->dir_entry, &de, glob);
-            if (err != 0)
-            {
-                ReleaseDirHandle(&dh, glob);
-                return err;
-            }
 
             de.e.entry.file_size = AROS_LONG2LE(size);
             de.e.entry.first_cluster_lo =
@@ -1141,14 +1118,16 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want,
                 AROS_WORD2LE(lock->ioh.first_cluster >> 16);
 
             de.e.entry.attr |= ATTR_ARCHIVE;
-            SetWriteDate(&de, glob);
+            SetWriteDate(&de, wdate, wtime);
             err = UpdateDirEntry(&de, glob);
-
-            ReleaseDirHandle(&dh, glob);
-            if (err != 0)
-                return err;
-            NoteWriteDate(lock, &de);
+        }
+        ReleaseDirHandle(&dh, glob);
+        if (err != 0)
+            return err;
+        if (update_entry)
+        {
             lock->gl->first_cluster = lock->ioh.first_cluster;
+            lock->gl->attr |= ATTR_ARCHIVE;
         }
         lock->gl->size = size;
     }
@@ -1164,6 +1143,7 @@ LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG whence,
     struct DirEntry de;
     QUAD size;
     LONG err;
+    UWORD wdate, wtime;
     ULONG first, cl, next, count = 0, want, keep = 0, tail = 0;
     ULONG keep_next = 0;
     ULONG added = 0, added_last = 0, last = 0, original_next = 0;
@@ -1277,11 +1257,12 @@ LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG whence,
     de.e.entry.first_cluster_hi = AROS_WORD2LE(first >> 16);
     de.e.entry.file_size = AROS_LONG2LE((ULONG)size);
     de.e.entry.attr |= ATTR_ARCHIVE;
-    SetWriteDate(&de, glob);
+    CurrentWriteDate(&wdate, &wtime, glob);
+    SetWriteDate(&de, wdate, wtime);
     err = UpdateDirEntry(&de, glob);
     if (err != 0)
         goto rollback;
-    NoteWriteDate(lock, &de);
+    lock->gl->attr |= ATTR_ARCHIVE;
 
     lock->gl->size = size;
     lock->gl->first_cluster = lock->ioh.first_cluster = first ? first : 0xffffffff;
@@ -1423,19 +1404,7 @@ LONG OpSetDate(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     de.e.entry.last_access_date = wdate;
     err = UpdateDirEntry(&de, glob);
     if (err == 0)
-    {
-        struct GlobalLock *gl;
-        struct MinNode *node;
-
-        /* A date set explicitly stays until the file's contents change
-         * again: the next write to an open file must store its own date */
-        ForeachNode(&glob->sb->info->locks, gl)
-            if (gl->dir_cluster == de.cluster && gl->dir_entry == de.index)
-                ForeachNode(&gl->locks, node)
-                    LOCKFROMNODE(node)->date_set = FALSE;
-
         SendNotifyByDirEntry(glob->sb, &de);
-    }
 
     ReleaseDirHandle(&dh, glob);
 
