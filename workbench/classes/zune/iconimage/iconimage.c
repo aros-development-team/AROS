@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
     This file is part of the IconImage class, which is distributed under
     the terms of version 2.1 of the GNU Lesser General Public License.
     
@@ -27,7 +27,70 @@
 #include "iconimage_private.h"
 
 
+/****** IconImage.mcc/MUIC_IconImage ************
+*
+*   NAME
+*       MUIC_IconImage
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       Display a Workbench icon without its label or border. Supply one
+*       non-NULL DiskObject or File attribute when creating the object.
+*       The last occurrence of either attribute takes precedence.
+*       Drawing uses the current selected state and does not scale the icon.
+*
+*   NOTES
+*       The class borrows DiskObject pointers and has no local Set, Get, or
+*       Dispose handler. LayoutIcon adjusts the icon for the current screen.
+*
+*   BUGS
+*       Icons loaded through File are never freed by this class, including
+*       after construction failure. Prefer a caller-owned DiskObject when
+*       resource cleanup is required.
+*
+*/
+/****** IconImage.mcc/MUIA_IconImage_DiskObject ************
+*
+*   NAME
+*       MUIA_IconImage_DiskObject
+*
+*   FUNCTION
+*       Use an existing DiskObject for the displayed icon.
+*
+*   INPUTS
+*       Initialize only; struct DiskObject *.
+*
+*   NOTES
+*       The object borrows the pointer without copying or freeing it. Keep
+*       the icon valid until this object is disposed. LayoutIcon may change
+*       its screen-dependent layout. Do not supply a non-NULL File as well.
+*
+*/
+/****** IconImage.mcc/MUIA_IconImage_File ************
+*
+*   NAME
+*       MUIA_IconImage_File
+*
+*   FUNCTION
+*       Load an icon from a file name during object construction.
+*
+*   INPUTS
+*       Initialize only; CONST_STRPTR.
+*
+*   NOTES
+*       GetDiskObjectNew() may return a default icon. The file name is not
+*       retained. Do not supply a non-NULL DiskObject as well.
+*
+*   BUGS
+*       The loaded icon is not released on disposal or construction failure.
+*
+*/
+
 /*** Methods ****************************************************************/
+/* Select one icon source; return NULL if it is missing or ambiguous.
+   Icons loaded from File are not released on later failure. */
 Object *IconImage__OM_NEW
 (
     Class *CLASS, Object *self, struct opSet *message
@@ -81,6 +144,8 @@ error:
     return NULL;
 }
 
+/* Draw the parent background and selected/normal icon without a border.
+   The icon functions' results are not checked. */
 IPTR IconImage__MUIM_Draw
 (
     Class *CLASS, Object *self, struct MUIP_Draw *message
@@ -114,6 +179,8 @@ IPTR IconImage__MUIM_Draw
     return rc;
 }
 
+/* Add the borderless icon's inclusive rectangle dimensions to superclass
+   limits when GetIconRectangle succeeds. */
 IPTR IconImage__MUIM_AskMinMax
 (
     Class *CLASS, Object *self, struct MUIP_AskMinMax *message
