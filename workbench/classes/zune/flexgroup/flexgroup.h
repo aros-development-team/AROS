@@ -22,6 +22,8 @@
     (MUIB_Flexgroup | 0x00000002)   /* Zune: V1 isg LONG */
 #define MUIA_Flexgroup_Gap \
     (MUIB_Flexgroup | 0x00000003)   /* Zune: V1 isg LONG */
+#define MUIA_Flexgroup_Wrap \
+    (MUIB_Flexgroup | 0x00000004)   /* Zune: V1 isg BOOL */
 
 enum
 {
@@ -52,6 +54,14 @@ enum
 
 /* Per-child growing and shrinking uses the weight along the main axis:
    MUIA_HorizWeight for Row, MUIA_VertWeight for Column.  A weight of 0
-   pins the child to its natural size, like CSS "flex: none". */
+   pins the child to its natural size, like CSS "flex: none".
+
+   MUIA_Flexgroup_Wrap is flex-wrap: wrap.  Children go into lines as long
+   as their natural sizes and the gaps fit, every line gets grow, shrink,
+   justify and align of its own, and the lines are stacked along the cross
+   axis, the gap apart.  The group then needs the room of all its lines,
+   which depends on its width; it works that out from the width of its last
+   layout and lays itself out again when that turns out wrong.  Make it a
+   virtual group (MUIA_Group_Virtual) to put it in a Scrollgroup. */
 
 #endif /* ZUNE_FLEXGROUP_H */
