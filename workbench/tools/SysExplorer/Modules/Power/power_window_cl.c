@@ -175,17 +175,44 @@ static CONST_STRPTR PowerWindow_TelemetryUnitToString(ULONG units)
         case vHW_TelemetryUnit_RPM:
             return "RPM";
         case vHW_TelemetryUnit_Celsius:
-            return "Celsius";
+        case vHW_TelemetryUnit_MilliCelsius:
+            return "\260C";
         case vHW_TelemetryUnit_Volts:
-            return "Volts";
+        case vHW_TelemetryUnit_MilliVolts:
+            return "V";
         case vHW_TelemetryUnit_Amps:
-            return "Amps";
+        case vHW_TelemetryUnit_MilliAmps:
+            return "A";
         case vHW_TelemetryUnit_Watts:
-            return "Watts";
+        case vHW_TelemetryUnit_MilliWatts:
+            return "W";
         case vHW_TelemetryUnit_Unknown:
         default:
             return NULL;
     }
+}
+
+
+/* Thousandths are shown as a decimal number of the whole unit */
+static BOOL PowerWindow_IsMilliUnit(ULONG units)
+{
+    return (units >= vHW_TelemetryUnit_MilliCelsius) && (units <= vHW_TelemetryUnit_MilliWatts);
+}
+
+static char *PowerWindow_FormatMilli(LONG value, CONST_STRPTR unitStr)
+{
+    ULONG mag = (value < 0) ? (ULONG)-value : (ULONG)value;
+    ULONG frac = mag % 1000;
+    int digits = 3;
+
+    /* no trailing zeros, but always one decimal */
+    while (digits > 1 && (frac % 10) == 0)
+    {
+        frac /= 10;
+        digits--;
+    }
+    return PowerWindow_AllocString("%s%lu.%0*lu %s", (value < 0) ? "-" : "", (unsigned long)(mag / 1000),
+                  digits, (unsigned long)frac, unitStr);
 }
 
 static char *PowerWindow_FormatTelemetryValue(LONG value, ULONG units)
@@ -196,7 +223,11 @@ static char *PowerWindow_FormatTelemetryValue(LONG value, ULONG units)
     {
         if (units <= vHW_TelemetryUnit_Raw)
             return PowerWindow_AllocString("%ld (%s)", value, unitStr);
-        return PowerWindow_AllocString("%ld%s", value, unitStr);
+        if (PowerWindow_IsMilliUnit(units))
+            return PowerWindow_FormatMilli(value, unitStr);
+        if (units == vHW_TelemetryUnit_Percent)
+            return PowerWindow_AllocString("%ld%s", value, unitStr);
+        return PowerWindow_AllocString("%ld %s", value, unitStr);
     }
 
     return PowerWindow_AllocString("%ld", value);
