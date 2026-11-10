@@ -478,6 +478,7 @@ struct USB2OTGUnit
     UBYTE               hu_CtrlSplitChan;
     UBYTE               hu_BurnedChannels;
     BOOL                hu_IntAsBulk;       /* direct INT armed as BULK (BCM2835 workaround) */
+    BOOL                hu_NPTxGate;        /* drain NPTxFIFO before bulk OUT (QEMU has no FIFO) */
 
 /*
  * DMA buffers — must be in heap memory so the 0xC0000000 VC bus

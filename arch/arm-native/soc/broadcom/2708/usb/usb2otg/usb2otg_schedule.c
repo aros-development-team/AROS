@@ -1459,7 +1459,8 @@ void FNAME_DEV(StartChannel)(struct USB2OTGUnit *otg_Unit, int chan, int quick)
      */
     {
         struct IOUsbHWReq *arm_req = otg_Unit->hu_Channel[chan].hc_Request;
-        BOOL is_bulk_out = (arm_req != NULL &&
+        BOOL is_bulk_out = (otg_Unit->hu_NPTxGate &&
+                            arm_req != NULL &&
                             arm_req->iouh_Req.io_Command == UHCMD_BULKXFER &&
                             arm_req->iouh_Dir == UHDIR_OUT &&
                             !(arm_req->iouh_Flags & UHFF_SPLITTRANS));

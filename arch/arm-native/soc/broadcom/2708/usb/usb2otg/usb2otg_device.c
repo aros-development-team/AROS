@@ -238,6 +238,8 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
 
                                     /* INT-as-BULK works around the BCM2835 core; QEMU's emulated 2.94a core runs direct INT natively */
                                     USB2OTGBase->hd_Unit->hu_IntAsBulk = (rd32le(USB2OTG_VENDORID) != 0x4F54294A);
+                                    /* QEMU's GNPTXSTS is a constant (queue space 4), so the drain gate would always time out */
+                                    USB2OTGBase->hd_Unit->hu_NPTxGate = USB2OTGBase->hd_Unit->hu_IntAsBulk;
 
                                     /* Heap memory (VC bus alias maps it), and 64-byte
                                      * aligned so DMA cache maintenance owns its lines. */
