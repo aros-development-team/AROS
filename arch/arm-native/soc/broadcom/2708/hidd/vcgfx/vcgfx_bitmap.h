@@ -80,6 +80,7 @@ struct BitmapData {
 	BOOL                flippending;            /* Scan-out: flipbuf still shown until fliptoken */
 	UBYTE               flipbuf;                /* Scan-out: the page a NoWait swap displaced */
 	ULONG               fliptoken;              /* vc4_hvs_latch_token() of that swap */
+	ULONG               fliptime;               /* and when, on the 1 MHz system timer */
 };
 
 #endif /* _VIDEOCOREGFX_BITMAP_H */

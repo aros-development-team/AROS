@@ -590,6 +590,15 @@ void vc4_hvs6_latch_wait_for(struct VideoCoreGfx_staticdata *xsd, ULONG token)
         bug("[VC4HVS6] frame counter stuck at %lu\n", (unsigned long)(token & 0x3f));
 }
 
+/* Has FRCNT moved on from that commit? With none due, it has. */
+BOOL vc4_hvs6_latch_passed(struct VideoCoreGfx_staticdata *xsd, ULONG token)
+{
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+
+    return !st->h6_Active || !(token & 0x100)
+        || (HVS6_DISPSTAT_FRCNT(hvs6_rd(HVS6_CHAN(st->h6_Chan) + HVS6_DISPSTAT)) != (token & 0x3f));
+}
+
 /* No firmware ALLOCMEM on this generation, so allocate the cursor buffer */
 BOOL vc4_hvs6_init_cursor(struct VideoCoreGfx_staticdata *xsd)
 {
