@@ -191,27 +191,28 @@ LONG PrintLine(struct InstData *data, LONG x, struct line_node *line, LONG line_
       if(startx < x+c_length && stopx > x)
       {
         if(startx > x)
-          blockstart = TextLengthNew(&data->tmprp, text+x, startx-x, data->TabSizePixels);
+          blockstart = TextLengthNew(data, &data->tmprp, text+x, startx-x, data->TabSizePixels);
         else
           startx = x;
 
-        blockwidth = ((stopx >= c_length+x) ? _mwidth(data->object)-(blockstart+flow) : TextLengthNew(&data->tmprp, text+startx, stopx-startx, data->TabSizePixels));
+        blockwidth = ((stopx >= c_length+x) ? _mwidth(data->object)-(blockstart+flow) : TextLengthNew(data, &data->tmprp, text+startx, stopx-startx, data->TabSizePixels));
       }
       else if(isFlagClear(data->flags, FLG_ReadOnly) &&
               isFlagClear(data->flags, FLG_Ghosted) &&
               line == data->actualline &&
+              data->Utf8NoCursor == FALSE &&
               data->CPos_X >= x &&
               data->CPos_X < x+c_length &&
               !Enabled(data) &&
               (isFlagSet(data->flags, FLG_Active) || data->inactiveCursor == TRUE))
       {
         cursor = TRUE;
-        blockstart = TextLengthNew(&data->tmprp, text+x, data->CPos_X-x, data->TabSizePixels);
+        blockstart = TextLengthNew(data, &data->tmprp, text+x, data->CPos_X-x, data->TabSizePixels);
 
         // calculate the cursor width
         // if it is set to 6 then we should find out how the width of the current char is
         if(data->CursorWidth == 6)
-          blockwidth = TextLengthNew(&data->tmprp, (text[data->CPos_X] < ' ') ? (char *)" " : (char *)&text[data->CPos_X], 1, data->TabSizePixels);
+          blockwidth = TextLengthNew(data, &data->tmprp, (text[data->CPos_X] < ' ') ? (char *)" " : (char *)&text[data->CPos_X], (text[data->CPos_X] < ' ') ? 1 : CharLenAt(data, line, data->CPos_X), data->TabSizePixels);
         else
           blockwidth = data->CursorWidth;
       }
@@ -361,14 +362,14 @@ LONG PrintLine(struct InstData *data, LONG x, struct line_node *line, LONG line_
       if(maxwidth > 0)
       {
         // calculate how many character really fit in the remaining space
-        ULONG fitting = TextFitNew(rp, text+x, p_length, &te, NULL, 1, maxwidth, data->fontheight, data->TabSizePixels);
+        ULONG fitting = TextFitNew(data, rp, text+x, p_length, &te, NULL, 1, maxwidth, data->fontheight, data->TabSizePixels);
 
         if(fitting > 0)
         {
           if(text[x+fitting-1] < ' ')
-            TextNew(rp, text+x, fitting-1, data->TabSizePixels);
+            TextNew(data, rp, text+x, fitting-1, data->TabSizePixels);
           else
-            TextNew(rp, text+x, fitting, data->TabSizePixels);
+            TextNew(data, rp, text+x, fitting, data->TabSizePixels);
         }
 
         // adjust the available horizontal pixel space

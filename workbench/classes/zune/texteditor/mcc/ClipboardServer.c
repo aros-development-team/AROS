@@ -58,6 +58,10 @@ struct ServerData
   LONG sd_Length;
   ULONG sd_Codeset;
   LONG sd_Error;
+  // UTF-8 session, writing: the CHRS copy of the text, made by the client
+  // (the server's small stack makes no conversions)
+  char *sd_Local;
+  ULONG sd_LocalLength;
 };
 
 #define SERVER_SHUTDOWN       0xdeadf00d
@@ -72,13 +76,53 @@ struct ServerData
 #define ID_CHRS    MAKE_ID('C','H','R','S')
 #define ID_CSET    MAKE_ID('C','S','E','T')
 
+// the session of an object in the UTF-8 mode, if one is open (sessions
+// come one at a time through the server)
+static IPTR utf8Session = (IPTR)NULL;
+
+/// ServerWriteText
+// the text of a line: in the UTF-8 mode a UTF8 chunk with it as it is,
+// then the CHRS copy in the system's set; else CHRS as it is
+static void ServerWriteText(struct IFFHandle *iff, BOOL utf8, CONST_STRPTR text, LONG length, const char *local, ULONG localLength)
+{
+  LONG error;
+
+  if(utf8 == TRUE)
+  {
+    D(DBF_CLIPBOARD, "writing UTF8");
+    error = PushChunk(iff, 0, ID_UTF8, IFFSIZE_UNKNOWN);
+    error = WriteChunkBytes(iff, (APTR)text, length);
+    error = PopChunk(iff);
+    // the copy (empty when there was no memory for it: CHRS still ends
+    // the line)
+    error = PushChunk(iff, 0, ID_CHRS, IFFSIZE_UNKNOWN);
+    if(local != NULL && localLength > 0)
+      error = WriteChunkBytes(iff, (APTR)local, localLength);
+    error = PopChunk(iff);
+    SHOWVALUE(DBF_CLIPBOARD, error);
+    return;
+  }
+
+  D(DBF_CLIPBOARD, "writing CHRS");
+  error = PushChunk(iff, 0, ID_CHRS, IFFSIZE_UNKNOWN);
+  SHOWVALUE(DBF_CLIPBOARD, error);
+  error = WriteChunkBytes(iff, (APTR)text, length);
+  SHOWVALUE(DBF_CLIPBOARD, error);
+  error = PopChunk(iff);
+  SHOWVALUE(DBF_CLIPBOARD, error);
+}
+
+///
 /// ServerStartSession
 static IPTR ServerStartSession(ULONG mode)
 {
   IPTR result = (IPTR)NULL;
   struct IFFHandle *iff;
+  BOOL utf8 = (mode & CLIPMODE_UTF8) ? TRUE : FALSE;
 
   ENTER();
+
+  mode &= ~CLIPMODE_UTF8;
 
   if((iff = AllocIFF()) != NULL)
   {
@@ -101,9 +145,17 @@ static IPTR ServerStartSession(ULONG mode)
           StopChunk(iff, ID_FTXT, ID_COLS);
           StopChunk(iff, ID_FTXT, ID_STYL);
           StopChunk(iff, ID_FTXT, ID_CSET);
+          if(utf8 == TRUE)
+          {
+            StopChunk(iff, ID_FTXT, ID_UTF8);
+            StopChunk(iff, ID_FTXT, ID_UCOL);
+            StopChunk(iff, ID_FTXT, ID_USTY);
+          }
         }
 
         result = (IPTR)iff;
+        if(utf8 == TRUE)
+          utf8Session = result;
       }
       else
       {
@@ -126,6 +178,9 @@ static void ServerEndSession(IPTR session)
   struct IFFHandle *iff = (struct IFFHandle *)session;
 
   ENTER();
+
+  if(session == utf8Session)
+    utf8Session = (IPTR)NULL;
 
   if(iff != NULL)
   {
@@ -193,13 +248,14 @@ static void ServerWriteInfo(IPTR session, struct line_node *line)
 
 ///
 /// ServerWriteChars
-static void ServerWriteChars(IPTR session, struct line_node *line, LONG start, LONG length)
+static void ServerWriteChars(IPTR session, struct line_node *line, LONG start, LONG length, const char *local, ULONG localLength)
 {
   struct IFFHandle *iff = (struct IFFHandle *)session;
   LONG error;
   struct LineStyle style = {1, GetStyle(start-1, line)};
   struct LineColor color = {1, 0};
   struct LineColor *colors = line->line.Colors;
+  BOOL utf8 = (session == utf8Session) ? TRUE : FALSE;
 
   ENTER();
 
@@ -208,7 +264,7 @@ static void ServerWriteChars(IPTR session, struct line_node *line, LONG start, L
   if(colors != NULL)
   {
     D(DBF_CLIPBOARD, "writing COLS");
-    error = PushChunk(iff, 0, ID_COLS, IFFSIZE_UNKNOWN);
+    error = PushChunk(iff, 0, utf8 ? ID_UCOL : ID_COLS, IFFSIZE_UNKNOWN);
     SHOWVALUE(DBF_CLIPBOARD, error);
 
     while(colors->column <= start && colors->column != EOC)
@@ -241,7 +297,7 @@ static void ServerWriteChars(IPTR session, struct line_node *line, LONG start, L
   }
 
   D(DBF_CLIPBOARD, "writing STYL");
-  error = PushChunk(iff, 0, ID_STYL, IFFSIZE_UNKNOWN);
+  error = PushChunk(iff, 0, utf8 ? ID_USTY : ID_STYL, IFFSIZE_UNKNOWN);
   SHOWVALUE(DBF_CLIPBOARD, error);
 
   if(style.style != 0)
@@ -317,25 +373,20 @@ static void ServerWriteChars(IPTR session, struct line_node *line, LONG start, L
   error = PopChunk(iff);
   SHOWVALUE(DBF_CLIPBOARD, error);
 
-  D(DBF_CLIPBOARD, "writing CHRS");
-  error = PushChunk(iff, 0, ID_CHRS, IFFSIZE_UNKNOWN);
-  SHOWVALUE(DBF_CLIPBOARD, error);
-  error = WriteChunkBytes(iff, line->line.Contents + start, length);
-  SHOWVALUE(DBF_CLIPBOARD, error);
-  error = PopChunk(iff);
-  SHOWVALUE(DBF_CLIPBOARD, error);
+  ServerWriteText(iff, utf8, line->line.Contents + start, length, local, localLength);
 
   LEAVE();
 }
 
 ///
 /// ServerWriteLine
-static void ServerWriteLine(IPTR session, struct line_node *line)
+static void ServerWriteLine(IPTR session, struct line_node *line, const char *local, ULONG localLength)
 {
   struct IFFHandle *iff = (struct IFFHandle *)session;
   LONG error;
   struct LineStyle *styles = line->line.Styles;
   struct LineColor *colors = line->line.Colors;
+  BOOL utf8 = (session == utf8Session) ? TRUE : FALSE;
 
   ENTER();
 
@@ -346,7 +397,7 @@ static void ServerWriteLine(IPTR session, struct line_node *line)
     LONG numColors = 0;
 
     D(DBF_CLIPBOARD, "writing COLS");
-    error = PushChunk(iff, 0, ID_COLS, IFFSIZE_UNKNOWN);
+    error = PushChunk(iff, 0, utf8 ? ID_UCOL : ID_COLS, IFFSIZE_UNKNOWN);
     SHOWVALUE(DBF_CLIPBOARD, error);
 
     while(colors->column != EOC)
@@ -367,7 +418,7 @@ static void ServerWriteLine(IPTR session, struct line_node *line)
     LONG numStyles = 0;
 
     D(DBF_CLIPBOARD, "writing STYL");
-    error = PushChunk(iff, 0, ID_STYL, IFFSIZE_UNKNOWN);
+    error = PushChunk(iff, 0, utf8 ? ID_USTY : ID_STYL, IFFSIZE_UNKNOWN);
     SHOWVALUE(DBF_CLIPBOARD, error);
 
     while(styles->column != EOS)
@@ -383,13 +434,7 @@ static void ServerWriteLine(IPTR session, struct line_node *line)
     SHOWVALUE(DBF_CLIPBOARD, error);
   }
 
-  D(DBF_CLIPBOARD, "writing CHRS");
-  error = PushChunk(iff, 0, ID_CHRS, IFFSIZE_UNKNOWN);
-  SHOWVALUE(DBF_CLIPBOARD, error);
-  error = WriteChunkBytes(iff, line->line.Contents, line->line.Length);
-  SHOWVALUE(DBF_CLIPBOARD, error);
-  error = PopChunk(iff);
-  SHOWVALUE(DBF_CLIPBOARD, error);
+  ServerWriteText(iff, utf8, line->line.Contents, line->line.Length, local, localLength);
 
   LEAVE();
 }
@@ -410,6 +455,9 @@ static LONG ServerReadLine(IPTR session, struct line_node **linePtr, ULONG *cset
   UWORD separator = LNSF_None;
   LONG error;
   BOOL lineFinished = FALSE;
+  // UTF-8 session: a UTF8 chunk read before the CHRS of the same line
+  STRPTR utf8Text = NULL;
+  ULONG utf8Length = 0;
 
   ENTER();
 
@@ -497,6 +545,32 @@ static LONG ServerReadLine(IPTR session, struct line_node **linePtr, ULONG *cset
         }
         break;
 
+        case ID_UTF8:
+        {
+          ULONG length = cn->cn_Size;
+
+          D(DBF_CLIPBOARD, "reading UTF8");
+          if(utf8Text != NULL)
+            FreeVec(utf8Text);
+          // room for a trailing LF and the NUL, as for CHRS
+          if((utf8Text = AllocVecShared(length + 2, MEMF_ANY)) != NULL)
+          {
+            if(ReadChunkBytes(iff, utf8Text, length) == (LONG)length && Utf8Valid(utf8Text, length) == TRUE)
+            {
+              utf8Text[length] = '\0';
+              utf8Length = length;
+            }
+            else
+            {
+              // a UTF8 chunk that is not UTF-8 is not taken
+              FreeVec(utf8Text);
+              utf8Text = NULL;
+            }
+          }
+        }
+        break;
+
+        case ID_UCOL:
         case ID_COLS:
         {
           ULONG numColors = cn->cn_Size / sizeof(struct LineColor);
@@ -519,6 +593,7 @@ static LONG ServerReadLine(IPTR session, struct line_node **linePtr, ULONG *cset
         }
         break;
 
+        case ID_USTY:
         case ID_STYL:
         {
           ULONG numStyles = cn->cn_Size / sizeof(struct LineStyle);
@@ -548,7 +623,15 @@ static LONG ServerReadLine(IPTR session, struct line_node **linePtr, ULONG *cset
           D(DBF_CLIPBOARD, "reading CHRS");
           SHOWVALUE(DBF_CLIPBOARD, cn->cn_Size);
 
-          if(length > 0)
+          // UTF-8 session: the line's UTF8 chunk instead of its copy
+          if(utf8Text != NULL)
+          {
+            textline = utf8Text;
+            length = utf8Length;
+            utf8Text = NULL;
+            codeset = CLIPCSET_UTF8;
+          }
+          else if(length > 0)
           {
             // allocate 2 additional bytes:
             // - one for the trailing LF
@@ -559,6 +642,12 @@ static LONG ServerReadLine(IPTR session, struct line_node **linePtr, ULONG *cset
               SHOWVALUE(DBF_CLIPBOARD, error);
               textline[length] = '\0';
             }
+          }
+          else
+            textline = NULL;
+
+          if(length > 0)
+          {
 
             if(textline != NULL && (line = AllocVecShared(sizeof(*line), MEMF_ANY|MEMF_CLEAR)) != NULL)
             {
@@ -592,12 +681,17 @@ static LONG ServerReadLine(IPTR session, struct line_node **linePtr, ULONG *cset
             highlight = FALSE;
             separator = LNSF_None;
           }
+          else if(textline != NULL)
+            FreeVec(textline);
         }
         break;
       }
     }
   }
   while(lineFinished == FALSE);
+
+  if(utf8Text != NULL)
+    FreeVec(utf8Text);
 
   // in case we didn't read a complete line but at least some other of our
   // chunks we free them here to avoid leaks.
@@ -693,6 +787,10 @@ void ClientWriteChars(IPTR session, struct line_node *line, LONG start, LONG len
     sd.sd_Line = line;
     sd.sd_Start = start;
     sd.sd_Length = length;
+    sd.sd_Local = NULL;
+    sd.sd_LocalLength = 0;
+    if(session == utf8Session)
+      sd.sd_Local = Utf8LocalCopy(line->line.Contents + start, length, &sd.sd_LocalLength);
 
     // set up the message, send it and wait for a reply
     msg.mn_Node.ln_Name = (STRPTR)&sd;
@@ -700,6 +798,9 @@ void ClientWriteChars(IPTR session, struct line_node *line, LONG start, LONG len
 
     PutMsg(serverPort, &msg);
     Remove((struct Node *)WaitPort(&replyPort));
+
+    if(sd.sd_Local != NULL)
+      Utf8Free(sd.sd_Local);
 
     // allow other tasks again
     ReleaseSemaphore(serverLock);
@@ -721,6 +822,10 @@ void ClientWriteLine(IPTR session, struct line_node *line)
     sd.sd_Command = SERVER_WRITE_LINE;
     sd.sd_Session = session;
     sd.sd_Line = line;
+    sd.sd_Local = NULL;
+    sd.sd_LocalLength = 0;
+    if(session == utf8Session)
+      sd.sd_Local = Utf8LocalCopy(line->line.Contents, line->line.Length, &sd.sd_LocalLength);
 
     // set up the message, send it and wait for a reply
     msg.mn_Node.ln_Name = (STRPTR)&sd;
@@ -728,6 +833,9 @@ void ClientWriteLine(IPTR session, struct line_node *line)
 
     PutMsg(serverPort, &msg);
     Remove((struct Node *)WaitPort(&replyPort));
+
+    if(sd.sd_Local != NULL)
+      Utf8Free(sd.sd_Local);
 
     // allow other tasks again
     ReleaseSemaphore(serverLock);
@@ -842,13 +950,13 @@ static SAVEDS ASM LONG ClipboardServer(UNUSED REG(a0, STRPTR args), UNUSED REG(d
 
             case SERVER_WRITE_CHARS:
             {
-              ServerWriteChars(sd->sd_Session, sd->sd_Line, sd->sd_Start, sd->sd_Length);
+              ServerWriteChars(sd->sd_Session, sd->sd_Line, sd->sd_Start, sd->sd_Length, sd->sd_Local, sd->sd_LocalLength);
             }
             break;
 
             case SERVER_WRITE_LINE:
             {
-              ServerWriteLine(sd->sd_Session, sd->sd_Line);
+              ServerWriteLine(sd->sd_Session, sd->sd_Line, sd->sd_Local, sd->sd_LocalLength);
             }
             break;
 

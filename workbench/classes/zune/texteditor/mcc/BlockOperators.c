@@ -751,7 +751,7 @@ LONG CutBlock2(struct InstData *data, ULONG flags, struct marking *newblock)
     if(isFlagSet(flags, CUTF_CLIPBOARD))
     {
       // write the block to the clipboard
-      if((clipSession = ClientStartSession(IFFF_WRITE)) != (IPTR)NULL)
+      if((clipSession = ClientStartSession(IFFF_WRITE | (data->utf8 ? CLIPMODE_UTF8 : 0))) != (IPTR)NULL)
       {
         ClientWriteChars(clipSession, startline, startx, startline->line.Length-startx);
       }
@@ -821,7 +821,7 @@ LONG CutBlock2(struct InstData *data, ULONG flags, struct marking *newblock)
   {
     if(isFlagSet(flags, CUTF_CLIPBOARD))
     {
-      if((clipSession = ClientStartSession(IFFF_WRITE)) != (IPTR)NULL)
+      if((clipSession = ClientStartSession(IFFF_WRITE | (data->utf8 ? CLIPMODE_UTF8 : 0))) != (IPTR)NULL)
       {
         ClientWriteChars(clipSession, startline, startx, stopx-startx);
         ClientEndSession(clipSession);

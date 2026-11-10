@@ -183,6 +183,14 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
             // initialize our temporary rastport
             InitRastPort(&data->tmprp);
 
+            // the UTF-8 mode, chosen at creation only, before the contents
+            // are taken; unitext.library is opened for it alone
+            if(GetTagData(MUIA_TextEditor_UTF8, FALSE, msg->ops_AttrList) != FALSE)
+            {
+              data->utf8 = TRUE;
+              Utf8New(data);
+            }
+
             // walk through all attributes and check if
             // they were set during OM_NEW
             mSet(cl, obj, (struct opSet *)msg);
@@ -222,6 +230,9 @@ static IPTR mDispose(struct IClass *cl, Object *obj, Msg msg)
 
   FreeKeywords(data);
 
+  Utf8Cleanup(data);
+  Utf8Dispose(data);
+
   if(data->mylocale != NULL)
   {
     CloseLocale(data->mylocale);
@@ -254,6 +265,14 @@ static IPTR mSetup(struct IClass *cl, Object *obj, Msg msg)
   // initialize the configuration of our TextEditor
   // object from the configuration set by the user
   InitConfig(cl, obj);
+
+  // UTF-8: no window without faces for the text; the status says why
+  if(data->utf8 == TRUE && Utf8Setup(data) == FALSE)
+  {
+    FreeConfig(cl, obj);
+    RETURN(FALSE);
+    return FALSE;
+  }
 
   if(DoSuperMethodA(cl, obj, msg))
   {
@@ -315,7 +334,10 @@ static IPTR mSetup(struct IClass *cl, Object *obj, Msg msg)
   }
 
   if(result == FALSE)
+  {
+    Utf8Cleanup(data);
     FreeConfig(cl, obj);
+  }
 
   RETURN(result);
   return result;
@@ -349,6 +371,7 @@ static IPTR mCleanup(struct IClass *cl, Object *obj, Msg msg)
     RejectInput(data);
   }
 
+  Utf8Cleanup(data);
   FreeConfig(cl, obj);
 
   result = DoSuperMethodA(cl, obj, msg);

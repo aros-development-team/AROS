@@ -49,7 +49,7 @@ static void MangleCharacters(struct InstData *data, char (*change)(char c))
   else
   {
     startx    = data->CPos_X;
-    stopx     = startx+1;
+    stopx     = startx+CharLenAt(data, data->actualline, startx);
     startline = data->actualline;
     stopline  = startline;
 
@@ -73,7 +73,10 @@ static void MangleCharacters(struct InstData *data, char (*change)(char c))
       if(startx == stopx && startline == stopline)
         break;
 
-      startline->line.Contents[startx] = change(startline->line.Contents[startx]);
+      // UTF-8: ASCII letters only; a byte of a multi-byte character is
+      // not a character of the locale's 8-bit set
+      if(data->utf8 == FALSE || (UBYTE)startline->line.Contents[startx] < 0x80)
+        startline->line.Contents[startx] = change(startline->line.Contents[startx]);
 
       startx++;
     }

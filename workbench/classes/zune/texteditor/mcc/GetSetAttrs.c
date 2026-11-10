@@ -20,6 +20,8 @@
 
 ***************************************************************************/
 
+#include <string.h>
+
 #include <intuition/classes.h>
 #include <utility/tagitem.h>
 #include <clib/alib_protos.h>
@@ -125,6 +127,12 @@ IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg)
       break;
     case MUIA_TextEditor_FixedFont:
       ti_Data = data->use_fixedfont;
+      break;
+    case MUIA_TextEditor_UTF8:
+      ti_Data = data->utf8;
+      break;
+    case MUIA_TextEditor_UTF8Status:
+      ti_Data = data->Utf8Status;
       break;
     case MUIA_TextEditor_Pen:
       ti_Data = data->Pen;
@@ -827,6 +835,13 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
     result = ReimportText(cl, obj);
   }
 
+  // UTF-8: contents that are not UTF-8 are refused; the old ones stay
+  if(contents != NULL && data->utf8 == TRUE && Utf8Valid((CONST_STRPTR)contents, strlen(contents)) == FALSE)
+  {
+    DisplayBeep(NULL);
+    contents = NULL;
+  }
+
   if(contents != NULL)
   {
     struct MinList newlines;
@@ -855,6 +870,8 @@ IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
     {
       data->CPos_X = (data->actualline->line.Length > crsr_x) ? crsr_x : data->actualline->line.Length-1;
     }
+    // UTF-8: a position inside a character moves back to its start
+    Utf8SnapCursor(data);
 
     ScrollIntoDisplay(data);
     SetCursor(data, data->CPos_X, data->actualline, TRUE);

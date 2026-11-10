@@ -476,6 +476,8 @@ static LONG FindKey(struct InstData *data, UBYTE key, ULONG qualifier)
 
 ///
 /// Key_Normal()
+static void Key_NormalUTF8(struct InstData *data, const char *text, LONG k);
+
 void Key_Normal(struct InstData *data, char key)
 {
   ENTER();
@@ -547,6 +549,78 @@ void Key_Normal(struct InstData *data, char key)
 }
 
 ///
+/// Key_NormalUTF8()
+/* UTF-8: a typed character of k bytes (a grapheme or part of one, such as
+   a combining mark) put in at the cursor as one undo step. */
+static void Key_NormalUTF8(struct InstData *data, const char *text, LONG k)
+{
+  struct marking block;
+
+  ENTER();
+
+  if(Enabled(data))
+    Key_Clear(data);
+  else
+    ScrollIntoDisplay(data);
+
+  // spell checking and keywords as for an 8-bit key: at a character that
+  // ends a word (ASCII only; any other character continues it)
+  if(k == 1 && text[0] != '-' && IsAlpha(data->mylocale, text[0]) == FALSE)
+  {
+    if(data->TypeAndSpell == TRUE)
+      SpellCheckWord(data);
+    if(data->Keywords != NULL)
+      KeywordCheck(data);
+  }
+
+  block.enabled = FALSE;
+  block.startline = data->actualline;
+  block.startx = data->CPos_X;
+  if(PasteChars(data, data->CPos_X, data->actualline, k, text, NULL) == TRUE)
+  {
+    data->CPos_X += k;
+    block.stopline = data->actualline;
+    block.stopx = data->CPos_X;
+    AddToUndoBuffer(data, ET_PASTEBLOCK, &block);
+    Utf8SnapCursor(data);
+  }
+  else
+    DisplayBeep(NULL);
+
+  // hard wrapping at the border, as for an 8-bit key; the border and the
+  // search for a space count bytes, and spaces are ASCII
+  if(data->WrapMode == MUIV_TextEditor_WrapMode_HardWrap &&
+     data->WrapBorder > 0 &&
+     data->CPos_X > data->WrapBorder &&
+     !(k == 1 && text[0] == ' '))
+  {
+    LONG xpos = data->WrapBorder+1;
+
+    while(xpos > 0 && data->actualline->line.Contents[xpos] != ' ')
+      xpos--;
+    if(xpos == 0)
+    {
+      xpos = data->WrapBorder;
+      while(xpos < data->CPos_X && data->actualline->line.Contents[xpos] != ' ')
+        xpos++;
+    }
+    if(xpos != 0 && xpos < data->CPos_X)
+    {
+      LONG length = data->CPos_X-xpos;
+
+      data->CPos_X = xpos;
+      AddToUndoBuffer(data, ET_SPLITLINE, NULL);
+      SplitLine(data, data->CPos_X, data->actualline, TRUE, NULL);
+      AddToUndoBuffer(data, ET_DELETECHAR, &data->actualline->line.Contents[data->CPos_X]);
+      data->CPos_X = length-1;
+      RemoveChars(data, 0, data->actualline, 1);
+    }
+  }
+
+  LEAVE();
+}
+
+///
 /// ConvertKey()
 /*----------------*
  * Convert Rawkey *
@@ -565,6 +639,24 @@ static BOOL ConvertKey(struct InstData *data, struct IntuiMessage *imsg)
   event.ie_Code         = imsg->Code;
   event.ie_Qualifier    = imsg->Qualifier;
   event.ie_EventAddress = (APTR *) *((IPTR *)imsg->IAddress);
+
+  // UTF-8: the key's bytes decoded from the system's set before control
+  // characters are left out; put in whole
+  if(data->utf8 == TRUE)
+  {
+    char text[16];
+    ULONG k = Utf8Key(imsg, text, sizeof(text));
+
+    if(k > 0)
+    {
+      data->pixel_x = 0;
+      Key_NormalUTF8(data, text, k);
+      result = TRUE;
+    }
+
+    RETURN(result);
+    return result;
+  }
 
   if(MapRawKey(&event, (STRPTR)&code, 1, NULL) > 0)
   {
@@ -601,6 +693,9 @@ static BOOL ReactOnRawKey(struct InstData *data, struct IntuiMessage *imsg)
   ENTER();
 
   dummy = FindKey(data, imsg->Code, imsg->Qualifier);
+
+  // UTF-8: whatever moved the cursor, it stays on a character's start
+  Utf8SnapCursor(data);
 
   D(DBF_INPUT, "FindKey: %ld (%lx)", dummy, imsg->Code);
 
@@ -1388,22 +1483,32 @@ void Key_Backspace(struct InstData *data)
     if(data->CPos_X > 0)
     {
       struct marking block;
+      LONG n = 1;
 
-      // move the cursor position one to the left
-      data->CPos_X--;
+      // move the cursor position one to the left (UTF-8: one grapheme
+      // cluster, all its bytes)
+      if(data->utf8 == TRUE)
+      {
+        LONG prev = Utf8Prev(data->actualline->line.Contents, data->actualline->line.Length, data->CPos_X);
+
+        n = data->CPos_X - prev;
+        data->CPos_X = prev;
+      }
+      else
+        data->CPos_X--;
 
       // define a block which consists of a single character only
       block.enabled = TRUE;
       block.startline = data->actualline;
       block.startx = data->CPos_X;
       block.stopline = data->actualline;
-      block.stopx = data->CPos_X+1;
+      block.stopx = data->CPos_X+n;
 
       // add this single character block to the Undo buffer
       AddToUndoBuffer(data, ET_DELETEBLOCK, &block);
 
       // erase the character
-      RemoveChars(data, data->CPos_X, data->actualline, 1);
+      RemoveChars(data, data->CPos_X, data->actualline, n);
     }
     else if(HasPrevLine(data->actualline) == TRUE)
     {
@@ -1437,19 +1542,21 @@ void Key_Delete(struct InstData *data)
     if(data->CPos_X+1 < data->actualline->line.Length)
     {
       struct marking block;
+      // UTF-8: the whole grapheme cluster under the cursor
+      LONG n = CharLenAt(data, data->actualline, data->CPos_X);
 
       // define a block which consists of a single character only
       block.enabled = TRUE;
       block.startline = data->actualline;
       block.startx = data->CPos_X;
       block.stopline = data->actualline;
-      block.stopx = data->CPos_X+1;
+      block.stopx = data->CPos_X+n;
 
       // add this single character block to the Undo buffer
       AddToUndoBuffer(data, ET_DELETEBLOCK_NOMOVE, &block);
 
       // erase the character
-      RemoveChars(data, data->CPos_X, data->actualline, 1);
+      RemoveChars(data, data->CPos_X, data->actualline, n);
     }
     else if(HasNextLine(data->actualline) == TRUE)
     {

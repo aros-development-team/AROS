@@ -192,7 +192,29 @@ BOOL PasteClip(struct InstData *data, LONG x, struct line_node *actline)
 
   ENTER();
 
-  if((clipSession = ClientStartSession(IFFF_READ)) != (IPTR)NULL)
+  // UTF-8: a clip of another program with its text in UTF8 after the CHRS
+  // copy is taken from that UTF8, as a foreign clip
+  if(data->utf8 == TRUE)
+  {
+    char *text;
+
+    if((text = Utf8ForeignClip()) != NULL)
+    {
+      struct Hook *oldhook = data->ImportHook;
+
+      data->ImportHook = &ImPlainHook;
+      data->actualline = actline;
+      data->CPos_X = x;
+      res = InsertText(data, text, TRUE) ? TRUE : FALSE;
+      data->ImportHook = oldhook;
+      FreeVec(text);
+
+      RETURN(res);
+      return res;
+    }
+  }
+
+  if((clipSession = ClientStartSession(IFFF_READ | (data->utf8 ? CLIPMODE_UTF8 : 0))) != (IPTR)NULL)
   {
     LONG error;
     BOOL newline = TRUE;
@@ -209,6 +231,41 @@ BOOL PasteClip(struct InstData *data, LONG x, struct line_node *actline)
       SHOWVALUE(DBF_CLIPBOARD, error);
       SHOWVALUE(DBF_CLIPBOARD, line);
       SHOWVALUE(DBF_CLIPBOARD, codeset);
+
+      // UTF-8: a line in the system's set (no UTF8 chunk) converted, its
+      // style and colour columns moved onto the UTF-8 bytes
+      if(error == 0 && line != NULL && data->utf8 == TRUE && codeset != CLIPCSET_UTF8 && line->line.Contents != NULL)
+      {
+        ULONG n = 0;
+        char *u = Utf8FromLocal(line->line.Contents, line->line.Length, &n);
+
+        if(u != NULL)
+        {
+          struct LineStyle *st;
+          struct LineColor *co;
+
+          for(st = line->line.Styles; st != NULL && st->column != EOS; st++)
+            st->column = 1 + Utf8LocalOffset(line->line.Contents, st->column-1);
+          for(co = line->line.Colors; co != NULL && co->column != EOC; co++)
+            co->column = 1 + Utf8LocalOffset(line->line.Contents, co->column-1);
+          FreeVec(line->line.Contents);
+          line->line.Contents = (STRPTR)u;
+          line->line.Length = n;
+          line->line.allocatedContents = n+2;
+        }
+        else
+        {
+          // no memory: nothing of the clip is taken
+          FreeVec(line->line.Contents);
+          if(line->line.Styles != NULL)
+            FreeVec(line->line.Styles);
+          if(line->line.Colors != NULL)
+            FreeVec(line->line.Colors);
+          FreeVec(line);
+          line = NULL;
+          error = IFFERR_NOMEM;
+        }
+      }
 
       if(error == 0 && line != NULL)
       {

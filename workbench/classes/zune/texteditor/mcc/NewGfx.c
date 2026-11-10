@@ -27,7 +27,7 @@
 #include "Debug.h"
 
 /// TextLengthNew
-LONG TextLengthNew(struct RastPort *rp, const char *string, ULONG count, LONG tabSizePixels)
+LONG TextLengthNew(struct InstData *data, struct RastPort *rp, const char *string, ULONG count, LONG tabSizePixels)
 {
   LONG result = 0;
   const char *tptr = string;
@@ -35,6 +35,13 @@ LONG TextLengthNew(struct RastPort *rp, const char *string, ULONG count, LONG ta
   LONG count0 = 0;
 
   ENTER();
+
+  if(data->utf8 == TRUE)
+  {
+    result = Utf8TextLength(data, rp, (CONST_STRPTR)string, count, tabSizePixels);
+    RETURN(result);
+    return result;
+  }
 
   do
   {
@@ -76,7 +83,7 @@ LONG TextLengthNew(struct RastPort *rp, const char *string, ULONG count, LONG ta
 
 ///
 /// TextFitNew
-ULONG TextFitNew(struct RastPort *rp, const char *string, ULONG strLen, struct TextExtent *textExtent, const struct TextExtent *constrainingExtent, LONG strDirection, LONG constrainingBitWidth, LONG constrainingBitHeight, LONG tabSizePixels)
+ULONG TextFitNew(struct InstData *data, struct RastPort *rp, const char *string, ULONG strLen, struct TextExtent *textExtent, const struct TextExtent *constrainingExtent, LONG strDirection, LONG constrainingBitWidth, LONG constrainingBitHeight, LONG tabSizePixels)
 {
   ULONG result = 0;
   ULONG strLen0 = 0;
@@ -84,6 +91,13 @@ ULONG TextFitNew(struct RastPort *rp, const char *string, ULONG strLen, struct T
   const char *tptr0 = string;
 
   ENTER();
+
+  if(data->utf8 == TRUE)
+  {
+    result = Utf8TextFit(data, rp, (CONST_STRPTR)string, strLen, textExtent, constrainingBitWidth, tabSizePixels);
+    RETURN(result);
+    return result;
+  }
 
   do
   {
@@ -106,7 +120,7 @@ ULONG TextFitNew(struct RastPort *rp, const char *string, ULONG strLen, struct T
         result += TextFit(rp, tptr0, strLen0, textExtent, (struct TextExtent *)constrainingExtent, strDirection, constrainingBitWidth, constrainingBitHeight);
 
       // substract the width of the maximum width
-      constrainingBitWidth -= TextLengthNew(rp, tptr0, strLen0+1, tabSizePixels);
+      constrainingBitWidth -= TextLengthNew(data, rp, tptr0, strLen0+1, tabSizePixels);
       // bail out if no space is left
       if(constrainingBitWidth <= 0)
         break;
@@ -128,13 +142,20 @@ ULONG TextFitNew(struct RastPort *rp, const char *string, ULONG strLen, struct T
 
 ///
 /// TextNew
-void TextNew(struct RastPort *rp, const char *string, ULONG count, LONG tabSizePixels)
+void TextNew(struct InstData *data, struct RastPort *rp, const char *string, ULONG count, LONG tabSizePixels)
 {
   const char *tptr = string;
   const char *tptr0 = string;
   LONG count0 = 0;
 
   ENTER();
+
+  if(data->utf8 == TRUE)
+  {
+    Utf8Text(data, rp, (CONST_STRPTR)string, count, tabSizePixels);
+    LEAVE();
+    return;
+  }
 
   do
   {

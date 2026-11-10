@@ -39,7 +39,7 @@ LONG FlowSpace(struct InstData *data, UWORD flow, STRPTR text)
 
   if(flow != MUIV_TextEditor_Flow_Left)
   {
-    flowspace  = (_mwidth(data->object)-TextLengthNew(&data->tmprp, text, LineCharsWidth(data, text)-1, data->TabSizePixels));
+    flowspace  = (_mwidth(data->object)-TextLengthNew(data, &data->tmprp, text, LineCharsWidth(data, text)-1, data->TabSizePixels));
     flowspace -= (data->CursorWidth == 6) ? TextLength(&data->tmprp, " ", 1) : data->CursorWidth;
     if(flow == MUIV_TextEditor_Flow_Center)
     {
@@ -71,7 +71,7 @@ static LONG CursorOffset(struct InstData *data)
     if(offset < 1)
       offset = 1;
 
-    res = TextFitNew(&data->tmprp, text, lineCharsWidth, &tExtend, NULL, 1, offset, data->font->tf_YSize, data->TabSizePixels);
+    res = TextFitNew(data, &data->tmprp, text, lineCharsWidth, &tExtend, NULL, 1, offset, data->font->tf_YSize, data->TabSizePixels);
 
     // in case of a hard-wrapped line we have to deal with
     // the possibility that the user tries to
@@ -98,12 +98,12 @@ static LONG GetPosInPixels(struct InstData *data, LONG bytes, LONG x)
 
   ENTER();
 
-  pos = TextLengthNew(&data->tmprp, &data->actualline->line.Contents[bytes], x, data->TabSizePixels);
+  pos = TextLengthNew(data, &data->tmprp, &data->actualline->line.Contents[bytes], x, data->TabSizePixels);
 
   if(data->actualline->line.Contents[data->CPos_X] == '\n')
     pos += TextLength(&data->tmprp, " ", 1)/2;
   else
-    pos += TextLengthNew(&data->tmprp, &data->actualline->line.Contents[data->CPos_X], 1, data->TabSizePixels)/2;
+    pos += TextLengthNew(data, &data->tmprp, &data->actualline->line.Contents[data->CPos_X], CharLenAt(data, data->actualline, data->CPos_X), data->TabSizePixels)/2;
 
   pos += FlowSpace(data, data->actualline->line.Flow, &data->actualline->line.Contents[bytes]);
 
@@ -418,6 +418,9 @@ void GoEndOfLine(struct InstData *data)
       data->CPos_X = pos.bytes + c - 1;
     else
       data->CPos_X = pos.bytes;
+
+    // UTF-8: on the last character's start, not inside it
+    Utf8SnapCursor(data);
   }
 
   LEAVE();
@@ -428,6 +431,29 @@ void GoEndOfLine(struct InstData *data)
 void GoNextWord(struct InstData *data)
 {
   ENTER();
+
+  // UTF-8: words as Unicode sees them, across lines
+  if(data->utf8 == TRUE)
+  {
+    struct line_node *next;
+
+    data->CPos_X = Utf8NextWord(data->actualline->line.Contents, data->actualline->line.Length-1, data->CPos_X);
+    while(data->CPos_X >= data->actualline->line.Length-1 && (next = GetNextLine(data->actualline)) != NULL)
+    {
+      data->actualline = next;
+      data->CPos_X = 0;
+      // the next line's first word, unless it starts with one
+      if(data->actualline->line.Length > 1 && CheckSep(data, data->actualline->line.Contents[0]) == FALSE)
+        break;
+      data->CPos_X = Utf8NextWord(data->actualline->line.Contents, data->actualline->line.Length-1, 0);
+      if(data->CPos_X < data->actualline->line.Length-1)
+        break;
+    }
+    if(data->CPos_X > data->actualline->line.Length-1)
+      data->CPos_X = data->actualline->line.Length-1;
+    LEAVE();
+    return;
+  }
 
   while(data->CPos_X < data->actualline->line.Length && CheckSep(data, data->actualline->line.Contents[data->CPos_X]) == FALSE)
     data->CPos_X++;
@@ -474,6 +500,9 @@ void GoNextSentence(struct InstData *data)
       NextLine(data);
   }
 
+  // UTF-8: never inside a character
+  Utf8SnapCursor(data);
+
   LEAVE();
 }
 
@@ -484,7 +513,7 @@ void GoRight(struct InstData *data)
   ENTER();
 
   if(data->CPos_X+1 < data->actualline->line.Length)
-    data->CPos_X++;
+    data->CPos_X += CharLenAt(data, data->actualline, data->CPos_X);
   else
     NextLine(data);
 
@@ -514,6 +543,19 @@ void GoPreviousWord(struct InstData *data)
   struct line_node *prev;
 
   ENTER();
+
+  // UTF-8: words as Unicode sees them, across lines
+  if(data->utf8 == TRUE)
+  {
+    while(data->CPos_X == 0 && (prev = GetPrevLine(data->actualline)) != NULL)
+    {
+      data->actualline = prev;
+      data->CPos_X = data->actualline->line.Length-1;
+    }
+    data->CPos_X = Utf8PrevWord(data->actualline->line.Contents, data->actualline->line.Length-1, data->CPos_X);
+    LEAVE();
+    return;
+  }
 
 FindWord:
 
@@ -573,6 +615,9 @@ void GoPreviousSentence(struct InstData *data)
     }
   }
 
+  // UTF-8: never inside a character
+  Utf8SnapCursor(data);
+
   LEAVE();
 }
 
@@ -583,7 +628,12 @@ void GoLeft(struct InstData *data)
   ENTER();
 
   if(data->CPos_X > 0)
-    data->CPos_X--;
+  {
+    if(data->utf8 == TRUE)
+      data->CPos_X = Utf8Prev(data->actualline->line.Contents, data->actualline->line.Length, data->CPos_X);
+    else
+      data->CPos_X--;
+  }
   else
   {
     struct line_node *prev = GetPrevLine(data->actualline);
@@ -609,7 +659,11 @@ BOOL CheckSep(struct InstData *data, char character)
 
   ENTER();
 
-  if(!IsAlNum(data->mylocale, (long)character))
+  // UTF-8: a byte of a multi-byte character belongs to a word (the
+  // locale's 8-bit classes say nothing about it)
+  if(data->utf8 == TRUE && (UBYTE)character >= 0x80)
+    isSep = FALSE;
+  else if(!IsAlNum(data->mylocale, (long)character))
   	isSep = TRUE;
 
   RETURN(isSep);

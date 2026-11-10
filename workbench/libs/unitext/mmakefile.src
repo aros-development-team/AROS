@@ -1,0 +1,42 @@
+#   AROS metamakefile for unitext.library
+
+include $(SRCDIR)/config/aros.cfg
+
+HARFBUZZVERSION=14.5.0
+HARFBUZZREPOSITORIES = https://github.com/harfbuzz/harfbuzz/releases/download/$(HARFBUZZVERSION)
+HARFBUZZARCHBASE     := harfbuzz-$(HARFBUZZVERSION)
+HARFBUZZARCHSUFFIX   := "tar.xz"
+HARFBUZZSRCDIR       := $(PORTSDIR)/harfbuzz/$(HARFBUZZARCHBASE)
+
+%fetch mmake=workbench-libs-unitext-fetch archive=$(HARFBUZZARCHBASE) destination=$(PORTSDIR)/harfbuzz \
+    location=$(PORTSSOURCEDIR)/harfbuzz archive_origins=$(HARFBUZZREPOSITORIES) suffixes=$(HARFBUZZARCHSUFFIX)
+
+#MM- workbench-libs-complete : workbench-libs-unitext
+#MM- workbench-libs-unitext : workbench-libs-unitext-library
+#MM workbench-libs-unitext-library : workbench-libs-unitext-fetch workbench-libs-unitext-includes \
+#MM     workbench-libs-freetype-module workbench-libs-utf8proc-library workbench-libs-codesets
+#MM workbench-libs-unitext-library-includes : workbench-libs-unitext-fetch
+#MM workbench-libs-unitext-library-linklib : workbench-libs-unitext-fetch
+#MM- workbench-libs-unitext-includes : workbench-libs-unitext-includes-copy
+
+INCLUDE_FILES := zk_text.h zk_text_aros.h
+%copy_includes mmake=workbench-libs-unitext-includes-copy dir=include includes=$(INCLUDE_FILES) path=unitext
+
+FILES := library zk_text zk_text_aros
+CXXFILES := $(HARFBUZZSRCDIR)/src/harfbuzz
+
+# HarfBuzz with its thread safety on: GCC atomics, exec semaphores for its
+# locks (hb-aros-config.h); no exceptions or RTTI, so no C++ runtime.
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)/include -I$(HARFBUZZSRCDIR)/src \
+    -I$(AROS_INCLUDES)/freetype
+USER_CPPFLAGS := -DHB_CONFIG_OVERRIDE_H='"hb-aros-config.h"' -DHB_NO_MMAP -DHB_NO_SETLOCALE
+USER_CXXFLAGS := -std=c++11 -fno-exceptions -fno-rtti
+# HarfBuzz built so needs no C++ runtime: no libstdc++, libsupc++ or
+# libatomic (its atomics are compiler builtins), so none is linked.
+TARGET_CXX_LIBS :=
+
+%build_module mmake=workbench-libs-unitext-library modname=unitext modtype=library \
+    files="$(FILES)" cxxfiles="$(CXXFILES)" \
+    uselibs="freetype2 utf8proc posixc_rel stdc_rel" conffile=unitext.conf
+
+%common

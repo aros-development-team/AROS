@@ -110,6 +110,11 @@ struct InstData
   BOOL mui39;
   BOOL mui4x;
   STRPTR OwnBackground;
+
+  /* MUIA_BetterString_UTF8 (UTF8.c) */
+  struct Library *UniText;      /* this object's open of unitext.library */
+  struct zt_font *Utf8Font;     /* Setup..Cleanup */
+  LONG Utf8Status;              /* MUIA_BetterString_UTF8Status */
 };
 
 #define FLG_Secret                 (1L << 0)
@@ -135,6 +140,7 @@ struct InstData
 #define FLG_WindowSleepNotifyAdded (1L << 22) // notify for MUIA_Window_Sleep was added
 #define FLG_DummyNotifyAdded       (1L << 23) // dummy notify was added
 #define FLG_Truecolor              (1L << 24) // we live on a truecolor screen
+#define FLG_UTF8                   (1L << 25) // MUIA_BetterString_UTF8
 
 // private attributes
 #define MUIA_BetterString_InternalSelectOnActive   0xad002000UL
@@ -258,10 +264,33 @@ void ShowSelectPointer(Object *obj, struct InstData *data);
 void HideSelectPointer(Object *obj, struct InstData *data);
 
 // ClipboardServer.c
+// UTF8.c
+struct zt_font;
+BOOL Utf8New(struct InstData *data);
+void Utf8Dispose(struct InstData *data);
+BOOL Utf8Setup(Object *obj, struct InstData *data);
+void Utf8Cleanup(struct InstData *data);
+UWORD Utf8Next(struct InstData *data, UWORD pos);
+UWORD Utf8Prev(struct InstData *data, UWORD pos);
+UWORD Utf8Snap(struct InstData *data, UWORD pos);
+UWORD Utf8NextWord(struct InstData *data, UWORD pos);
+UWORD Utf8PrevWord(struct InstData *data, UWORD pos);
+ULONG Utf8Cut(CONST_STRPTR s, ULONG n, ULONG max);
+BOOL Utf8Valid(CONST_STRPTR s, ULONG n);
+ULONG Utf8Key(struct IntuiMessage *imsg, char *out, ULONG cap);
+BOOL Utf8Allowed(struct InstData *data, CONST_STRPTR s, ULONG n);
+char *Utf8LocalCopy(CONST_STRPTR s, ULONG n, ULONG *outn);
+char *Utf8FromLocal(CONST_STRPTR s, ULONG n, ULONG *outn);
+void Utf8Free(char *p, BOOL fromLibrary);
+VOID PrintStringUTF8(struct IClass *cl, Object *obj);
+UWORD Utf8Hit(Object *obj, struct InstData *data, LONG x);
+
 BOOL StartClipboardServer(void);
 void ShutdownClipboardServer(void);
 void StringToClipboard(STRPTR str, LONG length);
 BOOL ClipboardToString(STRPTR *str, LONG *length);
+void StringToClipboardUTF8(STRPTR str, LONG length);
+BOOL ClipboardToStringUTF8(STRPTR *str, LONG *length);
 
 #define setFlag(mask, flag)             (mask) |= (flag)
 #define clearFlag(mask, flag)           (mask) &= ~(flag)
