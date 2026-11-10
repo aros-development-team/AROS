@@ -101,6 +101,9 @@
 
 #include <netinet/in.h>
 #include <netinet/in_var.h>
+#if INET6
+#include <netinet6/in6_var.h>
+#endif
 
 #if NS
 #include <netns/ns.h>
@@ -138,6 +141,7 @@ static int rtinits_done = 0;
 struct radix_node_head *ns_rnhead = 0, *in_rnhead = 0;
 #if INET6
 struct radix_node_head *in6_rnhead = 0;
+extern struct ifnet *ifnet;     /* net/if.c */
 #endif
 struct radix_node *rn_match(), *rn_delete(), *rn_addroute();
 
@@ -418,6 +422,32 @@ struct sockaddr	*dst, *gateway;
        dereferencing a hole where one should have been */
     if(gateway == NULL)
         return ((struct ifaddr *)0);
+
+#if INET6
+    /*
+     * A link-local gateway is on the link its zone names (RFC 4007
+     * section 6): the route takes that interface and its link-local
+     * address - not whichever interface's fe80::/64 the address happens to
+     * match first (ifa_ifwithnet()), which sent the traffic of a route
+     * through fe80::1%eth1 out by eth0, to another neighbour.
+     */
+    if(gateway->sa_family == AF_INET6 && dst->sa_family == AF_INET6) {
+        struct sockaddr_in6 *g6 = (struct sockaddr_in6 *)gateway;
+
+        if(g6->sin6_scope_id != 0 && (IN6_IS_ADDR_LINKLOCAL(&g6->sin6_addr) ||
+                                     IN6_IS_ADDR_MC_LINKLOCAL(&g6->sin6_addr))) {
+            struct ifnet *ifp;
+            struct in6_ifaddr *ia;
+
+            for(ifp = ifnet; ifp; ifp = ifp->if_next)
+                if(ifp->if_index == g6->sin6_scope_id)
+                    break;
+            if(ifp == NULL || (ia = in6_ifaof_ifpforlinklocal(ifp)) == NULL)
+                return ((struct ifaddr *)0);
+            return (&ia->ia_ifa);
+        }
+    }
+#endif
 
     if((flags & RTF_GATEWAY) == 0) {
         /*

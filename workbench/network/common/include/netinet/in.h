@@ -515,7 +515,7 @@ struct sockaddr_in6 {
 #define IPV6_RTHDR		51	/* get/set IPv6 routing header */
 #define IPV6_RECVPKTINFO	61	/* bool; recv if, dst addr */
 #define IPV6_RECVHOPLIMIT	37	/* bool; recv hop limit */
-#define IPV6_CHECKSUM		26	/* int; checksum offset for raw socket */
+#define IPV6_CHECKSUM		7	/* int; checksum offset for raw socket (Linux's number; 26 is IPV6_V6ONLY) */
 #define IPV6_TCLASS		36	/* int; traffic class */
 /* path MTU (RFC 3542 section 11), numbered as in FreeBSD */
 #define IPV6_USE_MIN_MTU	42	/* int; -1: 1280 for multicast, 0: path MTU, 1: 1280 */

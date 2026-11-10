@@ -92,6 +92,7 @@ extern int  ip6_defhlim;
 struct rip6pcb {
     int                 rp_proto;   /* protocol; 0 takes every protocol */
     struct icmp6_filter rp_filter;  /* ICMPv6 types it receives (ICMP6_FILTER) */
+    int                 rp_cksum;   /* IPV6_CHECKSUM offset, -1: none */
 };
 #define intorip6(inp)	((struct rip6pcb *)(inp)->inp_ppcb)
 
@@ -207,6 +208,7 @@ rip6_input(void *args, ...)
     struct sockaddr_in6 from;
     int off, nxt;
     u_int8_t type = 0;
+    int csum = -1;              /* IPV6_CHECKSUM verified: -1 not yet, 1 good, 0 bad */
     va_list va;
 
     va_start(va, args);
@@ -252,6 +254,15 @@ rip6_input(void *args, ...)
             continue;
         if(nxt == IPPROTO_ICMPV6 && ICMP6_FILTER_WILLBLOCK(type, &rp->rp_filter))
             continue;
+        if(nxt != IPPROTO_ICMPV6 && rp->rp_cksum >= 0) {
+            /* IPV6_CHECKSUM: one with a wrong checksum is not for it */
+            if(m->m_pkthdr.len - off < rp->rp_cksum + 2)
+                continue;
+            if(csum < 0)
+                csum = in6_cksum(m, nxt, off, m->m_pkthdr.len - off) == 0;
+            if(!csum)
+                continue;
+        }
         if(last != NULL) {
             struct mbuf *n = m_copym(m, 0, M_COPYALL, M_DONTWAIT);
 
@@ -468,6 +479,10 @@ rip6_send(struct inpcb *inp, struct mbuf *m, struct mbuf *nam,
         error = EINVAL;     /* no room for the checksum */
         goto bad;
     }
+    if(rp->rp_proto != IPPROTO_ICMPV6 && rp->rp_cksum >= 0 && plen < rp->rp_cksum + 2) {
+        error = EINVAL;     /* no room for the IPV6_CHECKSUM one */
+        goto bad;
+    }
 
     M_PREPEND(m, sizeof(struct ip6_hdr), M_DONTWAIT);
     if(m == NULL)
@@ -498,15 +513,14 @@ rip6_send(struct inpcb *inp, struct mbuf *m, struct mbuf *nam,
         ip6->ip6_hlim = (inp->in6p_hops >= 0) ? (u_int8_t)inp->in6p_hops
                         : (u_int8_t)ip6_defhlim;
 
-    if(rp->rp_proto == IPPROTO_ICMPV6) {
+    if(rp->rp_proto == IPPROTO_ICMPV6 || rp->rp_cksum >= 0) {
         u_int16_t sum = 0;
-        int coff = sizeof(struct ip6_hdr) + 2;
+        int coff = sizeof(struct ip6_hdr) +
+                   (rp->rp_proto == IPPROTO_ICMPV6 ? 2 : rp->rp_cksum);
 
-        if(m->m_len < coff + 2 && (m = m_pullup(m, coff + 2)) == NULL)
-            return ENOBUFS;
-        bcopy((caddr_t)&sum, mtod(m, caddr_t) + coff, sizeof(sum));
-        sum = in6_cksum(m, IPPROTO_ICMPV6, sizeof(struct ip6_hdr), plen);
-        bcopy((caddr_t)&sum, mtod(m, caddr_t) + coff, sizeof(sum));
+        m_copyback(m, coff, sizeof(sum), (caddr_t)&sum);
+        sum = in6_cksum(m, rp->rp_proto, sizeof(struct ip6_hdr), plen);
+        m_copyback(m, coff, sizeof(sum), (caddr_t)&sum);
     }
 
     if(oifp != NULL) {
@@ -564,6 +578,51 @@ rip6_output(void *args, ...)
 /* ------------------------------------------------------------------
  * Socket options: ICMP6_FILTER here, everything else ip6_ctloutput().
  * ------------------------------------------------------------------ */
+/*
+ * IPV6_CHECKSUM (RFC 3542 section 3.1): the offset, in the data, of a
+ * 16-bit checksum over the data and the pseudo-header (RFC 8200 section
+ * 8.1) that the kernel computes on output and checks on input; -1, the
+ * default, is none. An ICMPv6 socket has its checksum computed and checked
+ * always, and cannot set it (EINVAL; it reads 2, its offset); an odd offset
+ * is refused, as FreeBSD does.
+ */
+static int
+rip6_cksumopt(int op, struct inpcb *inp, struct mbuf **m)
+{
+    struct rip6pcb *rp;
+    int error = 0;
+
+    if(inp == NULL || (rp = intorip6(inp)) == NULL)
+        error = EINVAL;
+    else if(op == PRCO_SETOPT) {
+        if(*m == NULL || (*m)->m_len != sizeof(int))
+            error = EINVAL;
+        else if(rp->rp_proto == IPPROTO_ICMPV6)
+            error = EINVAL;
+        else {
+            int v = *mtod(*m, int *);
+
+            if(v < -1 || (v >= 0 && (v & 1)))
+                error = EINVAL;
+            else
+                rp->rp_cksum = v;
+        }
+    } else {
+        *m = m_get(M_WAIT, MT_SOOPTS);
+        if(*m == NULL)
+            error = ENOBUFS;
+        else {
+            (*m)->m_len = sizeof(int);
+            *mtod(*m, int *) = rp->rp_proto == IPPROTO_ICMPV6 ? 2 : rp->rp_cksum;
+        }
+    }
+    if(op == PRCO_SETOPT && *m) {
+        m_freem(*m);
+        *m = NULL;
+    }
+    return error;
+}
+
 int
 rip6_ctloutput(int op, struct socket *so, int level, int optname,
                struct mbuf **m)
@@ -572,6 +631,8 @@ rip6_ctloutput(int op, struct socket *so, int level, int optname,
     struct rip6pcb *rp;
     int error = 0;
 
+    if(level == IPPROTO_IPV6 && optname == IPV6_CHECKSUM)
+        return rip6_cksumopt(op, inp, m);
     if(level != IPPROTO_ICMPV6)
         return ip6_ctloutput(op, so, level, optname, m);
 
@@ -660,6 +721,7 @@ rip6_usrreq(struct socket *so, int req, struct mbuf *m,
             break;
         }
         rp->rp_proto = (int)(long)nam;
+        rp->rp_cksum = -1;
         ICMP6_FILTER_SETPASSALL(&rp->rp_filter);
         error = soreserve(so, rip6_sendspace, rip6_recvspace);
         if(error == 0) {
