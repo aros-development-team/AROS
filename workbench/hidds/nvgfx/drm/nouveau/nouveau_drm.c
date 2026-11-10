@@ -1714,6 +1714,71 @@ nouveau_aros_probe(struct pci_dev *pdev, struct drm_device **pdrm)
 #include <nvkm/subdev/volt.h>
 #include <nouveau_aros_sensors.h>
 
+/*
+ * With GSP-RM running the card the firmware owns the sensors, and the
+ * temperature is asked of it: NV2080_CTRL_CMD_THERMAL_SYSTEM_EXECUTE_V2 runs
+ * a list of thermal instructions, here the one that reads sensor 0 (the
+ * GPU's own). Layout and values are those of ctrl/ctrl2080/ctrl2080thermal.h
+ * in NVIDIA's open-gpu-kernel-modules (580 series). Fan, voltage and power
+ * controls are not published there.
+ */
+struct nouveau_aros_thermal_instruction {
+	u32 result;
+	u32 executed;
+	u32 opcode;
+	union {
+		struct {
+			u32 sensorIndex;
+			s32 value;
+		} getStatusSensorReading;
+		u32 space[8];
+	} operands;
+};
+
+struct nouveau_aros_thermal_execute_v2 {
+	u32 clientAPIVersion;
+	u32 clientAPIRevision;
+	u32 clientInstructionSizeOf;
+	u32 executeFlags;
+	u32 successfulInstructions;
+	u32 instructionListSize;
+	struct nouveau_aros_thermal_instruction instructionList[0x20];
+};
+
+#define NOUVEAU_AROS_THERMAL_SYSTEM_EXECUTE_V2		0x20800513
+#define NOUVEAU_AROS_THERMAL_SENSOR_READING_OPCODE	0x00001500
+
+static int
+nouveau_aros_gsp_temp(struct nvkm_device *device, long *val)
+{
+	struct nvkm_gsp_object *subdevice = &device->gsp->internal.device.subdevice;
+	struct nouveau_aros_thermal_execute_v2 *ctrl;
+	int ret;
+
+	ctrl = nvkm_gsp_rm_ctrl_get(subdevice, NOUVEAU_AROS_THERMAL_SYSTEM_EXECUTE_V2, sizeof(*ctrl));
+	if (IS_ERR(ctrl))
+		return PTR_ERR(ctrl);
+
+	memset(ctrl, 0, sizeof(*ctrl));
+	ctrl->clientAPIVersion = 1;
+	ctrl->clientAPIRevision = 0;
+	ctrl->clientInstructionSizeOf = sizeof(ctrl->instructionList[0]);
+	ctrl->instructionListSize = 1;
+	ctrl->instructionList[0].opcode = NOUVEAU_AROS_THERMAL_SENSOR_READING_OPCODE;
+	ctrl->instructionList[0].operands.getStatusSensorReading.sensorIndex = 0;
+
+	ret = nvkm_gsp_rm_ctrl_push(subdevice, &ctrl, sizeof(*ctrl));
+	if (ret)
+		return ret;
+
+	if (ctrl->successfulInstructions != 1 || ctrl->instructionList[0].result)
+		ret = -ENODEV;
+	else
+		*val = (long)ctrl->instructionList[0].operands.getStatusSensorReading.value * 1000;
+	nvkm_gsp_rm_ctrl_done(subdevice, ctrl);
+	return ret;
+}
+
 int
 nouveau_aros_sensor(struct drm_device *dev, int what, long *val)
 {
@@ -1726,6 +1791,8 @@ nouveau_aros_sensor(struct drm_device *dev, int what, long *val)
 
 	switch (what) {
 	case NVSENSOR_TEMP:
+		if (!therm && device && nvkm_gsp_rm(device->gsp))
+			return nouveau_aros_gsp_temp(device, val);
 		if (!therm)
 			return -ENODEV;
 		ret = nvkm_therm_temp_get(therm);
