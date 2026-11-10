@@ -725,7 +725,7 @@ static int bufsize(int s, int opt)
 void testTCPINFO_AUTOSIZE(void)
 {
     LONG snd = 0, rcv = 0, big = 64 * 1024 * 1024;
-    int c, s, c2, s2, v = 96 * 1024, n0, n1, r0, r1;
+    int c, s, c2, s2, i, v = 96 * 1024, n0, n1, r0, r1;
     unsigned long avail = (unsigned long)AvailMem(MEMF_ANY);
 
     CU_ASSERT_EQUAL(tcpctl(TCPCTL_SENDBUF_MAX, &snd, NULL), 0);
@@ -739,14 +739,20 @@ void testTCPINFO_AUTOSIZE(void)
         return;
     }
 
+    /* over the loopback the buffer holds the sender back only when the
+     * sending task outruns the stack, which takes a few writes or none:
+     * up to three transfers of 4 MB (one did not grow it in about one
+     * run in twelve) */
     CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
-    n0 = bufsize(c, SO_SNDBUF);
+    n0 = n1 = bufsize(c, SO_SNDBUF);
     r0 = bufsize(s, SO_RCVBUF);
-    CU_ASSERT_EQUAL(st_oneway(c, s, 4 * 1024 * 1024), 0);
-    n1 = bufsize(c, SO_SNDBUF);
+    for (i = 0; i < 3 && n1 == n0; i++) {
+        CU_ASSERT_EQUAL(st_oneway(c, s, 4 * 1024 * 1024), 0);
+        n1 = bufsize(c, SO_SNDBUF);
+    }
     r1 = bufsize(s, SO_RCVBUF);
-    printf("    4 MB over the loopback: send buffer %d -> %d, receive buffer %d -> %d\n",
-           n0, n1, r0, r1);
+    printf("    %d x 4 MB over the loopback: send buffer %d -> %d, receive buffer %d -> %d\n",
+           i, n0, n1, r0, r1);
     CU_ASSERT(n1 > n0 && n1 <= snd);
     CU_ASSERT(r1 >= r0 && r1 <= rcv);
     CloseSocket(c);
