@@ -98,8 +98,11 @@ extern struct InputEvent *cxIHandler();
     
     ObtainSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
 
+    if (nb->nb_Version != NB_VERSION)
+        myerr = CBERR_VERSION;
+
     /* No duplicates allowed? */
-    if (nb->nb_Unique & NBU_UNIQUE)
+    if (myerr == CBERR_OK && (nb->nb_Unique & NBU_UNIQUE))
     {
         temp = (CxObj *)FindName(&GPB(CxBase)->cx_BrokerList, nb->nb_Name);
         
