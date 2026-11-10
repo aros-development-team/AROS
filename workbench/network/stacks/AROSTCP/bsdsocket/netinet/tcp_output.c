@@ -704,10 +704,12 @@ skip_sack:
      */
     if(win < (long)(so->so_rcv.sb_hiwat / 4) && win < (long)tp->t_maxseg)
         win = 0;
-    if(win > (long)TCP_MAXWIN << tp->rcv_scale)
-        win = (long)TCP_MAXWIN << tp->rcv_scale;
     if(win < (long)(tp->rcv_adv - tp->rcv_nxt))
         win = (long)(tp->rcv_adv - tp->rcv_nxt);
+    /* the field's limit last, as in FreeBSD: whatever was promised, it
+     * never carries more than it can hold (else only its low 16 bits) */
+    if(win > (long)TCP_MAXWIN << tp->rcv_scale)
+        win = (long)TCP_MAXWIN << tp->rcv_scale;
     ti->ti_win = htons((u_short)(win >> tp->rcv_scale));
     if(SEQ_GT(tp->snd_up, tp->snd_nxt)) {
         ti->ti_urp = htons((u_short)(tp->snd_up - tp->snd_nxt));

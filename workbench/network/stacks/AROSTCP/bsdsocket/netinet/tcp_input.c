@@ -1375,7 +1375,16 @@ findpcb:
             if(taop->tao_ccsent == 0)
                 taop->tao_ccsent = to.to_ccecho;
 
-            tp->rcv_adv += tp->rcv_wnd;
+            /*
+             * What the peer may send is what the window field can say: no
+             * more than TCP_MAXWIN << rcv_scale (65535 bytes with a peer
+             * that did not take window scaling), however large the receive
+             * buffer. Past that, tcp_output()'s "do not shrink the window"
+             * raised the window above the field, which then carried its
+             * low 16 bits: a few hundred bytes, then zero (FreeBSD's
+             * tcp_do_segment() has the same bound).
+             */
+            tp->rcv_adv += MIN(tp->rcv_wnd, (u_long)TCP_MAXWIN << tp->rcv_scale);
             tp->snd_una++;		/* SYN is acked */
             TCP_UTO_PROGRESS(tp);   /* the SYN no longer waits */
             tcp_ack_rtt(tp, &to, ti->ti_ack);   /* the SYN's RTT */

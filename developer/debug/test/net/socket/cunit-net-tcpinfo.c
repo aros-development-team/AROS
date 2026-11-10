@@ -486,6 +486,59 @@ void testTCPINFO_REASS_FULL(void)
     CloseSocket(s);
 }
 
+/* Without window scaling (a peer that does not take the option: here RFC
+ * 7323 is turned off for the connection) the side that connected offers the
+ * 65535 bytes the window field can hold, and goes on doing so: with a
+ * receive buffer above 64 KB it had promised the whole buffer on the
+ * SYN-ACK, and the field then carried the low 16 bits of that - a few
+ * hundred bytes, then zero - so that the peer's data waited for its persist
+ * timer (#2173). */
+void testTCPINFO_WINDOW_NO_SCALE(void)
+{
+    struct tcp_info si;
+    LONG old = 1, off = 0;
+    static char buf[16384];
+    int c, s, i, on = 1, rcvbuf = 0, sent = 0, got = 0;
+    socklen_t l = sizeof(rcvbuf);
+    const int total = 256 * 1024;
+
+    CU_ASSERT_EQUAL_FATAL(tcpctl(TCPCTL_DO_RFC1323, &old, &off), 0);
+    i = st_tcp_pair(AF_INET, &c, &s);
+    tcpctl(TCPCTL_DO_RFC1323, &off, &old);
+    CU_ASSERT_EQUAL_FATAL(i, 0);
+    getsockopt(c, SOL_SOCKET, SO_RCVBUF, &rcvbuf, &l);
+    /* a byte each way, so that the server has the window of an ACK the
+     * client sent after its SYN */
+    CU_ASSERT_EQUAL(send(c, "x", 1, 0), 1);
+    CU_ASSERT_EQUAL(sock_wait(s, 0, 2), 1);
+    CU_ASSERT_EQUAL(recv(s, buf, 1, 0), 1);
+    CU_ASSERT_EQUAL(info(s, &si, NULL), 0);
+    printf("\n    receive buffer %d, no window scaling: the client offers %lu bytes\n",
+           rcvbuf, (unsigned long)si.tcpi_snd_wnd);
+    CU_ASSERT_FALSE(si.tcpi_options & TCPI_OPT_WSCALE);
+    CU_ASSERT_EQUAL(si.tcpi_snd_wnd, rcvbuf > 65535 ? 65535 : rcvbuf);
+
+    /* and data to the client arrives without a pause */
+    memset(buf, 'w', sizeof(buf));
+    IoctlSocket(s, FIONBIO, (char *)&on);
+    IoctlSocket(c, FIONBIO, (char *)&on);
+    for (i = 0; i < 100 && got < total; i++) {      /* up to 2 s */
+        int n;
+
+        while (sent < total &&
+                (n = send(s, buf, total - sent < (int)sizeof(buf) ? total - sent : (int)sizeof(buf), 0)) > 0)
+            sent += n;
+        while ((n = recv(c, buf, sizeof(buf), 0)) > 0)
+            got += n;
+        if (got < total)
+            Delay(1);
+    }
+    printf("    %d bytes sent to it, %d read\n", sent, got);
+    CU_ASSERT_EQUAL(got, total);
+    CloseSocket(c);
+    CloseSocket(s);
+}
+
 /* A listening socket reports LISTEN. */
 void testTCPINFO_LISTEN(void)
 {
@@ -532,6 +585,7 @@ int main(int argc, char **argv)
         !CU_add_test(p, "an unanswered SYN backs off from 1 s", testTCPINFO_SYN_BACKOFF) ||
         !CU_add_test(p, "a short buffer gets the start", testTCPINFO_SHORT) ||
         !CU_add_test(p, "a full reassembly queue takes the segment that fills its hole", testTCPINFO_REASS_FULL) ||
+        !CU_add_test(p, "without window scaling the window offered is 65535, not its low bits", testTCPINFO_WINDOW_NO_SCALE) ||
         !CU_add_test(p, "a listening socket reports LISTEN", testTCPINFO_LISTEN))
     {
         CU_cleanup_registry();
