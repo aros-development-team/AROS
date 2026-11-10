@@ -102,15 +102,17 @@
 
 /*
  * The retransmission timer is a deadline in milliseconds (t_rexmt_at, on
- * tcp_ms()), checked on every fast timeout (PR_FASTHZ, 50 ms): it fires
- * within a fast tick after the RTO, never before. t_timer[TCPT_REXMT] only says it
- * is set; the other timers count slow ticks.
+ * tcp_ms()): a timer.device request of its own waits for the earliest of
+ * all connections' (tcp_timer_want(), kern/amiga_time.c), and the fast
+ * timeout (PR_FASTHZ, 50 ms) checks them too. t_timer[TCPT_REXMT] only
+ * says it is set; the other timers count slow ticks.
  */
 #define	TCP_FASTHZ_MS	(1000 / PR_FASTHZ)	/* 50 ms */
 #define	TCP_SLOWHZ_MS	(1000 / PR_SLOWHZ)	/* 500 ms */
 #define	TCP_MS_TO_STICKS(ms)	(((ms) + TCP_SLOWHZ_MS - 1) / TCP_SLOWHZ_MS)
 /* t_timer[TCPT_REXMT] = TCPT_REXMT_ARM(tp): set it to t_rxtcur from now */
-#define	TCPT_REXMT_ARM(tp)	((tp)->t_rexmt_at = tcp_ms() + (u_int32_t)(tp)->t_rxtcur, 1)
+#define	TCPT_REXMT_ARM(tp)	((tp)->t_rexmt_at = tcp_ms() + (u_int32_t)(tp)->t_rxtcur, \
+				 tcp_timer_want((tp)->t_rexmt_at), 1)
 #define	TCPTV_REXMTMIN_MS	200		/* default tcp_rexmit_min, as FreeBSD's */
 #define	TCPTV_REXMTMAX_MS	64000		/* max allowable REXMT value */
 #define	TCPTV_RTOSYN_MS		3000		/* RTO once a SYN timed out (6298 5.7) */

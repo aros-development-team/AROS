@@ -192,7 +192,7 @@ little memory there is), so a buffer that grows is a lasting claim on system mem
   (`tcp_autobuf_pool()`);
 - what autosizing has given all live connections stays within 3/8 of that, a byte of buffer
   counting as two of the pool (`sb_mbmax`; a 1448-byte segment sits in a 2 KB cluster and an mbuf),
-  and goes back at `tcp_close()`; a buffer grows by what is left, if less than asked, and nothing
+  and goes back at `tcp_close()` or when the connection enters TIME_WAIT (`tcp_autobuf_release()`); a buffer grows by what is left, if less than asked, and nothing
   grows while half of what the pool may use is in clusters in use (`tcp_autobuf_grow()`). Without
   such a budget, eight connections receiving at 100 ms grew while their buffers were empty, filled
   them together and ran the pool out.
@@ -246,7 +246,10 @@ and the TCP state machine are shared, and only the family-specific edges branch 
   `m_data` past IP+TCP+options, and locates the PCB.
 - **`tcp_output`** copies `tp->t_template` into the mbuf, fills the TCP fields/options, then calls
   IPv4 `ip_output` or IPv6 `tcp_v6output`. It panics if `tp->t_template == 0`, so `tcp_connect` and
-  `syncache_socket` build the template before the first send.
+  `syncache_socket` build the template before the first send. `sosend()` hands a write to TCP a
+  cluster at a time; while more of the same write follows, the send buffer is marked
+  `SB_MORETOCOME` (FreeBSD's `PRUS_MORETOCOME`) and `tcp_output` sends no part of a segment, so a
+  write leaves in full-sized segments even with `TCP_NODELAY` (10000 bytes: 7 segments, not 10).
 - **`tcp_subr`** provides `tcp_template` (per-connection `tcpiphdr` template), `tcp_respond`
   (RST/ACK/keep-alive; dual-stack), `tcp_v6output` (shared IPv6 sender), `tcp_newtcpcb`/`tcp_close`,
   and the SYN-cookie generate/validate helpers.
@@ -300,6 +303,36 @@ bench (random, several holes in a window, a lost retransmission, reordering) it 
 difference either way. A partial ACK is one more ACK in recovery. `snd_cwnd` stays at
 what is in flight until the recovery ends, at `ssthresh`.
 
+With SACK, what is lost is decided by time, by **RACK** (RFC 8985 section 6, `tcp_rack.c`; sysctl
+`net.inet.tcp.rack`, on), not by DupThresh: a segment is lost when one sent after it has been
+delivered and more than RACK.rtt + reo_wnd has passed since it was sent. reo_wnd, the reordering
+tolerated, is min_RTT / 4 (at most SRTT), times a multiplier each D-SACK grows; 0 before any
+reordering is seen, in recovery or with DupThresh segments SACKed. The send buffer is a byte stream,
+so the send times are kept in a map of their own (`t_xmap`: ranges of sequence space, the time each
+was last sent and whether as a retransmission), filled by `tcp_output()` and split at the
+cumulative ACK and the scoreboard's edges. The map is allocated when a connection negotiates SACK
+(`tcp_rack_attach()`, freed by `tcp_close()`), so connections without SACK do not carry it; its
+length is chosen when the stack starts from the memory free then, the same for every CPU: one
+12-byte entry per 256 KB free, 16 to 64 (16 with 4 MB free or less, 64 from 16 MB); a full map
+merges its oldest entries. A connection whose map cannot be allocated, or set up while RACK was
+off, runs with DupThresh. RACK.xmit_ts takes a retransmission only when the
+timestamp echoed is its own (Karn). Its result is the bound below which holes are lost, which
+`IsLost()`/`NextSeg()`/`SetPipe()` use, and recovery starts on any ACK that finds one, not only the
+third duplicate; a retransmission found lost is sent again. A loss is found on the next ACK: there
+is no reordering timer (section 6.2.6) - the tail loss probe or the RTO acts when no ACK comes. The
+clock is in milliseconds, so a segment counts as lost only once more than RACK.rtt + reo_wnd has
+passed: the RTT and the elapsed time are each truncated.
+
+A recovery that D-SACKs show was needless is undone (RFC 3708 with D-SACK, as Linux's
+`tcp_try_undo_dsack()`): when every byte it retransmitted has come back reported as a duplicate,
+nothing was lost - segments were reordered or delayed - and `cwnd` and `ssthresh` return to their
+values before it; a recovery still running ends. An RTO is not undone this way.
+
+On the loss bench (`tests/tcp/loss_probe.py` in aros-matter, 1 MB, median of 5 runs, against the
+tail loss probe alone): random losses 1.29 -> 0.52 s, several holes in a window 0.72 -> 0.38 s, a
+lost retransmission 0.37 -> 0.19 s, reordering (a tenth of the segments 5 ms ahead) 0.58 -> 0.29 s
+with 27 -> 11 needless retransmissions.
+
 As a receiver, the SACK blocks of an ACK (`tcp_sack_rcvblocks()`, from the reassembly queue once
 `rcv_nxt` has moved) begin with the one that holds the segment just received, as RFC 2018
 section 4 requires, then the ones sent before, most recent first, as many as fit. None lies below
@@ -315,6 +348,18 @@ Without SACK, loss recovery is NewReno (RFC 6582). A partial ACK in fast recover
 first unacknowledged segment with `cwnd` covering the bytes it acknowledges plus that segment
 (snd_una has not advanced yet), deflates `cwnd`, and is then processed like any ACK, so `snd_una`
 advances and the retransmit timer runs again, as in FreeBSD's `tcp_newreno_partial_ack()`.
+
+A loss at the end of a flight - the last segments of a reply - brings no duplicate ACKs. With SACK,
+a **tail loss probe** (RFC 8985 section 7, `tcp_tlp_arm()`/`tcp_tlp_send()` in `tcp_timer.c`)
+finds it before the RTO: a connection with data in flight, not in loss recovery and with no probe
+out arms a probe timeout when the RTO is armed, 2 * SRTT (plus 200 ms, the worst delayed ACK, with
+one segment in flight), never later than the RTO, whose first expiry it then takes. The last
+segment goes again whatever cwnd says. An ACK beyond the probe with no D-SACK for it means the
+probe repaired a loss, and cwnd is reduced once, as for an ECN echo; a D-SACK or a duplicate ACK
+means both copies arrived (`tcp_tlp_ack()`, as Linux's `tcp_process_tlp_ack()`). An RTO ends the
+episode. Sysctl `net.inet.tcp.tlp` (on). On the bench (`tests/tcp/tail_probe.py` in aros-matter,
+bursts of 10 KB losing their last segment, 20 ms RTT) a tail comes back after 134 ms instead of
+208 ms (the RTO), and the connection does not fall back to one segment.
 
 ### 5.2 SYN cache and SYN cookies
 
@@ -368,9 +413,11 @@ SHOULD be 1 s, FreeBSD and Linux use about 200 ms, and so does this stack) and 6
 each timeout. Before the first sample it is `net.inet.tcp.rttdflt`, 1 s (section 2.1; 4.4BSD had
 6 s), and 3 s once a connection is established with no sample after its SYN or SYN-ACK was
 retransmitted (section 5.7); the SYN cache resends a SYN-ACK after 1, 2, 4 and 8 s. The
-retransmission timer is a deadline (`t_rexmt_at`) checked on every fast tick, so it fires within
-50 ms after the RTO, never before. On the bench (`tests/tcp/rto_probe.py` in aros-matter) the RTO
-after a lost tail is 0.20-0.24 s at an RTT of 0.4 ms, 0.26 s at 200 ms and 0.56 s at 500 ms, where
+retransmission timer is a deadline (`t_rexmt_at`, also the loss probe's): a timer.device request
+of its own waits for the earliest deadline of all connections (`tcp_timer_want()`,
+`kern/amiga_time.c`, brought forward when a sooner one is set) and runs the due ones
+(`tcp_rexmt_due()`), so it fires on time, not on the next 50 ms tick; the fast tick checks them too. On the bench (`tests/tcp/rto_probe.py` in aros-matter) the RTO
+after a lost tail is 0.200 s at an RTT of 0.4 ms and at 50 ms, 0.25 s at 200 ms and 0.55 s at 500 ms, where
 the 500 ms clock gave 1.2-2.4 s.
 
 The retransmission timer also detects a path MTU black hole (RFC 2923 section 2.1): a path that
@@ -433,6 +480,12 @@ connection answers with a reset at that number. A SYN on a synchronized connecti
 challenge ACK too, not a reset, and so does a segment whose ACK is older than SND.UNA by more than
 the peer's largest window (section 5.2), whose data is dropped. Challenge ACKs are limited to 5 a
 second on each connection (section 7), not for all of them together.
+
+The ACK that answers a dropped segment - an ACK of data not yet sent, a segment outside the window
+or failing PAWS, one in TIME_WAIT - is limited the same way, 5 a second on each connection, with a
+count of its own (`tcp_ackwar_ok()`, as FreeBSD's `ack_war_cnt`): two ends out of step, one
+acknowledging data the other never sent and the other's ACKs below its window, otherwise answered
+each other at once and kept the stack busy for good (an ACK war).
 
 ---
 

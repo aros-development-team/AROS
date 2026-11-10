@@ -54,6 +54,21 @@
  */
 #define TCP_SACK_BOARD	32
 
+/*
+ * RACK (RFC 8985 section 6): when each part of what is in flight was last
+ * sent. t_xmap[i] covers [the previous entry's end (t_xmap_start for the
+ * first), end), in sequence order. The map is allocated when a connection
+ * negotiates SACK (tcp_rack_attach()), t_xmap_len entries: tcp_rack_maplen,
+ * chosen when the stack starts from the memory free then (tcp_rack_init()).
+ */
+struct tcp_xrec {
+	tcp_seq		end;
+	u_int32_t	ts;		/* tcp_ms() when last sent */
+	u_short		flags;
+#define	XR_RETX		0x01		/* last sent as a retransmission */
+#define	XR_DELIV	0x02		/* acknowledged or SACKed */
+};
+
 struct sackblk {
 	tcp_seq	start;		/* left edge (first unacknowledged byte) */
 	tcp_seq	end;		/* right edge (next byte after SACK'd data) */
@@ -146,6 +161,9 @@ struct tcpcb {
 #define TF_PMTUD_BH	0x0080		/* MSS lowered: path MTU black hole suspected */
 #define TF_PMTUD_NODF	0x0100		/* IPv4: DF off after a black hole */
 #define TF_ECN_SYN	0x0200		/* our SYN asked for ECN */
+#define TF_PTO		0x0400		/* TCPT_REXMT is the loss probe timeout (RFC 8985) */
+#define TF_TLP		0x0800		/* a loss probe is out, up to t_tlp_end */
+#define TF_UNDO		0x1000		/* the last recovery may prove needless (D-SACKs) */
 
 	struct	tcpiphdr *t_template;	/* skeletal packet for transmit */
 	struct	inpcb *t_inpcb;		/* back pointer to internet pcb */
@@ -280,6 +298,14 @@ struct tcpcb {
 	u_int	t_challenge_cnt;
 
 /*
+ * ACKs sent for segments dropped (dropafterack), counted as the challenge
+ * ACKs are, so that two ends out of step do not answer each other's ACKs
+ * for ever (an ACK war; FreeBSD's tcp_ack_war_check()).
+ */
+	u_long	t_ackwar_time;
+	u_int	t_ackwar_cnt;
+
+/*
  * What this connection adds to tcp_now in its TSval (RFC 7323 section 5.4).
  */
 	u_int32_t t_ts_offset;
@@ -297,6 +323,29 @@ struct tcpcb {
 	u_int32_t t_rfbuf_ts;
 	u_long	t_rfbuf_cnt;
 	u_long	t_autobuf;		/* its share of tcp_autobuf_used (pool bytes) */
+
+/* Tail Loss Probe (RFC 8985 section 7): where the probe's data ends */
+	tcp_seq	t_tlp_end;
+
+/* RACK (RFC 8985 section 6), tcp_rack.c */
+	struct tcp_xrec *t_xmap;		/* NULL: no RACK on this connection */
+	tcp_seq	t_xmap_start;
+	u_short	t_xmap_n;
+	u_short	t_xmap_len;		/* entries t_xmap holds */
+	u_char	t_rack_reord;		/* reordering seen on this connection */
+	u_char	t_rack_mult;		/* reo_wnd multiplier, grown by D-SACKs */
+	u_int32_t t_rack_ts;		/* RACK.xmit_ts: latest send time delivered */
+	tcp_seq	t_rack_end;		/* RACK.end_seq */
+	u_int32_t t_rack_rtt;		/* RACK.rtt (ms) */
+	u_int32_t t_rack_minrtt;	/* least RACK.rtt (ms; 0: none) */
+	tcp_seq	t_rack_lost;		/* the holes below it are lost */
+
+/* Undoing a needless recovery (RFC 3708 with D-SACK, as Linux): cwnd and
+ * ssthresh before it, and the bytes it retransmitted that no D-SACK has
+ * reported yet */
+	u_long	t_undo_cwnd;
+	u_long	t_undo_ssthresh;
+	long	t_undo_bytes;
 
 /* TUBA stuff */
 	caddr_t	t_tuba_pcb;		/* next level down pcb for TCP over z */
@@ -456,6 +505,7 @@ struct	tcpstat {
 	u_long	tcps_sc_reset;		/* entries removed by RST */
 	u_long	tcps_sc_zonefail;	/* entry allocation failures */
 	u_long	tcps_sc_aborted;	/* completions aborted (listen full) */
+	u_long	tcps_rcvackwar;		/* ACKs for dropped segments not sent (rate) */
 };
 
 /*
@@ -480,7 +530,9 @@ struct	tcpstat {
 #define	TCPCTL_MINMSS		17	/* the least MSS a connection takes */
 #define	TCPCTL_SENDBUF_MAX	18	/* send buffer autosizing ceiling (0: off) */
 #define	TCPCTL_RECVBUF_MAX	19	/* receive buffer autosizing ceiling (0: off) */
-#define TCPCTL_MAXID		20
+#define	TCPCTL_TLP		20	/* tail loss probe (RFC 8985 section 7) */
+#define	TCPCTL_RACK		21	/* RACK loss detection (RFC 8985 section 6) */
+#define TCPCTL_MAXID		22
 
 #define TCPCTL_NAMES { \
 	{ 0, 0 }, \
@@ -503,6 +555,8 @@ struct	tcpstat {
 	{ "minmss", CTLTYPE_INT }, \
 	{ "sendbuf_max", CTLTYPE_INT }, \
 	{ "recvbuf_max", CTLTYPE_INT }, \
+	{ "tlp", CTLTYPE_INT }, \
+	{ "rack", CTLTYPE_INT }, \
 }
 
 #ifdef KERNEL
@@ -544,6 +598,9 @@ extern	int tcp_do_hystart;	/* HyStart++ (RFC 9406) */
 extern	int tcp_minmss;		/* the least MSS (TCP_MINMSS) */
 /* the least MSS a connection uses: tcp_minmss, never below 64 bytes */
 #define	TCP_MSS_FLOOR	(tcp_minmss > 64 ? tcp_minmss : 64)
+extern	int tcp_do_tlp;		/* tail loss probe (RFC 8985) */
+extern	int tcp_do_rack;	/* RACK loss detection (RFC 8985) */
+extern	int tcprexmtthresh;	/* DupThresh */
 extern	u_long tcp_autosndbuf_max;	/* send buffer autosizing ceiling */
 extern	u_long tcp_autorcvbuf_max;	/* receive buffer autosizing ceiling */
 #define	TCP_AUTOSNDBUF_INC	(16 * 1024)	/* send buffer autosizing step */
@@ -609,6 +666,18 @@ int	 tcp_autobuf_grow __P((struct tcpcb *, struct sockbuf *, u_long, u_long));
 void	 tcp_autobuf_init __P((void));
 u_long	 tcp_autobuf_pool __P((void));
 u_long	 tcp_autobuf_one __P((void));
+void	 tcp_autobuf_release __P((struct tcpcb *));
+void	 tcp_tlp_arm __P((struct tcpcb *));
+void	 tcp_timer_want __P((u_int32_t));
+u_int32_t tcp_rexmt_due __P((int *));
+int	 tcp_rack_on __P((const struct tcpcb *));
+void	 tcp_rack_init __P((void));
+void	 tcp_rack_attach __P((struct tcpcb *));
+void	 tcp_rack_detach __P((struct tcpcb *));
+void	 tcp_rack_sent __P((struct tcpcb *, tcp_seq, tcp_seq, int));
+void	 tcp_rack_ack __P((struct tcpcb *, const struct tcpopt *, tcp_seq));
+void	 tcp_rack_reset __P((struct tcpcb *));
+int	 tcp_dsack_block __P((const struct tcpopt *, tcp_seq, struct sackblk *));
 int	 tcp_rscale __P((struct socket *));
 #endif /* KERNEL */
 

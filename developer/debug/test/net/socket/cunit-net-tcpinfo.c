@@ -275,6 +275,17 @@ void testTCPINFO_MSS_FLOOR(void)
 void testTCPINFO_ROUTE_SSTHRESH6(void) { route_ssthresh(AF_INET6); }
 
 /* The pure ACKs the stack has sent (net.inet.tcp.stats), or -1. */
+static long tcpstat_field(size_t off)
+{
+    LONG name[4] = { CTL_NET, PF_INET, IPPROTO_TCP, TCPCTL_STATS };
+    struct tcpstat st;
+    LONG len = sizeof(st);
+
+    if (MiamiSysCtl(name, 4, &st, &len, NULL, 0, 0) != 0)
+        return -1;
+    return (long)*(u_long *)((char *)&st + off);
+}
+
 static long sent_acks(void)
 {
     LONG name[4] = { CTL_NET, PF_INET, IPPROTO_TCP, TCPCTL_STATS };
@@ -612,6 +623,75 @@ void testTCPINFO_WINDOW_NO_SCALE(void)
     CloseSocket(s);
 }
 
+/* Two ends out of step do not answer each other's ACKs for ever: 100
+ * bytes made by hand with the client's numbers reach the server, which
+ * takes them and acknowledges data the client never sent; the client's
+ * ACK of its own state is below the server's window, and so on. Each side
+ * answering at once kept the stack busy for good (an ACK war); the ACKs
+ * for dropped segments are now at most 5 a second on a connection, and in
+ * a second the stack sends a few dozen ACKs at most. */
+void testTCPINFO_ACK_WAR(void)
+{
+    struct tcp_info ci, si;
+    struct sockaddr_in a;
+    socklen_t l = sizeof(a);
+    LONG old = 1, off = 0;
+    u_short cport, sport;
+    long a0, a1;
+    int c, s, r, i;
+
+    CU_ASSERT_EQUAL_FATAL(tcpctl(TCPCTL_DO_RFC1323, &old, &off), 0);
+    i = st_tcp_pair(AF_INET, &c, &s);
+    tcpctl(TCPCTL_DO_RFC1323, &off, &old);
+    CU_ASSERT_EQUAL_FATAL(i, 0);
+    getsockname(c, (struct sockaddr *)&a, &l);
+    cport = ntohs(a.sin_port);
+    l = sizeof(a);
+    getsockname(s, (struct sockaddr *)&a, &l);
+    sport = ntohs(a.sin_port);
+    CU_ASSERT_EQUAL(info(c, &ci, NULL), 0);
+    CU_ASSERT_EQUAL(info(s, &si, NULL), 0);
+    r = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
+    CU_ASSERT_FATAL(r >= 0);
+    a0 = sent_acks();
+    CU_ASSERT_EQUAL(inject(r, cport, sport, si.tcpi_rcv_nxt, ci.tcpi_rcv_nxt, 100), 120);
+    Delay(50);
+    a1 = sent_acks();
+    printf("\n    out of step for 1 s: %ld ACKs sent\n", a1 - a0);
+    CU_ASSERT(a1 - a0 > 0 && a1 - a0 < 40);
+    CloseSocket(r);
+    CloseSocket(c);
+    CloseSocket(s);
+}
+
+/* One write leaves in full-sized segments: the socket layer hands TCP a
+ * cluster at a time, and with TCP_NODELAY on an idle connection each one
+ * used to end in a segment of its own, part of a segment (as FreeBSD's
+ * PRUS_MORETOCOME, TCP now waits for the rest of the write). 10000 bytes
+ * on a connection with nothing in flight: ceil(10000 / MSS) segments. */
+void testTCPINFO_WRITE_SEGMENTS(void)
+{
+    static char buf[10000];
+    struct tcp_info ti;
+    long p0, p1, want;
+    int c, s, on = 1, n, got = 0;
+
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    setsockopt(c, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on));
+    CU_ASSERT_EQUAL(info(c, &ti, NULL), 0);
+    want = (sizeof(buf) + ti.tcpi_snd_mss - 1) / ti.tcpi_snd_mss;
+    p0 = tcpstat_field(offsetof(struct tcpstat, tcps_sndpack));
+    CU_ASSERT_EQUAL(send(c, buf, sizeof(buf), 0), sizeof(buf));
+    while (got < (int)sizeof(buf) && (n = recv(s, buf, sizeof(buf), 0)) > 0)
+        got += n;
+    p1 = tcpstat_field(offsetof(struct tcpstat, tcps_sndpack));
+    printf("\n    10000 bytes, MSS %lu: %ld data segments (least %ld)\n",
+           (unsigned long)ti.tcpi_snd_mss, p1 - p0, want);
+    CU_ASSERT_EQUAL(p1 - p0, want);
+    CloseSocket(c);
+    CloseSocket(s);
+}
+
 /* The accepted side of a connection has an RTT from the handshake (the
  * timestamp its SYN-ACK carried, echoed in the final ACK), before any
  * data; it used to have none until it sent some. */
@@ -645,7 +725,7 @@ static int bufsize(int s, int opt)
 void testTCPINFO_AUTOSIZE(void)
 {
     LONG snd = 0, rcv = 0, big = 64 * 1024 * 1024;
-    int c, s, c2, s2, v = 96 * 1024, n0, n1, r0, r1;
+    int c, s, c2, s2, i, v = 96 * 1024, n0, n1, r0, r1;
     unsigned long avail = (unsigned long)AvailMem(MEMF_ANY);
 
     CU_ASSERT_EQUAL(tcpctl(TCPCTL_SENDBUF_MAX, &snd, NULL), 0);
@@ -659,14 +739,20 @@ void testTCPINFO_AUTOSIZE(void)
         return;
     }
 
+    /* over the loopback the buffer holds the sender back only when the
+     * sending task outruns the stack, which takes a few writes or none:
+     * up to three transfers of 4 MB (one did not grow it in about one
+     * run in twelve) */
     CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
-    n0 = bufsize(c, SO_SNDBUF);
+    n0 = n1 = bufsize(c, SO_SNDBUF);
     r0 = bufsize(s, SO_RCVBUF);
-    CU_ASSERT_EQUAL(st_oneway(c, s, 4 * 1024 * 1024), 0);
-    n1 = bufsize(c, SO_SNDBUF);
+    for (i = 0; i < 3 && n1 == n0; i++) {
+        CU_ASSERT_EQUAL(st_oneway(c, s, 4 * 1024 * 1024), 0);
+        n1 = bufsize(c, SO_SNDBUF);
+    }
     r1 = bufsize(s, SO_RCVBUF);
-    printf("    4 MB over the loopback: send buffer %d -> %d, receive buffer %d -> %d\n",
-           n0, n1, r0, r1);
+    printf("    %d x 4 MB over the loopback: send buffer %d -> %d, receive buffer %d -> %d\n",
+           i, n0, n1, r0, r1);
     CU_ASSERT(n1 > n0 && n1 <= snd);
     CU_ASSERT(r1 >= r0 && r1 <= rcv);
     CloseSocket(c);
@@ -768,6 +854,8 @@ int main(int argc, char **argv)
         !CU_add_test(p, "the accepted side has an RTT from the handshake", testTCPINFO_PASSIVE_RTT) ||
         !CU_add_test(p, "socket buffers grow unless the application sized them", testTCPINFO_AUTOSIZE) ||
         !CU_add_test(p, "with the ceilings at 0 no buffer grows", testTCPINFO_AUTOSIZE_OFF) ||
+        !CU_add_test(p, "two ends out of step do not answer each other for ever", testTCPINFO_ACK_WAR) ||
+        !CU_add_test(p, "one write leaves in full-sized segments", testTCPINFO_WRITE_SEGMENTS) ||
         !CU_add_test(p, "a listening socket reports LISTEN", testTCPINFO_LISTEN))
     {
         CU_cleanup_registry();

@@ -439,7 +439,7 @@ extern struct in_addr zeroin_addr;
  * - the budget: what autosizing has given all live connections stays
  *   within 3/8 of that (a byte of buffer counts as two of the pool,
  *   sb_mbmax: a 1448-byte segment sits in a 2 KB cluster and an mbuf), and
- *   goes back at tcp_close().
+ *   goes back at tcp_close() or in TIME_WAIT (tcp_autobuf_release()).
  */
 #define	TCP_AUTOBUF_MINFREE	(16UL * 1024 * 1024)
 #define	TCP_AUTOBUF_DIV		64
@@ -519,6 +519,20 @@ u_long max;
 }
 
 /*
+ * Give a connection's share of the budget back: at tcp_close(), and when
+ * it enters TIME_WAIT, where its buffers hold nothing and never will (a
+ * connection that closed first waits there 2 MSL, a minute; holding its
+ * share, a few of them kept every new connection from growing).
+ */
+void
+tcp_autobuf_release(tp)
+struct tcpcb *tp;
+{
+    tcp_autobuf_used -= tp->t_autobuf;
+    tp->t_autobuf = 0;
+}
+
+/*
  * The window scale to ask for (RFC 7323 section 2.2): enough for the
  * receive buffer, or for what autosizing may grow it to (with autosizing
  * off, a ceiling of 0, the buffer alone); the scale is fixed at the
@@ -559,6 +573,7 @@ tcp_init()
     tcbinfo.hashbase = phashinit(TCBHASHSIZE, M_PCB, &tcbinfo.hashsize);
     syncache_init();
     tcp_autobuf_init();
+    tcp_rack_init();
     if(max_protohdr < sizeof(struct tcpiphdr))
         max_protohdr = sizeof(struct tcpiphdr);
     if(max_linkhdr + sizeof(struct tcpiphdr) > MHLEN)
@@ -942,9 +957,10 @@ register struct tcpcb *tp;
         tp->t_segq = nq;
         m_freem(q);
     }
+    tcp_rack_detach(tp);                /* RACK's map, if any */
     if(tp->t_template)
         (void) m_free(dtom(tp->t_template));
-    tcp_autobuf_used -= tp->t_autobuf;  /* autosizing's budget back */
+    tcp_autobuf_release(tp);
     bsd_free(tp, M_PCB);
     inp->inp_ppcb = 0;
     soisdisconnected(so);

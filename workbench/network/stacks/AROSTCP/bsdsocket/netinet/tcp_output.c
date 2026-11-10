@@ -242,7 +242,8 @@ again:
 
     /*
      * Sender silly window avoidance.  If connection is idle
-     * and can send all data, a maximum segment,
+     * and can send all data (and no more of the same write is about
+     * to come, SB_MORETOCOME), a maximum segment,
      * at least a maximum default-size segment do it,
      * or are forced, do it; otherwise don't bother.
      * If peer's buffer is tiny, then send
@@ -255,6 +256,7 @@ again:
             goto send;
         if((idle || tp->t_flags & TF_NODELAY) &&
                 (tp->t_flags & TF_NOPUSH) == 0 &&
+                !(so->so_snd.sb_flags & SB_MORETOCOME) &&
                 len + off >= so->so_snd.sb_cc)
             goto send;
         if(tp->t_force)
@@ -771,6 +773,12 @@ skip_sack:
         if(len > 0 && SEQ_GEQ(startseq, tp->snd_max))
             ecn_ect = 1;
 
+        /* RACK (RFC 8985): when this data left (tcp_rack.c) */
+        if(len > 0)
+            tcp_rack_sent(tp, startseq, startseq + len, SEQ_LT(startseq, tp->snd_max));
+        if(len > 0 && SEQ_LT(startseq, tp->snd_max) && (tp->t_flagsext & TF_UNDO))
+            tp->t_undo_bytes += len;        /* retransmitted in a recovery */
+
         /*
          * PRR (RFC 6937): count every data byte transmitted during a
          * recovery episode (new data and retransmissions alike).
@@ -814,6 +822,7 @@ skip_sack:
         if(tp->t_timer[TCPT_REXMT] == 0 &&
                 tp->snd_nxt != tp->snd_una) {
             tp->t_timer[TCPT_REXMT] = TCPT_REXMT_ARM(tp);
+            tcp_tlp_arm(tp);        /* the loss probe, if it comes first */
             TCP_UTO_START(tp);      /* data waits for its ACK */
             if(tp->t_timer[TCPT_PERSIST]) {
                 tp->t_timer[TCPT_PERSIST] = 0;

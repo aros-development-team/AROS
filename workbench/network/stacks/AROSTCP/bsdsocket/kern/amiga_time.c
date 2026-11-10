@@ -70,6 +70,57 @@ static struct timeoutRequest *ifTimer = NULL,
 static BOOL can_send_timeouts = FALSE;
 
 /*
+ * The TCP retransmission deadlines (t_rexmt_at: RTO, loss probe) on a
+ * request of their own, so that they do not wait for the next 50 ms tick:
+ * it waits for the earliest of all connections'. tcp_timer_want() brings
+ * it forward when a deadline comes before it; when it fires,
+ * tcp_rexmt_due() runs the due ones and gives the next deadline, which it
+ * is sent again for (timer_poll()), or half a second when none is set.
+ */
+extern u_int32_t tcp_ms(void);
+extern u_int32_t tcp_rexmt_due(int *);
+static struct timeoutRequest *tcpTimer = NULL;
+static u_int32_t tcp_timer_at;          /* when it is due (tcp_ms()) */
+static BOOL tcp_timer_out = FALSE;      /* sent and not back yet */
+
+static void
+tcp_timer_set(u_int32_t at)
+{
+    long d = (long)(at - tcp_ms());
+
+    if(d < 1)
+        d = 1;
+    tcpTimer->timeout_timeval.tv_sec = d / 1000;
+    tcpTimer->timeout_timeval.tv_usec = (d % 1000) * 1000;
+    tcp_timer_at = at;
+}
+
+/* timer_poll() calls it, then sends the request again */
+static void
+tcp_timer_fire(void)
+{
+    u_int32_t next;
+    int any;
+
+    tcp_timer_out = FALSE;
+    next = tcp_rexmt_due(&any);
+    tcp_timer_set(any ? next : tcp_ms() + 500);
+    tcp_timer_out = TRUE;
+}
+
+/* A retransmission deadline was set: bring the request forward to it. */
+void
+tcp_timer_want(u_int32_t at)
+{
+    if(tcpTimer == NULL || !tcp_timer_out || (int)(at - tcp_timer_at) >= 0)
+        return;
+    AbortIO((struct IORequest *)tcpTimer);
+    WaitIO((struct IORequest *)tcpTimer);
+    tcp_timer_set(at);
+    sendTimeoutRequest(tcpTimer);
+}
+
+/*
  * Initialize the timer. This MUST be called before any Timer functions are
  * used (including get_time() and microtime() which use GetSysTime())
  * (see sys/time.h).
@@ -147,7 +198,9 @@ timer_init(void)
                     deferTimer = createTimeoutRequest(netdb_defer_timer, NETDB_DEFER_SECS, 0);
                     protoSlowTimer = createTimeoutRequest(pfslowtimo, 0, 1000000 / PR_SLOWHZ);
                     protoFastTimer = createTimeoutRequest(pffasttimo, 0, 1000000 / PR_FASTHZ);
-                    if(protoFastTimer && protoSlowTimer && arpTimer && ifTimer && autoipTimer && deferTimer) {
+                    tcpTimer = createTimeoutRequest(tcp_timer_fire, 0, 500000);
+                    if(protoFastTimer && protoSlowTimer && arpTimer && ifTimer && autoipTimer && deferTimer &&
+                            tcpTimer) {
                         can_send_timeouts = TRUE;
                         return (ULONG)(1 << timerport->mp_SigBit);
                     }
@@ -175,6 +228,10 @@ timer_deinit(void)
 #endif
     can_send_timeouts = FALSE;
 
+    tcp_timer_out = FALSE;
+    if(tcpTimer)
+        deleteTimeoutRequest(tcpTimer);
+    tcpTimer = NULL;
     if(protoFastTimer)
         deleteTimeoutRequest(protoFastTimer);
     if(protoSlowTimer)
@@ -221,6 +278,9 @@ timer_send(void)
         sendTimeoutRequest(deferTimer);
         sendTimeoutRequest(protoSlowTimer);
         sendTimeoutRequest(protoFastTimer);
+        tcp_timer_set(tcp_ms() + 500);
+        sendTimeoutRequest(tcpTimer);
+        tcp_timer_out = TRUE;
 
         can_send_timeouts = FALSE;
     }

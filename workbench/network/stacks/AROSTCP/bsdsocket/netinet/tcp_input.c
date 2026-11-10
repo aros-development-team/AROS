@@ -155,6 +155,35 @@ tcp_autorcvbuf(struct tcpcb *tp, struct socket *so, int len)
     tp->t_rfbuf_ts = 0;                 /* a new period with the next segment */
 }
 
+/*
+ * The ACKs after a loss probe (RFC 8985 section 7.4, as Linux's
+ * tcp_process_tlp_ack()). The probe sent the last segment again; once an
+ * ACK reaches its end:
+ * - a D-SACK for it (the first SACK block below the ACK, RFC 2883) or a
+ *   duplicate ACK with nothing new: both copies arrived, there was no loss;
+ * - an ACK beyond it with neither: the probe repaired a loss, and the
+ *   congestion window is reduced once, as for an ECN echo (no recovery).
+ * An ACK that only reaches the probe's end waits for the next (the D-SACK
+ * of a probe that was not needed may come in the ACK after).
+ */
+static void
+tcp_tlp_ack(struct tcpcb *tp, const struct tcpopt *to, tcp_seq ack, int dup)
+{
+    if(!(tp->t_flagsext & TF_TLP) || SEQ_LT(ack, tp->t_tlp_end))
+        return;
+    if(((to->to_flag & TOF_SACK) && to->to_nsacks > 0 &&
+            SEQ_LEQ(to->to_sacks[0].end, ack) &&
+            SEQ_GT(to->to_sacks[0].end, tp->t_tlp_end - tp->t_maxseg)) || dup) {
+        tp->t_flagsext &= ~TF_TLP;          /* no loss */
+        return;
+    }
+    if(SEQ_GT(ack, tp->t_tlp_end)) {
+        tp->t_flagsext &= ~TF_TLP;
+        if(!(tp->t_flagsext & TF_IN_FASTRECOV))
+            CC_ON_ECN(tp);                  /* the probe repaired a loss */
+    }
+}
+
 #define TCP_REASS(tp, ti, m, so, flags) { \
     if ((ti)->ti_seq == (tp)->rcv_nxt && \
         (tp)->t_segq == NULL && \
@@ -571,6 +600,9 @@ tcp_sack_lostbound(struct tcpcb *tp)
     u_long above = 0;
     int i;
 
+    if(tcp_rack_on(tp))                 /* RACK: by time (tcp_rack.c) */
+        return SEQ_GT(tp->t_rack_lost, tp->snd_una) ? tp->t_rack_lost : tp->snd_una;
+
     for(i = tp->t_num_sack_blks - 1; i >= 0; i--) {
         above += tp->t_sack_blks[i].end - tp->t_sack_blks[i].start;
         if(above > (u_long)(tcprexmtthresh - 1) * tp->t_maxseg)
@@ -719,6 +751,85 @@ tcp_sack_recover(struct tcpcb *tp, u_long delivered)
 }
 
 /*
+ * A D-SACK (RFC 2883 section 4): the first SACK block of an ACK reports a
+ * segment that arrived twice when it lies below the cumulative ACK or
+ * within the second block. 1, and the block in *b if b.
+ */
+int
+tcp_dsack_block(const struct tcpopt *to, tcp_seq ack, struct sackblk *b)
+{
+    if(!(to->to_flag & TOF_SACK) || to->to_nsacks < 1)
+        return 0;
+    if(!SEQ_LEQ(to->to_sacks[0].end, ack) &&
+            !(to->to_nsacks > 1 && SEQ_GEQ(to->to_sacks[0].start, to->to_sacks[1].start) &&
+              SEQ_LEQ(to->to_sacks[0].end, to->to_sacks[1].end)))
+        return 0;
+    if(b)
+        *b = to->to_sacks[0];
+    return 1;
+}
+
+/*
+ * Undo a needless recovery (RFC 3708 section 3.2 with D-SACK, as Linux's
+ * tcp_try_undo_dsack()): once D-SACKs have reported every byte the
+ * recovery retransmitted, nothing had been lost - the segments were
+ * reordered or delayed - and cwnd and ssthresh go back to what they were
+ * before it; a recovery still running ends.
+ */
+static void
+tcp_undo_dsack(struct tcpcb *tp, const struct tcpopt *to, tcp_seq ack)
+{
+    struct sackblk b;
+
+    if(!(tp->t_flagsext & TF_UNDO) || !tcp_dsack_block(to, ack, &b))
+        return;
+    tp->t_undo_bytes -= (long)(b.end - b.start);
+    if(tp->t_undo_bytes > 0)
+        return;
+    tp->t_flagsext &= ~(TF_UNDO | TF_IN_FASTRECOV | TF_PRR);
+    if(tp->snd_cwnd < tp->t_undo_cwnd)
+        tp->snd_cwnd = tp->t_undo_cwnd;
+    if(tp->snd_ssthresh < tp->t_undo_ssthresh)
+        tp->snd_ssthresh = tp->t_undo_ssthresh;
+    tp->t_dupacks = 0;
+}
+
+/*
+ * Loss recovery with SACK starts (RFC 6675 section 5): DupThresh duplicate
+ * ACKs, or RACK finding a hole lost (tcp_rack.c), on any ACK. Retransmit
+ * the first segment, then send as NextSeg() says, within cwnd - pipe, or
+ * what PRR (RFC 6937) allows when it is on.
+ */
+static void
+tcp_sack_enter(struct tcpcb *tp, u_long delivered)
+{
+    u_long sent;
+
+    tp->t_undo_cwnd = tp->snd_cwnd;     /* for tcp_undo_dsack() */
+    tp->t_undo_ssthresh = tp->snd_ssthresh;
+    tp->t_undo_bytes = 0;
+    tp->t_flagsext |= TF_UNDO;
+    CC_ON_LOSS(tp);
+    tp->t_timer[TCPT_REXMT] = 0;
+    tp->t_rtttime = 0;
+    tp->snd_recover = tp->snd_max;      /* recovery until this is acknowledged */
+    tp->t_flagsext |= TF_IN_FASTRECOV;
+    tp->snd_highrxt = tp->snd_una;
+    if(tcp_do_prr) {
+        tp->t_flagsext |= TF_PRR;
+        tp->snd_prr_out = 0;
+        tp->snd_prr_delivered = 0;
+        tp->snd_prr_recover_fs = tp->snd_max - tp->snd_una;
+    }
+    sent = tcp_sack_send(tp, tp->snd_una, tp->t_maxseg);
+    if(sent) {
+        tp->snd_highrxt = tp->snd_una + sent;
+        tcpstat.tcps_sack_rexmits++;
+    }
+    tcp_sack_recover(tp, delivered);
+}
+
+/*
  * Proportional Rate Reduction (RFC 6937), on each ACK in recovery with
  * PRR: delivered is DeliveredData, the bytes this ACK newly acknowledged,
  * cumulatively or by SACK. Returns sndcnt, the bytes that may be sent.
@@ -772,6 +883,26 @@ tcp_challenge_ok(struct tcpcb *tp)
         tp->t_challenge_cnt = 0;
     }
     return tp->t_challenge_cnt++ < TCP_CHALLENGE_MAX;
+}
+
+/*
+ * Whether an ACK for a dropped segment may go (dropafterack): at most
+ * TCP_ACKWAR_MAX a second on each connection, as FreeBSD's
+ * net.inet.tcp.ack_war_cnt (5 in its ack_war_timewindow, 1 s). Two ends out
+ * of step - one acknowledging data the other never sent, the other's ACKs
+ * below its window - would otherwise answer each other at once, for ever,
+ * and keep the stack busy.
+ */
+#define TCP_ACKWAR_MAX      5
+
+static int
+tcp_ackwar_ok(struct tcpcb *tp)
+{
+    if(tcp_now - tp->t_ackwar_time >= PR_SLOWHZ) {
+        tp->t_ackwar_time = tcp_now;
+        tp->t_ackwar_cnt = 0;
+    }
+    return tp->t_ackwar_cnt++ < TCP_ACKWAR_MAX;
 }
 
 /*
@@ -1246,6 +1377,8 @@ findpcb:
                  * this is a pure ack for outstanding data.
                  */
                 ++tcpstat.tcps_predack;
+                tcp_tlp_ack(tp, &to, ti->ti_ack, 0);
+                tcp_rack_ack(tp, &to, ti->ti_ack);
                 tcp_ack_rtt(tp, &to, ti->ti_ack);
                 acked = ti->ti_ack - tp->snd_una;
                 tcpstat.tcps_rcvackpack++;
@@ -1266,8 +1399,10 @@ findpcb:
                  */
                 if(tp->snd_una == tp->snd_max)
                     tp->t_timer[TCPT_REXMT] = 0;
-                else if(tp->t_timer[TCPT_PERSIST] == 0)
+                else if(tp->t_timer[TCPT_PERSIST] == 0) {
                     tp->t_timer[TCPT_REXMT] = TCPT_REXMT_ARM(tp);
+                    tcp_tlp_arm(tp);
+                }
 
                 if(so->so_snd.sb_flags & SB_NOTIFY)
                     sowwakeup(so);
@@ -1399,6 +1534,8 @@ findpcb:
             /* Enable SACK if both sides agree */
             if(!(to.to_flag & TOF_SACK_PERMITTED))
                 tp->t_flags &= ~TF_SACK_PERMIT;
+            else if(tp->t_flags & TF_SACK_PERMIT)
+                tcp_rack_attach(tp);
             /*
              * ECN negotiation (RFC 3168 section 6.1.1): if our SYN asked
              * with ECE+CWR and the SYN-ACK has ECE without CWR, ECN is
@@ -1888,6 +2025,11 @@ close:
             tcp_sack_update(tp, &to);
             sacknew = tp->snd_sacked > osacked;
         }
+        tcp_tlp_ack(tp, &to, ti->ti_ack,
+                    ti->ti_ack == tp->snd_una && ti->ti_len == 0 && !sacknew);
+        if(SEQ_LEQ(ti->ti_ack, tp->snd_max))
+            tcp_rack_ack(tp, &to, ti->ti_ack);
+        tcp_undo_dsack(tp, &to, ti->ti_ack);
 
         if(SEQ_LEQ(ti->ti_ack, tp->snd_una)) {
             /*
@@ -1930,8 +2072,15 @@ close:
                 if(tp->t_timer[TCPT_REXMT] == 0 ||
                         ti->ti_ack != tp->snd_una)
                     tp->t_dupacks = 0;
-                else if(++tp->t_dupacks == tcprexmtthresh &&
+                else if((tcp_rack_on(tp) ?
+                         (++tp->t_dupacks, SEQ_GT(tp->t_rack_lost, tp->snd_una)) :
+                         ++tp->t_dupacks == tcprexmtthresh) &&
                         !(tp->t_flagsext & TF_IN_FASTRECOV)) {
+                    if(tp->t_flags & TF_SACK_PERMIT) {
+                        tcp_sack_enter(tp, tp->snd_sacked > osacked ?
+                                       tp->snd_sacked - osacked : 0);
+                        goto drop;
+                    }
                     CC_ON_LOSS(tp);
                     tp->t_timer[TCPT_REXMT] = 0;
                     tp->t_rtttime = 0;
@@ -1942,31 +2091,7 @@ close:
                      */
                     tp->snd_recover = tp->snd_max;
                     tp->t_flagsext |= TF_IN_FASTRECOV;
-                    if(tp->t_flags & TF_SACK_PERMIT) {
-                        /*
-                         * With SACK (RFC 6675 section 5): retransmit
-                         * the first segment, then send as NextSeg()
-                         * says, within cwnd - pipe, or what PRR (RFC
-                         * 6937) allows when it is on.
-                         */
-                        u_long sent;
-
-                        tp->snd_highrxt = tp->snd_una;
-                        if(tcp_do_prr) {
-                            tp->t_flagsext |= TF_PRR;
-                            tp->snd_prr_out = 0;
-                            tp->snd_prr_delivered = 0;
-                            tp->snd_prr_recover_fs =
-                                tp->snd_max - tp->snd_una;
-                        }
-                        sent = tcp_sack_send(tp, tp->snd_una, tp->t_maxseg);
-                        if(sent) {
-                            tp->snd_highrxt = tp->snd_una + sent;
-                            tcpstat.tcps_sack_rexmits++;
-                        }
-                        tcp_sack_recover(tp, tp->snd_sacked > osacked ?
-                                     tp->snd_sacked - osacked : 0);
-                    } else {
+                    {
                         /*
                          * Without SACK: retransmit snd_una, then
                          * inflate cwnd by the segments the receiver
@@ -2123,8 +2248,10 @@ process_ACK:
         if(ti->ti_ack == tp->snd_max) {
             tp->t_timer[TCPT_REXMT] = 0;
             needoutput = 1;
-        } else if(tp->t_timer[TCPT_PERSIST] == 0)
+        } else if(tp->t_timer[TCPT_PERSIST] == 0) {
             tp->t_timer[TCPT_REXMT] = TCPT_REXMT_ARM(tp);
+            tcp_tlp_arm(tp);
+        }
 
         /*
          * If no data (only SYN) was ACK'd,
@@ -2178,6 +2305,12 @@ process_ACK:
             long delivered = (long)acked + (long)tp->snd_sacked - (long)osacked;
 
             tcp_sack_recover(tp, delivered > 0 ? (u_long)delivered : 0);
+        } else if(tcp_rack_on(tp) && !(tp->t_flagsext & TF_IN_FASTRECOV) &&
+                  SEQ_GT(tp->t_rack_lost, tp->snd_una)) {
+            /* RACK found a hole lost: recovery starts on this ACK */
+            long delivered = (long)acked + (long)tp->snd_sacked - (long)osacked;
+
+            tcp_sack_enter(tp, delivered > 0 ? (u_long)delivered : 0);
         }
 
         switch(tp->t_state) {
@@ -2214,6 +2347,7 @@ process_ACK:
             if(ourfinisacked) {
                 tp->t_state = TCPS_TIME_WAIT;
                 tcp_canceltimers(tp);
+                tcp_autobuf_release(tp);
                 /* Shorten TIME_WAIT [RFC-1644, p.28] */
                 if(tp->cc_recv != 0 &&
                         tp->t_duration < TCPTV_MSL)
@@ -2395,6 +2529,7 @@ dodata:							/* XXX */
         case TCPS_FIN_WAIT_2:
             tp->t_state = TCPS_TIME_WAIT;
             tcp_canceltimers(tp);
+            tcp_autobuf_release(tp);
             /* Shorten TIME_WAIT [RFC-1644, p.28] */
             if(tp->cc_recv != 0 &&
                     tp->t_duration < TCPTV_MSL) {
@@ -2435,6 +2570,10 @@ dropafterack:
     D(bug("[AROSTCP:TCP] %s: dropafterack: flags=0x%02x\n", __func__, tiflags));
     if(tiflags & TH_RST)
         goto drop;
+    if(!tcp_ackwar_ok(tp)) {
+        tcpstat.tcps_rcvackwar++;
+        goto drop;
+    }
 #ifdef TCPDEBUG
     if(so->so_options & SO_DEBUG)
         tcp_trace(TA_DROP, ostate, tp, &tcp_saveti, 0);

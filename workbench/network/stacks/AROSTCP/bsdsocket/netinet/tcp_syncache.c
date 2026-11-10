@@ -682,9 +682,10 @@ syncache_socket(struct syncache *sc, struct socket *lso, struct tcpiphdr *ti)
         tp->t_ts_offset = sc->sc_tsoff;
     } else
         tp->t_flags &= ~TF_REQ_TSTMP;
-    if (sc->sc_flags & SCF_SACK)
+    if (sc->sc_flags & SCF_SACK) {
         tp->t_flags |= TF_SACK_PERMIT;
-    else
+        tcp_rack_attach(tp);
+    } else
         tp->t_flags &= ~TF_SACK_PERMIT;
     if (sc->sc_flags & SCF_ECN)
         tp->t_flagsext |= TF_ECN_PERMIT;

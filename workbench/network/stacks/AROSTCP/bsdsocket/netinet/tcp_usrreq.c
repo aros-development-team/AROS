@@ -972,6 +972,26 @@ size_t newlen;
             tcp_rexmit_min = v;
         return (error);
     }
+    case TCPCTL_RACK: {
+        int v = tcp_do_rack, error;
+
+        error = sysctl_int(oldp, oldlenp, newp, newlen, &v);
+        if(error == 0 && (v < 0 || v > 1))
+            error = EINVAL;
+        if(error == 0)
+            tcp_do_rack = v;
+        return (error);
+    }
+    case TCPCTL_TLP: {
+        int v = tcp_do_tlp, error;
+
+        error = sysctl_int(oldp, oldlenp, newp, newlen, &v);
+        if(error == 0 && (v < 0 || v > 1))
+            error = EINVAL;
+        if(error == 0)
+            tcp_do_tlp = v;
+        return (error);
+    }
     case TCPCTL_SENDBUF_MAX:
     case TCPCTL_RECVBUF_MAX: {      /* autosizing ceilings, bytes; 0: off */
         u_long *p = name[0] == TCPCTL_SENDBUF_MAX ? &tcp_autosndbuf_max : &tcp_autorcvbuf_max;
