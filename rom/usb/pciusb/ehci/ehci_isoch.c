@@ -39,6 +39,25 @@ static inline struct EhciPTDPrivate *ehciPTDPrivate(struct PTDNode *ptd)
     return (struct EhciPTDPrivate *)ptd->ptd_Chipset;
 }
 
+/* Release a PTD's DMA bounce.  High-bandwidth whole-frame bounces are
+   AllocVec'd (also on 32-bit, where usbGetBuffer() is a no-op); controller
+   bounces from usbGetBuffer() are released through it. */
+static void ehciReleaseBounce(struct EhciPTDPrivate *ptdpriv, UWORD dir, ULONG len)
+{
+    if(!ptdpriv->ptd_BounceBuffer)
+        return;
+
+    if(ptdpriv->ptd_BounceOwned) {
+        FreeVec(ptdpriv->ptd_BounceBuffer);
+    } else {
+        usbReleaseBuffer(ptdpriv->ptd_BounceBuffer, ptdpriv->ptd_BufferReq.ubr_Buffer,
+                         len, dir);
+    }
+
+    ptdpriv->ptd_BounceBuffer = NULL;
+    ptdpriv->ptd_BounceOwned = FALSE;
+}
+
 /* FRINDEX is 14 bits; after >> 3 the frame number is 11 bits and wraps
    at 2048, not at 8192. */
 #define EHCI_FRAME_NUMBER_MASK  0x07ff
@@ -434,18 +453,11 @@ void ehciHandleIsochTDs(struct PCIController *hc)
                         CallHookPkt(urti->urti_InDoneHook, rtn, &sub);
                     }
                 }
-                if(ptdpriv->ptd_BounceBuffer) {
-                    usbReleaseBuffer(ptdpriv->ptd_BounceBuffer, bufreq->ubr_Buffer,
-                                     0, rtn->rtn_IOReq.iouh_Dir);
-                    ptdpriv->ptd_BounceBuffer = NULL;
-                }
+                /* IN data was already copied per transaction above, so the
+                   bounce itself needs no copy-back. */
+                ehciReleaseBounce(ptdpriv, rtn->rtn_IOReq.iouh_Dir, 0);
             } else {
-                if(ptdpriv->ptd_BounceBuffer &&
-                        ptdpriv->ptd_BounceBuffer != bufreq->ubr_Buffer) {
-                    usbReleaseBuffer(ptdpriv->ptd_BounceBuffer, bufreq->ubr_Buffer,
-                                     bufreq->ubr_Length, rtn->rtn_IOReq.iouh_Dir);
-                    ptdpriv->ptd_BounceBuffer = NULL;
-                }
+                ehciReleaseBounce(ptdpriv, rtn->rtn_IOReq.iouh_Dir, bufreq->ubr_Length);
                 if(urti && urti->urti_OutDoneHook)
                     CallHookPkt(urti->urti_OutDoneHook, rtn, bufreq);
             }
@@ -828,39 +840,51 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         struct IOUsbHWBufferReq *bufreq = &ptdpriv->ptd_BufferReq;
         buffer = bufreq->ubr_Buffer;
         len = bufreq->ubr_Length;
-        ptdlen = len;
 
-        if(!buffer || !len) {
-            /* A zero-length request must not permanently occupy a PTD. */
-            ptd->ptd_Flags &= ~PTDF_BUFFER_VALID;
-            continue;
+        /* A request hook that supplies no buffer still asked for a request:
+           send it as a zero-length transfer (nothing is read through the
+           pointer of an empty iTD, so any address will do), like pcixhci and
+           denebusb do.  Dropping it can empty the in-flight queue and stop the
+           stream for good. */
+        if(!buffer) {
+            len = 0;
+            buffer = (APTR)ptd;
         }
+        ptdlen = len;
 
         dma_len = len;
         if(!(ptd->ptd_Flags & PTDF_SITD)) {
-            if(rtn->rtn_IOReq.iouh_Flags & UHFF_MULTI_3)
+            ULONG mflags = rtn->rtn_IOReq.iouh_Flags;
+
+            /* UHFF_MULTI_3 is UHFF_MULTI_1|UHFF_MULTI_2, and Poseidon sets
+               UHFF_MULTI_1 on every high-speed endpoint, so a bit test
+               classifies all of them as Mult 3.  Compare the field. */
+            if((mflags & UHFF_MULTI_3) == UHFF_MULTI_3)
                 multi = 3;
-            else if(rtn->rtn_IOReq.iouh_Flags & UHFF_MULTI_2)
+            else if(mflags & UHFF_MULTI_2)
                 multi = 2;
 
             /* High-bandwidth IN: the client requests one microframe's worth
                (Multi * max packet); an iTD covers eight microframes. */
-            if(multi > 1 && rtn->rtn_IOReq.iouh_Dir == UHDIR_IN) {
+            if(multi > 1 && len && rtn->rtn_IOReq.iouh_Dir == UHDIR_IN) {
                 hw_bw = TRUE;
                 dma_len = (ULONG)rtn->rtn_IOReq.iouh_MaxPktSize * multi * 8;
             }
         }
 
         dmabuffer = buffer;
-#if __WORDSIZE == 64
+        ptdpriv->ptd_BounceOwned = FALSE;
         if(hw_bw) {
-            /* A high-bandwidth iTD spans 8 microframes; use a low, physically
-               contiguous bounce for the whole frame. */
+            /* A high-bandwidth iTD spans 8 microframes, so use a physically
+               contiguous bounce for the whole frame.  This is needed on
+               32-bit builds too: the client buffer only covers one microframe
+               and is not guaranteed contiguous. */
             dmabuffer = AllocVec(dma_len, MEMF_31BIT|MEMF_PUBLIC);
             if(!dmabuffer) {
                 ehciAbortIsochIO(hc, rtn, UHIOERR_OUTOFMEMORY);
                 return FALSE;
             }
+            ptdpriv->ptd_BounceOwned = TRUE;
         } else if(dmabuffer && !ehcihcp->ehc_64BitCapable) {
             dmabuffer = usbGetBuffer(dmabuffer, len, rtn->rtn_IOReq.iouh_Dir);
             if(!dmabuffer) {
@@ -870,7 +894,6 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
             if(dmabuffer != buffer && rtn->rtn_IOReq.iouh_Dir == UHDIR_OUT)
                 CopyMem(buffer, dmabuffer, len);
         }
-#endif
         ptdpriv->ptd_BounceBuffer = (dmabuffer != buffer) ? dmabuffer : NULL;
 
         {
@@ -953,10 +976,18 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
                 if(!maxtxn)
                     maxtxn = 1;
 
-                pktcnt = (ptdlen + rtn->rtn_IOReq.iouh_MaxPktSize - 1) /
-                         rtn->rtn_IOReq.iouh_MaxPktSize;
-                if(pktcnt > maxtxn)
-                    pktcnt = (UWORD)maxtxn;
+                if(!ptdlen) {
+                    /* Zero-length requests are still scheduled, with a
+                       single zero-length transaction and IOC, so they keep
+                       their slot and completion.  Dropping them can empty the
+                       in-flight queue and stall the stream (cf. pcixhci). */
+                    pktcnt = 1;
+                } else {
+                    pktcnt = (ptdlen + rtn->rtn_IOReq.iouh_MaxPktSize - 1) /
+                             rtn->rtn_IOReq.iouh_MaxPktSize;
+                    if(pktcnt > maxtxn)
+                        pktcnt = (UWORD)maxtxn;
+                }
 
                 ptdpriv->ptd_MfStep = (UWORD)mfstep;
 
@@ -999,12 +1030,12 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
                 UWORD mfidx = (UWORD)(pktidx * ptdpriv->ptd_MfStep);
                 pktlen = ptdpriv->ptd_PktLength[pktidx];
                 {
-                    /* EHCI transaction Length is per transaction; the
-                       endpoint's Multi field repeats it per microframe.
-                       The buffer span per microframe still advances by the
-                       full mult*max_packet. */
-                    UWORD tlen = hw_bw ? (UWORD)rtn->rtn_IOReq.iouh_MaxPktSize
-                                       : pktlen;
+                    /* For IN the controller accumulates up to Transaction X
+                       Length bytes in the microframe; it is the buffer
+                       available for the whole microframe (per_mf = Mult *
+                       max packet for a high-bandwidth iTD), not one max
+                       packet.  The per-microframe span below matches it. */
+                    UWORD tlen = hw_bw ? (UWORD)per_mf : pktlen;
                     trans = EITF_STATUS_ACTIVE |
                             ((pktoffset >> 12) << EITF_PAGESELECT_SHIFT) |
                             (pktoffset & EITM_BUFFER_OFFSET) |
@@ -1088,12 +1119,8 @@ void ehciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         if(ptd && ptd->ptd_Chipset) {
             struct EhciPTDPrivate *ptdpriv = ehciPTDPrivate(ptd);
-            if(ptdpriv->ptd_BounceBuffer &&
-                    ptdpriv->ptd_BounceBuffer != ptdpriv->ptd_BufferReq.ubr_Buffer) {
-                usbReleaseBuffer(ptdpriv->ptd_BounceBuffer, ptdpriv->ptd_BufferReq.ubr_Buffer,
-                                 ptdpriv->ptd_BufferReq.ubr_Length, rtn->rtn_IOReq.iouh_Dir);
-                ptdpriv->ptd_BounceBuffer = NULL;
-            }
+            ehciReleaseBounce(ptdpriv, rtn->rtn_IOReq.iouh_Dir,
+                              ptdpriv->ptd_BufferReq.ubr_Length);
         }
     }
 

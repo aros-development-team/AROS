@@ -26,6 +26,7 @@ struct EhciPTDPrivate
 {
     struct IOUsbHWBufferReq     ptd_BufferReq;  /* per-PTD RT-ISO buffer (cf. OHCI) */
     APTR                        ptd_BounceBuffer;
+    BOOL                        ptd_BounceOwned; /* AllocVec'd whole-frame bounce */
     ULONG           ptd_NextPhys;
     UWORD           ptd_PktCount;
     UWORD           ptd_MfStep;
