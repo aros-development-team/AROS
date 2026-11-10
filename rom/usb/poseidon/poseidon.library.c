@@ -75,7 +75,15 @@ static UWORD pGetMaxStreamsForEndpoint(const struct PsdEndpoint *pep);
 #define DOSBase ps->ps_DosBase
 #define TimerBase ps->ps_TimerIOReq.tr_node.io_Device
 
-/* LibInit */
+/*
+ * Initialize the Poseidon library base.
+ *
+ * Open utility.library (version 39 or later), initialize library-owned lists
+ * and locks, and create the two memory pools. Return TRUE after both pools and
+ * the base/configuration locks are ready. Return FALSE if utility.library or
+ * either pool cannot be obtained; release acquired library/pool resources on
+ * these failure paths.
+ */
 static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR ps)
 {
     KPRINTF(10, ("libInit ps: 0x%p SysBase: 0x%p\n",
@@ -139,7 +147,17 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR ps)
     return FALSE;
 }
 
-/* LibOpen */
+/*
+ * Perform first-open initialization of the Poseidon stack.
+ *
+ * With ps_ReentrantLock held, open timer.device and allocate default global
+ * configuration. After successful setup, mark the stack initialized and
+ * release the lock. Call pStartEventHandler(), then return TRUE without
+ * checking its result; TRUE does not guarantee that the event handler started.
+ * Later opens return TRUE without repeating setup. Return FALSE if the timer
+ * open or configuration allocation fails. If configuration allocation fails
+ * after opening the timer device, this function does not close that device.
+ */
 static int GM_UNIQUENAME(libOpen)(LIBBASETYPEPTR ps)
 {
     struct PsdIFFContext *pic;
@@ -225,6 +243,15 @@ static int GM_UNIQUENAME(libOpen)(LIBBASETYPEPTR ps)
     return TRUE;
 }
 
+/*
+ * Release Poseidon library-owned resources during expunge.
+ *
+ * Remove hardware, classes, error messages, and configuration forms. Signal
+ * the popup and event-handler tasks to stop, then wait for each task pointer
+ * to clear. Free remaining event and popup resources, close the timer device
+ * and libraries, delete the memory pools, unlink the library node, and
+ * return TRUE. The task-shutdown waits have no timeout.
+ */
 int GM_UNIQUENAME(libExpunge)(LIBBASETYPEPTR ps)
 {
     struct PsdHardware *phw = (struct PsdHardware *) ps->ps_Hardware.lh_Head;
@@ -3822,6 +3849,17 @@ pApplyDeviceBosCapabilities(struct PsdDevice *pd, const struct PsdBosCaps *caps)
     }
 }
 
+/*
+ * Extract supported USB BOS capabilities from a descriptor buffer.
+ *
+ * Return FALSE without modifying the output if the input or output pointer
+ * is NULL, or if bosbuflen is shorter than a BOS descriptor header. Otherwise
+ * clear boscaps, set hasBos, and parse recognized USB 2.0 extension,
+ * SuperSpeed, and Container ID capabilities. A zero-length or overrunning
+ * descriptor ends the scan; the function retains any capabilities
+ * already parsed and still returns TRUE. The BOS header's bLength supplies
+ * the initial scan offset; its value is not independently validated here.
+ */
 static BOOL
 pParseBosDescriptor(const UBYTE *bosbuf, UWORD bosbuflen,
                     struct PsdBosCaps *boscaps)
@@ -3932,6 +3970,17 @@ pParseBosDescriptor(const UBYTE *bosbuf, UWORD bosbuflen,
     return TRUE;
 }
 
+/*
+ * Request a device's USB BOS descriptor and decode supported capabilities.
+ *
+ * Use pp to request the BOS header, then request the descriptor again with
+ * its advertised total length, clamped to at least the header's bLength and
+ * at most the 256-byte local buffer. Restore the first header to that buffer
+ * before parsing. Return FALSE if either transfer reports an error; otherwise
+ * return pParseBosDescriptor()'s result. A larger BOS descriptor is truncated,
+ * and successful transfers do not by themselves guarantee complete parsing.
+ * pp must point to a valid device pipe.
+ */
 static BOOL
 pFetchBosCaps(struct PsdPipe *pp, struct PsdBosCaps *boscaps)
 {
@@ -3998,6 +4047,16 @@ pFetchBosCaps(struct PsdPipe *pp, struct PsdBosCaps *boscaps)
     return pParseBosDescriptor(bosbuf, toRead, boscaps);
 }
 
+/*
+ * Compute the default per-transfer USB link-power policy flags.
+ *
+ * Start with USBPWR_POLICY_BALANCED. Allow L1 for LPM-capable USB 2.1 or newer
+ * devices. For SuperSpeed devices, allow U1 when its exit latency is nonzero.
+ * Allow U2 only when its exit latency is nonzero and pep identifies a
+ * non-isochronous endpoint. Leave U3 disabled.
+ * pd must refer to a valid device; pep may be NULL. phw is not used. Return
+ * the policy flags without applying them to the hardware.
+ */
 static UWORD
 pBuildDefaultPowerPolicy(struct PsdHardware *phw, struct PsdDevice *pd,
                          struct PsdEndpoint *pep)
@@ -4058,6 +4117,14 @@ pBuildDefaultPowerPolicy(struct PsdHardware *phw, struct PsdDevice *pd,
     return policy;
 }
 
+/*
+ * Calculate the stream count encoded for a SuperSpeed bulk endpoint.
+ *
+ * Return zero for a NULL endpoint, a non-SuperSpeed device, a non-bulk
+ * endpoint, or a zero stream exponent. Otherwise return 1 << n, where n is
+ * the low five bits of pep_CompAttributes, saturating to 0xffff for n >= 16.
+ * A non-NULL endpoint must have a valid interface, configuration, and device.
+ */
 static UWORD
 pGetMaxStreamsForEndpoint(const struct PsdEndpoint *pep)
 {
