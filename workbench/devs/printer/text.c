@@ -11,6 +11,8 @@
 
 #include <aros/debug.h>
 
+#include <exec/errors.h>
+
 #include "printer_intern.h"
 
 #define WBUFSIZE    256
@@ -212,6 +214,11 @@ LONG Printer_Text_Command(struct PrinterData *pd, UWORD command, UBYTE p0, UBYTE
     }
     FLUSH_BUFFER();
 
+    /* pd_PWrite() does not wait for the write it starts: the buffers are
+     * free for the next command only once both writes are through.
+     */
+    pd->pd_PBothReady();
+
     return 0;
 }
 
@@ -303,7 +310,7 @@ LONG Printer_Text_Write(struct PrinterData *pd, UBYTE *text, LONG length)
     UBYTE *buffer = &buff[0][0];
     int buffsel = 0;
     int blen = 0;
-    LONG err;
+    LONG err, ret = 0;
 
     if (pd->pd_SegmentData->ps_Version >= 33) {
         Char8Bit = (CONST_STRPTR *)ped->ped_8BitChars;
@@ -318,6 +325,15 @@ LONG Printer_Text_Write(struct PrinterData *pd, UBYTE *text, LONG length)
     for (;(length < 0 && *text) || (length > 0); text++, length--) {
         LONG cmd;
         D(bug("%s: c='%c' (\\%o)\n", __func__, *text, *text));
+
+        /* AbortIO(), or the output device has failed: no point in going on */
+        if (Printer_Aborted(pd)) {
+            ret = IOERR_ABORTED;
+            break;
+        }
+        if (pd->pd_PUnit->pu_IOError != 0)
+            break;
+
         cmd = doState(&state, *text, parm, &pindex);
         if (cmd == -2)
             continue;
@@ -325,6 +341,8 @@ LONG Printer_Text_Write(struct PrinterData *pd, UBYTE *text, LONG length)
         if (cmd < 0) {
             if (Char8Bit && *text >= 0xa0) {
                 CONST_STRPTR str = Char8Bit[*text-0xa0];
+                /* after the text before it, not ahead of it */
+                FLUSH_BUFFER();
                 pd->pd_PWrite((APTR)str, strlen(str));
                 continue;
             }
@@ -349,5 +367,13 @@ LONG Printer_Text_Write(struct PrinterData *pd, UBYTE *text, LONG length)
             FLUSH_BUFFER();
     }
 
-    return 0;
+    if (ret == 0)
+        FLUSH_BUFFER();
+
+    /* The buffers are on this stack: both writes have to be through
+     * before it is given up.
+     */
+    pd->pd_PBothReady();
+
+    return ret;
 }
