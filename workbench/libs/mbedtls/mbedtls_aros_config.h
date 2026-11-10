@@ -39,6 +39,9 @@
 #define MBEDTLS_SSL_TLS_C
 #define MBEDTLS_SSL_PROTO_TLS1_2
 #define MBEDTLS_SSL_PROTO_TLS1_3
+#define MBEDTLS_SSL_TLS1_3_KEY_EXCHANGE_MODE_EPHEMERAL_ENABLED
+#define MBEDTLS_X509_RSASSA_PSS_SUPPORT
+#define MBEDTLS_SSL_SERVER_NAME_INDICATION
 /* TLS 1.3 derives its key schedule through PSA and keeps the peer cert */
 #define MBEDTLS_PSA_CRYPTO_C
 #define MBEDTLS_SSL_KEEP_PEER_CERTIFICATE
@@ -93,6 +96,7 @@
 /* Key exchange */
 #define MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED
 #define MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
+#define MBEDTLS_KEY_EXCHANGE_RSA_ENABLED
 
 /* mbedTLS has no millisecond clock for AROS - see mbedtls_platform_aros.c */
 #define MBEDTLS_PLATFORM_MS_TIME_ALT
