@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#include "aros/riscv/asm.h"
+#include "aros/riscv/xlen.h"
 
 	.text
 	.align	2
@@ -22,18 +22,18 @@ AROS_CDEFNAME(vfork):
 	 * so they are stashed on the stack, not in scratch registers.
 	 */
 	addi	sp, sp, -(jmpbuf_SIZEOF+16)
-	sw	ra, jmpbuf_SIZEOF+0(sp)		/* stash caller's ra           */
+	REG_S	ra, jmpbuf_SIZEOF+0(sp)		/* stash caller's ra           */
 	addi	a0, sp, jmpbuf_SIZEOF+16
-	sw	a0, jmpbuf_SIZEOF+4(sp)		/* stash caller's sp           */
+	REG_S	a0, jmpbuf_SIZEOF+SZREG(sp)	/* stash caller's sp           */
 
 	mv	a0, sp				/* a0 = jmp_buf                */
 	call	setjmp				/* fill with current state     */
 
 	/* Patch the jmp_buf: return to our caller, on our caller's stack */
-	lw	a1, jmpbuf_SIZEOF+0(sp)
-	sw	a1, retaddr(sp)			/* retaddr = caller's ra       */
-	lw	a1, jmpbuf_SIZEOF+4(sp)
-	sw	a1, 13*4(sp)			/* sp slot = caller's sp       */
+	REG_L	a1, jmpbuf_SIZEOF+0(sp)
+	REG_S	a1, retaddr(sp)			/* retaddr = caller's ra       */
+	REG_L	a1, jmpbuf_SIZEOF+SZREG(sp)
+	REG_S	a1, 13*SZREG(sp)		/* sp slot = caller's sp       */
 
 	mv	a0, sp				/* a0 = jmp_buf for __vfork    */
 	call	__vfork				/* never returns               */
