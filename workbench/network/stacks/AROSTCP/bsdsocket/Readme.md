@@ -192,7 +192,7 @@ little memory there is), so a buffer that grows is a lasting claim on system mem
   (`tcp_autobuf_pool()`);
 - what autosizing has given all live connections stays within 3/8 of that, a byte of buffer
   counting as two of the pool (`sb_mbmax`; a 1448-byte segment sits in a 2 KB cluster and an mbuf),
-  and goes back at `tcp_close()`; a buffer grows by what is left, if less than asked, and nothing
+  and goes back at `tcp_close()` or when the connection enters TIME_WAIT (`tcp_autobuf_release()`); a buffer grows by what is left, if less than asked, and nothing
   grows while half of what the pool may use is in clusters in use (`tcp_autobuf_grow()`). Without
   such a budget, eight connections receiving at 100 ms grew while their buffers were empty, filled
   them together and ran the pool out.

@@ -666,6 +666,7 @@ int	 tcp_autobuf_grow __P((struct tcpcb *, struct sockbuf *, u_long, u_long));
 void	 tcp_autobuf_init __P((void));
 u_long	 tcp_autobuf_pool __P((void));
 u_long	 tcp_autobuf_one __P((void));
+void	 tcp_autobuf_release __P((struct tcpcb *));
 void	 tcp_tlp_arm __P((struct tcpcb *));
 int	 tcp_rack_on __P((const struct tcpcb *));
 void	 tcp_rack_init __P((void));

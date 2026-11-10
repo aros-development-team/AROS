@@ -2347,6 +2347,7 @@ process_ACK:
             if(ourfinisacked) {
                 tp->t_state = TCPS_TIME_WAIT;
                 tcp_canceltimers(tp);
+                tcp_autobuf_release(tp);
                 /* Shorten TIME_WAIT [RFC-1644, p.28] */
                 if(tp->cc_recv != 0 &&
                         tp->t_duration < TCPTV_MSL)
@@ -2528,6 +2529,7 @@ dodata:							/* XXX */
         case TCPS_FIN_WAIT_2:
             tp->t_state = TCPS_TIME_WAIT;
             tcp_canceltimers(tp);
+            tcp_autobuf_release(tp);
             /* Shorten TIME_WAIT [RFC-1644, p.28] */
             if(tp->cc_recv != 0 &&
                     tp->t_duration < TCPTV_MSL) {
