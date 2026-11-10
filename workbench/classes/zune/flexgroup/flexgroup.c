@@ -1,16 +1,162 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Flexgroup: a Group that lays its children out like a CSS flexbox.
+*/
 
-    The class owns a MUIA_Group_LayoutHook and drives the standard
-    MUILM_MINMAX / MUILM_LAYOUT protocol from it, so no change to Group
-    itself is needed.
-
-    Implemented: direction, gap, justify-content, align-items, flex-grow,
-    flex-shrink and flex-basis.  flex-wrap is not implemented - AskMinMax
-    can only report a scalar MinHeight that is independent of the width,
-    so wrapping needs either a virtual group or an extra layout pass.
+/****** Flexgroup.mcc/MUIC_Flexgroup ************
+*
+*   NAME
+*       MUIC_Flexgroup
+*
+*   SUPERCLASS
+*       Group.mui
+*
+*   DESCRIPTION
+*       Arrange visible children in one row or column using their existing MUI
+*       size limits and weights. The class installs its own Group layout hook
+*       and implements the MUILM_MINMAX and MUILM_LAYOUT protocol. It does not
+*       implement wrapping or a CSS property interface. The source configuration
+*       declares version 1.0.
+*       Only children with MUIA_ShowMe true participate. A child's starting
+*       main-axis size is its default size clamped between minimum and maximum.
+*       Positive weights share extra space in proportion to weight and shrink in
+*       proportion to weight times starting size, within those limits. Zero
+*       weight keeps the starting size. Use MUIA_HorizWeight for Row and
+*       MUIA_VertWeight for Column.
+*       Gap reserves space between adjacent visible children. Justify
+*       distributes any surplus left after growth. Align controls the cross
+*       axis. Main-axis maximum is MUI_MAXMAX; Stretch can constrain the
+*       cross-axis maximum to child maxima, but never below the largest child
+*       minimum. Empty groups report zero minimum/default content sizes and
+*       MUI_MAXMAX maxima.
+*       The class owns a reusable child-calculation table, grows it when needed,
+*       and frees it at disposal. Group retains normal ownership and lifecycle
+*       of member objects.
+*
+*   NOTES
+*       Defaults are Direction_Row, Justify_Start, Align_Stretch, and Gap zero.
+*       Construction uses the first matching tag for each attribute; Set stores
+*       the last occurrence. Values are converted to the private UBYTE selectors
+*       or WORD gap without validation.
+*       Set temporarily changes the last tag of each Flexgroup attribute to
+*       TAG_IGNORE before forwarding to Group, then restores those tags. Supply
+*       writable tag lists. A second superclass call sends the selected
+*       attributes with Group_Forward FALSE, in Direction/Justify/Align/Gap
+*       order, so the normal case notifies this object without setting child
+*       Flexgroups. The notification carries the supplied value, which can
+*       differ from the converted getter value. Relayout uses
+*       InitChange/ExitChange when render information exists, even for unchanged
+*       values.
+*
+*   BUGS
+*       Only the last occurrence of each Flexgroup attribute is hidden in the
+*       first pass. Earlier duplicates can notify and reach children through
+*       Group forwarding. Avoid duplicate Flexgroup tags in Set calls. The
+*       second notification pass does not carry the caller's NoNotify tag, so
+*       NoNotify does not reliably suppress these attribute notifications.
+*       The class reclaims its layout hook after a caller attempts to set
+*       Group_LayoutHook. The caller hook still passes through Group first and
+*       can reach child groups. Do not supply an independent Group_LayoutHook.
+*       Insufficient space does not force children below minima; layout can
+*       exceed the available area. Individual MUI_Layout results are ignored.
+*       Calculation-table allocation failure makes layout return FALSE, but
+*       measurement leaves empty-group bounds and reports no separate error. Use
+*       consistent child limits, nonnegative weights, and sizes whose
+*       calculations fit the implementation's integer types.
+*
+*/
+/****** Flexgroup.mcc/MUIA_Flexgroup_Direction ************
+*
+*   NAME
+*       MUIA_Flexgroup_Direction
+*
+*   FUNCTION
+*       Select the main axis used for child sizing and placement.
+*
+*   INPUTS
+*       Initialize, set, get; LONG. MUIV_Flexgroup_Direction_Row (0, default) or
+*       Column (1).
+*
+*   NOTES
+*       Row lays out left to right and uses horizontal weights; Column lays out
+*       top to bottom and uses vertical weights. Child order is preserved;
+*       reverse directions and wrapping are not implemented. Stored as UBYTE.
+*       Any stored value other than Row takes the column path; unsupported input
+*       is not rejected. See the class notes for setter notification and
+*       tag-list behavior.
+*
+*/
+/****** Flexgroup.mcc/MUIA_Flexgroup_Justify ************
+*
+*   NAME
+*       MUIA_Flexgroup_Justify
+*
+*   FUNCTION
+*       Distribute unused main-axis space after weighted sizing.
+*
+*   INPUTS
+*       Initialize, set, get; LONG. MUIV_Flexgroup_Justify_Start (0, default),
+*       End (1), Center (2), SpaceBetween (3), SpaceAround (4), or SpaceEvenly
+*       (5).
+*
+*   NOTES
+*       Start leaves surplus after the children. End puts it before them; Center
+*       uses half before. SpaceBetween adds surplus divided by n-1 to each gap
+*       when n>1. SpaceAround starts at surplus/(2*n) and adds twice that value
+*       between children. SpaceEvenly uses surplus/(n+1) before and between
+*       children. All divisions use integers; remaining pixels need not be
+*       symmetric.
+*       Existing Gap is included in every interior interval. For a single child,
+*       SpaceBetween behaves like Start. Growth may consume all surplus, leaving
+*       nothing to justify. Stored as UBYTE; an unrecognized stored value
+*       behaves like Start. See the class notes for setter behavior.
+*
+*/
+/****** Flexgroup.mcc/MUIA_Flexgroup_Align ************
+*
+*   NAME
+*       MUIA_Flexgroup_Align
+*
+*   FUNCTION
+*       Size and position children across the main axis.
+*
+*   INPUTS
+*       Initialize, set, get; LONG. MUIV_Flexgroup_Align_Stretch (0, default),
+*       Start (1), End (2), or Center (3).
+*
+*   NOTES
+*       Stretch clamps available cross-axis size to each child's minimum/maximum
+*       and places it at the start. Other modes use the child default clamped to
+*       its limits. End offsets by available minus child size; Center uses half
+*       that difference; negative offsets are clamped to zero.
+*       Stretch also constrains reported cross-axis maximum using child maxima;
+*       other modes leave it MUI_MAXMAX. Stored as UBYTE. Unrecognized stored
+*       values use non-stretch sizing at the start. Oversized children can
+*       extend beyond the group; no additional shrink-to-fit rule applies.
+*
+*/
+/****** Flexgroup.mcc/MUIA_Flexgroup_Gap ************
+*
+*   NAME
+*       MUIA_Flexgroup_Gap
+*
+*   FUNCTION
+*       Set the baseline spacing between adjacent visible children.
+*
+*   INPUTS
+*       Initialize, set, get; LONG converted to signed WORD. Default zero. Use 0
+*       through 32767 for nonnegative spacing.
+*
+*   NOTES
+*       For n visible children the reserved amount is (n-1)*Gap. Hidden children
+*       contribute neither size nor gaps. Justify can add space to this
+*       baseline; there is no separately requested outer gap.
+*       Negative values are accepted and can overlap children; the class does
+*       not reject or clamp them. Out-of-range input is converted to WORD. Get
+*       returns the stored value, not the original tag value. Gap affects both
+*       measurement and placement; see the class notes for relayout and
+*       notification behavior.
+*
 */
 
 #include <exec/types.h>
@@ -38,6 +184,11 @@ static const Tag flex_attrs[] =
 };
 #define FLEX_ATTRS (sizeof(flex_attrs) / sizeof(flex_attrs[0]))
 
+/* Recover instance storage from the address of its first member, hook.
+ * Require a hook embedded at offset zero in a live Flexgroup_DATA; no
+ * validation or ownership transfer occurs. Return the enclosing instance
+ * pointer.
+ */
 static struct Flexgroup_DATA *flex_data(struct Hook *hook)
 {
     return (struct Flexgroup_DATA *)hook;
@@ -45,6 +196,12 @@ static struct Flexgroup_DATA *flex_data(struct Hook *hook)
 
 /* Collects visible children into the cached table.  Returns the count, or
    -1 if the table could not be grown. */
+/* Count ShowMe children and collect their borrowed object pointers,
+ * main/cross size limits and axis weights. Grow the owned calculation table
+ * if necessary, freeing the old one first. Return count, zero for no
+ * visible children, or -1 on allocation failure. Reset frozen and clamp
+ * each basis to its limits; caller must serialize child-list changes.
+ */
 static LONG flex_gather(struct Flexgroup_DATA *data, struct MinList *children)
 {
     struct FlexCalc *calc;
@@ -109,6 +266,12 @@ static LONG flex_gather(struct Flexgroup_DATA *data, struct MinList *children)
     return i;
 }
 
+/* Initialize empty-content bounds, then gather visible children. On no
+ * children or allocation failure, leave those bounds. Sum main minima or
+ * fixed bases and gaps, take largest cross minima/defaults, and constrain
+ * cross maximum only for Stretch. Map axes into the hook message. No
+ * separate error return exists.
+ */
 static void flex_minmax(struct Flexgroup_DATA *data,
     struct MUI_LayoutMsg *lm)
 {
@@ -182,6 +345,12 @@ static void flex_minmax(struct Flexgroup_DATA *data,
 }
 
 /* Hands out surplus in proportion to weight, saturating at ->max. */
+/* Distribute positive free space among positive-weight unfrozen entries,
+ * respecting maximum sizes. Use up to eight proportional passes, then
+ * assign remaining pixels in child order while progress is possible. Modify
+ * size/frozen in place. Integer arithmetic must remain representable;
+ * unused surplus is allowed when all eligible children saturate.
+ */
 static void flex_grow(struct FlexCalc *calc, LONG n, LONG freespace)
 {
     LONG pass, i;
@@ -245,6 +414,12 @@ static void flex_grow(struct FlexCalc *calc, LONG n, LONG freespace)
 
 /* Takes back a deficit in proportion to weight * basis, as CSS does,
    saturating at ->min. */
+/* Remove a positive deficit in proportion to positive weight times basis,
+ * respecting minima. Use 64-bit ratios for proportional passes, then remove
+ * pixels in child order while progress is possible. Modify size/frozen in
+ * place; return without consuming the deficit when the active weight sum is
+ * zero. Zero-weight entries remain fixed.
+ */
 static void flex_shrink(struct FlexCalc *calc, LONG n, LONG deficit)
 {
     LONG pass, i;
@@ -308,6 +483,12 @@ static void flex_shrink(struct FlexCalc *calc, LONG n, LONG deficit)
     }
 }
 
+/* Gather visible children, returning FALSE on table allocation failure and
+ * TRUE for an empty group. Start at each basis, grow or shrink, distribute
+ * nonnegative remaining slack by Justify, and size the cross axis by Align.
+ * Call MUI_Layout for each child but ignore its result. Return TRUE even if
+ * limits force content beyond available space.
+ */
 static ULONG flex_layout(struct Flexgroup_DATA *data,
     struct MUI_LayoutMsg *lm)
 {
@@ -424,6 +605,11 @@ static ULONG flex_layout(struct Flexgroup_DATA *data,
     return TRUE;
 }
 
+/* Dispatch the class-owned hook protocol using instance storage embedded
+ * with the hook. MINMAX fills bounds and returns zero; LAYOUT returns the
+ * layout helper result; other message types return MUILM_UNKNOWN. The
+ * object argument is unused and no ownership is transferred.
+ */
 static ULONG Flexgroup_LayoutFunc(struct Hook *hook, Object *obj,
     struct MUI_LayoutMsg *lm)
 {
@@ -445,6 +631,12 @@ static ULONG Flexgroup_LayoutFunc(struct Hook *hook, Object *obj,
 /* Puts our own hook back in place, bypassing our OM_SET so we do not
    have to filter the caller's tag list.  Forwarding has to be off, or
    Group hands the hook to every child group as well. */
+/* Install the instance hook with a superclass OM_SET call that bypasses
+ * Flexgroup and sets Group_Forward FALSE for this call. This prevents
+ * forwarding this replacement hook to child groups; it does not suppress
+ * Notify or undo a previously forwarded caller hook. Ignore the superclass
+ * result.
+ */
 static void flex_claim_hook(struct IClass *cl, Object *obj,
     struct Flexgroup_DATA *data)
 {
@@ -460,6 +652,12 @@ static void flex_claim_hook(struct IClass *cl, Object *obj,
     DoSuperMethod(cl, obj, OM_SET, (IPTR) tags, (IPTR) NULL);
 }
 
+/* Create the Group superclass and return NULL on failure. Initialize the
+ * embedded HookEntry callback and read the first occurrence of each local
+ * attribute with defaults. Claim the layout hook afterward. A supplied non-
+ * NULL hook emits a diagnostic; no custom hook remains installed on this
+ * object.
+ */
 IPTR Flexgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Flexgroup_DATA *data;
@@ -492,6 +690,11 @@ IPTR Flexgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/* Free the owned cached calculation table, then delegate disposal of the
+ * Group and its members. Table entries only borrow child pointers; this
+ * method does not separately dispose them. Return the superclass disposal
+ * result.
+ */
 IPTR Flexgroup__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Flexgroup_DATA *data = INST_DATA(cl, obj);
@@ -501,6 +704,13 @@ IPTR Flexgroup__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
+/* Store local values and remember only their last tag occurrences.
+ * Temporarily hide those tags for the first superclass pass, restore them,
+ * reclaim any caller-replaced hook, then notify in a separate nonforwarding
+ * pass and request relayout when render info exists. Require writable tags.
+ * Earlier duplicates and omitted NoNotify in the second pass remain
+ * observable. Return only the first superclass result.
+ */
 IPTR Flexgroup__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Flexgroup_DATA *data = INST_DATA(cl, obj);
@@ -604,6 +814,10 @@ IPTR Flexgroup__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     return retval;
 }
 
+/* Return the converted stored Direction, Justify, Align, or Gap value with
+ * TRUE. These getters do not validate selector ranges or perform layout.
+ * Forward unknown attribute queries to Group and return its result.
+ */
 IPTR Flexgroup__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 #define STORE *(msg->opg_Storage)
