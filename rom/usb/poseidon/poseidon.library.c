@@ -4730,7 +4730,9 @@ fail:
 
     KPRINTF(5, ("psdSuspendBindings(%p)\n", pd));
     if(pd) {
-        if(ps->ps_GlobalCfg->pgc_ForceSuspend && (pd->pd_CurrentConfig->pc_Attr & USCAF_REMOTE_WAKEUP)) {
+        /* pd_CurrentConfig is NULL for an enumerated but unconfigured device */
+        if(ps->ps_GlobalCfg->pgc_ForceSuspend && pd->pd_CurrentConfig &&
+           (pd->pd_CurrentConfig->pc_Attr & USCAF_REMOTE_WAKEUP)) {
             force = TRUE;
         }
         // ask existing bindings to go to suspend first -- if they don't support it, break off
@@ -4776,8 +4778,8 @@ fail:
             }
         }
         pc = pd->pd_CurrentConfig;
-        pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
-        while(pif->pif_Node.ln_Succ) {
+        pif = pc ? (struct PsdInterface *) pc->pc_Interfaces.lh_Head : NULL;
+        while(pif && pif->pif_Node.ln_Succ) {
             if(pif->pif_IfBinding) {
                 if((puc = pif->pif_ClsBinding)) {
                     suspendable = 0;
@@ -4937,15 +4939,13 @@ fail:
         Sends UCM_AttemptResumeDevice to a device class binding. Application
         bindings are left alone. A failed class callback requests release of
         that binding and schedules a stack-wide psdClassScan(). The same
-        handling is applied to the first bound interface in the current
+        handling is applied to every bound interface in the current
         configuration. A rescan can create new bindings; it does not guarantee
-        replacement of each released binding.
+        replacement of each released binding. A device without a current
+        configuration has no interface bindings to resume.
 
     BUGS
-        Interface traversal stops at the first binding, even if its class
-        pointer is absent. Later bound interfaces are not resumed. Failures
-        are not returned and release completion is not checked. A non-NULL
-        device without a current configuration can cause a NULL dereference.
+        Failures are not returned and release completion is not checked.
 
     SEE ALSO
         psdResumeDevice(), psdSuspendBindings(), psdClassScan()
@@ -4977,19 +4977,21 @@ fail:
                 }
             }
         }
+        /* walk every bound interface, the same way psdSuspendBindings() does:
+           stopping at the first one left the remaining bindings of a composite
+           device (two-interface HID receivers, headsets) stopped after a resume */
         pc = pd->pd_CurrentConfig;
-        pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
-        while(pif->pif_Node.ln_Succ) {
+        pif = pc ? (struct PsdInterface *) pc->pc_Interfaces.lh_Head : NULL;
+        while(pif && pif->pif_Node.ln_Succ) {
             if(pif->pif_IfBinding) {
                 if((puc = pif->pif_ClsBinding)) {
                     res = usbDoMethod(UCM_AttemptResumeDevice, pif->pif_IfBinding);
                     if(!res) {
-                        // didn't want to suspend
+                        // didn't want to resume, so rebind
                         psdReleaseIfBinding(pif);
                         rescan = TRUE;
                     }
                 }
-                break;
             }
             pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
         }
@@ -6251,6 +6253,12 @@ static VOID pFreeDevAndBindings(LIBBASETYPEPTR ps, struct PsdDevice *pd)
         cancellation request to complete and releases the temporary object.
         It does not wait for or remove the original pipe's completion reply.
         Call psdWaitPipe() before reusing or releasing the original pipe.
+
+        Must be called from the task that owns the pipe's message port: the
+        cancellation request replies to that port and the wait blocks on its
+        signal bit, so another task would never be woken by the reply. A
+        class that needs to abort from a different context (e.g. from
+        usbDoMethodA()) should signal its own task to do the abort.
 
     BUGS
         If allocation of the temporary cancellation request fails, no
