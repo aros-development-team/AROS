@@ -44,6 +44,13 @@
                                     /* when your object is disabled or invisible */
 #endif
 
+/* IMsgToChar
+ * Map a valid raw-key message through the current default keymap after
+ * clearing the supplied code/qualifier masks. Return the first output
+ * byte, or -1 for other message classes or no mapping. Borrow imsg and
+ * its valid IAddress indirection; multi-byte mappings are reduced to one
+ * byte.
+ */
 static LONG IMsgToChar(struct IntuiMessage *imsg, ULONG dccode, ULONG dcquali)
 {
   struct InputEvent ie;
@@ -78,6 +85,13 @@ static LONG IMsgToChar(struct IntuiMessage *imsg, ULONG dccode, ULONG dcquali)
   return key;
 }
 
+/* mNLV_HandleEvent
+ * On the configured control character, move the child active entry up
+ * with Shift or down without it. AROS does not use the legacy MUI 3.8
+ * forwarding branch. Return the legacy forwarding result, otherwise zero,
+ * even after changing selection. Do not claim that the control-character
+ * event was consumed.
+ */
 static IPTR mNLV_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
   struct NLVData *data = INST_DATA(cl, obj);
@@ -116,6 +130,11 @@ static IPTR mNLV_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleE
   return result;
 }
 
+/* mNLV_HandleInput
+ * Forward non-NONE MUI keys to the embedded list when present; otherwise
+ * call the superclass. Return that handler result without changing
+ * ownership of the message.
+ */
 static IPTR mNLV_HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleInput *msg)
 {
   struct NLVData *data = INST_DATA(cl, obj);
@@ -132,6 +151,13 @@ static IPTR mNLV_HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleI
   return result;
 }
 
+/* AddVerticalScroller
+ * Attach the retained vertical scrollbar once, copy the child disabled
+ * state, install bidirectional non-notifying position updates, and
+ * refresh all property values from the list. Caller supplies live objects
+ * and the appropriate group-change context. Membership/notification
+ * results are not checked.
+ */
 static void AddVerticalScroller(Object *obj, struct NLVData *data)
 {
   ENTER();
@@ -181,6 +207,12 @@ static void AddVerticalScroller(Object *obj, struct NLVData *data)
   LEAVE();
 }
 
+/* RemoveVerticalScroller
+ * If attached, remove both directions of property notifications and
+ * detach the vertical scrollbar. Retain the object for reuse or disposal;
+ * do not free it. Caller supplies the group-change context. Removal
+ * results are not checked.
+ */
 static void RemoveVerticalScroller(Object *obj, struct NLVData *data)
 {
   ENTER();
@@ -206,6 +238,13 @@ static void RemoveVerticalScroller(Object *obj, struct NLVData *data)
   LEAVE();
 }
 
+/* AddHorizontalScroller
+ * Attach the retained horizontal scrollbar to the inner group and refresh
+ * disabled/property state. If the active entry was the last visible
+ * entry, queue a jump after completed setup so layout can settle. No
+ * queued jump is requested before setup. Membership/notification results
+ * are not checked.
+ */
 static void AddHorizontalScroller(Object *obj, struct NLVData *data)
 {
   ENTER();
@@ -272,6 +311,11 @@ static void AddHorizontalScroller(Object *obj, struct NLVData *data)
   LEAVE();
 }
 
+/* RemoveHorizontalScroller
+ * Remove the installed horizontal property notifications and detach, but
+ * retain, the scrollbar. Caller supplies the inner group and its change
+ * context. Repeated removal is a no-op when already detached.
+ */
 static void RemoveHorizontalScroller(Object *obj, struct NLVData *data)
 {
   ENTER();
@@ -297,6 +341,14 @@ static void RemoveHorizontalScroller(Object *obj, struct NLVData *data)
   LEAVE();
 }
 
+/* NLV_Scrollers
+ * Resolve nonzero low-nibble modes, then combine visibility bits for both
+ * axes. AROS forces each resolved mode to Always, overriding preferences
+ * and None/Left. Ignore Off for Always. Queue private SetScrollers only
+ * after setup; earlier requests are not retained as pending layout
+ * operations. The guard in callers prevents recursive processing, not
+ * concurrent access.
+ */
 static void NLV_Scrollers(Object *obj, struct NLVData *data, LONG vert, LONG horiz)
 {
   LONG scrollers = 0;
@@ -456,6 +508,11 @@ static void NLV_Scrollers(Object *obj, struct NLVData *data, LONG vert, LONG hor
    tag list into a full-width IPTR array at the call site instead */
 #define DoSuperNew(cl, obj, ...) DoSuperNewTags((cl), (obj), NULL, __VA_ARGS__)
 #else
+/* DoSuperNew
+ * Non-AROS, non-MorphOS varargs bridge to superclass OM_NEW. Borrow the
+ * terminated tag list and return the superclass result. AROS instead uses
+ * the DoSuperNewTags macro to preserve full-width tag values.
+ */
 static Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...)
 {
   Object *rc;
@@ -474,6 +531,16 @@ static Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...)
 #endif // !__MORPHOS__
 
 /* static ULONG mNLV_New(struct IClass *cl,Object *obj,Msg msg) */
+/* mNLV_New
+ * Consume Draggable, Dropable and CycleChain tags in place. Use the
+ * supplied child (own tag preferred to Listview_List), rejecting explicit
+ * NULL, or create NList from the remaining tags. Group owns the child on
+ * successful construction. Forward selected compatibility tags to an
+ * explicit child; create two initially detached scrollbars and connect
+ * list requests. Return superclass object or NULL. Child/group/scrollbar
+ * allocation results are not individually validated here; failure cleanup
+ * is not fully established by this handler.
+ */
 static IPTR mNLV_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
   struct NLVData *data;
@@ -630,6 +697,12 @@ static IPTR mNLV_New(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 
+/* mNLV_Dispose
+ * Dispose retained scrollbars only when detached; let superclass group
+ * disposal free attached members and the list hierarchy. Return
+ * superclass result. Borrowed child pointers become invalid when the
+ * hierarchy is disposed.
+ */
 static IPTR mNLV_Dispose(struct IClass *cl,Object *obj,Msg msg)
 {
   struct NLVData *data = INST_DATA(cl, obj);
@@ -652,6 +725,13 @@ static IPTR mNLV_Dispose(struct IClass *cl,Object *obj,Msg msg)
   return DoSuperMethodA(cl,obj,msg);
 }
 
+/* mNLV_Setup
+ * Resolve modes with SETUP FALSE, so no scrollbar update is queued at
+ * this point. Register the raw-key event handler when a window exists,
+ * then call superclass setup. Set SETUP TRUE only on success and return
+ * that result as BOOL. This handler has no local rollback of the event
+ * handler if superclass setup fails.
+ */
 static IPTR mNLV_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
   struct NLVData *data = INST_DATA(cl, obj);
@@ -688,6 +768,11 @@ static IPTR mNLV_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 }
 
 
+/* mNLV_Cleanup
+ * Remove the raw-key handler when a window exists, clear SETUP, and
+ * delegate. This path does not explicitly cancel queued SetScrollers
+ * calls or detach scrollbars. Require the normal matched MUI lifecycle.
+ */
 static IPTR mNLV_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
   struct NLVData *data = INST_DATA(cl, obj);
@@ -704,6 +789,13 @@ static IPTR mNLV_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *ms
 }
 
 
+/* mNLV_Notify
+ * Route Notify, KillNotify and KillNotifyObj for the listed list
+ * attributes to the child, returning its result; route other triggers to
+ * the superclass. The three messages share the trigger field used here.
+ * Notifications belong to the selected receiving object, not a generic
+ * forwarding layer.
+ */
 static IPTR mNLV_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg)
 {
   struct NLVData *data = INST_DATA(cl, obj);
@@ -743,6 +835,14 @@ static IPTR mNLV_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg)
 
 
 
+/* mNLV_Set
+ * Consume scrollbar tags as TAG_IGNORE, resolve them under a recursion
+ * guard, and forward four key-focus attributes to the child. ScrollerPos
+ * is translated in place and controls only vertical mode on set. Delegate
+ * remaining tags and return superclass result. Require writable tags;
+ * consumed scrollbar tags do not generate ordinary superclass
+ * notifications.
+ */
 static IPTR mNLV_Set(struct IClass *cl,Object *obj,Msg msg)
 {
   struct NLVData *data = INST_DATA(cl, obj);
@@ -810,6 +910,12 @@ static IPTR mNLV_Set(struct IClass *cl,Object *obj,Msg msg)
 }
 
 
+/* mNLV_Get
+ * Write child pointer, effective scrollbar mode, attached scrollbar
+ * dimensions or class version to valid IPTR storage and return TRUE.
+ * Dimensions are zero while detached, regardless of requested mode.
+ * Return borrowed child without transfer; delegate unhandled attributes.
+ */
 static IPTR mNLV_Get(struct IClass *cl,Object *obj,Msg msg)
 {
   struct NLVData *data = INST_DATA(cl, obj);
@@ -889,6 +995,10 @@ static IPTR mNLV_Get(struct IClass *cl,Object *obj,Msg msg)
   return result;
 }
 
+/* mNLV_GoActive
+ * Send NList_GoActive to the child if present, discard its result, and
+ * return superclass GoActive result.
+ */
 static IPTR mNLV_GoActive(struct IClass *cl, Object *obj, Msg msg)
 {
   struct NLVData *data = INST_DATA(cl, obj);
@@ -901,6 +1011,10 @@ static IPTR mNLV_GoActive(struct IClass *cl, Object *obj, Msg msg)
   return DoSuperMethodA(cl, obj, msg);
 }
 
+/* mNLV_GoInactive
+ * Send NList_GoInactive to the child if present, discard its result, and
+ * return superclass GoInactive result.
+ */
 static IPTR mNLV_GoInactive(struct IClass *cl, Object *obj, Msg msg)
 {
   struct NLVData *data = INST_DATA(cl, obj);
@@ -913,6 +1027,13 @@ static IPTR mNLV_GoInactive(struct IClass *cl, Object *obj, Msg msg)
   return DoSuperMethodA(cl, obj, msg);
 }
 
+/* mNLV_SetScrollers
+ * Private deferred layout handler. Apply per-axis On/Off bit fields,
+ * using group InitChange/ExitChange after setup. Skip a change when
+ * InitChange fails; do not report failures (return zero). When a combined
+ * request fails outer InitChange, neither axis changes. Before setup,
+ * membership changes bypass group-change methods.
+ */
 static IPTR mNLV_SetScrollers(struct IClass *cl, Object *obj, struct MUIP_NListview_SetScrollers *msg)
 {
   struct NLVData *data = INST_DATA(cl, obj);
@@ -967,6 +1088,13 @@ static IPTR mNLV_SetScrollers(struct IClass *cl, Object *obj, struct MUIP_NListv
   return 0;
 }
 
+/* _Dispatcher
+ * Dispatch local handlers, return zero for QueryBeginning and refuse drag
+ * queries. Forward only the enumerated List/NList methods to the child,
+ * returning zero when no child exists. Delegate all other methods to
+ * Group. Require valid method-specific messages; this is not universal
+ * child forwarding.
+ */
 DISPATCHER(_Dispatcher)
 {
   switch(msg->MethodID)
