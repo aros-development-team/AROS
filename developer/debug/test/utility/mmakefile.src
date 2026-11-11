@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2020, The AROS Development Team. All rights reserved.
+# Copyright (C) 2003-2026 The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -12,15 +12,30 @@ FILES := \
     vartags \
 
 EXEDIR := $(AROS_TESTS)/utility
+CUNITEXEDIR := $(AROS_TESTS)/cunit/utility
 
 USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
-#MM- test : test-utility
-#MM- test-quick : test-utility-quick
+#MM- test : test-utility test-utility-checkdate-cunit
+#MM- test-quick : test-utility-quick test-utility-checkdate-cunit-quick
+
+#MM- test-utility-checkdate-cunit : test-utility-checkdate-$(TARGET_UNITTESTS)-cunit
+#MM- test-utility-checkdate-cunit-quick : test-utility-checkdate-$(TARGET_UNITTESTS)-cunit-quick
 
 #MM test-utility : includes linklibs
 
 %build_progs mmake=test-utility \
     files=$(FILES) targetdir=$(EXEDIR)
+
+#MM test-utility-checkdate-yes-cunit : includes linklibs linklibs-cunit
+
+USER_CPPFLAGS :=
+USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
+USER_CFLAGS :=
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+
+%build_prog mmake=test-utility-checkdate-yes-cunit \
+    files=cunit-utility-checkdate targetdir=$(CUNITEXEDIR) \
+    progname=cunit-utility-checkdate uselibs="cunit posixc"
 
 %common
