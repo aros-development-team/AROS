@@ -70,6 +70,13 @@ static struct PosixCIntBase *__fd_owner(struct PosixCIntBase *PosixCBase)
 #define FD_LOCK(base)   ObtainSemaphore(&__fd_owner(base)->fd_sem)
 #define FD_UNLOCK(base) ReleaseSemaphore(&__fd_owner(base)->fd_sem)
 
+/* Held in a slot of the table from __getfdslot() until __setfdesc(): the
+   number is taken but has no descriptor yet. Numbers that are not reserved
+   in fd.library (0..2, and all of them without fd.library) have no other
+   record that they are taken. */
+static fdesc __fd_reserved;
+#define FD_RESERVED (&__fd_reserved)
+
 /* TODO: Add locking to make filedesc usage thread safe
    Using vfork()+exec*() filedescriptors may be shared between different
    tasks. Only one DOS file handle is used between shared file descriptors.
@@ -124,6 +131,9 @@ fdesc *__getfdesc(register int fd)
     local = ((FD_SLOTS(PosixCBase)>fd) && (fd>=0)) ?
                 FD_ARRAY(PosixCBase)[fd] : NULL;
     FD_UNLOCK(PosixCBase);
+
+    if (local == FD_RESERVED)
+        local = NULL;
 
     /* Standard streams (0..2) are always process-local. */
     if (fd >= 0 && fd <= STDERR_FILENO)
@@ -227,7 +237,7 @@ int __getfirstfd(register int startfd)
     }
 }
 
-int __getfdslot(int wanted_fd)
+static int __getfdslot_from(int wanted_fd, int startfd)
 {
     struct PosixCIntBase *PosixCBase =
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
@@ -240,7 +250,7 @@ int __getfdslot(int wanted_fd)
     FD_LOCK(PosixCBase);
 
     if (wanted_fd == __FD_FIRSTFREE)
-        wanted_fd = __getfirstfd(0);
+        wanted_fd = __getfirstfd(startfd);
 
     if (wanted_fd>=FD_SLOTS(PosixCBase))
     {
@@ -273,6 +283,13 @@ int __getfdslot(int wanted_fd)
     {
         FD_UNLOCK(PosixCBase);
         __set_errno(PosixCBase, EINVAL);
+        return -1;
+    }
+    else if (FD_ARRAY(PosixCBase)[wanted_fd] == FD_RESERVED)
+    {
+        /* Another Task is opening this number */
+        FD_UNLOCK(PosixCBase);
+        __set_errno(PosixCBase, EBUSY);
         return -1;
     }
     else if (FD_ARRAY(PosixCBase)[wanted_fd])
@@ -310,8 +327,20 @@ int __getfdslot(int wanted_fd)
         }
     }
 
+    FD_ARRAY(PosixCBase)[wanted_fd] = FD_RESERVED;
+
     FD_UNLOCK(PosixCBase);
     return wanted_fd;
+}
+
+int __getfdslot(int wanted_fd)
+{
+    return __getfdslot_from(wanted_fd, 0);
+}
+
+int __getfreefdslot(int startfd)
+{
+    return __getfdslot_from(__FD_FIRSTFREE, startfd);
 }
 
 LONG __oflags2amode(int flags)
@@ -710,7 +739,7 @@ static int __copy_fdarray(fdesc **__src_fd_array, int fd_slots)
     
     for(i = fd_slots - 1; i >= 0; i--)
     {
-        if(__src_fd_array[i])
+        if(__src_fd_array[i] && __src_fd_array[i] != FD_RESERVED)
         {
             if(__getfdslot(i) != i)
                 return 0;

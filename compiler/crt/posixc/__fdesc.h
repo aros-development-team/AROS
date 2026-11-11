@@ -93,6 +93,8 @@ int __getfdslot(int wanted_fd);
 /* wanted_fd for __getfdslot()/__open(): the lowest free fd, picked and
    reserved under the table lock so two Tasks cannot get the same one */
 #define __FD_FIRSTFREE (-2)
+/* The same for the lowest free fd that is not below startfd */
+int __getfreefdslot(int startfd);
 int __getfirstfd(register int startfd);
 int __open(int wanted_fd, const char *pathname, int flags, int mode);
 void __updatestdio(void);
