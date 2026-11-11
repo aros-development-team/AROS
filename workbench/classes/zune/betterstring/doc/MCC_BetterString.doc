@@ -56,9 +56,11 @@ BetterString.mcc/MUIM_BetterString_Insert
         success is not proof that the content changed.
         NoInput and NoShortcuts affect particular input paths; neither is an
         access-control boundary. Programmatic edits and standard MUI key
-        actions have separate handling. Secret masks displayed content and
-        suppresses clipboard copying, but Contents remains readable and no
-        explicit memory-wiping guarantee is provided.
+        actions have separate handling. Secret suppresses clipboard copying,
+        but display masking depends on successful temporary allocation. It is
+        not a reliable confidentiality guarantee under allocation failure.
+        Contents remains readable and no explicit memory-wiping guarantee is
+        provided.
 
     BUGS
         The Revert snapshot taken on activation uses an incorrect copy length
