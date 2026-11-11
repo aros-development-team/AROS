@@ -11,6 +11,7 @@ STDCTESTFILES := \
         clock \
         ctype \
         environ \
+        errno_task \
         exit \
         fileseek \
         jmpbuf \
