@@ -26,7 +26,7 @@
     image will start on.
 
     So exec ships the generic version of anything that could use one (see
-    arch/riscv64-all/exec), and what is found here replaces it.
+    arch/riscv-all/exec), and what is found here replaces it.
 
     Instruction fetch is the first case. Stores reach it only when
     something says so, and this platform can always ask the SEE: the call

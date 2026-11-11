@@ -637,13 +637,13 @@ ARCHCONVERTFUNCH(AVX,ARGB32,RGB24)
             __m128i lo = _mm256_castsi256_si128(pixels);               // pixels 0-3
             __m128i hi = _mm256_extracti128_si256(pixels, 1);          // pixels 4-7
 
-            // Shuffle to get packed RGB from ARGB
-            const __m128i rgb_shuffle = _mm_set_epi8(
-                13,14,15,   // R3, G3, B3
-                9, 10, 11,   // R2, G2, B2
-                 5, 6, 7,   // R1, G1, B1
-                 1, 2, 3,    // R0, G0, B0
-                 -1, -1, -1, -1 // Padding bytes -> 0x80 (zero fill)
+            // Pack B, G, R of each pixel (memory order B, G, R, A) into bytes 0..11
+            const __m128i rgb_shuffle = _mm_setr_epi8(
+                 0,  1,  2,     // pixel 0
+                 4,  5,  6,     // pixel 1
+                 8,  9, 10,     // pixel 2
+                12, 13, 14,     // pixel 3
+                -1, -1, -1, -1  // zero fill
             );
             __m128i rgb0 = _mm_shuffle_epi8(lo, rgb_shuffle);
             __m128i rgb1 = _mm_shuffle_epi8(hi, rgb_shuffle);
@@ -693,13 +693,13 @@ ARCHCONVERTFUNCH(AVX,BGRA32,RGB24)
             __m128i lo = _mm256_castsi256_si128(pixels);               // pixels 0-3
             __m128i hi = _mm256_extracti128_si256(pixels, 1);          // pixels 4-7
 
-            // Shuffle to get packed RGB from BGRA
-            const __m128i rgb_shuffle = _mm_set_epi8(
-                14,13,12,   // R3, G3, B3
-                10, 9, 8,   // R2, G2, B2
-                 6, 5, 4,   // R1, G1, B1
-                 2, 1, 0,    // R0, G0, B0
-                 -1, -1, -1, -1 // Padding bytes -> 0x80 (zero fill)
+            // Pack B, G, R of each pixel (memory order A, R, G, B) into bytes 0..11
+            const __m128i rgb_shuffle = _mm_setr_epi8(
+                 3,  2,  1,     // pixel 0
+                 7,  6,  5,     // pixel 1
+                11, 10,  9,     // pixel 2
+                15, 14, 13,     // pixel 3
+                -1, -1, -1, -1  // zero fill
             );
             __m128i rgb0 = _mm_shuffle_epi8(lo, rgb_shuffle);
             __m128i rgb1 = _mm_shuffle_epi8(hi, rgb_shuffle);

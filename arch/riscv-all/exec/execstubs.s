@@ -9,52 +9,53 @@
     integer register, calls the real C implementation (_Exec_20_Disable),
     then restores and returns - so Disable()/Enable()/Forbid()/Permit()
     and the semaphore fast paths stay register-transparent to their
-    callers, as on the other arches. The ILP32D caller-saved integer set
-    is ra, t0-t6 and a0-a7 (the C impl preserves s0-s11/sp). As on
-    AArch64, caller-saved FP registers are not preserved here.
+    callers, as on the other arches. The caller-saved integer set (ILP32D
+    and LP64D alike) is ra, t0-t6 and a0-a7 (the C impl preserves
+    s0-s11/sp); each takes an SZREG slot. As on AArch64, caller-saved FP
+    registers are not preserved here.
 */
 
-#include "aros/riscv/asm.h"
+#include "aros/riscv/xlen.h"
 
 #define STUB(cname,name)                          \
 	.globl	cname                           ; \
 	.type	cname, %function                ; \
 cname:                                          ; \
-	addi	sp, sp, -64                     ; \
-	sw	ra, 0(sp)                       ; \
-	sw	t0, 4(sp)                       ; \
-	sw	t1, 8(sp)                       ; \
-	sw	t2, 12(sp)                      ; \
-	sw	t3, 16(sp)                      ; \
-	sw	t4, 20(sp)                      ; \
-	sw	t5, 24(sp)                      ; \
-	sw	t6, 28(sp)                      ; \
-	sw	a0, 32(sp)                      ; \
-	sw	a1, 36(sp)                      ; \
-	sw	a2, 40(sp)                      ; \
-	sw	a3, 44(sp)                      ; \
-	sw	a4, 48(sp)                      ; \
-	sw	a5, 52(sp)                      ; \
-	sw	a6, 56(sp)                      ; \
-	sw	a7, 60(sp)                      ; \
+	addi	sp, sp, -16*SZREG               ; \
+	REG_S	ra, 0(sp)                       ; \
+	REG_S	t0, 1*SZREG(sp)                 ; \
+	REG_S	t1, 2*SZREG(sp)                 ; \
+	REG_S	t2, 3*SZREG(sp)                 ; \
+	REG_S	t3, 4*SZREG(sp)                 ; \
+	REG_S	t4, 5*SZREG(sp)                 ; \
+	REG_S	t5, 6*SZREG(sp)                 ; \
+	REG_S	t6, 7*SZREG(sp)                 ; \
+	REG_S	a0, 8*SZREG(sp)                 ; \
+	REG_S	a1, 9*SZREG(sp)                 ; \
+	REG_S	a2, 10*SZREG(sp)                ; \
+	REG_S	a3, 11*SZREG(sp)                ; \
+	REG_S	a4, 12*SZREG(sp)                ; \
+	REG_S	a5, 13*SZREG(sp)                ; \
+	REG_S	a6, 14*SZREG(sp)                ; \
+	REG_S	a7, 15*SZREG(sp)                ; \
 	call	name                            ; \
-	lw	a7, 60(sp)                      ; \
-	lw	a6, 56(sp)                      ; \
-	lw	a5, 52(sp)                      ; \
-	lw	a4, 48(sp)                      ; \
-	lw	a3, 44(sp)                      ; \
-	lw	a2, 40(sp)                      ; \
-	lw	a1, 36(sp)                      ; \
-	lw	a0, 32(sp)                      ; \
-	lw	t6, 28(sp)                      ; \
-	lw	t5, 24(sp)                      ; \
-	lw	t4, 20(sp)                      ; \
-	lw	t3, 16(sp)                      ; \
-	lw	t2, 12(sp)                      ; \
-	lw	t1, 8(sp)                       ; \
-	lw	t0, 4(sp)                       ; \
-	lw	ra, 0(sp)                       ; \
-	addi	sp, sp, 64                      ; \
+	REG_L	a7, 15*SZREG(sp)                ; \
+	REG_L	a6, 14*SZREG(sp)                ; \
+	REG_L	a5, 13*SZREG(sp)                ; \
+	REG_L	a4, 12*SZREG(sp)                ; \
+	REG_L	a3, 11*SZREG(sp)                ; \
+	REG_L	a2, 10*SZREG(sp)                ; \
+	REG_L	a1, 9*SZREG(sp)                 ; \
+	REG_L	a0, 8*SZREG(sp)                 ; \
+	REG_L	t6, 7*SZREG(sp)                 ; \
+	REG_L	t5, 6*SZREG(sp)                 ; \
+	REG_L	t4, 5*SZREG(sp)                 ; \
+	REG_L	t3, 4*SZREG(sp)                 ; \
+	REG_L	t2, 3*SZREG(sp)                 ; \
+	REG_L	t1, 2*SZREG(sp)                 ; \
+	REG_L	t0, 1*SZREG(sp)                 ; \
+	REG_L	ra, 0(sp)                       ; \
+	addi	sp, sp, 16*SZREG                ; \
 	ret
 
 	.text
