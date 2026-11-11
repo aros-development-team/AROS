@@ -6,14 +6,20 @@ import pathlib
 import re
 import shlex
 import subprocess
+import sys
 import tempfile
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--cc', default='cc')
 parser.add_argument('--source', type=pathlib.Path)
 parser.add_argument('--expect-failure', action='store_true')
+parser.add_argument('--require-sanitizers', action='store_true',
+                    help='fail when the host compiler cannot build with ASan/UBSan')
 args = parser.parse_args()
 here = pathlib.Path(__file__).resolve().parent
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(here.parents[2]))
+from host_sanitizers import sanitizer_options
 source = args.source or here.parents[5] / 'rom/filesys/CDVDFS/src/cdrom.c'
 text = source.read_text()
 names = ['CDCacheLowMemHandler', 'Sector_Buffer', 'IO_Buffer',
@@ -43,8 +49,9 @@ with tempfile.TemporaryDirectory(prefix='aros-cdcache-') as temporary:
     unit.write_text('#include "host_support.h"\n' + '\n'.join(functions) +
                     '\n#include "cache_test.c"\n')
     binary = root / 'cache_test'
-    subprocess.run(shlex.split(args.cc) + ['-std=c11', '-O1', '-g',
-        '-fsanitize=address,undefined', '-fno-sanitize-recover=all',
+    compiler = shlex.split(args.cc)
+    sanitizers = sanitizer_options(compiler, args.require_sanitizers)
+    subprocess.run(compiler + ['-std=c11', '-O1', '-g'] + sanitizers + [
         '-I', str(here), str(unit), '-o', str(binary)], check=True)
     result = subprocess.run([str(binary)])
     if args.expect_failure:
