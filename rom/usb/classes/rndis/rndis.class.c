@@ -112,29 +112,10 @@ ADD2EXPUNGELIB(libExpunge, 0)
  * ***********************************************************************
  */
 
-struct AutoBindData
-{
-    UWORD abd_VendID;
-    UWORD abd_ProdID;
-};
-
-
-struct AutoBindData ClassBinds[] =
-{
-    { 0x0bb4, 0x0ffe },      // HTC , Android phone
-    //{ 0x12d1, 0x1039 },   // Huawei u8800
-    { 0, 0 }
-};
-
 /* /// "usbAttemptInterfaceBinding()" */
 struct NepClassEth * usbAttemptInterfaceBinding(struct NepEthBase *nh, struct PsdInterface *pif)
 {
     struct Library *ps;
-    struct AutoBindData *abd = ClassBinds;
-    struct PsdConfig *pc = NULL;
-    struct PsdDevice *pd = NULL;
-    IPTR prodid = 0;
-    IPTR vendid = 0;
     IPTR ifclass = 0;
     IPTR subclass = 0;
     IPTR proto = 0;
@@ -147,15 +128,8 @@ struct NepClassEth * usbAttemptInterfaceBinding(struct NepEthBase *nh, struct Ps
                     IFA_Class, &ifclass,
                     IFA_SubClass, &subclass,
                     IFA_Protocol, &proto,
-                    IFA_Config, &pc,
                     TAG_DONE);
-        if(pc)
-            psdGetAttrs(PGA_CONFIG, pc, CA_Device, &pd, TAG_END);
-        if(pd)
-            psdGetAttrs(PGA_DEVICE, pd,
-                        DA_VendorID, &vendid,
-                        DA_ProductID, &prodid,
-                        TAG_END);
+        CloseLibrary(ps);
 
         /* RNDIS control interface — two encodings seen in the wild:
          *  - CDC-ACM RNDIS: class 2 (Comm) / subclass 2 (ACM) / proto 255 (RNDIS)
@@ -167,20 +141,8 @@ struct NepClassEth * usbAttemptInterfaceBinding(struct NepEthBase *nh, struct Ps
         if(((ifclass == 2)   && (subclass == 2) && (proto == 255)) ||
            ((ifclass == 224) && (subclass == 1) && (proto == 3)))
         {
-            CloseLibrary(ps);
             return(usbForceInterfaceBinding(nh, pif));
         }
-
-        while(abd->abd_VendID)
-        {
-            if((vendid == abd->abd_VendID) && (prodid == abd->abd_ProdID))
-            {
-                CloseLibrary(ps);
-                return(usbForceInterfaceBinding(nh, pif));
-            }
-            abd++;
-        }
-
     }
     return(NULL);
 }
