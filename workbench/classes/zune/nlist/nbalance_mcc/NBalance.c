@@ -45,6 +45,12 @@
 // functions
 
 // methods
+/* mNew
+ * Construct Balance superclass, default Pointer to Standard and process
+ * initial own tags. Return object or NULL. The failure path calls
+ * CoerceMethod even when superclass creation returned NULL; no complete
+ * construction-failure recovery is established here.
+ */
 IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 {
   BOOL result = FALSE;
@@ -86,6 +92,11 @@ IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
   return (IPTR)obj;
 }
 
+/* mGet
+ * Return Pointer, Version or Revision through valid storage and TRUE;
+ * delegate other getters. Pointer is a numeric mode, not a newly allocated
+ * pointer object.
+ */
 IPTR mGet(struct IClass *cl, Object *obj, Msg msg)
 {
   IPTR result = FALSE;
@@ -119,6 +130,12 @@ IPTR mGet(struct IClass *cl, Object *obj, Msg msg)
   return result;
 }
 
+/* mSet
+ * Store each Pointer value and replace that tag with TAG_IGNORE. Off resets
+ * the custom pointer immediately only if mouseSelectDown is set, clearing
+ * that flag. Delegate remaining tags. Require writable tag storage; own
+ * changes are not forwarded for ordinary superclass notification.
+ */
 IPTR mSet(struct IClass *cl,Object *obj, Msg msg)
 {
   struct InstData *data = INST_DATA(cl, obj);
@@ -158,6 +175,12 @@ IPTR mSet(struct IClass *cl,Object *obj, Msg msg)
 }
 
 
+/* mSetup
+ * After superclass setup succeeds, capture parent Group_Type, create custom
+ * pointers and register a priority-minus-two GUIMODE handler for mouse
+ * moves/buttons. Return TRUE despite individual pointer creation failure.
+ * Require live parent/window and matched cleanup.
+ */
 IPTR mSetup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
 {
   IPTR result = FALSE;
@@ -190,6 +213,12 @@ IPTR mSetup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
   return result;
 }
 
+/* mCleanup
+ * Dispose custom pointer objects and remove the event handler, then
+ * delegate superclass cleanup. Require matched setup and no further users.
+ * This path does not explicitly reset the window pointer before disposing
+ * objects.
+ */
 IPTR mCleanup(struct IClass *cl, Object *obj, Msg msg)
 {
   IPTR result = 0;
@@ -208,6 +237,11 @@ IPTR mCleanup(struct IClass *cl, Object *obj, Msg msg)
   return result;
 }
 
+/* mHide
+ * Reset pointer only when a mouse selection is down and the pointer is
+ * recorded outside the object, then delegate. This is not an unconditional
+ * custom-pointer reset on hide.
+ */
 IPTR mHide(struct IClass *cl, Object *obj, Msg msg)
 {
   struct InstData *data = INST_DATA(cl, obj);
@@ -229,6 +263,13 @@ IPTR mHide(struct IClass *cl, Object *obj, Msg msg)
   return result;
 }
 
+/* mHandleEvent
+ * Track hover and selection to show/reset a custom pointer when mode is
+ * nonzero. Hover checks covering layer/window; selection-down checks object
+ * bounds. Ignore one leave transition after selection begins. Return zero
+ * without direct superclass forwarding; inherited Balance handling uses its
+ * own routing. Require valid attached GUI state.
+ */
 IPTR mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
   IPTR result = 0;
@@ -313,6 +354,12 @@ IPTR mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
   return result;
 }
 
+/* FindNeighbours
+ * Read group children, returning last preceding and first following object
+ * through valid output pointers. Initialize both to NULL. TRUE means a
+ * following child was found, not that a predecessor exists. Borrow the list
+ * and child objects; do not mutate them during traversal.
+ */
 static BOOL FindNeighbours(Object *group, Object *obj, Object **prev, Object **next)
 {
   BOOL success = FALSE;
@@ -358,6 +405,13 @@ static BOOL FindNeighbours(Object *group, Object *obj, Object **prev, Object **n
   return success;
 }
 
+/* mExport
+ * For nonzero ObjectID and a following sibling, read adjacent
+ * orientation-specific weights and add two native ULONG values if either is
+ * positive. Require an actual preceding sibling too. Ignore dataspace Add
+ * result; retain any old saved entry when both weights are zero. Return
+ * zero and do not delegate superclass export.
+ */
 IPTR mExport(UNUSED struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
   ULONG id;
@@ -395,6 +449,12 @@ IPTR mExport(UNUSED struct IClass *cl, Object *obj, struct MUIP_Export *msg)
   return 0;
 }
 
+/* mImport
+ * For nonzero ObjectID and adjacent objects, find native two-ULONG weight
+ * data and set each positive weight. Ignore zero values and do not validate
+ * data length. Require correctly sized readable data and both neighbours.
+ * Return zero without superclass import or success reporting.
+ */
 IPTR mImport(UNUSED struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
   ULONG id;

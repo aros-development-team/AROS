@@ -9,153 +9,152 @@ NFloattext.mcc/MUIA_NFloattext_Text
 NFloattext.mcc/MUIM_NFloattext_GetEntry
 NFloattext.mcc/NFloattext.mcc
 
-        NFloattext class is a subclass of NList class that takes
-        a big text string as input and splits it up into several
-        lines to be dislayed. Formatting capabilities include
-        paragraphs an justified text with word wrap. That MCC
-        public custom class  work near the same way as Floattext.
+    NAME
+        NFloattext.mcc -- Display wrapped text.
 
-        All you can do with NFloattext can be done directly using
-        NList and its word wrap capabilities. NFloattext is here
-        to give easy use and transition from Floattext.
+    SUPERCLASS
+        NList.mcc
 
-        Now NList package provide a Floattext.mui replacement
-        which use directly this class. Unfortunately the
-        repacement Floattext.mui have to have the same major release
-        number than original Floattext.mui to be accepted by MUI,
-        so it will have to be update with each new MUI remease.  :(
-
-        By default, MUIA_NList_Input is FALSE and MUIA_NList_TypeSelect
-        is MUIV_NList_TypeSelect_Char, alowing char selection and copy
-        to clipboard. If you set MUIA_NList_Input to TRUE, then
-        MUIA_NList_TypeSelect default to MUIV_NList_TypeSelect_Line as
-        usual.
-
-        NFloattext don't copy the string text, so it needs to copy
-        the string line to a buffer when you do a MUIM_NFloattext_GetEntry
-        or MUIM_List_GetEntry, so the return pointer will be invalid
-        after next GetEntry call (the new one will be valid of course).
-
-        Using the old MUIA_Floattext_Text from standard Floadtext class
-        instead of MUIA_NFloattext_Text will make NFloattext copy
-        the text like in Floattext class.
-
-        Note that MUIM_NList_GetEntry work as describe in NList, so
-        as NFloattext use word wrap entries, you should use better
-        MUIM_NFloattext_GetEntry or MUIM_List_GetEntry. Or use
-        MUIM_NList_GetEntryInfo and MUIM_NList_GetEntry.
-
+    DESCRIPTION
+        Use NList wrapped entries to display paragraphs. This source defines
+        version 19.74. By default the constructor supplies NList_Input FALSE
+        and NList_TypeSelect_Char. An explicit TypeSelect takes precedence;
+        Input TRUE also prevents this class from imposing character selection.
+        NFloattext_Text borrows the source string. The legacy Floattext_Text
+        alias copies it. Keep borrowed text valid and unchanged while the
+        object uses it. Dispose the object through MUI. Copy and insertion
+        failures do not consistently make construction fail.
+        Set Align after construction and before supplying Text. The initial
+        Align path accesses instance data before superclass construction and
+        is subsequently overwritten by the local default; it is not a
+        supported way to establish the requested alignment in this
+        implementation.
+        Align and Justify changes do not rebuild existing entries. Text
+        replacement inserts with the stored alignment at that point, so tag
+        order matters. Use independent replacement storage when prior text was
+        copied by the class; the old allocation is freed before replacement.
+        List_GetEntry is an alias of NFloattext_GetEntry. NList_GetEntry
+        remains the superclass method and has different wrapped-entry
+        semantics. Returned pointers are borrowed and may refer to either
+        source storage or one reusable line buffer. Do not free them.
 NFloattext.mcc/MUIA_NFloattext_Align
 
     NAME
-        MUIA_NFloattext_Align -- [ISG], LONG
+        MUIA_NFloattext_Align -- Select alignment for subsequent text
+        insertion.
 
-    SPECIAL INPUTS
-        ALIGN_LEFT
-        ALIGN_CENTER
-        ALIGN_RIGHT
-        ALIGN_JUSTIFY
+    INPUTS
+        Set/get; LONG. Header also declares initialization, but that
+        constructor path is defective. Use ALIGN_LEFT (0), ALIGN_CENTER
+        (0x0100), ALIGN_RIGHT (0x0200) or ALIGN_JUSTIFY (0x0400).
 
     FUNCTION
-        Indicate what alignment you want.
-        It can be done with an escape alignment sequence
-        in the Format preparse string or in the text string
-        (for each linefeed separated lines) itself.
-
-        setting it will set MUIA_NFloattext_Justify to
-        TRUE if ALIGN_JUSTIFY, else to FALSE.
-
-    SEE ALSO
-        MUIA_NFloattext_Justify, MUIA_NList_Format
+        Set stores value masked with 0x0700. Justify becomes TRUE only when
+        the masked value equals ALIGN_JUSTIFY. Combined bits are not
+        separately validated. Get returns the stored value.
+        No existing entries are reinserted or reformatted by this setter. Set
+        alignment before Text in a set message or in an earlier call. Initial
+        effective alignment is left or justified according to the constructor
+        Justify option; do not rely on an initial Align tag.
 NFloattext.mcc/MUIA_NFloattext_Justify
 
     NAME
-        MUIA_NFloattext_Justify -- [ISG], BOOL
+        MUIA_NFloattext_Justify -- Select justified or left alignment.
+
+    INPUTS
+        Initialize/set/get; BOOL, default FALSE. Floattext_Justify is an
+        alias.
 
     FUNCTION
-        Same as Floattext.mui/MUIA_Floattext_Justify.
-
-        if TRUE, MUIA_NFloattext_Align will be set to
-        ALIGN_JUSTIFY, else to ALIGN_LEFT.
-
-    SEE ALSO
-        MUIA_NFloattext_Align, MUIA_NList_Format
+        Nonzero stores TRUE and ALIGN_JUSTIFY; zero stores FALSE and
+        ALIGN_LEFT. A later Align tag can change both settings. During
+        construction the NFloattext alias takes precedence over the legacy
+        alias. During set, tags are processed in order. Existing entries are
+        not rebuilt; this setting is used when Text is inserted.
 NFloattext.mcc/MUIA_NFloattext_SkipChars
 
     NAME
-        MUIA_NFloattext_SkipChars -- [ISG], char *
+        MUIA_NFloattext_SkipChars -- Supply characters for NList to skip.
+
+    INPUTS
+        Initialize/set/get; borrowed NUL-terminated char * or NULL. Backend
+        default NULL.
 
     FUNCTION
-        Same as NList.mcc/MUIA_NList_SkipChars
-        and Floattext.mui/MUIA_Floattext_SkipChars.
-
-    SEE ALSO
-        MUIA_NList_SkipChars, MUIA_Floattext_SkipChars
+        Translate to NList_SkipChars, including the legacy Floattext_SkipChars
+        alias. NList stores the pointer without copying it and requests redraw
+        on set. Keep the string readable while in use; get returns the
+        borrowed pointer.
+        Construction rewrites the first own tag, otherwise the first legacy
+        tag. Set rewrites every matching tag in place. Get rewrites opg_AttrID
+        before delegating. Message and tag storage must be writable. This
+        class does not remove bytes from your source text.
 NFloattext.mcc/MUIA_NFloattext_TabSize
 
     NAME
-        MUIA_NFloattext_TabSize -- [ISG], LONG
+        MUIA_NFloattext_TabSize -- Set NList tab spacing.
+
+    INPUTS
+        Initialize/set/get; numeric size, backend default 8. Header type
+        ULONG; backend stores LONG.
 
     FUNCTION
-        Same as NList.mcc/MUIA_NList_TabSize
-        and Floattext.mui/MUIA_Floattext_TabSize.
-
-        Tab size defaults to 8.
-
-    SEE ALSO
-        MUIA_NList_TabSize, MUIA_Floattext_TabSize
+        Translate to NList_TabSize, including the legacy Floattext_TabSize
+        alias. Backend set stores the value and requests redraw without local
+        range validation. Use a positive representable size. Construction
+        rewrites the first own tag or first legacy tag; set rewrites matching
+        tags, and get rewrites opg_AttrID. Supply writable message/tag
+        storage.
 NFloattext.mcc/MUIA_NFloattext_Text
 
     NAME
-        MUIA_NFloattext_Text -- [ISG], STRPTR
+        MUIA_NFloattext_Text -- Replace the displayed text.
+
+    INPUTS
+        Initialize/set/get; readable NUL-terminated STRPTR or NULL.
 
     FUNCTION
-        Same as Floattext.mui/MUIA_Floattext_Text.
-
-        String of characters to be displayed as floattext.
-        This string may contain linefeeds or carriage retruns to mark
-        the end of paragraphs or tab characters for indention.
-
-        NFloattext will automatically format the text according
-        to the width of the NFloattext object. If a word
-        won't fit into the current line, it will be wrapped.
-
-        NFloattext don't copies the string into a private buffer
-        as Floattext do it, so you need to keep your text in
-        memory, but it uses less memory.
-
-        If you want NFloattext to copy the text, just use
-        MUIA_Floattext_Text which will do it for compatibility.
-
-        Setting MUIA_NFloattext_Text to NULL means to clear
-        the current text.
-
-        Please note that justification and word wrap is a
-        complicated operation and may take a considerable
-        amount of time, especially with long texts on slow
-        machines.
-
+        Borrow this attribute value without copying. NULL clears the text.
+        Wrapped display is provided by NList; keep source storage valid until
+        replacement or disposal. Get returns the stored pointer without
+        ownership transfer.
+        Floattext_Text instead copies the input to owned storage. During
+        construction the own attribute takes precedence. During set, each text
+        tag clears entries and frees any old owned text before replacement;
+        allocation failure can leave the object empty. Do not pass an alias
+        into that old allocation as replacement input.
+        Set Align or Justify before Text to insert with the requested
+        alignment. The class ignores the InsertWrap result; an attribute set
+        result is not proof of complete insertion.
 NFloattext.mcc/MUIM_NFloattext_GetEntry
 
     NAME
-        MUIM_NFloattext_GetEntry --
+        MUIM_NFloattext_GetEntry -- Read a displayed entry.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NFloattext_GetEntry,LONG pos, APTR *entry);
+        DoMethod(obj, MUIM_NFloattext_GetEntry, pos, &entry);
+
+    INPUTS
+        pos -- Zero-based displayed entry index, or MUIV_NList_GetEntry_Active
+        (-1). The backend also interprets -2 as logical line zero and -3 as
+        the last inserted entry. entry -- Writable APTR storage.
+        MUIM_List_GetEntry uses this same handler.
 
     FUNCTION
-        Same function as List.mui/MUIM_List_GetEntry.
+        Query entry information. A wrapped slice is normally copied into a
+        reusable buffer and terminated with NUL. Copy its contents before
+        another GetEntry call if it must survive. Unwrapped entries are
+        returned directly from NList.
+        If buffer allocation fails, return a pointer into the original text at
+        the slice start. No terminator is added at the displayed line
+        boundary, so the result is not guaranteed to contain only that line. A
+        missing entry writes NULL.
+        Do not free the returned pointer. Source replacement, list changes and
+        disposal can invalidate source-backed results; a later call can
+        overwrite or free the reusable buffer.
 
-        You'll get pointer to a null terminated string buffer which
-        is a copy of the asked visible entry.
-
-        Unlike with Floattext, the returned string will be valid only
-        until next MUIM_NFloattext_GetEntry/MUIM_List_GetEntry call
-        if the entry was word wrapped.
-        I'll try to make it stay valid when using MUIM_List_GetEntry
-        only if someone report me some compatibility problem because
-        doing that will use more memory.
-
-    SEE ALSO
-        MUIM_NList_GetEntry, MUIM_NList_GetEntryInfo, MUIM_List_GetEntry
+    RESULT
+        Always TRUE, including missing entries and buffer allocation failure.
+        Inspect the output pointer; TRUE does not prove a copied,
+        line-terminated result.
 
