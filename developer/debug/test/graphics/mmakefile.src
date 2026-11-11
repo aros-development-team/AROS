@@ -5,6 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 FILES := screenppm \
     allocbitmap \
     alphascreen \
+    areafill_range \
     areatest2 \
     bltbitmapalpha \
     bltbitmap_count \
