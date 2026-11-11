@@ -140,7 +140,7 @@
     desc->fcb->opencount = 1;
     desc->fcb->privflags |= _FCB_ISDIR;
 
-    fd = __getfdslot(__getfirstfd(3));
+    fd = __getfreefdslot(3);
     /* Slot allocation may fail; never publish through a negative index. */
     if (fd < 0)
     {
