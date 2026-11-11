@@ -168,8 +168,7 @@ static void fill(struct Work *w)
 static void judge(struct Work *w)
 {
     const struct Case *c = w->c;
-    ULONG pixels = 0, mask = 0, broken = 0, i;
-    LONG x, y;
+    ULONG mask = 0, broken = 0, i;
 
     for (i = 0; i < GUARD; i++)
     {
@@ -189,6 +188,9 @@ static void judge(struct Work *w)
     check(mask == c->want, "MASK", c->name, (long)mask, (long)c->want);
     if (!c->full)
     {
+        ULONG pixels = 0;
+        LONG x, y;
+
         for (y = w->miny; y <= w->maxy; y++)
             for (x = w->minx; x <= w->maxx; x++)
                 if (ReadPixel(&w->rp, x, y))
