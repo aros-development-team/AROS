@@ -1,7 +1,7 @@
 /*
     Copyright (c) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: CacheClearU() for 64bit RISC-V.
+    Desc: CacheClearU() for RISC-V.
 */
 
 #include <exec/types.h>
