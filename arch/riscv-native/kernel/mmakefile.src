@@ -10,7 +10,7 @@ include $(SRCDIR)/config/aros.cfg
 #
 # Keyed on the opensbi ARCH, so it is built for every opensbi CPU. The
 # include priority sorts it after the platform directory (10) and before
-# riscv64-all (5): the flag files are concatenated in lexical order.
+# riscv-all (5): the flag files are concatenated in lexical order.
 #
 # Every file is built for both variants; the SMP bodies are guarded by
 # __AROSEXEC_SMP__ and the uniprocessor ones match the generic code.

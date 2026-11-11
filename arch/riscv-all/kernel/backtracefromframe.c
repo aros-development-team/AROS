@@ -32,7 +32,7 @@ AROS_LH3(ULONG, KrnBacktraceFromFrame,
     AROS_LIBFUNC_INIT
 
     KrnSymResolver_t resolver = KernelBase->kb_gResolver;
-    IPTR *sp = (IPTR *)((IPTR)frame_in & ~(IPTR)7);
+    IPTR *sp = (IPTR *)((IPTR)frame_in & ~(IPTR)(sizeof(IPTR) - 1));
     ULONG n = 0, i;
 
     if (!resolver || !sp)
