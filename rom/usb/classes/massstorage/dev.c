@@ -334,11 +334,13 @@ AROS_LH1(LONG, devAbortIO,
     /* Is it pending? */
     if(ioreq->io_Message.mn_Node.ln_Type == NT_MESSAGE)
     {
+        Forbid(); /* the unit task owns these structures */
         if(unit->ncm_XFerPending == ioreq)
         {
             unit->ncm_XFerPending = NULL;
             ioreq->io_Error = IOERR_ABORTED;
             ReplyMsg(&ioreq->io_Message);
+            Permit();
             return(0);
         }
         iocmp = (struct IOStdReq *) unit->ncm_XFerQueue.lh_Head;
@@ -349,11 +351,16 @@ AROS_LH1(LONG, devAbortIO,
                 Remove((struct Node *) ioreq);
                 ioreq->io_Error = IOERR_ABORTED;
                 ReplyMsg(&ioreq->io_Message);
+                Permit();
                 return(0);
             }
             iocmp = (struct IOStdReq *) iocmp->io_Message.mn_Node.ln_Succ;
         }
+        Permit();
     }
+    /* Anything else is a request the unit task is executing right now: it
+       runs to completion in that task's context, so there is nothing here to
+       take away from it. Refuse the abort. */
     return(-1);
 
     AROS_LIBFUNC_EXIT
