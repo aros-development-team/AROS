@@ -30,6 +30,7 @@ struct NepClassHubSS * GM_UNIQUENAME(nAllocHub)(void);
 void GM_UNIQUENAME(nFreeHub)(struct NepClassHubSS *nch);
 struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHubSS *nch, UWORD port);
 LONG GM_UNIQUENAME(nClearPortStatus)(struct NepClassHubSS *nch, UWORD port);
+LONG GM_UNIQUENAME(nWarmResetPort)(struct NepClassHubSS *nch, UWORD port);
 BOOL GM_UNIQUENAME(nHubSuspendDevice)(struct NepClassHubSS *nch, struct PsdDevice *pd);
 BOOL GM_UNIQUENAME(nHubResumeDevice)(struct NepClassHubSS *nch, struct PsdDevice *pd);
 void GM_UNIQUENAME(nHandleHubMethod)(struct NepClassHubSS *nch, struct NepHubSSMsg *nhm);
@@ -37,6 +38,8 @@ AROS_UFP0(void, GM_UNIQUENAME(nHubssTask));
 
 /* /// "Lib Stuff" */
 static const STRPTR libname = MOD_NAME_STRING;
+static const STRPTR hubunknown = "unknown hub";
+static const STRPTR devunknown = "unknown device";
 
 static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR nh) {
     KPRINTF(1, ("%s()\n", __func__));
@@ -87,6 +90,7 @@ struct NepClassHubSS * GM_UNIQUENAME(usbForceDeviceBinding)(struct NepHubSSBase 
 
     if((ps = OpenLibrary("poseidon.library", 4))) {
         psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_DONE);
+        if (!devname) devname = hubunknown;
 
         if((nch = psdAllocVec(sizeof(struct NepClassHubSS)))) {
             nch->nch_HubBase = nh;
@@ -149,6 +153,7 @@ void GM_UNIQUENAME(usbReleaseDeviceBinding)(struct NepHubSSBase *nh, struct NepC
 
         //FreeSignal(nch->nch_ReadySignal);
         psdGetAttrs(PGA_DEVICE, nch->nch_Device, DA_ProductName, &devname, TAG_END);
+        if (!devname) devname = hubunknown;
         psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "Time to get rid of '%s'!", devname);
 
         Forbid();
@@ -379,6 +384,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
         for(num = 1; num <= nch->nch_NumPorts; num++) {
             if(((nch->nch_Downstream)[num-1] = pd = GM_UNIQUENAME(nConfigurePort)(nch, num))) {
                 psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
+                if (!devname) devname = devunknown;
                 psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
                                "Detected device '%s' at port %ld. I like it.",
                                devname, num);
@@ -404,7 +410,14 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
                 psdSendPipe(nch->nch_EP1Pipe, nch->nch_PortChanges, (nch->nch_NumPorts+8)>>3);
                 nch->nch_IOStarted = TRUE;
             }
-            sigs = Wait(sigmask);
+            if(nch->nch_DisablePort || nch->nch_ClassScan) {
+                /* Don't sleep on queued port work: the wake-up Signal may have
+                   been consumed by a pipe wait inside a concurrent enumeration
+                   (e.g. a disable/class-scan request arriving mid-nConfigurePort). */
+                sigs = SetSignal(0, 0) & SIGBREAKF_CTRL_C;
+            } else {
+                sigs = Wait(sigmask);
+            }
 
             while((nhm = (struct NepHubSSMsg *) GetMsg(nch->nch_CtrlMsgPort))) {
                 GM_UNIQUENAME(nHandleHubMethod)(nch, nhm);
@@ -419,6 +432,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
                         if((pd = (nch->nch_Downstream)[num-1])) {
                             psdSetAttrs(PGA_DEVICE, pd, DA_IsConnected, FALSE, TAG_END);
                             psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
+                            if (!devname) devname = devunknown;
                             psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
                                            "Zapping device '%s' at port %ld!",
                                            devname, num);
@@ -457,6 +471,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
                             psdDelayMS(250);
                             if(((nch->nch_Downstream)[num-1] = pd = GM_UNIQUENAME(nConfigurePort)(nch, num))) {
                                 psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
+                                if (!devname) devname = devunknown;
                                 psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
                                                "Device '%s' returned. Happy happy joy joy.",
                                                devname);
@@ -474,6 +489,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
                     if((pd = (nch->nch_Downstream)[num-1]))
                     {
                         psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
+                        if (!devname) devname = devunknown;
                         psdHubClassScan(pd);
                     }
                 }
@@ -568,18 +584,40 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
                         {
                             if(nch->nch_PortChanges[num>>3] & (1L<<(num & 7)))
                             {
-                                psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_OTHER,
-                                             USR_GET_STATUS, 0, (ULONG) num);
-                                ioerr = psdDoPipe(nch->nch_EP0Pipe, &uhps, sizeof(struct UsbPortStatus));
-                                uhps.wPortStatus = AROS_WORD2LE(uhps.wPortStatus);
-                                uhps.wPortChange = AROS_WORD2LE(uhps.wPortChange);
-                                if(ioerr == UHIOERR_TIMEOUT)
+                                IPTR isconnected = 0;
+
+                                psdGetAttrs(PGA_DEVICE, nch->nch_Device,
+                                            DA_IsConnected, &isconnected, TAG_END);
+                                if(!isconnected)
                                 {
+                                    /* The hub is gone: psdDoPipe() short-circuits every request on a
+                                       disconnected device (50 ms, manufactured UHIOERR_TIMEOUT). The
+                                       only thing known is that the child is unreachable, which is what
+                                       the connection arm concludes - synthesise that and nothing else.
+                                       A blanket 0xffff also fires the suspend arm (resuming bindings of
+                                       a device freed a few lines later), logs a bogus suspend change
+                                       for every empty port and, on a SuperSpeed hub, carries
+                                       C_PORT_LINK_STATE/C_PORT_CONFIG_ERROR into the link-state arm. */
                                     uhps.wPortStatus = 0;
-                                    uhps.wPortChange = 0xffff;
+                                    uhps.wPortChange = UPSF_PORT_CONNECTION;
                                     ioerr = 0;
                                 } else {
-                                    GM_UNIQUENAME(nClearPortStatus)(nch, num);
+                                    psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_OTHER,
+                                                 USR_GET_STATUS, 0, (ULONG) num);
+                                    ioerr = psdDoPipe(nch->nch_EP0Pipe, &uhps, sizeof(struct UsbPortStatus));
+                                    uhps.wPortStatus = AROS_WORD2LE(uhps.wPortStatus);
+                                    uhps.wPortChange = AROS_WORD2LE(uhps.wPortChange);
+                                    if(ioerr == UHIOERR_TIMEOUT)
+                                    {
+                                        /* a live hub that did not answer within the pipe's 1s NAK
+                                           timeout is a real transfer failure, not a disconnect:
+                                           assume every change is pending */
+                                        uhps.wPortStatus = 0;
+                                        uhps.wPortChange = 0xffff;
+                                        ioerr = 0;
+                                    } else {
+                                        GM_UNIQUENAME(nClearPortStatus)(nch, num);
+                                    }
                                 }
                                 if(!ioerr)
                                 {
@@ -589,6 +627,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
                                         if(pd)
                                         {
                                             psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
+                                            if (!devname) devname = devunknown;
                                         } else {
                                             devname = "a ghost";
                                         }
@@ -610,6 +649,95 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
                                                      USR_CLEAR_FEATURE, UFS_C_PORT_OVER_CURRENT, (ULONG) num);
                                         psdDoPipe(nch->nch_EP0Pipe, NULL, 0);
                                     }
+                                    /* USB 3 link state arm. A SuperSpeed hub reports
+                                       suspend/resume and link failures through the
+                                       port link state (wPortStatus bits 5-8) and the
+                                       C_PORT_LINK_STATE / C_PORT_CONFIG_ERROR change
+                                       bits; the emulated root hub reports the USB 2.0
+                                       layout and takes the suspend arm below instead. */
+                                    if(nch->nch_SSPortProto &&
+                                       (uhps.wPortChange & (UPS3F_C_PORT_LINK_STATE | UPS3F_C_PORT_CONFIG_ERROR)))
+                                    {
+                                        UWORD pls = (uhps.wPortStatus & UPS3M_PORT_LINK_STATE)
+                                                    >> UPS3S_PORT_LINK_STATE;
+
+                                        if(uhps.wPortChange & UPS3F_C_PORT_CONFIG_ERROR)
+                                        {
+                                            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                                                           "Link configuration error on port %ld (link state %ld).",
+                                                           num, (ULONG) pls);
+                                        }
+                                        if((pls == UPS3_PLS_INACTIVE) || (pls == UPS3_PLS_COMPLIANCE))
+                                        {
+                                            /* The downstream link failed and cannot retrain itself;
+                                               only a warm reset clears SS.Inactive/Compliance, and it
+                                               returns the device to the default state, so tear the old
+                                               device down and re-enumerate. */
+                                            psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
+                                                           "Link error (state %ld) on port %ld, warm-resetting.",
+                                                           (ULONG) pls, num);
+                                            if(pd)
+                                            {
+                                                psdSetAttrs(PGA_DEVICE, pd, DA_IsConnected, FALSE, TAG_END);
+                                                psdFreeDevice(pd);
+                                                psdSendEvent(EHMB_REMDEVICE, pd, NULL);
+                                                (nch->nch_Downstream)[num-1] = NULL;
+                                                pd = NULL;
+                                            }
+                                            GM_UNIQUENAME(nWarmResetPort)(nch, num);
+                                            GM_UNIQUENAME(nClearPortStatus)(nch, num);
+                                            /* nConfigurePort re-reads the status; it is a no-op
+                                               if the port turns out to be empty */
+                                            if(((nch->nch_Downstream)[num-1] = pd = GM_UNIQUENAME(nConfigurePort)(nch, num)))
+                                            {
+                                                psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
+                                                if (!devname) devname = devunknown;
+                                                psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                                                               "Device '%s' at port %ld recovered.",
+                                                               devname, num);
+                                                psdClassScan();
+                                            }
+                                        }
+                                        else if((pls == UPS3_PLS_U0) && pd)
+                                        {
+                                            /* U3 -> U0 is a remote wake if we had parked it */
+                                            IPTR oldsusp = 0;
+                                            psdGetAttrs(PGA_DEVICE, pd, DA_IsSuspended, &oldsusp, TAG_END);
+                                            psdSetAttrs(PGA_DEVICE, pd, DA_IsSuspended, FALSE, TAG_END);
+                                            psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
+                                            if (!devname) devname = devunknown;
+                                            if(oldsusp)
+                                            {
+                                                psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                                                               "Device '%s' at port %ld resumed from remote!",
+                                                               devname, num);
+                                                psdSendEvent(EHMB_DEVRESUMED, pd, NULL);
+                                                psdResumeBindings(pd);
+                                            }
+                                        }
+                                        else if((pls == UPS3_PLS_U3) && pd)
+                                        {
+                                            /* U3 is the parked state, never a wake: mirror it, do
+                                               not clear it (psdDoPipe() auto-resumes off the flag). */
+                                            IPTR oldsusp = 0;
+                                            psdGetAttrs(PGA_DEVICE, pd, DA_IsSuspended, &oldsusp, TAG_END);
+                                            psdSetAttrs(PGA_DEVICE, pd, DA_IsSuspended, TRUE, TAG_END);
+                                            psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
+                                            if (!devname) devname = devunknown;
+                                            psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                                                           "Device '%s' at port %ld suspended!",
+                                                           devname, num);
+                                            if(!oldsusp)
+                                            {
+                                                psdSendEvent(EHMB_DEVSUSPENDED, pd, NULL);
+                                            }
+                                        } else {
+                                            /* U1/U2/Recovery/Resume etc. are normal SuperSpeed link
+                                               power management on a downstream port: no action. */
+                                            KPRINTF(2, ("port %ld link state %ld, no action\n",
+                                                        num, (ULONG) pls));
+                                        }
+                                    }
                                     /* A SuperSpeed hub has no suspend change
                                        bit; bit 2 is reserved there and the
                                        link state carries U1/U2/U3 instead. */
@@ -622,6 +750,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
                                             psdGetAttrs(PGA_DEVICE, pd, DA_IsSuspended, &oldsusp, TAG_END);
                                             psdSetAttrs(PGA_DEVICE, pd, DA_IsSuspended, FALSE, TAG_END);
                                             psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
+                                            if (!devname) devname = devunknown;
                                             if(oldsusp)
                                             {
                                                 psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
@@ -633,11 +762,25 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
                                         }
                                         else if((uhps.wPortStatus & UPSF_PORT_SUSPEND) && pd)
                                         {
-                                            psdSetAttrs(PGA_DEVICE, pd, DA_IsSuspended, FALSE, TAG_END);
+                                            /* The port is parked, not waking. The device flag is the
+                                               stack's mirror of that: psdDoPipe()/psdSendPipe() auto-
+                                               resume off it and the idle sweep skips devices already
+                                               suspended, so clearing it here would strand the device
+                                               on a suspended port. nHubSuspendDevice() has set it on
+                                               our own suspend path - this only re-syncs a port that
+                                               was parked behind the stack's back. */
+                                            IPTR oldsusp = 0;
+                                            psdGetAttrs(PGA_DEVICE, pd, DA_IsSuspended, &oldsusp, TAG_END);
+                                            psdSetAttrs(PGA_DEVICE, pd, DA_IsSuspended, TRUE, TAG_END);
                                             psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
+                                            if (!devname) devname = devunknown;
                                             psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
                                                            "Device '%s' at port %ld suspended!",
                                                            devname, num);
+                                            if(!oldsusp)
+                                            {
+                                                psdSendEvent(EHMB_DEVSUSPENDED, pd, NULL);
+                                            }
                                         } else {
                                             psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
                                                            "Bogus suspend/resume change on port %ld.",
@@ -651,6 +794,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
                                         {
                                             psdSetAttrs(PGA_DEVICE, pd, DA_IsConnected, FALSE, TAG_END);
                                             psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
+                                            if (!devname) devname = devunknown;
                                             psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
                                                            "Device '%s' at port %ld is gone!",
                                                            devname, num);
@@ -667,6 +811,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
                                             if(((nch->nch_Downstream)[num-1] = pd = GM_UNIQUENAME(nConfigurePort)(nch, num)))
                                             {
                                                 psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
+                                                if (!devname) devname = devunknown;
                                                 psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
                                                                "New device '%s' at port %ld. Very nice.",
                                                                devname, num);
@@ -830,9 +975,17 @@ struct NepClassHubSS * GM_UNIQUENAME(nAllocHub)(void) {
                                         nch->nch_NumPorts     = (UWORD)usshd->bNbrPorts;
                                         nch->nch_HubAttr      = (UWORD)AROS_WORD2LE(usshd->wHubCharacteristics);
                                         nch->nch_PwrGoodTime  = (UWORD)usshd->bPwrOn2PwrGood<<1;
+                                        /* An external hub owes a device at least 100ms after
+                                           port power to draw power and signal attach, whatever
+                                           its descriptor says (see hub.class). The root hub is
+                                           the host controller driver: pcixhci reports the
+                                           20 ms the xHCI spec allows and is taken at its word. */
+                                        if(!nch->nch_IsRootHub && (nch->nch_PwrGoodTime < 100)) {
+                                            nch->nch_PwrGoodTime = 100;
+                                        }
                                         nch->nch_HubCurrent   = (UWORD)usshd->bHubContrCurrent;
                                         nch->nch_HubHdrDecLat = (UWORD)usshd->bHubHdrDecLat;
-                                        nch->nch_HubDelay     = (UWORD)usshd->wHubDelay;
+                                        nch->nch_HubDelay     = (UWORD)AROS_WORD2LE(usshd->wHubDelay);
                                         nch->nch_Removable    = (UWORD)usshd->DeviceRemovable;
 
                                         if(nch->nch_HubAttr & UHCM_THINK_TIME) {
@@ -1019,6 +1172,7 @@ void GM_UNIQUENAME(nFreeHub)(struct NepClassHubSS *nch) {
                 psdSetAttrs(PGA_DEVICE, pd, DA_IsConnected, FALSE, TAG_END);
             }
             psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
+            if (!devname) devname = devunknown;
             psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "My death killed device '%s' at port %ld!", devname, num);
             KPRINTF(1, ("FreeDevice %p\n", pd));
             psdFreeDevice(pd);
@@ -1144,6 +1298,51 @@ LONG GM_UNIQUENAME(nClearPortStatus)(struct NepClassHubSS *nch, UWORD port)
 
     return firsterr;
 }
+
+/* /// "nWarmResetPort()" */
+/*
+ * Warm-reset (BH_PORT_RESET) a downstream port and wait for it to complete.
+ * A warm reset is the only way to clear an SS.Inactive/Compliance link, and it
+ * returns the device to the default state, so the caller must re-enumerate.
+ */
+LONG GM_UNIQUENAME(nWarmResetPort)(struct NepClassHubSS *nch, UWORD port)
+{
+    struct UsbPortStatus uhps;
+    LONG ioerr;
+    LONG retries;
+
+    KPRINTF(1, ("%s(0x%p, %ld)\n", __func__, nch, port));
+
+    psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
+                 USR_SET_FEATURE, UFS_BH_PORT_RESET, (ULONG)port);
+    ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0);
+    if(ioerr) {
+        psdAddErrorMsg(RETURN_WARN, (STRPTR)libname,
+                       "BH_PORT_RESET for port %ld failed: %s (%ld)",
+                       port, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+        return ioerr;
+    }
+
+    /* wait for the warm reset to finish (C_BH_PORT_RESET) or the port to drop */
+    for(retries = 0; retries < 500; retries += 20) {
+        psdDelayMS(20);
+        psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_OTHER,
+                     USR_GET_STATUS, 0, (ULONG)port);
+        if((ioerr = psdDoPipe(nch->nch_EP0Pipe, &uhps, sizeof(struct UsbPortStatus)))) {
+            break;
+        }
+        uhps.wPortStatus = AROS_WORD2LE(uhps.wPortStatus);
+        uhps.wPortChange = AROS_WORD2LE(uhps.wPortChange);
+        if(uhps.wPortChange & UPS3F_C_BH_PORT_RESET) {
+            break;
+        }
+        if(!(uhps.wPortStatus & UPS3F_PORT_CONNECTION)) {
+            break;
+        }
+    }
+    return ioerr;
+}
+/* \\\ */
 
 
 /* /// "nDecodePortStatus()" */
@@ -1550,12 +1749,10 @@ void GM_UNIQUENAME(nHandleHubMethod)(struct NepClassHubSS *nch, struct NepHubSSM
         }
 
         case UCM_AttemptResumeDevice:
-            if(!nch->nch_Running) {
-                psdWaitPipe(nch->nch_EP1Pipe);
-                psdSendPipe(nch->nch_EP1Pipe, nch->nch_PortChanges, (nch->nch_NumPorts+8)>>3);
-                nch->nch_Running = TRUE;
-            }
-
+            /* The main loop owns the EP1 pipe: with nch_Running set it will
+               resubmit once the aborted request has drained (nch_IOStarted).
+               Submitting here as well put the same request in flight twice. */
+            nch->nch_Running = TRUE;
             nhm->nhm_Result = TRUE;
 
             for(num = 1; num <= nch->nch_NumPorts; num++) {
@@ -1599,8 +1796,18 @@ BOOL GM_UNIQUENAME(nHubSuspendDevice)(struct NepClassHubSS *nch, struct PsdDevic
 
     for(num = 1; num <= nch->nch_NumPorts; num++) {
         if(pd == (nch->nch_Downstream)[num-1]) {
-            psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
-                         USR_SET_FEATURE, UFS_PORT_SUSPEND, (ULONG)num);
+            if(nch->nch_SSPortProto) {
+                /* USB 3 hub protocol: suspend = set the link state to U3.
+                   PORT_SUSPEND is not a feature a SuperSpeed hub accepts
+                   (it stalls it); the link state goes in the upper byte of
+                   wIndex. */
+                psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
+                             USR_SET_FEATURE, UFS_PORT_LINK_STATE,
+                             (ULONG)(num | (UPS3_PLS_U3 << 8)));
+            } else {
+                psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
+                             USR_SET_FEATURE, UFS_PORT_SUSPEND, (ULONG)num);
+            }
             ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0);
 
             if(ioerr) {
@@ -1630,8 +1837,15 @@ BOOL GM_UNIQUENAME(nHubResumeDevice)(struct NepClassHubSS *nch, struct PsdDevice
 
     for(num = 1; num <= nch->nch_NumPorts; num++) {
         if(pd == (nch->nch_Downstream)[num-1]) {
-            psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
-                         USR_CLEAR_FEATURE, UFS_PORT_SUSPEND, (ULONG)num);
+            if(nch->nch_SSPortProto) {
+                /* USB 3 hub protocol: resume = set the link state to U0 */
+                psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
+                             USR_SET_FEATURE, UFS_PORT_LINK_STATE,
+                             (ULONG)(num | (UPS3_PLS_U0 << 8)));
+            } else {
+                psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER,
+                             USR_CLEAR_FEATURE, UFS_PORT_SUSPEND, (ULONG)num);
+            }
             ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0);
 
             if(ioerr) {
