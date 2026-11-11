@@ -574,7 +574,6 @@ AROS_UFH0(void, nEthTask)
                     ncp->ncp_WritePending = NULL;
                     if (ioreq) {
                         LONG txerr = psdGetPipeError(pp);
-                        if (txerr)
                         if (txerr) {
                             KPRINTF(5, ("lan78xx: TX err=%ld\n", (LONG)txerr));
                             nDoEvent(ncp, S2EVENT_ERROR | S2EVENT_TX);
@@ -1726,6 +1725,8 @@ static LONG lan78xx_chip_init(struct NepClassEth *ncp)
      * every idle bulk-IN with a zero-length packet, one round trip per
      * poll. Set, it NAKs instead and the DMA core retries the token.
      * Needs USB2OTG_BULK_IN_NAK_LIVENESS on the host side.
+     * LAN7500: HW_CFG bit 7. LAN7800/7801: USB_CFG0 bit 6 (HW_CFG bit 7
+     * is SUSPEND_N_SEL there).
      */
 
     /* Burst cap + bulk-in delay.  Pi3 is HS — use the high-speed sizing. */
@@ -1746,11 +1747,11 @@ static LONG lan78xx_chip_init(struct NepClassEth *ncp)
 
         if (lan78xx_read_reg(ncp, LAN78XX_REG_HW_CFG, &val))
             return (-1);
-        lan78xx_write_reg(ncp, LAN78XX_REG_HW_CFG, val | LAN78XX_HW_CFG_MEF | LAN78XX_HW_CFG_BIR);
+        lan78xx_write_reg(ncp, LAN78XX_REG_HW_CFG, val | LAN78XX_HW_CFG_MEF);
 
         if (lan78xx_read_reg(ncp, LAN78XX_REG_USB_CFG0, &val))
             return (-1);
-        lan78xx_write_reg(ncp, LAN78XX_REG_USB_CFG0, val | LAN78XX_USB_CFG0_BCE);
+        lan78xx_write_reg(ncp, LAN78XX_REG_USB_CFG0, val | LAN78XX_USB_CFG0_BCE | LAN78XX_USB_CFG0_BIR);
     }
 
     lan78xx_write_reg(ncp, LAN78XX_REG_INT_STS, 0xFFFFFFFFUL);
