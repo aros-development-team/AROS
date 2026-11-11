@@ -855,7 +855,7 @@ AROS_UFH0(void, nSerialTask)
                     Permit();
                     ioreq->IOSer.io_Actual = psdStreamWrite(ncp->ncp_EPOutStream, ioreq->IOSer.io_Data, ioreq->IOSer.io_Length);
                     ncp->ncp_WritePending = NULL;
-                    ioerr = psdGetStreamError(ncp->ncp_EPInStream);
+                    ioerr = psdGetStreamError(ncp->ncp_EPOutStream);
                     if(ioerr > 0)
                     {
                         ioreq->IOSer.io_Error = SerErr_LineErr;
