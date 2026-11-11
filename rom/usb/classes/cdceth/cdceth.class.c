@@ -1396,13 +1396,8 @@ static BOOL cdceth_set_packet_filter(struct NepClassEth *ncp, UWORD filter)
                        "SET_ETHERNET_PACKET_FILTER failed: %s (%ld)",
                        psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
 
-        /* Clear any stall on the default pipe so subsequent control transfers succeed. */
-        psdPipeSetup(ncp->ncp_EP0Pipe,
-                     URTF_OUT|URTF_STANDARD|URTF_ENDPOINT,
-                     USR_CLEAR_FEATURE,
-                     UFS_ENDPOINT_HALT,
-                     0);
-        psdDoPipe(ncp->ncp_EP0Pipe, NULL, 0);
+        /* A protocol stall on the default pipe clears itself on the next
+           SETUP; ENDPOINT_HALT is not defined for endpoint 0. */
         ncp->ncp_FilterTried = TRUE;
         return(FALSE);
     }
