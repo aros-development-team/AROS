@@ -37,6 +37,12 @@ typedef int (*cmpfunc_t)(const void * element1, const void * element2);
 
 static ULONG NL_List_Move(struct NLData *data,LONG from,LONG to);
 
+/* NL_GetSelects
+ * Read valid logical-entry wrap selection state into a compact bit mask.
+ * Requires a valid entry index and entry array; returns zero unless
+ * multiselect and a wrapped owner apply. Used to preserve selection
+ * across rewrapping, not as an unbounded per-line bitmap.
+ */
 LONG NL_GetSelects(struct NLData *data, LONG ent)
 {
   LONG selects = 0L;
@@ -279,6 +285,12 @@ struct sort_entry
 };
 
 
+/* NL_SortCompar
+ * Compare logical owners of two valid display rows via NList_Compare and
+ * current sort types. Break equal comparisons by original owner index,
+ * and rows of one owner by original display index, preserving their
+ * relative order. Borrow payloads; do not construct or destroy entries.
+ */
 static int NL_SortCompar(struct NLData *data,LONG ent1,LONG ent2)
 {
   LONG result = 0;
@@ -304,6 +316,11 @@ static int NL_SortCompar(struct NLData *data,LONG ent1,LONG ent2)
 
 
 /*int sort_compar(const void *e1, const void *e2)*/
+/* sort_compar
+ * qsort adapter for two valid sort_entry records from one list. Delegate
+ * comparison through their original indices; return negative, zero or
+ * positive according to NL_SortCompar.
+ */
 static int sort_compar(struct sort_entry *e1, struct sort_entry *e2)
 {
   return NL_SortCompar(e1->data,e1->ent,e2->ent);
@@ -313,6 +330,13 @@ static int sort_compar(struct sort_entry *e1, struct sort_entry *e2)
 //$$$ARRAY+
 //fent = first entry
 //lent = last entry
+/* NL_List_SortPart
+ * Sort the inclusive valid display-row range through a temporary pooled
+ * index array. Reorder existing records, track Active and LastInserted,
+ * and mark changed rows. Return whether any exchange occurred; allocation
+ * failure and already ordered input both return FALSE. No payload
+ * ownership transfer.
+ */
 static ULONG NL_List_SortPart(struct NLData *data,LONG fent,LONG lent)
 {
   LONG ent, ent1, numfollow, numexch, has_changed;
@@ -397,6 +421,12 @@ static ULONG NL_List_SortPart(struct NLData *data,LONG fent,LONG lent)
 }
 
 
+/* NL_List_Sort
+ * Sort all rows with current comparison policy, preserving equal-entry
+ * order through index tie-breaking. Return the exchange indicator, not
+ * general success. Rewrap/update selection and redraw when required; a
+ * FALSE result can still accompany wrap work.
+ */
 ULONG NL_List_Sort(struct NLData *data)
 {
   LONG has_changed;
@@ -423,6 +453,12 @@ ULONG NL_List_Sort(struct NLData *data)
 
 
 //$$$ARRAY+
+/* NL_List_SortMore
+ * Sort the newly appended suffix and merge it into an already sorted
+ * prefix. Borrow entries and preserve records. Return the suffix-sort
+ * change indicator, which does not include every merge move; callers must
+ * not treat it as a complete movement count or error result.
+ */
 static ULONG NL_List_SortMore(struct NLData *data,LONG newpos)
 {
   LONG has_changed=0,fent,ment,lent;
@@ -487,6 +523,16 @@ static ULONG NL_List_SortMore(struct NLData *data,LONG newpos)
 
 
 //$$$ARRAY+
+/* NL_List_Insert
+ * Construct entries from a pointer array or multiline string, update
+ * positions and optionally sort. Return a BOOL indicating retained
+ * insertion, not an inserted count or all-or-nothing success. Failed
+ * construct results may be skipped. Input traversal and allocation-
+ * failure handling do not provide a complete bounded, transactional
+ * failure path; callers must not infer that guarantee from count or the
+ * return value. Keep borrowed payloads alive according to the
+ * construction policy.
+ */
 ULONG NL_List_Insert(struct NLData *data,APTR *entries,LONG count,LONG pos,LONG wrapcol,LONG align,ULONG flags)
 {
   BOOL success = FALSE;
@@ -885,6 +931,14 @@ STOPCLOCK(DBF_ALWAYS, "insert");
 }
 
 
+/* NL_List_Replace
+ * Resolve a display position to its logical owner and construct
+ * replacement before destructing the old payload. On successful
+ * construction replace in place and return TRUE. If construction returns
+ * NULL, remove the old entry and return the removal result. Reject NULL
+ * input or invalid position with FALSE. Borrowed aliases must remain
+ * valid after the old destructor runs.
+ */
 ULONG NL_List_Replace(struct NLData *data,APTR entry,LONG pos,LONG wrapcol,LONG align)
 {
   ULONG result = FALSE;
@@ -1010,6 +1064,13 @@ ULONG NL_List_Replace(struct NLData *data,APTR entry,LONG pos,LONG wrapcol,LONG 
 
 
 //$$$ARRAY+
+/* NL_List_Clear
+ * Destruct each logical payload once, free display records and the entry
+ * array, reset active/first/last-inserted state and request
+ * layout/redraw. Preserve Visible while quiet for later recalculation.
+ * Return TRUE even for an empty list; destructor return values are
+ * ignored.
+ */
 ULONG NL_List_Clear(struct NLData *data)
 {
   LONG ent = data->NList_Entries - 1;
@@ -1092,6 +1153,13 @@ ULONG NL_List_Clear(struct NLData *data)
 
 
 //$$$ARRAY+
+/* NL_List_Remove
+ * Resolve First/Last/Active/Selected or a display index, normalizing
+ * wrapped continuations to their owner. Destruct logical payloads, update
+ * selection/active/first and request rewrap/redraw. Return TRUE for a
+ * removal, FALSE for no valid target. Destruction failure is not
+ * reported; caller-held payload pointers may become invalid.
+ */
 ULONG NL_List_Remove(struct NLData *data,LONG pos)
 {
   LONG ent,ent2,skip,nlentries;
@@ -1274,6 +1342,12 @@ ULONG NL_List_Remove(struct NLData *data,LONG pos)
 }
 
 
+/* NL_List_Exchange
+ * Resolve two positions and normalize wrapped continuations to their
+ * owners. Swap existing records without construct/destruct, track the
+ * active item and request rewrap/redraw. Return TRUE only for two valid
+ * distinct resolved entries; equal or invalid positions return FALSE.
+ */
 ULONG NL_List_Exchange(struct NLData *data,LONG pos1,LONG pos2)
 {
   LONG ent1, ent2;
@@ -1372,6 +1446,15 @@ ULONG NL_List_Exchange(struct NLData *data,LONG pos1,LONG pos2)
 
 
 //$$$ARRAY+
+/* NL_List_Move_Selected
+ * Move selected rows as a group to an insertion boundary, expanding
+ * wrapped selections to owners/continuations and preserving order. In
+ * character-selection mode use the selected entry range. Return TRUE for
+ * no selection or an unchanged contiguous block, delegate the single-
+ * entry case, or FALSE on buffer allocation failure. Active destination
+ * must exist; do not infer validation of that sentinel from numeric-
+ * destination clamping.
+ */
 static ULONG NL_List_Move_Selected(struct NLData *data, LONG to)
 {
   LONG num_sel = 0;
@@ -1596,6 +1679,14 @@ static ULONG NL_List_Move_Selected(struct NLData *data, LONG to)
 
 
 //$$$ARRAY+
+/* NL_List_Move
+ * Move one logical entry to a resolved final position or delegate
+ * Selected to the block helper. Normalize wrapped rows, retain payload
+ * ownership, track active position and LastInserted, rewrap and redraw.
+ * Return TRUE for an actual single-entry move; FALSE for invalid or
+ * identical resolved positions. Selected has different no-op return
+ * semantics.
+ */
 static ULONG NL_List_Move(struct NLData *data,LONG from,LONG to)
 {
   LONG ent1, ent2;
@@ -1737,6 +1828,10 @@ static ULONG NL_List_Move(struct NLData *data,LONG from,LONG to)
 
 
 
+/* mNL_List_Sort
+ * Return NL_List_Sort change indicator using the current comparison
+ * policy. Message has no additional arguments; no superclass call.
+ */
 IPTR mNL_List_Sort(struct IClass *cl, Object *obj, UNUSED struct MUIP_NList_Sort *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1745,6 +1840,11 @@ IPTR mNL_List_Sort(struct IClass *cl, Object *obj, UNUSED struct MUIP_NList_Sort
 }
 
 
+/* mNL_List_Sort2
+ * Update primary sort type by the masked-match/add rule, set its
+ * attribute, then sort. Return sort change indicator, not update success.
+ * The secondary type is unchanged.
+ */
 IPTR mNL_List_Sort2(struct IClass *cl,Object *obj,struct  MUIP_NList_Sort2 *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1757,6 +1857,12 @@ IPTR mNL_List_Sort2(struct IClass *cl,Object *obj,struct  MUIP_NList_Sort2 *msg)
 }
 
 
+/* mNL_List_Sort3
+ * Update secondary type for selector 2, primary for selector 1, or
+ * primary then copy to secondary for other selectors. Use the Sort2
+ * masked-match/add rule. Set affected attributes, sort and return its
+ * change indicator.
+ */
 IPTR mNL_List_Sort3(struct IClass *cl,Object *obj,struct  MUIP_NList_Sort3 *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1787,6 +1893,11 @@ IPTR mNL_List_Sort3(struct IClass *cl,Object *obj,struct  MUIP_NList_Sort3 *msg)
 }
 
 
+/* mNL_List_Insert
+ * Pass entries/count/position/flags to insertion with NOWRAP and
+ * ALIGN_LEFT. Require the full NList message including flags. Return
+ * backend BOOL; not a count.
+ */
 IPTR mNL_List_Insert(struct IClass *cl,Object *obj,struct  MUIP_NList_Insert *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1795,6 +1906,11 @@ IPTR mNL_List_Insert(struct IClass *cl,Object *obj,struct  MUIP_NList_Insert *ms
 }
 
 
+/* mNL_List_InsertSingle
+ * For non-NULL entry, delegate to the common insertion path with count
+ * one, NOWRAP, ALIGN_LEFT and no flags. NULL returns zero. Common
+ * insertion traversal/failure limitations also apply.
+ */
 IPTR mNL_List_InsertSingle(struct IClass *cl,Object *obj,struct  MUIP_NList_InsertSingle *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1805,6 +1921,11 @@ IPTR mNL_List_InsertSingle(struct IClass *cl,Object *obj,struct  MUIP_NList_Inse
 }
 
 
+/* mNL_List_InsertWrap
+ * Delegate insertion with the supplied flags, wrap mask and alignment
+ * masked to ALIGN_MASK. Return backend BOOL; wrapping does not change
+ * entry ownership rules.
+ */
 IPTR mNL_List_InsertWrap(struct IClass *cl,Object *obj,struct  MUIP_NList_InsertWrap *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1813,6 +1934,11 @@ IPTR mNL_List_InsertWrap(struct IClass *cl,Object *obj,struct  MUIP_NList_Insert
 }
 
 
+/* mNL_List_InsertSingleWrap
+ * For non-NULL entry, delegate count-one insertion with supplied wrap
+ * mask, masked alignment and no flags. NULL returns zero. Common
+ * insertion limitations apply.
+ */
 IPTR mNL_List_InsertSingleWrap(struct IClass *cl,Object *obj,struct  MUIP_NList_InsertSingleWrap *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1823,6 +1949,11 @@ IPTR mNL_List_InsertSingleWrap(struct IClass *cl,Object *obj,struct  MUIP_NList_
 }
 
 
+/* mNL_List_ReplaceSingle
+ * Delegate replacement with supplied entry/position/wrap mask and masked
+ * alignment. Return backend result, which can be TRUE after removing an
+ * old entry when construction fails.
+ */
 IPTR mNL_List_ReplaceSingle(struct IClass *cl,Object *obj,struct  MUIP_NList_ReplaceSingle *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1831,6 +1962,10 @@ IPTR mNL_List_ReplaceSingle(struct IClass *cl,Object *obj,struct  MUIP_NList_Rep
 }
 
 
+/* mNL_List_Exchange
+ * Delegate both positions unchanged to exchange and return its BOOL. No
+ * payload copy or ownership transfer.
+ */
 IPTR mNL_List_Exchange(struct IClass *cl,Object *obj,struct MUIP_NList_Exchange *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1839,6 +1974,11 @@ IPTR mNL_List_Exchange(struct IClass *cl,Object *obj,struct MUIP_NList_Exchange 
 }
 
 
+/* mNL_List_Move
+ * Delegate source/destination selectors to move and return its BOOL.
+ * Selected input uses insertion-boundary semantics rather than the
+ * ordinary final-index destination.
+ */
 IPTR mNL_List_Move(struct IClass *cl,Object *obj,struct MUIP_NList_Move *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1847,6 +1987,10 @@ IPTR mNL_List_Move(struct IClass *cl,Object *obj,struct MUIP_NList_Move *msg)
 }
 
 
+/* mNL_List_Clear
+ * Clear through the common backend and return TRUE. Destructors are
+ * called for logical payloads; the method has no extra inputs.
+ */
 IPTR mNL_List_Clear(struct IClass *cl, Object *obj, UNUSED struct MUIP_NList_Clear *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1855,6 +1999,11 @@ IPTR mNL_List_Clear(struct IClass *cl, Object *obj, UNUSED struct MUIP_NList_Cle
 }
 
 
+/* mNL_List_Remove
+ * Delegate position or selector to removal and return its BOOL. No valid
+ * target returns FALSE; selected removal may affect several logical
+ * entries.
+ */
 IPTR mNL_List_Remove(struct IClass *cl,Object *obj,struct MUIP_NList_Remove *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);

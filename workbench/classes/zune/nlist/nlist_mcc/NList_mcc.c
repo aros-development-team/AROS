@@ -126,6 +126,11 @@ DEFAULT_KEYS_ARRAY
   }
 
 
+/* NL_ConstructFunc_String
+ * Copy bytes up to the first NUL, LF or CR into a new NUL-terminated
+ * pooled vector. Require a readable string and valid pool; return NULL on
+ * allocation failure. Pair with the matching pooled string destructor.
+ */
 HOOKPROTONH(NL_ConstructFunc_String, APTR, APTR pool, char *str)
 {
   char *new;
@@ -146,6 +151,11 @@ HOOKPROTONH(NL_ConstructFunc_String, APTR, APTR pool, char *str)
 }
 MakeHook(NL_ConstructHook_String, NL_ConstructFunc_String);
 
+/* NL_DestructFunc_String
+ * Free a string vector allocated by the matching string constructor from
+ * the same pool. Caller must supply the live allocation exactly once; no
+ * ownership is retained.
+ */
 HOOKPROTONH(NL_DestructFunc_String, void, APTR pool, char *entry)
 {
   FreeVecPooled(pool, entry);
