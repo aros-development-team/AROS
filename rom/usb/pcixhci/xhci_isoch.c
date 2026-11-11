@@ -52,6 +52,38 @@ static struct PTDNode *xhciNextIsoPTD(struct RTIsoNode *rtn)
     return NULL;
 }
 
+/*
+ * Return the complete payload capacity of one RTISO IN service opportunity.
+ * High-speed endpoints may carry up to three transactions per microframe;
+ * SuperSpeed endpoints carry their companion-descriptor service payload.
+ */
+static ULONG xhciRTIsoServiceLength(const struct IOUsbHWReq *ioreq)
+{
+    ULONG length;
+
+    if(!ioreq)
+        return 0;
+
+    length = ioreq->iouh_MaxPktSize;
+    if(!length)
+        return 0;
+
+    if(ioreq->iouh_Flags & UHFF_SUPERSPEED) {
+        if(ioreq->iouh_SS_BytesPerInterval)
+            return ioreq->iouh_SS_BytesPerInterval;
+
+        length *= (ULONG)(ioreq->iouh_SS_MaxBurst + 1);
+        length *= (ULONG)(ioreq->iouh_SS_Mult + 1);
+    } else if(ioreq->iouh_Flags & UHFF_HIGHSPEED) {
+        if((ioreq->iouh_Flags & UHFF_MULTI_3) == UHFF_MULTI_3)
+            length *= 3;
+        else if(ioreq->iouh_Flags & UHFF_MULTI_2)
+            length *= 2;
+    }
+
+    return length;
+}
+
 void xhciScheduleIsoTDs(struct PCIController *hc)
 {
     struct PCIUnit *unit = hc->hc_Unit;
@@ -143,15 +175,26 @@ void xhciScheduleIsoTDs(struct PCIController *hc)
 
 WORD xhciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
+    ULONG inlen = 0;
+
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
 
     if(!rtn->rtn_PTDs || !rtn->rtn_PTDCount)
         return UHIOERR_BADPARAMS;
 
+    if(rtn->rtn_RTIso && (rtn->rtn_IOReq.iouh_Dir == UHDIR_IN)) {
+        inlen = xhciRTIsoServiceLength(&rtn->rtn_IOReq);
+        if(!inlen)
+            return UHIOERR_BADPARAMS;
+    }
+
     for(UWORD idx = 0; idx < rtn->rtn_PTDCount; idx++) {
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
 
         if(ptd) {
+            if(ptd->ptd_BounceBuffer)
+                FreeMem(ptd->ptd_BounceBuffer, ptd->ptd_BounceLength);
+
             if(ptd->ptd_Descriptor)
                 FreeMem(ptd->ptd_Descriptor, sizeof(struct pciusbXHCITRBParams));
 
@@ -176,6 +219,17 @@ WORD xhciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         ptd->ptd_IOReq.iouh_Req.io_Message.mn_Node.ln_Succ = NULL;
         ptd->ptd_IOReq.iouh_Req.io_Message.mn_Node.ln_Pred = NULL;
         ptd->ptd_RTIsoNode = rtn;
+
+        if(inlen) {
+            ptd->ptd_BounceBuffer = AllocMem(inlen, MEMF_ANY | MEMF_CLEAR);
+            if(!ptd->ptd_BounceBuffer) {
+                FreeMem(ptd->ptd_Descriptor, sizeof(struct pciusbXHCITRBParams));
+                FreeMem(ptd, sizeof(*ptd));
+                rtn->rtn_PTDs[idx] = NULL;
+                goto fail;
+            }
+            ptd->ptd_BounceLength = inlen;
+        }
 
         rtn->rtn_PTDs[idx] = ptd;
     }
@@ -217,8 +271,18 @@ WORD xhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         if(!(rtn->rtn_Flags & RTISO_FLAG_EXPLICIT_FRAME))
             bufreq->ubr_Frame = 0;
         if(ioreq->iouh_Dir == UHDIR_IN) {
-            if(urti->urti_InReqHook)
-                CallHookPkt(urti->urti_InReqHook, rtn, bufreq);
+            /*
+             * RTISO IN is post-receive scatter/gather. Receive one complete
+             * service payload into HCD-owned storage first; the client hooks
+             * consume it after the actual byte count is known.
+             */
+            if(!ptd->ptd_BounceBuffer || !ptd->ptd_BounceLength)
+                return UHIOERR_OUTOFMEMORY;
+
+            bufreq->ubr_Buffer = ptd->ptd_BounceBuffer;
+            bufreq->ubr_Length = ptd->ptd_BounceLength;
+            bufreq->ubr_Frame = 0;
+            bufreq->ubr_Flags = 0;
         } else {
             if(urti->urti_OutReqHook)
                 CallHookPkt(urti->urti_OutReqHook, rtn, bufreq);
@@ -284,12 +348,15 @@ WORD xhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
     ptd->ptd_FrameIdx = bufreq->ubr_Frame;
     ptd->ptd_Flags |= PTDF_BUFFER_VALID;
-    rtn->rtn_BufferReq = *bufreq;
-    /* RT iso contract (cf. denebusb): after each request the client buffer
-       pointer advances by the length transferred, so the next request hook
-       continues from the following data unless it supplies a new buffer. */
-    if(urti)
-        rtn->rtn_BufferReq.ubr_Buffer += bufreq->ubr_Length;
+    /*
+     * RTISO IN keeps rtn_BufferReq as client scatter state. The staging
+     * buffer is PTD-private and must not replace that state.
+     */
+    if(!urti || (ioreq->iouh_Dir != UHDIR_IN)) {
+        rtn->rtn_BufferReq = *bufreq;
+        if(urti)
+            rtn->rtn_BufferReq.ubr_Buffer += bufreq->ubr_Length;
+    }
 
     return RC_OK;
 }
@@ -484,6 +551,9 @@ void xhciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     for(UWORD idx = 0; idx < rtn->rtn_PTDCount; idx++) {
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         if(ptd) {
+            if(ptd->ptd_BounceBuffer)
+                FreeMem(ptd->ptd_BounceBuffer, ptd->ptd_BounceLength);
+
             if(ptd->ptd_Descriptor)
                 FreeMem(ptd->ptd_Descriptor, sizeof(struct pciusbXHCITRBParams));
 
