@@ -1,7 +1,7 @@
 #ifndef DEVICES_USB_MASSSTORAGE_H
 #define DEVICES_USB_MASSSTORAGE_H
 /*
-**	$VER: usb_massstorage.h 2.1 (21.12.2025)
+**	$VER: usb_massstorage.h 2.2 (11.11.2026)
 **
 **	usb definitions include file
 **
@@ -84,50 +84,84 @@ struct UsbMSCBIStatusWrapper
 #define UAS_PIPE_ID_DATA_IN  0x03
 #define UAS_PIPE_ID_DATA_OUT 0x04
 
-/* UAS IU identifiers */
+/* UAS IU identifiers (UAS 1.0 Table 6). The Sense IU (0x03) carries both the
+   SCSI status and, when present, the sense data. */
 #define UAS_IU_ID_COMMAND     0x01
-#define UAS_IU_ID_STATUS      0x03
+#define UAS_IU_ID_SENSE       0x03  /* "Sense IU": SCSI status (+ optional sense) */
 #define UAS_IU_ID_RESPONSE    0x04
-#define UAS_IU_ID_READ_READY  0x05
-#define UAS_IU_ID_WRITE_READY 0x06
-#define UAS_IU_ID_SENSE       0x07
+#define UAS_IU_ID_TASK_MGMT   0x05
+#define UAS_IU_ID_READ_READY  0x06
+#define UAS_IU_ID_WRITE_READY 0x07
+
+/* Task Management functions (UAS 1.0 Table 12) */
+#define UAS_TMF_ABORT_TASK          0x01
+#define UAS_TMF_ABORT_TASK_SET      0x02
+#define UAS_TMF_CLEAR_TASK_SET      0x04
+#define UAS_TMF_LOGICAL_UNIT_RESET  0x08
+#define UAS_TMF_IT_NEXUS_RESET      0x10
+#define UAS_TMF_CLEAR_ACA           0x40
+#define UAS_TMF_QUERY_TASK          0x80
+
+/* Response IU iu_Response codes (UAS 1.0 Table 14). */
+#define UAS_RESP_TMF_COMPLETE       0x00
+#define UAS_RESP_INVALID_IU         0x02
+#define UAS_RESP_TMF_NOT_SUPPORTED  0x04
+#define UAS_RESP_TMF_FAILED         0x05
+#define UAS_RESP_TMF_SUCCEEDED      0x08
+#define UAS_RESP_INCORRECT_LUN      0x09
+#define UAS_RESP_OVERLAPPED_TAG     0x0a
 
 #if defined(__GNUC__)
 # pragma pack(1)
 #endif
 
+/* Wire layout per UAS 1.0. All multi-byte fields are big-endian; the Tag rides
+   bytes 2..3 and the device mirrors it as the transfer stream id. */
 struct UasCommandIU
 {
-    UBYTE  iu_Id;
-    UBYTE  iu_Reserved1;
-    UBYTE  iu_Reserved2;
-    UBYTE  iu_TaskAttr;
-    ULONG  iu_Tag;
-    UBYTE  iu_Lun[8];
-    UBYTE  iu_Cdb[16];
-};
-
-struct UasStatusIU
-{
-    UBYTE  iu_Id;
-    UBYTE  iu_Reserved1;
-    UBYTE  iu_Status;
-    UBYTE  iu_Reserved2;
-    ULONG  iu_Tag;
-    ULONG  iu_Residue;
-    UBYTE  iu_Reserved3[4];
+    UBYTE  iu_Id;           /* 0      UAS_IU_ID_COMMAND */
+    UBYTE  iu_Reserved1;    /* 1 */
+    UWORD  iu_Tag;          /* 2..3   big-endian */
+    UBYTE  iu_TaskAttr;     /* 4      task attribute (2:0), priority (6:3) */
+    UBYTE  iu_Reserved2;    /* 5 */
+    UBYTE  iu_AddCdbLen;    /* 6      additional CDB length, in dwords */
+    UBYTE  iu_Reserved3;    /* 7 */
+    UBYTE  iu_Lun[8];       /* 8..15 */
+    UBYTE  iu_Cdb[16];      /* 16..31 */
 };
 
 struct UasSenseIU
 {
-    UBYTE  iu_Id;
-    UBYTE  iu_Reserved1;
-    UBYTE  iu_Status;
-    UBYTE  iu_Reserved2;
-    ULONG  iu_Tag;
-    UWORD  iu_SenseLength;
-    UBYTE  iu_Reserved3[2];
-    UBYTE  iu_Sense[18];
+    UBYTE  iu_Id;           /* 0      UAS_IU_ID_SENSE (Sense IU) */
+    UBYTE  iu_Reserved1;    /* 1 */
+    UWORD  iu_Tag;          /* 2..3   big-endian */
+    UWORD  iu_StatusQual;   /* 4..5   big-endian */
+    UBYTE  iu_Status;       /* 6      SCSI status */
+    UBYTE  iu_Reserved2[7]; /* 7..13 */
+    UWORD  iu_Length;       /* 14..15 big-endian, sense-data length */
+    UBYTE  iu_Sense[18];    /* 16..   sense data */
+};
+
+struct UasResponseIU
+{
+    UBYTE  iu_Id;                   /* 0      UAS_IU_ID_RESPONSE */
+    UBYTE  iu_Reserved1;            /* 1 */
+    UWORD  iu_Tag;                  /* 2..3   big-endian */
+    UBYTE  iu_AddtionalRespInfo[3]; /* 4..6   additional response info */
+    UBYTE  iu_Response;             /* 7      response code */
+};
+
+/* Task Management IU: iu_Tag is the TM's OWN tag, iu_TaskTag names the task
+   being managed. */
+struct UasTaskMgmtIU
+{
+    UBYTE  iu_Id;           /* 0      UAS_IU_ID_TASK_MGMT */
+    UBYTE  iu_Reserved1;    /* 1 */
+    UWORD  iu_Tag;          /* 2..3   big-endian, the TM IU's own tag */
+    UBYTE  iu_Function;     /* 4      UAS_TMF_* */
+    UBYTE  iu_Reserved2;    /* 5 */
+    UWORD  iu_TaskTag;      /* 6..7   big-endian, tag of the managed task */
+    UBYTE  iu_Lun[8];       /* 8..15 */
 };
 
 #if defined(__GNUC__)
