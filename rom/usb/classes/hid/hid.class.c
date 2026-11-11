@@ -453,12 +453,26 @@ AROS_LH2(IPTR, usbDoMethodA,
         case UCM_AttemptSuspendDevice:
             nch = (struct NepClassHid *) methoddata[0];
             nch->nch_Running = FALSE;
+            /* Let the hid task quiesce its interrupt IN pipe before the device
+               is suspended (see nHidTask). The task owns the pipe's message
+               port, so the abort has to be done there, not in this context. */
+            Forbid();
+            if(nch->nch_Task && nch->nch_TaskMsgPort)
+            {
+                Signal(nch->nch_Task, (1L<<nch->nch_TaskMsgPort->mp_SigBit));
+            }
+            Permit();
             return(TRUE);
 
         case UCM_AttemptResumeDevice:
             nch = (struct NepClassHid *) methoddata[0];
             nch->nch_Running = TRUE;
-            Signal(nch->nch_Task, (1L<<nch->nch_TaskMsgPort->mp_SigBit));
+            Forbid();
+            if(nch->nch_Task && nch->nch_TaskMsgPort)
+            {
+                Signal(nch->nch_Task, (1L<<nch->nch_TaskMsgPort->mp_SigBit));
+            }
+            Permit();
             return(TRUE);
 
         default:
@@ -733,6 +747,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHidTask))
     struct NepHidItem **nhiptr;
     struct NepHidItem *nhi;
 
+    nApplyInputTaskPriFloor();
     if((nch = GM_UNIQUENAME(nAllocHid())))
     {
         Forbid();
@@ -899,6 +914,14 @@ AROS_UFH0(void, GM_UNIQUENAME(nHidTask))
                     nch->nch_IOStarted = TRUE;
                 }
                 sigs = Wait(sigmask);
+                if((!nch->nch_Running) && nch->nch_IOStarted)
+                {
+                    /* Suspend requested: do not leave the interrupt IN transfer
+                       in flight on a device about to be suspended (hub.class
+                       does the same). The reply is reaped below and ignored
+                       while nch_Running is FALSE; resume resubmits. */
+                    psdAbortPipe(nch->nch_EPInPipe);
+                }
                 while((pp = (struct PsdPipe *) GetMsg(nch->nch_TaskMsgPort)))
                 {
                     if(pp == nch->nch_EPInPipe)
@@ -978,7 +1001,11 @@ AROS_UFH0(void, GM_UNIQUENAME(nHidTask))
                                     }
                                 }
                                 lastioerr = ioerr;
+                                if(ioerr == UHIOERR_STALL)
                                 {
+                                    /* Only a STALL means a halted endpoint. Clearing
+                                       the halt unconditionally also reset the device's
+                                       data toggle on errors that halted nothing. */
                                     IPTR epnum;
                                     psdGetAttrs(PGA_ENDPOINT, nch->nch_EPIn,
                                                 EA_EndpointNum, &epnum,
@@ -1093,7 +1120,6 @@ struct NepClassHid * GM_UNIQUENAME(nAllocHid)(void)
     struct NepClassHid *nch;
     LONG ioerr;
     IPTR subclass;
-    IPTR protocol;
 
     thistask = FindTask(NULL);
 #undef IntuitionBase
@@ -1118,7 +1144,6 @@ struct NepClassHid * GM_UNIQUENAME(nAllocHid)(void)
                     IFA_Config, &nch->nch_Config,
                     IFA_InterfaceNum, &nch->nch_IfNum,
                     IFA_SubClass, &subclass,
-                    IFA_Protocol, &protocol,
                     TAG_END);
         psdGetAttrs(PGA_CONFIG, nch->nch_Config,
                     CA_Device, &nch->nch_Device,
@@ -1175,8 +1200,12 @@ struct NepClassHid * GM_UNIQUENAME(nAllocHid)(void)
                             }
                             if(subclass == HID_BOOT_SUBCLASS)
                             {
+                                /* wValue = (idle duration in 4 ms units << 8) | report ID;
+                                   0 = report only on a change, for every report ID. The
+                                   old keyboard value 64 was duration 0 for report ID 0x40,
+                                   which no keyboard has. */
                                 psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_INTERFACE,
-                                             UHR_SET_IDLE, (ULONG) ((protocol == HID_PROTO_KEYBOARD) ? 64 : 0), nch->nch_IfNum);
+                                             UHR_SET_IDLE, 0, nch->nch_IfNum);
                                 ioerr = psdDoPipe(nch->nch_EP0Pipe, NULL, 0);
                                 if(ioerr)
                                 {
@@ -5050,6 +5079,19 @@ BOOL nProcessItem(struct NepClassHid *nch, struct NepHidItem *nhi, UBYTE *buf)
             } while(--acount);
         }
 
+        /* HID usage 07:01 ErrorRollOver: too many keys down, the device cannot
+           tell us the state. Keep the previous one, as Linux hid-core does; diffing
+           it would release every held key and press it again when it clears. */
+        for(acount = 0; acount < nhi->nhi_Count; acount++)
+        {
+            value = nhi->nhi_Buffer[acount];
+            if((value >= nhi->nhi_LogicalMin) && (value <= nhi->nhi_LogicalMax) &&
+               (nhi->nhi_UsageMap[value - nhi->nhi_LogicalMin] == 0x00070001))
+            {
+                return(res);
+            }
+        }
+
         /* Look for up events first */
         acount = 0;
         do
@@ -5604,18 +5646,18 @@ BOOL nDoAction(struct NepClassHid *nch, struct NepHidAction *nha, struct NepHidI
             break;
 
         case HUA_KEYMAP:
-        {
-            UWORD iecode;
             if((uid > 0x70000) && (uid < 0x700e8))
             {
-                iecode = nch->nch_KeymapCfg.kmc_Keymap[uid & 0xff];
+                UWORD iecode = nch->nch_KeymapCfg.kmc_Keymap[uid & 0xff];
                 KPRINTF(1,("Key %ld %s\n", iecode, downevent ? "DOWN" : "UP"));
-                nch->nch_FakeEvent.ie_Class = IECLASS_RAWKEY;
-                nch->nch_FakeEvent.ie_SubClass = 0;
-                nSendRawKey(nch, downevent ? iecode : iecode|IECODE_UP_PREFIX);
+                /* 0xff = no Amiga key for this usage. Its up code would equal its
+                   down code (0xff|IECODE_UP_PREFIX == 0xff). */
+                if(iecode != 0xff)
+                {
+                    nSendRawKey(nch, downevent ? iecode : iecode|IECODE_UP_PREFIX);
+                }
             }
             break;
-        }
 
         case HUA_MOUSEPOS:
             switch(nha->nha_MouseAxis)
@@ -5929,35 +5971,15 @@ BOOL nDoAction(struct NepClassHid *nch, struct NepHidAction *nha, struct NepHidI
             {
                 if(downevent)
                 {
+                    /* IND_WRITEEVENT on purpose, as in bootmouse: N downs and one
+                       up are not a held key, and IND_ADDEVENT would have
+                       input.device auto-repeat the wheel if the up came late. */
                     while(wheeldist--)
                     {
                         KPRINTF(1, ("Doing wheel %ld\n", wheeliecode));
-                        nSendRawKey(nch, wheeliecode);
-#if 0
-                        nch->nch_FakeEvent.ie_Class = IECLASS_NEWMOUSE;
-                        nch->nch_FakeEvent.ie_SubClass = 0;
-                        nch->nch_FakeEvent.ie_Code = wheeliecode;
-                        nch->nch_FakeEvent.ie_NextEvent = NULL;
-                        nch->nch_FakeEvent.ie_Qualifier = nch->nch_KeyQualifiers;
-                        nch->nch_InpIOReq->io_Data = &nch->nch_FakeEvent;
-                        nch->nch_InpIOReq->io_Length = sizeof(struct InputEvent);
-                        nch->nch_InpIOReq->io_Command = IND_WRITEEVENT;
-                        DoIO((struct IORequest *) nch->nch_InpIOReq);
-#endif
+                        nSendRawKeyCmd(nch, wheeliecode, IND_WRITEEVENT);
                     }
-
-                    nSendRawKey(nch, wheeliecode|IECODE_UP_PREFIX);
-#if 0
-                    nch->nch_FakeEvent.ie_Class = IECLASS_NEWMOUSE;
-                    nch->nch_FakeEvent.ie_SubClass = 0;
-                    nch->nch_FakeEvent.ie_Code = wheeliecode|IECODE_UP_PREFIX;
-                    nch->nch_FakeEvent.ie_NextEvent = NULL;
-                    nch->nch_FakeEvent.ie_Qualifier = nch->nch_KeyQualifiers;
-                    nch->nch_InpIOReq->io_Data = &nch->nch_FakeEvent;
-                    nch->nch_InpIOReq->io_Length = sizeof(struct InputEvent);
-                    nch->nch_InpIOReq->io_Command = IND_WRITEEVENT;
-                    DoIO((struct IORequest *) nch->nch_InpIOReq);
-#endif
+                    nSendRawKeyCmd(nch, wheeliecode|IECODE_UP_PREFIX, IND_WRITEEVENT);
                 }
             }
             break;
@@ -6535,8 +6557,8 @@ void nFlushEvents(struct NepClassHid *nch)
 }
 /* \\\ */
 
-/* /// "nSendRawKey()" */
-void nSendRawKey(struct NepClassHid *nch, UWORD key)
+/* /// "nSendRawKeyCmd()" */
+void nSendRawKeyCmd(struct NepClassHid *nch, UWORD key, UWORD cmd)
 {
     nch->nch_FakeEvent.ie_Class = IECLASS_RAWKEY;
     nch->nch_FakeEvent.ie_SubClass = 0;
@@ -6545,8 +6567,20 @@ void nSendRawKey(struct NepClassHid *nch, UWORD key)
     nch->nch_FakeEvent.ie_Qualifier = nch->nch_KeyQualifiers;
     nch->nch_InpIOReq->io_Data = &nch->nch_FakeEvent;
     nch->nch_InpIOReq->io_Length = sizeof(struct InputEvent);
-    nch->nch_InpIOReq->io_Command = nch->nch_OS4Hack ? IND_ADDEVENT : IND_WRITEEVENT;
+    nch->nch_InpIOReq->io_Command = cmd;
     DoIO((struct IORequest *) nch->nch_InpIOReq);
+}
+/* \\\ */
+
+/* /// "nSendRawKey()" */
+/* A key edge. IND_ADDEVENT so input.device tracks it (qualifier state,
+   auto-repeat until the matching up arrives). nch_LastRawKey is what
+   nCheckReset() reads: nFlushEvents() overwrites nch_FakeEvent.ie_Code with
+   the mouse events before it runs. */
+void nSendRawKey(struct NepClassHid *nch, UWORD key)
+{
+    nch->nch_LastRawKey = key;
+    nSendRawKeyCmd(nch, key, nch->nch_OS4Hack ? IND_ADDEVENT : IND_WRITEEVENT);
 }
 /* \\\ */
 
@@ -6626,7 +6660,7 @@ void nCheckReset(struct NepClassHid *nch)
     else if(nch->nch_CDC->cdc_EnableKBReset &&
         (nch->nch_KeyQualifiers & IEQUALIFIER_CONTROL) &&
         (nch->nch_KeyQualifiers & (IEQUALIFIER_LALT|IEQUALIFIER_RALT)) &&
-        nch->nch_FakeEvent.ie_Code == RAWKEY_DELETE)
+        nch->nch_LastRawKey == RAWKEY_DELETE)
     {
         KPRINTF(20, ("Reboot!\n"));
         ShutdownA(SD_ACTION_REBOOT);
@@ -7037,49 +7071,74 @@ AROS_UFH0(void, GM_UNIQUENAME(nDispatcherTask))
                     if((nh->nh_IntBase = (struct IntuitionBase *) OpenLibrary("intuition.library", 39)))
                     {
 #define IntuitionBase nh->nh_IntBase
-                        if((nh->nh_DTBase = OpenLibrary("datatypes.library", 39)))
+                        /* datatypes and commodities are disk based and neither is
+                           needed for input: datatypes only plays the sound actions
+                           and commodities only parses the key-string actions. Take
+                           them if they are there, carry on without them if not,
+                           rather than losing every action over a missing library. */
+                        nh->nh_DTBase = OpenLibrary("datatypes.library", 39);
+                        nh->nh_CxBase = OpenLibrary("commodities.library", 39);
+                        if(!(nh->nh_DTBase && nh->nh_CxBase))
                         {
-                            if((nh->nh_CxBase = OpenLibrary("commodities.library", 39)))
+                            struct Library *ps;
+                            if((ps = OpenLibrary("poseidon.library", 4)))
                             {
-                                if((nh->nh_LayersBase = OpenLibrary("layers.library", 39)))
+                                if(!nh->nh_DTBase)
                                 {
+                                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                                   "No datatypes.library: sound actions will not play.");
+                                }
+                                if(!nh->nh_CxBase)
+                                {
+                                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                                   "No commodities.library: key-string actions cannot be sent.");
+                                }
+                                CloseLibrary(ps);
+                            }
+                        }
+                        if((nh->nh_LayersBase = OpenLibrary("layers.library", 39)))
+                        {
 #define CxBase nh->nh_CxBase
 #define DOSBase nh->nh_DOSBase
 #define DataTypesBase nh->nh_DTBase
 #define LayersBase nh->nh_LayersBase
-                                    if((nh->nh_DTaskMsgPort = CreateMsgPort()))
-                                    {
-                                        nh->nh_DispatcherTask = thistask;
-                                        Forbid();
-                                        if(nh->nh_ReadySigTask)
-                                        {
-                                            Signal(nh->nh_ReadySigTask, 1L<<nh->nh_ReadySignal);
-                                        }
-                                        Permit();
-
-                                        nLastActionHero(nh);
-
-                                        Forbid();
-                                        while((am = (struct ActionMsg *) GetMsg(nh->nh_DTaskMsgPort)))
-                                        {
-                                            FreeVec(am);
-                                        }
-                                        nhs = (struct NepHidSound *) nh->nh_Sounds.lh_Head;
-                                        while(nhs->nhs_Node.ln_Succ)
-                                        {
-                                            nFreeSound(nh, nhs);
-                                            nhs = (struct NepHidSound *) nh->nh_Sounds.lh_Head;
-                                        }
-                                        DeleteMsgPort(nh->nh_DTaskMsgPort);
-                                        nh->nh_DTaskMsgPort = NULL;
-                                        Permit();
-                                    }
-                                    CloseLibrary(nh->nh_LayersBase);
-                                    nh->nh_LayersBase = NULL;
+                            if((nh->nh_DTaskMsgPort = CreateMsgPort()))
+                            {
+                                nh->nh_DispatcherTask = thistask;
+                                Forbid();
+                                if(nh->nh_ReadySigTask)
+                                {
+                                    Signal(nh->nh_ReadySigTask, 1L<<nh->nh_ReadySignal);
                                 }
-                                CloseLibrary(nh->nh_CxBase);
-                                nh->nh_CxBase = NULL;
+                                Permit();
+
+                                nLastActionHero(nh);
+
+                                Forbid();
+                                while((am = (struct ActionMsg *) GetMsg(nh->nh_DTaskMsgPort)))
+                                {
+                                    FreeVec(am);
+                                }
+                                nhs = (struct NepHidSound *) nh->nh_Sounds.lh_Head;
+                                while(nhs->nhs_Node.ln_Succ)
+                                {
+                                    nFreeSound(nh, nhs);
+                                    nhs = (struct NepHidSound *) nh->nh_Sounds.lh_Head;
+                                }
+                                DeleteMsgPort(nh->nh_DTaskMsgPort);
+                                nh->nh_DTaskMsgPort = NULL;
+                                Permit();
                             }
+                            CloseLibrary(nh->nh_LayersBase);
+                            nh->nh_LayersBase = NULL;
+                        }
+                        if(nh->nh_CxBase)
+                        {
+                            CloseLibrary(nh->nh_CxBase);
+                            nh->nh_CxBase = NULL;
+                        }
+                        if(nh->nh_DTBase)
+                        {
                             CloseLibrary(nh->nh_DTBase);
                             nh->nh_DTBase = NULL;
                         }
@@ -7294,6 +7353,10 @@ BOOL nPlaySound(struct NepHidBase *nh, struct NepHidAction *nha)
 {
     struct NepHidSound *nhs;
     struct dtTrigger playmsg;
+    if(!nh->nh_DTBase) /* no datatypes.library, nothing to play it with */
+    {
+        return(FALSE);
+    }
     nhs = (struct NepHidSound *) FindName(&nh->nh_Sounds, nha->nha_SoundFile);
     if(!nhs)
     {
@@ -7344,6 +7407,7 @@ struct InputEvent *nInvertString(struct NepHidBase *nh, STRPTR str, struct KeyMa
     char cc;
     char *oldsptr;
 
+    if(!nh->nh_CxBase) return(NULL); /* ParseIX()/InvertKeyMap() are commodities */
     if(!str) return(NULL);
     if(!(*str)) return(NULL);
     do
