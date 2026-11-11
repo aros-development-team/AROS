@@ -1460,6 +1460,12 @@ ULONG NL_List_TestPosOld(struct NLData *data,LONG x,LONG y,struct MUI_List_TestP
 }
 
 
+/* mNL_List_GetEntry
+ * Resolve Active or a display index, mapping wrapped continuations to
+ * their logical owner. Return the borrowed payload directly, or NULL for
+ * no entry. Also write it through entry when that optional output pointer
+ * is non-NULL. Do not free or retain beyond the payload lifetime.
+ */
 IPTR mNL_List_GetEntry(struct IClass *cl,Object *obj,struct  MUIP_NList_GetEntry *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1484,6 +1490,15 @@ IPTR mNL_List_GetEntry(struct IClass *cl,Object *obj,struct  MUIP_NList_GetEntry
 }
 
 
+/* mNL_List_GetEntryInfo
+ * Require a valid writable result structure. Interpret pos as display
+ * index, Active, Line or the internal last-inserted selector; Line
+ * additionally reads line. Return TRUE even for no match, writing NULL
+ * and sentinel fields on failure. The internal line=-2 mode returns a
+ * private record and leaves other fields unchanged. Normal results borrow
+ * the logical payload and describe the selected display slice; no
+ * substring is copied.
+ */
 IPTR mNL_List_GetEntryInfo(struct IClass *cl,Object *obj,struct  MUIP_NList_GetEntryInfo *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);

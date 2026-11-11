@@ -39,6 +39,12 @@
 
 #include "NList_func.h"
 
+/* MyCallHookPkt
+ * Call a valid hook with borrowed object/message arguments. When hdata is
+ * TRUE and h_Data is NULL, temporarily install the list object there and
+ * restore NULL afterward. Existing h_Data is preserved. Return hook
+ * result; hook storage must be writable for the temporary assignment.
+ */
 IPTR MyCallHookPkt(Object *obj,BOOL hdata,struct Hook *hook,APTR object,APTR message)
 {
   if (hdata)
