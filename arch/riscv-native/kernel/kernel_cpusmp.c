@@ -50,14 +50,6 @@ extern struct Task *Exec_RVCreateIdleTask(struct ExecBase *SysBase);
 
 static spinlock_t startup_lock;
 
-static inline UQUAD krnRVTime(void)
-{
-    UQUAD v;
-
-    asm volatile("rdtime %0" : "=r"(v));
-    return v;
-}
-
 /*
  * The bootstrap task's code: it only gets scheduling going on this hart.
  * It returns into exec's task exit code like any other task, and this
@@ -210,10 +202,10 @@ void krnRVStartCPUs(struct KernelBase *KernelBase, struct ExecBase *SysBase)
         }
 
         /* The hart releases the lock once its idle task exists */
-        deadline = krnRVTime() + timebase;
+        deadline = krnRVReadTime() + timebase;
         while (!(released = krnRVSpinTryWrite(&startup_lock)))
         {
-            if ((QUAD)(krnRVTime() - deadline) > 0)
+            if ((QUAD)(krnRVReadTime() - deadline) > 0)
                 break;
             krnRVPause();
         }

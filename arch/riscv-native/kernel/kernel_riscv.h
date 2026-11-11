@@ -69,6 +69,33 @@ void krnRVResetCPUs(void);
 extern struct RISCV_Implementation __riscv_arosintern;
 
 /*
+ * The time counter, RVI_TimebaseFreq ticks per second. rdtime fills one
+ * register, so rv32 reads the two halves separately and retries if the
+ * high half moved in between.
+ */
+static inline UQUAD krnRVReadTime(void)
+{
+#if __riscv_xlen == 32
+    ULONG hi, lo, hi2;
+
+    do
+    {
+        asm volatile("rdtimeh %0" : "=r"(hi));
+        asm volatile("rdtime %0" : "=r"(lo));
+        asm volatile("rdtimeh %0" : "=r"(hi2));
+    } while (hi != hi2);
+    return ((UQUAD)hi << 32) | lo;
+#elif __riscv_xlen == 64
+    UQUAD v;
+
+    asm volatile("rdtime %0" : "=r"(v));
+    return v;
+#else
+#error "kernel_riscv.h: __riscv_xlen must be 32 or 64"
+#endif
+}
+
+/*
  * Logical CPU numbering. CPU 0 is the boot hart; the others are
  * numbered in the order they are brought online. Only the firmware
  * calls deal in hart ids.

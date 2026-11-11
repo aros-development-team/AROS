@@ -71,10 +71,10 @@ BOOL krnRVStopOtherCPUs(void)
     /* Each one drops out of the online mask just before it stops */
     limit = __riscv_arosintern.RVI_TimebaseFreq ?
             __riscv_arosintern.RVI_TimebaseFreq : 10000000;
-    asm volatile("rdtime %0" : "=r"(start));
+    start = krnRVReadTime();
     while (__atomic_load_n(&__riscv_cpu_count, __ATOMIC_ACQUIRE) > 1)
     {
-        asm volatile("rdtime %0" : "=r"(now));
+        now = krnRVReadTime();
         if ((now - start) > limit)
             return FALSE;
         krnRVPause();
@@ -109,9 +109,9 @@ void krnRVIdleWait(void)
     unsigned int prev = krnRVIntrDisable();
     UQUAD from, to;
 
-    asm volatile("rdtime %0" : "=r"(from));
+    from = krnRVReadTime();
     asm volatile("wfi" ::: "memory");
-    asm volatile("rdtime %0" : "=r"(to));
+    to = krnRVReadTime();
 
     if (cpu < RISCV_MAXCPUS)
         __riscv_cpu_idletime[cpu] += to - from;
