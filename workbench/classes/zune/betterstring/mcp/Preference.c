@@ -70,6 +70,14 @@ struct UtilityIFace *IUtility = NULL;
 
 extern DISPATCHERPROTO(_DispatcherP);
 
+/*
+ * Run the standalone preferences demonstration with a Group-derived custom
+ * class and an application event loop. Wait for input or Ctrl-C; dispose
+ * the application before deleting the class and closing catalog/libraries.
+ * Return zero even when initialization fails. Do not call
+ * configuration-transfer methods or save a preferences file. This program
+ * is not in the AROS MCP module file list.
+ */
 int main(void)
 {
   if((UtilityBase = (APTR)OpenLibrary("utility.library", 38)) &&

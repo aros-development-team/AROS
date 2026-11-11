@@ -47,6 +47,13 @@ static ULONG debug_classes = DBC_ERROR | DBC_DEBUG | DBC_WARNING | DBC_ASSERT | 
 
 /****************************************************************************/
 
+/*
+ * Read betterstring.mcc.debug into a 256-byte buffer and update global
+ * DEBUG masks. Space, comma and semicolon separate tokens; @ selects
+ * classes, ! clears bits, and ansi enables color. Repeated calls retain
+ * state; no synchronization is provided. Use case-insensitive prefix
+ * comparisons; also support clipboard.
+ */
 void SetupDebug(void)
 {
   char var[256];
@@ -179,6 +186,10 @@ void SetupDebug(void)
 
 /****************************************************************************/
 
+/*
+ * Print a cleanup message. DEBUG only; release no resources and do not
+ * reset masks, indentation or ANSI state.
+ */
 void CleanupDebug(void)
 {
   kprintf("** Cleaned up debugging ********************************************\n");
@@ -221,6 +232,10 @@ void CleanupDebug(void)
 
 /****************************************************************************/
 
+/*
+ * Print one space per positive global indentation level. DEBUG only; no
+ * locking or per-task indentation is provided.
+ */
 STATIC INLINE void _INDENT(void)
 {
   int i;
@@ -230,6 +245,11 @@ STATIC INLINE void _INDENT(void)
 
 /****************************************************************************/
 
+/*
+ * Print borrowed source/function strings when all requested class bits are
+ * enabled. Increment global indentation even when filtered. DEBUG only;
+ * pair with one leave or return and serialize concurrent tracing.
+ */
 void _ENTER(unsigned long dclass, const char *file, int line, const char *function)
 {
   if(isFlagSet(debug_classes, dclass))
@@ -244,6 +264,11 @@ void _ENTER(unsigned long dclass, const char *file, int line, const char *functi
   indent_level++;
 }
 
+/*
+ * Decrement global indentation, then print borrowed source/function strings
+ * if all requested class bits are enabled. DEBUG only; no underflow guard
+ * or synchronization is provided.
+ */
 void _LEAVE(unsigned long dclass, const char *file, int line, const char *function)
 {
   indent_level--;
@@ -258,6 +283,12 @@ void _LEAVE(unsigned long dclass, const char *file, int line, const char *functi
   }
 }
 
+/*
+ * Decrement indentation and optionally print the supplied unsigned-long
+ * result. This DEBUG-only logger does not return that value to its caller.
+ * Require paired tracing and readable strings; state is global and
+ * unlocked.
+ */
 void _RETURN(unsigned long dclass, const char *file, int line, const char *function, unsigned long result)
 {
   indent_level--;
@@ -274,6 +305,12 @@ void _RETURN(unsigned long dclass, const char *file, int line, const char *funct
 
 /****************************************************************************/
 
+/*
+ * When all requested class and flag bits are enabled, print the
+ * unsigned-long value with size-selected formatting. Size one can add a
+ * character display; size does not truncate the value. Borrow readable
+ * name/file strings. DEBUG only; output is synchronous and unsynchronized.
+ */
 void _SHOWVALUE(unsigned long dclass, unsigned long dflags, unsigned long value, int size, const char *name, const char *file, int line)
 {
   if(isFlagSet(debug_classes, dclass) &&
@@ -320,6 +357,12 @@ void _SHOWVALUE(unsigned long dclass, unsigned long dflags, unsigned long value,
 
 /****************************************************************************/
 
+/*
+ * When all requested class and flag bits are enabled, print the pointer
+ * value or NULL without dereferencing it. Borrow readable name/file
+ * strings. DEBUG only; formatting is unsigned-long based, not an
+ * independent portable pointer representation.
+ */
 void _SHOWPOINTER(unsigned long dclass, unsigned long dflags, const void *p, const char *name, const char *file, int line)
 {
   if(isFlagSet(debug_classes, dclass) &&
@@ -347,6 +390,12 @@ void _SHOWPOINTER(unsigned long dclass, unsigned long dflags, const void *p, con
 
 /****************************************************************************/
 
+/*
+ * When all requested class and flag bits are enabled, print the string
+ * address and contents. Require readable NUL-terminated string, name and
+ * file arguments; no explicit NULL handling or redaction is provided. DEBUG
+ * only; borrow pointers for the call.
+ */
 void _SHOWSTRING(unsigned long dclass, unsigned long dflags, const char *string, const char *name, const char *file, int line)
 {
   if(isFlagSet(debug_classes, dclass) &&
@@ -363,6 +412,11 @@ void _SHOWSTRING(unsigned long dclass, unsigned long dflags, const char *string,
 
 /****************************************************************************/
 
+/*
+ * When all requested class and flag bits are enabled, print the borrowed
+ * NUL-terminated message and source location. No ownership transfer,
+ * redaction or synchronization is provided. DEBUG only.
+ */
 void _SHOWMSG(unsigned long dclass, unsigned long dflags, const char *msg, const char *file, int line)
 {
   if(isFlagSet(debug_classes, dclass) &&
@@ -379,6 +433,14 @@ void _SHOWMSG(unsigned long dclass, unsigned long dflags, const char *msg, const
 
 /****************************************************************************/
 
+/*
+ * Format into a shared static 1024-byte buffer and print synchronously.
+ * Require a valid format, matching arguments and readable source strings.
+ * Output passes when class/flag masks match, or the requested class
+ * includes ERROR or WARNING. Formatting may truncate and its result is
+ * ignored. DEBUG only; shared buffer and indentation are non-reentrant and
+ * unsynchronized.
+ */
 void _DPRINTF(unsigned long dclass, unsigned long dflags, const char *file, int line, const char *format, ...)
 {
   if((isFlagSet(debug_classes, dclass) && isFlagSet(debug_flags, dflags)) ||

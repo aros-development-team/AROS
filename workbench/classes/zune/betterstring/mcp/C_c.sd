@@ -38,6 +38,11 @@ static struct Catalog *BS_Catalog = NULL;
 
 /*** Catalog functions ***/
 /// GetStr()
+/*
+ * Read a valid generated FC_Type record and return a borrowed catalog
+ * string or built-in fallback. Do not free or modify it; finish using
+ * catalog-backed strings before CloseCat. This is a FlexCat template.
+ */
 const char *GetStr(APTR fcstr)
 {
   const char *defaultstr = ((struct FC_Type *)fcstr)->Str;
@@ -52,6 +57,12 @@ const char *GetStr(APTR fcstr)
 ///
 /// GetStripStr()
 // function that will strip out the special menusigns
+/*
+ * Get the borrowed localized string and return its third byte when the
+ * second byte is NUL; otherwise return its start. Require the generated
+ * prefix representation and enough readable bytes. This does not generally
+ * search for or remove menu markers.
+ */
 const char *GetStripStr(APTR fcstr)
 {
    const char *loc_str = GetStr(fcstr);
@@ -60,6 +71,11 @@ const char *GetStripStr(APTR fcstr)
 }
 ///
 /// CloseCat()
+/*
+ * Close the stored catalog when LocaleBase is available, then clear its
+ * pointer. Require catalog-string users to have finished. Do not close
+ * locale.library.
+ */
 void CloseCat(void)
 {
   if (LocaleBase) CloseCatalog(BS_Catalog);
@@ -67,6 +83,11 @@ void CloseCat(void)
 }
 ///
 /// OpenCat(void)
+/*
+ * Open the generated catalog name with built-in language and version tags
+ * when LocaleBase exists and no catalog is open. Retain it until CloseCat.
+ * Failure leaves NULL and is not returned; GetStr can use built-in text.
+ */
 void OpenCat(void)
 {
   static const struct TagItem tags[] = {

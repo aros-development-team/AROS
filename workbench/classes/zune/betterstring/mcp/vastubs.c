@@ -34,8 +34,18 @@
 
 #include <proto/intuition.h>
 
+/*
+ * Non-AROS m68k adapter: borrow the stack tag list at tag1 and forward to
+ * NewObjectA. Return its object or NULL. Require the selected m68k ABI and
+ * a terminated tag list. Excluded on AROS.
+ */
 APTR NewObject( struct IClass *classPtr, CONST_STRPTR classID, Tag tag1, ... )
 { return NewObjectA(classPtr, classID, (struct TagItem *)&tag1); }
+/*
+ * Non-AROS m68k adapter: forward the borrowed stack tag list to SetAttrsA
+ * and return its result. Require a live object, terminated list and the
+ * selected m68k ABI. Excluded on AROS.
+ */
 ULONG SetAttrs( APTR object, ULONG tag1, ... )
 { return SetAttrsA(object, (struct TagItem *)&tag1); }
 
