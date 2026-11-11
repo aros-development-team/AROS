@@ -21,15 +21,11 @@
 ***************************************************************************/
 
 /*
- * The system (and compiler) rely on a symbol named _start which marks
- * the beginning of execution of an ELF file. To prevent others from
- * executing this library, and to keep the compiler/linker happy, we
- * define an empty _start symbol here.
- *
- * On the classic system (pre-AmigaOS4) this was usually done by
- * moveq #0,d0
- * rts
- *
+ * Reject direct program execution of this class library. On AmigaOS3 the
+ * assembler entry returns 20; the C _start entry returns RETURN_FAIL.
+ * Neither path initializes the class or opens a preferences interface.
+ * Keep this entry first in the linked executable as required by the build.
+ * This source alone does not prove the final binary's entry placement.
  */
 
 #if defined(__amigaos3__)
