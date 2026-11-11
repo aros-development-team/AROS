@@ -2,11 +2,12 @@
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Times the bitmap format conversion routines (ConvertPixels).
-          CHECK: instead checks every conversion into a 32 bit format against
-          the formats' byte layouts, for widths that exercise both the SIMD
-          blocks and the scalar remainders of the optimised converters: the
-          colour must survive, and the alpha byte of the result must be 0xFF
-          when the source has no alpha (and the source's alpha otherwise).
+          CHECK: instead checks every conversion into a 32 or 24 bit format
+          against the formats' byte layouts, for widths that exercise both the
+          SIMD blocks and the scalar remainders of the optimised converters:
+          the colour must survive, and the alpha byte of a 32 bit result must
+          be 0xFF when the source has no alpha (and the source's alpha
+          otherwise).
 
     Usage: convertpixels [CHECK]
 */
@@ -113,7 +114,7 @@ static const struct fmtinfo fmts[] =
     { vHidd_StdPixFmt_BGR15_LE, "BGR15_LE", 2, -1, -1, -1, -1 },
 };
 #define NUMFMTS (sizeof(fmts) / sizeof(fmts[0]))
-#define NUMDSTFMTS 8    /* the 32 bit formats lead the table */
+#define NUMDSTFMTS 10   /* the 32 and 24 bit formats lead the table */
 
 #define CHECK_MAXW   37 /* past two 16 pixel SIMD blocks, every remainder */
 #define CHECK_H      2
@@ -152,7 +153,7 @@ static ULONG check_conversions(OOP_Object *bm)
                     for (x = 0; x < w; x++)
                     {
                         UBYTE *s = &src[y * CHECK_SRCMOD + x * sf->bpp];
-                        UBYTE *d = &dst[y * CHECK_DSTMOD + x * 4];
+                        UBYTE *d = &dst[y * CHECK_DSTMOD + x * df->bpp];
                         BOOL ok = TRUE;
 
                         if ((sf->r >= 0) &&
@@ -173,7 +174,7 @@ static ULONG check_conversions(OOP_Object *bm)
                 /* nothing past the converted width may be touched */
                 for (y = 0; y < CHECK_H; y++)
                 {
-                    for (i = w * 4; i < CHECK_DSTMOD; i++)
+                    for (i = w * df->bpp; i < CHECK_DSTMOD; i++)
                     {
                         if (dst[y * CHECK_DSTMOD + i] != 0x5A)
                         {
