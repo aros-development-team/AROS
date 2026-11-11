@@ -184,6 +184,10 @@ static struct BitMap selectPointerBitmap =
 #endif
 #endif
 
+/* Read screen palette colors 17 to 19 and select static bitmap planes
+ * nearest black/white. Mutate shared plane pointers; require a compatible
+ * palette and serialized GUI use. No allocation or error result.
+ */
 static void IdentifyPointerColors(Object *obj)
 {
   int i;
@@ -297,6 +301,11 @@ static void IdentifyPointerColors(Object *obj)
   LEAVE();
 }
 
+/* Choose platform-native pointer tokens where supported or allocate
+ * pointerclass/legacy storage. AROS follows the Intuition-version branch.
+ * Clear activeSelectPointer; allocation failure leaves no pointer without a
+ * returned error. Cleanup owns release.
+ */
 void SetupSelectPointer(struct InstData *data)
 {
   ENTER();
@@ -348,6 +357,10 @@ void SetupSelectPointer(struct InstData *data)
   LEAVE();
 }
 
+/* Dispose owned pointerclass or free legacy storage and clear PointerObj;
+ * native tokens are cleared without disposal. Require the pointer no longer
+ * shown. Does not reset the Window pointer itself.
+ */
 void CleanupSelectPointer(struct InstData *data)
 {
   ENTER();
@@ -386,6 +399,10 @@ void CleanupSelectPointer(struct InstData *data)
   LEAVE();
 }
 
+/* If storage exists and the Window is awake, identify colors on first
+ * activation and set the Window pointer even when already marked active.
+ * AROS uses WA_Pointer. Mark active; no previous custom pointer is saved.
+ */
 void ShowSelectPointer(Object *obj, struct InstData *data)
 {
   ENTER();
@@ -431,6 +448,10 @@ void ShowSelectPointer(Object *obj, struct InstData *data)
   LEAVE();
 }
 
+/* With active pointer storage, reset the live Window pointer to default and
+ * clear the active flag. Does not restore an earlier custom pointer or free
+ * its storage.
+ */
 void HideSelectPointer(Object *obj, struct InstData *data)
 {
   ENTER();

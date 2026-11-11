@@ -5,64 +5,99 @@ HotkeyString.mcc/MUIA_HotkeyString_IX
 HotkeyString.mcc/MUIA_HotkeyString_Snoop
 HotkeyString.mcc/HotkeyString.mcc
 
-    *******************************************************************
-    Copyright (C) 2005-2018 BetterString.mcc Open Source Team
-    $Id$
+    NAME
+        HotkeyString.mcc -- Capture a textual key description.
 
-    HotkeyString.mcc is a subclass of BetterString.mcc, it overloads
-    the input method, and converts inputevents to the alphabetical
-    representation. This is useful when you allow the user to customize
-    keybindings.
+    SUPERCLASS
+        BetterString.mcc
 
-    The gadget was originally written in 1997 by Allan Odgaard. As of
-    version released in July 2005, the gadget is maintained by
-    the BetterString.mcc Open Source team.
+    DESCRIPTION
+        Represent captured raw-key input as String_Contents. This source
+        defines version 12.28. The class does not register a global hotkey,
+        execute a command, or return a parsed InputXpression. The application
+        validates, stores, and uses the description.
+        Setup adds a priority-1 raw-key event handler alongside the inherited
+        BetterString handler. Capture through this handler requires Active and
+        Snoop. Key-up events and next/previous-gadget navigation are not
+        captured. Unhandled HandleEvent messages return zero rather than being
+        forwarded directly; inherited input handling uses its separately
+        registered handler.
+        Qualifier names appear in this order: lshift, rshift, capslock,
+        control, lalt, ralt, lcommand, rcommand, numericpad, repeat.
+        Modifier-only input can produce just this text; higher qualifier bits
+        are not represented. Named keys include arrows,
+        function/navigation/media keys and supported wheel events. Other keys
+        use one unqualified keymap byte, with names for backspace, tab,
+        return/enter, esc, space, and del. This is not lossless serialization
+        of every input event.
 
-    It is released and distributed under the terms of the GNU Lesser
-    General Public License (LGPL) and available free of charge.
+    NOTES
+        Contents changes pass through BetterString and its notification
+        handling. Capture does not automatically turn Snoop off. Successive
+        captured Backspace inputs alternate between a backspace description
+        and an empty string; another recognized key resets this toggle. An
+        unmapped key can be consumed without changing content.
+        Active capture overwrites Window_DisableKeys. Disabling capture or
+        leaving active capture writes zero rather than restoring an earlier
+        application mask. Coordinate that window-wide setting with other
+        controls and use matched Setup/Cleanup to remove the extra handler.
+        Read String_Contents for borrowed text and copy it before editing or
+        disposal. Neither own attribute has a local getter. Version and
+        Revision do. BetterString ownership, byte-string and editing
+        limitations also apply.
 
-    Please visit http://www.sf.net/projects/bstring-mcc/ for
-    the very latest version and information regarding HotkeyString.mcc
-    *******************************************************************
-
+    COPYRIGHT
+        Copyright (C) 2005-2018 BetterString.mcc Open Source Team
+        $Id$
+        Distributed under the GNU Lesser General Public License.
 HotkeyString.mcc/MUIA_HotkeyString_IX
 
     NAME
-        MUIA_HotkeyString_IX -- [IS.], struct InputXpression *
+        MUIA_HotkeyString_IX
 
     FUNCTION
-        Allows to specify a pointer to a standard "struct InputXpression"
-        and sets the contents of the string gadget accordingly to the passed
-        input expression.
+        Generate a description from selected fields of an input expression.
 
+    INPUTS
+        Initialize, set; struct InputXpression *. NULL is ignored. No local
+        getter. The public header marks this attribute V12.
+
+    NOTES
+        Only IECLASS_RAWKEY expressions are handled. The setter constructs a
+        temporary event from ix_Code and ix_Qualifier and calls the capture
+        helper synchronously. It does not retain the expression or use masks,
+        synonyms, and other expression fields.
+        The helper accepts normal raw-key input when Snoop or Active is set;
+        qualifier-only codes have separate acceptance. An inactive object with
+        Snoop FALSE need not update its contents. Constructor processing
+        defaults Snoop TRUE, then processes the first Snoop tag before the
+        first IX tag regardless of their list order.
+        Supply a valid readable expression for the call. Only the first IX tag
+        is processed; the helper result is ignored. Read String_Contents to
+        inspect the resulting text. This attribute does not establish a
+        round-trip InputXpression conversion.
 HotkeyString.mcc/MUIA_HotkeyString_Snoop
 
     NAME
-        MUIA_HotkeyString_Snoop -- [.SG], BOOL
+        MUIA_HotkeyString_Snoop
 
     FUNCTION
-        Normally this stringgadget converts each and every keypress to the
-        alphabetical representation. In some cases this may not be desirable,
-        e.g. if you bind the gadget to a listview.
-        Setting this tag to FALSE will make the gadget behave like a normal
-        stringgadget.
+        Enable or disable capture by this subclass.
 
-    EXAMPLE
-        /*  We have a tbutton, which is a toggle button, a hstring which is our
-            HotkeyString - The tbutton is placed to the right of the string.
+    INPUTS
+        Initialize, set; BOOL. Default TRUE. No local getter: OM_GET delegates
+        this attribute to BetterString.
 
-            Setting up the following notify will let the string convert keys
-            only when the tbutton is down - And it will make the tbutton
-            become unpressed, when the user enters his hotkey.
-         */
-
-        DoMethod(tbutton, MUIM_Notify, MUIA_Selected, TRUE,
-                 MUIV_Notify_Window, 3, MUIM_Set, MUIA_Window_ActiveObject,
-                 hstring);
-
-        DoMethod(tbutton, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, hstring,
-                 3, MUIM_Set, MUIA_HotkeyString_Snoop, MUIV_TriggerValue);
-
-        DoMethod(hstring, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
-                 tbutton, 3, MUIM_Set, MUIA_Selected, FALSE);
-
+    NOTES
+        Nonzero enables capture; zero disables it. Only the first Snoop tag in
+        a message is used. Capture from the registered handler also requires
+        Active. FALSE leaves normal editing to the inherited BetterString
+        event handler; it does not make content immutable.
+        While active, changing this flag overwrites Window_DisableKeys with a
+        nonzero mask or zero. Activation uses a different nonzero mask. No
+        previous mask is saved. While inactive, this setter does not change
+        window keys.
+        Snoop remains enabled after capture unless the application changes it.
+        For one-shot capture, an application can clear Snoop in response to
+        String_Contents, but that notification also occurs for programmatic
+        changes. Do not infer the event source from it. 

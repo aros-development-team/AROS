@@ -33,6 +33,10 @@ static APTR sharedPool;
 static struct SignalSemaphore sharedPoolSema;
 #endif
 
+/* Create the library-wide pool and initialize its semaphore on AROS. Return
+ * whether creation succeeded. Call once before allocation; concurrent
+ * creation/deletion is not serialized here.
+ */
 BOOL CreateSharedPool(void)
 {
   BOOL success = FALSE;
@@ -62,6 +66,10 @@ BOOL CreateSharedPool(void)
   return success;
 }
 
+/* Delete the pool when present and clear its pointer. Require all users and
+ * server operations stopped; outstanding blocks become invalid. Does not
+ * acquire the allocation semaphore.
+ */
 void DeleteSharedPool(void)
 {
   ENTER();
@@ -80,6 +88,11 @@ void DeleteSharedPool(void)
 }
 
 #if defined(__amigaos3__)
+/* AmigaOS 3-only compatibility allocator: reserve payload plus a stored
+ * ULONG size and return the payload or NULL. Require a live pool and
+ * representable size; pair with the matching FreeVecPooled. Excluded on
+ * AROS.
+ */
 static APTR AllocVecPooled(APTR poolHeader, ULONG memSize)
 {
   ULONG *memory;
@@ -101,6 +114,10 @@ static APTR AllocVecPooled(APTR poolHeader, ULONG memSize)
 }
 #endif
 
+/* Allocate length bytes from the live shared pool, serialized by
+ * sharedPoolSema on AROS. Return owned storage or NULL; no clearing is
+ * promised. Release with SharedPoolFree before teardown.
+ */
 APTR SharedPoolAlloc(ULONG length)
 {
   ULONG *mem;
@@ -122,6 +139,10 @@ APTR SharedPoolAlloc(ULONG length)
 }
 
 #if defined(__amigaos3__)
+/* AmigaOS 3-only compatibility free: recover the stored size before a valid
+ * matching payload and return the block to its pool. No NULL/provenance
+ * validation is added. Excluded on AROS.
+ */
 static void FreeVecPooled(APTR poolHeader, APTR memory)
 {
   ULONG *mem = (ULONG *)memory;
@@ -139,6 +160,10 @@ static void FreeVecPooled(APTR poolHeader, APTR memory)
 }
 #endif
 
+/* Return a matching allocation through FreeVecPooled under the AROS pool
+ * semaphore. Require a live pool and valid allocation; this wrapper adds no
+ * NULL or lifetime check.
+ */
 void SharedPoolFree(APTR mem)
 {
   ENTER();
@@ -165,6 +190,11 @@ struct ContentString
 #define STR_TO_CSTR(str)    (struct ContentString *)(((size_t)(str)) - sizeof(struct ContentString))
 #define CSTR_TO_STR(cstr)   (&(cstr)->string[0])
 
+/* Allocate a size-tracked shared-pool block and initialize its first
+ * character to NUL. Require size at least one and non-overflowing total
+ * allocation. Return the owned header or NULL; other bytes are not
+ * initialized.
+ */
 static struct ContentString *AllocContentStringInternal(ULONG size)
 {
   struct ContentString *cstr;
@@ -181,6 +211,10 @@ static struct ContentString *AllocContentStringInternal(ULONG size)
   return cstr;
 }
 
+/* Return an empty size-tracked character buffer or NULL. Size includes
+ * terminator space and must be at least one. Free via FreeContentString,
+ * not FreeVec or SharedPoolFree on the character pointer.
+ */
 char *AllocContentString(ULONG size)
 {
   struct ContentString *cstr;
@@ -197,6 +231,10 @@ char *AllocContentString(ULONG size)
   return result;
 }
 
+/* Accept NULL or a matching live content-string pointer and free its
+ * enclosing shared-pool allocation. Does not wipe bytes or clear caller
+ * aliases; aliases become invalid.
+ */
 void FreeContentString(char *str)
 {
   ENTER();
@@ -211,6 +249,10 @@ void FreeContentString(char *str)
   LEAVE();
 }
 
+/* Return allocated character capacity, including terminator space, or zero
+ * for NULL. Require a matching live content-string pointer; this is not
+ * strlen or pointer validation.
+ */
 ULONG ContentStringSize(char *str)
 {
   ULONG size = 0;
@@ -228,6 +270,13 @@ ULONG ContentStringSize(char *str)
   return size;
 }
 
+/* Ensure length plus terminator plus extra fits, adding a 32-byte margin on
+ * growth. On successful reallocation copy, free old storage and replace the
+ * pointer; on failure retain existing storage and return FALSE. NULL input
+ * allocates exactly extra bytes, which must include terminator space.
+ * Require valid pointer storage and representable sizes; pool locking does
+ * not serialize a string.
+ */
 BOOL ExpandContentString(char **str, ULONG extra)
 {
   BOOL success = FALSE;
