@@ -32,6 +32,12 @@
 #include "private.h"
 #include "version.h"
 
+/* CopyText
+ * Copy readable NUL-terminated text to a new shared vector, or return NULL
+ * for NULL input or allocation failure. Caller owns the vector and must
+ * FreeVec it. Length is stored in int; require a representable allocation
+ * size.
+ */
 static char *CopyText(char *textin)
 {
   char *textout = NULL;
@@ -49,6 +55,12 @@ static char *CopyText(char *textin)
 
 #if !defined(__MORPHOS__)
 #ifdef __AROS__
+/* DoSuperNew
+ * Platform varargs bridge for superclass OM_NEW. Borrow a terminated tag
+ * list; return the superclass object or NULL. The AROS branch uses
+ * slow-stack tag macros. The alternate non-MorphOS branch follows its
+ * platform varargs ABI.
+ */
 static __attribute__ ((noinline)) Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, Tag tag1, ...)
 {
     AROS_SLOWSTACKTAGS_PRE_AS(tag1, Object *)
@@ -56,6 +68,12 @@ static __attribute__ ((noinline)) Object * VARARGS68K DoSuperNew(struct IClass *
     AROS_SLOWSTACKTAGS_POST
 }
 #else
+/* DoSuperNew
+ * Platform varargs bridge for superclass OM_NEW. Borrow a terminated tag
+ * list; return the superclass object or NULL. The AROS branch uses
+ * slow-stack tag macros. The alternate non-MorphOS branch follows its
+ * platform varargs ABI.
+ */
 static Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...)
 {
   Object *rc;
@@ -73,6 +91,15 @@ static Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...)
 #endif
 #endif // !__MORPHOS__
 
+/* mNFT_New
+ * Translate the first SkipChars/TabSize tags in place; prefer own Text over
+ * the legacy alias. Default Input FALSE and character selection unless
+ * caller overrides. Create superclass, retain own text or copy legacy text,
+ * then insert wrapped entries. Initial Align accesses instance data before
+ * superclass construction and is overwritten afterward; it is not a
+ * reliable construction option. Copy/insert failure is not reported as
+ * constructor failure.
+ */
 static IPTR mNFT_New(struct IClass *cl,Object *obj,struct opSet *msg)
 {
   struct NFTData *data;
@@ -175,6 +202,11 @@ static IPTR mNFT_New(struct IClass *cl,Object *obj,struct opSet *msg)
 }
 
 
+/* mNFT_Dispose
+ * Clear inherited entries before freeing owned legacy text and the reusable
+ * line buffer, then dispose superclass. Borrowed own Text is not freed. All
+ * returned entry pointers must be considered invalid after disposal.
+ */
 static IPTR mNFT_Dispose(struct IClass *cl,Object *obj,Msg msg)
 {
   struct NFTData *data;
@@ -191,6 +223,14 @@ static IPTR mNFT_Dispose(struct IClass *cl,Object *obj,Msg msg)
 }
 
 
+/* mNFT_Set
+ * Process tags in order. Text clears entries and frees previous owned text
+ * before borrowing or copying replacement. Align/Justify only update stored
+ * settings; they do not rebuild existing entries. Translate
+ * SkipChars/TabSize tags in place and delegate. Require writable tags and
+ * replacement text not aliased to storage this call frees. Copy failure
+ * loses prior content.
+ */
 static IPTR mNFT_Set(struct IClass *cl,Object *obj,Msg msg)
 {
   struct NFTData *data = INST_DATA(cl,obj);
@@ -247,6 +287,11 @@ static IPTR mNFT_Set(struct IClass *cl,Object *obj,Msg msg)
 }
 
 
+/* mNFT_Get
+ * Return borrowed Text, stored Justify/Align or version values through
+ * valid storage. For SkipChars/TabSize rewrite opg_AttrID to NList and
+ * delegate. Require a writable message; no caller-owned copy is created.
+ */
 static IPTR mNFT_Get(struct IClass *cl,Object *obj,Msg msg)
 {
   struct NFTData *data = INST_DATA(cl,obj);
@@ -284,6 +329,14 @@ static IPTR mNFT_Get(struct IClass *cl,Object *obj,Msg msg)
 }
 
 
+/* mNFT_GetEntry
+ * Query backend entry info. For wrapped entries copy the slice to a
+ * reusable terminated buffer; on allocation failure return a borrowed
+ * pointer into the original text instead, without adding a line terminator.
+ * Return raw backend pointer for unwrapped entries, NULL for no entry.
+ * Always return TRUE; require writable entry pointer storage. Later calls
+ * may overwrite or free the buffer.
+ */
 static IPTR mNFT_GetEntry(struct IClass *cl,Object *obj,struct MUIP_NFloattext_GetEntry *msg)
 {
   struct NFTData *data = INST_DATA(cl,obj);
@@ -318,6 +371,12 @@ static IPTR mNFT_GetEntry(struct IClass *cl,Object *obj,struct MUIP_NFloattext_G
 }
 
 
+/* _Dispatcher
+ * Dispatch construction, disposal, attributes and both
+ * NFloattext_GetEntry/List_GetEntry aliases. Delegate other methods,
+ * including NList_GetEntry. Require valid method-specific messages;
+ * returned ownership follows the selected implementation.
+ */
 DISPATCHER(_Dispatcher)
 {
   switch (msg->MethodID)

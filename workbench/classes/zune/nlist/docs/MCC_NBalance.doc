@@ -4,43 +4,62 @@ NBalance.mcc/NBalance.mcc
 NBalance.mcc/MUIA_NBalance_Pointer
 NBalance.mcc/NBalance.mcc
 
-    *******************************************************************
-    Copyright (C) 2001-2014 NList Open Source Team
-    $Id: MCC_NBalance.doc 716 2014-01-26 09:32:35Z damato $
+    NAME
+        NBalance.mcc -- Resize adjacent groups with pointer feedback.
 
-    This MCC public custom class is derived from the MUI standard
-    balance class which handles the dragging/resizing of vertical and
-    horizontal groups.
+    SUPERCLASS
+        Balance.mui
 
-    In contrast to the standard MUI balance class, however, it adds
-    some features such as displaying a mouse pointer as soon as the
-    mouse is above a dragable NBalance object.
+    DESCRIPTION
+        Inherit balancing behavior from Balance and add pointer feedback plus
+        neighbouring-weight import/export. This source defines version 15.19.
+        Use a balance object between two live siblings in a parent group.
+        Setup records the parent group type and registers mouse
+        movement/button handling. AROS creates horizontal and vertical
+        pointerclass objects. Individual pointer allocation failures do not
+        make setup fail. The window pointer is reset to default when hidden by
+        this class; a previous custom pointer is not saved.
+        To participate in application preference saving, assign a nonzero
+        unique ObjectID. Export stores the immediately preceding/following
+        sibling weights under that ID as two native ULONG values, choosing
+        horizontal or vertical weights from Group_Horiz. Import applies only
+        positive saved values. The class itself does not write a preferences
+        file.
+        Both-zero export leaves an existing dataspace entry untouched. Import
+        does not restore zero weights, validate the item length, or convert
+        byte order. Both methods return zero and do not propagate dataspace
+        failure. Keep the sibling layout and data representation compatible.
+        FindNeighbours reports success when a following child exists even if
+        there is no predecessor. Supply both neighbours. The pointer cleanup
+        path disposes its objects without explicitly resetting the window
+        pointer first; do not infer a complete pointer-lifetime guarantee from
+        Cleanup alone.
 
-    It is released and distributed under the terms of the GNU Lesser
-    General Public License (LGPL) and available free of charge.
-
-    Please visit http://www.sf.net/projects/nlist-classes/ for
-    the very latest version and information regarding NBalance
-    *******************************************************************
-
-NBalance.mcc is able to save the balancing weights permanently. Just set a
-unique MUIA_ObjectID and use MUIM_Application_Load/Save to permanently load
-or save the current balancing weights.
+    COPYRIGHT
+        Copyright (C) 2001-2014 NList Open Source Team
+        $Id: MCC_NBalance.doc 716 2014-01-26 09:32:35Z damato $
+        Distributed under the GNU Lesser General Public License.
 NBalance.mcc/MUIA_NBalance_Pointer
 
     NAME
-        MUIA_NBalance_Pointer -- [ISG.], LONG
+        MUIA_NBalance_Pointer -- Enable resize-pointer feedback.
 
     INPUTS
-        MUIV_NBalance_Pointer_Off
-        MUIV_NBalance_Pointer_Standard (default)
+        Initialize/set/get; LONG. Off (0) disables event-driven feedback;
+        Standard (1) is the default.
 
     FUNCTION
-        Allows to set the mouse pointer that should be displayed when
-        the mouse is found to be above a NBalance object. Per default
-        a standard horizontal or vertical size pointer is displayed as
-        soon as the mouse is above a dragable NBalance object.
-
-    SEE ALSO
-
+        Any nonzero stored value takes the same enabled event path; it is not
+        a custom pointer-object address. Direction comes from the parent group
+        type captured at setup. Pointer display is skipped while the window
+        sleeps.
+        Setting Off immediately resets the custom pointer only when
+        mouseSelectDown is TRUE. A pointer shown merely by hovering is not
+        unconditionally reset by this setter; subsequent disabled events do
+        not run the pointer logic. Do not assume immediate reset in every
+        state.
+        Set replaces the own tag with TAG_IGNORE before superclass dispatch,
+        so ordinary superclass attribute notification is not generated for it
+        by this path. Get returns the stored mode. Provide writable tags. This
+        attribute controls feedback, not superclass resizing or persistence.
 
