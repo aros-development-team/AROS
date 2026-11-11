@@ -802,9 +802,11 @@ GNU_REPOSITORY := gnu://
    hostisaflags="%(hostisaflags)" kernelisaflags="%(kernelisaflags)" targetisaflags="%(targetisaflags)" \
    use_build_env=%(use_build_env) nix=%(nix) buildflags=%(buildflags) gnuflags=%(gnuflags) nlsflag=%(nlsflag) xflag=%(xflag)
 
+# Delete the .la files this package installed. Other .la files in the same
+# directory belong to other rules (libatomic.la comes from the toolchain).
 #MM
 postinstall-%(package)-delete-la-files:
-	$(RM) %(prefix)/lib/*.la
+	$(RM) $(addprefix %(prefix)/lib/,$(sort $(notdir $(shell find $(development-%(package)-%(subpackage)-pkgdir) -name '*.la' 2>/dev/null))))
 
 %end
 #------------------------------------------------------------------------------
