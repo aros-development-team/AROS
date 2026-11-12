@@ -121,30 +121,20 @@ LONG Host_Write(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr)
 
 ULONG Host_Seek(struct unit *Unit, ULONG pos)
 {
-    ULONG ret;
-
-    Forbid();
-    ret = Unit->hdskBase->iface->SetFilePointer(Unit->file, pos, NULL, FILE_BEGIN);
-    Permit();
-
-    if (ret != -1)
-        return 0;
-
-    return TDERR_SeekError;
+    return Host_Seek64(Unit, pos, 0);
 }
 
 ULONG Host_Seek64(struct unit *Unit, ULONG pos, ULONG pos_hi)
 {
-    ULONG ret;
+    ULONG ret, err;
+    LONG high = pos_hi;
 
     Forbid();
-    ret = Unit->hdskBase->iface->SetFilePointer(Unit->file, pos, &pos_hi, FILE_BEGIN);
+    ret = Unit->hdskBase->iface->SetFilePointer(Unit->file, pos, &high, FILE_BEGIN);
+    err = Unit->hdskBase->iface->GetLastError();
     Permit();
 
-    if (ret != -1)
-        return 0;
-
-    return TDERR_SeekError;
+    return ret == (ULONG)-1 && err != 0 ? TDERR_SeekError : 0;
 }
 
 ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
