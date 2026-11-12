@@ -455,7 +455,7 @@ static void remchangeint(struct unit *unit, struct IOExtTD *iotd)
 
 /**************************************************************************/
 
-static ULONG getgeometry(struct unit *Unit, struct DriveGeometry *dg)
+void Host_DefaultGeometry(struct DriveGeometry *dg)
 {
     /*
      * First set some common defaults.
@@ -478,8 +478,12 @@ static ULONG getgeometry(struct unit *Unit, struct DriveGeometry *dg)
     dg->dg_BufMemType   = MEMF_PUBLIC;
     dg->dg_DeviceType   = DG_DIRECT_ACCESS;
     dg->dg_Flags        = 0;
+    dg->dg_Reserved     = 0;
+}
 
-    /* Call host-specific processing */
+static ULONG getgeometry(struct unit *Unit, struct DriveGeometry *dg)
+{
+    Host_DefaultGeometry(dg);
     return Host_GetGeometry(Unit, dg);
 }
 
