@@ -2,7 +2,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 #
-# Native (supervisor-mode) RISC-V kernel code shared by the platforms:
+# Native RISC-V kernel code shared by the platforms:
 # per-hart TLS, CPU numbering and masks, spinlocks, the SMP scheduler,
 # IPIs and secondary hart bring-up. Firmware-specific operations are
 # reached through __riscv_arosintern (kernel_riscv.h), which the

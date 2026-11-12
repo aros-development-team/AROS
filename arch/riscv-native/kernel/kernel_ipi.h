@@ -36,7 +36,7 @@ struct IPIHook
 extern void core_IPIInit(void);
 /* Post msg to every CPU in the (resolved) mask and interrupt them */
 extern void core_SendIPI(ULONG msg, const ULONG *mask);
-/* The supervisor software interrupt handler (from the trap dispatch) */
+/* The software interrupt handler (from the trap dispatch) */
 extern void core_IPIHandle(void);
 
 extern int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async,

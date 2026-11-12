@@ -15,8 +15,9 @@
 /* See rom/kernel/issuper.c for documentation */
 
 /*
- * Everything runs in S-mode until user-mode task separation exists, so
- * the privilege level can not distinguish task from kernel context.
+ * Everything runs in the kernel's privilege mode until user-mode task
+ * separation exists, so the privilege level can not distinguish task
+ * from kernel context.
  * What callers (e.g. exec semaphores) actually need to know is whether
  * we are in trap/interrupt context, where sleeping is impossible - the
  * platform trap handler maintains the depth (per hart on SMP, where it

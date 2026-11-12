@@ -25,6 +25,8 @@
 #include <proto/kernel.h>
 #include <proto/exec.h>
 
+#include <asm/cpu.h>
+
 #include <kernel_base.h>
 #include <kernel_debug.h>
 
@@ -105,7 +107,7 @@ void __attribute__((noreturn)) cpu_Register(void)
         KrnGetCPUMask(cpunum, PrivExecBase(SysBase)->CPUMask);
 
     /* Inter-processor interrupts, then this hart's own tick */
-    asm volatile("csrs sie, %0" :: "r"(2UL) : "memory");    /* SIE.SSIE */
+    csr_set(RV_CSR_IE, RV_IE_SOFT);
     if (__riscv_arosintern.RVI_InitTimerCore)
         __riscv_arosintern.RVI_InitTimerCore();
 

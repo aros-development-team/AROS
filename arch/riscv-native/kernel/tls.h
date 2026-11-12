@@ -3,13 +3,14 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Per-hart data for native (supervisor-mode) RISC-V targets.
+    Per-hart data for native RISC-V targets.
 
     The pointer lives in the tp register. Every task and every trap runs
-    in S-mode, tp is not part of a task context (see traps.S), and the
-    toolchains never use it for thread-local storage (gcc is configured
-    --disable-tls and uses emutls; the Rust target has no native thread
-    locals), so it keeps its value across task switches.
+    in the kernel's privilege mode, tp is not part of a task context
+    (see traps.S), and the toolchains never use it for thread-local
+    storage (gcc is configured --disable-tls and uses emutls; the Rust
+    target has no native thread locals), so it keeps its value across
+    task switches.
 
     Only SMP builds load tp. Uniprocessor builds keep the per-CPU state
     in ExecBase, exactly as before (see exec_platform.h).
@@ -66,7 +67,7 @@ typedef struct tls
     UQUAD               WdTicks;        /* Timer interrupts taken               */
     UQUAD               WdTime;         /* rdtime at the last one               */
     UQUAD               WdPC[8];        /* Interrupted pc, last 8 ticks         */
-    UQUAD               WdRA;           /* ... and ra, sp, sstatus at the last  */
+    UQUAD               WdRA;           /* ... and ra, sp, status at the last   */
     UQUAD               WdSP;
     UQUAD               WdSR;
     struct Task         *WdTask;        /* Task it interrupted (NULL: asleep in

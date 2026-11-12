@@ -20,7 +20,7 @@ AROS_LH0I(void, KrnCli,
 {
     AROS_LIBFUNC_INIT
 
-    csr_clear(sstatus, SSTATUS_SIE);
+    csr_clear(RV_CSR_STATUS, RV_STATUS_IE);
 
     AROS_LIBFUNC_EXIT
 }

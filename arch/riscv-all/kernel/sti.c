@@ -20,7 +20,7 @@ AROS_LH0I(void, KrnSti,
 {
     AROS_LIBFUNC_INIT
 
-    csr_set(sstatus, SSTATUS_SIE);
+    csr_set(RV_CSR_STATUS, RV_STATUS_IE);
 
     AROS_LIBFUNC_EXIT
 }

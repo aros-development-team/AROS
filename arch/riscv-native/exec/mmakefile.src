@@ -2,7 +2,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 #
-# Native (supervisor-mode) RISC-V exec code shared by the platforms:
+# Native RISC-V exec code shared by the platforms:
 # exec_platform.h (per-hart TLS scheduler state on SMP), the idle task
 # and exec's SMP support. See ../kernel/mmakefile.src for the layering.
 #
