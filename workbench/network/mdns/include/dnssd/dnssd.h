@@ -132,6 +132,8 @@ struct DNSSDEvent
 #define DNSSD_TXT           (DNSSD_Dummy + 7)   /* Register, Update: TXT data, length-prefixed strings */
 #define DNSSD_TXTLength     (DNSSD_Dummy + 8)   /* its length in bytes, at most 1300 */
 #define DNSSD_Port          (DNSSD_Dummy + 9)   /* Update: another port */
+#define DNSSD_Host          (DNSSD_Dummy + 10)  /* Register for another host: its name ("printer") */
+#define DNSSD_HostAddress   (DNSSD_Dummy + 11)  /* and its address, struct DNSSDAddress * (IPv4) */
 
 /* DNSSD_GetStatusA() */
 #define DNSSD_Status_Incarnation (DNSSD_Dummy + 0x100)  /* ULONG *: mdnsd's incarnation */

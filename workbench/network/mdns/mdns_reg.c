@@ -1656,7 +1656,8 @@ LONG
 mdnsRegAddNative(struct MDNSDaemon *md, const char *instance,
     const char *type, const char *domain, const char subtypes[][MDNS_MAX_SUBTYPE + 1],
     UWORD subtypeCount, UWORD port, const UBYTE *txt, UWORD txtLength,
-    MDNSRegNotify notify, APTR data, APTR *ref)
+    const char *host, ULONG hostAddr, MDNSRegNotify notify, APTR data,
+    APTR *ref)
 {
     struct MDNSRegisteredService *rs;
     struct Node *n;
@@ -1703,6 +1704,24 @@ mdnsRegAddNative(struct MDNSDaemon *md, const char *instance,
     memcpy(rs->rs_TXT, txt, txtLength);
     rs->rs_TXTLength = txtLength;
     rs->rs_Port = port;
+    if (host != NULL) {
+        LONG at = mdnsTextLength(host, 64);
+        char own[256];
+
+        /* announced for a host that does not speak mDNS itself: its
+         * label, in the mDNS domain - not this host's own name */
+        mdnsHostFqdn(md, own, (LONG)sizeof(own));
+        if (at == 0 || at > 63 || strchr(host, '.') != NULL || hostAddr == 0 ||
+            (Strnicmp(own, host, at) == 0 && own[at] == '.')) {
+            FreeMem(rs, sizeof(*rs));
+            return MDNSERR_BADPARAM;
+        }
+        rs->rs_Proxy = TRUE;
+        rs->rs_HostAddr = hostAddr;
+        mdnsTextCopy(rs->rs_HostTarget, (LONG)sizeof(rs->rs_HostTarget), host);
+        mdnsTextCopy(rs->rs_HostTarget + at,
+            (LONG)sizeof(rs->rs_HostTarget) - at, "." MDNS_DOMAIN_LOCAL);
+    }
     rs->rs_Notify = notify;
     rs->rs_NotifyData = data;
     rs->rs_ClientRef = (APTR)(IPTR)md->md_NextHandle++;

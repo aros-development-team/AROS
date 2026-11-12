@@ -76,6 +76,7 @@ struct ServerOperation
     UWORD           so_Port, so_Priority, so_Weight;
     UWORD           so_TXTLength;
     BOOL            so_HaveSRV, so_HaveTXT;
+    BOOL            so_Enumerate;       /* Browse of _services._dns-sd._udp */
     ULONG           so_Sequence;
     ULONG           so_Interface;       /* 0: all */
     ULONG           so_Deadline;        /* mdnsTicks(), 0: none */
@@ -411,6 +412,8 @@ service_parts(struct EventParts *ep, const UBYTE *name, UWORD typeOffset,
     ep->ep_Length[PART_DOMAIN] = name_text(name, domainOffset, -1, domain, 256);
 }
 
+static BOOL label_at(const UBYTE *name, ULONG size, UWORD offset);
+
 /*
  * Browse: a PTR whose target is <instance>.<type>.<domain> is an instance
  * on the link it was heard on (RFC 6763 section 4.1); it comes and goes.
@@ -425,8 +428,34 @@ browse_notify(APTR data, const struct MDNSCacheEntry *e, BOOL added)
     const UBYTE *base = op->so_Name + op->so_TypeOffset;
     LONG baseLength = mdnsWireNameLength(base);
 
-    if ((op->so_Interface != 0 && op->so_Interface != e->ce_Link) ||
-        e->ce_DataLength < 2 || target[0] == 0 ||
+    if (op->so_Interface != 0 && op->so_Interface != e->ce_Link) {
+        return;
+    }
+    if (op->so_Enumerate) {
+        /* the service types on the link (RFC 6763 section 9): a PTR to
+         * <type>.<domain>, its domain the one browsed */
+        LONG domainLength = baseLength - (op->so_DomainOffset - op->so_TypeOffset);
+        LONG typeEnd = (LONG)e->ce_DataLength - domainLength;
+
+        if (typeEnd < 2 || !label_at(target, e->ce_DataLength, (UWORD)typeEnd) ||
+            !mdnsWireNameEqual(target + typeEnd, op->so_Name + op->so_DomainOffset)) {
+            return;
+        }
+        memset(&ep, 0, sizeof(ep));
+        ep.ep_Kind = added ? DNSSD_EVENT_ADD : DNSSD_EVENT_REMOVE;
+        ep.ep_Interface = e->ce_Link;
+        ep.ep_TTL = added ? e->ce_TTL : 0;
+        ep.ep_RRType = DNS_TYPE_PTR;
+        ep.ep_Part[PART_NAME] = (const UBYTE *)full;
+        ep.ep_Length[PART_NAME] = name_text(target, 0, -1, full, sizeof(full));
+        ep.ep_Part[PART_TYPE] = (const UBYTE *)type;
+        ep.ep_Length[PART_TYPE] = name_text(target, 0, typeEnd, type, sizeof(type));
+        ep.ep_Part[PART_DOMAIN] = (const UBYTE *)domain;
+        ep.ep_Length[PART_DOMAIN] = name_text(target, typeEnd, -1, domain, sizeof(domain));
+        push_event(op->so_Daemon->md_DNSSD, op, &ep);
+        return;
+    }
+    if (e->ce_DataLength < 2 || target[0] == 0 ||
         baseLength < 0 || 1 + target[0] + baseLength != e->ce_DataLength ||
         !mdnsWireNameEqual(target + 1 + target[0], base)) {
         return;
@@ -684,9 +713,20 @@ start_register(struct MDNSDaemon *md, struct ServerOperation *op,
         memcpy(subtypes[count], msg->dm_Extra + at + 1, len);
         subtypes[count++][len] = '\0';
     }
+    if (msg->dm_Host[0] != '\0' &&
+        (msg->dm_HostAddress.da_Family != DNSSD_FAMILY_IPV4 ||
+         msg->dm_HostAddress.da_Length != 4)) {
+        return DNSSD_ERR_BADPARAM;      /* another host: IPv4 for now */
+    }
     rc = mdnsRegAddNative(md, instance, type, domain, subtypes, count,
-        msg->dm_Port, msg->dm_Extra, msg->dm_TXTLength, register_notify, op,
-        &op->so_Service);
+        msg->dm_Port, msg->dm_Extra, msg->dm_TXTLength,
+        msg->dm_Host[0] != '\0' ? (const char *)msg->dm_Host : NULL,
+        msg->dm_Host[0] != '\0' ?
+            ((ULONG)msg->dm_HostAddress.da_Bytes[0] << 24) |
+            ((ULONG)msg->dm_HostAddress.da_Bytes[1] << 16) |
+            ((ULONG)msg->dm_HostAddress.da_Bytes[2] << 8) |
+            msg->dm_HostAddress.da_Bytes[3] : 0,
+        register_notify, op, &op->so_Service);
     return rc == MDNS_OK ? DNSSD_OK : rc == MDNSERR_DUPLICATE ? DNSSD_ERR_EXISTS :
         rc == MDNSERR_NOMEM ? DNSSD_ERR_NOMEM : DNSSD_ERR_BADPARAM;
 }
@@ -822,8 +862,17 @@ start_operation(struct MDNSDaemon *md, struct ServerSession *ss, LONG sslot,
         }
         return DNSSD_OK;
     }
-    case OP_BROWSE:
-        /* a subtype's PTRs name instances of the base type: the base is
+    case OP_BROWSE: {
+        static const UBYTE services[] = {
+            9, '_', 's', 'e', 'r', 'v', 'i', 'c', 'e', 's',
+            7, '_', 'd', 'n', 's', '-', 's', 'd', 4, '_', 'u', 'd', 'p', 0
+        };
+
+        op->so_Enumerate = op->so_TypeOffset == 0 &&
+            op->so_DomainOffset == sizeof(services) - 1 &&
+            memcmp(op->so_Name, services, sizeof(services) - 1) == 0;
+    }
+        /* fall through: a subtype's PTRs name instances of the base type: the base is
          * what follows "<subtype>._sub" (RFC 6763 section 7.1) */
         op->so_Watch[0] = mdnsCacheWatch(md, op->so_Name, DNS_TYPE_PTR,
             op->so_Interface, browse_notify, op);

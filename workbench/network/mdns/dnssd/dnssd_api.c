@@ -860,6 +860,9 @@ out:
             empty string
         DNSSD_Subtype - a subtype it has ("_printer"), one tag each
         DNSSD_Domain - default "local"
+        DNSSD_Host, DNSSD_HostAddress - published for another host, one
+            that does not speak mDNS itself: its name's label ("printer",
+            which becomes "printer.local") and its IPv4 address
         DNSSD_UserData - returned in the operation's events
 
     RESULT
@@ -908,6 +911,20 @@ out:
         }
     }
     extra[at++] = 0;
+    {
+        CONST_STRPTR host = (CONST_STRPTR)GetTagData(DNSSD_Host, 0, tags);
+        const struct DNSSDAddress *address =
+            (const struct DNSSDAddress *)GetTagData(DNSSD_HostAddress, 0, tags);
+
+        if ((host != NULL) != (address != NULL) ||
+            (host != NULL && (strlen(host) == 0 || strlen(host) > 63))) {
+            return DNSSD_ERR_BADPARAM;
+        }
+        if (host != NULL) {
+            strcpy((char *)msg.dm_Host, host);
+            msg.dm_HostAddress = *address;
+        }
+    }
     msg.dm_Data = wire;
     msg.dm_DataSize = length;
     msg.dm_Port = (UWORD)port;
