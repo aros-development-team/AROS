@@ -23,6 +23,17 @@ extern IPTR __arm_periiobase;
 #define FNAME_BCMSDC(x)                 BCM2708SD__Device__ ## x
 #define FNAME_BCMSDCBUS(x)              BCM2708SD__SDBus__ ## x
 
+/* Private data stored in sdcb_Private */
+struct bcmsdc_private
+{
+    ULONG   lastwrite;          /* when the last register write went out */
+    UQUAD   dmaparent;          /* DMA window: its physical base, */
+    UQUAD   dmachild;           /* where the controller sees it, */
+    UQUAD   dmasize;            /* and its size */
+};
+
+#define BCMSDC_PRIV(bus)  ((struct bcmsdc_private *)(bus)->sdcb_Private)
+
 #define TIMEOUT			        30
 
 #define BCM2708SDUNIT_MAX               1

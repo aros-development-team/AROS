@@ -1,7 +1,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- kernel-sdcard : kernel-dma-bcm2708-includes
+#MM- kernel-sdcard : kernel-dma-bcm2708-includes kernel-openfirmware-includes
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/devs/sdcard
 
