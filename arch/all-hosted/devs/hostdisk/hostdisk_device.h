@@ -35,6 +35,7 @@ struct unit
     struct HostDiskBase         *hdskBase;
     ULONG                       usecount;
     struct MsgPort              *port;
+    struct Task                 *closingTask;
     file_t                      file;
     UBYTE                       flags;
     ULONG                       changecount;

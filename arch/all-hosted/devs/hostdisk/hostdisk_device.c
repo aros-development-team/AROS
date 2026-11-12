@@ -191,8 +191,12 @@ static int GM_UNIQUENAME(Close)(LIBBASETYPEPTR hdskBase, struct IOExtTD *iotd)
     {
         Remove(&unit->n);
 
-        /* The task will free its unit structure itself */
+        /* Keep the device and host interface alive until the worker exits. */
+        unit->closingTask = FindTask(NULL);
+        SetSignal(0, SIGF_SINGLE);
         Signal(unit->port->mp_SigTask, SIGBREAKF_CTRL_C);
+        Wait(SIGF_SINGLE);
+        freeUnit(unit);
     }
 
     ReleaseSemaphore(&hdskBase->sigsem);
@@ -521,7 +525,10 @@ static void unitentry(struct IOExtTD *iotd)
     unit->port = CreateMsgPort();
     if (!unit->port)
     {
+        iotd->iotd_Req.io_Error = TDERR_NoMem;
+        Forbid();
         Signal(parent, SIGF_SINGLE);
+        RemTask(NULL);
         return;
     }
 
@@ -533,8 +540,12 @@ static void unitentry(struct IOExtTD *iotd)
         D(bug("%s: open failed :-(\n", me->tc_Node.ln_Name));
 
         iotd->iotd_Req.io_Error = err;
+        DeleteMsgPort(unit->port);
+        unit->port = NULL;
 
+        Forbid();
         Signal(parent, SIGF_SINGLE);
+        RemTask(NULL);
         return;
     }
 
@@ -656,13 +667,17 @@ static void unitentry(struct IOExtTD *iotd)
         }
 
         /* Process quit signal after our MsgPort is empty */
-        if (sigs & SIGBREAKF_CTRL_C)
+        if ((sigs & SIGBREAKF_CTRL_C) && unit->closingTask)
         {
             D(bug("%s: Received EXIT signal.\n", me->tc_Node.ln_Name));
 
             Host_Close(unit);
+            DeleteMsgPort(unit->port);
 
-            freeUnit(unit);
+            /* Do not execute device code after waking the final closer. */
+            Forbid();
+            Signal(unit->closingTask, SIGF_SINGLE);
+            RemTask(NULL);
             return;
         }
 
