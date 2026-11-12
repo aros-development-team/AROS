@@ -69,6 +69,8 @@ struct DNSSDIPCMsg
     UWORD           dm_Flags;
     ULONG           dm_ExtraSize;
     UBYTE          *dm_Extra;
+    UBYTE           dm_Host[64];    /* REGISTER for another host: its name's first label */
+    struct DNSSDAddress dm_HostAddress;
     IPTR            dm_UserData;
     ULONG           dm_DataSize;    /* bytes of dm_Data used */
     ULONG           dm_DataMax;     /* bytes of dm_Data */

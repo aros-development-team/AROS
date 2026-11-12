@@ -293,7 +293,8 @@ void mdnsQueryFree(struct MDNSDaemon *md);
 LONG mdnsRegAddNative(struct MDNSDaemon *md, const char *instance,
     const char *type, const char *domain, const char subtypes[][MDNS_MAX_SUBTYPE + 1],
     UWORD subtypeCount, UWORD port, const UBYTE *txt, UWORD txtLength,
-    MDNSRegNotify notify, APTR data, APTR *ref);
+    const char *host, ULONG hostAddr, MDNSRegNotify notify, APTR data,
+    APTR *ref);
 LONG mdnsRegUpdateRef(struct MDNSDaemon *md, APTR ref, const UBYTE *txt,
     UWORD txtLength, UWORD port);
 void mdnsRegRemoveRef(struct MDNSDaemon *md, APTR ref);
