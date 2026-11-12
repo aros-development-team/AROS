@@ -242,6 +242,8 @@ AROS_LH1(void, beginio,
     AROS_LIBFUNC_INIT
 
     struct NSDeviceQueryResult *nsdq;
+
+    iotd->iotd_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
  
     DCMD(bug("hostdisk: command %u\n", iotd->iotd_Req.io_Command));
     switch(iotd->iotd_Req.io_Command)
@@ -274,9 +276,9 @@ AROS_LH1(void, beginio,
         case TD_EJECT:
         case TD_PROTSTATUS:
             /* Forward to unit thread */
-            PutMsg(((struct unit *)iotd->iotd_Req.io_Unit)->port, &iotd->iotd_Req.io_Message);
-            /* Not done quick */
+            /* Publish all request state before the worker can reply. */
             iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
+            PutMsg(((struct unit *)iotd->iotd_Req.io_Unit)->port, &iotd->iotd_Req.io_Message);
             return;
 
         /*
@@ -313,9 +315,6 @@ AROS_LH1(void, beginio,
             break;
             
     } /* switch(iotd->iotd_Req.io_Command) */
-
-    /* WaitIO will look into this */
-    iotd->iotd_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
 
     /* Finish message */
     if(!(iotd->iotd_Req.io_Flags&IOF_QUICK))
