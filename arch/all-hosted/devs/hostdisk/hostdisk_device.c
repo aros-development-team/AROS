@@ -250,7 +250,6 @@ AROS_LH1(void, beginio,
     DCMD(bug("hostdisk: command %u\n", iotd->iotd_Req.io_Command));
     switch(iotd->iotd_Req.io_Command)
     {
-        case CMD_UPDATE:
         case CMD_CLEAR:
         case CMD_FLUSH:
         case TD_MOTOR:
@@ -269,6 +268,7 @@ AROS_LH1(void, beginio,
             iotd->iotd_Req.io_Error = 0;
             break;
 
+        case CMD_UPDATE:
         case CMD_READ:
         case CMD_WRITE:
         case TD_SEEK:
@@ -550,6 +550,11 @@ static void unitentry(struct IOExtTD *iotd)
             {
                 switch(iotd->iotd_Req.io_Command)
                 {
+                case CMD_UPDATE:
+                    iotd->iotd_Req.io_Actual = 0;
+                    err = unit->file == INVALID_HANDLE_VALUE ? 0 : Host_Flush(unit);
+                    break;
+
                 /*
                  * In fact these two commands make a little sense, but they exist,
                  * so we honestly process them.

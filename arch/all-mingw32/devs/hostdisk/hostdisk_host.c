@@ -63,6 +63,21 @@ void Host_Close(struct unit *Unit)
     Permit();
 }
 
+ULONG Host_Flush(struct unit *Unit)
+{
+    ULONG ret, err;
+
+    if (Unit->flags & UNIT_READONLY)
+        return 0;
+
+    Forbid();
+    ret = Unit->hdskBase->iface->FlushFileBuffers(Unit->file);
+    err = Unit->hdskBase->iface->GetLastError();
+    Permit();
+
+    return ret ? 0 : error(err);
+}
+
 LONG Host_Read(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr)
 {
     ULONG resSize;
@@ -204,6 +219,7 @@ static const char *KernelSymbols[] = {
     "GetFileSize",
     "DeviceIoControl",
     "GetLastError",
+    "FlushFileBuffers",
     NULL
 };
 

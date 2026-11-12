@@ -83,6 +83,7 @@ struct HostInterface
     int            (*fstat64)(int fd, struct stat64 *buf);
 #endif
     int            (*stat64)(const char *path, struct stat64 *buf);
+    int            (*fsync)(int fd);
 };
 
 #ifdef HOST_LONG_ALIGNED

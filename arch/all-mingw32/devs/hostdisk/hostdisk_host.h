@@ -91,4 +91,5 @@ struct HostInterface
     ULONG  __stdcall (*DeviceIoControl)(void *hDevice, ULONG dwIoControlCode, void *lpInBuffer, ULONG nInBufferSize,
 					void *lpOutBuffer, ULONG nOutBufferSize, ULONG *lpBytesReturned, void *lpOverlapped);
     ULONG  __stdcall (*GetLastError)(void);
+    ULONG  __stdcall (*FlushFileBuffers)(void *hFile);
 };

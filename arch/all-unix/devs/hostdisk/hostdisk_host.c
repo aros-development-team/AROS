@@ -152,6 +152,25 @@ void Host_Close(struct unit *Unit)
     HostLib_Unlock();
 }
 
+ULONG Host_Flush(struct unit *Unit)
+{
+    struct HostDiskBase *hdskBase = Unit->hdskBase;
+    int ret, err;
+
+    if (Unit->flags & UNIT_READONLY)
+        return 0;
+
+    HostLib_Lock();
+    do {
+        ret = hdskBase->iface->fsync(Unit->file);
+        AROS_HOST_BARRIER
+        err = *hdskBase->errnoPtr;
+    } while (ret == -1 && err == EINTR);
+    HostLib_Unlock();
+
+    return ret == -1 ? error(err) : 0;
+}
+
 LONG Host_Read(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr)
 {
     struct HostDiskBase *hdskBase = Unit->hdskBase;
@@ -315,6 +334,7 @@ static const char *libcSymbols[] =
     "fstat64" INODE64_SUFFIX,
     "stat64" INODE64_SUFFIX,
 #endif
+    "fsync",
     NULL
 };
 
