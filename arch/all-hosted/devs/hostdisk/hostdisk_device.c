@@ -657,7 +657,16 @@ static void unitentry(struct IOExtTD *iotd)
                 case TD_GETGEOMETRY:
                     DCMD(bug("%s: received TD_GETGEOMETRY\n", me->tc_Node.ln_Name));
 
-                    err = getgeometry(unit, (struct DriveGeometry *)iotd->iotd_Req.io_Data);
+                    iotd->iotd_Req.io_Actual = 0;
+                    if (iotd->iotd_Req.io_Length < sizeof(struct DriveGeometry))
+                        err = IOERR_BADLENGTH;
+                    else if (!iotd->iotd_Req.io_Data)
+                        err = IOERR_BADADDRESS;
+                    else {
+                        err = getgeometry(unit, (struct DriveGeometry *)iotd->iotd_Req.io_Data);
+                        if (!err)
+                            iotd->iotd_Req.io_Actual = sizeof(struct DriveGeometry);
+                    }
                     break;
 
                 case TD_EJECT:
