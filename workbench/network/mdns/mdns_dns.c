@@ -23,44 +23,42 @@ mdnsInitHeader(struct MDNSHeader *hdr, UWORD flags, UWORD qdcount)
     hdr->arcount = 0;
 }
 
+/*
+ * A name as text - labels between dots, "\." a dot and "\\" a backslash
+ * inside a label (RFC 1035 section 5.1), so that an instance's name may
+ * hold dots - as wire labels. A trailing dot is allowed.
+ */
 LONG
 mdnsNameToWire(const char *name, UBYTE *buf, LONG buflen, LONG *used)
 {
-    const char *start;
-    const char *p;
-    LONG pos;
-    LONG label;
+    const char *p = name;
+    LONG pos = 0;
 
     if (name == NULL || buf == NULL || used == NULL || buflen < 2) {
         return -1;
     }
-
-    pos = 0;
-    start = name;
-    p = name;
-
     while (*p != '\0') {
-        if (*p == '.') {
-            label = p - start;
-            if (label <= 0 || label > 63 || pos + 1 + label > buflen) {
+        LONG start = pos++;
+
+        while (*p != '\0' && *p != '.') {
+            if (*p == '\\' && p[1] != '\0') {
+                p++;
+            }
+            if (pos - start > 63 || pos + 2 > buflen) {
                 return -1;
             }
-            buf[pos++] = (UBYTE)label;
-            memcpy(buf + pos, start, (size_t)label);
-            pos += label;
-            start = p + 1;
+            buf[pos++] = (UBYTE)*p++;
         }
-        p++;
+        if (pos - start == 1) {
+            return -1;                  /* an empty label */
+        }
+        buf[start] = (UBYTE)(pos - start - 1);
+        if (*p == '.') {
+            p++;
+        }
     }
-
-    label = p - start;
-    if (label > 63 || pos + 1 + label + 1 > buflen) {
+    if (pos + 1 > buflen) {
         return -1;
-    }
-    if (label > 0) {
-        buf[pos++] = (UBYTE)label;
-        memcpy(buf + pos, start, (size_t)label);
-        pos += label;
     }
     buf[pos++] = 0;
     *used = pos;
@@ -148,11 +146,22 @@ mdnsWireToName(const UBYTE *pkt, LONG pktlen, LONG offset,
         if (label > 63 || pos + 1 + label >= pktlen) {
             return -1;
         }
-        if (out + label + 1 >= namelen) {
-            return -1;
+        {
+            LONG k;
+
+            /* a dot or backslash in a label is escaped */
+            for (k = 0; k < label; k++) {
+                UBYTE c = pkt[pos + 1 + k];
+
+                if (out + 3 >= namelen) {
+                    return -1;
+                }
+                if (c == '.' || c == '\\') {
+                    name[out++] = '\\';
+                }
+                name[out++] = (char)c;
+            }
         }
-        memcpy(name + out, pkt + pos + 1, (size_t)label);
-        out += label;
         name[out++] = '.';
         pos += 1 + label;
     }

@@ -66,11 +66,20 @@ valid_subtype(const char *subtype)
     return TRUE;
 }
 
-/* "Printer._ipp._tcp.local" */
+/* "My\\.Printer._ipp._tcp.local": the instance's own label may hold dots
+ * and backslashes, escaped in the name as text (mdnsNameToWire()). */
 static void
 instance_fqdn(const struct MDNSRegisteredService *rs, char *buf, LONG size)
 {
-    LONG at = text_add(buf, size, 0, rs->rs_Instance);
+    LONG at = 0, i;
+
+    for (i = 0; rs->rs_Instance[i] != '\0' && at + 3 < size; i++) {
+        if (rs->rs_Instance[i] == '.' || rs->rs_Instance[i] == '\\') {
+            buf[at++] = '\\';
+        }
+        buf[at++] = rs->rs_Instance[i];
+    }
+    buf[at] = '\0';
 
     at = text_add(buf, size, at, ".");
     at = text_add(buf, size, at, rs->rs_Type);
@@ -153,20 +162,19 @@ srv_data(const struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
 }
 
 /*
- * The data of a TXT record. The client's text is "key=value" items with a
- * space between them; DNS-SD wants each as a string of its own (RFC 6763
- * section 6). An instance always has a TXT record: one empty string when
- * it has nothing to say.
+ * TXT data from a bonami.library client's text: "key=value" items with a
+ * space between them, each a string of its own (RFC 6763 section 6). Its
+ * length.
  */
-static LONG
-txt_data(const struct MDNSRegisteredService *rs, UBYTE *data, LONG size)
+static UWORD
+txt_from_text(const char *text, UBYTE *data, LONG size)
 {
     LONG length = 0;
     LONG pos = 0;
 
     for (;;) {
         UBYTE item[255];
-        LONG len = mdnsTxtNext(rs->rs_TXT, &pos, item, (LONG)sizeof(item));
+        LONG len = mdnsTxtNext(text, &pos, item, (LONG)sizeof(item));
 
         if (len < 0) {
             break;
@@ -177,10 +185,20 @@ txt_data(const struct MDNSRegisteredService *rs, UBYTE *data, LONG size)
             length += len;
         }
     }
-    if (length == 0) {
-        data[length++] = 0;
+    return (UWORD)length;
+}
+
+/* The data of the TXT record. An instance always has one: one empty
+ * string when it has nothing to say. */
+static LONG
+txt_data(const struct MDNSRegisteredService *rs, UBYTE *data, LONG size)
+{
+    if (rs->rs_TXTLength == 0 || rs->rs_TXTLength > size) {
+        data[0] = 0;
+        return 1;
     }
-    return length;
+    memcpy(data, rs->rs_TXT, rs->rs_TXTLength);
+    return rs->rs_TXTLength;
 }
 
 /* A resolver that speaks plain DNS keeps no mDNS cache: ten seconds at
@@ -1161,6 +1179,9 @@ mdnsRegTick(struct MDNSDaemon *md)
             rs->rs_Step = 1;
             rs->rs_NextTick = now + 50;
             service_send(md, rs, FALSE, all_subtypes(rs));
+            if (rs->rs_Notify != NULL) {
+                rs->rs_Notify(rs->rs_NotifyData, rs);
+            }
         } else if (rs->rs_Step < MDNS_ANNOUNCE_COUNT &&
                    (LONG)(now - rs->rs_NextTick) >= 0 &&
                    (hostReady || rs->rs_Proxy)) {
@@ -1461,7 +1482,6 @@ mdnsRegAdd(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         mdnsTextLength(msg->mi_ServiceType, MDNS_MAX_BROWSE_TYPE + 1) >
             MDNS_MAX_TYPE ||
         mdnsTextLength(msg->mi_Name, MDNS_MAX_NAME) > 63 ||
-        strchr(msg->mi_Name, '.') != NULL ||
         ((msg->mi_HostName[0] != '\0') != (msg->mi_HostAddr != 0))) {
         return MDNSERR_BADPARAM;
     }
@@ -1499,7 +1519,8 @@ mdnsRegAdd(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
     }
     mdnsTextCopy(rs->rs_Domain, (LONG)sizeof(rs->rs_Domain),
         msg->mi_Domain[0] != '\0' ? msg->mi_Domain : MDNS_DOMAIN_LOCAL);
-    mdnsTextCopy(rs->rs_TXT, (LONG)sizeof(rs->rs_TXT), msg->mi_TXT);
+    rs->rs_TXTLength = txt_from_text(msg->mi_TXT, rs->rs_TXT,
+        (LONG)sizeof(rs->rs_TXT));
     rs->rs_Port = msg->mi_Port;
     rs->rs_TTL = msg->mi_TTL;
     rs->rs_TaskID = msg->mi_TaskID;
@@ -1564,11 +1585,13 @@ mdnsRegUpdate(struct MDNSDaemon *md, const struct MDNSIPCMsg *msg)
         return MDNSERR_BADPARAM;
     }
     if (msg->mi_Flags & MDNS_IPC_UPDF_TXT) {
-        char txt[sizeof(rs->rs_TXT)];
+        UBYTE txt[MDNS_TXT_DATA_MAX];
+        UWORD length = txt_from_text(msg->mi_TXT, txt, (LONG)sizeof(txt));
 
-        mdnsTextCopy(txt, (LONG)sizeof(txt), msg->mi_TXT);
-        if (strcmp(txt, rs->rs_TXT) != 0) {
-            memcpy(rs->rs_TXT, txt, sizeof(txt));
+        if (length != rs->rs_TXTLength ||
+            memcmp(txt, rs->rs_TXT, length) != 0) {
+            memcpy(rs->rs_TXT, txt, length);
+            rs->rs_TXTLength = length;
             changed = TRUE;
         }
     }
@@ -1620,6 +1643,117 @@ mdnsRegRelease(struct MDNSDaemon *md, ULONG taskID)
         if (((struct MDNSRegisteredService *)n)->rs_TaskID == taskID) {
             service_remove(md, (struct MDNSRegisteredService *)n);
         }
+    }
+}
+
+/*
+ * A service for a dnssd.library client: its instance's own label (dots
+ * allowed), type ("_ipp._tcp"), domain, subtypes (labels), port and TXT
+ * data as they go on the wire. notify is told each time its name is
+ * announced. *ref names it to mdnsRegRemoveRef()/mdnsRegUpdateRef().
+ */
+LONG
+mdnsRegAddNative(struct MDNSDaemon *md, const char *instance,
+    const char *type, const char *domain, const char subtypes[][MDNS_MAX_SUBTYPE + 1],
+    UWORD subtypeCount, UWORD port, const UBYTE *txt, UWORD txtLength,
+    MDNSRegNotify notify, APTR data, APTR *ref)
+{
+    struct MDNSRegisteredService *rs;
+    struct Node *n;
+    LONG i, j;
+
+    if (instance[0] == '\0' || mdnsTextLength(instance, 64) > 63 ||
+        type[0] == '\0' || mdnsTextLength(type, MDNS_MAX_TYPE + 1) > MDNS_MAX_TYPE ||
+        mdnsTextLength(domain, MDNS_MAX_DOMAIN + 1) > MDNS_MAX_DOMAIN ||
+        subtypeCount > MDNS_MAX_SUBTYPES || port == 0 ||
+        txtLength > MDNS_TXT_DATA_MAX) {
+        return MDNSERR_BADPARAM;
+    }
+    for (i = 0; i < subtypeCount; i++) {
+        if (!valid_subtype(subtypes[i])) {
+            return MDNSERR_BADPARAM;
+        }
+        for (j = 0; j < i; j++) {
+            if (Stricmp(subtypes[i], subtypes[j]) == 0) {
+                return MDNSERR_BADPARAM;
+            }
+        }
+    }
+    FOR_SERVICES(md, n) {
+        rs = (struct MDNSRegisteredService *)n;
+        if (Stricmp(rs->rs_Instance, instance) == 0 &&
+            Stricmp(rs->rs_Type, type) == 0 &&
+            Stricmp(rs->rs_Domain, domain[0] != '\0' ? domain : MDNS_DOMAIN_LOCAL) == 0) {
+            return MDNSERR_DUPLICATE;
+        }
+    }
+    rs = (struct MDNSRegisteredService *)AllocMem(sizeof(*rs), MEMF_CLEAR);
+    if (rs == NULL) {
+        return MDNSERR_NOMEM;
+    }
+    mdnsTextCopy(rs->rs_Instance, (LONG)sizeof(rs->rs_Instance), instance);
+    mdnsTextCopy(rs->rs_Type, (LONG)sizeof(rs->rs_Type), type);
+    mdnsTextCopy(rs->rs_Domain, (LONG)sizeof(rs->rs_Domain),
+        domain[0] != '\0' ? domain : MDNS_DOMAIN_LOCAL);
+    rs->rs_SubtypeCount = subtypeCount;
+    for (i = 0; i < subtypeCount; i++) {
+        mdnsTextCopy(rs->rs_Subtypes[i], (LONG)sizeof(rs->rs_Subtypes[i]),
+            subtypes[i]);
+    }
+    memcpy(rs->rs_TXT, txt, txtLength);
+    rs->rs_TXTLength = txtLength;
+    rs->rs_Port = port;
+    rs->rs_Notify = notify;
+    rs->rs_NotifyData = data;
+    rs->rs_ClientRef = (APTR)(IPTR)md->md_NextHandle++;
+    rs->rs_State = MDNS_NAME_PROBING;
+    rs->rs_NextTick = mdnsTicks();
+    AddTail(&md->md_Services, &rs->rs_Node);
+    *ref = rs->rs_ClientRef;
+    return MDNS_OK;
+}
+
+/* A dnssd.library client's service changes its TXT data (txt not NULL)
+ * or its port (not 0); what changed is announced. */
+LONG
+mdnsRegUpdateRef(struct MDNSDaemon *md, APTR ref, const UBYTE *txt,
+    UWORD txtLength, UWORD port)
+{
+    struct MDNSRegisteredService *rs = service_find(md, ref);
+    BOOL changed = FALSE;
+
+    if (rs == NULL || rs->rs_Notify == NULL) {
+        return MDNSERR_NOTFOUND;
+    }
+    if (txtLength > MDNS_TXT_DATA_MAX) {
+        return MDNSERR_BADPARAM;
+    }
+    if (txt != NULL && (txtLength != rs->rs_TXTLength ||
+            memcmp(txt, rs->rs_TXT, txtLength) != 0)) {
+        memcpy(rs->rs_TXT, txt, txtLength);
+        rs->rs_TXTLength = txtLength;
+        changed = TRUE;
+    }
+    if (port != 0 && port != rs->rs_Port) {
+        rs->rs_Port = port;
+        changed = TRUE;
+    }
+    if (changed && rs->rs_State == MDNS_NAME_ANNOUNCED) {
+        service_send(md, rs, FALSE, all_subtypes(rs));
+        rs->rs_Step = 1;
+        rs->rs_NextTick = mdnsTicks() + 50;
+    }
+    return MDNS_OK;
+}
+
+/* A dnssd.library client's service goes, with its goodbyes. */
+void
+mdnsRegRemoveRef(struct MDNSDaemon *md, APTR ref)
+{
+    struct MDNSRegisteredService *rs = service_find(md, ref);
+
+    if (rs != NULL) {
+        service_remove(md, rs);
     }
 }
 

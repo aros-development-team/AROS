@@ -827,3 +827,139 @@ out:
     return start(session, &msg, tags, operation);
     AROS_LIBFUNC_EXIT
 }
+
+/*****************************************************************************
+
+    NAME */
+        AROS_LH6(LONG, DNSSD_RegisterA,
+
+/*  SYNOPSIS */
+        AROS_LHA(DNSSDSessionRef, session, A0),
+        AROS_LHA(CONST_STRPTR, instance, A1),
+        AROS_LHA(CONST_STRPTR, type, A2),
+        AROS_LHA(ULONG, port, D0),
+        AROS_LHA(DNSSDOperationRef *, operation, A3),
+        AROS_LHA(struct TagItem *, tags, A4),
+
+/*  LOCATION */
+        struct DNSSDIntern *, DNSSDBase, 15, DNSSD)
+
+/*  FUNCTION
+        Publishes a service of this host: instance (its own label, UTF-8,
+        dots allowed, at most 63 bytes) of type ("_ipp._tcp") on port.
+        mdnsd probes for the name and announces it (RFC 6762 section 8):
+        DNSSD_EVENT_REGISTERED says the name it has - another one ("Name
+        (2)") if another host had it, and again if a conflict renames it
+        later. The service lasts as long as the operation: DNSSD_Cancel(),
+        DNSSD_CloseSession() or the end of the task withdraw it, with its
+        goodbyes.
+
+    INPUTS
+        DNSSD_TXT, DNSSD_TXTLength - its TXT data, length-prefixed strings
+            (DNS-SD's "key=value" items, binary values allowed); none: one
+            empty string
+        DNSSD_Subtype - a subtype it has ("_printer"), one tag each
+        DNSSD_Domain - default "local"
+        DNSSD_UserData - returned in the operation's events
+
+    RESULT
+        DNSSD_OK and *operation; DNSSD_ERR_EXISTS if this host has that
+        instance of that type already; DNSSD_ERR_BADNAME, _BADPARAM.
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct DNSSDIPCMsg msg;
+    struct TagItem *tstate = tags, *tag;
+    UBYTE wire[256], extra[1300 + 8 * 64 + 1];
+    const UBYTE *txt = (const UBYTE *)GetTagData(DNSSD_TXT, 0, tags);
+    ULONG txtLength = GetTagData(DNSSD_TXTLength, 0, tags);
+    ULONG at;
+    LONG length;
+
+    if (session == NULL || instance == NULL || type == NULL ||
+        operation == NULL || port == 0 || port > 0xffff ||
+        (txt == NULL && txtLength != 0) || txtLength > 1300) {
+        return DNSSD_ERR_BADPARAM;
+    }
+    *operation = NULL;
+    init_msg(&msg, session, DNSSD_IPC_REGISTER);
+    length = label_to_wire(instance, wire, 0);
+    if (length >= 0) {
+        length = service_to_wire(NULL, type,
+            (CONST_STRPTR)GetTagData(DNSSD_Domain, (IPTR)"local", tags),
+            wire, length, &msg.dm_TypeOffset, &msg.dm_DomainOffset);
+    }
+    if (length < 0) {
+        return DNSSD_ERR_BADNAME;
+    }
+    if (txtLength != 0) {
+        memcpy(extra, txt, txtLength);
+    }
+    at = txtLength;
+    while ((tag = NextTagItem(&tstate)) != NULL) {
+        if (tag->ti_Tag == DNSSD_Subtype) {
+            LONG next = label_to_wire((CONST_STRPTR)tag->ti_Data, extra + at, 0);
+
+            if (next < 0 || at + next + 1 > sizeof(extra)) {
+                return DNSSD_ERR_BADNAME;
+            }
+            at += next;
+        }
+    }
+    extra[at++] = 0;
+    msg.dm_Data = wire;
+    msg.dm_DataSize = length;
+    msg.dm_Port = (UWORD)port;
+    msg.dm_TXTLength = (UWORD)txtLength;
+    msg.dm_Extra = extra;
+    msg.dm_ExtraSize = at;
+    return start(session, &msg, tags, operation);
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+
+    NAME */
+        AROS_LH2(LONG, DNSSD_UpdateA,
+
+/*  SYNOPSIS */
+        AROS_LHA(DNSSDOperationRef, operation, A0),
+        AROS_LHA(struct TagItem *, tags, A1),
+
+/*  LOCATION */
+        struct DNSSDIntern *, DNSSDBase, 16, DNSSD)
+
+/*  FUNCTION
+        Changes what a registered service (DNSSD_RegisterA()) says: its TXT
+        data, its port. What changed is announced; an update that changes
+        nothing is not.
+
+    INPUTS
+        DNSSD_TXT, DNSSD_TXTLength - the new TXT data
+        DNSSD_Port - the new port
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct DNSSDIPCMsg msg;
+    const UBYTE *txt = (const UBYTE *)GetTagData(DNSSD_TXT, 0, tags);
+    ULONG txtLength = GetTagData(DNSSD_TXTLength, 0, tags);
+    ULONG port = GetTagData(DNSSD_Port, 0, tags);
+
+    if (operation == NULL || port > 0xffff || txtLength > 1300 ||
+        (txt == NULL && txtLength != 0)) {
+        return DNSSD_ERR_BADPARAM;
+    }
+    init_msg(&msg, operation->do_Session, DNSSD_IPC_UPDATE);
+    msg.dm_Operation = operation->do_ID;
+    msg.dm_Port = (UWORD)port;
+    if (FindTagItem(DNSSD_TXT, tags) != NULL) {
+        msg.dm_Flags = DNSSD_IPCF_TXT;
+        msg.dm_Extra = (UBYTE *)txt;
+        msg.dm_ExtraSize = txtLength;
+        msg.dm_TXTLength = (UWORD)txtLength;
+    }
+    return dnssdSend(&msg);
+    AROS_LIBFUNC_EXIT
+}
