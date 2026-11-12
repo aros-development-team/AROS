@@ -179,7 +179,7 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
         Permit();
 
         D(bug("hostdisk: Image file length: %d\n", len));
-        if (len != -1)
+        if (len != (ULONG)-1 || err == 0)
         {
             dg->dg_TotalSectors = (len >> 9) | (len64 << 23); /* This relies on the fact that SectorSize == 512) */
             dg->dg_Cylinders    = dg->dg_TotalSectors;        /* LBA, CylSectors == 1 */
