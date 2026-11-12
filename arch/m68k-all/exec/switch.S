@@ -23,6 +23,16 @@ AROS_SLIB_ENTRY(Switch,Exec,9):
         move.w  %sp@+,%a5@-
         move.l  %sp@+,%a5@-
 
+        /*
+         * The frame is saved; what follows puts the outgoing task back on
+         * TaskReady or TaskWait (core_Switch()). An interrupt whose handler
+         * Signal()s a waiting task links that task into TaskReady too: with
+         * both inside Enqueue() at once the list can lose a node, leaving a
+         * task TS_READY on no list - never dispatched again. Mask interrupts
+         * for the list work, as m68k_VoluntarySwitch does; the dispatcher
+         * restores the next task's own level.
+         */
+        ori.w   #0x0700,%sr
         move.l  %a5,%sp@-
         jsr     m68k_SwitchTail
         addq.l  #4,%sp
