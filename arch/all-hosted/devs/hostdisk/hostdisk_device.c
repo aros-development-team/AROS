@@ -79,7 +79,6 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR hdskBase, struct IOExtTD *iotd, IP
 {
     STRPTR unitname;
     struct unit *unit;
-    UBYTE unitflags = 0;
 
     if (unitnum < 1024)
     {
@@ -89,11 +88,15 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR hdskBase, struct IOExtTD *iotd, IP
         if (!unitname)
             return FALSE;
 
-        unitflags = UNIT_FREENAME;
         NewRawDoFmt(hdskBase->DiskDevice, (VOID_FUNC)RAWFMTFUNC_STRING, unitname, unitnum + hdskBase->unitBase);
     }
     else
-        unitname = (STRPTR)unitnum;
+    {
+        unitname = AllocVec(strlen((STRPTR)unitnum) + 1, MEMF_ANY);
+        if (!unitname)
+            return FALSE;
+        strcpy(unitname, (STRPTR)unitnum);
+    }
 
     D(bug("hostdisk: open unit %s\n", unitname));
 
@@ -103,8 +106,7 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR hdskBase, struct IOExtTD *iotd, IP
 
     if (unit)
     {
-        if (unitflags & UNIT_FREENAME)
-            FreeVec(unitname);
+        FreeVec(unitname);
         unit->usecount++;
         ReleaseSemaphore(&hdskBase->sigsem);
             
@@ -135,7 +137,7 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR hdskBase, struct IOExtTD *iotd, IP
         unit->n.ln_Name = unitname;
         unit->usecount  = 1;
         unit->hdskBase  = hdskBase;
-        unit->flags     = unitflags;
+        unit->flags     = UNIT_FREENAME;
         NEWLIST((struct List *)&unit->changeints);
 
         iotd->iotd_Req.io_Unit = (struct Unit *)unit;
@@ -167,8 +169,7 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR hdskBase, struct IOExtTD *iotd, IP
     }
     else
     {
-        if (unitflags & UNIT_FREENAME)
-            FreeVec(unitname);
+        FreeVec(unitname);
         iotd->iotd_Req.io_Error = TDERR_NoMem;
     }
 
