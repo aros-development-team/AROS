@@ -391,6 +391,8 @@ static LONG write(struct unit *unit, struct IOExtTD *iotd)
     while(size)
     {
         subsize = Host_Write(unit, buf, size, &ioerr);
+        if (!subsize)
+            return IOERR_BADLENGTH;
         if(subsize == -1)
         {
             return ioerr;
