@@ -77,6 +77,8 @@
 #include <netinet/in_proto_protos.h>
 #include <netinet/in_protos.h>
 #include <netinet/in_pcb.h>
+
+void arp_fasttimo(void);              /* net/sana2arp.c: RFC 5227 */
 #include <kern/amiga_dhcp.h>
 #include <sys/syslog.h>
 #include <net/if.h>
@@ -166,7 +168,7 @@ struct protosw inetsw[] = {
         0,		&inetdomain,	0,		0,
         NULL,		ip_output,	in_ctlinput_all, NULL,
         NULL,
-        ip_init,	NULL,		ip_slowtimo,	ip_drain,
+        ip_init,	arp_fasttimo,	ip_slowtimo,	ip_drain,
     },
     IN_EMPTYSLOT, IN_EMPTYSLOT, IN_EMPTYSLOT, IN_EMPTYSLOT,
     /* raw IP, and the input of the numbers no protocol took */

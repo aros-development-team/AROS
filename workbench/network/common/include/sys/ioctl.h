@@ -130,6 +130,8 @@ __END_DECLS
  */
 #define SIOCAIFADDR_IN6	 _IOW ('i', 26, struct in6_aliasreq) /* add/chg IPv6 alias */
 #define SIOCDIFADDR_IN6  _IOW ('i', 25, struct in6_ifreq)   /* delete IPv6 addr */
+#define SIOCGIFAFLAG_IN	 _IOWR('i', 39, struct ifreq)       /* an address's IN_IFF_* flags (NetBSD) */
+#define SIOCAIFADDR_ORIGIN _IOW('i', 26, struct in_originreq) /* SIOCAIFADDR with its IN_ORIGIN_* */
 #define SIOCGIFADDR_IN6	 _IOWR('i', 33, struct in6_ifreq)   /* get IPv6 address */
 #define SIOCGIFDSTADDR_IN6 _IOWR('i', 34, struct in6_ifreq) /* get IPv6 p-p addr */
 #define SIOCGIFNETMASK_IN6 _IOWR('i', 37, struct in6_ifreq) /* get IPv6 netmask */

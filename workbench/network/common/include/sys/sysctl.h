@@ -38,7 +38,8 @@
 #define IPCTL_SENDREDIRECTS     2       /* may send redirects when forwarding */
 #define IPCTL_DEFTTL            3       /* default TTL */
 #define IPCTL_STATS             4       /* ipstat structure (read-only) */
-#define IPCTL_MAXID             5
+#define IPCTL_DAD_COUNT         5       /* RFC 5227 probes for a new address (0: none) */
+#define IPCTL_MAXID             6
 
 /* net.inet.tcp (TCPCTL_*) leaves live in <netinet/tcp_var.h>. */
 /* net.inet.udp (UDPCTL_*) leaves live in <netinet/udp_var.h>. */

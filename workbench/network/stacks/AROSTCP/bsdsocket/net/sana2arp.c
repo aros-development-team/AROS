@@ -60,6 +60,8 @@
 #include <net/netmodule.h>
 
 #include <net/if_loop_protos.h>
+#include <protos/kern/kern_random_protos.h>
+#include <protos/net/rtsock_protos.h>
 #include <protos/netinet/in_protos.h>
 #include <net/netcore_map.h>        /* always the last include */
 
@@ -488,134 +490,370 @@ arp_announce(struct sana_softc *ssc, struct in_addr *addr)
                             (struct rtentry *)0);
 }
 
-/* Assign the probed candidate address via SIOCAIFADDR */
+/*
+ * IPv4 link-local addresses (RFC 3927): autoip picks a 169.254/16 address
+ * and adds it; conflict detection (RFC 5227, below) probes, announces and
+ * defends it as any other address - RFC 3927's probing and defence are the
+ * same, with the same constants. When the address is duplicated (another
+ * host answered a probe, or claimed it twice within DEFEND_INTERVAL),
+ * autoip_conflict() takes it off and picks another; after MAX_CONFLICTS,
+ * one a minute (RATE_LIMIT_INTERVAL). ss_autoip.wanted is the interface's
+ * IP=AUTO: autoip runs again when the link comes back.
+ */
+
+/* Add the candidate: it is tentative until conflict detection probed it */
 static void
-autoip_set_addr(struct sana_softc *ssc)
+autoip_claim(struct sana_softc *ssc)
 {
-    struct ifaliasreq ifr;
-    struct sockaddr_in *sin;
+    struct in_originreq ifro;
+    struct in_aliasreq *ifra = &ifro.ifro_ifra;
 
-    memset(&ifr, 0, sizeof(ifr));
-    sin = (struct sockaddr_in *)&ifr.ifra_addr;
-    sin->sin_family    = AF_INET;
-    sin->sin_addr      = ssc->ss_autoip.candidate;
-    sin = (struct sockaddr_in *)&ifr.ifra_mask;
-    sin->sin_family    = AF_INET;
-    sin->sin_addr.s_addr = htonl(0xFFFF0000UL);   /* /16 netmask */
-
-    in_control(NULL, SIOCAIFADDR, (caddr_t)&ifr, &ssc->ss_if);
-
-    __log(LOG_INFO, "IPv4LL: assigned %d.%d.%d.%d/16 to %s\n",
+    autoip_randaddr(ssc, &ssc->ss_autoip.candidate);
+    ssc->ss_autoip.state = AUTOIP_CLAIMING;
+    memset(&ifro, 0, sizeof(ifro));
+    ifra->ifra_addr.sin_len         = sizeof(ifra->ifra_addr);
+    ifra->ifra_addr.sin_family      = AF_INET;
+    ifra->ifra_addr.sin_addr        = ssc->ss_autoip.candidate;
+    ifra->ifra_mask.sin_len         = sizeof(ifra->ifra_mask);
+    ifra->ifra_mask.sin_family      = AF_INET;
+    ifra->ifra_mask.sin_addr.s_addr = htonl(0xFFFF0000UL);   /* /16 */
+    ifro.ifro_origin = IN_ORIGIN_LINKLOCAL;
+    switch(in_control(NULL, SIOCAIFADDR_ORIGIN, (caddr_t)&ifro, &ssc->ss_if)) {
+    case 0:
+        break;
+    case EEXIST:
+        /* the address is on; another interface's 169.254/16 route stays
+         * (one route per network): link-local peers are reached by that
+         * interface (RFC 3927 section 3.2) */
+        __log(LOG_WARNING, "IPv4LL: %s%d: 169.254/16 is routed by another interface\n",
+              ssc->ss_if.if_name, ssc->ss_if.if_unit);
+        break;
+    default:
+        ssc->ss_autoip.state = AUTOIP_WAIT;     /* try again in a second */
+        ssc->ss_autoip.ticks = 1;
+        return;
+    }
+    __log(LOG_INFO, "IPv4LL: claiming %d.%d.%d.%d/16 on %s%d\n",
           (ntohl(ssc->ss_autoip.candidate.s_addr) >> 24) & 0xFF,
           (ntohl(ssc->ss_autoip.candidate.s_addr) >> 16) & 0xFF,
           (ntohl(ssc->ss_autoip.candidate.s_addr) >>  8) & 0xFF,
           ntohl(ssc->ss_autoip.candidate.s_addr)        & 0xFF,
-          ssc->ss_name);
+          ssc->ss_if.if_name, ssc->ss_if.if_unit);
 }
 
-/* Handle a detected address conflict */
+/* Take the candidate off the interface */
+static void
+autoip_drop_addr(struct sana_softc *ssc)
+{
+    struct ifreq ifr;
+    struct sockaddr_in *sin = (struct sockaddr_in *)&ifr.ifr_addr;
+
+    memset(&ifr, 0, sizeof(ifr));
+    sin->sin_len    = sizeof(*sin);
+    sin->sin_family = AF_INET;
+    sin->sin_addr   = ssc->ss_autoip.candidate;
+    in_control(NULL, SIOCDIFADDR, (caddr_t)&ifr, &ssc->ss_if);
+}
+
+/* The candidate is duplicated (from arp_dad_conflict()): another one */
 static void
 autoip_conflict(struct sana_softc *ssc)
 {
-    ssc->ss_autoip.conflicts++;
-
-    __log(LOG_WARNING, "IPv4LL: address conflict on %s (count %u)\n",
-          ssc->ss_name, (unsigned)ssc->ss_autoip.conflicts);
-
-    /* Pick a new candidate and restart */
-    autoip_randaddr(ssc, &ssc->ss_autoip.candidate);
-    ssc->ss_autoip.count  = 0;
-    ssc->ss_autoip.state  = AUTOIP_PROBE;
-
+    if(ssc->ss_autoip.conflicts < 255)
+        ssc->ss_autoip.conflicts++;
+    __log(LOG_WARNING, "IPv4LL: address conflict on %s%d (count %u)\n",
+          ssc->ss_if.if_name, ssc->ss_if.if_unit, (unsigned)ssc->ss_autoip.conflicts);
+    autoip_drop_addr(ssc);
     if(ssc->ss_autoip.conflicts >= AUTOIP_MAX_CONFLICTS) {
-        /* Rate-limit: wait 60 s before first probe */
+        ssc->ss_autoip.state = AUTOIP_WAIT;     /* one a minute */
         ssc->ss_autoip.ticks = AUTOIP_RATE_LIMIT_INTERVAL;
-    } else {
-        ssc->ss_autoip.ticks = AUTOIP_PROBE_WAIT;
-    }
+    } else
+        autoip_claim(ssc);
 }
 
-/* Begin IPv4LL probing on an interface */
+/* Begin IPv4LL on an interface (IP=AUTO, no DHCP, no address) */
 void
 autoip_start(struct ifnet *ifp)
 {
     struct sana_softc *ssc = (struct sana_softc *)ifp;
 
+    if(ssc->ss_autoip.state != AUTOIP_DISABLED)
+        autoip_stop(ifp);
+    ssc->ss_autoip.wanted = 1;
     ssc->ss_autoip.conflicts = 0;
-    autoip_randaddr(ssc, &ssc->ss_autoip.candidate);
-    ssc->ss_autoip.count  = 0;
-    ssc->ss_autoip.ticks  = AUTOIP_PROBE_WAIT;
-    ssc->ss_autoip.state  = AUTOIP_PROBE;
-
-    __log(LOG_INFO, "IPv4LL: starting on %s, probing %d.%d.%d.%d\n",
-          ssc->ss_name,
-          (ntohl(ssc->ss_autoip.candidate.s_addr) >> 24) & 0xFF,
-          (ntohl(ssc->ss_autoip.candidate.s_addr) >> 16) & 0xFF,
-          (ntohl(ssc->ss_autoip.candidate.s_addr) >>  8) & 0xFF,
-          ntohl(ssc->ss_autoip.candidate.s_addr)        & 0xFF);
+    autoip_claim(ssc);
 }
 
-/* Cancel IPv4LL on an interface */
+/* Stop IPv4LL on an interface, its address going with the others; the link
+ * coming back starts it again while ss_autoip.wanted is set */
 void
 autoip_stop(struct ifnet *ifp)
 {
     struct sana_softc *ssc = (struct sana_softc *)ifp;
-    ssc->ss_autoip.state  = AUTOIP_DISABLED;
-    ssc->ss_autoip.count  = 0;
-    ssc->ss_autoip.ticks  = 0;
+
+    if(ssc->ss_autoip.state == AUTOIP_CLAIMING)
+        autoip_drop_addr(ssc);
+    ssc->ss_autoip.state = AUTOIP_DISABLED;
+    ssc->ss_autoip.ticks = 0;
 }
 
-/* 1-second tick driver for the IPv4LL state machine (called from timer framework) */
+/* Once a second: the rate limit's wait */
 void
 autoip_timer(void)
 {
     struct sana_softc *ssc;
 
-    for(ssc = ssq; ssc; ssc = ssc->ss_next) {
-        if(ssc->ss_autoip.state == AUTOIP_DISABLED ||
-                ssc->ss_autoip.state == AUTOIP_BOUND)
-            continue;
+    for(ssc = ssq; ssc; ssc = ssc->ss_next)
+        if(ssc->ss_autoip.state == AUTOIP_WAIT && --ssc->ss_autoip.ticks == 0)
+            autoip_claim(ssc);
+}
 
-        if(ssc->ss_autoip.ticks > 0) {
-            ssc->ss_autoip.ticks--;
+/* =========================================================
+ * Address conflict detection, RFC 5227 (as NetBSD's arp_dad_*)
+ * ========================================================= */
+
+/*
+ * An address configured on an ARP interface is tentative (IN_IFF_TENTATIVE)
+ * until ip_dad_count probes - ARP requests from 0.0.0.0 for it - have gone
+ * unanswered: it is not used as a source, not accepted as a destination and
+ * not answered for meanwhile. Then it is announced twice and ready; a host
+ * that answers a probe, or probes for it at the same time, makes it
+ * IN_IFF_DUPLICATED. An address in use is defended once in DEFEND_INTERVAL
+ * (an announcement); a second conflict within it makes a DHCP or IPv4LL
+ * address duplicated (RFC 5227 section 2.4 (b)) and leaves one configured
+ * by hand in use (2.4 (c), ia_origin). A duplicated address is
+ * probed again every ARP_DAD_REPROBE, and is ready when no one answers. Each change is announced as RTM_NEWADDR and the
+ * SBTC_SIG_ADDRESS_CHANGE_MASK signal (rt_newaddrmsg()), as IPv6's DAD
+ * does. The 169.254/16 address autoip claims (RFC 3927) goes the same way,
+ * and when duplicated back to autoip for another. net.inet.ip.dad_count 0
+ * turns the probes off for other addresses: ready at once, announced, and
+ * a conflict only logged.
+ */
+int ip_dad_count = 3;           /* PROBE_NUM */
+static u_long arp_ticks;        /* ARP's monotonic clock: fast ticks (ARP_HZ)
+                                   since the stack started */
+
+/* The SANA-II interface that resolves with ARP behind ifp, if any. */
+static struct sana_softc *
+arp_dad_ssc(struct ifnet *ifp)
+{
+    struct sana_softc *ssc;
+
+    if(ifp == NULL || (ifp->if_flags & (IFF_LOOPBACK | IFF_POINTOPOINT | IFF_NOARP)))
+        return NULL;
+    ssc = sana_softc_of(ifp);
+    return ssc && ssc->ss_arp_table ? ssc : NULL;
+}
+
+int
+arp_dad_capable(struct ifnet *ifp)
+{
+    return arp_dad_ssc(ifp) != NULL;
+}
+
+/* Is ia the 169.254/16 address autoip claims (RFC 3927)? */
+static int
+arp_dad_autoip(struct sana_softc *ssc, struct in_ifaddr *ia)
+{
+    return ssc->ss_autoip.state == AUTOIP_CLAIMING &&
+           ia->ia_addr.sin_addr.s_addr == ssc->ss_autoip.candidate.s_addr;
+}
+
+/*
+ * Where an address came from (ia_origin, given when it was added: see
+ * IN_ORIGIN_* in <netinet/in_var.h>) decides what a conflict over it does
+ * once it is in use (RFC 5227 section 2.4): one configured by hand is never
+ * given up - defended once per DEFEND_INTERVAL, the conflict logged (2.4
+ * (c)); only its probes, before it is first used, can refuse it. A DHCP
+ * address whose defence fails is duplicated and goes back to dhclient,
+ * which declines it; an IPv4LL one goes back to autoip for another.
+ */
+
+/*
+ * An in-place reload deletes every address and adds them again: one that
+ * was in use and comes back unchanged within ARP_DAD_KEEP_TIME keeps its
+ * state and is not probed again (the window covers dhclient applying its
+ * lease again after the reload).
+ */
+#define ARP_DAD_KEEP_MAX   16
+#define ARP_DAD_KEEP_TIME  (30 * ARP_HZ)
+
+static struct {
+    u_short        index;
+    struct in_addr addr;
+    u_long         until;
+} arp_dad_keep[ARP_DAD_KEEP_MAX];
+static int arp_dad_reloading;
+
+void
+arp_dad_reload(int begin)
+{
+    arp_dad_reloading = begin;
+}
+
+/* ia is being deleted: during a reload, remember it if it was in use */
+void
+arp_dad_forget(struct in_ifaddr *ia)
+{
+    int i, slot = -1;
+
+    if(!arp_dad_reloading || (ia->ia4_flags & IN_IFF_NOTREADY) ||
+            ia->ia_addr.sin_addr.s_addr == INADDR_ANY || arp_dad_ssc(ia->ia_ifp) == NULL)
+        return;
+    for(i = 0; i < ARP_DAD_KEEP_MAX; i++)
+        if(slot < 0 && (long)(arp_ticks - arp_dad_keep[i].until) >= 0)
+            slot = i;
+    if(slot < 0)
+        return;
+    arp_dad_keep[slot].index = ia->ia_ifp->if_index;
+    arp_dad_keep[slot].addr = ia->ia_addr.sin_addr;
+    arp_dad_keep[slot].until = arp_ticks + ARP_DAD_KEEP_TIME;
+}
+
+/* Was ia in use before a reload took it off? (The entry is used up.) */
+static int
+arp_dad_kept(const struct in_ifaddr *ia)
+{
+    int i;
+
+    for(i = 0; i < ARP_DAD_KEEP_MAX; i++)
+        if((long)(arp_ticks - arp_dad_keep[i].until) < 0 &&
+                arp_dad_keep[i].index == ia->ia_ifp->if_index &&
+                arp_dad_keep[i].addr.s_addr == ia->ia_addr.sin_addr.s_addr) {
+            arp_dad_keep[i].until = arp_ticks;
+            return 1;
+        }
+    return 0;
+}
+
+static void
+arp_dad_log(int pri, const char *what, struct in_ifaddr *ia, caddr_t sha, int len)
+{
+    u_long a = ntohl(ia->ia_addr.sin_addr.s_addr);
+
+    __log(pri, "%s%d: %s %lu.%lu.%lu.%lu%s%s\n", ia->ia_ifp->if_name, ia->ia_ifp->if_unit, what,
+          (a >> 24) & 0xff, (a >> 16) & 0xff, (a >> 8) & 0xff, a & 0xff,
+          sha ? " from " : "", sha ? sana_sprintf(sha, len) : "");
+}
+
+/* A new address on an ARP interface: probe it before it is used. */
+void
+arp_dad_start(struct in_ifaddr *ia)
+{
+    struct sana_softc *ssc = arp_dad_ssc(ia->ia_ifp);
+
+    arp_dad_stop(ia);
+    if(ssc == NULL || ia->ia_addr.sin_addr.s_addr == INADDR_ANY || arp_dad_kept(ia))
+        return;
+    /* RFC 3927 has an IPv4LL address probed whatever dad_count says */
+    if(ip_dad_count == 0 && !arp_dad_autoip(ssc, ia)) {
+        ia->ia_dad_announces = ARP_DAD_ANNOUNCE_NUM;
+        ia->ia_dad_ticks = 1;
+        return;
+    }
+    ia->ia4_flags |= IN_IFF_TENTATIVE;
+    ia->ia_dad_count = ip_dad_count ? ip_dad_count : ARP_DAD_PROBE_NUM;
+    ia->ia_dad_ticks = 1 + kern_random32() % ARP_DAD_PROBE_WAIT;
+    arp_dad_log(LOG_INFO, "probing", ia, NULL, 0);
+}
+
+/* No more probing or announcing (the address is going, or changing). */
+void
+arp_dad_stop(struct in_ifaddr *ia)
+{
+    ia->ia4_flags &= ~IN_IFF_NOTREADY;
+    ia->ia_dad_ticks = 0;
+    ia->ia_dad_probes = 0;
+    ia->ia_dad_announces = 0;
+    ia->ia_dad_defended = 0;
+}
+
+/* Every fast tick (ip's pr_fasttimo): ARP's clock, conflict detection */
+void
+arp_fasttimo(void)
+{
+    struct in_ifaddr *ia;
+
+    arp_ticks++;
+    for(ia = in_ifaddr; ia; ia = ia->ia_next) {
+        struct sana_softc *ssc;
+
+        if(ia->ia_dad_ticks == 0 || --ia->ia_dad_ticks > 0)
+            continue;
+        if((ssc = arp_dad_ssc(ia->ia_ifp)) == NULL)
+            continue;
+        if(!(ssc->ss_if.if_flags & IFF_UP)) {
+            ia->ia_dad_ticks = ARP_HZ;      /* the link is not up yet */
             continue;
         }
-
-        switch(ssc->ss_autoip.state) {
-
-        case AUTOIP_PROBE:
-            if(ssc->ss_autoip.count < AUTOIP_PROBE_NUM) {
-                arp_probe(ssc, &ssc->ss_autoip.candidate);
-                ssc->ss_autoip.count++;
-                ssc->ss_autoip.ticks = AUTOIP_PROBE_INTERVAL;
-            } else {
-                /* All probes sent - wait then announce */
-                ssc->ss_autoip.state = AUTOIP_ANNOUNCE;
-                ssc->ss_autoip.count = 0;
-                ssc->ss_autoip.ticks = AUTOIP_ANNOUNCE_WAIT;
+        if(ia->ia4_flags & IN_IFF_DUPLICATED) {
+            /* probed again once a minute; back when no one answers */
+            ia->ia4_flags = (ia->ia4_flags & ~IN_IFF_DUPLICATED) | IN_IFF_TENTATIVE;
+            ia->ia_dad_probes = 0;
+            ia->ia_dad_count = ip_dad_count ? ip_dad_count : ARP_DAD_PROBE_NUM;
+            ia->ia_dad_ticks = 1 + kern_random32() % ARP_DAD_PROBE_WAIT;
+            arp_dad_log(LOG_INFO, "probing again", ia, NULL, 0);
+            rt_newaddrmsg(RTM_NEWADDR, &ia->ia_ifa, 0, NULL);
+            continue;
+        }
+        if(ia->ia4_flags & IN_IFF_TENTATIVE) {
+            if(ia->ia_dad_probes < ia->ia_dad_count) {
+                arp_probe(ssc, &ia->ia_addr.sin_addr);
+                ia->ia_dad_probes++;
+                ia->ia_dad_ticks = ia->ia_dad_probes < ia->ia_dad_count ?
+                                   ARP_DAD_PROBE_MIN + kern_random32() %
+                                   (ARP_DAD_PROBE_MAX - ARP_DAD_PROBE_MIN) :
+                                   ARP_DAD_ANNOUNCE_WAIT;
+                continue;
             }
-            break;
-
-        case AUTOIP_ANNOUNCE:
-            arp_announce(ssc, &ssc->ss_autoip.candidate);
-            ssc->ss_autoip.count++;
-            if(ssc->ss_autoip.count >= AUTOIP_ANNOUNCE_NUM) {
-                autoip_set_addr(ssc);
-                ssc->ss_autoip.state = AUTOIP_BOUND;
-                ssc->ss_autoip.count = 0;
-                ssc->ss_autoip.ticks = 0;
-            } else {
-                ssc->ss_autoip.ticks = AUTOIP_ANNOUNCE_INTERVAL;
-            }
-            break;
-
-        case AUTOIP_DEFEND:
-            /* Defend interval elapsed - return to BOUND */
-            ssc->ss_autoip.state = AUTOIP_BOUND;
-            ssc->ss_autoip.ticks = 0;
-            break;
+            ia->ia4_flags &= ~IN_IFF_TENTATIVE;     /* no one has it */
+            arp_dad_log(LOG_INFO, "probed, no conflict:", ia, NULL, 0);
+            rt_newaddrmsg(RTM_NEWADDR, &ia->ia_ifa, 0, NULL);
+            ia->ia_dad_announces = ARP_DAD_ANNOUNCE_NUM;
+        }
+        if(ia->ia_dad_announces) {
+            arp_announce(ssc, &ia->ia_addr.sin_addr);
+            if(--ia->ia_dad_announces)
+                ia->ia_dad_ticks = ARP_DAD_ANNOUNCE_INTERVAL;
         }
     }
+}
+
+/*
+ * Another host (sha) has ia's address: it answered or sent a probe for it,
+ * or uses it as its sender. 1 if the ARP packet is to be dropped.
+ */
+static int
+arp_dad_conflict(struct sana_softc *ssc, struct in_ifaddr *ia, caddr_t sha)
+{
+    int len = ssc->ss_if.if_addrlen;
+
+    if(!(ia->ia4_flags & IN_IFF_NOTREADY)) {
+        if(ip_dad_count == 0 && !arp_dad_autoip(ssc, ia)) {
+            arp_dad_log(LOG_ERR, "duplicate IP address", ia, sha, len);
+            return 0;                   /* the old behaviour: answer */
+        }
+        if(ia->ia_dad_defended == 0 ||
+                arp_ticks - ia->ia_dad_defended >= ARP_DAD_DEFEND_INTERVAL) {
+            ia->ia_dad_defended = arp_ticks ? arp_ticks : 1;
+            arp_announce(ssc, &ia->ia_addr.sin_addr);
+            arp_dad_log(LOG_ERR, "defended", ia, sha, len);
+            return 1;
+        }
+        if(ia->ia_origin == IN_ORIGIN_MANUAL)
+            return 1;   /* kept, defended again when DEFEND_INTERVAL is past */
+        arp_dad_log(LOG_ERR, "defence failed, duplicated:", ia, sha, len);
+    } else if(ia->ia4_flags & IN_IFF_DUPLICATED)
+        return 1;
+    else
+        arp_dad_log(LOG_ERR, "duplicated while probing:", ia, sha, len);
+    ia->ia_dad_ticks = ARP_DAD_REPROBE;     /* probed again in a minute */
+    ia->ia_dad_announces = 0;
+    ia->ia4_flags = (ia->ia4_flags & ~IN_IFF_TENTATIVE) | IN_IFF_DUPLICATED;
+    rt_newaddrmsg(RTM_NEWADDR, &ia->ia_ifa, 0, NULL);
+    if(arp_dad_autoip(ssc, ia))
+        autoip_conflict(ssc);           /* takes ia off: another address */
+    return 1;
 }
 
 /*
@@ -648,10 +886,23 @@ arpwhohas(register struct sana_softc *ssc, struct in_addr *addr)
     bcopy((caddr_t)ssc->ss_hwaddr,
           (caddr_t)&s2a->arpdata,
           s2a->arp_hln);
-    /* Copy source protocol address */
-    bcopy((caddr_t)&ssc->ss_ipaddr,
-          (caddr_t)&s2a->arpdata + s2a->arp_hln,
-          s2a->arp_pln);
+    /* Copy source protocol address: one of the interface's that is ready,
+     * the interface's own first; 0.0.0.0 if none is (RFC 5227 2.1.1:
+     * neighbours must not cache a tentative or duplicated one) */
+    {
+        struct in_addr src;
+        const struct in_ifaddr *ia, *ready = NULL;
+
+        for(ia = in_ifaddr; ia; ia = ia->ia_next)
+            if(ia->ia_ifp == &ssc->ss_if && !(ia->ia4_flags & IN_IFF_NOTREADY) &&
+                    ia->ia_addr.sin_addr.s_addr != INADDR_ANY &&
+                    (ready == NULL || ia->ia_addr.sin_addr.s_addr == ssc->ss_ipaddr.s_addr))
+                ready = ia;
+        src.s_addr = ready ? ready->ia_addr.sin_addr.s_addr : INADDR_ANY;
+        bcopy((caddr_t)&src,
+              (caddr_t)&s2a->arpdata + s2a->arp_hln,
+              s2a->arp_pln);
+    }
     /* Zero target hardware address */
     bzero((caddr_t)&s2a->arpdata + s2a->arp_hln + s2a->arp_pln,
           s2a->arp_hln);
@@ -712,10 +963,13 @@ arpresolve(register struct sana_softc *ssc,
     }
 #endif
 
-    /* if for us, use software loopback driver if up */
+    /* if for us, use software loopback driver if up; an address of ours
+     * that is not ready (RFC 5227: tentative, or another host's) is not
+     * us - what is sent to it goes out on the link, to its owner */
     for(register struct in_ifaddr *ia = in_ifaddr; ia; ia = ia->ia_next)
         if((ia->ia_ifp == &ssc->ss_if) &&
-                (destip->s_addr == ia->ia_addr.sin_addr.s_addr)) {
+                (destip->s_addr == ia->ia_addr.sin_addr.s_addr) &&
+                !(ia->ia4_flags & IN_IFF_NOTREADY)) {
             /*
              * This test used to be
              *	if (loif.if_flags & IFF_UP)
@@ -959,6 +1213,7 @@ in_arpinput(register struct sana_softc *ssc,
     register struct s2_arppkt *s2a;
     struct sockaddr_in sin;
     struct in_addr isaddr, itaddr, myaddr;
+    struct in_ifaddr *myia = NULL;      /* the address of ours concerned */
     int op;
 #if 0 /* unused */
     int completed = 0;
@@ -990,24 +1245,10 @@ in_arpinput(register struct sana_softc *ssc,
                         (isaddr.s_addr == ia->ia_addr.sin_addr.s_addr))
                     break;
             }
-        /* RFC 3927: detect IPv4LL probe/announce conflicts before normal exit */
-        if(ssc->ss_autoip.state == AUTOIP_PROBE ||
-                ssc->ss_autoip.state == AUTOIP_ANNOUNCE) {
-            u_int32_t cand = ssc->ss_autoip.candidate.s_addr;
-            if((isaddr.s_addr == cand || itaddr.s_addr == cand) &&
-                    bcmp(sha, (caddr_t)ssc->ss_hwaddr, len) != 0)
-                autoip_conflict(ssc);
-        } else if(ssc->ss_autoip.state == AUTOIP_BOUND &&
-                  isaddr.s_addr == ssc->ss_autoip.candidate.s_addr &&
-                  bcmp(sha, (caddr_t)ssc->ss_hwaddr, len) != 0) {
-            /* Conflict with our bound address - defend */
-            ssc->ss_autoip.state = AUTOIP_DEFEND;
-            ssc->ss_autoip.ticks = AUTOIP_DEFEND_INTERVAL;
-            arp_announce(ssc, &ssc->ss_autoip.candidate);
-        }
         if(maybe_ia == 0)
             goto out;
-        myaddr = ia ? ia->ia_addr.sin_addr : maybe_ia->ia_addr.sin_addr;
+        myia = ia ? ia : maybe_ia;
+        myaddr = myia->ia_addr.sin_addr;
         if(!bcmp(sha, (caddr_t)ssc->ss_hwaddr, len))
             goto out;			/* it's from me, ignore it. */
     }
@@ -1020,13 +1261,21 @@ in_arpinput(register struct sana_softc *ssc,
     }
 #endif
 
-    /* Check for duplicate IP addresses */
-    if(isaddr.s_addr == myaddr.s_addr) {
-        __log(LOG_ERR,
-              "duplicate IP address %lx!! sent from hardware address: %s\n",
-              (u_long)ntohl(isaddr.s_addr),
-              sana_sprintf(sha, len));
-        itaddr = myaddr;
+    /*
+     * Address conflicts (RFC 5227 section 2.1.1, 2.4): another host using
+     * our address as its sender is always one; a probe for it (sender
+     * 0.0.0.0, broadcast) is one while ours is still tentative - a host
+     * probing for an address we use gets our answer below. An address
+     * already duplicated is its owner's: what the owner sends is taken as
+     * from any neighbour (its entry is made), and not answered for.
+     */
+    if(!(myia->ia4_flags & IN_IFF_DUPLICATED) &&
+            (isaddr.s_addr == myaddr.s_addr ||
+             (isaddr.s_addr == INADDR_ANY && itaddr.s_addr == myaddr.s_addr &&
+              (m->m_flags & M_BCAST) && (myia->ia4_flags & IN_IFF_TENTATIVE)))) {
+        if(arp_dad_conflict(ssc, myia, sha))
+            goto out;
+        itaddr = myaddr;                /* dad_count 0: answer, as before */
         if(op == ARPOP_REQUEST)
             goto reply;
         goto out;
@@ -1093,7 +1342,9 @@ reply:
         goto out;
 
     if(itaddr.s_addr == myaddr.s_addr) {
-        /* I am the target */
+        /* I am the target, if the address is ready (RFC 5227 2.1.1) */
+        if(myia->ia4_flags & IN_IFF_NOTREADY)
+            goto out;
         bcopy(sha, tha, len);
         bcopy((caddr_t)ssc->ss_hwaddr, sha, len);
     } else {
