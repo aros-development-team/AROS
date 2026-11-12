@@ -832,6 +832,151 @@ rename_failed:
     return err;
 }
 
+/* A directory other than the root that is marked read-only refuses
+ * changes. The root has no dot entry. */
+static LONG CheckDirWritable(struct DirHandle *dh, struct Globals *glob)
+{
+    struct DirEntry de;
+    LONG err;
+
+    if (dh->ioh.first_cluster == glob->sb->rootdir_cluster)
+        return 0;
+    if ((err = GetDirEntry(dh, 0, &de, glob)) != 0)
+        return err;
+    return (de.e.entry.attr & ATTR_READ_ONLY) ? ERROR_WRITE_PROTECTED : 0;
+}
+
+/*
+ * ACTION_REPLACE_OBJECT: the source file takes the destination's name,
+ * replacing the file of that name. FAT has no atomic rename, so the
+ * replacement is published by a single directory entry write: the
+ * destination's entry takes the source's clusters, size, dates and
+ * attributes. Only then is the source's entry removed and the replaced
+ * file's clusters freed. A crash between the two entry writes leaves both
+ * names on the new data, a cross-link that a disk check repairs, and never
+ * neither name. Without a destination, or when both names are the same
+ * entry, this is a rename.
+ */
+LONG OpReplaceFile(struct ExtFileLock *sdirlock, UBYTE *sname,
+    ULONG snamelen, struct ExtFileLock *ddirlock, UBYTE *dname,
+    ULONG dnamelen, struct Globals *glob)
+{
+    struct FSSuper *sb = glob->sb;
+    struct ExtFileLock *target = NULL;
+    struct DirHandle sdh, ddh;
+    struct DirEntry sde, dde;
+    struct FATDirEntry replaced;
+    struct GlobalLock *gl;
+    UBYTE *sleaf = sname, *dleaf = dname;
+    ULONG sleaflen = snamelen, dleaflen = dnamelen, rawlen, len,
+        old_chain;
+    LONG err;
+
+    InitDirHandle(sb, sdirlock != NULL ? sdirlock->ioh.first_cluster : 0,
+        &sdh, FALSE, glob);
+    InitDirHandle(sb, ddirlock != NULL ? ddirlock->ioh.first_cluster : 0,
+        &ddh, FALSE, glob);
+
+    /* Find the source, which must be a file, then the destination by its
+     * spelling as given and, failing that, as a new entry would store it
+     * (see OpRenameFile()) */
+    if ((err = MoveToSubdir(&sdh, &sleaf, &sleaflen, glob)) != 0
+        || (err = GetDirEntryByName(&sdh, sleaf, sleaflen, &sde, glob)) != 0)
+        goto done;
+    if (sde.e.entry.attr & ATTR_DIRECTORY)
+    {
+        err = ERROR_OBJECT_WRONG_TYPE;
+        goto done;
+    }
+    if ((err = MoveToSubdir(&ddh, &dleaf, &dleaflen, glob)) != 0)
+        goto done;
+    err = GetDirEntryByName(&ddh, dleaf, dleaflen, &dde, glob);
+    if (err == ERROR_OBJECT_NOT_FOUND)
+    {
+        rawlen = dleaflen;
+        if (NormalizeDirEntryName(&dleaf, &dleaflen) == 0
+            && dleaflen != rawlen)
+            err = GetDirEntryByName(&ddh, dleaf, dleaflen, &dde, glob);
+    }
+    if (err == ERROR_OBJECT_NOT_FOUND
+        || (err == 0 && sde.cluster == dde.cluster && sde.index == dde.index))
+    {
+        ReleaseDirHandle(&ddh, glob);
+        ReleaseDirHandle(&sdh, glob);
+        return OpRenameFile(sdirlock, sname, snamelen, ddirlock, dname,
+            dnamelen, glob);
+    }
+    if (err != 0)
+        goto done;
+
+    /* The replaced file must be a deletable file nobody uses */
+    if (dde.e.entry.attr & ATTR_DIRECTORY)
+        err = ERROR_OBJECT_WRONG_TYPE;
+    else if (dde.e.entry.attr & ATTR_READ_ONLY)
+        err = ERROR_DELETE_PROTECTED;
+    else if ((err = CheckDirWritable(&sdh, glob)) == 0
+        && (err = CheckDirWritable(&ddh, glob)) == 0)
+        err = LockFile(dde.cluster, dde.index, EXCLUSIVE_LOCK, &target,
+            glob);
+    if (err != 0)
+        goto done;
+
+    /* Publish: the destination's entry now describes the source's data */
+    replaced = dde.e.entry;
+    old_chain = FIRST_FILE_CLUSTER(&dde);
+    dde.e.entry.first_cluster_lo = sde.e.entry.first_cluster_lo;
+    dde.e.entry.first_cluster_hi = sde.e.entry.first_cluster_hi;
+    dde.e.entry.file_size = sde.e.entry.file_size;
+    dde.e.entry.attr = sde.e.entry.attr | ATTR_ARCHIVE;
+    dde.e.entry.create_date = sde.e.entry.create_date;
+    dde.e.entry.create_time = sde.e.entry.create_time;
+    dde.e.entry.create_time_tenth = sde.e.entry.create_time_tenth;
+    dde.e.entry.write_date = sde.e.entry.write_date;
+    dde.e.entry.write_time = sde.e.entry.write_time;
+    dde.e.entry.last_access_date = sde.e.entry.last_access_date;
+    if ((err = UpdateDirEntry(&dde, glob)) != 0)
+        goto done;
+
+    /* Resolve watchers of the source's path while that entry still exists */
+    SendNotifyByDirEntry(sb, &sde);
+
+    if ((err = DeleteDirEntry(&sde, glob)) != 0)
+    {
+        /* Both names hold the new data: give the old one back */
+        dde.e.entry = replaced;
+        UpdateDirEntry(&dde, glob);
+        goto done;
+    }
+    ReleaseDirHandle(&ddh, glob);
+    ReleaseDirHandle(&sdh, glob);
+
+    /* The replaced file is gone; locks on the source follow its new entry */
+    FreeLock(target, glob);
+    err = FreeClusterChain(sb, old_chain);
+    ForeachNode(&sb->info->locks, gl)
+    {
+        if (gl->dir_cluster == sde.cluster && gl->dir_entry == sde.index)
+        {
+            gl->dir_cluster = dde.cluster;
+            gl->dir_entry = dde.index;
+            GetDirEntryShortName(&dde, &(gl->name[1]), &len, glob);
+            gl->name[0] = (UBYTE) len;
+            GetDirEntryLongName(&dde, &(gl->name[1]), &len);
+            gl->name[0] = (UBYTE) len;
+        }
+    }
+    SendNotifyByDirEntry(sb, &dde);
+
+    return err;
+
+done:
+    ReleaseDirHandle(&ddh, glob);
+    ReleaseDirHandle(&sdh, glob);
+    if (target != NULL)
+        FreeLock(target, glob);
+    return err;
+}
+
 LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     struct ExtFileLock **newdirlock, struct Globals *glob)
 {

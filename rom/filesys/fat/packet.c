@@ -751,6 +751,25 @@ void ProcessPackets(struct Globals *glob)
                 break;
             }
 
+        case ACTION_REPLACE_OBJECT:
+            {
+                struct ExtFileLock *sfl = BADDR(pkt->dp_Arg1), *dfl =
+                    BADDR(pkt->dp_Arg3);
+
+                if ((err = TestLock(sfl, glob)) != 0
+                    || (err = TestLock(dfl, glob)) != 0)
+                    break;
+
+                err = OpReplaceFile(sfl, AROS_BSTR_ADDR(pkt->dp_Arg2),
+                    AROS_BSTR_strlen(pkt->dp_Arg2), dfl,
+                    AROS_BSTR_ADDR(pkt->dp_Arg4),
+                    AROS_BSTR_strlen(pkt->dp_Arg4), glob);
+                if (err == 0)
+                    res = DOSTRUE;
+
+                break;
+            }
+
         case ACTION_CREATE_DIR:
             {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg1), *new;

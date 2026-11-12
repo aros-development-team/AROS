@@ -109,6 +109,9 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
 LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen,
     struct ExtFileLock *ddirlock, UBYTE *dname, ULONG dnamelen,
     struct Globals *glob);
+LONG OpReplaceFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen,
+    struct ExtFileLock *ddirlock, UBYTE *dname, ULONG dnamelen,
+    struct Globals *glob);
 LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     struct ExtFileLock **newdirlock, struct Globals *glob);
 LONG OpRead(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *read,
