@@ -213,6 +213,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library not available - skipping SLAAC6 tests\n");
         return 0;
     }
+    if (st_skip_program("cunit-net-slaac6", ST_V6)) {
+        CloseLibrary(SocketBase);
+        return 0;
+    }
     ready = index_of(ifname, &ifindex) == 0 && have_addr(NULL, &linklocal) &&
             FindPort((STRPTR)AROSTCP_CTRLPORT_NAME) != NULL;
     if (!ready)

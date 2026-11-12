@@ -53,27 +53,29 @@
 #include <sys/sysctl.h>
 #endif
 
+#include <sys/domain.h>
+
 #include <net/route.h>
 #include <net/if.h>
+#include <net/netmodule.h>
 
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
-#include <netinet/ip.h>
+#include <netinet/ip.h>         /* struct inpcb holds one; not used here */
 #include <netinet/in_pcb.h>
-#include <netinet/in_var.h>
-#include <netinet/ip_var.h>
+#include <netinet/inetfamily.h>
 #include <netinet/tcp.h>
-#include <netinet/in_protos.h>
 #include <netinet/tcp_fsm.h>
 #include <netinet/tcp_seq.h>
 #include <netinet/tcp_timer.h>
 #include <netinet/tcp_var.h>
-#include <netinet/tcpip.h>
 #ifdef TCPDEBUG
 #include <netinet/tcp_debug.h>
 #endif
 
 #include "tcp_compat.h"
+#include "tcp_syncache.h"           /* syncache_listen() */
+#include <net/netcore_map.h>        /* always the last include */
 
 /*
  * TCP protocol interface to socket abstraction.
@@ -98,6 +100,26 @@ extern	char *tcpstates[];
  * then m is the mbuf chain of send data.  If this is a timer expiration
  * (called from the software clock routine), then timertype tells which timer.
  */
+/*
+ * A connect found another PCB with the same four addresses and ports
+ * (inpcb_connect()). If that is an earlier incarnation of the connection
+ * still in TIME_WAIT, for less than MSL, with a peer that sent CC options
+ * (RFC 1644 section 3.3: TIME-WAIT truncation), it is closed and the
+ * connect goes on; else the address is in use. The rule is TCP's and has
+ * nothing of a family in it: it applies to every family.
+ */
+static int
+tcp_connreuse(struct inpcb *oinp)
+{
+    struct tcpcb *otp = intotcpcb(oinp);
+
+    if(otp == NULL || otp->t_state != TCPS_TIME_WAIT ||
+            otp->t_duration >= TCPTV_MSL || !(otp->t_flags & TF_RCVD_CC))
+        return (0);
+    (void) tcp_close(otp);
+    return (1);
+}
+
 /*ARGSUSED*/
 int
 tcp_usrreq(so, req, m, nam, control)
@@ -107,16 +129,26 @@ struct mbuf *m, *nam, *control;
 {
     register struct inpcb *inp;
     register struct tcpcb *tp = 0;
-    struct sockaddr_in *sinp;
     int s;
     int error = 0;
 #ifdef TCPDEBUG
     int ostate;
 #endif
 
-    if(req == PRU_CONTROL)
-        return (in_control(so, (int)(long)m, (caddr_t)nam,
-                           (struct ifnet *)control));
+    if(req == PRU_CONTROL) {
+        /*
+         * An ioctl: the family of the socket knows its address requests.
+         * (The socket's, not the PCB's: a connection of another family
+         * that the socket accepted is still that socket to its owner.)
+         */
+        const struct inetfamily *inf =
+            inetfamily_find(so->so_proto->pr_domain->dom_family);
+
+        if(inf == NULL || inf->inf_control == NULL)
+            return (EOPNOTSUPP);
+        return ((*inf->inf_control)(so, (int)(long)m, (caddr_t)nam,
+                                    (struct ifnet *)control));
+    }
     if(control && control->m_len) {
         m_freem(control);
         if(m)
@@ -187,38 +219,29 @@ struct mbuf *m, *nam, *control;
          * Give the socket an address.
          */
     case PRU_BIND:
-#if INET6
-        if(tcp_isipv6(inp)) {
-            error = in6_pcbbind(inp, nam);
-            break;
-        }
-#endif
         /*
-         * Must check for multicast addresses and disallow binding
-         * to them.
+         * A connection has no multicast end: refuse such an address,
+         * whichever family it is of.
          */
-        sinp = mtod(nam, struct sockaddr_in *);
-        if(sinp->sin_family == AF_INET &&
-                IN_MULTICAST(ntohl(sinp->sin_addr.s_addr))) {
+        if((*inp->inp_family->inf_sa_multicast)(nam)) {
             error = EAFNOSUPPORT;
             break;
         }
-        error = in_pcbbind(inp, nam);
-        if(error)
-            break;
+        error = inpcb_bind(inp, nam);
         break;
 
         /*
          * Prepare to accept connections.
          */
     case PRU_LISTEN:
-        if(inp->inp_lport == 0)
-#if INET6
-            error = tcp_isipv6(inp) ? in6_pcbbind(inp, (struct mbuf *)0)
-                                    : in_pcbbind(inp, (struct mbuf *)0);
-#else
-            error = in_pcbbind(inp, (struct mbuf *)0);
-#endif
+        /*
+         * The SYN cache's table comes with the first listener, of either
+         * family: a machine that never listens does not pay for it.
+         * Without it the socket cannot listen (ENOBUFS).
+         */
+        error = syncache_listen();
+        if(error == 0 && inp->inp_lport == 0)
+            error = inpcb_bind(inp, (struct mbuf *)0);
         if(error == 0)
             tp->t_state = TCPS_LISTEN;
         break;
@@ -232,15 +255,12 @@ struct mbuf *m, *nam, *control;
          */
     case PRU_CONNECT:
         /*
-         * Must disallow TCP ``connections'' to multicast addresses.
+         * Must disallow TCP ``connections'' to multicast addresses,
+         * whichever family they are of.
          */
-        if(!tcp_isipv6(inp)) {
-            sinp = mtod(nam, struct sockaddr_in *);
-            if(sinp->sin_family == AF_INET
-                    && IN_MULTICAST(ntohl(sinp->sin_addr.s_addr))) {
-                error = EAFNOSUPPORT;
-                break;
-            }
+        if((*inp->inp_family->inf_sa_multicast)(nam)) {
+            error = EAFNOSUPPORT;
+            break;
         }
 
         if((error = tcp_connect(tp, nam)) != 0)
@@ -276,12 +296,7 @@ struct mbuf *m, *nam, *control;
          * of the peer, storing through addr.
          */
     case PRU_ACCEPT:
-#if INET6
-        if(tcp_isipv6(inp))
-            in6_setpeeraddr(inp, nam);
-        else
-#endif
-            in_setpeeraddr(inp, nam);
+        inpcb_setpeeraddr(inp, nam);
         break;
 
         /*
@@ -385,22 +400,17 @@ struct mbuf *m, *nam, *control;
         tp->t_force = 0;
         break;
 
+    /*
+     * The addresses are written in the form of the socket's family, which
+     * is not the PCB's for an IPv4 connection accepted on an IPv6
+     * socket (inpcb_setsockaddr()).
+     */
     case PRU_SOCKADDR:
-#if INET6
-        if(tcp_isipv6(inp))
-            in6_setsockaddr(inp, nam);
-        else
-#endif
-            in_setsockaddr(inp, nam);
+        inpcb_setsockaddr(inp, nam);
         break;
 
     case PRU_PEERADDR:
-#if INET6
-        if(tcp_isipv6(inp))
-            in6_setpeeraddr(inp, nam);
-        else
-#endif
-            in_setpeeraddr(inp, nam);
+        inpcb_setpeeraddr(inp, nam);
         break;
 
         /*
@@ -427,9 +437,9 @@ struct mbuf *m, *nam, *control;
 
 /*
  * Common subroutine to open a TCP connection to remote host specified
- * by struct sockaddr_in in mbuf *nam.  Call in_pcbbind to assign a local
- * port number if needed.  Call in_pcbladdr to do the routing and to choose
- * a local host address (interface).  If there is an existing incarnation
+ * by the socket address in mbuf *nam.  Bind a local port number if
+ * needed.  Have the PCB layer do the routing and choose a local host
+ * address (interface).  If there is an existing incarnation
  * of the same connection in TIME-WAIT state and if the remote host was
  * sending CC options and if the connection duration was < MSL, then
  * truncate the previous TIME-WAIT state and proceed.
@@ -440,79 +450,28 @@ tcp_connect(tp, nam)
 register struct tcpcb *tp;
 struct mbuf *nam;
 {
-    struct inpcb *inp = tp->t_inpcb, *oinp;
+    struct inpcb *inp = tp->t_inpcb;
     struct socket *so = inp->inp_socket;
-    struct sockaddr_in *sin = mtod(nam, struct sockaddr_in *);
-    struct sockaddr_in *ifaddr;
     int error;
 
-#if INET6
-    if(tcp_isipv6(inp)) {
-        /* IPv6 connect: bind an ephemeral local port/addr, then connect. */
-        if(inp->inp_lport == 0) {
-            error = in6_pcbbind(inp, (struct mbuf *)0);
-            if(error)
-                return error;
-        }
-        error = in6_pcbconnect(inp, nam);
-        if(error)
-            return error;
-        tp->t_template = tcp_template(tp);
-        if(tp->t_template == 0) {
-            in6_pcbdisconnect(inp);
-            return ENOBUFS;
-        }
-        tp->request_r_scale = tcp_rscale(so);
-        soisconnecting(so);
-        tcpstat.tcps_connattempt++;
-        tp->t_state = TCPS_SYN_SENT;
-        tp->t_timer[TCPT_KEEP] = TP_KEEPINIT(tp);
-        tp->iss = tcp_new_isn(inp);
-        tp->t_ts_offset = tcp_new_tsoff(inp);
-        tcp_sendseqinit(tp);
-        tp->cc_send = CC_INC(tcp_ccgen);
-        return 0;
-    }
-#endif /* INET6 */
-
     if(inp->inp_lport == 0) {
-        error = in_pcbbind(inp, NULL);
+        error = inpcb_bind(inp, (struct mbuf *)0);
         if(error)
             return error;
     }
 
     /*
-     * Cannot simply call in_pcbconnect, because there might be an
-     * earlier incarnation of this same connection still in
-     * TIME_WAIT state, creating an ADDRINUSE error.
+     * The peer, and the local address the family chooses for it. An
+     * earlier incarnation of this same connection still in TIME_WAIT
+     * does not make the address "in use" (tcp_connreuse()).
      */
-    error = in_pcbladdr(inp, nam, &ifaddr);
+    error = inpcb_connect(inp, nam, tcp_connreuse);
     if(error)
         return error;
-    oinp = in_pcblookup(inp->inp_pcbinfo->listhead,
-                        sin->sin_addr, sin->sin_port,
-                        inp->inp_laddr.s_addr != INADDR_ANY ? inp->inp_laddr
-                        : ifaddr->sin_addr,
-                        inp->inp_lport,  0);
-    if(oinp) {
-        struct tcpcb *otp;
-        if(oinp != inp && (otp = intotcpcb(oinp)) != NULL &&
-                otp->t_state == TCPS_TIME_WAIT &&
-                otp->t_duration < TCPTV_MSL &&
-                (otp->t_flags & TF_RCVD_CC))
-            (void) tcp_close(otp);
-        else
-            return EADDRINUSE;
-    }
-    if(inp->inp_laddr.s_addr == INADDR_ANY)
-        inp->inp_laddr = ifaddr->sin_addr;
-    inp->inp_faddr = sin->sin_addr;
-    inp->inp_fport = sin->sin_port;
-    in_pcbrehash(inp);
 
     tp->t_template = tcp_template(tp);
     if(tp->t_template == 0) {
-        in_pcbdisconnect(inp);
+        inpcb_disconnect(inp);
         return ENOBUFS;
     }
 
@@ -596,21 +555,21 @@ struct mbuf **mp;
         return (ECONNRESET);
     }
     if(level != IPPROTO_TCP) {
-#if INET6
         /*
-         * IPv6-level options (e.g. IPV6_V6ONLY, IPV6_UNICAST_HOPS) on a TCP6
-         * socket must go to ip6_ctloutput; the TCP6 protosw shares this
-         * ctloutput with TCP4, so route by the option level rather than always
-         * falling through to the IPv4 ip_ctloutput (which rejects IPPROTO_IPV6
-         * with EINVAL).  Requires <conf.h> (included above) for INET6.
+         * An option of a family's level goes to that family, whichever
+         * family the socket is of (as it always did). A level no family
+         * of the running stack answers for is refused, as the IPv4 code
+         * used to refuse what it did not know.
          */
-        extern int ip6_ctloutput(int op, struct socket *so, int level,
-                                 int optname, struct mbuf **m);
-        if(level == IPPROTO_IPV6)
-            error = ip6_ctloutput(op, so, level, optname, mp);
-        else
-#endif
-            error = ip_ctloutput(op, so, level, optname, mp);
+        const struct inetfamily *inf = inetfamily_bylevel(level);
+
+        if(inf != NULL)
+            error = (*inf->inf_ctloutput)(op, so, level, optname, mp);
+        else {
+            error = EINVAL;
+            if(op == PRCO_SETOPT && *mp)
+                (void) m_free(*mp);
+        }
         splx(s);
         return (error);
     }
@@ -774,12 +733,12 @@ struct mbuf **mp;
  * be set by the route).
  */
 #if defined(__mc68000__)
-u_long	tcp_sendspace = 1024 * 16;
-u_long	tcp_recvspace = 1024 * 16;
+#define TCP_SPACE_DFLT	(1024 * 16)
 #else
-u_long	tcp_sendspace = 1024 * 128;
-u_long	tcp_recvspace = 1024 * 128;
+#define TCP_SPACE_DFLT	(1024 * 128)
 #endif
+u_long	tcp_sendspace = TCP_SPACE_DFLT;
+u_long	tcp_recvspace = TCP_SPACE_DFLT;
 
 /*
  * Attach TCP protocol to socket, allocating
@@ -892,36 +851,28 @@ register struct tcpcb *tp;
     return (tp);
 }
 
+/*
+ * TCP's variables and statistics, for whoever reaches them from outside
+ * TCP: the configuration and ARexx variables (TCP, TCP_SENDSPACE,
+ * TCP_RECVSPACE), programs that look the stack's symbols up (netstat:
+ * "_tcb", "_tcpstat") and sysctl (net.inet.tcp.<id>). None of them names
+ * TCP: the table is registered when TCP starts and each looks its name up
+ * (net/netmodule.h).
+ *
+ * The names under net.inet.tcp are TCP's, whichever families the stack
+ * runs. (net.inet.tcp.mssdflt is not here: the default MSS is each
+ * family's own, and IPv4 registers its.)
+ */
 #ifdef ENABLE_SYSCTL
 /*
- * Sysctl for tcp variables.
+ * The variables whose new value is checked: out of range is EINVAL and
+ * changes nothing.
  */
-int
-tcp_sysctl(name, namelen, oldp, oldlenp, newp, newlen)
-int *name;
-u_int namelen;
-void *oldp;
-size_t *oldlenp;
-void *newp;
-size_t newlen;
+static int
+tcp_sysctl_checked(const struct netvar *nv, void *oldp, size_t *oldlenp,
+                   void *newp, size_t newlen)
 {
-    /* All sysctl names at this level are terminal. */
-    if(namelen != 1)
-        return (ENOTDIR);
-
-    switch(name[0]) {
-    case TCPCTL_DO_RFC1323:
-        return (sysctl_int(oldp, oldlenp, newp, newlen,
-                           &tcp_do_rfc1323));
-    case TCPCTL_DO_RFC1644:
-        return (sysctl_int(oldp, oldlenp, newp, newlen,
-                           &tcp_do_rfc1644));
-    case TCPCTL_MSSDFLT:
-        return (sysctl_int(oldp, oldlenp, newp, newlen,
-                           &tcp_mssdflt));
-    case TCPCTL_STATS:
-        return (sysctl_rdstruct(oldp, oldlenp, newp, &tcpstat,
-                                sizeof tcpstat));
+    switch(nv->nv_id) {
     case TCPCTL_RTTDFLT: {          /* the initial RTO, s */
         int v = tcp_rttdflt, error;
 
@@ -994,7 +945,7 @@ size_t newlen;
     }
     case TCPCTL_SENDBUF_MAX:
     case TCPCTL_RECVBUF_MAX: {      /* autosizing ceilings, bytes; 0: off */
-        u_long *p = name[0] == TCPCTL_SENDBUF_MAX ? &tcp_autosndbuf_max : &tcp_autorcvbuf_max;
+        u_long *p = nv->nv_id == TCPCTL_SENDBUF_MAX ? &tcp_autosndbuf_max : &tcp_autorcvbuf_max;
         int v = *p, error;
 
         /* bounded by autosizing's budget (tcp_autobuf_grow()), not sb_max:
@@ -1006,23 +957,6 @@ size_t newlen;
             *p = v;
         return (error);
     }
-    case TCPCTL_KEEPIDLE:
-        return (sysctl_int(oldp, oldlenp, newp, newlen,
-                           &tcp_keepidle));
-    case TCPCTL_KEEPINTVL:
-        return (sysctl_int(oldp, oldlenp, newp, newlen,
-                           &tcp_keepintvl));
-    case TCPCTL_SENDSPACE:
-        return (sysctl_int(oldp, oldlenp, newp, newlen,
-                           (int *)&tcp_sendspace)); /* XXX */
-    case TCPCTL_RECVSPACE:
-        return (sysctl_int(oldp, oldlenp, newp, newlen,
-                           (int *)&tcp_recvspace)); /* XXX */
-    case TCPCTL_PMTUD:
-        return (sysctl_int(oldp, oldlenp, newp, newlen, &tcp_do_pmtud));
-    case TCPCTL_PMTUD_BLACKHOLE:
-        return (sysctl_int(oldp, oldlenp, newp, newlen,
-                           &tcp_do_pmtud_blackhole));
     case TCPCTL_ECN: {
         int v = tcp_do_ecn, error;
 
@@ -1033,12 +967,64 @@ size_t newlen;
             tcp_do_ecn = v;
         return (error);
     }
-    case TCPCTL_PRR:
-        return (sysctl_int(oldp, oldlenp, newp, newlen, &tcp_do_prr));
-    default:
-        return (ENOPROTOOPT);
     }
-    /* NOTREACHED */
+    return (ENOPROTOOPT);
 }
+#define TCPVAR_CHECKED(name, id) \
+    { name, (void *)tcp_sysctl_checked, 0, NVT_SYSCTL, PF_INET, IPPROTO_TCP, id }
 #endif
 
+#define TCPVAR(name, var, id) \
+    { name, &(var), sizeof(int), NVT_INT, PF_INET, IPPROTO_TCP, id }
+
+static const struct netvar tcp_netvars[] = {
+    { "tcpstat", &tcpstat, sizeof(tcpstat), NVT_STATS, PF_INET, IPPROTO_TCP, TCPCTL_STATS },
+    /* the list of TCP's PCBs, which netstat walks: a block read from
+     * outside, as the statistics are */
+    { "tcb",     &tcb,     sizeof(tcb),     NVT_STATS },
+    /* (the two buffer sizes are u_long; what is read and set is an int's
+     * worth of them, as it always was) */
+    TCPVAR("tcp_sendspace",          tcp_sendspace,          TCPCTL_SENDSPACE),
+    TCPVAR("tcp_recvspace",          tcp_recvspace,          TCPCTL_RECVSPACE),
+    TCPVAR("tcp_do_rfc1323",         tcp_do_rfc1323,         TCPCTL_DO_RFC1323),
+    TCPVAR("tcp_do_rfc1644",         tcp_do_rfc1644,         TCPCTL_DO_RFC1644),
+    TCPVAR("tcp_keepidle",           tcp_keepidle,           TCPCTL_KEEPIDLE),
+    TCPVAR("tcp_keepintvl",          tcp_keepintvl,          TCPCTL_KEEPINTVL),
+    TCPVAR("tcp_do_pmtud",           tcp_do_pmtud,           TCPCTL_PMTUD),
+    TCPVAR("tcp_do_pmtud_blackhole", tcp_do_pmtud_blackhole, TCPCTL_PMTUD_BLACKHOLE),
+    TCPVAR("tcp_do_prr",             tcp_do_prr,             TCPCTL_PRR),
+#ifdef ENABLE_SYSCTL
+    TCPVAR_CHECKED("tcp_rttdflt",        TCPCTL_RTTDFLT),
+    TCPVAR_CHECKED("tcp_abc_l",          TCPCTL_ABC_L),
+    TCPVAR_CHECKED("tcp_do_hystart",     TCPCTL_HYSTART),
+    TCPVAR_CHECKED("tcp_minmss",         TCPCTL_MINMSS),
+    TCPVAR_CHECKED("tcp_rexmit_min",     TCPCTL_REXMIT_MIN),
+    TCPVAR_CHECKED("tcp_do_rack",        TCPCTL_RACK),
+    TCPVAR_CHECKED("tcp_do_tlp",         TCPCTL_TLP),
+    TCPVAR_CHECKED("tcp_autosndbuf_max", TCPCTL_SENDBUF_MAX),
+    TCPVAR_CHECKED("tcp_autorcvbuf_max", TCPCTL_RECVBUF_MAX),
+    TCPVAR_CHECKED("tcp_do_ecn",         TCPCTL_ECN),
+#endif
+};
+
+/* Called first thing by tcp_init(): a value the configuration set for one
+ * of the variables before TCP started is given to it here. */
+void
+tcp_vars_register(void)
+{
+    (void)netvar_register(tcp_netvars, sizeof(tcp_netvars) / sizeof(tcp_netvars[0]));
+}
+
+/*
+ * TCP stops. Taken back first: the core then keeps what the configuration
+ * had set for a variable it knows by a keyword (TCP_SENDSPACE,
+ * TCP_RECVSPACE; kern/config_var.c) and gives it to the variable again at
+ * the next start. Then this file's variables are what the file gives them.
+ */
+void
+tcp_vars_unregister(void)
+{
+    (void)netvar_unregister(tcp_netvars);
+    tcp_sendspace = TCP_SPACE_DFLT;
+    tcp_recvspace = TCP_SPACE_DFLT;
+}

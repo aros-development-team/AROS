@@ -236,6 +236,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library not available - skipping ARPQUEUE tests\n");
         return 0;
     }
+    if (st_skip_program("cunit-net-arpqueue", ST_V4)) {
+        CloseLibrary(SocketBase);
+        return 0;
+    }
     ready = setup();
     if (!ready)
         printf("%s: no IPv4 interface - skipping ARPQUEUE tests\n", ifname);

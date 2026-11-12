@@ -21,6 +21,7 @@
 
 #ifdef KERNEL
 void mld6_init(void);
+void mld6_defaults(void);	/* IPv6 stops: MLD's variables as the file has them */
 void mld6_input(struct mbuf *, int, int);
 void mld6_start_listening(struct in6_multi *);
 void mld6_stop_listening(struct in6_multi *);

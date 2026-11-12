@@ -165,7 +165,7 @@ struct tcpcb {
 #define TF_TLP		0x0800		/* a loss probe is out, up to t_tlp_end */
 #define TF_UNDO		0x1000		/* the last recovery may prove needless (D-SACKs) */
 
-	struct	tcpiphdr *t_template;	/* skeletal packet for transmit */
+	struct	tcphdr *t_template;	/* skeletal TCP header for transmit */
 	struct	inpcb *t_inpcb;		/* back pointer to internet pcb */
 /*
  * The following fields are used as in the protocol specification.
@@ -560,6 +560,19 @@ struct	tcpstat {
 }
 
 #ifdef KERNEL
+/*
+ * The TCP header of a segment in an mbuf. struct tcphdr is packed, so
+ * through a plain pointer to it the compiler must assume any address and,
+ * on machines that cannot read a word from an odd one (the 68000), fetches
+ * and stores every 16- and 32-bit field a byte at a time: some 120 cycles
+ * more for each th_seq or th_ack. The header of a segment is even-aligned
+ * - the network header in front of it starts at an even address of its
+ * mbuf and is a multiple of 4 bytes long, and what TCP builds starts at
+ * such a place - and this type says so. (struct tcpiphdr said the same
+ * for the code that was here before.) Needs <netinet/tcp.h> first.
+ */
+typedef struct tcphdr tcp_ahdr_t __attribute__((__aligned__(2)));
+
 extern	struct inpcbhead tcb;		/* head of queue of active tcpcb's */
 extern	struct inpcbinfo tcbinfo;
 extern	struct tcpstat tcpstat;	/* tcp statistics */
@@ -589,7 +602,6 @@ extern	int tcp_do_rfc1644;	/* XXX */
 #define TCP_KEEP_MAXSECS	(32767 / PR_SLOWHZ)
 extern	int tcp_do_pmtud;		/* IPv4 path MTU discovery */
 extern	int tcp_do_pmtud_blackhole;	/* black-hole detection */
-extern	int tcp_mssdflt;	/* XXX */
 extern	u_long tcp_now;		/* for RFC 1323 timestamps */
 extern	int tcp_rttdflt;	/* initial retransmission timeout (s) */
 extern	int tcp_rexmit_min;	/* minimum retransmission timeout (ms) */
@@ -615,20 +627,25 @@ void	 tcp_canceltimers __P((struct tcpcb *));
 struct tcpcb *
 	 tcp_close __P((struct tcpcb *));
 int	 tcp_connect __P((struct tcpcb *, struct mbuf *));
-void	 tcp_ctlinput __P((int, struct sockaddr *, void *));
 int	 tcp_ctloutput __P((int, struct socket *, int, int, struct mbuf **));
 struct tcpcb *
 	 tcp_disconnect __P((struct tcpcb *));
 struct tcpcb *
 	 tcp_drop __P((struct tcpcb *, int));
 void	 tcp_dooptions __P((struct tcpcb *,
-	    u_char *, int, struct tcpiphdr *, struct tcpopt *));
+	    u_char *, int, struct tcphdr *, struct tcpopt *));
 void	 tcp_drain __P((void));
 void	 tcp_fasttimo __P((void));
 struct rmxp_tao *
 	 tcp_gettaocache __P((struct inpcb *));
 void	 tcp_init __P((void));
-void	 tcp_input __P((void *arg, ...));
+struct inetfamily;
+struct inctlparam;
+/* a segment, its network header still in front (hlen bytes), from the
+ * family it arrived by */
+void	 tcp_input __P((struct mbuf *, int, const struct inetfamily *));
+/* what a family's ICMP says about a segment sent (netinet/inetfamily.h) */
+void	 tcp_ctlnotify __P((int, const struct inctlparam *));
 void	 tcp_mss __P((struct tcpcb *, int));
 int	 tcp_mssopt __P((struct tcpcb *));
 struct tcpcb *
@@ -636,22 +653,19 @@ struct tcpcb *
 void	 tcp_notify __P((struct inpcb *, int));
 int	 tcp_output __P((struct tcpcb *));
 void	 tcp_pulloutofband __P((struct socket *,
-	    struct tcpiphdr *, struct mbuf *));
+	    struct tcphdr *, struct mbuf *));
 void	 tcp_quench __P((struct inpcb *, int));
-int	 tcp_reass __P((struct tcpcb *, struct tcpiphdr *, struct mbuf *));
-struct in6_addr;
-void	 tcp_respond __P((struct tcpcb *,
-	    struct tcpiphdr *, struct mbuf *, tcp_seq, tcp_seq, int,
-	    int, struct in6_addr *, struct in6_addr *));
-struct rtentry *
-	 tcp_rtlookup __P((struct inpcb *));
+int	 tcp_reass __P((struct tcpcb *, struct tcphdr *, int, struct mbuf *));
+void	 tcp_respond __P((struct tcpcb *, const struct inetfamily *,
+	    const void *, const void *, tcp_ahdr_t *, struct mbuf *,
+	    tcp_seq, tcp_seq, int));
 void	 tcp_setpersist __P((struct tcpcb *));
 void	 tcp_slowtimo __P((void));
-int	 tcp_sysctl __P((int *, u_int, void *, size_t *, void *, size_t));
-struct tcpiphdr *
+struct tcphdr *
 	 tcp_template __P((struct tcpcb *));
 struct tcpcb *
 	 tcp_timers __P((struct tcpcb *, int));
+struct tcpiphdr;	/* only tcp_debug.c still has one */
 void	 tcp_trace __P((int, int, struct tcpcb *, struct tcpiphdr *, int));
 struct tcpcb *
 	 tcp_usrclosed __P((struct tcpcb *));

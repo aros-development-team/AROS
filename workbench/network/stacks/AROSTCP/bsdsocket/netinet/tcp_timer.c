@@ -61,7 +61,6 @@
 #include <netinet/tcp_seq.h>
 #include <netinet/tcp_timer.h>
 #include <netinet/tcp_var.h>
-#include <netinet/tcpip.h>
 
 #include <conf.h>
 #include <netinet/tcp_cc.h>
@@ -73,6 +72,7 @@ int	tcp_maxidle;
 
 #include "tcp_compat.h"
 #include "tcp_syncache.h"
+#include <net/netcore_map.h>        /* always the last include */
 
 void tcp_pmtud_blackhole(struct tcpcb *);   /* tcp_subr.c */
 
@@ -258,6 +258,16 @@ int	tcp_backoff[TCP_MAXRXTSHIFT + 1] =
  * it is.
  */
 int	tcp_do_tlp = 1;			/* net.inet.tcp.tlp */
+
+/* TCP stops (tcp_deinit()): this file's variables as the file has them */
+void
+tcp_timer_defaults(void)
+{
+    tcp_keepidle = TCPTV_KEEP_IDLE;
+    tcp_keepintvl = TCPTV_KEEPINTVL;
+    tcp_maxidle = 0;
+    tcp_do_tlp = 1;
+}
 
 #define	TCP_WCDELACKT_MS	200	/* worst-case delayed ACK (RFC 8985) */
 
@@ -497,13 +507,13 @@ int timer;
              * The keepalive packet must have nonzero length
              * to get a 4.2 host to respond.
              */
-            tcp_respond(tp, tp->t_template, (struct mbuf *)NULL,
-                        tp->rcv_nxt - 1, tp->snd_una - 1, 0,
-                        0, NULL, NULL);
+            tcp_respond(tp, tp->t_inpcb->inp_family, &tp->t_inpcb->inp_la,
+                        &tp->t_inpcb->inp_fa, tp->t_template,
+                        (struct mbuf *)NULL, tp->rcv_nxt - 1, tp->snd_una - 1, 0);
 #else
-            tcp_respond(tp, tp->t_template, (struct mbuf *)NULL,
-                        tp->rcv_nxt, tp->snd_una - 1, 0,
-                        0, NULL, NULL);
+            tcp_respond(tp, tp->t_inpcb->inp_family, &tp->t_inpcb->inp_la,
+                        &tp->t_inpcb->inp_fa, tp->t_template,
+                        (struct mbuf *)NULL, tp->rcv_nxt, tp->snd_una - 1, 0);
 #endif
             tp->t_timer[TCPT_KEEP] = TP_KEEPINTVL(tp);
         } else

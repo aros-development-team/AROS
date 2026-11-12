@@ -158,10 +158,10 @@ int main(int argc, char **argv)
     }
     p = CU_add_suite("IFLIST_Suite", init_suite, clean_suite);
     if (p == NULL ||
-        !CU_add_test(p, "ObtainInterfaceList() lists the interfaces", testIFLIST_LIST) ||
-        !CU_add_test(p, "QueryInterfaceTagList(lo0): MTU, address, netmask", testIFLIST_LOOPBACK) ||
-        !CU_add_test(p, "QueryInterfaceTagList(): what the ioctls say", testIFLIST_INTERFACE) ||
-        !CU_add_test(p, "an unknown name: ENXIO", testIFLIST_UNKNOWN))
+        !st_add_test(p, "ObtainInterfaceList() lists the interfaces", testIFLIST_LIST, ST_NONE) ||
+        !st_add_test(p, "QueryInterfaceTagList(lo0): MTU, address, netmask", testIFLIST_LOOPBACK, ST_V4) ||
+        !st_add_test(p, "QueryInterfaceTagList(): what the ioctls say", testIFLIST_INTERFACE, ST_V4) ||
+        !st_add_test(p, "an unknown name: ENXIO", testIFLIST_UNKNOWN, ST_NONE))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

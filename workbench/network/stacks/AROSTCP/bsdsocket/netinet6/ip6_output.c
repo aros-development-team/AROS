@@ -47,6 +47,10 @@
 #include <net/if_loop_protos.h>
 #include <protos/kern/kern_random_protos.h>
 #include <kern/uipc_socket2_protos.h>
+#include <net/netcore_map.h>        /* always the last include */
+
+/* IPv6's packet hook point (netinet6/in6_proto.c) */
+extern struct pfil_point in6_pfil;
 
 /*
  * ip6_mloopback - give a copy of a group datagram being sent on ifp to this
@@ -234,9 +238,8 @@ ip6_output(void *args, ...)
              * address means that interface, not the first one that is up */
         } else {
             /* pick first non-loopback, up interface */
-            extern struct ifnet *ifnet;
             struct ifnet *mifp;
-            for(mifp = ifnet; mifp; mifp = mifp->if_next) {
+            for(mifp = ifnet_list; mifp; mifp = mifp->if_next) {
                 if((mifp->if_flags & (IFF_UP | IFF_LOOPBACK)) == IFF_UP) {
                     ifp = mifp;
                     break;
@@ -340,7 +343,6 @@ ip6_output(void *args, ...)
 #if INET6
     if(!(ifp->if_flags & IFF_LOOPBACK)) {
         struct in6_ifaddr *ia6;
-        extern struct ifnet loif;
         for(ia6 = in6_ifaddr; ia6; ia6 = ia6->ia_next) {
             if(IN6_ARE_ADDR_EQUAL(&ia6->ia_addr.sin6_addr, &ip6->ip6_dst)) {
                 ifp = &loif;
@@ -359,6 +361,27 @@ multicast_output:
     /* Set hop limit if not already set by transport layer */
     if(ip6->ip6_hlim == 0)
         ip6->ip6_hlim = ip6_defhlim;
+
+    /*
+     * The packet hooks (the filter engine, Miami hooks that asked for
+     * IPv6): one word tested while nothing is hooked (net/pfil.h). The
+     * outgoing interface is known, and the packet is judged whole, before
+     * the MTU and the fragments, as in IPv4 - with its payload length set
+     * for them, which is otherwise set only when it is sent. A dropped
+     * packet is freed already and the send fails with what the hook said
+     * (the filter engine: EHOSTUNREACH, as for IPv4).
+     */
+    if(PFIL_HOOKED(&in6_pfil, PFIL_OUT)) {
+        struct mbuf *hm = m;
+
+        ip6->ip6_plen = htons((u_int16_t)(m->m_pkthdr.len - sizeof(struct ip6_hdr)));
+        if((error = pfil_run(&in6_pfil, &hm, ifp, PFIL_OUT)) != 0) {
+            m = NULL;
+            goto bad;
+        }
+        m = hm;
+        ip6 = mtod(m, struct ip6_hdr *);
+    }
 
     mtu = ifp->if_mtu;
     /*
@@ -531,7 +554,7 @@ multicast_output:
     }
 
 bad:
-    m_freem(m);
+    m_freem(m);                 /* NULL when a packet hook dropped it */
     if(ro == (struct route *)&iproute && ro->ro_rt) {
         RTFREE(ro->ro_rt);
         ro->ro_rt = NULL;

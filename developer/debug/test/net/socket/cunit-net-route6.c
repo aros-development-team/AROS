@@ -258,12 +258,15 @@ void testROUTE6_ASKS_FOR_ROUTER(void)
     Delay(3 * 50);      /* the new address is tentative until DAD completes */
     CU_ASSERT_EQUAL(route(RTM_ADD, NET, 64, GW), 0);
     s = socket(AF_INET6, SOCK_DGRAM, 0);
-    sa6(&d, DST);
-    d.sin6_port = htons(9);
-    CU_ASSERT_EQUAL(sendto(s, "hop", 3, 0, (struct sockaddr *)&d, sizeof(d)), 3);
-    CU_ASSERT(ns_for(GW, 3));
-    CloseSocket(s);
-    route(RTM_DELETE, NET, 64, GW);
+    CU_ASSERT(s >= 0);
+    if (s >= 0) {
+        sa6(&d, DST);
+        d.sin6_port = htons(9);
+        CU_ASSERT_EQUAL(sendto(s, "hop", 3, 0, (struct sockaddr *)&d, sizeof(d)), 3);
+        CU_ASSERT(ns_for(GW, 3));
+        CloseSocket(s);
+    }
+    route(RTM_DELETE, NET, 64, GW);     /* the route and the address go, socket or not */
     addr6(0, SRCNET);
 }
 
@@ -279,6 +282,10 @@ int main(int argc, char **argv)
     SocketBase = OpenLibrary("bsdsocket.library", 3);
     if (SocketBase == NULL) {
         printf("bsdsocket.library not available - skipping ROUTE6 tests\n");
+        return 0;
+    }
+    if (st_skip_program("cunit-net-route6", ST_V6)) {
+        CloseLibrary(SocketBase);
         return 0;
     }
 

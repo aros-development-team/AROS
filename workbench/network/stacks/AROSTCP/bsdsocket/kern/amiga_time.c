@@ -30,12 +30,13 @@
 #include <sys/socketvar.h>
 #include <sys/protosw.h>	/* for protocol timeouts */
 #include <net/if.h>		/* for if timeout */
-#include <netinet/in.h>
-#include <net/sana2arp.h>	/* for arp timeout */
+#include <sys/kernel.h>		/* hz, tick */
+#include <net/netmodule.h>	/* netperiodic_add() */
 
 #include <kern/amiga_includes.h>
 #include <kern/amiga_time.h>
 #include <kern/amiga_netdb.h>           /* netdb_defer_timer() */
+#include <kern/netdiag.h>
 
 /*
  * include prototypes for timeout functions
@@ -61,8 +62,6 @@ static struct timerequest *timerIORequest = NULL; /* template IORequest */
  * timeoutrequest pointers for all the timeouts
  */
 static struct timeoutRequest *ifTimer = NULL,
-                                  *arpTimer = NULL,
-                                   *autoipTimer = NULL,
                                    *deferTimer = NULL,
                                     *protoSlowTimer = NULL,
                                      *protoFastTimer = NULL;
@@ -70,23 +69,90 @@ static struct timeoutRequest *ifTimer = NULL,
 static BOOL can_send_timeouts = FALSE;
 
 /*
+ * The periodic calls of the modules (netperiodic_add(), net/netmodule.h):
+ * a protocol's own timeouts - address resolution ageing and the like - are
+ * registered by the module that has them, not created here by name. One
+ * request each, sent with the others by timer_send() or, for a module
+ * started later, at once.
+ */
+#define PERIODIC_MAX 8
+static struct timeoutRequest *periodicTimers[PERIODIC_MAX];
+static BOOL timers_running = FALSE;     /* timer_send() has sent the requests */
+
+/* netdiag.tm_last[] has a slot for each of them (kern/netdiag.h) */
+typedef char netdiag_timers_fit[(NETDIAG_TIMERS == NDT_PERIODIC + PERIODIC_MAX) ? 1 : -1];
+
+/*
+ * Every request goes out through here and comes back through timer_poll()
+ * or an AbortIO()/WaitIO(), so that netdiag can tell a request that went
+ * out twice (tm_sent - tm_replied - tm_collected above tm_reqs) or never
+ * came back (its tm_last[] frozen).
+ */
+static inline void
+timer_sendreq(struct timeoutRequest *tr)
+{
+    netdiag.tm_sent++;
+    sendTimeoutRequest(tr);
+}
+
+/* abort a request that may be out and take it back */
+static inline void
+timer_collect(struct timeoutRequest *tr)
+{
+    AbortIO((struct IORequest *)tr);
+    WaitIO((struct IORequest *)tr);
+    netdiag.tm_collected++;
+}
+
+/*
+ * The core's coarse clock (net/netmodule.h): one more with every slow
+ * timeout of the protocols.
+ */
+unsigned long net_slowticks = 0;
+
+static void
+proto_slowtimo(void)
+{
+    net_slowticks++;
+    pfslowtimo();
+}
+
+/*
  * The TCP retransmission deadlines (t_rexmt_at: RTO, loss probe) on a
  * request of their own, so that they do not wait for the next 50 ms tick:
- * it waits for the earliest of all connections'. tcp_timer_want() brings
- * it forward when a deadline comes before it; when it fires,
- * tcp_rexmt_due() runs the due ones and gives the next deadline, which it
- * is sent again for (timer_poll()), or half a second when none is set.
+ * it waits for the earliest of all connections'. tcp_timer_want() asks for
+ * it to be brought forward when a deadline comes before it; when it fires,
+ * the due ones are run and the next deadline is given, which it is sent
+ * again for (timer_poll()), or half a second when none is set.
+ *
+ * Only the task that owns the timer port - the stack's - ever aborts,
+ * collects or sends the request. exec lets nobody else: WaitIO() takes a
+ * reply off the owner's port and waits on the caller's own signals, the
+ * reply signals the owner, and whether it was right depended on where the
+ * owner happened to be in timer_poll(). Another task records the deadline
+ * and signals the owner (tcp_timer_rearm), which does the rest at its next
+ * timer_poll().
+ *
+ * The core does not name TCP for this: the module that has the deadlines
+ * registers how its clock is read and how the due ones are run (struct
+ * netdeadline, net/netmodule.h: TCP's tcp_ms() and tcp_rexmt_due()), and
+ * `deadline' is that registration. While there is none - no transports in
+ * the running stack, or not started yet - the request goes round every
+ * half second and does nothing.
  */
-extern u_int32_t tcp_ms(void);
-extern u_int32_t tcp_rexmt_due(int *);
+static const struct netdeadline *deadline = NULL;
 static struct timeoutRequest *tcpTimer = NULL;
-static u_int32_t tcp_timer_at;          /* when it is due (tcp_ms()) */
+static u_int32_t tcp_timer_at;          /* when it is due, or is wanted to be
+                                           (on nd_now's clock) */
 static BOOL tcp_timer_out = FALSE;      /* sent and not back yet */
+static BOOL tcp_timer_rearm = FALSE;    /* another task wants it at tcp_timer_at,
+                                           and the owner has not seen to it yet */
 
+/* only with a registration */
 static void
 tcp_timer_set(u_int32_t at)
 {
-    long d = (long)(at - tcp_ms());
+    long d = (long)(at - (*deadline->nd_now)());
 
     if(d < 1)
         d = 1;
@@ -95,29 +161,143 @@ tcp_timer_set(u_int32_t at)
     tcp_timer_at = at;
 }
 
+/*
+ * Half a second from now: when no deadline is set, and when nobody is
+ * registered (the interval alone is set then - there is no clock to say
+ * when that is, and nobody who could ask: see tcp_timer_want()).
+ */
+static void
+tcp_timer_idle(void)
+{
+    if(deadline != NULL)
+        tcp_timer_set((*deadline->nd_now)() + 500);
+    else {
+        tcpTimer->timeout_timeval.tv_sec = 0;
+        tcpTimer->timeout_timeval.tv_usec = 500000;
+    }
+}
+
 /* timer_poll() calls it, then sends the request again */
 static void
 tcp_timer_fire(void)
 {
     u_int32_t next;
-    int any;
+    int any = 0;
 
+    netdiag.dl_fire++;
     tcp_timer_out = FALSE;
-    next = tcp_rexmt_due(&any);
-    tcp_timer_set(any ? next : tcp_ms() + 500);
+    tcp_timer_rearm = FALSE;            /* every deadline is looked at below */
+    if(deadline != NULL)
+        next = (*deadline->nd_due)(&any);
+    if(any)
+        tcp_timer_set(next);
+    else
+        tcp_timer_idle();
     tcp_timer_out = TRUE;
 }
 
-/* A retransmission deadline was set: bring the request forward to it. */
+/*
+ * The module that has the deadlines makes itself known, and takes itself
+ * back. With the stack fenced, as modules are started and stopped; at
+ * splsoftclock the request is pending or replied and still on the port,
+ * never half-way through timer_poll().
+ *
+ * Registered while the request is out (a module started after the timers):
+ * the request is left as it is - it comes back within half a second - and
+ * tcp_timer_at is set to no earlier than that, so that a deadline before
+ * it brings the request forward (tcp_timer_want()) and one after it finds
+ * the request back in time.
+ */
+int
+netdeadline_register(const struct netdeadline *nd)
+{
+    spl_t s;
+
+    if(nd == NULL || nd->nd_now == NULL || nd->nd_due == NULL)
+        return (EINVAL);
+    if(deadline != NULL)
+        return (deadline == nd ? 0 : EEXIST);
+    s = splsoftclock();
+    deadline = nd;
+    tcp_timer_at = (*nd->nd_now)() + 500;
+    splx(s);
+    return (0);
+}
+
+int
+netdeadline_unregister(const struct netdeadline *nd)
+{
+    spl_t s;
+
+    if(nd == NULL || deadline != nd)
+        return (ENOENT);
+    /* the request, if it is out, comes back by itself and then idles */
+    s = splsoftclock();
+    deadline = NULL;
+    tcp_timer_rearm = FALSE;
+    splx(s);
+    return (0);
+}
+
+/*
+ * Send the request again for tcp_timer_at, which is before the time it is
+ * out for. ONLY in the task that owns the timer port, at splsoftclock or
+ * above, with the request out (tcp_timer_out) and a registration.
+ *
+ * A request that is back already is left on the port: timer_poll() takes
+ * it next and tcp_timer_fire() looks at every deadline. One that comes back
+ * between the test and the AbortIO() is collected by the WaitIO() and sent
+ * again for tcp_timer_at, a deadline that has not been run yet.
+ */
+static void
+tcp_timer_bring_forward(void)
+{
+    if(CheckIO((struct IORequest *)tcpTimer) != NULL) {
+        netdiag.dl_back++;
+        return;
+    }
+    netdiag.dl_forward++;
+    timer_collect(tcpTimer);
+    tcp_timer_set(tcp_timer_at);
+    timer_sendreq(tcpTimer);
+}
+
+/*
+ * A retransmission deadline was set: have the request brought forward to
+ * it. Called at splnet from whatever task is in the stack - an
+ * application's, inside send(), as well as the stack's own.
+ *
+ * The stack's task does it at once. Any other task only records the
+ * deadline and signals the stack's task, whose next timer_poll() sends the
+ * request again; that is as soon as the caller lets go of the stack (the
+ * two run at the same priority during a call) and in no case later than
+ * the next timeout of any kind, 50 ms. One signal for any number of
+ * deadlines until then - and no more than before, when the AbortIO() made
+ * here replied to the stack's port and woke its task for nothing.
+ *
+ * (The request was once aborted, collected and sent again from here in the
+ * caller's task. With timer_poll() as it then was - reply taken first, lock
+ * after - a caller in that gap removed a message already taken and sent a
+ * request that timer_poll() then sent again: queued twice in timer.device,
+ * and the stack's timers stopped for good.)
+ */
 void
 tcp_timer_want(u_int32_t at)
 {
-    if(tcpTimer == NULL || !tcp_timer_out || (int)(at - tcp_timer_at) >= 0)
+    /* (without a registration there is nobody whose deadline this is) */
+    if(tcpTimer == NULL || deadline == NULL || !tcp_timer_out ||
+            (int)(at - tcp_timer_at) >= 0)
         return;
-    AbortIO((struct IORequest *)tcpTimer);
-    WaitIO((struct IORequest *)tcpTimer);
-    tcp_timer_set(at);
-    sendTimeoutRequest(tcpTimer);
+    tcp_timer_at = at;          /* a later deadline asks for nothing more */
+    netdiag.dl_want++;
+    if(FindTask(NULL) == timerport->mp_SigTask) {
+        tcp_timer_rearm = FALSE;
+        tcp_timer_bring_forward();
+    } else if(!tcp_timer_rearm) {
+        tcp_timer_rearm = TRUE;
+        netdiag.dl_signal++;
+        Signal(timerport->mp_SigTask, 1UL << timerport->mp_SigBit);
+    }
 }
 
 /*
@@ -193,13 +373,11 @@ timer_init(void)
                      * create timeout requests for all timeouts;
                      */
                     ifTimer = createTimeoutRequest(if_slowtimo, 1 / IFNET_SLOWHZ, 0);
-                    arpTimer = createTimeoutRequest(arptimer, ARPT_AGE, 0);
-                    autoipTimer = createTimeoutRequest(autoip_timer, 1, 0);
                     deferTimer = createTimeoutRequest(netdb_defer_timer, NETDB_DEFER_SECS, 0);
-                    protoSlowTimer = createTimeoutRequest(pfslowtimo, 0, 1000000 / PR_SLOWHZ);
+                    protoSlowTimer = createTimeoutRequest(proto_slowtimo, 0, 1000000 / PR_SLOWHZ);
                     protoFastTimer = createTimeoutRequest(pffasttimo, 0, 1000000 / PR_FASTHZ);
                     tcpTimer = createTimeoutRequest(tcp_timer_fire, 0, 500000);
-                    if(protoFastTimer && protoSlowTimer && arpTimer && ifTimer && autoipTimer && deferTimer &&
+                    if(protoFastTimer && protoSlowTimer && ifTimer && deferTimer &&
                             tcpTimer) {
                         can_send_timeouts = TRUE;
                         return (ULONG)(1 << timerport->mp_SigBit);
@@ -227,21 +405,31 @@ timer_deinit(void)
     D(bug("[AROSTCP](amiga_timer.c) timer_deinit()\n"));
 #endif
     can_send_timeouts = FALSE;
+    timers_running = FALSE;
+
+    /* what the modules registered and did not take back */
+    {
+        int i;
+
+        for(i = 0; i < PERIODIC_MAX; i++)
+            if(periodicTimers[i]) {
+                deleteTimeoutRequest(periodicTimers[i]);
+                periodicTimers[i] = NULL;
+            }
+    }
 
     tcp_timer_out = FALSE;
+    tcp_timer_rearm = FALSE;
     if(tcpTimer)
         deleteTimeoutRequest(tcpTimer);
     tcpTimer = NULL;
+    deadline = NULL;            /* a module's: it may leave memory after this */
     if(protoFastTimer)
         deleteTimeoutRequest(protoFastTimer);
     if(protoSlowTimer)
         deleteTimeoutRequest(protoSlowTimer);
     if(deferTimer)
         deleteTimeoutRequest(deferTimer);
-    if(autoipTimer)
-        deleteTimeoutRequest(autoipTimer);
-    if(arpTimer)
-        deleteTimeoutRequest(arpTimer);
     if(ifTimer)
         deleteTimeoutRequest(ifTimer);
 
@@ -272,14 +460,19 @@ timer_send(void)
         /*
          * Start timeout requests
          */
-        sendTimeoutRequest(ifTimer);
-        sendTimeoutRequest(arpTimer);
-        sendTimeoutRequest(autoipTimer);
-        sendTimeoutRequest(deferTimer);
-        sendTimeoutRequest(protoSlowTimer);
-        sendTimeoutRequest(protoFastTimer);
-        tcp_timer_set(tcp_ms() + 500);
-        sendTimeoutRequest(tcpTimer);
+        int i;
+
+        netdiag.tm_reqs += 5;
+        timer_sendreq(ifTimer);
+        for(i = 0; i < PERIODIC_MAX; i++)
+            if(periodicTimers[i])
+                timer_sendreq(periodicTimers[i]);
+        timers_running = TRUE;
+        timer_sendreq(deferTimer);
+        timer_sendreq(protoSlowTimer);
+        timer_sendreq(protoFastTimer);
+        tcp_timer_idle();
+        timer_sendreq(tcpTimer);
         tcp_timer_out = TRUE;
 
         can_send_timeouts = FALSE;
@@ -357,8 +550,7 @@ deleteTimeoutRequest(struct timeoutRequest *tr)
      * Abort the request if ever used
      */
     if(((struct Node *)tr)->ln_Type != NT_UNKNOWN) {
-        AbortIO((struct IORequest *)tr);
-        WaitIO((struct IORequest *)tr);
+        timer_collect(tr);
         /*
          * Make sure the signal gets cleared
          */
@@ -368,6 +560,101 @@ deleteTimeoutRequest(struct timeoutRequest *tr)
      * free the request
      */
     DeleteIORequest((struct IORequest *)tr);
+}
+
+/*
+ * A periodic call for a module (net/netmodule.h).
+ */
+void *
+netperiodic_add(void (*fn)(void), unsigned long ticks)
+{
+    struct timeoutRequest *tr;
+    spl_t s;
+    int i;
+
+    if(fn == NULL || ticks == 0 || timerport == NULL)
+        return (NULL);
+    s = splsoftclock();
+    for(i = 0; i < PERIODIC_MAX; i++)
+        if(periodicTimers[i] == NULL)
+            break;
+    if(i == PERIODIC_MAX ||
+            (tr = createTimeoutRequest(fn, ticks / hz, (ticks % hz) * tick)) == NULL) {
+        splx(s);
+        return (NULL);
+    }
+    periodicTimers[i] = tr;
+    netdiag.tm_reqs++;
+    if(timers_running)
+        timer_sendreq(tr);
+    splx(s);
+    return (tr);
+}
+
+/*
+ * Take a periodic call back. At splsoftclock the request is pending in
+ * timer.device or replied and still on the port, never half-way through
+ * timer_poll() (which keeps this level from before it takes a reply until
+ * it has sent the request again): it can be aborted and collected here.
+ * The port's signal is left alone - other replies may be waiting on it -
+ * so the stack's task may be woken once for nothing.
+ */
+void
+netperiodic_remove(void *handle)
+{
+    struct timeoutRequest *tr = handle;
+    spl_t s;
+    int i;
+
+    if(tr == NULL)
+        return;
+    s = splsoftclock();
+    for(i = 0; i < PERIODIC_MAX; i++)
+        if(periodicTimers[i] == tr) {
+            periodicTimers[i] = NULL;
+            netdiag.tm_reqs--;
+            if(((struct Node *)tr)->ln_Type != NT_UNKNOWN)
+                timer_collect(tr);
+            DeleteIORequest((struct IORequest *)tr);
+            break;
+        }
+    splx(s);
+}
+
+/*
+ * Milliseconds since midnight UT: the time stamp of ICMP and of the IP
+ * time stamp option (RFC 792), and what the TCP trace buffer records. In
+ * host byte order.
+ */
+u_long
+time_msofday(void)
+{
+    struct timeval atv;
+
+    GetSysTime(&atv);
+    return ((atv.tv_sec % (24 * 60 * 60)) * 1000 + atv.tv_usec / 1000);
+}
+
+/* which slot of netdiag.tm_last[] a request is (one reply in 50 ms: the fast timer first) */
+static int
+timer_slot(struct timeoutRequest *tr)
+{
+    int i;
+
+    if(tr == protoFastTimer)
+        return NDT_FAST;
+    if(tr == tcpTimer)
+        return NDT_DEADLINE;
+    if(tr == protoSlowTimer)
+        return NDT_SLOW;
+    if(tr == ifTimer)
+        return NDT_IF;
+    if(tr == deferTimer)
+        return NDT_DEFER;
+    for(i = 0; i < PERIODIC_MAX; i++)
+        if(tr == periodicTimers[i])
+            return NDT_PERIODIC + i;
+    return -1;
 }
 
 BOOL timer_poll(VOID)
@@ -380,11 +667,31 @@ BOOL timer_poll(VOID)
     /*
      * Get all messages from the timer reply port.
      */
+    /*
+     * Enter softclock level BEFORE taking a reply off the port, and keep it
+     * until the request has been sent again: a request is then never in
+     * between - taken here but not yet handled - while another task is in
+     * the stack (netperiodic_remove() relies on it).
+     */
+    spl_t s = splsoftclock();
+
+    /*
+     * A deadline before the one the deadline request is out for, asked for
+     * by another task (tcp_timer_want()). Its signal alone brings us here,
+     * with no reply on the port.
+     */
+    if(tcp_timer_rearm) {
+        tcp_timer_rearm = FALSE;
+        if(tcpTimer != NULL && deadline != NULL && tcp_timer_out)
+            tcp_timer_bring_forward();
+    }
+
     if(timerReply = (struct timeoutRequest *)GetMsg(timerport)) {
-        /*
-         * enter softclock interrupt level
-         */
-        spl_t s = splsoftclock();
+        int slot = timer_slot(timerReply);
+
+        netdiag.tm_replied++;
+        if(slot >= 0)
+            netdiag.tm_last[slot] = netdiag.ml_iter;
         /*
          * handle the timeout
          */
@@ -392,7 +699,7 @@ BOOL timer_poll(VOID)
         /*
          * restart timeout request
          */
-        sendTimeoutRequest(timerReply);
+        timer_sendreq(timerReply);
         /*
          * restore previous interrupt level
          */
@@ -400,6 +707,8 @@ BOOL timer_poll(VOID)
 
         return TRUE;
     }
+    netdiag.tm_empty++;
+    splx(s);
 
     return FALSE;
 }

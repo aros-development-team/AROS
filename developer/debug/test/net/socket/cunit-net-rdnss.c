@@ -320,6 +320,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library not available - skipping RDNSS tests\n");
         return 0;
     }
+    if (st_skip_program("cunit-net-rdnss", ST_V6)) {
+        CloseLibrary(SocketBase);
+        return 0;
+    }
     MiamiBase = OpenLibrary("miami.library", 0);
     ready = index_of(ifname, &ifindex) == 0 && get_linklocal(&linklocal);
     if (!ready)

@@ -71,10 +71,18 @@
 #include <sys/synch.h>
 
 #include <net/if.h>
+#include <net/netisr.h>
+#include <net/netmodule.h>
+#include <netinet/inetfamily.h>
 #include <net/if_protos.h>
 #include <net/route.h>
 #include <net/pfil.h>
-#include "../net/ipfilter.h"
+#include <net/if_sana.h>
+#include <net/sana2arp.h>		/* arp_init() */
+#include <sys/sysctl.h>			/* IPCTL_xxx */
+
+/* IPv4's packet hook point (netinet/in_proto.c) */
+extern struct pfil_point ip_pfil;
 
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
@@ -83,6 +91,9 @@
 #include "in_var.h"
 #include <netinet/ip_var.h>
 #include <netinet/ip_icmp.h>
+#include <netinet/tcp.h>
+#include <netinet/tcp_timer.h>
+#include <netinet/tcp_var.h>		/* TCPCTL_MSSDFLT */
 
 #include <netinet/ip_input_protos.h>
 #include <netinet/ip_output_protos.h>
@@ -94,6 +105,8 @@
 #include "ip_compat.h"
 #include <protos/kern/kern_random_protos.h>
 #include <protos/net/route_protos.h>
+#include <netinet/inet_transport.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 #ifndef	IPFORWARDING
 #define	IPFORWARDING	0
@@ -120,7 +133,37 @@ struct	ifqueue	ipintrq = {0};	/* ip packet input queue */
 
 extern	struct domain inetdomain;
 extern	struct protosw inetsw[];
-u_char	ip_protox[IPPROTO_MAX] = {0};
+
+/*
+ * IPv4's variables and statistics that are read or set from outside it
+ * (net/netmodule.h): by the configuration and ARexx variables (GATEWAY,
+ * IPSENDREDIRECTS, DEBUGIP, DEBUGICMP, USELOOPBACK, IP, ICMP), by sysctl
+ * (net.inet.ip) and by programs that look the stack's symbols up. The core
+ * finds them by name; registered from ip_init().
+ */
+extern struct icmpstat icmpstat;	/* ip_icmp.c */
+extern int icmpprintfs;			/* ip_icmp.c */
+extern int useloopback;			/* net/sana2arp.c */
+extern int tcp_mssdflt;			/* in_family.c: the MSS IPv4 assumes */
+
+static const struct netvar ip_netvars[] = {
+    { "ipstat",          &ipstat,          sizeof(ipstat),   NVT_STATS, PF_INET, IPPROTO_IP, IPCTL_STATS },
+    { "icmpstat",        &icmpstat,        sizeof(icmpstat), NVT_STATS },
+    { "ipforwarding",    &ipforwarding,    sizeof(int),      NVT_INT,   PF_INET, IPPROTO_IP, IPCTL_FORWARDING },
+    { "ipsendredirects", &ipsendredirects, sizeof(int),      NVT_INT,   PF_INET, IPPROTO_IP, IPCTL_SENDREDIRECTS },
+    { "ipprintfs",       &ipprintfs,       sizeof(int),      NVT_INT },
+    { "icmpprintfs",     &icmpprintfs,     sizeof(int),      NVT_INT },
+    { "useloopback",     &useloopback,     sizeof(int),      NVT_INT },
+    /* net.inet.tcp.mssdflt is IPv4's default MSS: IPv4's variable, under
+     * the name it has always had */
+    { "tcp_mssdflt",     &tcp_mssdflt,     sizeof(int),      NVT_INT,   PF_INET, IPPROTO_TCP, TCPCTL_MSSDFLT },
+};
+/*
+ * Which protocol takes which IP protocol number. Filled from inetsw[] at
+ * start; a protocol outside that table takes a number with
+ * ip_proto_register().
+ */
+struct protodispatch ip_protos;
 int	ipqmaxlen = 4 * IFQ_MAXLEN;	/* deeper IP input queue to absorb receive bursts */
 struct	in_ifaddr *in_ifaddr  = NULL; /* first inet address */
 
@@ -152,23 +195,53 @@ u_long	*ip_ifmatrix = NULL;
 /*
  * IP initialization: fill in IP protocol switch table.
  * All protocols not implemented in kernel go to raw IP protocol handler.
+ *
+ * Called by domain_attach() from IPv4's module start (inet_start(),
+ * netinet/in_proto.c), after the registered transports were given their
+ * entries of inetsw[]: the table is complete when this reads it. Every
+ * registration IPv4 makes with the core and with the transports' common
+ * part is made here or in inet_start().
  */
 void
 ip_init()
 {
+    /* the raw protocol's entry, there whether raw sockets are or not */
+    extern struct protosw *const in_defaultproto;   /* netinet/in_proto.c */
     register struct protosw *pr;
     register int i;
 
-    pr = pffindproto(PF_INET, IPPROTO_RAW, SOCK_RAW);
-    if(pr == 0)
+    if(protodispatch_init(&ip_protos, in_defaultproto) != 0)
         panic("ip_init");
-    for(i = 0; i < IPPROTO_MAX; i++)
-        ip_protox[i] = pr - inetsw;
     for(pr = inetdomain.dom_protosw;
             pr < inetdomain.dom_protoswNPROTOSW; pr++)
         if(pr->pr_domain->dom_family == PF_INET &&
                 pr->pr_protocol && pr->pr_protocol != IPPROTO_RAW)
-            ip_protox[pr->pr_protocol] = pr - inetsw;
+            (void)protodispatch_set(&ip_protos, pr->pr_protocol, pr);
+    /* a protocol of another module (a tunnel) takes a number here */
+    (void)protodispatch_publish(AF_INET, &ip_protos);
+    {
+        static const struct netinput ip_input_queue = {
+            AF_INET, NETISR_IP, &ipintrq, ipintr
+        };
+
+        (void)netinput_register(&ip_input_queue);
+    }
+    {
+        extern const struct netfamily_ifops in_ifops;
+
+        (void)netfamily_ifops_register(&in_ifops);
+    }
+    {
+        extern const struct inetfamily in_family;
+        extern const struct inet_transport_if *in_transports;  /* netinet/in_proto.c */
+
+        /* the transports may serve IPv4 sockets */
+        (void)(*in_transports->ti_family_register)(&in_family);
+    }
+    /* ARP finds link addresses for the SANA-II interfaces; its timers */
+    arp_init();
+    /* what the configuration, sysctl and netstat find by name */
+    (void)netvar_register(ip_netvars, sizeof(ip_netvars) / sizeof(ip_netvars[0]));
     ipq.next = ipq.prev = &ipq;
     kern_random(&ip_id, sizeof(ip_id));
     ipintrq.ifq_maxlen = ipqmaxlen;
@@ -187,6 +260,109 @@ ip_init()
 struct	ip *ip_reass();
 struct	sockaddr_in ipaddr = { sizeof(ipaddr), AF_INET };
 struct	route ipforward_rt = { 0 };
+
+/*
+ * IPv4 STOPS (inet_stop(), netinet/in_proto.c), in three steps of this
+ * file's, each the reverse of a part of ip_init().
+ *
+ * ip_input_stop(): no packet reaches IPv4 any more. The caller has taken
+ * the read requests of IPv4's link types back from the drivers; here the
+ * input queue is unregistered - the loopback and a tunnel find no queue
+ * for the family from then on and refuse the packet - and what was
+ * waiting on it is dropped. Nothing can be put on it afterwards: the
+ * core's pointer to it is gone (and with it what the SANA-II read path had
+ * kept, net/if_sana.c).
+ */
+void
+ip_input_stop(void)
+{
+    struct mbuf *m;
+    spl_t s;
+
+    (void)netinput_unregister(AF_INET);
+    s = splimp();
+    for(;;) {
+        IF_DEQUEUE(&ipintrq, m);
+        if(m == NULL)
+            break;
+        m_freem(m);
+    }
+    splx(s);
+}
+
+/*
+ * ip_flush(): what is global to IPv4 and has no interface to go with -
+ * after the interfaces' addresses and their routes are gone. The route
+ * kept for forwarding is given back; every route still in IPv4's table,
+ * and the path MTU slots that hold one, go (rt_flushfamily(): the table
+ * is the core's and stays, empty); the reassembly queues are freed with
+ * the fragments they hold; the saved source route is forgotten.
+ */
+void
+ip_flush(void)
+{
+    spl_t s = splnet();
+
+    if(ipforward_rt.ro_rt != NULL) {
+        RTFREE(ipforward_rt.ro_rt);
+        ipforward_rt.ro_rt = NULL;
+    }
+    rt_flushfamily(AF_INET);
+    if(ipq.next != NULL)
+        ip_drain();
+    splx(s);
+}
+
+/*
+ * ip_deinit(): the registrations ip_init() made that are not ARP's or the
+ * transports' are taken back, the dispatch table's memory is freed, and
+ * this file's variables are what the file gives them. The caller has
+ * taken the transports' entries out of the table before (they clear their
+ * numbers in it), and unregisters IPv4's instance of the family interface
+ * itself.
+ */
+void
+ip_deinit(void)
+{
+    extern const struct netfamily_ifops in_ifops;
+
+    (void)netfamily_ifops_unregister(&in_ifops);
+    (void)netvar_unregister(ip_netvars);    /* the core keeps what was set for a switch */
+    (void)protodispatch_publish(AF_INET, (struct protodispatch *)NULL);
+    protodispatch_done(&ip_protos);
+
+    ipforwarding = IPFORWARDING;
+    ipsendredirects = IPSENDREDIRECTS;
+    ipprintfs = IPPRINTFS;
+    bzero((caddr_t)&ipstat, sizeof(ipstat));
+    bzero((caddr_t)&ipq, sizeof(ipq));
+    nipq = 0;
+    maxnipq = 64;
+    ip_id = 0;
+    bzero((caddr_t)&ipintrq, sizeof(ipintrq));
+    ipqmaxlen = 4 * IFQ_MAXLEN;
+    in_ifaddr = NULL;
+    ip_nhops = 0;
+    bzero((caddr_t)&ip_srcrt, sizeof(ip_srcrt));
+    ipaddr.sin_addr.s_addr = 0;
+    bzero((caddr_t)&ipforward_rt, sizeof(ipforward_rt));
+}
+
+/*
+ * An IP protocol number taken by, and given back by, a protocol that is
+ * not in inetsw[] (net/netmodule.h).
+ */
+int
+ip_proto_register(int proto, struct protosw *pr)
+{
+    return (protodispatch_set(&ip_protos, proto, pr));
+}
+
+int
+ip_proto_unregister(int proto, struct protosw *pr)
+{
+    return (protodispatch_clear(&ip_protos, proto, pr));
+}
 
 /*
  * Ip input routine.  Checksum and byte swap header.  If fragmented
@@ -277,13 +453,20 @@ next:
     }
 
     /*
-     * Run through list of hooks and IP filter engine.
+     * The packet hooks (the filter engine, Miami hooks): one word tested
+     * while nothing is hooked (net/pfil.h). A hook may have replaced the
+     * chain; a dropped packet is freed already.
      */
-    if(pfil_run_hooks(m, m->m_pkthdr.rcvif, MIAMIPFBPT_IP, IPF_IN)) {
-        DIPF(log(LOG_DEBUG, "ipfilter: dropped incoming packet on %s%d\n",
-                 m->m_pkthdr.rcvif->if_name, m->m_pkthdr.rcvif->if_unit);)
-        m_freem(m);
-        goto next;
+    if(PFIL_HOOKED(&ip_pfil, PFIL_IN)) {
+        struct mbuf *hm = m;    /* m itself stays a register for the paths without hooks */
+
+        if(pfil_run(&ip_pfil, &hm, m->m_pkthdr.rcvif, PFIL_IN) != 0) {
+            DIPF(log(LOG_DEBUG, "ipfilter: dropped an incoming packet\n");)
+            goto next;
+        }
+        m = hm;
+        ip = mtod(m, struct ip *);
+        hlen = ip->ip_hl << 2;
     }
 
     /*
@@ -421,7 +604,7 @@ found:
     ipstat.ips_delivered++;
     D(bug("[AROSTCP:IP] %s: proto=%u mbuf=0x%p len=%d -> pr_input\n",
           __func__, ip->ip_p, m, ip->ip_len));
-    (*inetsw[ip_protox[ip->ip_p]].pr_input)(m, hlen);
+    (*PROTODISPATCH(&ip_protos, ip->ip_p)->pr_input)(m, hlen);
     goto next;
 bad:
     m_freem(m);
@@ -1173,6 +1356,23 @@ int srcrt;
                 printf("redirect (%ld) to %lx\n", (long)code, (u_long)dest.s_addr);
 #endif
         }
+    }
+
+    /*
+     * The forwarding hooks, with the route known: a packet they drop is
+     * gone (and not counted as forwarded); the output hooks follow in
+     * ip_output().
+     */
+    if(PFIL_HOOKED(&ip_pfil, PFIL_FWD)) {
+        struct mbuf *hm = m;
+
+        if(pfil_run(&ip_pfil, &hm, rt->rt_ifp, PFIL_FWD) != 0) {
+            ipstat.ips_cantforward++;
+            if(mcopy)
+                m_freem(mcopy);
+            return;
+        }
+        m = hm;
     }
 
     error = ip_output(m, (struct mbuf *)0, &ipforward_rt, IP_FORWARDING);

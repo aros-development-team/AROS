@@ -4,8 +4,9 @@
     A small DNS server for the resolver's cunit tests: the test program
     runs itself again with --serve (dns_start()), and that copy answers
     queries to port 53 on every address, IPv4 and IPv6, from the table
-    below - an A record for a name in it, "no such name" for any other,
-    and "quit.dns.test" stops it. Include after socktest.h.
+    below - an A or an AAAA record for a name in it, as asked, "no such
+    name" for any other, and "quit.dns.test" stops it. Include after
+    socktest.h.
 */
 
 #ifndef NET_DNSTEST_H
@@ -17,8 +18,8 @@
 
 #define DNS_PORT    53
 
-/* 192.0.2.last, with a TTL of 0 - the resolver's cache keeps none - but
- * for the names that test it. */
+/* 192.0.2.last and 2001:db8::last, with a TTL of 0 - the resolver's cache
+ * keeps none - but for the names that test it. */
 static const struct { const char *name; unsigned char last; unsigned long ttl; } dns_records[] = {
     { "one.rdnss.test", 77 },
     { "two.rdnss.test", 78 },
@@ -60,7 +61,8 @@ static int dns_answer(int s)
     int n, end, i;
     const int count = sizeof(dns_records) / sizeof(dns_records[0]);
 
-    n = recvfrom(s, (char *)q, sizeof(q) - 16, 0, (struct sockaddr *)&from, &fl);
+    /* room left for the one record added: 28 octets when it is an AAAA */
+    n = recvfrom(s, (char *)q, sizeof(q) - 28, 0, (struct sockaddr *)&from, &fl);
     if (n < 12 || (end = dns_qname(q, n, name, sizeof(name))) == 0 || end + 4 > n)
         return 1;
     if (strcasecmp(name, "quit.dns.test") == 0)
@@ -83,6 +85,18 @@ static int dns_answer(int s)
 
             rr[6] = ttl >> 24; rr[7] = ttl >> 16; rr[8] = ttl >> 8; rr[9] = ttl;
             rr[15] = dns_records[i].last;
+            q[7] = 1;                           /* ANCOUNT */
+            memcpy(q + n, rr, sizeof(rr));
+            n += sizeof(rr);
+        } else if (q[end] == 0 && q[end + 1] == 28) {   /* type AAAA: 2001:db8::last */
+            unsigned char rr[] = {
+                0xc0, 12, 0, 28, 0, 1, 0, 0, 0, 0, 0, 16,
+                0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            };
+            unsigned long ttl = dns_records[i].ttl;
+
+            rr[6] = ttl >> 24; rr[7] = ttl >> 16; rr[8] = ttl >> 8; rr[9] = ttl;
+            rr[27] = dns_records[i].last;
             q[7] = 1;                           /* ANCOUNT */
             memcpy(q + n, rr, sizeof(rr));
             n += sizeof(rr);
@@ -128,23 +142,29 @@ static int dns_serve(void)
     SocketBase = OpenLibrary("bsdsocket.library", 3);
     if (SocketBase == NULL)
         return 20;
-    s4 = dns_socket(AF_INET);
-    s6 = dns_socket(AF_INET6);
-    while (on && s4 >= 0 && s6 >= 0 && idle < 120) {
+    /* a socket for each family the stack has; it serves with nothing less */
+    s4 = st_have_family(AF_INET) ? dns_socket(AF_INET) : -1;
+    s6 = st_have_family(AF_INET6) ? dns_socket(AF_INET6) : -1;
+    if ((s4 < 0 && st_have_family(AF_INET)) || (s6 < 0 && st_have_family(AF_INET6)) ||
+            (s4 < 0 && s6 < 0))
+        on = 0;
+    while (on && idle < 120) {
         fd_set fs;
         struct timeval tv = { 1, 0 };
 
         FD_ZERO(&fs);
-        FD_SET(s4, &fs);
-        FD_SET(s6, &fs);
+        if (s4 >= 0)
+            FD_SET(s4, &fs);
+        if (s6 >= 0)
+            FD_SET(s6, &fs);
         if (WaitSelect((s4 > s6 ? s4 : s6) + 1, &fs, NULL, NULL, &tv, NULL) <= 0) {
             idle++;
             continue;
         }
         idle = 0;
-        if (FD_ISSET(s4, &fs))
+        if (s4 >= 0 && FD_ISSET(s4, &fs))
             on = dns_answer(s4);
-        if (on && FD_ISSET(s6, &fs))
+        if (on && s6 >= 0 && FD_ISSET(s6, &fs))
             on = dns_answer(s6);
     }
     if (s4 >= 0)
@@ -155,7 +175,8 @@ static int dns_serve(void)
     return 0;
 }
 
-/* One query straight to the server at ::1, for name: whether it answers. */
+/* One query straight to the server at ::1 (at 127.0.0.1 where the stack
+ * has no IPv6), for name: whether it answers. */
 static int dns_ask(const char *name)
 {
     unsigned char q[96] = { 0x12, 0x34, 0x01, 0, 0, 1, 0, 0, 0, 0, 0, 0 }, r[512];
@@ -174,10 +195,10 @@ static int dns_ask(const char *name)
     }
     q[n++] = 0;
     q[n++] = 0; q[n++] = 1; q[n++] = 0; q[n++] = 1;
-    s = socket(AF_INET6, SOCK_DGRAM, 0);
+    s = socket(st_prefer_family(AF_INET6), SOCK_DGRAM, 0);
     if (s < 0)
         return 0;
-    st_loopback(AF_INET6, &a, htons(DNS_PORT));
+    st_loopback(st_prefer_family(AF_INET6), &a, htons(DNS_PORT));
     if (sendto(s, (char *)q, n, 0, (struct sockaddr *)&a, a.ss_len) == n &&
             sock_wait(s, 0, 1) > 0 && recv(s, (char *)r, sizeof(r), 0) >= 12)
         ok = 1;

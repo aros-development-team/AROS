@@ -51,8 +51,10 @@
 #include <netinet6/in6_var.h>
 #include <netinet6/nd6.h>
 #include <kern/amiga_netdb.h>
+#include <net/netmodule.h>          /* api_addrchange_retry() */
+#include <protos/net/route_protos.h>
+#include <net/netcore_map.h>        /* always the last include */
 
-void api_addrchange_retry(void);      /* api/amiga_api.c */
 static void nd6_solicit(struct llinfo_nd6 *, int);
 
 extern void icmp6_error(struct mbuf *, int, int, int);
@@ -125,9 +127,6 @@ nd6_hold_send(struct llinfo_nd6 *ln, struct ifnet *ifp, struct sockaddr *dst,
     }
 }
 
-/* Forward declaration */
-struct rtentry *rtalloc1(struct sockaddr *, int);
-
 /* ------------------------------------------------------------------
  * Globals
  * ------------------------------------------------------------------ */
@@ -167,6 +166,48 @@ nd6_init(void)
                                   ND6_IFF_AUTO_LINKLOCAL;
         nd6_ndi[i].initialized  = 0;
     }
+}
+
+/* ------------------------------------------------------------------
+ * nd6_deinit - IPv6 stops: the reverse of nd6_init() and of what
+ * neighbour discovery made since.
+ *
+ * The neighbour cache is hung on the routing table (rt_llinfo): an entry
+ * is freed when its route is deleted (nd6_rtrequest(RTM_DELETE)), with the
+ * packets that waited for the address. The caller has deleted every route
+ * of IPv6's table before this, so the list is empty; an entry still on it
+ * belongs to a route that could not be deleted, and is cut from it here,
+ * so that the route, which stays in the core, does not lead back to
+ * memory of this module's. Then the per-interface information, the
+ * counters and the file's other variables are what the file gives them.
+ * ------------------------------------------------------------------ */
+static int nd6_timer_ticks = 0;     /* nd6_timer()'s, for its trace */
+
+void
+nd6_deinit(void)
+{
+    struct llinfo_nd6 *ln;
+    spl_t s = splnet();
+
+    while(llinfo_nd6.ln_next != NULL && (ln = llinfo_nd6.ln_next) != &llinfo_nd6) {
+        nd6_hold_free(ln, 0);
+        ln->ln_prev->ln_next = ln->ln_next;
+        ln->ln_next->ln_prev = ln->ln_prev;
+        if(ln->ln_rt != NULL) {
+            ln->ln_rt->rt_llinfo = NULL;
+            ln->ln_rt->rt_flags &= ~RTF_LLINFO;
+        }
+        FREE(ln, M_PCB);
+    }
+    bzero((caddr_t)&llinfo_nd6, sizeof(llinfo_nd6));
+    bzero((caddr_t)nd6_ndi, sizeof(nd6_ndi));
+    bzero((caddr_t)&nd6stat, sizeof(nd6stat));
+    nd6_maxndopt = 10;
+    nd6_maxqueuelen = 1;
+    nd6_inuse = 0;
+    nd6_allocated = 0;
+    nd6_timer_ticks = 0;
+    splx(s);
 }
 
 /* ------------------------------------------------------------------
@@ -834,7 +875,6 @@ nd6_timer(void *arg)
     struct llinfo_nd6 *ln, *nln;
     struct timeval _tv;
     long now;
-    static int nd6_timer_ticks = 0;
 
     GetUpTime(&_tv);
     now = _tv.tv_sec;
@@ -914,10 +954,9 @@ nd6_timer(void *arg)
 
     /* RS retransmission for interfaces still soliciting */
     {
-        extern struct ifnet *ifnet;
         struct ifnet *iifp;
         struct nd_ifinfo *ndi;
-        for(iifp = ifnet; iifp; iifp = iifp->if_next) {
+        for(iifp = ifnet_list; iifp; iifp = iifp->if_next) {
             if(iifp->if_index >= ND6_MAXIFS)
                 continue;
             ndi = &nd6_ndi[iifp->if_index];
@@ -985,8 +1024,7 @@ nd6_storelladdr(struct rtentry *rt)
         buflen = ND6_ROUNDUP(sizeof(struct sockaddr_in6));
     }
 
-    snprintf(namebuf, sizeof(namebuf), "%s%d", ifp->if_name, ifp->if_unit);
-    namelen = strnlen(namebuf, sizeof(namebuf));
+    namelen = if_fullname(ifp, namebuf, sizeof(namebuf));
 
     /* sdl_len includes space for name + MAC (even though MAC is empty) */
     sdl_len = 8 + namelen + ifp->if_addrlen;

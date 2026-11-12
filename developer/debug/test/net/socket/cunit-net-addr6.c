@@ -251,6 +251,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library not available - skipping ADDR6 tests\n");
         return 0;
     }
+    if (st_skip_program("cunit-net-addr6", ST_V6)) {
+        CloseLibrary(SocketBase);
+        return 0;
+    }
     s = socket(AF_INET6, SOCK_DGRAM, 0);
     bzero(&ifr, sizeof(ifr));
     strncpy(ifr.ifr_name, ifname, sizeof(ifr.ifr_name) - 1);

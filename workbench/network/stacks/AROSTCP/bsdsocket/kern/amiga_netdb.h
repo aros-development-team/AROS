@@ -80,6 +80,9 @@ struct in6_addr;
 void ndb_ra_server(struct ifnet *ifp, const struct in6_addr *addr, ULONG lifetime);
 void ndb_ra_domain(struct ifnet *ifp, const char *name, ULONG lifetime);
 void ndb_ra_timer(void);
+/* ... and all of them at once, when the module that hears the advertisements
+ * stops; EBUSY (nothing done) while an application holds the database */
+int ndb_ra_flush(void);
 /* Apply what the stack task queued for the dynamic database (call with
  * DynDB.dyn_Lock held, before changing it). */
 int ndb_ops_locked(void);
@@ -175,7 +178,8 @@ struct ServentNode * findServentNode(struct NetDataBase * ndb,
 				     const char * name, const char * proto);
 
 /*
- * Read NetDB...
+ * Read NetDB... The readers are the module "netconfig" (kern/netconfig_ops.h);
+ * the names below are the core's, and call it.
  */
 /*
  * Stack-private flags for the netdb parsers, above the public NETDB_IFF_*
@@ -191,6 +195,6 @@ void netdb_deinit(void);
 LONG netdb_reload(void);        /* re-read config in place (reload): swap NDB, re-apply interfaces */
 void dyndb_flush(void);         /* drop all dynamic nameservers/domains (reload) */
 #define NETDB_DEFER_SECS 5      /* how often a DEFER interface is tried again */
-void netdb_defer_timer(void);   /* periodic retry of DEFER interfaces */
+void netdb_defer_timer(void);   /* periodic retry of DEFER interfaces (kern/netconfig_stubs.c) */
      
 #endif /* AMIGA_NETDB_H */

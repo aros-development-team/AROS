@@ -6,7 +6,9 @@
     negotiated, its maximum segment size, windows and sequence numbers,
     and its round-trip estimate and retransmission timeout, in
     microseconds. A short buffer gets the start of the structure; a
-    listening socket reports LISTEN. Over the loopback. Usage:
+    listening socket reports LISTEN. Over the loopback; the tests that are
+    not about a family run over IPv4, or over IPv6 where the stack has no
+    IPv4. Usage:
     cunit-net-tcpinfo [IFNAME]  (default eth0; the SYN backoff test needs
     an interface, the others the loopback)
 */
@@ -49,6 +51,9 @@ static int info(int s, struct tcp_info *ti, socklen_t *len)
     return getsockopt(s, IPPROTO_TCP, TCP_INFO, ti, len);
 }
 
+/* The family of the tests that are about TCP, not about a family. */
+#define FAM st_any_family()
+
 int init_suite(void) { return (SocketBase != NULL) ? 0 : -1; }
 int clean_suite(void) { return 0; }
 
@@ -58,7 +63,7 @@ static void established(int family)
 {
     struct tcp_info ti;
     socklen_t len = sizeof(ti);
-    int c, s;
+    int c = -1, s = -1;
 
     CU_ASSERT_EQUAL_FATAL(st_tcp_pair(family, &c, &s), 0);
     CU_ASSERT_EQUAL(info(c, &ti, &len), 0);
@@ -87,7 +92,7 @@ static void initial_window(int family)
 {
     struct tcp_info ti;
     unsigned long iw;
-    int c, s;
+    int c = -1, s = -1;
 
     CU_ASSERT_EQUAL_FATAL(st_tcp_pair(family, &c, &s), 0);
     CU_ASSERT_EQUAL(info(c, &ti, NULL), 0);
@@ -117,7 +122,7 @@ static long ss_growth(LONG abc, long *acked)
     *acked = -1;
     /* HyStart++ applies its own limit in the first slow start */
     if (tcpctl(TCPCTL_HYSTART, &ohs, &off) != 0 ||
-            tcpctl(TCPCTL_ABC_L, &old, &abc) != 0 || st_tcp_pair(AF_INET, &c, &s) != 0)
+            tcpctl(TCPCTL_ABC_L, &old, &abc) != 0 || st_tcp_pair(FAM, &c, &s) != 0)
         return -1;
     info(c, &a, NULL);
     send(c, buf, 12 * a.tcpi_snd_mss, 0);
@@ -165,7 +170,7 @@ void testTCPINFO_HYSTART_NO_EXIT(void)
     static char buf[16384];
     int c, s, sent, got;
 
-    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(FAM, &c, &s), 0);
     CU_ASSERT_EQUAL(info(c, &a, NULL), 0);
     for (sent = got = 0; got < 200 * 1024; ) {
         int k;
@@ -233,16 +238,19 @@ static int loopback_ssthresh(int family, u_long bytes)
 static void route_ssthresh(int family)
 {
     struct tcp_info ti;
-    int c, s;
+    int c = -1, s = -1, r;
 
     CU_ASSERT_EQUAL_FATAL(loopback_ssthresh(family, 50000), 0);
-    CU_ASSERT_EQUAL(st_tcp_pair(family, &c, &s), 0);
-    CU_ASSERT_EQUAL(info(c, &ti, NULL), 0);
-    printf("\n    route ssthresh 50000: connection's ssthresh %lu\n", (unsigned long)ti.tcpi_snd_ssthresh);
-    CU_ASSERT_EQUAL(ti.tcpi_snd_ssthresh, 50000);
-    CloseSocket(c);
-    CloseSocket(s);
-    loopback_ssthresh(family, 0);
+    r = st_tcp_pair(family, &c, &s);
+    CU_ASSERT_EQUAL(r, 0);
+    if (r == 0) {
+        CU_ASSERT_EQUAL(info(c, &ti, NULL), 0);
+        printf("\n    route ssthresh 50000: connection's ssthresh %lu\n", (unsigned long)ti.tcpi_snd_ssthresh);
+        CU_ASSERT_EQUAL(ti.tcpi_snd_ssthresh, 50000);
+        CloseSocket(c);
+        CloseSocket(s);
+    }
+    loopback_ssthresh(family, 0);       /* the route as it was, connection or not */
 }
 
 void testTCPINFO_ROUTE_SSTHRESH4(void) { route_ssthresh(AF_INET); }
@@ -255,22 +263,25 @@ void testTCPINFO_MSS_FLOOR(void)
 {
     struct tcp_info ci, si;
     LONG floor = 0;
-    int c, s;
+    int c = -1, s = -1, r;
 
     CU_ASSERT_EQUAL(tcpctl(TCPCTL_MINMSS, &floor, NULL), 0);
     CU_ASSERT_EQUAL(floor, TCP_MINMSS);
     floor = TCP_MINMSS;
     CU_ASSERT_EQUAL_FATAL(loopback_metric(AF_INET, RTV_MTU, 128), 0);
-    CU_ASSERT_EQUAL(st_tcp_pair(AF_INET, &c, &s), 0);
-    CU_ASSERT_EQUAL(info(c, &ci, NULL), 0);
-    CU_ASSERT_EQUAL(info(s, &si, NULL), 0);
-    printf("\n    route MTU 128, minmss %ld: MSS %lu and %lu\n", (long)floor,
-           (unsigned long)ci.tcpi_snd_mss, (unsigned long)si.tcpi_snd_mss);
-    CU_ASSERT(ci.tcpi_snd_mss + 12 >= (u_long)floor);
-    CU_ASSERT(si.tcpi_snd_mss + 12 >= (u_long)floor);
-    CloseSocket(c);
-    CloseSocket(s);
-    loopback_metric(AF_INET, RTV_MTU, 0);
+    r = st_tcp_pair(AF_INET, &c, &s);
+    CU_ASSERT_EQUAL(r, 0);
+    if (r == 0) {
+        CU_ASSERT_EQUAL(info(c, &ci, NULL), 0);
+        CU_ASSERT_EQUAL(info(s, &si, NULL), 0);
+        printf("\n    route MTU 128, minmss %ld: MSS %lu and %lu\n", (long)floor,
+               (unsigned long)ci.tcpi_snd_mss, (unsigned long)si.tcpi_snd_mss);
+        CU_ASSERT(ci.tcpi_snd_mss + 12 >= (u_long)floor);
+        CU_ASSERT(si.tcpi_snd_mss + 12 >= (u_long)floor);
+        CloseSocket(c);
+        CloseSocket(s);
+    }
+    loopback_metric(AF_INET, RTV_MTU, 0);       /* the route as it was, connection or not */
 }
 void testTCPINFO_ROUTE_SSTHRESH6(void) { route_ssthresh(AF_INET6); }
 
@@ -311,7 +322,7 @@ void testTCPINFO_ACK_EVERY_SECOND(void)
         CU_PASS("miami.library not available - skipping");
         return;
     }
-    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(FAM, &c, &s), 0);
     CU_ASSERT_EQUAL(info(c, &ti, NULL), 0);
     mss = ti.tcpi_snd_mss;
     a0 = sent_acks();
@@ -342,7 +353,7 @@ void testTCPINFO_CWND_APP_LIMITED(void)
     char buf[1000];
     int c, s, i;
 
-    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(FAM, &c, &s), 0);
     CU_ASSERT_EQUAL(info(c, &a, NULL), 0);
     for (i = 0; i < 40; i++) {
         CU_ASSERT_EQUAL(send(c, buf, sizeof(buf), 0), sizeof(buf));
@@ -365,7 +376,7 @@ void testTCPINFO_SEQUENCE(void)
     struct tcp_info a, b, a2, b2;
     int c, s;
 
-    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(FAM, &c, &s), 0);
     CU_ASSERT_EQUAL(info(c, &a, NULL), 0);
     CU_ASSERT_EQUAL(info(s, &b, NULL), 0);
     CU_ASSERT_EQUAL(st_oneway(c, s, 10000), 0);
@@ -389,7 +400,7 @@ void testTCPINFO_RTO_FLOOR(void)
     char b[100];
     int c, s, i;
 
-    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET6, &c, &s), 0);
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(st_prefer_family(AF_INET6), &c, &s), 0);
     for (i = 0; i < 20; i++) {
         CU_ASSERT_EQUAL(send(c, b, sizeof(b), 0), sizeof(b));
         CU_ASSERT_EQUAL(recv(s, b, sizeof(b), MSG_WAITALL), sizeof(b));
@@ -409,7 +420,18 @@ void testTCPINFO_RTO_FLOOR(void)
  * sections 2.1 and 5.5): the RTO doubles from the initial one, it does not
  * fall to the floor once the first SYN timed out. The SYN goes to a
  * link-local neighbour that does not exist, on IFNAME (cunit-net-tcpinfo
- * [IFNAME], default eth0); without the interface the test is skipped. */
+ * [IFNAME], default eth0).
+ *
+ * The test is about a SYN that was sent. Whether one can be sent from this
+ * machine is a precondition, and connect() says: EINPROGRESS - the SYN is
+ * out and the timings are asserted. No such interface, or connect() fails
+ * with EADDRNOTAVAIL, ENETUNREACH or EHOSTUNREACH (the interface has no
+ * IPv6 address a packet could leave from, as in a run whose interface
+ * configuration is IPv4 only): the destination cannot be tried at all, the
+ * SKIP line says so and nothing is asserted about timings. Any other
+ * result - a connect() that succeeds included - is a failure. */
+#define SYN_BACKOFF_NAME "an unanswered SYN backs off from 1 s"
+
 static unsigned index_of(const char *name)
 {
     struct ifreq ifr;
@@ -428,11 +450,13 @@ void testTCPINFO_SYN_BACKOFF(void)
 {
     struct tcp_info ti;
     struct sockaddr_in6 a;
-    int s, on = 1;
+    int s, on = 1, r;
+    LONG e;
     unsigned idx = index_of(ifname);
     unsigned long rto1, rto2;
 
     if (idx == 0) {
+        printf("\nSKIP %s: no interface %s to send the SYN through\n", SYN_BACKOFF_NAME, ifname);
         CU_PASS("no interface - skipping");
         return;
     }
@@ -445,13 +469,28 @@ void testTCPINFO_SYN_BACKOFF(void)
     a.sin6_port = htons(9);
     inet_pton(AF_INET6, "fe80::4d54:dead", &a.sin6_addr);
     a.sin6_scope_id = idx;
-    connect(s, (struct sockaddr *)&a, sizeof(a));
+    r = connect(s, (struct sockaddr *)&a, sizeof(a));
+    e = r == 0 ? 0 : Errno();
+    if (r != 0 && (e == EADDRNOTAVAIL || e == ENETUNREACH || e == EHOSTUNREACH)) {
+        printf("\nSKIP %s: no IPv6 address on %s to send the SYN from (connect: error %ld)\n",
+               SYN_BACKOFF_NAME, ifname, (long)e);
+        CU_PASS("the destination cannot be tried from this machine - skipping");
+        CloseSocket(s);
+        return;
+    }
+    if (r == 0 || e != EINPROGRESS) {
+        /* not a SYN on its way: the timings below would be of nothing */
+        printf("\n    connect() to a neighbour that is not there: result %d, error %ld\n", r, (long)e);
+        CU_FAIL("connect() neither started (EINPROGRESS) nor said the destination cannot be tried");
+        CloseSocket(s);
+        return;
+    }
     Delay(75);                          /* 1.5 s: one timeout */
-    info(s, &ti, NULL);
+    CU_ASSERT_EQUAL(info(s, &ti, NULL), 0);
     rto1 = ti.tcpi_rto;
     CU_ASSERT_EQUAL(ti.tcpi_state, TCPS_SYN_SENT);
     Delay(125);                         /* 4 s: two */
-    info(s, &ti, NULL);
+    CU_ASSERT_EQUAL(info(s, &ti, NULL), 0);
     rto2 = ti.tcpi_rto;
     printf("\n    SYN unanswered: RTO %lu us after one timeout, %lu us after two\n", rto1, rto2);
     CU_ASSERT_EQUAL(rto1, 2000000);
@@ -466,7 +505,7 @@ void testTCPINFO_SHORT(void)
     socklen_t len = 8;
     int c, s;
 
-    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(FAM, &c, &s), 0);
     CU_ASSERT_EQUAL(info(c, &ti, &len), 0);
     CU_ASSERT_EQUAL(len, 8);
     CU_ASSERT_EQUAL(ti.tcpi_state, TCPS_ESTABLISHED);
@@ -587,7 +626,7 @@ void testTCPINFO_WINDOW_NO_SCALE(void)
     const int total = 256 * 1024;
 
     CU_ASSERT_EQUAL_FATAL(tcpctl(TCPCTL_DO_RFC1323, &old, &off), 0);
-    i = st_tcp_pair(AF_INET, &c, &s);
+    i = st_tcp_pair(FAM, &c, &s);
     tcpctl(TCPCTL_DO_RFC1323, &off, &old);
     CU_ASSERT_EQUAL_FATAL(i, 0);
     getsockopt(c, SOL_SOCKET, SO_RCVBUF, &rcvbuf, &l);
@@ -676,7 +715,7 @@ void testTCPINFO_WRITE_SEGMENTS(void)
     long p0, p1, want;
     int c, s, on = 1, n, got = 0;
 
-    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(FAM, &c, &s), 0);
     setsockopt(c, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on));
     CU_ASSERT_EQUAL(info(c, &ti, NULL), 0);
     want = (sizeof(buf) + ti.tcpi_snd_mss - 1) / ti.tcpi_snd_mss;
@@ -700,7 +739,7 @@ void testTCPINFO_PASSIVE_RTT(void)
     struct tcp_info ti;
     int c, s;
 
-    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(FAM, &c, &s), 0);
     CU_ASSERT_EQUAL(info(s, &ti, NULL), 0);
     printf("\n    accepted side: rtt %lu us, rto %lu us\n",
            (unsigned long)ti.tcpi_rtt, (unsigned long)ti.tcpi_rto);
@@ -743,7 +782,7 @@ void testTCPINFO_AUTOSIZE(void)
      * sending task outruns the stack, which takes a few writes or none:
      * up to three transfers of 4 MB (one did not grow it in about one
      * run in twelve) */
-    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(FAM, &c, &s), 0);
     n0 = n1 = bufsize(c, SO_SNDBUF);
     r0 = bufsize(s, SO_RCVBUF);
     for (i = 0; i < 3 && n1 == n0; i++) {
@@ -758,7 +797,7 @@ void testTCPINFO_AUTOSIZE(void)
     CloseSocket(c);
     CloseSocket(s);
 
-    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(AF_INET, &c2, &s2), 0);
+    CU_ASSERT_EQUAL_FATAL(st_tcp_pair(FAM, &c2, &s2), 0);
     CU_ASSERT_EQUAL(setsockopt(c2, SOL_SOCKET, SO_SNDBUF, &v, sizeof(v)), 0);
     n0 = bufsize(c2, SO_SNDBUF);
     CU_ASSERT_EQUAL(st_oneway(c2, s2, 4 * 1024 * 1024), 0);
@@ -779,7 +818,7 @@ void testTCPINFO_AUTOSIZE_OFF(void)
 
     CU_ASSERT_EQUAL_FATAL(tcpctl(TCPCTL_SENDBUF_MAX, &snd, &zero), 0);
     CU_ASSERT_EQUAL_FATAL(tcpctl(TCPCTL_RECVBUF_MAX, &rcv, &zero), 0);
-    if (st_tcp_pair(AF_INET, &c, &s) == 0) {
+    if (st_tcp_pair(FAM, &c, &s) == 0) {
         int n0 = bufsize(c, SO_SNDBUF), r0 = bufsize(s, SO_RCVBUF), n1, r1, scale;
 
         CU_ASSERT_EQUAL(info(c, &ti, NULL), 0);
@@ -802,12 +841,101 @@ void testTCPINFO_AUTOSIZE_OFF(void)
     CU_ASSERT_EQUAL(tcpctl(TCPCTL_RECVBUF_MAX, &zero, &rcv), 0);
 }
 
+/* Many IPv6 connections in a row to one listener: none may stall. The ephemeral port picker did
+ * not see connected IPv6 sockets - those in TIME_WAIT too - so a new connection could be given a
+ * port an earlier one to the same peer still held; its SYN was answered by that old connection
+ * and retransmitted for 63 s, until TIME_WAIT ended. A connection that has not reached the
+ * listener in 600 ms counts as stalled (the first retransmission of a SYN comes after 1 s). */
+void testTCPINFO_CONNECT6_NO_STALL(void)
+{
+    struct sockaddr_storage ss;
+    unsigned short nport;
+    socklen_t len;
+    int l, i, on = 1, stalled = 0, done = 0;
+
+    /* the test is only added when the stack has IPv6, and then ::1 is there */
+    l = st_bound(AF_INET6, SOCK_STREAM, &nport);
+    CU_ASSERT_FATAL(l >= 0);
+    CU_ASSERT_EQUAL_FATAL(listen(l, 5), 0);
+    len = st_loopback(AF_INET6, &ss, nport);
+    for (i = 0; i < 400; i++) {
+        int c = socket(AF_INET6, SOCK_STREAM, 0), a;
+
+        if (c < 0)
+            break;
+        IoctlSocket(c, FIONBIO, (char *)&on);
+        connect(c, (struct sockaddr *)&ss, len);
+        {
+            fd_set r;
+            struct timeval tv;
+
+            FD_ZERO(&r);
+            FD_SET(l, &r);
+            tv.tv_sec = 0;
+            tv.tv_usec = 600000;
+            if (WaitSelect(l + 1, &r, NULL, NULL, &tv, NULL) <= 0) {
+                stalled++;
+                CloseSocket(c);
+                continue;
+            }
+        }
+        a = accept(l, NULL, NULL);
+        CloseSocket(c);
+        if (a < 0)
+            break;
+        CloseSocket(a);
+        done++;
+    }
+    printf("\n    400 IPv6 connections in a row: %d made, %d stalled\n", done, stalled);
+    CU_ASSERT_EQUAL(stalled, 0);
+    CU_ASSERT_EQUAL(done, 400);
+    CloseSocket(l);
+}
+
+/* A socket of every protocol can be created with its default buffers: a default above what the
+ * machine's socket-buffer limit allows is brought down to it, not refused. UDP's 266 KB receive
+ * default was above the 64 KB limit of m68k, and no UDP socket could be created there (ENOBUFS). */
+static void default_buffers(int family)
+{
+    static const struct { int af, type, proto; const char *name; } k[] = {
+        { AF_INET, SOCK_STREAM, 0, "TCP/IPv4" }, { AF_INET, SOCK_DGRAM, 0, "UDP/IPv4" },
+        { AF_INET, SOCK_RAW, IPPROTO_ICMP, "raw IPv4" }, { AF_INET6, SOCK_STREAM, 0, "TCP/IPv6" },
+        { AF_INET6, SOCK_DGRAM, 0, "UDP/IPv6" }, { AF_INET6, SOCK_RAW, IPPROTO_ICMPV6, "raw IPv6" },
+    };
+    unsigned i;
+
+    for (i = 0; i < sizeof(k) / sizeof(k[0]); i++) {
+        int s, snd = 0, rcv = 0;
+        socklen_t l = sizeof(snd);
+
+        if (k[i].af != family)
+            continue;
+        s = socket(k[i].af, k[i].type, k[i].proto);
+        if (s < 0) {
+            printf("\n    %s: socket() failed, errno %ld", k[i].name, (long)Errno());
+            CU_FAIL("a socket could not be created with its default buffers");
+            continue;
+        }
+        CU_ASSERT_EQUAL(getsockopt(s, SOL_SOCKET, SO_SNDBUF, &snd, &l), 0);
+        l = sizeof(rcv);
+        CU_ASSERT_EQUAL(getsockopt(s, SOL_SOCKET, SO_RCVBUF, &rcv, &l), 0);
+        CU_ASSERT(snd > 0);
+        CU_ASSERT(rcv > 0);
+        CloseSocket(s);
+    }
+}
+
+/* The protocols of each family in a test of their own, so that a stack
+ * with one family is still asked about that one. */
+void testTCPINFO_DEFAULT_BUFFERS4(void) { default_buffers(AF_INET); }
+void testTCPINFO_DEFAULT_BUFFERS6(void) { default_buffers(AF_INET6); }
+
 /* A listening socket reports LISTEN. */
 void testTCPINFO_LISTEN(void)
 {
     struct tcp_info ti;
     unsigned short port;
-    int l = st_bound(AF_INET, SOCK_STREAM, &port);
+    int l = st_bound(FAM, SOCK_STREAM, &port);
 
     CU_ASSERT_FATAL(l >= 0);
     CU_ASSERT_EQUAL(listen(l, 1), 0);
@@ -834,29 +962,32 @@ int main(int argc, char **argv)
     }
     p = CU_add_suite("TCPINFO_Suite", init_suite, clean_suite);
     if (p == NULL ||
-        !CU_add_test(p, "an established connection (IPv4)", testTCPINFO_ESTABLISHED4) ||
-        !CU_add_test(p, "an established connection (IPv6)", testTCPINFO_ESTABLISHED6) ||
-        !CU_add_test(p, "the initial window, to a local destination (IPv4)", testTCPINFO_INITIAL_WINDOW4) ||
-        !CU_add_test(p, "the initial window, to a local destination (IPv6)", testTCPINFO_INITIAL_WINDOW6) ||
-        !CU_add_test(p, "slow start counts the bytes acknowledged", testTCPINFO_SLOW_START_BYTES) ||
-        !CU_add_test(p, "HyStart++ does not end slow start without a delay", testTCPINFO_HYSTART_NO_EXIT) ||
-        !CU_add_test(p, "a route's ssthresh reaches a new connection (IPv4)", testTCPINFO_ROUTE_SSTHRESH4) ||
-        !CU_add_test(p, "a route's ssthresh reaches a new connection (IPv6)", testTCPINFO_ROUTE_SSTHRESH6) ||
-        !CU_add_test(p, "the MSS never goes below net.inet.tcp.minmss", testTCPINFO_MSS_FLOOR) ||
-        !CU_add_test(p, "a receiver ACKs at least every second segment", testTCPINFO_ACK_EVERY_SECOND) ||
-        !CU_add_test(p, "an application-limited sender does not grow cwnd", testTCPINFO_CWND_APP_LIMITED) ||
-        !CU_add_test(p, "data moves the sequence numbers", testTCPINFO_SEQUENCE) ||
-        !CU_add_test(p, "over the loopback the RTO is the floor", testTCPINFO_RTO_FLOOR) ||
-        !CU_add_test(p, "an unanswered SYN backs off from 1 s", testTCPINFO_SYN_BACKOFF) ||
-        !CU_add_test(p, "a short buffer gets the start", testTCPINFO_SHORT) ||
-        !CU_add_test(p, "a full reassembly queue takes the segment that fills its hole", testTCPINFO_REASS_FULL) ||
-        !CU_add_test(p, "without window scaling the window offered is 65535, not its low bits", testTCPINFO_WINDOW_NO_SCALE) ||
-        !CU_add_test(p, "the accepted side has an RTT from the handshake", testTCPINFO_PASSIVE_RTT) ||
-        !CU_add_test(p, "socket buffers grow unless the application sized them", testTCPINFO_AUTOSIZE) ||
-        !CU_add_test(p, "with the ceilings at 0 no buffer grows", testTCPINFO_AUTOSIZE_OFF) ||
-        !CU_add_test(p, "two ends out of step do not answer each other for ever", testTCPINFO_ACK_WAR) ||
-        !CU_add_test(p, "one write leaves in full-sized segments", testTCPINFO_WRITE_SEGMENTS) ||
-        !CU_add_test(p, "a listening socket reports LISTEN", testTCPINFO_LISTEN))
+        !st_add_test(p, "an established connection (IPv4)", testTCPINFO_ESTABLISHED4, ST_V4) ||
+        !st_add_test(p, "an established connection (IPv6)", testTCPINFO_ESTABLISHED6, ST_V6) ||
+        !st_add_test(p, "the initial window, to a local destination (IPv4)", testTCPINFO_INITIAL_WINDOW4, ST_V4) ||
+        !st_add_test(p, "the initial window, to a local destination (IPv6)", testTCPINFO_INITIAL_WINDOW6, ST_V6) ||
+        !st_add_test(p, "slow start counts the bytes acknowledged", testTCPINFO_SLOW_START_BYTES, ST_ANY) ||
+        !st_add_test(p, "HyStart++ does not end slow start without a delay", testTCPINFO_HYSTART_NO_EXIT, ST_ANY) ||
+        !st_add_test(p, "a route's ssthresh reaches a new connection (IPv4)", testTCPINFO_ROUTE_SSTHRESH4, ST_V4) ||
+        !st_add_test(p, "a route's ssthresh reaches a new connection (IPv6)", testTCPINFO_ROUTE_SSTHRESH6, ST_V6) ||
+        !st_add_test(p, "the MSS never goes below net.inet.tcp.minmss", testTCPINFO_MSS_FLOOR, ST_V4) ||
+        !st_add_test(p, "a receiver ACKs at least every second segment", testTCPINFO_ACK_EVERY_SECOND, ST_ANY) ||
+        !st_add_test(p, "an application-limited sender does not grow cwnd", testTCPINFO_CWND_APP_LIMITED, ST_ANY) ||
+        !st_add_test(p, "data moves the sequence numbers", testTCPINFO_SEQUENCE, ST_ANY) ||
+        !st_add_test(p, "over the loopback the RTO is the floor", testTCPINFO_RTO_FLOOR, ST_ANY) ||
+        !st_add_test(p, SYN_BACKOFF_NAME, testTCPINFO_SYN_BACKOFF, ST_V6) ||
+        !st_add_test(p, "a short buffer gets the start", testTCPINFO_SHORT, ST_ANY) ||
+        !st_add_test(p, "a full reassembly queue takes the segment that fills its hole", testTCPINFO_REASS_FULL, ST_V4) ||
+        !st_add_test(p, "without window scaling the window offered is 65535, not its low bits", testTCPINFO_WINDOW_NO_SCALE, ST_ANY) ||
+        !st_add_test(p, "the accepted side has an RTT from the handshake", testTCPINFO_PASSIVE_RTT, ST_ANY) ||
+        !st_add_test(p, "socket buffers grow unless the application sized them", testTCPINFO_AUTOSIZE, ST_ANY) ||
+        !st_add_test(p, "with the ceilings at 0 no buffer grows", testTCPINFO_AUTOSIZE_OFF, ST_ANY) ||
+        !st_add_test(p, "two ends out of step do not answer each other for ever", testTCPINFO_ACK_WAR, ST_V4) ||
+        !st_add_test(p, "one write leaves in full-sized segments", testTCPINFO_WRITE_SEGMENTS, ST_ANY) ||
+        !st_add_test(p, "IPv6 connections in a row do not stall", testTCPINFO_CONNECT6_NO_STALL, ST_V6) ||
+        !st_add_test(p, "every protocol's default buffers can be reserved (IPv4)", testTCPINFO_DEFAULT_BUFFERS4, ST_V4) ||
+        !st_add_test(p, "every protocol's default buffers can be reserved (IPv6)", testTCPINFO_DEFAULT_BUFFERS6, ST_V6) ||
+        !st_add_test(p, "a listening socket reports LISTEN", testTCPINFO_LISTEN, ST_ANY))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

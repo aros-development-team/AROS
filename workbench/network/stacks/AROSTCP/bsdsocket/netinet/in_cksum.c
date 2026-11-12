@@ -63,6 +63,7 @@
 #include <sys/mbuf.h>
 
 #include <netinet/in_cksum_protos.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 /*
  * Checksum routine for Internet Protocol family headers (Portable Version).

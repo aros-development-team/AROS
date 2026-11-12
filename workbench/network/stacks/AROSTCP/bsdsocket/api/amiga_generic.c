@@ -56,9 +56,7 @@ extern struct Library *FDBase;      /* opened in amiga_fdhooks.c */
 
 #include <net/if_protos.h>
 #include <net/route_protos.h>
-#ifdef ENABLE_PACKET_FILTER
-#include "../net/ipfilter.h"
-#endif
+#include <net/netmodule.h>          /* net/netdemand.h: ioctl numbers a module serves */
 
 #include <bsdsocket/socketbasetags.h>
 
@@ -123,6 +121,9 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
     register u_int size;
     struct socket *so;
     spl_t s;
+    struct netdemand *nd = NULL;
+    const struct netioctl *nio;
+    int fenced = 1;
 
     /*
      * Note: Syscall semaphore is essential here if two processes can access
@@ -144,6 +145,23 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
     {
         volatile LONG cmdslot = (LONG)cmd;
         cmd = (ULONG)cmdslot;
+    }
+
+    /*
+     * A number a module serves, whose module is started - and its library
+     * loaded - when it is not running (net/netdemand.h): BEFORE the fence,
+     * because the start is done by the stack's task, which takes the fence
+     * for it. Held from here to the end of the call, so that the module
+     * is not stopped under it. For every other request one bit is tested.
+     * When the module cannot be had the request fails with why: ENXIO when
+     * the configuration leaves out what it needs (the filter engine on a
+     * stack without IPv4), ENOENT when it is not installed.
+     */
+    if(NETIOCTL_GROUP(cmd) && (nd = netioctl_demand(cmd)) != NULL &&
+            (error = netdemand_enter_error(nd, NULL)) != 0) {
+        nd = NULL;
+        fenced = 0;
+        goto Return;
     }
 
     ObtainSyscallSemaphore(libPtr);
@@ -228,6 +246,26 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
     }
 
     /*
+     * A number a module serves now: its handler, before the core's own
+     * groups. One that may wait is called without the fence (and without
+     * the socket, which could be closed meanwhile); the module's slot,
+     * held since before the fence, keeps it from being stopped meanwhile.
+     */
+    if(NETIOCTL_GROUP(cmd) && (nio = netioctl_find(cmd)) != NULL) {
+        if(nio->nio_flags & NIOF_UNFENCED) {
+            netioctl_handler handler = nio->nio_handler;
+
+            ReleaseSyscallSemaphore(libPtr);
+            fenced = 0;
+            error = (*handler)(NULL, cmd, data);
+            goto Return;
+        }
+        if((error = (*nio->nio_handler)(so, cmd, data)) != NETIOCTL_PASS)
+            goto Return;
+        /* not one it knows: as if the range were not taken */
+    }
+
+    /*
      * Interface/routing/protocol specific ioctls:
      * interface and routing ioctls should have a
      * different entry since a socket's unnecessary -- not really,
@@ -238,97 +276,7 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
         goto Return;
     }
     if(IOCGROUP(cmd) == 'r') {
-        /* Check for IPF/NAT ioctls first */
-        switch(cmd) {
-#ifdef ENABLE_PACKET_FILTER
-        case SIOCFRENB:
-            if(*(u_int *)data)
-                ipf_enable();
-            else
-                ipf_disable();
-            error = 0;
-            goto Return;
-
-        case SIOCIPFFL: {
-            int flags = *(int *)data;
-            int flushed = ipf_flush(flags);
-            *(int *)data = flushed;
-            error = 0;
-            goto Return;
-        }
-
-        case SIOCADAFR:	/* SIOCADDFR */
-            error = ipf_add_rule((struct ipf_rule *)data);
-            goto Return;
-
-        case SIOCINAFR:
-            error = ipf_insert_rule((struct ipf_rule *)data);
-            goto Return;
-
-        case SIOCRMAFR:	/* SIOCDELFR */
-            error = ipf_remove_rule((struct ipf_rule *)data);
-            goto Return;
-
-        case SIOCGETFS: {
-            struct ipf_state *st = (struct ipf_state *)data;
-            memcpy(st, &ipf_global, sizeof(*st));
-            error = 0;
-            goto Return;
-        }
-
-        case SIOCSETFF:
-            /* Set global log flags (future use) */
-            error = 0;
-            goto Return;
-
-        case SIOCGETFF:
-            *(u_int *)data = 0;	/* log flags, future use */
-            error = 0;
-            goto Return;
-
-        case SIOCFRZST: {
-            struct ipf_state *st = (struct ipf_state *)data;
-            memcpy(st, &ipf_global, sizeof(*st));
-            ipf_global.passed = 0;
-            ipf_global.blocked = 0;
-            ipf_global.logged = 0;
-            error = 0;
-            goto Return;
-        }
-
-        case SIOCADNAT:
-            error = ipnat_add_rule((struct ipnat_rule *)data);
-            goto Return;
-
-        case SIOCRMNAT:
-            error = ipnat_remove_rule((struct ipnat_rule *)data);
-            goto Return;
-
-        case SIOCFLNAT: {
-            int cleared = ipnat_clear_rules();
-            *(int *)data = cleared;
-            error = 0;
-            goto Return;
-        }
-
-        case SIOCCNATL: {
-            int flushed = ipnat_flush_entries();
-            *(int *)data = flushed;
-            error = 0;
-            goto Return;
-        }
-
-        case SIOCGNATS: {
-            struct ipnat_state *ns = (struct ipnat_state *)data;
-            memcpy(ns, &ipnat_global, sizeof(*ns));
-            error = 0;
-            goto Return;
-        }
-#endif /* ENABLE_PACKET_FILTER */
-
-        default:
-            break;	/* fall through to rtioctl */
-        }
+        /* (the filter and NAT numbers of the group are the filter engine's: ipf_ioctl(), net/ipfilter.c) */
         error = (rtioctl(cmd, data));
         goto Return;
     }
@@ -336,7 +284,10 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
                                         (struct mbuf *)(long)cmd, (struct mbuf *)data, (struct mbuf *)0));
 
 Return:
-    ReleaseSyscallSemaphore(libPtr);
+    if(fenced)
+        ReleaseSyscallSemaphore(libPtr);
+    if(nd != NULL)
+        netdemand_leave(nd);
     DOPTERR(if(error) log(LOG_ERR, "IoctlSocket(): error %ld on command 0x%08lx", (long)error, cmd);)
         API_STD_RETURN(error, 0);
 }

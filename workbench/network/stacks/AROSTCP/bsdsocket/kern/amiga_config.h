@@ -89,9 +89,11 @@ struct cfg_variable {
 #define VF_RCONF    (VF_CONF|VF_READ)
 #define VF_FREE     (1<<8) /* free when replaced? */
 
+/* the command line and general.config: the configuration reader's, through
+ * its stub (kern/netconfig_stubs.c), as are read_sets() below and the
+ * reading of a file of this syntax */
 BOOL readconfig(void);
 
-LONG parsefile(UBYTE const *fname, UBYTE **errstrp, struct CSource *res);
 LONG parseline(struct CSource *args, UBYTE **errstrp, struct CSource *res);
 LONG readfile(struct CSource *args, UBYTE **errstrp, struct CSource *res);
 LONG getvalue(struct CSource *args, UBYTE **errstrp, struct CSource *res);

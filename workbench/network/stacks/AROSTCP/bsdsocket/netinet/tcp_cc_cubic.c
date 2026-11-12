@@ -41,6 +41,7 @@
 #include <netinet/tcp_cc.h>
 
 #include <conf.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 /*
  * Integer cube root using Newton's method.
@@ -357,4 +358,15 @@ tcp_cc_init(void)
 {
     tcp_cc_algos[TCP_CC_NEWRENO] = &tcp_cc_newreno;
     tcp_cc_algos[TCP_CC_CUBIC] = &tcp_cc_cubic;
+}
+
+/* TCP stops (tcp_deinit()): no algorithm is registered, the default is the file's */
+void
+tcp_cc_defaults(void)
+{
+    int i;
+
+    for(i = 0; i < TCP_CC_MAX; i++)
+        tcp_cc_algos[i] = NULL;
+    tcp_cc_default = TCP_CC_CUBIC;
 }

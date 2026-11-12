@@ -45,7 +45,6 @@
 #include <net/if_types.h>
 #include <net/if_protos.h>
 #include <net/pfil.h>
-#include "ipfilter.h"
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
 /* the stack's own, not the public <netinet/in_var.h>: it declares
@@ -58,8 +57,13 @@
 
 #include <net/if_sana.h>
 #include <net/sana2arp.h>
+#include <net/netmodule.h>
 
 #include <net/if_loop_protos.h>
+#include <net/netcore_map.h>        /* always the last include */
+
+/* ARP's packet hook point, registered by IPv4 (netinet/in_proto.c) */
+extern struct pfil_point arp_pfil;
 
 /*
  * Internet to hardware address resolution table entry
@@ -88,6 +92,7 @@ unsigned long arpentries = ARPENTRIES;
 struct arptable {
     struct SignalSemaphore atb_lock;
     struct arptab         *atb_free;
+    struct arptab         *atb_block;   /* the entries, as they were allocated */
     struct MinList         atb_entries[ARPTAB_HSIZE];
 };
 
@@ -95,7 +100,6 @@ struct arptable {
 #define ARPTAB_UNLOCK(atb) (ReleaseSemaphore(&atb->atb_lock))
 #define	ARPTAB_HASH(a) ((u_long)(a) % ARPTAB_HSIZE)
 
-extern struct ifnet loif;
 
 int	useloopback = 0;	/* use loopback interface for local traffic */
 
@@ -181,8 +185,8 @@ alloc_arptable(struct sana_softc *ssc, int to_allocate)
     struct arptable *atab;
     int i;
 
-    if(ssc->ss_arp.table)
-        return /* (void)ssc->ss_arp.table */;
+    if(ssc->ss_arp_table)
+        return /* (void)ssc->ss_arp_table */;
 
 #if 0
     if(to_allocate < arpentries)
@@ -195,7 +199,7 @@ alloc_arptable(struct sana_softc *ssc, int to_allocate)
     if(atab && at) {
         InitSemaphore(&atab->atb_lock);
         for(i = 0; i < ARPTAB_HSIZE; i++)
-            NewList((struct List *)(atab->atb_entries + i));
+            NEWLIST((struct List *)(atab->atb_entries + i));
 
         aligned_bzero(at, sizeof(*at) * to_allocate);
 
@@ -204,13 +208,44 @@ alloc_arptable(struct sana_softc *ssc, int to_allocate)
             at[i].at_succ = &at[i - 1];
         }
         atab->atb_free = &at[to_allocate - 1];
+        atab->atb_block = at;
     } else {
         if(atab) bsd_free(atab, M_ARPENT);
         if(at) bsd_free(at, M_ARPENT);
         __log(LOG_ERR, "Could not allocate ARP table for %s\n", ssc->ss_name);
     }
 
-    ssc->ss_arp.table = atab;
+    ssc->ss_arp_table = atab;
+}
+
+/*
+ * The reverse of alloc_arptable(): IPv4 stops, and what it kept with the
+ * interface goes back to the pool - the table, its entries with the
+ * packets that waited for an address, and the permanent entries, which
+ * were allocated one by one. MUST BE CALLED AT SPLIMP, by the stack's task
+ * with the stack fenced: nobody holds the table's lock then.
+ */
+static void
+free_arptable(struct sana_softc *ssc)
+{
+    struct arptable *atab = ssc->ss_arp_table;
+    struct arptab *at, *next;
+    int i;
+
+    if(atab == NULL)
+        return;
+    ssc->ss_arp_table = NULL;
+    for(i = 0; i < ARPTAB_HSIZE; i++)
+        for(at = (struct arptab *)atab->atb_entries[i].mlh_Head;
+                (next = at->at_succ) != NULL; at = next) {
+            arp_hold_free(at);
+            if(at->at_flags & ATF_PERM) {
+                Remove((struct Node *)at);
+                bsd_free(at, M_ARPENT);
+            }
+        }
+    bsd_free(atab->atb_block, M_ARPENT);
+    bsd_free(atab, M_ARPENT);
 }
 
 /*
@@ -324,7 +359,7 @@ arptimer()
     register int i;
 
     for(ssc = ssq; ssc; ssc = ssc->ss_next) {
-        if(!(atab = ssc->ss_arp.table))
+        if(!(atab = ssc->ss_arp_table))
             continue;
         /* Lock the table */
         ARPTAB_LOCK(atab);
@@ -387,7 +422,7 @@ arp_probe(struct sana_softc *ssc, struct in_addr *candidate)
     aligned_bzero_const((caddr_t)s2a, sizeof(*s2a));
     m->m_flags |= M_BCAST;
 
-    s2a->arp_hrd = htons(ssc->ss_arp.hrd);
+    s2a->arp_hrd = htons(ssc->ss_arp_hrd);
     s2a->arp_pro = htons(ssc->ss_ip.type);
     s2a->arp_pln = sizeof(struct in_addr);
     s2a->arp_hln = ssc->ss_if.if_addrlen;
@@ -427,7 +462,7 @@ arp_announce(struct sana_softc *ssc, struct in_addr *addr)
     aligned_bzero_const((caddr_t)s2a, sizeof(*s2a));
     m->m_flags |= M_BCAST;
 
-    s2a->arp_hrd = htons(ssc->ss_arp.hrd);
+    s2a->arp_hrd = htons(ssc->ss_arp_hrd);
     s2a->arp_pro = htons(ssc->ss_ip.type);
     s2a->arp_pln = sizeof(struct in_addr);
     s2a->arp_hln = ssc->ss_if.if_addrlen;
@@ -602,7 +637,7 @@ arpwhohas(register struct sana_softc *ssc, struct in_addr *addr)
     m->m_flags |= M_BCAST;
 
     /* fill in header depending of the interface */
-    s2a->arp_hrd = htons(ssc->ss_arp.hrd);
+    s2a->arp_hrd = htons(ssc->ss_arp_hrd);
     s2a->arp_pro = htons(ssc->ss_ip.type);
     s2a->arp_pln = sizeof(struct in_addr); /* protocol address length */
     s2a->arp_hln = ssc->ss_if.if_addrlen;  /* hardware address length */
@@ -717,9 +752,9 @@ arpresolve(register struct sana_softc *ssc,
     }
 
     /* Try to locate ARP table */
-    if(!(atb = ssc->ss_arp.table)) {
+    if(!(atb = ssc->ss_arp_table)) {
         alloc_arptable(ssc, 0);
-        if(!(atb = ssc->ss_arp.table)) {
+        if(!(atb = ssc->ss_arp_table)) {
             __log(LOG_ERR, "arpresolve: memory exhausted");
             *error = ENOBUFS;
             m_freem(m);
@@ -760,6 +795,101 @@ arpresolve(register struct sana_softc *ssc,
 }
 
 /*
+ * IPv4's address resolution for the SANA-II interfaces, as the link type
+ * that carries IPv4 asks for it (lt_resolve, net/if_sana.h): 0 with desten
+ * filled in, or EAGAIN when the packet was taken over - held until the
+ * address is known, sent over the loopback, or dropped. Called from
+ * sana_output() at splimp; registered by arp_init().
+ *
+ * The rest of what IPv4 does for a packet on its way to a device is here
+ * too: a copy of our own broadcast for ourselves where the device does not
+ * hear what it sends, and the request for the low-delay type of service to
+ * go ahead of the others.
+ */
+static int
+arp_lt_resolve(struct ifnet *ifp, struct rtentry *rt, struct mbuf *m,
+               struct sockaddr *dst, u_char *desten)
+{
+    struct sana_softc *ssc = (struct sana_softc *)ifp;
+    struct in_addr idst = ((struct sockaddr_in *)dst)->sin_addr;
+    int error = 0;
+
+    /* If the address is not resolved, arpresolve
+     * stores the packet to its private queue for
+     * later transmit and broadcasts the resolve
+     * request packet to the (ether)net.
+     * (Now ARP works only with IP and ethernet.)
+     */
+    if((ifp->if_flags & IFF_NOARP) != IFF_NOARP &&
+            !arpresolve(ssc, m, &idst, desten, &error))
+        return (EAGAIN);
+
+    /* Send to loopback if we do not hear our broadcasts */
+    if((ifp->if_flags & IFF_SIMPLEX) && (m->m_flags & M_BCAST)) {
+        /* If a broadcast, send a copy to ourself too */
+        struct mbuf *mcopy = m_copy(m, 0, (int)M_COPYALL);
+
+        if(mcopy != NULL)
+            (void) looutput(ifp, mcopy, dst, rt);
+    }
+    /* Set the message priority */
+    if(IPTOS_LOWDELAY & mtod(m, struct ip *)->ip_tos)
+        m->m_flags |= M_LINKPRI;
+    return (0);
+}
+
+/*
+ * ARP and IPv4 link-local addressing become part of the running stack:
+ * called from ip_init(). The SANA-II layer and the timers do not name
+ * them - IPv4 registers its resolver for the link type that carries it,
+ * the input of the ARP link type, and its two periodic calls.
+ */
+static void *arp_age_timer, *arp_ll_timer;      /* the two periodic calls */
+
+void
+arp_init(void)
+{
+    (void)sana_linktype_resolver(AF_INET, arp_lt_resolve);
+    (void)sana_linktype_handler(SANA_PT_ARP, arpinput, sizeof(struct s2_arppkt));
+    if((arp_age_timer = netperiodic_add(arptimer, ARPT_AGE * hz)) == NULL ||
+            (arp_ll_timer = netperiodic_add(autoip_timer, 1 * hz)) == NULL)
+        __log(LOG_ERR, "arp_init: no timer for ARP ageing or IPv4LL\n");
+}
+
+/*
+ * ARP and IPv4 link-local addressing leave the running stack: called when
+ * IPv4 stops (inet_stop(), netinet/in_proto.c), after the read requests of
+ * the ARP type were taken back from the drivers (sana_linktype_quiesce())
+ * and the interfaces' IPv4 addresses removed. The reverse of arp_init()
+ * and of what ARP made since: the SANA-II layer no longer has the resolver
+ * and the input, the two periodic calls are deleted, and every interface
+ * loses its ARP table, its copy of the IPv4 address and its IPv4LL state.
+ * This file's variables are then as the file has them.
+ */
+void
+arp_deinit(void)
+{
+    struct sana_softc *ssc;
+    spl_t s;
+
+    (void)sana_linktype_resolver(AF_INET, NULL);
+    (void)sana_linktype_handler(SANA_PT_ARP, NULL, 0);
+    netperiodic_remove(arp_age_timer);
+    netperiodic_remove(arp_ll_timer);
+    arp_age_timer = arp_ll_timer = NULL;
+
+    s = splimp();
+    for(ssc = ssq; ssc; ssc = ssc->ss_next) {
+        free_arptable(ssc);
+        ssc->ss_ipaddr.s_addr = 0;
+        bzero((caddr_t)&ssc->ss_autoip, sizeof(ssc->ss_autoip));    /* AUTOIP_DISABLED */
+    }
+    splx(s);
+    arpentries = ARPENTRIES;
+    useloopback = 0;
+}
+
+/*
  * Called from the sana poll routine
  * when ARP type packet is received.
  * Common length and type checks are done here,
@@ -780,7 +910,7 @@ arpinput(struct sana_softc *ssc,
     if(m->m_len < sizeof(struct arphdr))
         goto out;
     ar = mtod(m, struct arphdr *);
-    if(ntohs(ar->ar_hrd) != ssc->ss_arp.hrd)
+    if(ntohs(ar->ar_hrd) != ssc->ss_arp_hrd)
         goto out;
     if(m->m_len < sizeof(struct arphdr) + 2 * ar->ar_hln + 2 * ar->ar_pln)
         goto out;
@@ -797,7 +927,15 @@ arpinput(struct sana_softc *ssc,
         goto out;
     }
 #endif
-    pfil_run_hooks(m, &ssc->ss_if, MIAMIPFBPT_ARP, IPF_IN);
+    /* the packet hooks (Miami hooks): one word tested while nothing is hooked (net/pfil.h) */
+    if(PFIL_HOOKED(&arp_pfil, PFIL_IN)) {
+        struct mbuf *hm = m;
+
+        if(pfil_run(&arp_pfil, &hm, &ssc->ss_if, PFIL_IN) != 0)
+            return;             /* dropped by a hook, and freed */
+        m = hm;
+        ar = mtod(m, struct arphdr *);
+    }
     proto = ntohs(ar->ar_pro);
 
     if(proto == ssc->ss_ip.type) {
@@ -897,9 +1035,14 @@ in_arpinput(register struct sana_softc *ssc,
         struct arptable *atb;
         register struct arptab *at = NULL; /* same as "merge" flag */
 
-        /* Try to locate ARP table */
-        if(!(atb = ssc->ss_arp.table)) {
-            goto reply;
+        /* Try to locate ARP table; it is made when first needed */
+        if(!(atb = ssc->ss_arp_table)) {
+            spl_t s = splimp();
+
+            alloc_arptable(ssc, 0);
+            splx(s);
+            if(!(atb = ssc->ss_arp_table))
+                goto reply;
         }
 
         ARPTAB_LOCK(atb);
@@ -957,18 +1100,18 @@ reply:
         register struct arptab *at;
 
         /* Try to locate ARP table */
-        if(!ssc->ss_arp.table)
+        if(!ssc->ss_arp_table)
             goto out;
 
-        ARPTAB_LOCK(ssc->ss_arp.table);
-        at = arptab_look(ssc->ss_arp.table, itaddr.s_addr);
+        ARPTAB_LOCK(ssc->ss_arp_table);
+        at = arptab_look(ssc->ss_arp_table, itaddr.s_addr);
         if(at && (at->at_flags & ATF_PUBL)) {
             bcopy(sha, tha, len);
             bcopy(at->at_hwaddr, sha, len);
         } else {
             at = NULL;
         }
-        ARPTAB_UNLOCK(ssc->ss_arp.table);
+        ARPTAB_UNLOCK(ssc->ss_arp_table);
         if(!at)
             goto out;
     }
@@ -985,7 +1128,13 @@ reply:
 
         m->m_flags &= ~(M_BCAST | M_MCAST);
 
-        pfil_run_hooks(m, &ssc->ss_if, MIAMIPFBPT_ARP, IPF_OUT);
+        if(PFIL_HOOKED(&arp_pfil, PFIL_OUT)) {
+            struct mbuf *hm = m;
+
+            if(pfil_run(&arp_pfil, &hm, &ssc->ss_if, PFIL_OUT) != 0)
+                return;         /* dropped by a hook, and freed */
+            m = hm;
+        }
         (*ssc->ss_if.if_output)(&ssc->ss_if, m, (struct sockaddr *)&ss2,
                                 (struct rtentry *)0);
         return;
@@ -1050,7 +1199,7 @@ caddr_t data;
         siz = ar ? atr->atr_size : 0;
 
         for(ssc2 = ssq; ssc2 != NULL; ssc2 = ssc2->ss_next) {
-            if((atb2 = ssc2->ss_arp.table) == NULL)
+            if((atb2 = ssc2->ss_arp_table) == NULL)
                 continue;
 
             ARPTAB_LOCK(atb2);
@@ -1090,8 +1239,13 @@ caddr_t data;
     ssc = (struct sana_softc *)ifa->ifa_ifp;
     splx(s);
 
-    /*if (ssc->ss_if.if_type != IFT_SANA || !(atb = ssc->ss_arp.table)) {*/
-    if(ssc->ss_if.if_output != sana_output || !(atb = ssc->ss_arp.table)) {
+    /*if (ssc->ss_if.if_type != IFT_SANA || !(atb = ssc->ss_arp_table)) {*/
+    if(ssc->ss_if.if_output != sana_output)
+        return (EAFNOSUPPORT);
+    /* made when first needed; we are at splimp (arpioctl()) */
+    if(ssc->ss_arp_table == NULL && (ssc->ss_if.if_flags & IFF_NOARP) == 0)
+        alloc_arptable(ssc, 0);
+    if(!(atb = ssc->ss_arp_table)) {
         return (EAFNOSUPPORT);
     }
 

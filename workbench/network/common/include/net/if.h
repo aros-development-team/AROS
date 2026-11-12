@@ -120,6 +120,21 @@ struct if_data {
    u_char   ifi_aros_usedhcp6;         /* non-zero if DHCPv6 is requested   */
 };
 
+#ifdef KERNEL
+struct ifnet;
+extern struct ifnet *ifnet;	/* the list of interfaces (net/if.c) */
+extern struct ifnet loif;	/* the loopback interface (net/if_loop.c) */
+/*
+ * The list of interfaces has the name of the structure. A module in a
+ * library file of its own reaches the core's variables through macros of
+ * their names (net/netcore_map.h), and a macro called `ifnet' would
+ * replace the word after `struct' as well. So the variable has a second
+ * name that is not a tag, for code that may be built as such a module. In
+ * the stack program it means the same.
+ */
+#define ifnet_list	ifnet
+#endif
+
 struct ifnet {
 	char	*if_name;		/* name, e.g. ``en'' or ``lo'' */
 	struct	ifnet *if_next;		/* all struct ifnets are chained */

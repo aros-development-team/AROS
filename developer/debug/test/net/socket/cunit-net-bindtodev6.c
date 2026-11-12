@@ -28,14 +28,16 @@ struct Library *SocketBase = NULL;
 static const char *ifname[2] = { "eth0", "eth1" };
 static unsigned ifindex[2];
 static struct in6_addr linklocal[2];
-static int have[2];
+static int exists[2];    /* the interface is there */
+static int have[2];      /* ...and has a link-local address */
 
 #define NEED_IF(n) do { if (!have[0] || ((n) > 1 && !have[1])) { CU_PASS("no suitable interfaces - skipping"); return; } } while (0)
 
+/* The interface's index: asked of a socket of whichever family there is. */
 static int index_of(const char *name, unsigned *index)
 {
     struct ifreq ifr;
-    int s = socket(AF_INET6, SOCK_DGRAM, 0), r;
+    int s = socket(st_any_family(), SOCK_DGRAM, 0), r;
 
     if (s < 0)
         return -1;
@@ -281,14 +283,18 @@ void testBINDTODEV6_TCP6_LISTENER(void)
     CloseSocket(l);
 }
 
-/* A TCP/IPv4 listener bound to the interface: refused over 127.0.0.1. */
+/* A TCP/IPv4 listener bound to the interface: refused over 127.0.0.1.
+ * It needs the interface only, not an IPv6 address on it. */
 void testBINDTODEV6_TCP4_LISTENER(void)
 {
     struct sockaddr_in d;
     unsigned short port;
     int l;
 
-    NEED_IF(1);
+    if (!exists[0]) {
+        CU_PASS("no such interface - skipping");
+        return;
+    }
     CU_ASSERT_FATAL((l = tcp_listener(AF_INET, 0, &port)) >= 0);
     bzero(&d, sizeof(d));
     d.sin_len = sizeof(d);
@@ -313,9 +319,11 @@ int main(int argc, char **argv)
         printf("bsdsocket.library 4 not available - skipping BINDTODEV6 tests\n");
         return 0;
     }
-    for (i = 0; i < 2; i++)
-        have[i] = index_of(ifname[i], &ifindex[i]) == 0 && get_linklocal(i, &linklocal[i]);
-    if (!have[0] || !have[1])
+    for (i = 0; i < 2; i++) {
+        exists[i] = index_of(ifname[i], &ifindex[i]) == 0;
+        have[i] = exists[i] && st_have_family(AF_INET6) && get_linklocal(i, &linklocal[i]);
+    }
+    if (st_have_family(AF_INET6) && (!have[0] || !have[1]))
         printf("%s, %s: not both with link-local addresses - skipping what needs them\n",
                ifname[0], ifname[1]);
 
@@ -325,13 +333,13 @@ int main(int argc, char **argv)
     }
     p = CU_add_suite("BINDTODEV6_Suite", init_suite, clean_suite);
     if (p == NULL ||
-        !CU_add_test(p, "the option on an IPv6 socket", testBINDTODEV6_OPTION) ||
-        !CU_add_test(p, "a peer with no zone is on the bound link", testBINDTODEV6_UNZONED_PEER) ||
-        !CU_add_test(p, "and so for connect()", testBINDTODEV6_UNZONED_CONNECT) ||
-        !CU_add_test(p, "a peer in another zone is refused", testBINDTODEV6_OTHER_ZONE) ||
-        !CU_add_test(p, "it hears only its interface", testBINDTODEV6_HEARS_ITS_LINK) ||
-        !CU_add_test(p, "a TCP/IPv6 listener only its interface", testBINDTODEV6_TCP6_LISTENER) ||
-        !CU_add_test(p, "a TCP/IPv4 listener only its interface", testBINDTODEV6_TCP4_LISTENER))
+        !st_add_test(p, "the option on an IPv6 socket", testBINDTODEV6_OPTION, ST_V6) ||
+        !st_add_test(p, "a peer with no zone is on the bound link", testBINDTODEV6_UNZONED_PEER, ST_V6) ||
+        !st_add_test(p, "and so for connect()", testBINDTODEV6_UNZONED_CONNECT, ST_V6) ||
+        !st_add_test(p, "a peer in another zone is refused", testBINDTODEV6_OTHER_ZONE, ST_V6) ||
+        !st_add_test(p, "it hears only its interface", testBINDTODEV6_HEARS_ITS_LINK, ST_V6) ||
+        !st_add_test(p, "a TCP/IPv6 listener only its interface", testBINDTODEV6_TCP6_LISTENER, ST_V6) ||
+        !st_add_test(p, "a TCP/IPv4 listener only its interface", testBINDTODEV6_TCP4_LISTENER, ST_V4))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

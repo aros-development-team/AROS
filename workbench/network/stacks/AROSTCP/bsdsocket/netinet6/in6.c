@@ -34,7 +34,8 @@
 #include <net/if.h>
 #include <net/if_dl.h>
 #include <net/if_sana.h>
-#include <net/sana2request.h>
+#include <kern/amiga_dhcp.h>
+#include <net/netmodule.h>
 #include <net/route.h>
 
 #include <netinet/in.h>
@@ -46,6 +47,7 @@
 
 #include <devices/sana2.h>
 #include <protos/kern/kern_random_protos.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 struct in6_ifaddr *in6_ifaddr = NULL;
 struct ifqueue    ip6intrq    = {0};
@@ -55,7 +57,6 @@ int ip6_forwarding = 0;
 int ip6_v6only     = 1;   /* sockets default to IPv6-only */
 int ip6_use_tempaddr = 1; /* enable privacy extensions by default */
 
-extern struct ifnet loif;
 
 /* ------------------------------------------------------------------
  * Utility: compare two IPv6 addresses.
@@ -859,8 +860,7 @@ in6_ifconf(int cmd, caddr_t data)
             continue;
 
         bzero(&ifr6, sizeof(ifr6));
-        snprintf(ifr6.ifr_name, sizeof(ifr6.ifr_name),
-                 "%s%u", ifp->if_name, ifp->if_unit);
+        if_fullname(ifp, ifr6.ifr_name, sizeof(ifr6.ifr_name));
         ifr6.ifr_ifru.ifru_addr = ia->ia_addr;
 
         bcopy(&ifr6, ifrp, sizeof(ifr6));
@@ -888,78 +888,17 @@ in6_map_mcast_macaddr(struct in6_addr *addr, u_int8_t *mac)
 }
 
 /*
- * sana_add_mcast6 - tell SANA-II device to accept Ethernet multicast for an
- * IPv6 multicast address via S2_ADDMULTICASTADDRESS.
+ * in6_mcast_device - tell the interface's device to accept (add) or stop
+ * accepting (!add) the link address of an IPv6 group. The device request
+ * is the core's (sana_mcast(), shared with IPv4); only the mapping is ours.
  */
 static int
-sana_add_mcast6(struct ifnet *ifp, struct in6_addr *maddr)
+in6_mcast_device(struct ifnet *ifp, struct in6_addr *maddr, int add)
 {
-    struct sana_softc *ssc = (struct sana_softc *)ifp;
-    struct IOSana2Req *req;
     u_int8_t mac[6];
-    int error = 0;
-
-    if(ifp->if_addrlen != 6)
-        return 0;  /* not Ethernet — nothing to do */
 
     in6_map_mcast_macaddr(maddr, mac);
-
-    D(bug("[AROSTCP:IN6] %s: %s%d registering eth mcast %02x:%02x:%02x:%02x:%02x:%02x\n",
-          __func__, ifp->if_name, ifp->if_unit,
-          mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]));
-
-    req = CreateIOSana2Req(ssc);
-    if(req == NULL) {
-        D(bug("[AROSTCP:IN6] %s: CreateIOSana2Req failed\n", __func__));
-        return ENOBUFS;
-    }
-
-    req->ios2_Req.io_Command = S2_ADDMULTICASTADDRESS;
-    bcopy(mac, req->ios2_SrcAddr, 6);
-    D(bug("[AROSTCP:IN6] %s: calling DoIO(S2_ADDMULTICASTADDRESS)\n", __func__));
-    DoIO((struct IORequest *)req);
-
-    if(req->ios2_Req.io_Error) {
-        D(bug("[AROSTCP:IN6] %s: DoIO error=%d\n",
-              __func__, req->ios2_Req.io_Error));
-        error = EIO;
-    } else {
-        D(bug("[AROSTCP:IN6] %s: DoIO success\n", __func__));
-    }
-
-    DeleteIOSana2Req(req);
-    return error;
-}
-
-/*
- * sana_del_mcast6 - tell SANA-II device to stop accepting an Ethernet multicast.
- */
-static int
-sana_del_mcast6(struct ifnet *ifp, struct in6_addr *maddr)
-{
-    struct sana_softc *ssc = (struct sana_softc *)ifp;
-    struct IOSana2Req *req;
-    u_int8_t mac[6];
-    int error = 0;
-
-    if(ifp->if_addrlen != 6)
-        return 0;
-
-    in6_map_mcast_macaddr(maddr, mac);
-
-    req = CreateIOSana2Req(ssc);
-    if(req == NULL)
-        return ENOBUFS;
-
-    req->ios2_Req.io_Command = S2_DELMULTICASTADDRESS;
-    bcopy(mac, req->ios2_SrcAddr, 6);
-    DoIO((struct IORequest *)req);
-
-    if(req->ios2_Req.io_Error)
-        error = EIO;
-
-    DeleteIOSana2Req(req);
-    return error;
+    return sana_mcast(ifp, mac, add);
 }
 
 /*
@@ -991,14 +930,11 @@ in6_addmulti(struct in6_addr *maddr, struct ifnet *ifp)
         }
     }
 
-    /* register Ethernet multicast address with the NIC */
-    D(bug("[AROSTCP:IN6] %s: calling sana_add_mcast6\n", __func__));
-    if(sana_add_mcast6(ifp, maddr) != 0) {
+    /* register the group's link address with the device */
+    if(in6_mcast_device(ifp, maddr, 1) != 0) {
         __log(LOG_ERR, "in6_addmulti: S2_ADDMULTICASTADDRESS failed for %s%d\n",
               ifp->if_name, ifp->if_unit);
         /* continue anyway — some drivers accept all multicast */
-    } else {
-        D(bug("[AROSTCP:IN6] %s: sana_add_mcast6 succeeded\n", __func__));
     }
 
     /* allocate a new entry */
@@ -1040,8 +976,8 @@ in6_delmulti(struct in6_multi *in6m)
         /* Send MLD Done before removing from list */
         mld6_stop_listening(in6m);
 
-        /* unregister Ethernet multicast address from the NIC */
-        sana_del_mcast6(in6m->in6m_ifp, &in6m->in6m_addr);
+        /* unregister the group's link address from the device */
+        in6_mcast_device(in6m->in6m_ifp, &in6m->in6m_addr, 0);
     }
 
     for(p = &in6_multihead; *p; p = &(*p)->in6m_next) {
@@ -1265,3 +1201,208 @@ in6_tmpaddrtimer(void)
 }
 
 #endif /* INET6 */
+
+
+/*
+ * IPv6's part in the life of an interface (net/netmodule.h). Registered
+ * from ip6_init().
+ */
+static int
+in6_ifevent(int event, struct ifnet *ifp)
+{
+    struct ifaddr *ifa, *nifa;
+    int deleted = 0;
+
+    switch(event) {
+    case NFE_UP:
+        /* the link-local address (EUI-64) is the stack's own to make */
+        in6_if_up(ifp);
+        break;
+
+    case NFE_UNCONFIGURE_PRE:
+        /* forget the routers heard on it, the routes they gave, the prefixes */
+        nd6_purge_routers(ifp);
+        nd6_purge_prefixes(ifp);
+        break;
+
+    case NFE_UNCONFIGURE:
+        for(ifa = ifp->if_addrlist; ifa; ifa = nifa) {
+            nifa = ifa->ifa_next;       /* in6_purgeaddr() unlinks+frees ifa */
+            if(ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET6) {
+                in6_purgeaddr(ifa);
+                deleted++;
+            }
+        }
+        break;
+
+    case NFE_REMOVING:
+#if DHCP6
+        kill_dhclient6(ifp);
+#endif
+        break;
+
+    case NFE_DETACHING:
+        nd6_ifdetach(ifp);
+        break;
+
+    case NFE_DETACHED:
+        /* (the sockets that name it are the transports' to see to:
+         * their own handler, netinet/tcp_subr.c) */
+        in6_ifdetach(ifp);
+        break;
+    }
+    return (deleted);
+}
+
+/* IPv6's address requests: the list request names no interface, the others one. */
+static int
+in6_ifcontrol(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
+{
+    if(cmd == SIOCGLIFADDR)
+        return (in6_ifconf(cmd, data));
+    return (in6_control(so, cmd, data, ifp));
+}
+
+/*
+ * What the core asks about an IPv6 address (NFQ_xxx, net/netmodule.h).
+ * Only one question is answered; -1 is "not answered", which is what the
+ * core was told about every IPv6 address before.
+ *
+ * NFQ_GATEWAYLINK: a link-local gateway is on the link its zone names (RFC
+ * 4007 section 6), and the route through it takes that interface and its
+ * link-local address - not whichever interface's fe80::/64 the address
+ * happens to match first, which sent the traffic of a route through
+ * fe80::1%eth1 out by eth0, to another neighbour. The answer is the index
+ * of that interface, 0 when the gateway names no link; `res' is then this
+ * host's link-local address on it as the interface has it, or of length 0
+ * when there is no such interface or it has no usable link-local address.
+ */
+static int
+in6_addrquery(int what, const struct sockaddr *sa, struct sockaddr *res)
+{
+    const struct sockaddr_in6 *g6 = (const struct sockaddr_in6 *)sa;
+    struct in6_ifaddr *ia;
+    struct ifnet *ifp;
+
+    if(what != NFQ_GATEWAYLINK)
+        return (-1);
+    if(g6->sin6_scope_id == 0 || !(IN6_IS_ADDR_LINKLOCAL(&g6->sin6_addr) ||
+                                   IN6_IS_ADDR_MC_LINKLOCAL(&g6->sin6_addr)))
+        return (0);
+    bzero((caddr_t)res, sizeof(struct sockaddr_in6));
+    for(ifp = ifnet_list; ifp; ifp = ifp->if_next)
+        if(ifp->if_index == g6->sin6_scope_id)
+            break;
+    if(ifp != NULL && (ia = in6_ifaof_ifpforlinklocal(ifp)) != NULL)
+        *(struct sockaddr_in6 *)res = ia->ia_addr;
+    return ((int)g6->sin6_scope_id);
+}
+
+const struct netfamily_ifops in6_ifops = {
+    AF_INET6, 20, in6_ifevent, in6_ifcontrol, in6_addrquery
+};
+
+/*
+ * IPV6 STARTS WHILE THE STACK RUNS (inet6_start(), netinet6/in6_proto.c):
+ * the interfaces are there already, and nobody will raise for them the
+ * events a starting stack raises. For each interface that is up IPv6 does
+ * what it does when one comes up (NFE_UP): its link-local address, the
+ * all-nodes and solicited-node groups, the interface's neighbour discovery
+ * state, duplicate address detection - after which the routers are
+ * solicited, and what they advertise (prefixes, addresses made from them,
+ * routes, DNS servers) comes by itself. The loopback interface gets IPv6's
+ * loopback address, ::1, which the stack's start-up gives it (loconfig(),
+ * net/if_loop.c) and which went with IPv6 when it stopped.
+ *
+ * The addresses and the default route the configuration gives an
+ * interface, and DHCPv6, come back with the next reload of the
+ * configuration, which reads them again: the stack keeps no copy of an
+ * interface's configuration that a family could apply by itself.
+ *
+ * When the stack itself starts, no interface is up yet when the families
+ * are started, and this does nothing.
+ */
+void
+in6_attach_running(void)
+{
+    struct ifnet *ifp;
+
+    for(ifp = ifnet_list; ifp != NULL; ifp = ifp->if_next) {
+        if(!(ifp->if_flags & IFF_UP))
+            continue;
+        if(ifp->if_flags & IFF_LOOPBACK) {
+            static const struct in6_addr loopback6 = IN6ADDR_LOOPBACK_INIT;
+            struct in6_aliasreq ifra6;
+
+            bzero((caddr_t)&ifra6, sizeof(ifra6));
+            ifra6.ifra_addr.sin6_len    = sizeof(struct sockaddr_in6);
+            ifra6.ifra_addr.sin6_family = AF_INET6;
+            ifra6.ifra_addr.sin6_addr   = loopback6;
+            ifra6.ifra_prefixmask.sin6_len    = sizeof(struct sockaddr_in6);
+            ifra6.ifra_prefixmask.sin6_family = AF_INET6;
+            memset(&ifra6.ifra_prefixmask.sin6_addr, 0xff,
+                   sizeof(ifra6.ifra_prefixmask.sin6_addr));    /* /128 */
+            (void)in6_control((struct socket *)NULL, SIOCAIFADDR_IN6, (caddr_t)&ifra6, ifp);
+        } else
+            (void)in6_ifevent(NFE_UP, ifp);
+    }
+}
+
+/*
+ * IPV6 STOPS (inet6_stop()): what it has on the interfaces goes, on every
+ * interface of the stack - the loopback among them - in the order an
+ * interface loses its configuration and leaves (kern/netconfig_iface.c
+ * sana_remove_unseen()), for this family alone: the DHCPv6 client is told
+ * (NFE_REMOVING); the routers heard on the interface, the routes they
+ * gave and the prefixes are forgotten, each with its entry of the routing
+ * table (NFE_UNCONFIGURE_PRE); every IPv6 route through the interface is
+ * deleted - the neighbour cache entries are freed with the routes they
+ * hang on, and the packets that waited in them; then every IPv6 address
+ * (NFE_UNCONFIGURE: each stops its duplicate address detection, takes the
+ * routes that still used it, and leaves its solicited-node group, ::1 on
+ * the loopback among them); then the interface's neighbour discovery
+ * state (NFE_DETACHING).
+ *
+ * Then the group memberships that are left. Those of sockets were left
+ * when the sockets were closed - none exists now - and those of the
+ * addresses with the addresses; what remains is each interface's own
+ * membership of the all-nodes group (in6_join_allnodes()), for which
+ * nothing is ever sent, and any that a socket did not leave. The devices
+ * stay open, so each is told to forget the group's link address.
+ *
+ * Returns the number of addresses removed.
+ */
+int
+in6_detach_all(void)
+{
+    struct ifnet *ifp;
+    int deleted = 0;
+    spl_t s;
+
+    for(ifp = ifnet_list; ifp != NULL; ifp = ifp->if_next) {
+        (void)in6_ifevent(NFE_REMOVING, ifp);
+        (void)in6_ifevent(NFE_UNCONFIGURE_PRE, ifp);
+        rt_purgeif(ifp, AF_INET6);
+        deleted += in6_ifevent(NFE_UNCONFIGURE, ifp);
+        (void)in6_ifevent(NFE_DETACHING, ifp);
+    }
+
+    s = splimp();
+    while(in6_multihead != NULL) {
+        struct in6_multi *in6m = in6_multihead;
+
+        in6_multihead = in6m->in6m_next;
+        if(in6m->in6m_ifp != NULL)
+            in6_mcast_device(in6m->in6m_ifp, &in6m->in6m_addr, 0);
+        FREE(in6m, M_IFADDR);
+    }
+    splx(s);
+
+    /* this file's variables, as the file has them */
+    in6_ifaddr = NULL;
+    ip6_defhlim = 64;
+    ip6_forwarding = 0;
+    ip6_v6only = 1;
+    ip6_use_tempaddr = 1;
+    return (deleted);
+}

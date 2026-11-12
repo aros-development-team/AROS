@@ -56,6 +56,7 @@
 
 #include <protos/netinet/in_cksum_protos.h>
 #include <protos/netinet/ip_output_protos.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 /*
  * Robustness / timing constants (RFC 2236 §8).  inm_timer counts fast-timer
@@ -84,6 +85,14 @@ static void igmp_sendpkt(struct in_multi *, int, struct in_addr);
  * ------------------------------------------------------------------ */
 void
 igmp_init(void)
+{
+	igmp_timers_running = 0;
+	igmp_random_seed = 1;
+}
+
+/* IPv4 stops (inet_stop()): IGMP's variables as the file has them */
+void
+igmp_defaults(void)
 {
 	igmp_timers_running = 0;
 	igmp_random_seed = 1;

@@ -52,6 +52,7 @@ int ip6_output(void *, ...);
 
 #include <protos/netinet/in_cksum_protos.h>
 #include <protos/net/route_protos.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 /* Default router list (singly-linked) */
 static struct nd_defrouter *nd6_defrtrlist = NULL;
@@ -593,6 +594,36 @@ nd6_purge_routers(struct ifnet *ifp)
             ri = nd6_rtinfolist;
         } else
             ri = ri->next;
+    }
+}
+
+/*
+ * nd6_rtr_flush - IPv6 stops: whatever is still on the three lists - the
+ * default routers, the routes they gave, the prefixes - is freed. The
+ * entries of each interface went with the interface
+ * (nd6_purge_routers(), nd6_purge_prefixes()), each taking its route out
+ * of the table, so this finds one only if its interface left the list of
+ * interfaces behind its back. Its route is not looked for: the caller
+ * empties IPv6's routing table as a whole next (rt_flushfamily()).
+ */
+void
+nd6_rtr_flush(void)
+{
+    struct nd_defrouter *dr;
+    struct nd_route_info *ri;
+    struct nd_prefix *pr;
+
+    while((dr = nd6_defrtrlist) != NULL) {
+        nd6_defrtrlist = dr->next;
+        FREE(dr, M_PCB);
+    }
+    while((ri = nd6_rtinfolist) != NULL) {
+        nd6_rtinfolist = ri->next;
+        FREE(ri, M_PCB);
+    }
+    while((pr = nd6_prefixlist) != NULL) {
+        nd6_prefixlist = pr->next;
+        FREE(pr, M_PCB);
     }
 }
 

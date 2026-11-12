@@ -57,9 +57,15 @@
 static char sccsid[] = "@(#)gethostnamadr.c	6.45 (Berkeley) 2/24/91";
 #endif /* LIBC_SCCS and not lint */
 
-#include <conf.h>
+/*
+ * The host look-up proper of the resolver module (api/resolver_ops.h): by
+ * name through the hosts table and the DNS (with the DNS cache), by
+ * address through both. The vectors that call it, and what they answer
+ * without it - numeric addresses, the localhost names - are the core's
+ * (api/resolver_stubs.c).
+ */
 
-#include <aros/libcall.h>
+#include <conf.h>
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -69,7 +75,6 @@ static char sccsid[] = "@(#)gethostnamadr.c	6.45 (Berkeley) 2/24/91";
 #include <net/if.h> /* for the gethostid() needs */
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <ctype.h>
 #include <sys/errno.h>
 
 #include <arpa/nameser.h>
@@ -85,10 +90,9 @@ static char sccsid[] = "@(#)gethostnamadr.c	6.45 (Berkeley) 2/24/91";
 #include <api/apicalls.h>
 #include <api/dns_cache.h>         /* dns_cache_lookup/insert, dns_cache_enabled */
 #include <kern/amiga_netdb.h>      /* NDB, LOCK_R_NDB, HostentNode */
+#include <api/resolver_ops.h>
 
-#include <stdio.h>
-
-#include <proto/bsdsocket.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 #define	MAXALIASES	35
 #define	MAXADDRS	35
@@ -141,8 +145,6 @@ struct hoststruct {
 static struct hostent *makehostent(struct SocketBase *libPtr,
                                    struct hoststruct *HS,
                                    char *ptr);
-
-LONG usens = 2;
 
 static char *
 getanswer(struct SocketBase *libPtr, querybuf *answer, int anslen, int iquery,
@@ -368,75 +370,39 @@ getanswer(struct SocketBase *libPtr, querybuf *answer, int anslen, int iquery,
     }
 }
 
-int isipaddr(const char *name)
+/*
+ * The reverse name of an address (in-addr.arpa, ip6.arpa) into qbuf, which
+ * has room for MAXDNAME + 1 octets.
+ */
+static void
+reverse_name(const UBYTE *addr, int len, int type, char *qbuf)
 {
-    const char *c;
-    int i = 0;
-    for(c = name; *c; c++) {
-        if(!isdigit(*c)) {
-            if((*c) == '.')
-                i++;
-            else
-                return 0;
+    struct CSource cs;
+
+    if(type == AF_INET6 && len == 16) {
+        /* each nibble in reverse */
+        char *p = qbuf;
+        int i;
+        for(i = 15; i >= 0; i--) {
+            *p++ = "0123456789abcdef"[addr[i] & 0x0f];
+            *p++ = '.';
+            *p++ = "0123456789abcdef"[(addr[i] >> 4) & 0x0f];
+            *p++ = '.';
         }
+        memcpy(p, "ip6.arpa", 9);
+    } else {
+        cs.CS_Buffer = qbuf;
+        cs.CS_Length = MAXDNAME + 1;
+        cs.CS_CurChr = 0;
+        (void)csprintf(&cs, "%lu.%lu.%lu.%lu.in-addr.arpa",
+                       ((unsigned long)addr[3] & 0xff),
+                       ((unsigned long)addr[2] & 0xff),
+                       ((unsigned long)addr[1] & 0xff),
+                       ((unsigned long)addr[0] & 0xff));
     }
-    return (i == 3);
 }
 
-/*
- * The localhost names (RFC 6761 section 6.3): "localhost" and the names
- * within ".localhost", in any case, with or without the final dot. They
- * are the loopback addresses, never looked up in the host table or the
- * DNS.
- */
-static int islocalhost(const char *name)
-{
-    size_t n = strnlen(name, MAXDNAME);
-
-    if(n > 0 && name[n - 1] == '.')
-        n--;
-    if(n < 9 || strncasecmp(name + n - 9, "localhost", 9) != 0)
-        return 0;
-    return n == 9 || name[n - 10] == '.';
-}
-
-static const u_char loopback4[4] = { 127, 0, 0, 1 };
-static const u_char loopback6[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
-
-/*
- * hostent_literal - the base's hostent for one address of family af
- * (4 or 16 bytes at addr) named name: hostent | address | h_addr_list[2]
- * (whose NULL is also the empty h_aliases) | name.
- */
-static struct hostent *hostent_literal(struct SocketBase *libPtr, int af,
-                                       const void *addr, const char *name)
-{
-    int alen = af == AF_INET6 ? sizeof(struct in6_addr) : sizeof(struct in_addr);
-    int nlen = strnlen(name, MAXDNAME) + 1;
-    char *base, **addrlist;
-
-    if(allocDataBuffer(&libPtr->hostents, sizeof(struct hostent) + ALIGN(alen) +
-                       2 * sizeof(char *) + nlen) == FALSE) {
-        writeErrnoValue(libPtr, ENOMEM);
-        h_errno = 0;
-        return NULL;
-    }
-    HOSTENT->h_addrtype = af;
-    HOSTENT->h_length = alen;
-    base = (char *)(HOSTENT + 1);
-    bcopy(addr, base, alen);
-    addrlist = (char **)(base + ALIGN(alen));
-    addrlist[0] = base;
-    addrlist[1] = NULL;
-    HOSTENT->h_addr_list = addrlist;
-    HOSTENT->h_aliases = addrlist + 1;
-    HOSTENT->h_name = (char *)(addrlist + 2);
-    memcpy(HOSTENT->h_name, name, nlen);
-    HOSTENT->h_name[nlen - 1] = '\0';
-    return HOSTENT;
-}
-
-struct hostent *__gethostbyname(const char *name, struct SocketBase *libPtr)
+struct hostent *res_gethostbyname(const char *name, struct SocketBase *libPtr)
 {
     querybuf *buf;
     int n;
@@ -451,28 +417,11 @@ struct hostent *__gethostbyname(const char *name, struct SocketBase *libPtr)
     CHECK_TASK2();
 
     /*
-     * check if name consists of only dots and digits.
+     * A dotted quad, a localhost name: answered by the core as by its
+     * vector (getaddrinfo() asks here with whatever it was given).
      */
-    if(isipaddr(name)) {
-        struct in_addr inaddr;
-
-#if defined(__AROS__)
-        D(bug("[AROSTCP](gethostnameadr.c) gethostbyname: name IS an IP address\n"));
-#endif
-
-        if(!__inet_aton(name, &inaddr)) {
-            writeErrnoValue(libPtr, EINVAL);
-            h_errno = 0;
-            return NULL;
-        }
-        return hostent_literal(libPtr, AF_INET, &inaddr, name);
-    } else if(islocalhost(name))
-        return hostent_literal(libPtr, AF_INET, loopback4, name);
-    else {
-#if defined(__AROS__)
-        D(bug("[AROSTCP](gethostnameadr.c) gethostbyname: name ISNT an IP address\n"));
-#endif
-    }
+    if(resolver_literal(libPtr, name, AF_INET, &anshost))
+        return anshost;
 
     /*
      * Search local database (first) is usens not FIRST
@@ -561,7 +510,7 @@ struct hostent *__gethostbyname(const char *name, struct SocketBase *libPtr)
     return anshost;
 }
 
-struct hostent *__gethostbyname2(const char *name, int af, struct SocketBase *libPtr)
+struct hostent *res_gethostbyname2(const char *name, int af, struct SocketBase *libPtr)
 {
     querybuf *buf;
     int n;
@@ -577,33 +526,16 @@ struct hostent *__gethostbyname2(const char *name, int af, struct SocketBase *li
     CHECK_TASK2();
 
     if(af == AF_INET)
-        return __gethostbyname(name, libPtr);
-
-    if(af != AF_INET6) {
-        writeErrnoValue(libPtr, EAFNOSUPPORT);
-        return NULL;
-    }
-
-    qtype = T_AAAA;
-
-    if(islocalhost(name))
-        return hostent_literal(libPtr, AF_INET6, loopback6, name);
+        return res_gethostbyname(name, libPtr);
 
     /*
-     * Check if the name is a literal IPv6 address (contains ':')
-     * If so, parse it directly rather than querying DNS.
+     * A family other than IPv6, a localhost name, an IPv6 literal (it has
+     * a ':'): answered by the core, never looked up.
      */
-    if(strchr(name, ':') != NULL) {
-        struct in6_addr in6;
-        extern int __inet_pton(int, const char *, void *, struct SocketBase *);
+    if(resolver_literal(libPtr, name, af, &anshost))
+        return anshost;
 
-        if(__inet_pton(AF_INET6, name, &in6, libPtr) == 1)
-            return hostent_literal(libPtr, AF_INET6, &in6, name);
-        else {
-            writeErrnoValue(libPtr, EINVAL);
-            return NULL;
-        }
-    }
+    qtype = T_AAAA;
 
     /*
      * Search local database (first) if usens is not FIRST
@@ -670,24 +602,7 @@ struct hostent *__gethostbyname2(const char *name, int af, struct SocketBase *li
     return anshost;
 }
 
-AROS_LH1(struct hostent *, gethostbyname,
-         AROS_LHA(char *, name, A0),
-         struct SocketBase *, libPtr, 35, UL)
-{
-    AROS_LIBFUNC_INIT
-    struct hostent *r;
-
-    ObtainResolver(libPtr);
-    r = __gethostbyname(name, libPtr);
-    writeHErrnoValue(libPtr);
-    ReleaseResolver(libPtr);
-    return r;
-    AROS_LIBFUNC_EXIT
-}
-
-
-
-struct hostent *__gethostbyaddr(UBYTE *addr, int len, int type, struct SocketBase *libPtr)
+struct hostent *res_gethostbyaddr(UBYTE *addr, int len, int type, struct SocketBase *libPtr)
 {
     querybuf *buf;
     int n;
@@ -697,7 +612,7 @@ struct hostent *__gethostbyaddr(UBYTE *addr, int len, int type, struct SocketBas
     struct hostent *anshost = NULL;
 
 #if defined(__AROS__)
-    D(bug("[AROSTCP](gethostnameadr.c) __gethostbyaddr()\n"));
+    D(bug("[AROSTCP](gethostnameadr.c) res_gethostbyaddr()\n"));
 #endif
 
     CHECK_TASK2();
@@ -724,24 +639,7 @@ struct hostent *__gethostbyaddr(UBYTE *addr, int len, int type, struct SocketBas
     buf = (querybuf *)(HS + 1);
     qbuf = (caddr_t)(buf + 1);
 
-    if(type == AF_INET6 && len == 16) {
-        /* Build ip6.arpa reverse name: each nibble in reverse */
-        char *p = qbuf;
-        int i;
-        for(i = 15; i >= 0; i--) {
-            *p++ = "0123456789abcdef"[addr[i] & 0x0f];
-            *p++ = '.';
-            *p++ = "0123456789abcdef"[(addr[i] >> 4) & 0x0f];
-            *p++ = '.';
-        }
-        memcpy(p, "ip6.arpa", 9);
-    } else {
-        (void)snprintf(qbuf, MAXDNAME + 1, "%lu.%lu.%lu.%lu.in-addr.arpa",
-                       ((unsigned long)addr[3] & 0xff),
-                       ((unsigned long)addr[2] & 0xff),
-                       ((unsigned long)addr[1] & 0xff),
-                       ((unsigned long)addr[0] & 0xff));
-    }
+    reverse_name(addr, len, type, qbuf);
     /*
      * Cache probe (PTR / reverse). On a hit the stored response is run
      * through getanswer() and the very same address-injection the live path
@@ -751,7 +649,7 @@ struct hostent *__gethostbyaddr(UBYTE *addr, int len, int type, struct SocketBas
         n = dns_cache_lookup(qbuf, T_PTR, buf->buf, sizeof(querybuf));
         if(n > 0) {
 #if defined(__AROS__)
-            D(bug("[AROSTCP](gethostnameadr.c) __gethostbyaddr: [dns_cache] hit, %d bytes\n", n));
+            D(bug("[AROSTCP](gethostnameadr.c) res_gethostbyaddr: [dns_cache] hit, %d bytes\n", n));
 #endif
             ptr = getanswer(libPtr, buf, n, 1, T_PTR, HS);
             if(ptr != NULL) {
@@ -810,27 +708,6 @@ struct hostent *__gethostbyaddr(UBYTE *addr, int len, int type, struct SocketBas
     return anshost;
 }
 
-AROS_LH3(struct hostent *, gethostbyaddr,
-         AROS_LHA(UBYTE *, addr, A0),
-         AROS_LHA(int, len, D0),
-         AROS_LHA(int, type, D1),
-         struct SocketBase *, libPtr, 36, UL)
-{
-    AROS_LIBFUNC_INIT
-#if defined(__AROS__)
-    D(bug("[AROSTCP](gethostnameadr.c) gethostbyaddr()\n"));
-#endif
-
-    struct hostent *r;
-
-    ObtainResolver(libPtr);
-    r = __gethostbyaddr(addr, len, type, libPtr);
-    writeHErrnoValue(libPtr);
-    ReleaseResolver(libPtr);
-    return r;
-    AROS_LIBFUNC_EXIT
-}
-
 static struct hostent *makehostent(struct SocketBase *libPtr,
                                    struct hoststruct *HS,
                                    char *ptr)
@@ -845,7 +722,7 @@ static struct hostent *makehostent(struct SocketBase *libPtr,
     n = i + sizeof(struct hostent) + HS->h_addr_count * sizeof(char *) +
         HS->host_alias_count * sizeof(char *);
 
-    if(allocDataBuffer(&libPtr->hostents, n) == FALSE) {
+    if(res_allocdatabuffer(&libPtr->hostents, n) == FALSE) {
         writeErrnoValue(libPtr, ENOMEM);
         return NULL;
     }
@@ -1028,7 +905,7 @@ _gethtbyname_r(struct SocketBase *libPtr, const char *name,
          entNode = (struct HostentNode *)entNode->hn_Node.mln_Succ) {
         if (entNode->hn_Ent.h_addrtype != AF_INET)
             continue;   /* the table also holds IPv6 entries */
-        if (strcasecmp(entNode->hn_Ent.h_name, (char *)name) == 0) {
+        if (res_strcasecmp(entNode->hn_Ent.h_name, name) == 0) {
             rc = hostent_copyout_r(&entNode->hn_Ent, result, buf, buflen);
             break;
         }
@@ -1036,7 +913,7 @@ _gethtbyname_r(struct SocketBase *libPtr, const char *name,
         if (entNode->hn_Ent.h_aliases) {
             char **ap;
             for (ap = entNode->hn_Ent.h_aliases; *ap; ap++) {
-                if (strcasecmp(*ap, name) == 0) {
+                if (res_strcasecmp(*ap, name) == 0) {
                     rc = hostent_copyout_r(&entNode->hn_Ent, result,
                                            buf, buflen);
                     goto done;
@@ -1075,45 +952,14 @@ _gethtbyaddr_r(struct SocketBase *libPtr, const char *addr, int len, int type,
 }
 
 /*
- * hostent_literal_r -- the hostent for one IPv4 address named name, in the
- * caller's buffer: address | h_addr_list[2] | h_aliases[1] | name.
- * Returns 0, or ERANGE if buf is too small.
- */
-static int
-hostent_literal_r(const struct in_addr *addr, const char *name,
-                  struct hostent *result, char *buf, LONG buflen)
-{
-    int nlen = strnlen(name, MAXDNAME) + 1;
-    char *bp = buf;
-    char **addrlist;
-
-    if ((int)ALIGN(sizeof(struct in_addr)) + 3 * (int)sizeof(char *) + nlen > buflen)
-        return ERANGE;
-    memcpy(bp, addr, sizeof(struct in_addr));
-    bp += ALIGN(sizeof(struct in_addr));
-    addrlist = (char **)bp;
-    addrlist[0] = buf;
-    addrlist[1] = NULL;
-    result->h_addr_list = addrlist;
-    bp += 2 * sizeof(char *);
-    result->h_aliases = (char **)bp;    /* empty */
-    *(char **)bp = NULL;
-    bp += sizeof(char *);
-    result->h_name = bp;
-    memcpy(bp, name, nlen);
-    bp[nlen - 1] = '\0';
-    result->h_addrtype = AF_INET;
-    result->h_length = sizeof(struct in_addr);
-    return 0;
-}
-
-/*
- * __gethostbyname_r -- thread-safe gethostbyname.
+ * res_gethostbyname_r -- thread-safe gethostbyname.
  * Returns result on success, NULL on failure.
  * Sets *h_errnop on DNS errors. Sets errno via writeErrnoValue.
+ * Its vector (api/resolver_stubs.c) has checked the arguments and answered
+ * a dotted quad and a localhost name itself: here is a name to look up.
  */
 struct hostent *
-__gethostbyname_r(const char *name, struct hostent *result,
+res_gethostbyname_r(const char *name, struct hostent *result,
                   char *buf, LONG buflen, LONG *h_errnop,
                   struct SocketBase *libPtr)
 {
@@ -1123,37 +969,8 @@ __gethostbyname_r(const char *name, struct hostent *result,
     struct hoststruct *HS = NULL;
 
 #if defined(__AROS__)
-    D(bug("[AROSTCP](gethostnameadr.c) __gethostbyname_r('%s')\n", name));
+    D(bug("[AROSTCP](gethostnameadr.c) res_gethostbyname_r('%s')\n", name));
 #endif
-
-    if (!name || !result || !buf || buflen <= 0) {
-        writeErrnoValue(libPtr, EINVAL);
-        if (h_errnop) *h_errnop = NETDB_INTERNAL;
-        return NULL;
-    }
-
-    /*
-     * A dotted-quad IP address literal, or a localhost name (RFC 6761
-     * section 6.3): no lookup.
-     */
-    if (isipaddr(name) || islocalhost(name)) {
-        struct in_addr inaddr;
-
-        if (!isipaddr(name))
-            memcpy(&inaddr, loopback4, sizeof(inaddr));
-        else if (!__inet_aton(name, &inaddr)) {
-            writeErrnoValue(libPtr, EINVAL);
-            if (h_errnop) *h_errnop = HOST_NOT_FOUND;
-            return NULL;
-        }
-        if (hostent_literal_r(&inaddr, name, result, buf, buflen) != 0) {
-            writeErrnoValue(libPtr, ERANGE);
-            if (h_errnop) *h_errnop = NETDB_INTERNAL;
-            return NULL;
-        }
-        if (h_errnop) *h_errnop = 0;
-        return result;
-    }
 
     /*
      * Search local database (first if usens != FIRST)
@@ -1230,11 +1047,11 @@ __gethostbyname_r(const char *name, struct hostent *result,
 }
 
 /*
- * __gethostbyaddr_r -- thread-safe gethostbyaddr.
+ * res_gethostbyaddr_r -- thread-safe gethostbyaddr.
  * Returns result on success, NULL on failure.
  */
 struct hostent *
-__gethostbyaddr_r(const char *addr, LONG len, LONG type,
+res_gethostbyaddr_r(const char *addr, LONG len, LONG type,
                   struct hostent *result, char *buf, LONG buflen,
                   LONG *h_errnop, struct SocketBase *libPtr)
 {
@@ -1245,7 +1062,7 @@ __gethostbyaddr_r(const char *addr, LONG len, LONG type,
     char *revname;
 
 #if defined(__AROS__)
-    D(bug("[AROSTCP](gethostnameadr.c) __gethostbyaddr_r()\n"));
+    D(bug("[AROSTCP](gethostnameadr.c) res_gethostbyaddr_r()\n"));
 #endif
 
     if (!addr || !result || !buf || buflen <= 0) {
@@ -1292,24 +1109,7 @@ __gethostbyaddr_r(const char *addr, LONG len, LONG type,
     qb = (querybuf *)(HS + 1);
     revname = (caddr_t)(qb + 1);
 
-    if (type == AF_INET6 && len == 16) {
-        /* Build ip6.arpa reverse name */
-        char *p = revname;
-        int i;
-        for (i = 15; i >= 0; i--) {
-            *p++ = "0123456789abcdef"[((unsigned char *)addr)[i] & 0x0f];
-            *p++ = '.';
-            *p++ = "0123456789abcdef"[(((unsigned char *)addr)[i] >> 4) & 0x0f];
-            *p++ = '.';
-        }
-        memcpy(p, "ip6.arpa", 9);
-    } else {
-        (void)snprintf(revname, MAXDNAME + 1, "%lu.%lu.%lu.%lu.in-addr.arpa",
-                       ((unsigned long)((unsigned char *)addr)[3] & 0xff),
-                       ((unsigned long)((unsigned char *)addr)[2] & 0xff),
-                       ((unsigned long)((unsigned char *)addr)[1] & 0xff),
-                       ((unsigned long)((unsigned char *)addr)[0] & 0xff));
-    }
+    reverse_name((const UBYTE *)addr, len, type, revname);
 
     n = res_query(libPtr, revname, C_IN, T_PTR, (char *)qb, sizeof(querybuf));
     if (n >= 0) {
@@ -1365,246 +1165,4 @@ __gethostbyaddr_r(const char *addr, LONG len, LONG type,
     if (h_errnop) *h_errnop = h_errno;
     bsd_free(HS, M_TEMP);
     return NULL;
-}
-
-/*
- * id_addr variable is used by both the gethostname() and gethostid().
- *
- * host_name is the host_name configuration variable.
- */
-static ULONG id_addr = 0;
-
-void findid(ULONG *); /* defined in net/if.c */
-
-/*
- * Global host name and name length
- *
- * NOTE: host_name/host_namelen (and the global usens above) are shared,
- * unsynchronised globals. Concurrent sethostname()/gethostname() callers
- * can race on them. Locking is intentionally not added here to avoid
- * introducing a deadlock against the callers' higher-level locks.
- */
-char host_name[MAXHOSTNAMELEN + 1] = { 0 };
-size_t host_namelen = 0;
-
-/****i* AmiTCP/sethostname *********************************************
-*
-*   NAME
-*       sethostname -- set the name of the host
-*
-*   SYNOPSIS
-*       error = sethostname(name, namelen);
-*
-*       int sethostname(const char *, size_t);
-*
-*   FUNCTION
-*       Set the name of the host to the given 'name' of length 'namelen'.
-*
-*   INPUTS
-*       name    - Pointer to the name string.
-*       namelen - Length of the name.
-*
-*   RESULT
-*       error   - 0 on success.
-*
-*   EXAMPLE
-*
-*   NOTES
-*       This function is not intended to be provided to the applications,
-*       this is for AmiTCP internal use only (at least for now).
-*
-*   BUGS
-*
-*   SEE ALSO
-*****************************************************************************
-*
-*/
-int sethostname(const char *name, size_t namelen)
-{
-#if defined(__AROS__)
-    D(bug("[AROSTCP](gethostnameadr.c) sethostname()\n"));
-#endif
-
-    if(namelen > MAXHOSTNAMELEN)
-        namelen = MAXHOSTNAMELEN;
-
-    memcpy(host_name, name, namelen);
-    host_name[namelen] = '\0';
-    host_namelen = namelen;
-    SetVar("HOSTNAME", name, namelen, GVF_GLOBAL_ONLY);
-
-    return 0;
-}
-
-/****** bsdsocket.library/gethostname *************************************
-*
-*   NAME
-*       gethostname -- get the name of the host
-*
-*   SYNOPSIS
-*       error = gethostname(name, namelen);
-*
-*       long gethostname(char *, long);
-*
-*   FUNCTION
-*       Get the name of the host to the buffer name of length namelen.
-*       The name is queried from the netdb and/or the name server if
-*       it is not explicitly configured (configuration variable
-*       HOSTNAME).
-*
-*   INPUTS
-*       name    - Pointer to the buffer where the name should be
-*                 stored.
-*       namelen - Length of the buffer name.
-*
-*   RESULT
-*       error   - 0 on success.
-*
-*   EXAMPLE
-*       char hostname[MAXHOSTNAMELEN];
-*       long error;
-*
-*       error = gethostname(hostname, sizeof(hostname));
-*       if (error < 0)
-*         exit(10);
-*
-*       printf("My name is \"%s\".\n", hostname);
-*
-*   NOTES
-*
-*   BUGS
-*       Unlike the Unix version, this version assures that the
-*       resulting string is always NULL-terminated.
-*
-*   SEE ALSO
-*       gethostid()
-*****************************************************************************
-*
-*/
-LONG __gethostname(STRPTR name, LONG namelen, struct SocketBase *libPtr)
-{
-    size_t host_namelen = 0;
-
-#if defined(__AROS__)
-    D(bug("[AROSTCP](gethostnameadr.c) __gethostname()\n"));
-#endif
-
-    CHECK_TASK();
-
-    /*
-     * Get the name with the gethostbyaddr(), if the name is not set yet.
-     */
-    if(*host_name == '\0') {
-        struct hostent *hent;
-        /* gethostid() */
-        if(id_addr == 0)
-            findid(&id_addr);
-
-        if(id_addr != 0) {
-            /* query if we have an address */
-            hent = __gethostbyaddr((UBYTE *)&id_addr,
-                                   sizeof(id_addr), AF_INET, libPtr);
-
-            if(hent != NULL) {
-                host_namelen = strnlen(hent->h_name, MAXHOSTNAMELEN);
-                sethostname(hent->h_name, host_namelen);
-            } else {
-#if defined(__AROS__)
-                D(bug("[AROSTCP](gethostnameadr.c) __gethostname: BUG!?! No Host ??\n"));
-#endif
-            }
-        }
-    } else host_namelen = strnlen(host_name, MAXHOSTNAMELEN);
-
-#if defined(__AROS__)
-    D(bug("[AROSTCP](gethostnameadr.c) __gethostname: namelen: %d host_namelen: %d\n", (int)namelen, (int)host_namelen));
-#endif
-
-    /*
-     * Copy the name to the user buffer. stccpy() ensures that the buffer
-     * is not written over and that it will be null-terminated.
-     */
-    if(namelen > host_namelen)
-        namelen = host_namelen;
-    else
-        namelen--;			/* make space for the trailing '\0' */
-
-    memcpy(name, host_name, namelen);
-    name[namelen] = '\0';
-
-    API_STD_RETURN(0, 0);
-}
-
-AROS_LH2(LONG, gethostname,
-         AROS_LHA(STRPTR, name, A0),
-         AROS_LHA(LONG, namelen, D0),
-         struct SocketBase *, libPtr, 47, UL)
-{
-    AROS_LIBFUNC_INIT
-#if defined(__AROS__)
-    D(bug("[AROSTCP](gethostnameadr.c) gethostname()\n"));
-#endif
-    return __gethostname(name, namelen, libPtr);
-    AROS_LIBFUNC_EXIT
-}
-
-/****** bsdsocket.library/gethostid ***************************************
-*
-*   NAME
-*       gethostid -- get an unique 32-bit id to this host
-*
-*   SYNOPSIS
-*       id = gethostid();
-*
-*       ULONG gethostid(void);
-*
-*   FUNCTION
-*       Return the 32-bit unique id for this host. The Internet
-*       address if the primary interface is used as the unique id.
-*       This means that this function is also a supported way to get
-*       the hosts IP address in AmiTCP/IP. If no interfaces are
-*       configured, zero is returned. Any non-loobpack interface with
-*       is preferred. Only if no other interfaces are present, is the
-*       loopback address returned.
-*
-*   INPUTS
-*
-*   RESULT
-*       id  - non-zero on success.
-*
-*   EXAMPLE
-*       ULONG id;
-*
-*       id = gethostid();
-*       if (id == 0)
-*         exit(10);
-*
-*       printf("My primary IP address is: %s.\n", Inet_NtoA(id));
-*
-*   NOTES
-*       Non-zero id is returned as soon as a interface is configured.
-*       After that the id will not change, not even if the id is the
-*       address of the loopback interface.
-*
-*   BUGS
-*
-*   SEE ALSO
-*****************************************************************************
-*
-*/
-/*ULONG SAVEDS gethostid(
-   REG(a6, struct SocketBase * libPtr))*/
-AROS_LH0(ULONG, gethostid,
-         struct SocketBase *, libPtr, 48, UL)
-{
-    AROS_LIBFUNC_INIT
-
-#if defined(__AROS__)
-    D(bug("[AROSTCP](gethostnameadr.c) gethostid()\n"));
-#endif
-
-    if(id_addr == 0)
-        findid(&id_addr);
-    return id_addr;
-    AROS_LIBFUNC_EXIT
 }

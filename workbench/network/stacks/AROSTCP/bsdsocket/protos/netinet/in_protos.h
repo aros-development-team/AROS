@@ -35,3 +35,7 @@ struct in_ifaddr * in_iaonnetof(u_long net);
 
 int in_broadcast(struct in_addr in);
 
+/* IPv4 starts and stops while the stack runs (netinet/in_proto.c) */
+void in_attach_running(void);
+int in_detach_all(void);
+void in_family_defaults(void);	/* in_family.c */

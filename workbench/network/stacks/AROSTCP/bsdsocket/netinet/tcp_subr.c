@@ -51,28 +51,22 @@
 
 #include <net/route.h>
 #include <net/if.h>
+#include <net/netmodule.h>
 
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
-#include <netinet/ip6.h>
-#include <netinet6/in6_var.h>
 #include <netinet/in_pcb.h>
 #include <netinet/in_var.h>
 #include <netinet/ip_var.h>
-#include <netinet/ip_icmp.h>
+#include <netinet/inetfamily.h>
 #include <stddef.h>		/* offsetof */
-#include <netinet/in_cksum_protos.h>
 #include <protos/net/route_protos.h>
 #include <netinet/tcp.h>
 #include <netinet/tcp_fsm.h>
 #include <netinet/tcp_seq.h>
 #include <netinet/tcp_timer.h>
 #include <netinet/tcp_var.h>
-#include <netinet/tcpip.h>
-#ifdef TCPDEBUG
-#include <netinet/tcp_debug.h>
-#endif
 
 #include "tcp_compat.h"
 #include <netinet/tcp_cc.h>
@@ -83,81 +77,8 @@
 #include <kern/kern_subr_protos.h>
 #include <protos/kern/kern_random_protos.h>
 #include <kern/uipc_socket2_protos.h>
+#include <net/netcore_map.h>        /* always the last include */
 
-/*
- * Dual-stack helper: true if the socket bound to this PCB is an AF_INET6
- * (IPv6) socket.  Derived from the socket's protocol domain so it is correct
- * for listen children and syncache-created sockets too.
- */
-int
-tcp_isipv6(struct inpcb *inp)
-{
-#if INET6
-    if(inp && inp->inp_socket && inp->inp_socket->so_proto &&
-            inp->inp_socket->so_proto->pr_domain) {
-        if(inp->inp_socket->so_proto->pr_domain->dom_family != AF_INET6)
-            return (0);
-        /*
-         * A dual-stack socket holding an IPv4-mapped peer is carrying an
-         * IPv4 connection - it must be framed and routed as IPv4, even
-         * though the socket itself is AF_INET6.
-         */
-        if(IN6_IS_ADDR_V4MAPPED(&inp->inp_faddr6))
-            return (0);
-        return (1);
-    }
-#endif
-    return (0);
-}
-
-#if INET6
-/*
- * Dual-stack output helper.  The mbuf m must already start at the TCP header
- * (TCP header + options + data), with m_len / m_pkthdr.len == tlen.  Prepend
- * and fill an IPv6 header, compute the TCP checksum over the IPv6 pseudo-header
- * and hand the datagram to ip6_output().  Shared by tcp_output(), tcp_respond()
- * and the SYN cache, mirroring udp6_output()'s construction.
- */
-int
-tcp_v6output(struct mbuf *m, struct in6_addr *laddr, struct in6_addr *faddr,
-    int hlim, int tlen, int tclass, struct inpcb *inp)
-{
-    struct ip6_hdr *ip6;
-    struct tcphdr  *th;
-    struct ip6_moptions *im6o = inp ? inp->in6p_moptions : NULL;
-
-    M_PREPEND(m, sizeof(struct ip6_hdr), M_DONTWAIT);
-    if(m == NULL)
-        return (ENOBUFS);
-    /*
-     * M_PREPEND may have allocated a fresh mbuf for the IPv6 header, leaving
-     * the TCP header in the following mbuf.  Pull the IPv6 + TCP headers into
-     * one contiguous mbuf so the th_sum store below lands on the real TCP
-     * header (and not on stray bytes of a separate header mbuf).
-     */
-    if(m->m_len < sizeof(struct ip6_hdr) + sizeof(struct tcphdr)) {
-        m = m_pullup(m, sizeof(struct ip6_hdr) + sizeof(struct tcphdr));
-        if(m == NULL)
-            return (ENOBUFS);
-    }
-    ip6 = mtod(m, struct ip6_hdr *);
-    /* version 6 and the traffic class; no flow label */
-    ip6->ip6_flow = htonl(0x60000000 | ((u_int32_t)(tclass & 0xff) << 20));
-    ip6->ip6_plen = htons((u_short)tlen);
-    ip6->ip6_nxt  = IPPROTO_TCP;
-    ip6->ip6_hlim = (hlim > 0) ? (u_int8_t)hlim : (u_int8_t)ip6_defhlim;
-    ip6->ip6_src  = *laddr;
-    ip6->ip6_dst  = *faddr;
-
-    th = (struct tcphdr *)(ip6 + 1);
-    th->th_sum = 0;
-    th->th_sum = in6_cksum(m, IPPROTO_TCP, sizeof(struct ip6_hdr),
-                           (u_int32_t)tlen);
-
-    return (ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
-                       im6o, (struct ifnet **)NULL, inp));
-}
-#endif /* INET6 */
 u_int32_t tcp_secret_key[4];
 
 /*
@@ -217,13 +138,13 @@ tcp_siphash(const u_int32_t *key, const u_char *p, size_t len)
     return v0 ^ v1 ^ v2 ^ v3;
 }
 
-/* laddr and faddr: struct in6_addr if isipv6, else struct in_addr */
+/* laddr and faddr: addresses of alen bytes (a family's inf_addrlen) */
 u_int32_t
-tcp_conn_hash(const u_int32_t *key, int use, int isipv6, const void *laddr,
+tcp_conn_hash(const u_int32_t *key, int use, int addrlen, const void *laddr,
     const void *faddr, u_int16_t lport, u_int16_t fport, u_int32_t extra)
 {
-    u_char buf[1 + 2 * sizeof(struct in6_addr) + 2 * sizeof(u_int16_t) + sizeof(u_int32_t)];
-    size_t alen = isipv6 ? sizeof(struct in6_addr) : sizeof(struct in_addr), n = 0;
+    u_char buf[1 + 2 * INP_ADDRMAX + 2 * sizeof(u_int16_t) + sizeof(u_int32_t)];
+    size_t alen = addrlen, n = 0;
 
     buf[n++] = (u_char)use;
     bcopy(laddr, buf + n, alen);
@@ -239,14 +160,9 @@ tcp_conn_hash(const u_int32_t *key, int use, int isipv6, const void *laddr,
     return (u_int32_t)tcp_siphash(key, buf, n);
 }
 
-/* inp's family and addresses, for tcp_conn_hash() */
-#if INET6
-#define INP_HASHADDRS(inp) tcp_isipv6(inp), \
-        tcp_isipv6(inp) ? (const void *)&(inp)->inp_laddr6 : (const void *)&(inp)->inp_laddr, \
-        tcp_isipv6(inp) ? (const void *)&(inp)->inp_faddr6 : (const void *)&(inp)->inp_faddr
-#else
-#define INP_HASHADDRS(inp) 0, (const void *)&(inp)->inp_laddr, (const void *)&(inp)->inp_faddr
-#endif
+/* inp's address length and addresses, for tcp_conn_hash() */
+#define INP_HASHADDRS(inp) (inp)->inp_family->inf_addrlen, \
+        (const void *)&(inp)->inp_la, (const void *)&(inp)->inp_fa
 
 /*
  * Generate a per-connection ISN per RFC 6528:
@@ -308,7 +224,7 @@ tcp_sc_mss_encode(u_int16_t mss)
 }
 
 tcp_seq
-tcp_syncookie_generate(int isipv6, const void *laddr, const void *faddr,
+tcp_syncookie_generate(int addrlen, const void *laddr, const void *faddr,
     u_int16_t lport, u_int16_t fport, u_int16_t mss)
 {
 	u_int32_t counter;
@@ -318,7 +234,7 @@ tcp_syncookie_generate(int isipv6, const void *laddr, const void *faddr,
 	counter = (u_int32_t)(tcp_iss / TCP_ISSINCR);
 	mss_idx = tcp_sc_mss_encode(mss);
 
-	hash = tcp_conn_hash(tcp_secret_key, TCPH_COOKIE, isipv6, laddr, faddr,
+	hash = tcp_conn_hash(tcp_secret_key, TCPH_COOKIE, addrlen, laddr, faddr,
 	    lport, fport, counter);
 
 	return ((hash & 0xFFFFFF00) |
@@ -326,7 +242,7 @@ tcp_syncookie_generate(int isipv6, const void *laddr, const void *faddr,
 }
 
 u_int16_t
-tcp_syncookie_validate(int isipv6, const void *laddr, const void *faddr,
+tcp_syncookie_validate(int addrlen, const void *laddr, const void *faddr,
     u_int16_t lport, u_int16_t fport, tcp_seq ack_seq)
 {
 	tcp_seq cookie = ack_seq - 1;
@@ -349,7 +265,7 @@ tcp_syncookie_validate(int isipv6, const void *laddr, const void *faddr,
 
 	/* Try current counter epoch */
 	try_counter = (counter_now & ~0x1F) | counter_then;
-	hash = tcp_conn_hash(tcp_secret_key, TCPH_COOKIE, isipv6, laddr, faddr,
+	hash = tcp_conn_hash(tcp_secret_key, TCPH_COOKIE, addrlen, laddr, faddr,
 	    lport, fport, try_counter);
 	expected = (hash & 0xFFFFFF00) |
 	    ((mss_idx & 0x7) << 5) | (counter_then & 0x1F);
@@ -359,7 +275,7 @@ tcp_syncookie_validate(int isipv6, const void *laddr, const void *faddr,
 	/* Try previous epoch in case counter wrapped */
 	if(try_counter >= 32) {
 		try_counter -= 32;
-		hash = tcp_conn_hash(tcp_secret_key, TCPH_COOKIE, isipv6, laddr,
+		hash = tcp_conn_hash(tcp_secret_key, TCPH_COOKIE, addrlen, laddr,
 		    faddr, lport, fport, try_counter);
 		expected = (hash & 0xFFFFFF00) |
 		    ((mss_idx & 0x7) << 5) | (counter_then & 0x1F);
@@ -371,12 +287,7 @@ tcp_syncookie_validate(int isipv6, const void *laddr, const void *faddr,
 }
 
 /* patchable/settable parameters for tcp */
-int	ip_defttl = 60;				  /* default time to live for TCP segs */
-int 	tcp_mssdflt = 1460;			  /* Ethernet MSS (1500 - 40) */
-/* IPv6: the minimum link MTU less the IPv6 and TCP headers (1280 - 60); the
- * MSS to assume when a peer sends none (RFC 9293 section 3.7.1) and the most
- * to use towards a destination off the link with no path MTU known */
-int 	tcp_v6mssdflt = 1220;
+/* the default MSS and the default TTL/hop limit are each family's own */
 int 	tcp_rttdflt = TCPTV_RTOBASE;	/* initial RTO, s (net.inet.tcp.rttdflt) */
 /* The retransmission timeout is never below this (ms; net.inet.tcp.rexmit_min).
  * RFC 6298 section 2.4 says it SHOULD be at least 1 s; FreeBSD and Linux use
@@ -411,8 +322,6 @@ int	tcp_do_pmtud = 1;	/* IPv4 path MTU discovery: DF on (RFC 1191) */
 int	tcp_do_pmtud_blackhole = 1;
 static	void tcp_cleartaocache(void);
 
-extern u_char inetctlerrmap[];
-extern struct in_addr zeroin_addr;
 
 /*
  * Target size of TCP PCB hash table. Will be rounded down to a prime
@@ -465,7 +374,7 @@ tcp_autobuf_pool()
     u_long avail = AvailMem(MEMF_ANY);
     u_long spare = avail > TCP_AUTOBUF_MINFREE ? avail - TCP_AUTOBUF_MINFREE : 0;
 
-    return MIN((u_long)mbconf.maxmem * 1024, mbstat.m_memused + spare);
+    return MIN((u_long)mbconfig.maxmem * 1024, mbstats.m_memused + spare);
 }
 
 /* the most one buffer may grow to: the whole budget, at two bytes of the
@@ -500,12 +409,12 @@ u_long max;
         return 0;
     pool = tcp_autobuf_pool();
     cap = pool / 8 * 3;
-    inuse = (mbstat.m_clusters - mbstat.m_clfree) * mbconf.mclbytes;
+    inuse = (mbstats.m_clusters - mbstats.m_clfree) * mbconfig.mclbytes;
     if(inuse >= pool / 2 || tcp_autobuf_used >= cap)
         return 0;
     if((want - old) * 2 > cap - tcp_autobuf_used)
         want = old + (cap - tcp_autobuf_used) / 2;
-    if(want - old < mbconf.mclbytes)
+    if(want - old < mbconfig.mclbytes)
         return 0;
     /* max bounds the buffer, as sb_max does SO_SNDBUF/SO_RCVBUF; its mbuf
      * storage (sb_mbmax) may be twice the bytes */
@@ -553,11 +462,34 @@ struct socket *so;
 }
 
 /*
+ * The transports' part in the life of an interface (net/netmodule.h): no
+ * TCP or UDP socket of either family may go on naming one that is gone.
+ */
+void tcp_ifgone(struct ifnet *ifp);
+
+static int
+transport_ifevent(int event, struct ifnet *ifp)
+{
+    if(event == NFE_DETACHED) {
+        in_pcbifgone(&udb, ifp);
+        rip_ifgone(ifp);        /* raw sockets of every family */
+        tcp_ifgone(ifp);
+    }
+    return (0);
+}
+
+static const struct netfamily_ifops transport_ifops = { AF_UNSPEC, 30, transport_ifevent, NULL };
+
+/*
  * Tcp initialization
  */
 void
 tcp_init()
 {
+    /* first: what the configuration set for a variable is given to it */
+    tcp_vars_register();
+    (void)netfamily_ifops_register(&transport_ifops);
+
     /*
      * The ISN secret key (RFC 6528), also the SYN cookies' (tcp_syncookie_*),
      * and the start of the ISN clock, from arc4random_buf() (kern_random.c).
@@ -574,96 +506,126 @@ tcp_init()
     syncache_init();
     tcp_autobuf_init();
     tcp_rack_init();
-    if(max_protohdr < sizeof(struct tcpiphdr))
-        max_protohdr = sizeof(struct tcpiphdr);
-    if(max_linkhdr + sizeof(struct tcpiphdr) > MHLEN)
+    /* room for a TCP header behind the largest network header */
+    if(max_protohdr < TCP_NETHDR_MAX + sizeof(struct tcphdr))
+        max_protohdr = TCP_NETHDR_MAX + sizeof(struct tcphdr);
+    if(max_linkhdr + TCP_NETHDR_MAX + sizeof(struct tcphdr) + TCP_MAXOLEN > MHLEN)
         panic("tcp_init");
+}
+
+/*
+ * TCP stops: the reverse of tcp_init(), called by the transport module's
+ * stop (netinet/inet_transport.c) after the transports' domain is detached
+ * - no timer of TCP's runs any more - and with no socket, PCB or bound
+ * family left (transport_can_stop()).
+ *
+ * In this order: the registrations (the interface events, the variables -
+ * first, while the variables still hold what the core is to keep of them);
+ * the SYN cache's entries and table; the PCB hash table; the trace buffer
+ * if one was allocated; then every variable of TCP's files back to what
+ * the file gives it, so that the next start - of this copy of the code or
+ * of one loaded anew - begins the same. max_protohdr, the core's, stays
+ * as tcp_init() raised it: other protocols may count on it by now.
+ */
+void
+tcp_deinit()
+{
+    (void)netfamily_ifops_unregister(&transport_ifops);
+    tcp_vars_unregister();
+
+    syncache_deinit();
+    if(tcbinfo.hashbase != NULL)
+        bsd_free((caddr_t)tcbinfo.hashbase, M_PCB);
+    tcp_debug_free();
+
+    tcp_input_defaults();       /* tcb, tcbinfo, tcpstat, the clocks */
+    tcp_timer_defaults();
+    tcp_cc_defaults();
+    tcp_rack_defaults();
+    tcp_ss_defaults();
+    /* this file's */
+    tcp_syncookies = 1;
+    tcp_rttdflt = TCPTV_RTOBASE;
+    tcp_rexmit_min = TCPTV_REXMTMIN_MS;
+    tcp_minmss = TCP_MINMSS;
+    tcp_autosndbuf_max = tcp_autorcvbuf_max = 0;
+    tcp_do_rfc1323 = 1;
+    tcp_do_rfc1644 = 0;
+    tcp_do_sack = 1;
+    tcp_do_newreno = 1;
+    tcp_do_ecn = 2;
+    tcp_do_prr = 0;
+    tcp_do_pmtud = 1;
+    tcp_do_pmtud_blackhole = 1;
+    tcp_autobuf_used = 0;
+    bzero((caddr_t)tcp_secret_key, sizeof(tcp_secret_key));
+    bzero((caddr_t)tcp_ts_key, sizeof(tcp_ts_key));
 }
 
 /*
  * Create template to be used to send tcp packets on a connection.
  * Call after host entry created, allocates an mbuf and fills
- * in a skeletal tcp/ip header, minimizing the amount of work
- * necessary when the connection is used.
+ * in a skeletal tcp header, minimizing the amount of work
+ * necessary when the connection is used. The addresses are the PCB's and
+ * go into the network header when a segment is sent (inf_output).
  */
-struct tcpiphdr *
+struct tcphdr *
 tcp_template(tp)
 struct tcpcb *tp;
 {
     register struct inpcb *inp = tp->t_inpcb;
-    register struct tcpiphdr *n;
+    register tcp_ahdr_t *n;      /* in an mbuf: even-aligned */
 
-    if((n = tp->t_template) == 0) {
+    if((n = (tcp_ahdr_t *)tp->t_template) == 0) {
         register struct mbuf *m;
         m = m_get(M_DONTWAIT, MT_HEADER);
         if(m == NULL)
             return (0);
-        m->m_len = sizeof(struct tcpiphdr);
-        n = mtod(m, struct tcpiphdr *);
+        m->m_len = sizeof(struct tcphdr);
+        n = mtod(m, tcp_ahdr_t *);
     }
-    bzero(n->ti_x1, sizeof(n->ti_x1));
-    n->ti_pr = IPPROTO_TCP;
-    n->ti_len = htons(sizeof(struct tcpiphdr) - sizeof(struct ip));
-    n->ti_src = inp->inp_laddr;
-    n->ti_dst = inp->inp_faddr;
-    n->ti_sport = inp->inp_lport;
-    n->ti_dport = inp->inp_fport;
-    n->ti_seq = 0;
-    n->ti_ack = 0;
-    n->ti_x2 = 0;
-    n->ti_off = 5;
-    n->ti_flags = 0;
-    n->ti_win = 0;
-    n->ti_sum = 0;
-    n->ti_urp = 0;
-    return (n);
+    n->th_sport = inp->inp_lport;
+    n->th_dport = inp->inp_fport;
+    n->th_seq = 0;
+    n->th_ack = 0;
+    n->th_x2 = 0;
+    n->th_off = 5;
+    n->th_flags = 0;
+    n->th_win = 0;
+    n->th_sum = 0;
+    n->th_urp = 0;
+    return ((struct tcphdr *)n);
 }
 
 /*
- * Send a single message to the TCP at address specified by
- * the given TCP/IP header.  If m == 0, then we make a copy
- * of the tcpiphdr at ti and send directly to the addressed host.
- * This is used to force keep alive messages out using the TCP
- * template for a connection tp->t_template.  If flags are given
- * then we send a message back to the TCP which originated the
- * segment ti, and discard the mbuf containing it and any other
- * attached mbufs.
+ * Send a single message to the TCP at address faddr, from laddr
+ * (addresses of family inf). If m == 0, then we make a copy of the
+ * tcphdr at th and send it as it is: this is used to force keep alive
+ * messages out using the TCP template for a connection tp->t_template.
+ * Else m is a segment received, th its TCP header in it and laddr/faddr
+ * its destination and source: we send a message with the given flags back
+ * to the TCP which originated it (its ports swapped), and discard the mbuf
+ * containing it and any other attached mbufs.
  *
  * In any case the ack and sequence number of the transmitted
  * segment are as specified by the parameters.
  */
 void
-tcp_respond(tp, ti, m, ack, seq, flags, isipv6, laddr6, faddr6)
+tcp_respond(tp, inf, laddr, faddr, th, m, ack, seq, flags)
 struct tcpcb *tp;
-register struct tcpiphdr *ti;
+const struct inetfamily *inf;
+const void *laddr, *faddr;
+register tcp_ahdr_t *th;
 register struct mbuf *m;
 tcp_seq ack, seq;
 int flags;
-int isipv6;
-struct in6_addr *laddr6, *faddr6;
 {
     register int tlen;
     int win = 0;
-    struct route *ro = 0;
+    int oflags = INF_OUT_BARE;
 
-#if INET6
-    /*
-     * Auto-detect IPv6 from the connection when the caller did not pass an
-     * explicit family (e.g. the keep-alive timer).  The send-orientation
-     * addresses then come from the PCB.  Callers without a PCB (a RST for a
-     * stray segment) pass isipv6 and laddr6/faddr6 themselves.
-     */
-    if(!isipv6 && tp && tcp_isipv6(tp->t_inpcb)) {
-        isipv6 = 1;
-        laddr6 = &tp->t_inpcb->inp_laddr6;
-        faddr6 = &tp->t_inpcb->inp_faddr6;
-    }
-#endif
-
-    if(tp) {
+    if(tp)
         win = sbspace(&tp->t_inpcb->inp_socket->so_rcv);
-        ro = &tp->t_inpcb->inp_route;
-    }
     if(m == 0) {
         m = m_gethdr(M_DONTWAIT, MT_HEADER);
         if(m == NULL)
@@ -673,41 +635,34 @@ struct in6_addr *laddr6, *faddr6;
 #else
         tlen = 0;
 #endif
-        m->m_data += max_linkhdr;
-        *mtod(m, struct tcpiphdr *) = *ti;
-        ti = mtod(m, struct tcpiphdr *);
+        m->m_data += max_linkhdr + inf->inf_hdrlen;
+        *mtod(m, tcp_ahdr_t *) = *th;
+        th = mtod(m, tcp_ahdr_t *);
         flags = TH_ACK;
     } else {
         m_freem(m->m_next);
         m->m_next = 0;
-        m->m_data = (caddr_t)ti;
-        m->m_len = sizeof(struct tcpiphdr);
+        m->m_data = (caddr_t)th;
         tlen = 0;
-#define xchg(a,b,type) { type t; t=a; a=b; b=t; }
         /*
-         * Swap the ports to bounce the segment back to its origin.  For IPv4
-         * the addresses are swapped in the overlay too; for IPv6 the source
-         * and destination are taken from laddr6/faddr6 (already in our send
-         * orientation) by tcp_v6output() below.
+         * Swap the ports to bounce the segment back to its origin. The
+         * network header it came with lies in front of th (tcp_input()
+         * keeps the two together): the answer's goes there.
          */
-#if INET6
-        if(!isipv6)
-#endif
-            xchg(ti->ti_dst.s_addr, ti->ti_src.s_addr, u_long);
-        xchg(ti->ti_dport, ti->ti_sport, u_short);
+        oflags |= INF_OUT_ROOM;
+#define xchg(a,b,type) { type t; t=a; a=b; b=t; }
+        xchg(th->th_dport, th->th_sport, u_short);
 #undef xchg
     }
-    ti->ti_len = htons((u_short)(sizeof(struct tcphdr) + tlen));
-    tlen += sizeof(struct tcpiphdr);
+    tlen += sizeof(struct tcphdr);
     m->m_len = tlen;
     m->m_pkthdr.len = tlen;
     m->m_pkthdr.rcvif = (struct ifnet *) 0;
-    bzero(ti->ti_x1, sizeof(ti->ti_x1));
-    ti->ti_seq = htonl(seq);
-    ti->ti_ack = htonl(ack);
-    ti->ti_x2 = 0;
-    ti->ti_off = sizeof(struct tcphdr) >> 2;
-    ti->ti_flags = flags;
+    th->th_seq = htonl(seq);
+    th->th_ack = htonl(ack);
+    th->th_x2 = 0;
+    th->th_off = sizeof(struct tcphdr) >> 2;
+    th->th_flags = flags;
     /*
      * Clamp the advertised window to the 16-bit field.  The window is only
      * scaled on an established connection (rcv_scale != 0); on a listen
@@ -720,41 +675,12 @@ struct in6_addr *laddr6, *faddr6;
         win = TCP_MAXWIN;
     else if(win < 0)
         win = 0;
-    ti->ti_win = htons((u_short)win);
-    ti->ti_urp = 0;
-#if INET6
-    if(isipv6) {
-        /*
-         * Slide off the IPv4 ipovly overlay so the mbuf starts at the TCP
-         * header, then build and transmit the IPv6 datagram.  tlen still
-         * counts the overlay; the IPv6 TCP length excludes it.  The hop limit
-         * comes from the connection (in6p_hops) when there is a PCB, else 0
-         * (tcp_v6output() substitutes the default).
-         */
-        int t6 = tlen - sizeof(struct ipovly);
-        int hlim = tp ? tp->t_inpcb->in6p_hops : 0;
-
-        m->m_data       += sizeof(struct ipovly);
-        m->m_len         = t6;
-        m->m_pkthdr.len  = t6;
-        (void) tcp_v6output(m, laddr6, faddr6, hlim, t6, 0,
-                            tp ? tp->t_inpcb : NULL);
-        return;
-    }
-#endif
-    ti->ti_sum = 0;
-    ti->ti_sum = in_cksum(m, tlen);
-    ((struct ip *)ti)->ip_len = tlen;
-    ((struct ip *)ti)->ip_ttl = ip_defttl;
-#ifdef TCPDEBUG
-    if(tp == NULL || (tp->t_inpcb->inp_socket->so_options & SO_DEBUG))
-        tcp_trace(TA_OUTPUT, 0, tp, ti, 0);
-#endif
-#ifdef ENABLE_MULTICAST
-    (void) ip_output(m, (struct mbuf *)NULL, ro, 0, (struct ip_moptions *)NULL);
-#else
-    (void) ip_output(m, (struct mbuf *)NULL, ro, 0);
-#endif
+    th->th_win = htons((u_short)win);
+    th->th_urp = 0;
+    /* the family fills in the checksum and its header and sends: over the
+     * connection's route when there is one, with its own defaults else */
+    (void)(*inf->inf_output)(m, tp ? tp->t_inpcb : NULL, laddr, faddr, IPPROTO_TCP,
+                             offsetof(struct tcphdr, th_sum), 0, 0, oflags);
 }
 
 /*
@@ -773,7 +699,7 @@ struct inpcb *inp;
         return ((struct tcpcb *)0);
     bzero((char *) tp, sizeof(struct tcpcb));
     tp->t_segq = NULL;
-    tp->t_maxseg = tp->t_maxopd = tcp_mssdflt;
+    tp->t_maxseg = tp->t_maxopd = *inp->inp_family->inf_mssdflt;
 
     if(tcp_do_rfc1323)
         tp->t_flags = (TF_REQ_SCALE | TF_REQ_TSTMP);
@@ -814,7 +740,6 @@ struct inpcb *inp;
     tp->t_cc_algo = tcp_cc_default;
     CC_INIT(tp);
     tcp_hystart_init(tp);
-    inp->inp_ip.ip_ttl = ip_defttl;
     inp->inp_ppcb = (caddr_t)tp;
     return (tp);
 }
@@ -867,6 +792,23 @@ int _errno;
 }
 
 /*
+ * Is rt the default route? Its key is then all zero behind the family (the
+ * address, and the fields around it that a routing key leaves zero).
+ */
+static int
+tcp_rt_isdefault(const struct rtentry *rt)
+{
+    const struct sockaddr *sa = rt_key(rt);
+    const u_char *p = (const u_char *)sa->sa_data;
+    const u_char *e = (const u_char *)sa + sa->sa_len;
+
+    while(p < e)
+        if(*p++)
+            return (0);
+    return (1);
+}
+
+/*
  * Close a TCP control block:
  *	discard all space held by the tcp
  *	discard internet protocol block
@@ -896,8 +838,7 @@ register struct tcpcb *tp;
      * update anything that the user "locked".
      */
     if(SEQ_LT(tp->iss + so->so_snd.sb_hiwat * 16, tp->snd_max) &&
-            (rt = inp->inp_route.ro_rt) &&
-            ((struct sockaddr_in *)rt_key(rt))->sin_addr.s_addr != INADDR_ANY) {
+            (rt = inp->inp_route.ro_rt) && !tcp_rt_isdefault(rt)) {
         register u_long i = 0;
 
         if((rt->rt_rmx.rmx_locks & RTV_RTT) == 0) {
@@ -939,7 +880,8 @@ register struct tcpcb *tp;
             i = (i + tp->t_maxseg / 2) / tp->t_maxseg;
             if(i < 2)
                 i = 2;
-            i *= (u_long)(tp->t_maxseg + sizeof(struct tcpiphdr));
+            i *= (u_long)(tp->t_maxseg + inp->inp_family->inf_hdrlen +
+                          sizeof(struct tcphdr));
             if(rt->rt_rmx.rmx_ssthresh)
                 rt->rt_rmx.rmx_ssthresh =
                     (rt->rt_rmx.rmx_ssthresh + i) / 2;
@@ -1011,99 +953,46 @@ int error;
 
 void tcp_mtudisc(struct tcpcb *, u_int32_t);
 
-void
-tcp_ctlinput(cmd, sa, arg)
-int cmd;
-struct sockaddr *sa;
-void *arg;
-{
-    register struct ip *ip = arg;
-    void (*notify) __P((struct inpcb *, int)) = tcp_notify;
-
-    if(cmd == PRC_MSGSIZE) {
-        /*
-         * "Fragmentation needed" (RFC 1191) about a segment of a
-         * connection under way: icmp_input() has put the path MTU on the
-         * route and in the message (icmp_mtudisc()). Only for a segment
-         * still unacknowledged - anything else is old, or forged blind
-         * (RFC 5927 section 7.2) - the connection sends smaller ones.
-         */
-        const struct icmp *icp;
-        struct tcphdr *th;
-        struct inpcb *inp;
-        struct tcpcb *tp;
-        tcp_seq seq;
-
-        if(ip == NULL)
-            return;
-        icp = (const struct icmp *)((caddr_t)ip - offsetof(struct icmp, icmp_ip));
-        th = (struct tcphdr *)((caddr_t)ip + (ip->ip_hl << 2));
-        inp = in_pcblookup(&tcb, ip->ip_dst, th->th_dport, ip->ip_src,
-                           th->th_sport, 0);
-        if(inp == NULL || (tp = intotcpcb(inp)) == NULL)
-            return;
-        seq = ntohl(th->th_seq);
-        if(SEQ_LT(seq, tp->snd_una) || SEQ_GEQ(seq, tp->snd_max))
-            return;
-        tcp_mtudisc(tp, ntohs(icp->icmp_nextmtu));
-        return;
-    }
-    if(cmd == PRC_QUENCH)
-        notify = tcp_quench;
-    else if(!PRC_IS_REDIRECT(cmd) &&
-            ((unsigned)cmd > PRC_NCMDS || inetctlerrmap[cmd] == 0))
-        return;
-    if(ip) {
-        register struct tcphdr *th;
-        th = (struct tcphdr *)((caddr_t)ip + (ip->ip_hl << 2));
-        in_pcbnotify(&tcb, sa, th->th_dport, ip->ip_src, th->th_sport,
-                     cmd, notify);
-    } else
-        in_pcbnotify(&tcb, sa, 0, zeroin_addr, 0, cmd, notify);
-}
-
-#if INET6
-
 /*
- * tcp6_ctlinput - an ICMPv6 error about a TCP/IPv6 segment we sent
- * (icmp6_notify_error()): sa is its destination, arg an ip6ctlparam with
- * its source and ports. tcp_notify() keeps it as a soft error; a Packet
- * Too Big (PRC_MSGSIZE) about a segment still unacknowledged makes the
- * connection send smaller ones (tcp_mtudisc()).
+ * tcp_ctlnotify - what a family's ICMP says about a segment we sent (struct
+ * inctlparam, netinet/inetfamily.h). tcp_notify() keeps an error as a soft
+ * error. A "fragmentation needed" / Packet Too Big (PRC_MSGSIZE; RFC 1191,
+ * RFC 8201) about a segment of a connection under way, the path MTU with
+ * it: only for a segment still unacknowledged - anything else is old, or
+ * forged blind (RFC 5927 section 7.2) - the connection sends smaller ones
+ * (tcp_mtudisc()).
  */
 void
-tcp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
+tcp_ctlnotify(int cmd, const struct inctlparam *cp)
 {
-    struct ip6ctlparam *ip6cp = arg;
+    const struct inetfamily *inf = cp->icp_family;
 
+    if((unsigned)cmd >= PRC_NCMDS)
+        return;
     if(cmd == PRC_MSGSIZE) {
-        /* a Packet Too Big about a segment of a connection under way */
-        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
         struct inpcb *inp;
         struct tcpcb *tp;
 
-        if(ip6cp == NULL || !ip6cp->ip6c_haveseq)
+        if(!cp->icp_haveseq || cp->icp_laddr == NULL)
             return;
-        inp = in6_pcblookup(&tcb, &sin6->sin6_addr, ip6cp->ip6c_dport,
-                            &ip6cp->ip6c_src, ip6cp->ip6c_sport, NULL);
+        /* the connection itself: a listening socket sent no segment */
+        inp = inpcb_lookup(&tcbinfo, inf, cp->icp_faddr, cp->icp_fport,
+                           cp->icp_laddr, cp->icp_lport,
+                           (const struct ifnet *)NULL, 0);
         if(inp == NULL || (tp = intotcpcb(inp)) == NULL)
             return;
-        /* only for a segment that is still unacknowledged: anything else
-         * is old, or forged blind (RFC 5927 section 7.2) */
-        if(SEQ_LT(ip6cp->ip6c_seq, tp->snd_una) ||
-                SEQ_GEQ(ip6cp->ip6c_seq, tp->snd_max))
+        if(SEQ_LT(cp->icp_seq, tp->snd_una) || SEQ_GEQ(cp->icp_seq, tp->snd_max))
             return;
-        tcp_mtudisc(tp, ip6cp->ip6c_mtu);
+        tcp_mtudisc(tp, cp->icp_mtu);
         return;
     }
-    if(ip6cp != NULL)
-        in6_pcbnotify(&tcb, (struct sockaddr_in6 *)sa, ip6cp->ip6c_dport,
-                      &ip6cp->ip6c_src, ip6cp->ip6c_sport, cmd, tcp_notify);
-    else
-        in6_pcbnotify(&tcb, (struct sockaddr_in6 *)sa, 0, NULL, 0, cmd,
-                      tcp_notify);
+    /* only what is an error for the connection, a source quench, or a
+     * redirect (its route) */
+    if(cmd != PRC_QUENCH && !PRC_IS_REDIRECT(cmd) && inf->inf_ctlerrmap[cmd] == 0)
+        return;
+    inpcb_notify(&tcb, inf, cp->icp_faddr, cp->icp_fport, cp->icp_laddr,
+                 cp->icp_lport, cmd, cmd == PRC_QUENCH ? tcp_quench : tcp_notify);
 }
-#endif
 
 /*
  * tcp_setmtu - send segments of at most mtu bytes, headers included, to tp's
@@ -1113,13 +1002,9 @@ tcp6_ctlinput(int cmd, struct sockaddr *sa, void *arg)
 static int
 tcp_setmtu(struct tcpcb *tp, u_int32_t mtu)
 {
-    int hdrs = sizeof(struct tcpiphdr), mss;
+    const struct inetfamily *inf = tp->t_inpcb->inp_family;
+    int hdrs = inf->inf_hdrlen + sizeof(struct tcphdr), mss;
 
-#if INET6
-    if(tcp_isipv6(tp->t_inpcb))
-        hdrs = sizeof(struct ip6_hdr) + sizeof(struct tcphdr);
-    else
-#endif
     if(mtu == 0) {
         struct rtentry *rt = tp->t_inpcb->inp_route.ro_rt;
 
@@ -1130,10 +1015,11 @@ tcp_setmtu(struct tcpcb *tp, u_int32_t mtu)
     }
     mss = (int)mtu - hdrs;
     if(mss < TCP_MSS_FLOOR) {
-        /* never below the floor: over IPv4 the segments go without DF and
-         * are fragmented on the way, as FreeBSD's tcp_mtudisc() */
+        /* never below the floor: where routers fragment (INF_HASDF), the
+         * segments go without DF and are fragmented on the way, as
+         * FreeBSD's tcp_mtudisc() */
         mss = TCP_MSS_FLOOR;
-        if(hdrs == (int)sizeof(struct tcpiphdr))
+        if(inf->inf_flags & INF_HASDF)
             tp->t_flagsext |= TF_PMTUD_NODF;
     }
 
@@ -1153,7 +1039,7 @@ tcp_setmtu(struct tcpcb *tp, u_int32_t mtu)
  * tcp_mtudisc - the path to tp's peer takes packets of at most mtu bytes
  * (RFC 1191, RFC 8201 section 5.2): send segments that fit, and resend
  * what was not acknowledged, as FreeBSD's tcp_mtudisc() does. With mtu 0,
- * the MTU is the connection's route's (IPv4, after ip_output() said
+ * the MTU is the connection's route's (after the family's output said
  * EMSGSIZE).
  */
 void
@@ -1171,8 +1057,9 @@ tcp_mtudisc(struct tcpcb *tp, u_int32_t mtu)
  * raised. A path that drops large packets without telling us (ICMP
  * filtered: RFC 2923 section 2.1) loses every full-sized segment, so after
  * the 2nd timeout in a row with one unacknowledged, try segments that fit
- * the IPv6 minimum MTU (1280) or, for IPv4, 1240 bytes; after the 4th, an
- * IPv4 connection stops setting DF, so routers fragment again. After the
+ * the family's fall-back MTU (inf_bhmtu: the IPv6 minimum MTU, 1280; for
+ * IPv4, 1240 bytes); after the 4th, a connection of a family with a DF bit
+ * stops setting it, so routers fragment again. After the
  * 6th, it was not the path: the MSS and DF come back. A lowered MSS that
  * gets through is kept, as a learned path MTU is. FreeBSD's
  * tcp_timer_rexmt() does the same, with the same steps.
@@ -1180,17 +1067,13 @@ tcp_mtudisc(struct tcpcb *tp, u_int32_t mtu)
 void
 tcp_pmtud_blackhole(struct tcpcb *tp)
 {
-    u_int32_t mtu = 1240;               /* IPv4 */
+    const struct inetfamily *inf = tp->t_inpcb->inp_family;
+    u_int32_t mtu = inf->inf_bhmtu;
 
     if(!tcp_do_pmtud_blackhole ||
             (tp->t_state != TCPS_ESTABLISHED && tp->t_state != TCPS_CLOSE_WAIT))
         return;
-#if INET6
-    if(tcp_isipv6(tp->t_inpcb))
-        mtu = IPV6_MMTU;
-    else
-#endif
-    if(!tcp_do_pmtud)                   /* no DF: routers fragment */
+    if((inf->inf_flags & INF_HASDF) && !tcp_do_pmtud)   /* no DF: routers fragment */
         return;
 
     if(tp->t_rxtshift >= 6) {
@@ -1212,7 +1095,7 @@ tcp_pmtud_blackhole(struct tcpcb *tp)
     if(tcp_setmtu(tp, mtu))
         tp->t_flagsext |= TF_PMTUD_BH;
     else if(tp->t_flagsext & TF_PMTUD_BH)
-        tp->t_flagsext |= TF_PMTUD_NODF;    /* only IPv4 output reads it */
+        tp->t_flagsext |= TF_PMTUD_NODF;    /* only read where there is a DF bit */
 }
 
 /*
@@ -1232,57 +1115,6 @@ int _errno;
 }
 
 /*
- * Look-up the routing entry to the peer of this inpcb.  If no route
- * is found and it cannot be allocated the return NULL.  This routine
- * is called by TCP routines that access the rmx structure and by tcp_mss
- * to get the interface MTU.
- */
-struct rtentry *
-tcp_rtlookup(inp)
-struct inpcb *inp;
-{
-    struct route *ro;
-    struct rtentry *rt;
-
-    ro = &inp->inp_route;
-    rt = ro->ro_rt;
-    if(rt == NULL || !(rt->rt_flags & RTF_UP)) {
-        /* No route yet, so try to acquire one */
-        if(inp->inp_faddr.s_addr != INADDR_ANY) {
-            struct sockaddr_in *rodst_saddr = (struct sockaddr_in *)&ro->ro_dst;
-            ro->ro_dst.sa_family = AF_INET;
-            ro->ro_dst.sa_len = sizeof(ro->ro_dst);
-            rodst_saddr->sin_addr = inp->inp_faddr;
-            rtalloc(ro);
-            rt = ro->ro_rt;
-        }
-    }
-    return rt;
-}
-
-#if INET6
-/*
- * tcp_rtlookup6 - the route to an IPv6 connection's peer. inp_route has no
- * room for an IPv6 destination, so the route is looked up each time and
- * comes back with a reference the caller drops with rtfree(). NULL if there
- * is no peer or no route.
- */
-struct rtentry *
-tcp_rtlookup6(struct inpcb *inp)
-{
-    struct sockaddr_in6 dst;
-
-    if(IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6))
-        return NULL;
-    bzero(&dst, sizeof(dst));
-    dst.sin6_family = AF_INET6;
-    dst.sin6_len    = sizeof(dst);
-    dst.sin6_addr   = inp->inp_faddr6;
-    return rtalloc1((struct sockaddr *)&dst, 1);
-}
-#endif
-
-/*
  * Return a pointer to the cached information about the remote host.
  * The cached information is stored in the protocol specific part of
  * the route metrics.
@@ -1291,7 +1123,14 @@ struct rmxp_tao *
 tcp_gettaocache(inp)
 struct inpcb *inp;
 {
-    struct rtentry *rt = tcp_rtlookup(inp);
+    const struct inetfamily *inf = inp->inp_family;
+    struct rtentry *rt;
+
+    /* the cache is in the route a PCB keeps: a family whose PCBs keep none
+     * (INF_RTREF) has no cache */
+    if(inf->inf_flags & INF_RTREF)
+        return NULL;
+    rt = (*inf->inf_pcbroute)(inp);
 
     /* Make sure this is a host route and is up. */
     if(rt == NULL ||

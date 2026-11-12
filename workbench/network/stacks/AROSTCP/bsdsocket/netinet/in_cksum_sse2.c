@@ -125,6 +125,7 @@
 #include <emmintrin.h>   /* SSE2 intrinsics � requires -msse2                */
 #include <stdint.h>
 #include <string.h>      /* memcpy                                            */
+#include <net/netcore_map.h>        /* always the last include */
 
 /* ------------------------------------------------------------------ */
 /* Helper: branchless fold of a 64-bit accumulator to a 16-bit        */

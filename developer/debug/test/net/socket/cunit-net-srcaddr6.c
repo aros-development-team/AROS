@@ -211,6 +211,7 @@ void testSRC6_MLD_LINKSCOPE_GROUP(void)
     int s;
     NEED_IF();
     s = socket(AF_INET6, SOCK_DGRAM, 0);
+    CU_ASSERT_FATAL(s >= 0);
     CU_ASSERT_EQUAL(join(s, "ff12::4d54:61"), 0);
     CU_ASSERT(mld_source("ff12::4d54:61", 3, &src));
     CU_ASSERT(memcmp(&src, &linklocal, sizeof(src)) == 0);
@@ -224,6 +225,7 @@ void testSRC6_MLD_WIDER_GROUP(void)
     int s;
     NEED_IF();
     s = socket(AF_INET6, SOCK_DGRAM, 0);
+    CU_ASSERT_FATAL(s >= 0);
     CU_ASSERT_EQUAL(join(s, "ff15::4d54:61"), 0);
     CU_ASSERT(mld_source("ff15::4d54:61", 3, &src));
     CU_ASSERT(memcmp(&src, &linklocal, sizeof(src)) == 0);
@@ -288,6 +290,10 @@ int main(int argc, char **argv)
     SocketBase = OpenLibrary("bsdsocket.library", 3);
     if (SocketBase == NULL) {
         printf("bsdsocket.library not available - skipping SRC6 tests\n");
+        return 0;
+    }
+    if (st_skip_program("cunit-net-srcaddr6", ST_V6)) {
+        CloseLibrary(SocketBase);
         return 0;
     }
     ready = setup();

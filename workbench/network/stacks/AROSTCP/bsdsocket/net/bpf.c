@@ -36,19 +36,23 @@
 #include <net/if.h>
 #include "bpf.h"
 #include <net/if_sana.h>
+#include <net/packet_ops.h>
 
 #include <string.h>
-#include <stdio.h>
-#include <syslog.h>
 
-extern struct ifnet *ifnet;
+#include <net/netcore_map.h>        /* always the last include */
 
 /* Global descriptor table */
 static struct bpf_d bpf_dtab[BPF_MAXDEVICES];
 static int bpf_initialized = 0;
 
 /*
- * Initialize the BPF subsystem.
+ * Initialize the BPF subsystem. On first use, by bpf_allocate(): capture
+ * is part of the packet services module, loaded on demand (net/packet_ops.h),
+ * and is not set up when the stack starts, nor taken down when it ends -
+ * what a capture holds besides this table is memory of the core's pool,
+ * freed in one piece then. The module cannot be stopped while a handle is
+ * open (bpf_busy()).
  */
 void
 bpf_init(void)
@@ -78,6 +82,18 @@ bpf_cleanup(void)
         }
     }
     bpf_initialized = 0;
+}
+
+/* how many capture handles are open */
+int
+bpf_busy(void)
+{
+    int i, n = 0;
+
+    for(i = 0; bpf_initialized && i < BPF_MAXDEVICES; i++)
+        if(bpf_dtab[i].bd_inuse)
+            n++;
+    return n;
 }
 
 /*
@@ -250,10 +266,11 @@ bpf_setif(struct bpf_d *d, const char *ifname)
     spl_t s;
 
     /* Find the interface by name */
-    for(ifp = ifnet; ifp != NULL; ifp = ifp->if_next) {
+    for(ifp = ifnet_list; ifp != NULL; ifp = ifp->if_next) {
         char name[IFNAMSIZ];
-        snprintf(name, sizeof(name), "%s%d", ifp->if_name, ifp->if_unit);
-        if(strcmp(name, ifname) == 0)
+
+        if_fullname(ifp, name, sizeof(name));
+        if(strncmp(name, ifname, sizeof(name)) == 0)
             break;
     }
     if(ifp == NULL)

@@ -6,29 +6,20 @@
     The "api" and "addr" tests exercise socket creation, option get/set,
     bind/getsockname, listen and the address-conversion helpers; these only
     require the stack to be running.  The "loopback" test drives a full
-    TCP connect/accept/send/recv exchange over 127.0.0.1 (exercising the
-    listen/accept SYN-cache path) and is skipped gracefully if loopback is
-    not configured.
+    TCP connect/accept/send/recv exchange over the loopback address
+    (exercising the listen/accept SYN-cache path) and is skipped gracefully
+    if loopback is not configured.
+
+    None of this is about an address family: the sockets are IPv4 ones, or
+    IPv6 ones where the running stack has no IPv4.
 */
 
-#include <proto/exec.h>
-#include <proto/socket.h>
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <sys/errno.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-
-#include <stdio.h>
-#include <string.h>
-#include <strings.h>
-
-#include <CUnit/Basic.h>
-#include <CUnit/Automated.h>
+#include "socktest.h"
 
 struct Library *SocketBase = NULL;
+
+/* The family of the sockets these tests make. */
+#define FAM st_any_family()
 
 int init_suite(void)
 {
@@ -47,12 +38,12 @@ void testSOCKET_CREATE(void)
 {
     int s;
 
-    s = socket(AF_INET, SOCK_STREAM, 0);
+    s = socket(FAM, SOCK_STREAM, 0);
     CU_ASSERT(s >= 0);
     if (s >= 0)
         CU_ASSERT_EQUAL(CloseSocket(s), 0);
 
-    s = socket(AF_INET, SOCK_DGRAM, 0);
+    s = socket(FAM, SOCK_DGRAM, 0);
     CU_ASSERT(s >= 0);
     if (s >= 0)
         CU_ASSERT_EQUAL(CloseSocket(s), 0);
@@ -61,7 +52,7 @@ void testSOCKET_CREATE(void)
 void testSOCKET_BADARGS(void)
 {
     /* An unsupported socket type must fail rather than return a descriptor. */
-    int s = socket(AF_INET, 0x7fff, 0);
+    int s = socket(FAM, 0x7fff, 0);
     CU_ASSERT_EQUAL(s, -1);
     if (s >= 0)
         CloseSocket(s);
@@ -77,7 +68,7 @@ void testCLOSE_BADFD(void)
 
 void testSO_TYPE(void)
 {
-    int s = socket(AF_INET, SOCK_STREAM, 0);
+    int s = socket(FAM, SOCK_STREAM, 0);
     int val = 0;
     socklen_t len = sizeof(val);
 
@@ -91,7 +82,7 @@ void testSO_TYPE(void)
 
 void testSO_REUSEADDR(void)
 {
-    int s = socket(AF_INET, SOCK_STREAM, 0);
+    int s = socket(FAM, SOCK_STREAM, 0);
     int on = 1, val = 0;
     socklen_t len = sizeof(val);
 
@@ -108,7 +99,7 @@ void testSO_REUSEADDR(void)
 
 void testSO_RCVBUF(void)
 {
-    int s = socket(AF_INET, SOCK_STREAM, 0);
+    int s = socket(FAM, SOCK_STREAM, 0);
     int want = 16 * 1024, val = 0;
     socklen_t len = sizeof(val);
 
@@ -126,7 +117,7 @@ void testSO_RCVBUF(void)
 
 void testTCP_NODELAY(void)
 {
-    int s = socket(AF_INET, SOCK_STREAM, 0);
+    int s = socket(FAM, SOCK_STREAM, 0);
     int on = 1, val = 0;
     socklen_t len = sizeof(val);
 
@@ -145,49 +136,42 @@ void testTCP_NODELAY(void)
 
 void testBIND_GETSOCKNAME(void)
 {
-    int s = socket(AF_INET, SOCK_STREAM, 0);
-    struct sockaddr_in sa;
+    int s = socket(FAM, SOCK_STREAM, 0);
+    struct sockaddr_storage sa;
     socklen_t len;
 
     CU_ASSERT(s >= 0);
     if (s < 0)
         return;
-    bzero(&sa, sizeof(sa));
-    sa.sin_family = AF_INET;
-    sa.sin_len = sizeof(sa);
-    sa.sin_addr.s_addr = htonl(INADDR_ANY);
-    sa.sin_port = 0;			/* ask for an ephemeral port */
-    CU_ASSERT_EQUAL(bind(s, (struct sockaddr *)&sa, sizeof(sa)), 0);
+    len = st_wildcard(FAM, &sa, 0);	/* ask for an ephemeral port */
+    CU_ASSERT_EQUAL(bind(s, (struct sockaddr *)&sa, len), 0);
 
     bzero(&sa, sizeof(sa));
     len = sizeof(sa);
     CU_ASSERT_EQUAL(getsockname(s, (struct sockaddr *)&sa, &len), 0);
-    CU_ASSERT_EQUAL(sa.sin_family, AF_INET);
+    CU_ASSERT_EQUAL(sa.ss_family, FAM);
     CloseSocket(s);
 }
 
 void testLISTEN(void)
 {
-    int s = socket(AF_INET, SOCK_STREAM, 0);
-    struct sockaddr_in sa;
+    int s = socket(FAM, SOCK_STREAM, 0);
+    struct sockaddr_storage sa;
+    socklen_t len;
 
     CU_ASSERT(s >= 0);
     if (s < 0)
         return;
-    bzero(&sa, sizeof(sa));
-    sa.sin_family = AF_INET;
-    sa.sin_len = sizeof(sa);
-    sa.sin_addr.s_addr = htonl(INADDR_ANY);
-    sa.sin_port = 0;
-    CU_ASSERT_EQUAL(bind(s, (struct sockaddr *)&sa, sizeof(sa)), 0);
+    len = st_wildcard(FAM, &sa, 0);
+    CU_ASSERT_EQUAL(bind(s, (struct sockaddr *)&sa, len), 0);
     CU_ASSERT_EQUAL(listen(s, 5), 0);
     CloseSocket(s);
 }
 
 void testGETPEERNAME_UNCONN(void)
 {
-    int s = socket(AF_INET, SOCK_STREAM, 0);
-    struct sockaddr_in sa;
+    int s = socket(FAM, SOCK_STREAM, 0);
+    struct sockaddr_storage sa;
     socklen_t len = sizeof(sa);
 
     CU_ASSERT(s >= 0);
@@ -201,7 +185,7 @@ void testGETPEERNAME_UNCONN(void)
 
 void testNONBLOCK(void)
 {
-    int s = socket(AF_INET, SOCK_STREAM, 0);
+    int s = socket(FAM, SOCK_STREAM, 0);
     int on = 1;
 
     CU_ASSERT(s >= 0);
@@ -255,24 +239,20 @@ static int waitfd(int fd, int forwrite, int secs)
 void testLOOPBACK_ECHO(void)
 {
     int ls = -1, cs = -1, as = -1;
-    struct sockaddr_in sa, da;
+    struct sockaddr_storage sa, da;
     socklen_t len;
     int on = 1, r;
     char buf[8];
 
-    ls = socket(AF_INET, SOCK_STREAM, 0);
+    ls = socket(FAM, SOCK_STREAM, 0);
     CU_ASSERT(ls >= 0);
     if (ls < 0)
         return;
     (void) setsockopt(ls, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
-    bzero(&sa, sizeof(sa));
-    sa.sin_family = AF_INET;
-    sa.sin_len = sizeof(sa);
-    sa.sin_addr.s_addr = inet_addr("127.0.0.1");
-    sa.sin_port = 0;
-    if (bind(ls, (struct sockaddr *)&sa, sizeof(sa)) != 0) {
-        CU_PASS("127.0.0.1 bind failed - loopback not configured, skipping");
+    len = st_loopback(FAM, &sa, 0);
+    if (bind(ls, (struct sockaddr *)&sa, len) != 0) {
+        CU_PASS("loopback bind failed - loopback not configured, skipping");
         CloseSocket(ls);
         return;
     }
@@ -281,7 +261,7 @@ void testLOOPBACK_ECHO(void)
     len = sizeof(sa);
     CU_ASSERT_EQUAL(getsockname(ls, (struct sockaddr *)&sa, &len), 0);
 
-    cs = socket(AF_INET, SOCK_STREAM, 0);
+    cs = socket(FAM, SOCK_STREAM, 0);
     CU_ASSERT(cs >= 0);
     if (cs < 0) {
         CloseSocket(ls);
@@ -289,12 +269,8 @@ void testLOOPBACK_ECHO(void)
     }
     (void) IoctlSocket(cs, FIONBIO, (char *)&on);
 
-    bzero(&da, sizeof(da));
-    da.sin_family = AF_INET;
-    da.sin_len = sizeof(da);
-    da.sin_addr.s_addr = inet_addr("127.0.0.1");
-    da.sin_port = sa.sin_port;
-    r = connect(cs, (struct sockaddr *)&da, sizeof(da));
+    len = st_loopback(FAM, &da, st_port(&sa));
+    r = connect(cs, (struct sockaddr *)&da, len);
     if (r != 0 && Errno() != EINPROGRESS) {
         CU_PASS("loopback connect failed - skipping");
         CloseSocket(cs);
@@ -363,21 +339,21 @@ int main(void)
         return CU_get_error();
     }
 
-    if ((NULL == CU_add_test(pSuite, "socket()", testSOCKET_CREATE)) ||
-        (NULL == CU_add_test(pSuite, "socket() bad args", testSOCKET_BADARGS)) ||
-        (NULL == CU_add_test(pSuite, "CloseSocket() bad fd", testCLOSE_BADFD)) ||
-        (NULL == CU_add_test(pSuite, "getsockopt(SO_TYPE)", testSO_TYPE)) ||
-        (NULL == CU_add_test(pSuite, "setsockopt(SO_REUSEADDR)", testSO_REUSEADDR)) ||
-        (NULL == CU_add_test(pSuite, "setsockopt(SO_RCVBUF)", testSO_RCVBUF)) ||
-        (NULL == CU_add_test(pSuite, "setsockopt(TCP_NODELAY)", testTCP_NODELAY)) ||
-        (NULL == CU_add_test(pSuite, "bind()/getsockname()", testBIND_GETSOCKNAME)) ||
-        (NULL == CU_add_test(pSuite, "listen()", testLISTEN)) ||
-        (NULL == CU_add_test(pSuite, "getpeername() unconnected", testGETPEERNAME_UNCONN)) ||
-        (NULL == CU_add_test(pSuite, "IoctlSocket(FIONBIO)", testNONBLOCK)) ||
-        (NULL == CU_add_test(pSuite, "inet_addr()", testINET_ADDR)) ||
-        (NULL == CU_add_test(pSuite, "Inet_NtoA()", testINET_NTOA)) ||
-        (NULL == CU_add_test(pSuite, "htonl()/htons()", testHTON_ROUNDTRIP)) ||
-        (NULL == CU_add_test(pSuite, "loopback TCP echo", testLOOPBACK_ECHO)))
+    if (!st_add_test(pSuite, "socket()", testSOCKET_CREATE, ST_ANY) ||
+        !st_add_test(pSuite, "socket() bad args", testSOCKET_BADARGS, ST_ANY) ||
+        !st_add_test(pSuite, "CloseSocket() bad fd", testCLOSE_BADFD, ST_NONE) ||
+        !st_add_test(pSuite, "getsockopt(SO_TYPE)", testSO_TYPE, ST_ANY) ||
+        !st_add_test(pSuite, "setsockopt(SO_REUSEADDR)", testSO_REUSEADDR, ST_ANY) ||
+        !st_add_test(pSuite, "setsockopt(SO_RCVBUF)", testSO_RCVBUF, ST_ANY) ||
+        !st_add_test(pSuite, "setsockopt(TCP_NODELAY)", testTCP_NODELAY, ST_ANY) ||
+        !st_add_test(pSuite, "bind()/getsockname()", testBIND_GETSOCKNAME, ST_ANY) ||
+        !st_add_test(pSuite, "listen()", testLISTEN, ST_ANY) ||
+        !st_add_test(pSuite, "getpeername() unconnected", testGETPEERNAME_UNCONN, ST_ANY) ||
+        !st_add_test(pSuite, "IoctlSocket(FIONBIO)", testNONBLOCK, ST_ANY) ||
+        !st_add_test(pSuite, "inet_addr()", testINET_ADDR, ST_NONE) ||
+        !st_add_test(pSuite, "Inet_NtoA()", testINET_NTOA, ST_NONE) ||
+        !st_add_test(pSuite, "htonl()/htons()", testHTON_ROUNDTRIP, ST_NONE) ||
+        !st_add_test(pSuite, "loopback TCP echo", testLOOPBACK_ECHO, ST_ANY))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

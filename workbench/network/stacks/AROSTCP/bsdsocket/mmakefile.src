@@ -23,198 +23,39 @@ include $(SRCDIR)/config/aros.cfg
 # MA 02111-1307, USA.
 #
 
-SYS_H= \
-	sys/synch.h sys/uio.h \
-	sys/kernel.h sys/malloc.h sys/mbuf.h sys/queue.h \
-	sys/socketvar.h sys/domain.h sys/protosw.h \
-	sys/systm.h 
+#
+# The stack program. What it is built from, and with which options, is in
+# stack.cfg, shared with the protocol libraries (../modules/*): the file
+# lists of the four groups (core, transports, IPv4, IPv6), the include
+# paths and the compiler options.
+#
+#   workbench-network-stacks-arostcp-bsdsocket
+#       the program System/Network/AROSTCP/C/AROSTCP: the core alone, with
+#       no protocol code (AROSTCP_MONOLITHIC=no, the default), or the core
+#       and every protocol in one binary (AROSTCP_MONOLITHIC=yes, for
+#       debugging; see stack.cfg).
+#
+# The protocols are the libraries transport.prot,
+# inet.prot and inet6.prot, built by
+#   workbench-network-stacks-arostcp-modules-transport
+#   workbench-network-stacks-arostcp-modules-inet
+#   workbench-network-stacks-arostcp-modules-inet6
+# (all of them: workbench-network-stacks-arostcp-modules).
+#
+include $(SRCDIR)/workbench/network/stacks/AROSTCP/bsdsocket/stack.cfg
 
-PROTOS_H= \
-	protos/kern/amiga_api_protos.h 	protos/kern/amiga_main_protos.h \
-	protos/kern/amiga_select_protos.h protos/kern/amiga_time_protos.h \
-	protos/kern/kern_random_protos.h \
-	protos/kern/amiga_userlib_protos.h protos/kern/kern_malloc_protos.h \
-	protos/kern/kern_synch_protos.h protos/kern/subr_prf_protos.h \
-	protos/kern/uipc_domain_protos.h \
-	protos/kern/uipc_socket2_protos.h protos/kern/uipc_socket_protos.h \
-	protos/net/if_loop_protos.h protos/net/if_protos.h \
-	protos/net/radix_protos.h protos/net/raw_cb_protos.h \
-	protos/net/raw_usrreq_protos.h protos/net/rtsock_protos.h \
-	protos/netinet/in_cksum_protos.h protos/netinet/in_pcb_protos.h \
-	protos/netinet/in_proto_protos.h protos/netinet/in_protos.h \
-	protos/netinet/ip_icmp_protos.h protos/netinet/ip_input_protos.h \
-	protos/netinet/ip_output_protos.h protos/netinet/raw_ip_protos.h \
-	protos/netinet/tcp_debug_protos.h protos/netinet/tcp_input_protos.h \
-	protos/netinet/tcp_output_protos.h protos/netinet/tcp_subr_protos.h \
-	protos/netinet/tcp_timer_protos.h protos/netinet/tcp_usrreq_protos.h \
-	protos/netinet/tcp_cc_newreno_protos.h protos/netinet/tcp_cc_cubic_protos.h \
-	protos/netinet/udp_usrreq_protos.h
+USER_INCLUDES := $(STACK_INCLUDES)
+USER_CPPFLAGS := $(STACK_CPPFLAGS)
+USER_CFLAGS   := $(STACK_CFLAGS)
 
-# Protocol inspecific network routines:
-# network interfaces, input queue scheduling, 
-# raw sockets, routing
-NET_C= \
-	net/if net/if_loop net/pfil \
-	net/raw_cb net/raw_usrreq \
-	net/route net/rtsock net/radix \
-	net/if_sana net/if_stf net/netisr net/sana2config \
-	net/sana2copybuff net/sana2arp net/sana2perror \
-	net/bpf_filter net/bpf net/ipfilter
-
-NET_H= \
-	net/if_types.h net/if_sana.h \
-	net/sana2request.h net/sana2arp.h net/sana2config.h \
-	net/netisr.h net/raw_cb.h net/bpf.h
-
-# netinet -- internet protocols (ip, icmp, tcp, udp, arp)
-NETINET_C:= \
-	netinet/in netinet/in_pcb netinet/in_proto \
-	netinet/ip_icmp \
-	netinet/ip_input netinet/ip_output netinet/raw_ip \
-	netinet/tcp_debug netinet/tcp_input netinet/tcp_output \
-	netinet/tcp_subr netinet/tcp_syncache netinet/tcp_timer netinet/tcp_usrreq \
-	netinet/tcp_cc_newreno netinet/tcp_cc_cubic netinet/tcp_ss netinet/tcp_rack \
-	netinet/udp_usrreq netinet/igmp
-
-ifeq ($(AROS_TARGET_CPU),x86_64)
-NETINET_C += netinet/in_cksum_sse2
-else ifeq ($(AROS_TARGET_CPU),aarch64)
-NETINET_C += netinet/in_cksum_neon
-else
-NETINET_C += netinet/in_cksum
+STACK_PROGRAM_C := $(STACK_CORE_C)
+ifeq ($(AROSTCP_MONOLITHIC),yes)
+STACK_PROGRAM_C += $(STACK_PROTOCOL_C)
 endif
-
-NETINET_H= \
-	netinet/in_pcb.h netinet/in_var.h netinet/igmp.h netinet/icmp_var.h  \
-	netinet/tcpip.h netinet/tcp_debug.h netinet/tcp_fsm.h \
-	netinet/tcp_seq.h netinet/tcp_timer.h netinet/tcp_var.h \
-	netinet/tcp_cc.h \
-	netinet/udp_var.h 
-
-# netinet6 -- IPv6 protocol stack (KAME-derived)
-NETINET6_C= \
-	netinet6/in6 netinet6/in6_pcb netinet6/in6_proto \
-	netinet6/ip6_input netinet6/ip6_output \
-	netinet6/icmp6 netinet6/nd6 netinet6/nd6_nbr netinet6/nd6_rtr \
-	netinet6/mld6 netinet6/raw_ip6 \
-	netinet6/udp6_usrreq
-
-ifeq ($(AROS_TARGET_CPU),x86_64)
-NETINET6_C += netinet6/in6_cksum_sse2
-else ifeq ($(AROS_TARGET_CPU),aarch64)
-NETINET6_C += netinet6/in6_cksum_neon
-else
-NETINET6_C += netinet6/in6_cksum
-endif
-
-NETINET6_H= \
-	netinet6/in6_var.h netinet6/nd6.h
-
-# "Kernel" sources
-# main, timeouts, syncronization, memory management,
-# BSD socket ("Unix interprocess communication") routines,
-# logging and netstat rexx interface 
-KERN_C= \
-	kern/amiga_main kern/amiga_time kern/amiga_config \
-	kern/amiga_netdb kern/amiga_gui kern/amiga_cx \
-	kern/amiga_dhcp kern/amiga_rc kern/kern_subr \
-	kern/kern_synch kern/kern_malloc kern/uipc_mbuf \
-	kern/uipc_domain kern/uipc_socket kern/uipc_socket2 \
-	kern/amiga_log kern/amiga_cstat kern/amiga_rexx \
-	kern/subr_prf kern/accesscontrol kern/config_var \
-	kern/kern_sysctl kern/amiga_netsvc kern/amiga_svcmgr \
-	kern/kern_random
-
-KERN_H= \
-	kern/amiga_includes.h kern/amiga_time.h kern/amiga_config.h \
-	kern/amiga_netdb.h kern/amiga_gui.h kern/amiga_log.h \
-	kern/amiga_cx.h kern/amiga_dhcp.h kern/amiga_rc.h \
-        kern/amiga_rexx.h kern/amiga_subr.h kern/accesscontrol.h \
-        kern/amiga_netsvc.h kern/amiga_svcmgr.h
-
-# Application interface sources
-# Amiga "struct Library" interface, API functions,
-API_C=\
-	api/amiga_api api/amiga_libtables api/amiga_syscalls \
-	api/amiga_fdhooks \
-	api/amiga_sendrecv api/amiga_generic api/amiga_generic2 \
-	api/amiga_libcalls api/amiga_errlists api/amiga_kernvars \
-        api/amiga_ndbent api/amiga_netstat \
-	api/getxbyy api/gethostnamadr api/dns_cache api/allocdatabuffer \
-	api/res_comp api/res_debug api/res_init \
-	api/res_mkquery api/res_query api/res_send  \
-	api/amiga_roadshow api/miami_api api/miami_functable \
-	api/netservice_api api/netservice_functable \
-        api/if_indextoname api/if_nametoindex api/if_nameindex \
-        api/getifaddrs api/inet_pton api/inet_ntop
-
-API_H=\
-	api/amiga_raf.h api/amiga_api.h api/amiga_libcallentry.h \
-	api/allocdatabuffer.h api/dns_cache.h api/gethtbynamadr.h \
-	api/resolv.h api/sockargs.h \
-	api/apicalls.h api/miami_api.h api/netservice_api.h
-
-#
-# Misc headers
-#
-MISC_H=\
-	conf/conf.h
-
-#
-# Misc sources
-#
-MISC= \
-	kern/variables.src kern/config_var.awk
-
-NET_O=      $(NET_C:.c=.o)
-NETINET_O=  $(NETINET_C:.c=.o)
-NETINET6_O= $(NETINET6_C:.c=.o)
-KERN_O=     $(KERN_C:.c=.o)
-API_O=     $(API_C:.c=.o)
-CSRCS=	$(API_C) $(KERN_C) $(NET_C) $(NETINET_C) $(NETINET6_C)
-OBJS= 	$(API_O) $(KERN_O) $(NET_O) $(NETINET_O) $(NETINET6_O)
-AMISRC=      $(CSRCS) $(SYS_H) $(API_H) $(KERN_H) $(NET_H) $(NETINET_H) \
-	     $(NETINET6_H) $(MISC_H) $(MISC) $(PROTOS_H)
-#NETINCSRC=   $(SYS_HH) $(NET_HH) $(NETINET_HH) 
-SRCS=	     $(AMISRC) #$(NETINCSRC)
-TARGETS= AROSTCP
-DIRS= net netinet netinet6 kern api
-
-all: dirs $(TARGETS)
-
-opts: $(GCCOPTIONS)
-
-$(TARGETS): $(OBJS) $(SRCS)
-	$(LD) -o $@ $(OBJS) $(LIBSRC) $(LIBS)
-
-dirs: $(DIRS)
-
-net: $(NET_O)
-netinet: $(NETINET_O)
-netinet6: $(NETINET6_O)
-kern: $(KERN_O)
-api: $(API_O)
-
-STACK_NAME := AROSTCP
-
-USER_INCLUDES :=  -idirafter $(SRCDIR)/$(CURDIR) -idirafter $(SRCDIR)/$(CURDIR)/protos
-NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_IMPLICIT_FUNCTION_DECL) $(NOWARN_PARENTHESES)
-# enabling -DUSE_ALIGNED_COPIES  causes crashes..
-USER_CPPFLAGS := \
-	-DDIRECTED_BROADCAST \
-	-DENABLE_MULTICAST \
-	-DENABLE_FDLIBRARY \
-	-DAMITCP -DKERNEL \
-	-DENABLE_SYSCTL \
-	-D_XOPEN_SOURCE=600 \
-	-D__BSD_VISIBLE=1
-#USER_CPPFLAGS += -DDEBUG=1
-USER_CFLAGS := $(CFLAGS_GNU99) $(NOWARN_FLAGS) 
 
 %build_prog mmake=workbench-network-stacks-arostcp-bsdsocket \
     progname=$(STACK_NAME) \
-    files="$(NET_C) $(NETINET_C) $(NETINET6_C) $(KERN_C) $(API_C)" \
+    files="$(STACK_PROGRAM_C)" \
     targetdir=$(AROS_SYSTEM)/Network/$(STACK_NAME)/C
 
 %common
-

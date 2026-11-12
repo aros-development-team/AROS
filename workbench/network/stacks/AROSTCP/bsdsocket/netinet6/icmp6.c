@@ -33,6 +33,8 @@
 #include <stdarg.h>
 
 #include <net/if.h>
+#include <net/netisr.h>
+#include <net/netmodule.h>
 #include <net/route.h>
 
 #include <netinet/in.h>
@@ -44,24 +46,28 @@
 #include <netinet6/in6_var.h>
 #include <netinet6/nd6.h>
 #include <netinet6/mld6.h>
+#include <netinet/inet_transport.h>     /* TRF_xxx */
 
 #include <protos/net/route_protos.h>
 #include <kern/uipc_socket2_protos.h>
 #include <protos/netinet/in_cksum_protos.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 /* IP6_HDR_OFF macro: ip6 header is at offset 0 in mbuf after ip6_input */
 #define ICMPv6_HDRLEN sizeof(struct icmp6_hdr)
 
 struct icmp6stat icmp6stat = {0};
 
-/* tcp_now: 500ms tick counter incremented by tcp_slowtimo() */
-extern u_long tcp_now;
+/*
+ * The clock of the rate limit is the core's count of slow timeouts
+ * (net_slowticks, net/netmodule.h: 500 ms each), not a transport's.
+ */
 
 /* ICMPv6 rate limiting (token bucket) */
 static int icmp6_ratelimit_tokens = 10;    /* current tokens */
 static int icmp6_ratelimit_max = 10;       /* max burst */
 static int icmp6_ratelimit_rate = 5;       /* tokens per slow-tick (500ms) */
-static long icmp6_ratelimit_last = 0;      /* last refill time (tcp_now) */
+static long icmp6_ratelimit_last = 0;      /* last refill time (net_slowticks) */
 
 /*
  * Rate-limit ICMPv6 error generation using a token bucket.
@@ -72,9 +78,9 @@ icmp6_ratelimit(void)
 {
     long elapsed;
 
-    elapsed = (long)(tcp_now - icmp6_ratelimit_last);
+    elapsed = (long)(net_slowticks - icmp6_ratelimit_last);
     if (elapsed > 0) {
-        icmp6_ratelimit_last = tcp_now;
+        icmp6_ratelimit_last = net_slowticks;
         icmp6_ratelimit_tokens += elapsed * icmp6_ratelimit_rate;
         if (icmp6_ratelimit_tokens > icmp6_ratelimit_max)
             icmp6_ratelimit_tokens = icmp6_ratelimit_max;
@@ -90,7 +96,10 @@ icmp6_ratelimit(void)
 
 /* forward */
 static void icmp6_reflect(struct mbuf *, size_t);
-void rip6_input(void *args, ...);
+/* the transports bound to IPv6, and the raw sockets (netinet6/in6_proto.c) */
+void in6_raw_deliver(struct mbuf *, int, int);
+int  in6_transport_flags(int);
+int  in6_transport_ctlinput(int, int, struct sockaddr *, struct ip6ctlparam *);
 
 /* ------------------------------------------------------------------
  * icmp6_init
@@ -109,10 +118,21 @@ void icmp6_fasttimo(void)
 extern void frag6_slowtimo(void);
 extern void in6_tmpaddrtimer(void);
 
+static int icmp6_slow_ticks = 0;    /* icmp6_slowtimo()'s, for its trace */
+
+/* IPv6 stops (inet6_stop()): ICMPv6's variables as the file has them */
+void
+icmp6_defaults(void)
+{
+    icmp6_ratelimit_tokens = 10;
+    icmp6_ratelimit_last = 0;
+    icmp6_slow_ticks = 0;
+    bzero((caddr_t)&icmp6stat, sizeof(icmp6stat));
+}
+
 void
 icmp6_slowtimo(void)
 {
-    static int icmp6_slow_ticks = 0;
     icmp6_slow_ticks++;
     if(icmp6_slow_ticks <= 10 || (icmp6_slow_ticks % 60) == 0) {
         D(bug("[AROSTCP:ICMP6] %s: tick=%d\n", __func__, icmp6_slow_ticks));
@@ -121,7 +141,14 @@ icmp6_slowtimo(void)
     icmp6_ratelimit_tokens += icmp6_ratelimit_rate;
     if (icmp6_ratelimit_tokens > icmp6_ratelimit_max)
         icmp6_ratelimit_tokens = icmp6_ratelimit_max;
-    icmp6_ratelimit_last = tcp_now;
+    icmp6_ratelimit_last = net_slowticks;
+    /*
+     * The path MTUs whose time is up (net/route.c): they are kept by the
+     * core for every family, and nobody else calls this when IPv4 is not
+     * part of the running stack. Called by both when both run, which is
+     * harmless: a slot that was given back is free.
+     */
+    rt_pmtu_timer();
     nd6_timer(NULL);
     frag6_slowtimo();
     in6_tmpaddrtimer();
@@ -184,9 +211,12 @@ icmp6_echo_copy(struct mbuf *m, int off)
 /* ------------------------------------------------------------------
  * icmp6_notify_error - pass an ICMPv6 error to the upper-layer protocol
  * of the packet it quotes (RFC 4443 section 2.4), as KAME's
- * icmp6_notify_error() does: that protocol's pr_ctlinput gets the quoted
- * destination as a sockaddr_in6 and, in an ip6ctlparam, the quoted source
- * and ports. Only an upper-layer header that follows the IPv6 header
+ * icmp6_notify_error() does: a transport bound to IPv6 is told through
+ * in6_transport_ctlinput(), another protocol that has the value through
+ * its pr_ctlinput - with the quoted destination as a sockaddr_in6 and, in
+ * an ip6ctlparam, the quoted source and, where the transport says its
+ * header has them (TRF_PORTS, TRF_SEQ), the ports and the sequence
+ * number. Only an upper-layer header that follows the IPv6 header
  * directly is found. The quoted headers are copied out, so m is left as
  * it is for the raw sockets.
  * ------------------------------------------------------------------ */
@@ -194,12 +224,13 @@ static void
 icmp6_notify_error(struct mbuf *m, int off, int cmd)
 {
     extern struct protosw inet6sw[];
-    extern u_char ip6_protox[];
+    extern struct protodispatch ip6_protos;
     struct ip6_hdr oip6;
     struct sockaddr_in6 sa6;
     struct ip6ctlparam ip6cp;
     struct protosw *pr;
     int qoff = off + sizeof(struct icmp6_hdr);  /* the quoted IPv6 header */
+    int trflags;
 
     if(m->m_pkthdr.len < qoff + (int)sizeof(oip6)) {
         icmp6stat.icp6s_tooshort++;
@@ -209,15 +240,16 @@ icmp6_notify_error(struct mbuf *m, int off, int cmd)
 
     bzero(&ip6cp, sizeof(ip6cp));
     ip6cp.ip6c_src = oip6.ip6_src;
-    if((oip6.ip6_nxt == IPPROTO_TCP || oip6.ip6_nxt == IPPROTO_UDP) &&
+    trflags = in6_transport_flags(oip6.ip6_nxt);
+    if((trflags & TRF_PORTS) &&
             m->m_pkthdr.len >= qoff + (int)sizeof(oip6) + 4) {
-        u_int16_t ports[2];     /* TCP and UDP both begin with them */
+        u_int16_t ports[2];     /* the transport's header begins with them */
 
         m_copydata(m, qoff + sizeof(oip6), sizeof(ports), (caddr_t)ports);
         ip6cp.ip6c_sport = ports[0];
         ip6cp.ip6c_dport = ports[1];
     }
-    if(oip6.ip6_nxt == IPPROTO_TCP &&
+    if((trflags & TRF_SEQ) &&
             m->m_pkthdr.len >= qoff + (int)sizeof(oip6) + 8) {
         u_int32_t seq = 0;      /* after the ports */
 
@@ -241,7 +273,9 @@ icmp6_notify_error(struct mbuf *m, int off, int cmd)
             IN6_IS_ADDR_MC_LINKLOCAL(&sa6.sin6_addr)) && m->m_pkthdr.rcvif)
         sa6.sin6_scope_id = m->m_pkthdr.rcvif->if_index;
 
-    pr = &inet6sw[ip6_protox[oip6.ip6_nxt]];
+    if(in6_transport_ctlinput(oip6.ip6_nxt, cmd, (struct sockaddr *)&sa6, &ip6cp))
+        return;
+    pr = PROTODISPATCH(&ip6_protos, oip6.ip6_nxt);
     if(pr->pr_protocol == oip6.ip6_nxt && pr->pr_ctlinput != NULL)
         (*pr->pr_ctlinput)(cmd, (struct sockaddr *)&sa6, &ip6cp);
 }
@@ -367,7 +401,7 @@ icmp6_input(void *args, ...)
             bcopy(&ic6->icmp6_mtu, &omtu, sizeof(omtu));
             /* the route keeps the path MTU, which ip6_output() and a new
              * connection's tcp_mss() use; a TCP connection under way is
-             * told too, to send smaller segments (tcp6_ctlinput()) */
+             * told too, to send smaller segments (icmp6_notify_error()) */
             icmp6_update_pmtu(&odst, ntohl(omtu));
             icmp6_notify_error(m, off, PRC_MSGSIZE);
             break;
@@ -415,7 +449,7 @@ icmp6_input(void *args, ...)
         break;
     }
 
-    rip6_input(m, off, IPPROTO_ICMPV6);
+    in6_raw_deliver(m, off, IPPROTO_ICMPV6);
 }
 
 /* ------------------------------------------------------------------

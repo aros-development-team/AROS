@@ -4,8 +4,8 @@
  * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * Minimal 4.4BSD-style sysctl interface for AROSTCP.  It backs the
- * miami.library MiamiSysCtl() call and the per-protocol *_sysctl() handlers
- * (tcp_sysctl/udp_sysctl in netinet, ip_sysctl in kern/kern_sysctl.c).  Only
+ * miami.library MiamiSysCtl() call; every variable is one a module of the
+ * stack registered under its name (the registry of net/netmodule.h).  Only
  * the net.inet.{ip,tcp,udp} subtree is served; it is not a general kernel
  * MIB.  Built only when ENABLE_SYSCTL is defined.
  */
@@ -59,12 +59,6 @@ int sysctl_rdstruct(void *oldp, size_t *oldlenp, void *newp, void *sp, int len);
 int kern_sysctl(int *name, u_int namelen, void *oldp, size_t *oldlenp,
                 void *newp, size_t newlen);
 int net_sysctl(int *name, u_int namelen, void *oldp, size_t *oldlenp,
-               void *newp, size_t newlen);
-int ip_sysctl(int *name, u_int namelen, void *oldp, size_t *oldlenp,
-              void *newp, size_t newlen);
-int tcp_sysctl(int *name, u_int namelen, void *oldp, size_t *oldlenp,
-               void *newp, size_t newlen);
-int udp_sysctl(int *name, u_int namelen, void *oldp, size_t *oldlenp,
                void *newp, size_t newlen);
 
 #endif /* SYS_SYSCTL_H */

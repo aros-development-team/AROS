@@ -240,6 +240,7 @@ int connstatus;
         (void) bsd_free((caddr_t)so, M_SOCKET);
         return ((struct socket *)0);
     }
+    so->so_proto->pr_domain->dom_refs++;    /* dropped in sofree() */
     if(connstatus) {
         sowakeup(head, &head->so_rcv);
 //		soevent(head, FD_ACCEPT);
@@ -509,6 +510,22 @@ register struct socket *so;
 u_long sndcc, rcvcc;
 {
 
+    /*
+     * These are a protocol's default sizes, not a request of the
+     * application's (SO_SNDBUF and SO_RCVBUF go to sbreserve() and may be
+     * refused): one above what this machine's sb_max allows is brought down
+     * to it. A default sized for a large machine - UDP's 266 KB receive
+     * buffer against a 64 KB sb_max - otherwise failed here with ENOBUFS,
+     * and no socket of that protocol could be created at all.
+     */
+    {
+        u_long most = sb_max * mbconf.mclbytes / (MSIZE + mbconf.mclbytes);
+
+        if(sndcc > most)
+            sndcc = most;
+        if(rcvcc > most)
+            rcvcc = most;
+    }
     if(sbreserve(&so->so_snd, sndcc) == 0)
         goto bad;
     if(sbreserve(&so->so_rcv, rcvcc) == 0)

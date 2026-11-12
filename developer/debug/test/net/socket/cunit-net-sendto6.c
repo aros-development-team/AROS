@@ -282,6 +282,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library not available - skipping SENDTO6 tests\n");
         return 0;
     }
+    if (st_skip_program("cunit-net-sendto6", ST_V6)) {
+        CloseLibrary(SocketBase);
+        return 0;
+    }
     have_ll = setup();
     if (!have_ll)
         printf("%s: no link-local address - skipping the SENDTO6 tests that need one\n", ifname);

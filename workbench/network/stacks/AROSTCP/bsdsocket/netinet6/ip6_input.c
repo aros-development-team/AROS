@@ -33,6 +33,9 @@
 #include <sys/synch.h>
 
 #include <net/if.h>
+#include <net/netisr.h>
+#include <net/netmodule.h>
+#include <netinet/inetfamily.h>
 #include <net/route.h>
 #include <net/pfil.h>
 
@@ -45,8 +48,16 @@
 #include <netinet/icmp6.h>
 #include <netinet6/in6_var.h>
 #include <netinet6/nd6.h>
+#include <net/if_sana.h>
 
 #include <kern/uipc_domain_protos.h>
+#include <aros/debug.h>
+#include <netinet/inet_transport.h>
+#include <protos/net/route_protos.h>	/* rt_flushfamily() */
+#include <net/netcore_map.h>        /* always the last include */
+
+/* IPv6's packet hook point (netinet6/in6_proto.c) */
+extern struct pfil_point in6_pfil;
 
 /* ------------------------------------------------------------------
  * Globals
@@ -55,7 +66,8 @@ struct ip6stat ip6stat = {0};
 
 extern struct domain inet6domain;
 extern struct protosw inet6sw[];
-u_char ip6_protox[IPPROTO_MAX] = {0};
+void ip6intr(void);
+struct protodispatch ip6_protos;    /* which protocol takes which next-header value */
 
 /*
  * forward declarations (defined in icmp6.c).
@@ -408,6 +420,26 @@ ip6_forward(struct mbuf *m, struct ifnet *srcifp)
         ip6stat.ip6s_redirectsent++;
     }
 
+    /*
+     * The packet hooks, with the route and the outgoing interface known:
+     * the forwarding hooks, then the output hooks - this path does not go
+     * through ip6_output(), and a forwarded packet passes the same points
+     * as in IPv4 (in, forward, out). A dropped packet is freed already.
+     */
+    if(PFIL_HOOKED(&in6_pfil, PFIL_FWD | PFIL_OUT)) {
+        struct mbuf *hm = m;
+
+        if(((in6_pfil.pp_active & PFIL_FWD) &&
+                pfil_run(&in6_pfil, &hm, ifp, PFIL_FWD) != 0) ||
+                ((in6_pfil.pp_active & PFIL_OUT) &&
+                pfil_run(&in6_pfil, &hm, ifp, PFIL_OUT) != 0)) {
+            ip6stat.ip6s_cantforward++;
+            RTFREE(rt);
+            return;
+        }
+        m = hm;
+    }
+
     /* output via the outgoing interface */
     s = splimp();
     error = (*ifp->if_output)(ifp, m,
@@ -425,33 +457,144 @@ ip6_forward(struct mbuf *m, struct ifnet *srcifp)
     RTFREE(rt);
 }
 
+/*
+ * IPv6's statistics, found by name by programs that look the stack's
+ * symbols up (netstat; net/netmodule.h). Registered from ip6_init().
+ */
+static const struct netvar ip6_netvars[] = {
+    { "ip6stat",   &ip6stat,   sizeof(ip6stat),   NVT_STATS },
+    { "icmp6stat", &icmp6stat, sizeof(icmp6stat), NVT_STATS },
+};
+
 /* ------------------------------------------------------------------
  * ip6_init - called once during domain initialisation.
+ *
+ * Called by domain_attach() from IPv6's module start (inet6_start(),
+ * netinet6/in6_proto.c), after the registered transports were given their
+ * entries of inet6sw[]: the table is complete when this reads it. Every
+ * registration IPv6 makes with the core and with the transports' common
+ * part is made here or in inet6_start().
  * ------------------------------------------------------------------ */
 void
 ip6_init(void)
 {
+    /* the raw protocol's entry, there whether raw sockets are or not */
+    extern struct protosw *const in6_defaultproto;  /* netinet6/in6_proto.c */
     struct protosw *pr;
     int i;
 
-    pr = pffindproto(AF_INET6, IPPROTO_RAW, SOCK_RAW);
-    if(pr == NULL)
-        panic("ip6_init: no raw IPv6");
-
     /* build protocol dispatch table */
-    for(i = 0; i < IPPROTO_MAX; i++)
-        ip6_protox[i] = (u_char)(pr - inet6sw);
+    if(protodispatch_init(&ip6_protos, in6_defaultproto) != 0)
+        panic("ip6_init");
 
     for(pr = inet6domain.dom_protosw;
             pr < inet6domain.dom_protoswNPROTOSW;
             pr++) {
         if(pr->pr_protocol && pr->pr_protocol != IPPROTO_RAW)
-            ip6_protox[pr->pr_protocol] = (u_char)(pr - inet6sw);
+            (void)protodispatch_set(&ip6_protos, pr->pr_protocol, pr);
     }
+    /* a protocol of another module takes a next-header value here */
+    (void)protodispatch_publish(AF_INET6, &ip6_protos);
 
     nd6_init();
 
     ip6intrq.ifq_maxlen = IFQ_MAXLEN;
+    {
+        static const struct netinput ip6_input_queue = {
+            AF_INET6, NETISR_IPV6, &ip6intrq, ip6intr
+        };
+
+        (void)netinput_register(&ip6_input_queue);
+    }
+    {
+        extern const struct netfamily_ifops in6_ifops;
+
+        (void)netfamily_ifops_register(&in6_ifops);
+    }
+    {
+        extern const struct inetfamily in6_family;
+        extern const struct inet_transport_if *in6_transports; /* netinet6/in6_proto.c */
+
+        /* the transports may serve IPv6 sockets */
+        (void)(*in6_transports->ti_family_register)(&in6_family);
+    }
+    /* neighbour discovery finds link addresses for the SANA-II interfaces */
+    (void)sana_linktype_resolver(AF_INET6, nd6_resolve);
+    /* what netstat finds by name */
+    (void)netvar_register(ip6_netvars, sizeof(ip6_netvars) / sizeof(ip6_netvars[0]));
+}
+
+/* ------------------------------------------------------------------
+ * IPv6 STOPS (inet6_stop(), netinet6/in6_proto.c), in three steps of this
+ * file's, each the reverse of a part of ip6_init().
+ *
+ * ip6_input_stop(): no packet reaches IPv6 any more. The caller has taken
+ * the read requests of IPv6's link type back from the drivers; here the
+ * input queue is unregistered - the loopback, a tunnel and the SANA-II
+ * read path find no queue for the family from then on - and what was
+ * waiting on it is dropped.
+ * ------------------------------------------------------------------ */
+void
+ip6_input_stop(void)
+{
+    struct mbuf *m;
+    spl_t s;
+
+    (void)netinput_unregister(AF_INET6);
+    s = splimp();
+    for(;;) {
+        IF_DEQUEUE(&ip6intrq, m);
+        if(m == NULL)
+            break;
+        m_freem(m);
+    }
+    splx(s);
+}
+
+/* ------------------------------------------------------------------
+ * ip6_flush(): what is global to IPv6 and has no interface to go with,
+ * after the interfaces' addresses and their routes are gone: every route
+ * still in IPv6's table and the path MTU slots that hold one
+ * (rt_flushfamily(): the table is the core's and stays, empty) - the
+ * neighbour cache goes with the routes it hangs on - and the reassembly
+ * queues with the fragments they hold. No error is sent for those.
+ * ------------------------------------------------------------------ */
+void
+ip6_flush(void)
+{
+    spl_t s = splimp();
+
+    rt_flushfamily(AF_INET6);
+    while(ip6q.next != &ip6q)
+        frag6_freef(ip6q.next);
+    splx(s);
+}
+
+/* ------------------------------------------------------------------
+ * ip6_deinit(): the registrations ip6_init() made that are not the
+ * transports' are taken back, the dispatch table's memory is freed, and
+ * this file's variables are what the file gives them. The caller has
+ * taken the transports' entries out of the table before (they clear their
+ * next-header values in it), and unregisters IPv6's instance of the
+ * family interface itself.
+ * ------------------------------------------------------------------ */
+void
+ip6_deinit(void)
+{
+    extern const struct netfamily_ifops in6_ifops;
+
+    /* neighbour discovery no longer resolves for the SANA-II interfaces */
+    (void)sana_linktype_resolver(AF_INET6, NULL);
+    (void)netfamily_ifops_unregister(&in6_ifops);
+    (void)netvar_unregister(ip6_netvars);
+    (void)protodispatch_publish(AF_INET6, (struct protodispatch *)NULL);
+    protodispatch_done(&ip6_protos);
+
+    bzero((caddr_t)&ip6stat, sizeof(ip6stat));
+    ip6q.next = ip6q.prev = &ip6q;
+    ip6q_nfragpackets = 0;
+    ip6_nfrags = 0;
+    bzero((caddr_t)&ip6intrq, sizeof(ip6intrq));
 }
 
 /* ------------------------------------------------------------------
@@ -528,6 +671,22 @@ ip6_input(struct mbuf *m)
     /* trim any trailing junk */
     if(m->m_pkthdr.len > sizeof(struct ip6_hdr) + plen)
         m_adj(m, sizeof(struct ip6_hdr) + plen - m->m_pkthdr.len);
+
+    /*
+     * The packet hooks (the filter engine, Miami hooks that asked for
+     * IPv6): one word tested while nothing is hooked (net/pfil.h). They
+     * see the packet whole, before its scope and its destination are
+     * looked at - fragments before reassembly, as IPv4's do. A dropped
+     * packet is freed already; a hook may have replaced the chain.
+     */
+    if(PFIL_HOOKED(&in6_pfil, PFIL_IN)) {
+        struct mbuf *hm = m;
+
+        if(pfil_run(&in6_pfil, &hm, ifp, PFIL_IN) != 0)
+            return;
+        m = hm;
+        ip6 = mtod(m, struct ip6_hdr *);
+    }
 
     /* discard unspecified source except when link-local */
     if(IN6_IS_ADDR_UNSPECIFIED(&ip6->ip6_src) &&
@@ -768,7 +927,7 @@ ours:
 
 deliver:
     /* dispatch to upper-layer protocol */
-    pr = &inet6sw[ip6_protox[nxt]];
+    pr = PROTODISPATCH(&ip6_protos, nxt);
     if(pr->pr_input)
         (*pr->pr_input)(m, off, nxt);
     else

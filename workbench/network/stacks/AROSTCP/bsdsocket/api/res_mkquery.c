@@ -44,6 +44,8 @@ static char sccsid[] = "@(#)res_mkquery.c	6.16 (Berkeley) 3/6/91";
 #include <api/amiga_api.h>
 #include <kern/amiga_subr.h>
 
+#include <net/netcore_map.h>        /* always the last include */
+
 /*
  * Randomized DNS query ID (xorshift32 PRNG).
  * Prevents DNS cache poisoning via predictable IDs.

@@ -61,15 +61,17 @@ BOOL sana_poll(void);
 #include <kern/amiga_svcmgr.h>
 #include <kern/amiga_netsvc.h>
 #include <bsdsocket/socketbasetags.h>   /* SBTC_RECONFIG_* reconfigure tags */
+#include <net/netmodule.h>
 #include <bsdsocket/netcontrol.h>       /* NetControlMsg / NCMD_* / AROSTCP_CTRLPORT_NAME */
 #include <kern/kern_malloc_protos.h>
 #include <api/amiga_api.h>
+#include <kern/netdiag.h>
+#include <kern/netconfig_ops.h>       /* the configuration reader: netconfig_acquire() ... */
 
 /*
  * include prototypes for initialization functions
  */
 #include <kern/uipc_domain_protos.h>    /* domaininit() */
-#include "../net/bpf.h"                    /* bpf_init() */
 
 /*
  * The main module of the AMITCP/IP.
@@ -91,6 +93,61 @@ static ULONG sanamask = 0,
 static struct MsgPort *controlport = NULL;  /* AROSTCP.ctrl: RELOAD/SHUTDOWN requests */
 static BOOL  ctrl_shutdown = FALSE;          /* set by an NCMD_SHUTDOWN control message */
 static BOOL  control_poll(void);
+
+/*
+ * What the stack's task is doing, readable from outside while it is stuck
+ * (kern/netdiag.h). Made public at the start of main() and taken back at
+ * the end of deinit_all(), the last thing done before the code can go.
+ */
+struct netdiag netdiag;
+extern struct SignalSemaphore spl_semaphore;
+extern spl_t spl_level;
+
+static void
+netdiag_start(void)
+{
+    netdiag.nd_size = sizeof(netdiag);
+    netdiag.nd_version = NETDIAG_VERSION;
+    netdiag.nd_task = AROSTCP_Task;
+    netdiag.nd_spl_semaphore = &spl_semaphore;
+    netdiag.nd_syscall_semaphore = &syscall_semaphore;
+    netdiag.nd_spl_level = &spl_level;
+    netdiag.ml_where = NDW_OUTSIDE;
+    netdiag.init_stage = NDI_MAIN;
+
+    /* a port nobody sends to: only its name and its place in the list matter */
+    netdiag.nd_port.mp_Node.ln_Type = NT_MSGPORT;
+    netdiag.nd_port.mp_Node.ln_Pri = -128;
+    netdiag.nd_port.mp_Node.ln_Name = (char *)NETDIAG_PORTNAME;
+    netdiag.nd_port.mp_Flags = PA_IGNORE;
+    netdiag.nd_port.mp_SigTask = NULL;
+    NEWLIST(&netdiag.nd_port.mp_MsgList);
+    AddPort(&netdiag.nd_port);
+}
+
+static void
+netdiag_end(void)
+{
+    /* once: a panic() runs deinit_all() itself */
+    if(netdiag.nd_port.mp_Node.ln_Name != NULL) {
+        RemPort(&netdiag.nd_port);
+        netdiag.nd_port.mp_Node.ln_Name = NULL;
+    }
+}
+
+/* the signals just taken, each counted (ml_sig[]): four tests */
+static inline void
+netdiag_count(ULONG got)
+{
+    if(got & timermask)
+        netdiag.ml_sig[NDS_TIMER]++;
+    if(got & sanamask)
+        netdiag.ml_sig[NDS_SANA]++;
+    if(got & controlmask)
+        netdiag.ml_sig[NDS_CONTROL]++;
+    if(got & breakmask)
+        netdiag.ml_sig[NDS_BREAK]++;
+}
 
 UBYTE *taskname = NULL;
 /*BPTR db_lock = NULL;*/
@@ -158,6 +215,7 @@ main(int argc, char *argv[])
 #if defined(__AROS__)
     D(bug("[AROSTCP](amiga_main.c) main: AROSTCP_Task @ 0x%p\n", AROSTCP_Task));
 #endif
+    netdiag_start();
     D(Printf("AROSTCP_Task @ 0x%p\n", AROSTCP_Task);)
 
     /*
@@ -284,28 +342,42 @@ main(int argc, char *argv[])
          * let the timeouts roll!
          */
         timer_send();
+        netdiag.init_stage = NDI_RUNNING;
 
         for(;;) {
+            ULONG got;
+
+            netdiag.ml_where = NDW_WAIT;
             sig = Wait(signalmask);     /* Sleep until we are signalled. */
+            netdiag.ml_iter++;
+            netdiag.ml_wokeby = sig;
+            netdiag_count(sig);
 
             do {
                 if(sig & sanamask) {
+                    netdiag.ml_where = NDW_SANA;
                     if(!sana_poll()) sig &= ~sanamask;
                 }
 
                 if(sig & timermask) {
+                    netdiag.ml_where = NDW_TIMER;
                     if(!timer_poll()) sig &= ~timermask;
                 }
 
                 if(sig & controlmask) {
+                    netdiag.ml_where = NDW_CONTROL;
                     if(!control_poll()) sig &= ~controlmask;
                 }
 
-                sig |= SetSignal(0L, signalmask) & signalmask;
+                got = SetSignal(0L, signalmask) & signalmask;
+                netdiag_count(got);
+                sig |= got;
             } while(sig & (~breakmask));
 
             if((sig & breakmask) || ctrl_shutdown) {
                 int i;
+
+                netdiag.ml_where = NDW_STOP;
 
                 ctrl_shutdown = FALSE;      /* consume: one stop attempt per request */
 
@@ -357,6 +429,7 @@ main(int argc, char *argv[])
         retval = 20;
 
     /* free all resources */
+    netdiag.ml_where = NDW_OUTSIDE;
     deinit_all();
     initialized = FALSE;
 
@@ -377,6 +450,80 @@ main(int argc, char *argv[])
  * netservice_stop_all()/reload/netservice_start_all() reconfigure (net_reload)
  * here.
  */
+/*
+ * A module of the stack queried, started or stopped by name, or loaded
+ * from and unloaded with its library file. Runs in the stack's task with
+ * the socket calls fenced off, as a reload does; a stop is refused, never
+ * forced (net/netmodule.h).
+ */
+static LONG control_module(struct NetControlModuleMsg *mm)
+{
+    extern struct SignalSemaphore syscall_semaphore;
+    struct netmodule *nm = NULL;
+    LONG error = 0;
+
+    if(mm->ncmm_Msg.ncm_Msg.mn_Length < sizeof(*mm))
+        return EINVAL;
+    mm->ncmm_Name[NCM_MODULE_NAMELEN - 1] = '\0';
+    mm->ncmm_Flags = 0;
+    mm->ncmm_Users = 0;
+
+    /*
+     * A module in a library file of its own, loaded or unloaded: the file
+     * is read before the fence is taken, so these two take it themselves
+     * (kern/net_modload.c).
+     */
+    if(mm->ncmm_Msg.ncm_Command == NCMD_MODULE_LOAD) {
+        if((error = netmodule_load(mm->ncmm_Name, &nm)) != 0)
+            return error;
+        strncpy(mm->ncmm_Name, nm->nm_name, NCM_MODULE_NAMELEN - 1);    /* out: the module */
+        /* loaded by name: what could not be had before may be asked for on demand again */
+        netdemand_forget_failed(nm->nm_name);
+    } else if(mm->ncmm_Msg.ncm_Command == NCMD_MODULE_DEMAND) {
+        /*
+         * Needed by a call of an application (net/netdemand.h): started
+         * here, in the stack's task, whoever asked - a module's start may
+         * do what only this task may do. Loading reads the disk, so this
+         * takes the fence itself, as a load does.
+         */
+        error = netdemand_run(mm->ncmm_Name);
+    } else if(mm->ncmm_Msg.ncm_Command == NCMD_MODULE_UNLOAD) {
+        ObtainSemaphore(&syscall_semaphore);
+        nm = netmodule_known(mm->ncmm_Name);
+        ReleaseSemaphore(&syscall_semaphore);
+        /* only this task loads and unloads: nm stays valid without the fence */
+        if(nm == NULL)
+            return ENOENT;
+        if(nm->nm_library == NULL)
+            error = EPERM;              /* its code is part of the program */
+        else if((error = netmodule_unload(nm)) == 0)
+            return 0;                   /* gone, and its descriptor with it */
+        /* refused: say below what state it is in */
+    }
+
+    ObtainSemaphore(&syscall_semaphore);
+    if(nm == NULL && (nm = netmodule_known(mm->ncmm_Name)) == NULL) {
+        if(error == 0)
+            error = ENOENT;
+    } else {
+        if(mm->ncmm_Msg.ncm_Command == NCMD_MODULE_START)
+            error = netmodule_use(nm);
+        else if(mm->ncmm_Msg.ncm_Command == NCMD_MODULE_STOP)
+            error = (nm->nm_flags & NMF_STARTED) ? netmodule_unregister(nm) : 0;
+        if(nm->nm_flags & NMF_STARTED)
+            mm->ncmm_Flags |= NCMMF_STARTED;
+        if((nm->nm_flags & NMF_PERMANENT) || nm->nm_stop == NULL)
+            mm->ncmm_Flags |= NCMMF_PERMANENT;
+        if(nm->nm_flags & NMF_BUILTIN)
+            mm->ncmm_Flags |= NCMMF_BUILTIN;
+        if(nm->nm_library != NULL)
+            mm->ncmm_Flags |= NCMMF_LIBRARY;
+        mm->ncmm_Users = netmodule_users(nm);
+    }
+    ReleaseSemaphore(&syscall_semaphore);
+    return error;
+}
+
 static BOOL control_poll(void)
 {
     struct NetControlMsg *msg;
@@ -392,7 +539,28 @@ static BOOL control_poll(void)
             break;
         case NCMD_RELOAD:
             D(bug("[AROSTCP](amiga_main.c) control: RELOAD\n"));
+            /* a module that could not be had is looked for again (net/netdemand.h) */
+            netdemand_forget_failed(NULL);
+            /*
+             * The configuration reader first, before net_reload() takes the
+             * old configuration down: when it cannot be had the reload is
+             * refused and the stack keeps running as it is. Dropped again
+             * when the new configuration is in place (kern/netconfig_ops.h).
+             */
+            if((msg->ncm_Result = netconfig_acquire()) != 0) {
+                __log(LOG_ERR, "reload refused: the configuration is kept.");
+                break;
+            }
             msg->ncm_Result = net_reload();   /* in-place reconfigure (main-task context) */
+            netconfig_release();
+            break;
+        case NCMD_MODULE_QUERY:
+        case NCMD_MODULE_START:
+        case NCMD_MODULE_STOP:
+        case NCMD_MODULE_LOAD:
+        case NCMD_MODULE_UNLOAD:
+        case NCMD_MODULE_DEMAND:
+            msg->ncm_Result = control_module((struct NetControlModuleMsg *)msg);
             break;
         case NCMD_NOP:
         default:
@@ -426,6 +594,13 @@ init_all(void)
      */
     sleep_init();
     D(Printf("sleep_init() complete\n");)
+    netdiag.init_stage = NDI_LOCKS;
+
+    /*
+     * the demand slots and the ioctl ranges of modules loaded on first use
+     * (net/netdemand.h): empty, before anything can ask
+     */
+    netdemand_init();
 
     /*
      * initialize the network service registry (lives in netservices.library;
@@ -436,10 +611,35 @@ init_all(void)
     D(Printf("netservice_registry_init() complete\n");)
 
     /*
+     * The configuration reader (module "netconfig", kern/netconfig_ops.h),
+     * before anything the configuration decides: PROTOCOLS= and the
+     * interface lines say what starts. Loading it needs, of what is made
+     * further down, only the fence, which the loader takes
+     * (kern/net_modload.c), and arostcp.library, which a module library
+     * attaches to. Both are made here, earlier than they used to be; both
+     * depend on nothing made in between (the fence is a semaphore,
+     * InitSemaphore()d again unheld by api_init(); netcore_init() makes and
+     * publishes a library of function vectors and is not repeated by its
+     * second call below). Without the reader the configuration cannot be
+     * read, and the stack does not start (as with PROTOCOLS that select no
+     * family). It is dropped again when the start-up is done (below).
+     */
+    InitSemaphore(&syscall_semaphore);
+    if(!netcore_init())
+        return FALSE;
+    if(netconfig_acquire() != 0) {
+        Printf("AROSTCP: cannot read the configuration: "
+               NETCONFIG_MODULE NETMODULE_KIND_ATCP " is missing or does not load. "
+               "AROSTCP will quit.\n");
+        return FALSE;
+    }
+
+    /*
      * Read command line arguments and configuration file
      */
     if(!readconfig())
         return FALSE;
+    netdiag.init_stage = NDI_CONFIG;
     D(Printf("readconfig() complete\n");)
 
     /*
@@ -447,6 +647,7 @@ init_all(void)
      */
     if(!log_init())
         return FALSE;
+    netdiag.init_stage = NDI_LOG;
     D(Printf("log_init() complete\n");)
 
     /*
@@ -454,6 +655,7 @@ init_all(void)
      */
     if(!mbinit())
         return FALSE;
+    netdiag.init_stage = NDI_MBUF;
     D(Printf("mbinit() complete\n");)
 
     /*
@@ -461,6 +663,7 @@ init_all(void)
      */
     if((timermask = timer_init()) == 0L)
         return FALSE;
+    netdiag.init_stage = NDI_TIMER;
     D(Printf("timer_init() complete\n");)
 
     /*
@@ -468,28 +671,58 @@ init_all(void)
      */
     if(!api_init())
         return FALSE;
+    netdiag.init_stage = NDI_API;
     D(Printf("api_init() complete\n");)
+
+    /*
+     * publish arostcp.library, the core's services for the modules that
+     * are library files of their own - before any module is started
+     * (published already for the configuration reader, above: this call
+     * finds it there and does nothing)
+     */
+    if(!netcore_init())
+        return FALSE;
+    netdiag.init_stage = NDI_NETCORE;
+    D(Printf("netcore_init() complete\n");)
 
     /*
      * initialize SANA-II subsystem
      */
     if((sanamask = sana_init()) == 0L)
         return FALSE;
+    netdiag.init_stage = NDI_SANA;
     D(Printf("sana_init() complete\n");)
 
     /*
      * initialize domains (initializes all protocols)
      */
     domaininit();
+    netdiag.init_stage = NDI_DOMAINS;
     D(Printf("domaininit() complete\n");)
 
+    /*
+     * The protocol modules the configuration selects (PROTOCOLS, default
+     * both families) were started by that. A module that is missing or
+     * does not start is an error in the log and the stack goes on with
+     * the others; with none at all there is nothing a socket could be
+     * made of, and the stack does not start.
+     */
+    if(netmodule_protocols_started() == 0) {
+        Printf("AROSTCP: no protocol family could be started (PROTOCOLS=%s). "
+               "See the log; AROSTCP will quit.\n",
+               netmodule_protocols ? netmodule_protocols
+                                   : NETMODULE_PROTOCOLS_DEFAULT);
+        return FALSE;
+    }
+
     pfil_init();
+    netdiag.init_stage = NDI_PFIL;
     D(Printf("pfil_init() complete\n");)
 
-    bpf_init();
-    D(Printf("bpf_init() complete\n");)
+    /* (packet capture sets itself up when it is first used: net/bpf.c) */
 
     loconfig();
+    netdiag.init_stage = NDI_LOOPBACK;
     D(Printf("loconfig() complete\n");)
 
     /*
@@ -497,7 +730,35 @@ init_all(void)
      */
     if(init_netdb() != 0)
         return FALSE;
+    netdiag.init_stage = NDI_NETDB;
     D(Printf("init_netdb() complete\n");)
+
+    /*
+     * The optional modules the configuration wants from the start
+     * (MODULES=) instead of on their first use. What cannot be had is an
+     * error in the log; the stack runs without it.
+     */
+    netmodule_start_listed();
+    netdiag.init_stage = NDI_MODULES;
+
+    /*
+     * Create the out-of-band control port (RELOAD / SHUTDOWN requests, and
+     * the modules). Non-fatal on failure: the stack simply has no reload
+     * channel, and a module that is not running when it is first needed
+     * cannot be had. Made BEFORE the API is shown: a call that needs a
+     * module started sends its request here (net/netdemand.h), and the
+     * first calls come as soon as the API is visible - from NETTRACE among
+     * others. Requests wait in the port until the main loop runs.
+     */
+    if((controlport = CreateMsgPort()) != NULL) {
+        controlport->mp_Node.ln_Name = (char *)AROSTCP_CTRLPORT_NAME;
+        controlport->mp_Node.ln_Pri  = 0;
+        AddPort(controlport);
+        controlmask = 1UL << controlport->mp_SigBit;
+        netdemand_setport(controlport);
+        D(Printf("control port '%s' up\n", AROSTCP_CTRLPORT_NAME);)
+    }
+    netdiag.init_stage = NDI_CTRLPORT;
 
     /*
      * Make API visible. Nothing may fail after this point: the error path
@@ -506,28 +767,29 @@ init_all(void)
      */
     if(!Nettrace_Task || api_show() == FALSE)
         return FALSE;
+    netdiag.init_stage = NDI_SHOWN;
     D(Printf("api_show() complete\n");)
-
-    /*
-     * Create the out-of-band control port (RELOAD / SHUTDOWN requests).
-     * Non-fatal on failure: the stack simply has no reload channel.
-     */
-    if((controlport = CreateMsgPort()) != NULL) {
-        controlport->mp_Node.ln_Name = (char *)AROSTCP_CTRLPORT_NAME;
-        controlport->mp_Node.ln_Pri  = 0;
-        AddPort(controlport);
-        controlmask = 1UL << controlport->mp_SigBit;
-        D(Printf("control port '%s' up\n", AROSTCP_CTRLPORT_NAME);)
-    }
 
     D(Printf("Initialization complete, signalling NETTRACE\n");)
     Signal(Nettrace_Task, SIGBREAKF_CTRL_F);
 
     rc_start();
+    netdiag.init_stage = NDI_RC;
     D(Printf("rc_start() complete, initialization finished\n");)
 
     /* Register the built-in services now that the subsystems are up. */
     net_services_register();
+
+    /*
+     * The service files were the last configuration read by the start
+     * (svcmgr_register()): the reader leaves memory until the next reload.
+     * Before NDI_DONE, so that "start-up done" means it is gone. (A program
+     * that looks at memory as soon as bsdsocket.library appears still sees
+     * it: the API is shown, and the control port answers, before this - a
+     * control message sent now is answered from the main loop, after it.)
+     */
+    netconfig_release();
+    netdiag.init_stage = NDI_DONE;
 
 #if defined(__AROS__)
     D(bug("[AROSTCP](amiga_main.c) init_all: Initialisation successful.\n"));
@@ -545,6 +807,9 @@ deinit_all(void)
 #if defined(__AROS__)
     D(bug("[AROSTCP](amiga_main.c) deinit_all()\n"));
 #endif
+    netdiag.init_stage = NDI_STOPPING;
+    netdiag.ml_where = NDW_OUTSIDE;
+
     /*
      * make sure we are out of critical section
      */
@@ -560,6 +825,7 @@ deinit_all(void)
      */
     if(controlport) {
         struct NetControlMsg *m;
+        netdemand_setport(NULL);    /* no new demand is sent; those sent are replied below */
         RemPort(controlport);
         while((m = (struct NetControlMsg *)GetMsg(controlport)) != NULL) {
             m->ncm_Result = -1;
@@ -571,15 +837,53 @@ deinit_all(void)
     }
 
     /*
-     * Deinitialize network database.
+     * Deinitialize network database: the interface lines that wait for
+     * their device (DEFER) are forgotten - before the modules are stopped,
+     * because the configuration reader is kept loaded while one waits.
+     * Nothing reads them any more: the control port is gone, and the timer
+     * that tries them runs in this task, which is here.
      */
     netdb_deinit();
 
     /*
-     * Deinitialize BPF before network interfaces
+     * THE MODULES AT SHUTDOWN, step 1 of 3 (the whole order is described
+     * in kern/net_modload.c). No application has a library base open here
+     * - the main loop does not leave while one has - so only this task
+     * can still call into a module.
+     *
+     * Every module that lets itself be stopped is stopped now, by its own
+     * stop function, while everything those functions use is still there:
+     * the interfaces are open, the timers run, the pools exist. The
+     * protocol families go first and the transports after them
+     * (netmodule_stop_all(): the module that needs another before the one
+     * it needs); each takes its addresses, routes and requests off the
+     * interfaces, withdraws what it registered and frees what it
+     * allocated. Their library files are then unloaded
+     * (netmodule_unload_all()).
+     *
+     * A module whose stop refuses or fails is named in the log and stays
+     * as it is: closing the interfaces below may still call it, and it is
+     * cut off wholesale in steps 2 and 3, as every protocol module was
+     * before they could stop. So does one that cannot be stopped at all.
+     *
+     * Under the fence, as a stop asked for through the control port is,
+     * though nobody is left to fence off. (A stack whose start-up failed
+     * before any module was started has nothing to stop, and may not have
+     * a fence yet.)
      */
-    bpf_cleanup();
-    D(Printf("bpf_cleanup() completed\n");)
+    if(netmodules != NULL) {
+        extern struct SignalSemaphore syscall_semaphore;
+
+        ObtainSemaphore(&syscall_semaphore);
+        netmodule_stop_all();
+        ReleaseSemaphore(&syscall_semaphore);
+    }
+    netmodule_unload_all();
+
+    /*
+     * (Packet capture keeps nothing but memory of the core's pool, which is
+     * freed in one piece below.)
+     */
 
     /*
      * Deinitialize network interfaces
@@ -590,6 +894,32 @@ deinit_all(void)
      * Deinitialize timers
      */
     timer_deinit();
+
+    /*
+     * THE MODULES AT SHUTDOWN, steps 2 and 3, for the modules that are
+     * still started - those that could not be stopped above. Nothing can
+     * call a module any more: sana_deinit() has aborted, collected and deleted every
+     * SANA-II request (no read completion is delivered), timer_deinit()
+     * has deleted the periodic calls, the deadline timer and the
+     * protocols' fast and slow timers, and this task polls no queue.
+     *
+     * 2. netmodule_shutdown_all(): each module that is still started
+     *    releases what it holds that is not the core's (nm_shutdown; what
+     *    it took from the core's pools and mbufs is freed in one piece
+     *    below), and the core forgets every module and every
+     *    registration, so that no pointer into a module is left to
+     *    follow.
+     * 3. netmodule_expunge_all(): every module library is detached,
+     *    closed and removed from memory - its static data must not be
+     *    there, stale, when the stack is started again - and then
+     *    arostcp.library, which each of them held open, is taken back.
+     *
+     * Before mbdeinit(), log_deinit() and malloc_deinit(): a module's
+     * nm_shutdown may still log and free.
+     */
+    netmodule_shutdown_all();
+    netmodule_expunge_all();
+    netcore_deinit();
 
     /*
      * Free all resources allocated by mbufs.
@@ -616,6 +946,8 @@ deinit_all(void)
      * if all bases are closed.
      */
     api_deinit();  /* NOTICE: this waits until every api user has exited */
+
+    netdiag_end();
 }
 
 /*

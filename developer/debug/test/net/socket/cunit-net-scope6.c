@@ -228,8 +228,8 @@ void testSCOPE6_TCP_ACCEPT_ZONE(void)
     c = socket(AF_INET6, SOCK_STREAM, 0);
     CU_ASSERT_FATAL(c >= 0);
     sa6(&d, &linklocal, lp, ifindex);
-    CU_ASSERT_EQUAL(connect(c, (struct sockaddr *)&d, sizeof(d)), 0);
-    CU_ASSERT(sock_wait(l, 0, 2) > 0);
+    CU_ASSERT_EQUAL_FATAL(connect(c, (struct sockaddr *)&d, sizeof(d)), 0);
+    CU_ASSERT_FATAL(sock_wait(l, 0, 2) > 0);        /* else accept() waits for ever */
     n = accept(l, (struct sockaddr *)&a, &len);
     CU_ASSERT_FATAL(n >= 0);
     CU_ASSERT(memcmp(&a.sin6_addr, &linklocal, sizeof(linklocal)) == 0);
@@ -295,6 +295,10 @@ int main(int argc, char **argv)
     SocketBase = OpenLibrary("bsdsocket.library", 3);
     if (SocketBase == NULL) {
         printf("bsdsocket.library not available - skipping SCOPE6 tests\n");
+        return 0;
+    }
+    if (st_skip_program("cunit-net-scope6", ST_V6)) {
+        CloseLibrary(SocketBase);
         return 0;
     }
     ready = setup();

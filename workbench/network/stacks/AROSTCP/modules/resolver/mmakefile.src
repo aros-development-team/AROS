@@ -1,0 +1,42 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#
+# Copyright (C) 2026 The AROS Dev Team
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
+#
+#
+# resolver.atcp - the resolver (module "resolver"): the DNS
+# resolver and its cache, host look-ups by name and by address, and the one
+# getaddrinfo()/getnameinfo() of bsdsocket.library and miami.library. Loaded
+# by the stack on the first name look-up (bsdsocket/api/resolver_ops.h), or
+# at start with MODULES=RESOLVER. Needs no other module.
+#
+# Built from the stack's sources where they are, with the stack's own
+# include paths and options (stack.cfg), plus -DNETMODULE, the .conf file
+# every module library shares and the shared glue file. The file list is
+# $(STACK_RESOLVER_C) of bsdsocket/conf/group-resolver.cfg. While that file
+# builds the group into the stack program (STACK_RESOLVER_IN_CORE=yes), or
+# the program is monolithic, the library is built all the same and is not
+# used: a module that is part of the program is never also loaded.
+#
+include $(SRCDIR)/workbench/network/stacks/AROSTCP/bsdsocket/stack.cfg
+
+#MM- workbench-network-stacks-arostcp-modules : workbench-network-stacks-arostcp-modules-resolver
+#MM workbench-network-stacks-arostcp-modules-resolver : includes linklibs network-includes-copy
+
+USER_INCLUDES := $(STACK_INCLUDES)
+USER_CPPFLAGS := $(STACK_MODULE_CPPFLAGS)
+USER_CFLAGS   := $(STACK_CFLAGS)
+USER_LDFLAGS  := $(STACK_MODULE_LDFLAGS)
+
+%build_module_library mmake=workbench-network-stacks-arostcp-modules-resolver \
+    modname=resolver modtype=library modsuffix=$(STACK_MODULE_ATCP) \
+    conffile=$(STACK_MODULE_CONF) \
+    files="$(addprefix $(STACK_SRC_REL)/,$(STACK_RESOLVER_C) $(STACK_MODULE_GLUE))" \
+    moduledir=$(STACK_MODULE_DIR)
+
+%common

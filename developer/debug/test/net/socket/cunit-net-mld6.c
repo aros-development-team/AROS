@@ -192,6 +192,7 @@ void testMLD6_JOIN_LEAVE(void)
     int s;
     NEED_IF();
     s = mc_socket();
+    CU_ASSERT_FATAL(s >= 0);
     CU_ASSERT_EQUAL(mc_group(s, IPV6_JOIN_GROUP, "ff12::4d54:21"), 0);
     CU_ASSERT(mld_wait("ff12::4d54:21", EV_REPORT, 3));
     CU_ASSERT_EQUAL(mc_group(s, IPV6_LEAVE_GROUP, "ff12::4d54:21"), 0);
@@ -205,6 +206,7 @@ void testMLD6_CLOSE_LEAVES(void)
     int s;
     NEED_IF();
     s = mc_socket();
+    CU_ASSERT_FATAL(s >= 0);
     CU_ASSERT_EQUAL(mc_group(s, IPV6_JOIN_GROUP, "ff12::4d54:22"), 0);
     CU_ASSERT(mld_wait("ff12::4d54:22", EV_REPORT, 3));
     CloseSocket(s);
@@ -217,11 +219,13 @@ void testMLD6_REJOIN_AFTER_CLOSE(void)
     int s;
     NEED_IF();
     s = mc_socket();
+    CU_ASSERT_FATAL(s >= 0);
     mc_group(s, IPV6_JOIN_GROUP, "ff12::4d54:23");
     mld_wait("ff12::4d54:23", EV_REPORT, 3);
     CloseSocket(s);
     Delay(50);
     s = mc_socket();
+    CU_ASSERT_FATAL(s >= 0);
     CU_ASSERT_EQUAL(mc_group(s, IPV6_JOIN_GROUP, "ff12::4d54:23"), 0);
     CU_ASSERT(mld_wait("ff12::4d54:23", EV_REPORT, 3));
     mc_group(s, IPV6_LEAVE_GROUP, "ff12::4d54:23");
@@ -255,6 +259,10 @@ int main(int argc, char **argv)
     SocketBase = OpenLibrary("bsdsocket.library", 3);
     if (SocketBase == NULL) {
         printf("bsdsocket.library not available - skipping MLD6 tests\n");
+        return 0;
+    }
+    if (st_skip_program("cunit-net-mld6", ST_V6)) {
+        CloseLibrary(SocketBase);
         return 0;
     }
 

@@ -190,6 +190,7 @@ void testRAW6_ECHO_REQUEST_AND_REPLY(void)
     CU_ASSERT_EQUAL(recv_echo(s, ICMP6_ECHO_REQUEST, 1, 2, NULL), sizeof(struct icmp6_hdr));
     CloseSocket(s);
     s = icmp6_socket();
+    CU_ASSERT_FATAL(s >= 0);
     CU_ASSERT_EQUAL(send_echo(s, "::1", 0, 2), sizeof(struct icmp6_hdr));
     CU_ASSERT_EQUAL(recv_echo(s, ICMP6_ECHO_REPLY, 2, 2, NULL), sizeof(struct icmp6_hdr));
     CloseSocket(s);
@@ -438,6 +439,10 @@ int main(int argc, char **argv)
     SocketBase = OpenLibrary("bsdsocket.library", 3);
     if (SocketBase == NULL) {
         printf("bsdsocket.library not available - skipping RAW6 tests\n");
+        return 0;
+    }
+    if (st_skip_program("cunit-net-raw6", ST_V6)) {
+        CloseLibrary(SocketBase);
         return 0;
     }
     ready = setup();

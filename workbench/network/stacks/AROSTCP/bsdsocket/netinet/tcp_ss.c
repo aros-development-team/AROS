@@ -41,6 +41,7 @@
 #include <netinet/tcp_seq.h>
 #include <netinet/tcp_timer.h>
 #include <netinet/tcp_var.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 #define HS_MIN_RTT_THRESH       4       /* ms */
 #define HS_MAX_RTT_THRESH       16      /* ms */
@@ -55,6 +56,14 @@
 
 int tcp_abc_l = 1;
 int tcp_do_hystart = 1;
+
+/* TCP stops (tcp_deinit()): this file's variables as the file has them */
+void
+tcp_ss_defaults(void)
+{
+    tcp_abc_l = 1;
+    tcp_do_hystart = 1;
+}
 
 void
 tcp_hystart_init(struct tcpcb *tp)

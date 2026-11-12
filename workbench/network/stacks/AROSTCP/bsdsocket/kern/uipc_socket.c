@@ -173,6 +173,7 @@ int proto;
 #endif /* AMITCP */
         so->so_state = SS_PRIV; /* all sockets have the force  now */
     so->so_proto = prp;
+    prp->pr_domain->dom_refs++;     /* dropped in sofree() */
     error =
         (*prp->pr_usrreq)(so, PRU_ATTACH,
                           (struct mbuf *)0, (struct mbuf *)(long)proto, (struct mbuf *)0);
@@ -237,6 +238,7 @@ register struct socket *so;
     }
     sbrelease(&so->so_snd);
     sorflush(so);
+    so->so_proto->pr_domain->dom_refs--;
     FREE(so, M_SOCKET);
 }
 

@@ -218,6 +218,10 @@ extern struct nd6stat nd6stat;
 
 /* --- nd6.c: core neighbor cache and NUD --- */
 void nd6_init(void);
+/* IPv6 stops: the neighbour cache, the per-interface information, the variables */
+void nd6_deinit(void);
+void nd6_dad_flush(void);		/* nd6_nbr.c: no address is probed for */
+void nd6_rtr_flush(void);		/* nd6_rtr.c: routers, their routes, prefixes */
 void nd6_ifattach(struct ifnet *);
 void nd6_ifdetach(struct ifnet *);
 struct nd_ifinfo *nd6_ifinfo(struct ifnet *);

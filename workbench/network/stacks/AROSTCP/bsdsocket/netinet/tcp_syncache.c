@@ -36,20 +36,17 @@
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
-#include <netinet/ip6.h>
 #include <netinet/in_pcb.h>
+#include <netinet/inetfamily.h>
 
-/* netinet/in_pcb.c - stack internal, not part of the public in_pcb.h */
-void in_pcbsetv4mapped(struct inpcb *);
 #include <netinet/in_var.h>
 #include <netinet/ip_var.h>
-#include <netinet/in_cksum_protos.h>
+#include <stddef.h>		/* offsetof */
 #include <netinet/tcp.h>
 #include <netinet/tcp_fsm.h>
 #include <netinet/tcp_seq.h>
 #include <netinet/tcp_timer.h>
 #include <netinet/tcp_var.h>
-#include <netinet/tcpip.h>
 
 #include "tcp_compat.h"
 #include <netinet/tcp_cc.h>
@@ -57,11 +54,9 @@ void in_pcbsetv4mapped(struct inpcb *);
 
 #include <kern/amiga_includes.h>
 #include <kern/uipc_socket2_protos.h>
+#include <net/netcore_map.h>        /* always the last include */
 
-extern int tcp_v6mssdflt;
 extern int tcp_do_pmtud;
-int tcp_mssopt6(const struct ifnet *, const struct in6_addr *);
-extern int ip_defttl;			/* default TTL for TCP segments */
 
 /* Negotiated/observed options carried for a half-open connection. */
 #define SCF_WINSCALE	0x01		/* peer offered window scaling */
@@ -71,10 +66,9 @@ extern int ip_defttl;			/* default TTL for TCP segments */
 
 struct syncache {
     LIST_ENTRY(syncache) sc_hash;	/* hash bucket chain */
-    struct in_addr  sc_faddr;		/* peer (foreign) address (IPv4) */
-    struct in_addr  sc_laddr;		/* local address (IPv4) */
-    struct in6_addr sc_faddr6;		/* peer (foreign) address (IPv6) */
-    struct in6_addr sc_laddr6;		/* local address (IPv6) */
+    const struct inetfamily *sc_inf;	/* the family the SYN came in by */
+    union inp_addr  sc_fa;		/* peer (foreign) address, of that family; */
+    union inp_addr  sc_la;		/* local address (both zero behind it) */
     u_int16_t       sc_fport;		/* peer (foreign) port */
     u_int16_t       sc_lport;		/* local port */
     tcp_seq         sc_irs;		/* initial received seq (peer ISN) */
@@ -85,48 +79,41 @@ struct syncache {
     u_int16_t       sc_wnd;		/* our advertised window (16-bit field) */
     u_int8_t        sc_requested_s_scale; /* peer's window scale shift */
     u_int8_t        sc_request_r_scale;	/* our window scale shift */
-    u_int8_t        sc_ip_ttl;		/* TTL/hop-limit for our responses */
     u_int8_t        sc_flags;		/* SCF_* */
-    u_int8_t        sc_isipv6;		/* connection is IPv6 */
     u_int8_t        sc_rxmits;		/* SYN-ACK (re)transmit count */
     u_long          sc_rxttick;		/* tcp_now tick of next retransmit */
     struct socket  *sc_lso;		/* the listening socket (parent) */
 };
 
 /*
- * Family-neutral connection key extracted from an incoming segment.  For IPv4
- * the addresses come from the struct tcpiphdr overlay; for IPv6 they are the
- * separately carried src6/dst6 (the overlay then holds only the TCP header).
+ * The connection key of an incoming segment: the family it came in by, its
+ * addresses in that family's form (zero behind the family's address length,
+ * so that keys compare as bytes) and its ports.
  * "f" = foreign/peer (segment source), "l" = local (segment destination).
  */
 struct sc_key {
-    int             isipv6;
-    struct in_addr  faddr, laddr;	/* IPv4 */
-    struct in6_addr faddr6, laddr6;	/* IPv6 */
+    const struct inetfamily *inf;
+    union inp_addr  fa, la;
     u_int16_t       fport, lport;
 };
 
 static void
-syncache_key(struct sc_key *k, struct tcpiphdr *ti, int isipv6,
-    struct in6_addr *src6, struct in6_addr *dst6)
+syncache_key(struct sc_key *k, const struct inetfamily *inf,
+    const union inp_addr *src, const union inp_addr *dst, const tcp_ahdr_t *th)
 {
+    /* src and dst have the family's address length set and no more: the
+     * key is zero behind it */
     bzero((caddr_t)k, sizeof(*k));
-    k->isipv6 = isipv6;
-    k->fport  = ti->ti_sport;
-    k->lport  = ti->ti_dport;
-    if(isipv6) {
-        k->faddr6 = *src6;
-        k->laddr6 = *dst6;
-    } else {
-        k->faddr = ti->ti_src;
-        k->laddr = ti->ti_dst;
-    }
+    k->inf   = inf;
+    inpcb_addrcopy(&k->fa, src, inf->inf_addrlen);
+    inpcb_addrcopy(&k->la, dst, inf->inf_addrlen);
+    k->fport = th->th_sport;
+    k->lport = th->th_dport;
 }
 
-/* a key's family and addresses, for tcp_conn_hash() */
-#define SCK_HASHADDRS(k) (k)->isipv6, \
-        (k)->isipv6 ? (const void *)&(k)->laddr6 : (const void *)&(k)->laddr, \
-        (k)->isipv6 ? (const void *)&(k)->faddr6 : (const void *)&(k)->faddr
+/* a key's address length and addresses, for tcp_conn_hash() */
+#define SCK_HASHADDRS(k) (k)->inf->inf_addrlen, \
+        (const void *)&(k)->la, (const void *)&(k)->fa
 
 LIST_HEAD(sc_head, syncache);
 
@@ -135,8 +122,20 @@ struct syncache_bucket {
     int             sch_length;		/* number of entries in this bucket */
 };
 
-/* Tunables (compile-time). */
-#define SYNCACHE_HASHSIZE	512	/* number of buckets (power of two) */
+/*
+ * Tunables (compile-time).
+ *
+ * The table is made when the first socket listens (syncache_listen()), not
+ * when TCP starts: a machine that only connects out never pays for it. Its
+ * buckets are a power of two, one for each SYNCACHE_HASHPER bytes of free
+ * memory at that moment, between SYNCACHE_HASHMIN and SYNCACHE_HASHMAX: the
+ * whole 512 (4 KB on a 32-bit machine, 8 KB on a 64-bit one) from 8 MB
+ * free, 32 (256 bytes on a 32-bit machine) under 1 MB free. Fewer buckets hold fewer half-open
+ * connections (SYNCACHE_BUCKETLIMIT each); beyond that the cookies answer.
+ */
+#define SYNCACHE_HASHMIN	32	/* fewest buckets (power of two) */
+#define SYNCACHE_HASHMAX	512	/* most buckets (power of two) */
+#define SYNCACHE_HASHPER	(16 * 1024) /* bytes of free memory per bucket */
 #define SYNCACHE_BUCKETLIMIT	30	/* max entries per bucket */
 #define SYNCACHE_MAXREXMTS	3	/* SYN-ACK retransmits before giving up */
 /* base retransmit interval (slow ticks): the initial RTO, 1 s (RFC 6298
@@ -153,8 +152,7 @@ int tcp_syncookiesonly = 0;		/* force SYN cookies for every SYN */
 
 /*
  * Hash a connection 4-tuple to a bucket index using the keyed ISN hash, so an
- * attacker cannot deliberately overload a single bucket.  IPv6 addresses are
- * folded to 32 bits first.
+ * attacker cannot deliberately overload a single bucket.
  */
 static u_int32_t
 syncache_hashidx(struct sc_key *k)
@@ -178,21 +176,55 @@ syncache_cookiesonly(void)
     return (0);
 }
 
+/*
+ * TCP starts: no table yet - the first listen() makes it. Every entry
+ * point below returns at once while there is none.
+ */
 void
 syncache_init(void)
 {
-    u_int32_t i;
-
-    tcp_syncache_tbl = bsd_malloc(
-        (u_long)SYNCACHE_HASHSIZE * sizeof(struct syncache_bucket),
-        M_PCB, M_WAITOK);
-    tcp_syncache_hashmask = SYNCACHE_HASHSIZE - 1;
-    for (i = 0; i < SYNCACHE_HASHSIZE; i++) {
-        LIST_INIT(&tcp_syncache_tbl[i].sch_bucket);
-        tcp_syncache_tbl[i].sch_length = 0;
-    }
+    tcp_syncache_tbl = NULL;
+    tcp_syncache_hashmask = 0;
     tcp_syncache_count = 0;
     tcp_syncache_pause_until = 0;
+}
+
+/*
+ * A socket is to listen (PRU_LISTEN): make the table if there is none,
+ * sized by the memory free now (see SYNCACHE_HASHPER). If the pool cannot
+ * give that much, a half as large table is tried, down to the floor.
+ * 0, or ENOBUFS when not even the smallest table could be had - then the
+ * socket does not listen. The table stays until TCP stops
+ * (syncache_deinit()): listeners come and go, and freeing it with the last
+ * one would only make the next listen() allocate it again.
+ */
+int
+syncache_listen(void)
+{
+    struct syncache_bucket *tbl;
+    u_long n, want;
+    u_int32_t i;
+
+    if (tcp_syncache_tbl != NULL)
+        return (0);
+
+    want = (u_long)AvailMem(MEMF_ANY) / SYNCACHE_HASHPER;
+    for (n = SYNCACHE_HASHMIN; n < SYNCACHE_HASHMAX && n * 2 <= want; n <<= 1)
+        ;
+    while ((tbl = bsd_malloc(n * sizeof(struct syncache_bucket),
+                             M_PCB, M_NOWAIT)) == NULL) {
+        if (n <= SYNCACHE_HASHMIN)
+            return (ENOBUFS);
+        n >>= 1;
+    }
+    for (i = 0; i < n; i++) {
+        LIST_INIT(&tbl[i].sch_bucket);
+        tbl[i].sch_length = 0;
+    }
+    tcp_syncache_hashmask = n - 1;
+    tcp_syncache_count = 0;
+    tcp_syncache_tbl = tbl;
+    return (0);
 }
 
 static struct syncache *
@@ -201,19 +233,13 @@ syncache_lookup(struct syncache_bucket *sch, struct sc_key *k)
     struct syncache *sc;
 
     for (sc = sch->sch_bucket.lh_first; sc != NULL; sc = sc->sc_hash.le_next) {
-        if (sc->sc_isipv6 != (k->isipv6 != 0))
+        if (sc->sc_inf != k->inf)
             continue;
         if (sc->sc_fport != k->fport || sc->sc_lport != k->lport)
             continue;
-        if (k->isipv6) {
-            if (IN6_ARE_ADDR_EQUAL(&sc->sc_faddr6, &k->faddr6) &&
-                    IN6_ARE_ADDR_EQUAL(&sc->sc_laddr6, &k->laddr6))
-                return (sc);
-        } else {
-            if (sc->sc_faddr.s_addr == k->faddr.s_addr &&
-                    sc->sc_laddr.s_addr == k->laddr.s_addr)
-                return (sc);
-        }
+        if (bcmp((caddr_t)&sc->sc_fa, (caddr_t)&k->fa, sizeof(k->fa)) == 0 &&
+                bcmp((caddr_t)&sc->sc_la, (caddr_t)&k->la, sizeof(k->la)) == 0)
+            return (sc);
     }
     return (NULL);
 }
@@ -303,24 +329,22 @@ syncache_parse(u_char *optp, int optlen, u_int16_t tiflags,
 static int
 syncache_respond(struct syncache *sc)
 {
+    const struct inetfamily *inf = sc->sc_inf;
     struct mbuf *m;
-    struct tcpiphdr *ti;
+    tcp_ahdr_t *th;
     u_char opt[TCP_MAXOLEN];
     int optlen, tlen, win;
 
-    /* MSS option: the Ethernet default for IPv4; for IPv6, the MTU of the
-     * peer's link less the IPv6 and TCP headers (RFC 6691), as a SYN of ours
-     * would say (tcp_mssopt6()) */
+    /* MSS option: what the family's MTU towards the peer leaves behind its
+     * header and TCP's (RFC 6691). (IPv4 gives the MTU of its default MSS,
+     * whatever the route: inf_mtu.) */
     opt[0] = TCPOPT_MAXSEG;
     opt[1] = TCPOLEN_MAXSEG;
     {
         u_int16_t mss;
-#if INET6
-        if (sc->sc_isipv6)
-            mss = htons((u_int16_t)tcp_mssopt6(NULL, &sc->sc_faddr6));
-        else
-#endif
-            mss = htons((u_int16_t)tcp_mssdflt);
+
+        mss = htons((u_int16_t)((*inf->inf_mtu)(&sc->sc_fa, NULL) -
+                                inf->inf_hdrlen - sizeof(struct tcphdr)));
         bcopy(&mss, opt + 2, sizeof(mss));
     }
     optlen = TCPOLEN_MAXSEG;
@@ -348,69 +372,43 @@ syncache_respond(struct syncache *sc)
     m = m_gethdr(M_DONTWAIT, MT_HEADER);
     if (m == NULL)
         return (ENOBUFS);
-    if (max_linkhdr + sizeof(struct tcpiphdr) + optlen > MHLEN) {
+    if (max_linkhdr + inf->inf_hdrlen + sizeof(struct tcphdr) + optlen > MHLEN) {
         (void) m_free(m);
         return (ENOBUFS);
     }
-    m->m_data += max_linkhdr;
+    /* room in front for the family's header */
+    m->m_data += max_linkhdr + inf->inf_hdrlen;
 
-    tlen = sizeof(struct tcpiphdr) + optlen;
-    ti = mtod(m, struct tcpiphdr *);
-    bzero((caddr_t)ti, sizeof(struct tcpiphdr));
+    tlen = sizeof(struct tcphdr) + optlen;
+    th = mtod(m, tcp_ahdr_t *);
+    bzero((caddr_t)th, sizeof(struct tcphdr));
 
-    ti->ti_pr = IPPROTO_TCP;
-    ti->ti_src = sc->sc_laddr;
-    ti->ti_dst = sc->sc_faddr;
-    ti->ti_sport = sc->sc_lport;
-    ti->ti_dport = sc->sc_fport;
-    ti->ti_seq = htonl(sc->sc_iss);
-    ti->ti_ack = htonl(sc->sc_irs + 1);
-    ti->ti_off = (sizeof(struct tcphdr) + optlen) >> 2;
-    ti->ti_flags = TH_SYN | TH_ACK;
+    th->th_sport = sc->sc_lport;
+    th->th_dport = sc->sc_fport;
+    th->th_seq = htonl(sc->sc_iss);
+    th->th_ack = htonl(sc->sc_irs + 1);
+    th->th_off = (sizeof(struct tcphdr) + optlen) >> 2;
+    th->th_flags = TH_SYN | TH_ACK;
     if (sc->sc_flags & SCF_ECN)
-        ti->ti_flags |= TH_ECE;
+        th->th_flags |= TH_ECE;
     win = sc->sc_wnd;
-    ti->ti_win = htons((u_int16_t)win);
-    ti->ti_urp = 0;
+    th->th_win = htons((u_int16_t)win);
+    th->th_urp = 0;
 
     if (optlen)
-        bcopy(opt, (caddr_t)(ti + 1), optlen);
+        bcopy(opt, (caddr_t)(th + 1), optlen);
 
-    ti->ti_len = htons((u_int16_t)(sizeof(struct tcphdr) + optlen));
     m->m_len = tlen;
     m->m_pkthdr.len = tlen;
     m->m_pkthdr.rcvif = (struct ifnet *)0;
 
-#if INET6
-    if (sc->sc_isipv6) {
-        /*
-         * Slide off the IPv4 ipovly overlay so the mbuf starts at the TCP
-         * header, then build and send the IPv6 SYN-ACK.
-         */
-        int t6 = sizeof(struct tcphdr) + optlen;
-
-        m->m_data      += sizeof(struct ipovly);
-        m->m_len        = t6;
-        m->m_pkthdr.len = t6;
-        (void) tcp_v6output(m, &sc->sc_laddr6, &sc->sc_faddr6,
-                            sc->sc_ip_ttl, t6, 0, NULL);
-        return (0);
-    }
-#endif /* INET6 */
-
-    ti->ti_sum = 0;
-    ti->ti_sum = in_cksum(m, tlen);
-    ((struct ip *)ti)->ip_len = tlen;
-    ((struct ip *)ti)->ip_ttl = sc->sc_ip_ttl ? sc->sc_ip_ttl : ip_defttl;
-    if(tcp_do_pmtud)            /* path MTU discovery (RFC 1191) */
-        ((struct ip *)ti)->ip_off |= IP_DF;
-
-#ifdef ENABLE_MULTICAST
-    (void) ip_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
-                     (struct ip_moptions *)NULL);
-#else
-    (void) ip_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0);
-#endif
+    /*
+     * No socket yet: the family's default hop limit, no route kept. Path
+     * MTU discovery (RFC 1191) where the family has a DF bit.
+     */
+    (void) (*inf->inf_output)(m, (struct inpcb *)NULL, &sc->sc_la, &sc->sc_fa,
+                              IPPROTO_TCP, offsetof(struct tcphdr, th_sum), 0, 0,
+                              tcp_do_pmtud ? INF_OUT_DF : 0);
     return (0);
 }
 
@@ -420,30 +418,24 @@ syncache_respond(struct syncache *sc)
  */
 static void
 syncache_fill(struct syncache *sc, struct socket *lso, struct sc_key *k,
-    struct tcpiphdr *ti, u_int16_t peer_mss, u_int8_t flags, u_int8_t s_scale,
+    tcp_ahdr_t *th, u_int16_t peer_mss, u_int8_t flags, u_int8_t s_scale,
     u_int32_t ts)
 {
     long win;
     u_int8_t rscale = 0;
 
-    sc->sc_isipv6 = (k->isipv6 != 0);
-    if (k->isipv6) {
-        sc->sc_faddr6 = k->faddr6;
-        sc->sc_laddr6 = k->laddr6;
-    } else {
-        sc->sc_faddr = k->faddr;
-        sc->sc_laddr = k->laddr;
-    }
+    sc->sc_inf = k->inf;
+    sc->sc_fa = k->fa;
+    sc->sc_la = k->la;
     sc->sc_fport = k->fport;
     sc->sc_lport = k->lport;
     sc->sc_tsoff = tcp_conn_hash(tcp_ts_key, TCPH_TSOFF, SCK_HASHADDRS(k),
         k->lport, k->fport, 0);
-    sc->sc_irs = ti->ti_seq;
+    sc->sc_irs = th->th_seq;
     sc->sc_peer_mss = peer_mss;
     sc->sc_flags = flags;
     sc->sc_requested_s_scale = s_scale;
     sc->sc_ts_recent = ts;
-    sc->sc_ip_ttl = ip_defttl;
     sc->sc_lso = lso;
     sc->sc_rxmits = 0;
 
@@ -463,9 +455,9 @@ syncache_fill(struct syncache *sc, struct socket *lso, struct sc_key *k,
 }
 
 void
-syncache_add(struct socket *lso, struct tcpiphdr *ti,
-    u_char *optp, int optlen, struct mbuf *m,
-    int isipv6, struct in6_addr *src6, struct in6_addr *dst6)
+syncache_add(struct socket *lso, const struct inetfamily *inf,
+    const union inp_addr *src, const union inp_addr *dst, tcp_ahdr_t *th,
+    u_char *optp, int optlen, struct mbuf *m)
 {
     struct syncache_bucket *sch;
     struct syncache *sc;
@@ -475,21 +467,21 @@ syncache_add(struct socket *lso, struct tcpiphdr *ti,
     u_int32_t ts = 0;
     int s;
 
+    /* no table: nothing listens (a listener always made one) */
+    if (tcp_syncache_tbl == NULL)
+        return;
     /* RFC 1122 4.2.3.10: never answer a broadcast/multicast SYN. */
     if (m->m_flags & (M_BCAST | M_MCAST))
         return;
-    if (isipv6) {
-        if (IN6_IS_ADDR_MULTICAST(dst6))
-            return;
-    } else if (IN_MULTICAST(ntohl(ti->ti_dst.s_addr)))
+    if ((*inf->inf_addr_multicast)(dst))
         return;
 
-    syncache_key(&key, ti, isipv6, src6, dst6);
+    syncache_key(&key, inf, src, dst, th);
 
-    scflags = syncache_parse(optp, optlen, ti->ti_flags,
+    scflags = syncache_parse(optp, optlen, th->th_flags,
         &peer_mss, &s_scale, &ts);
     if (peer_mss == 0)                  /* RFC 9293 section 3.7.1 defaults */
-        peer_mss = isipv6 ? tcp_v6mssdflt : tcp_mssdflt;
+        peer_mss = *inf->inf_mssdflt;
 
     /* Honour the locally enabled feature set, as the legacy path does. */
     if (!tcp_do_rfc1323)
@@ -531,7 +523,7 @@ syncache_add(struct socket *lso, struct tcpiphdr *ti,
         /* Stateless: encode the connection in the SYN-ACK ISN. */
         struct syncache scs;
         bzero((caddr_t)&scs, sizeof(scs));
-        syncache_fill(&scs, lso, &key, ti, peer_mss, 0, 0, 0);
+        syncache_fill(&scs, lso, &key, th, peer_mss, 0, 0, 0);
         scs.sc_iss = tcp_syncookie_generate(SCK_HASHADDRS(&key),
             key.lport, key.fport, peer_mss);
         tcpstat.tcps_sc_sendcookie++;
@@ -546,7 +538,7 @@ syncache_add(struct socket *lso, struct tcpiphdr *ti,
         if (tcp_syncookies) {
             struct syncache scs;
             bzero((caddr_t)&scs, sizeof(scs));
-            syncache_fill(&scs, lso, &key, ti, peer_mss, 0, 0, 0);
+            syncache_fill(&scs, lso, &key, th, peer_mss, 0, 0, 0);
             scs.sc_iss = tcp_syncookie_generate(SCK_HASHADDRS(&key),
                 key.lport, key.fport, peer_mss);
             tcpstat.tcps_sc_sendcookie++;
@@ -557,7 +549,7 @@ syncache_add(struct socket *lso, struct tcpiphdr *ti,
     }
 
     bzero((caddr_t)sc, sizeof(*sc));
-    syncache_fill(sc, lso, &key, ti, peer_mss, scflags, s_scale, ts);
+    syncache_fill(sc, lso, &key, th, peer_mss, scflags, s_scale, ts);
     sc->sc_iss = (tcp_seq)tcp_iss + tcp_conn_hash(tcp_secret_key, TCPH_ISN,
         SCK_HASHADDRS(&key), key.lport, key.fport, 0);
     sc->sc_rxttick = tcp_now + 1 + SYNCACHE_RXTBASE;   /* a tick more: never early */
@@ -576,7 +568,7 @@ syncache_add(struct socket *lso, struct tcpiphdr *ti,
  * socket.  Returns the new socket, or NULL (and cleans up) on failure.
  */
 static struct socket *
-syncache_socket(struct syncache *sc, struct socket *lso, struct tcpiphdr *ti)
+syncache_socket(struct syncache *sc, struct socket *lso, tcp_ahdr_t *th)
 {
     struct inpcb *inp;
     struct socket *so;
@@ -588,60 +580,28 @@ syncache_socket(struct syncache *sc, struct socket *lso, struct tcpiphdr *ti)
         return (NULL);			/* accept backlog full */
 
     inp = (struct inpcb *)so->so_pcb;
-#if INET6
-    if (sc->sc_isipv6) {
-        /*
-         * Establish the IPv6 four-tuple directly.  IPv6 PCBs are located by a
-         * linear scan of the shared tcb list (in6_pcblookup), so unlike the
-         * IPv4 path there is no separate hash to rehash and no route to wire
-         * up here - tcp_output()/ip6_output() resolve the route lazily.
-         */
-        inp->inp_laddr6 = sc->sc_laddr6;
-        inp->inp_faddr6 = sc->sc_faddr6;
-        inp->inp_lport  = sc->sc_lport;
-        inp->inp_fport  = sc->sc_fport;
-    } else
-#endif
-    {
-        struct mbuf *am;
-        struct sockaddr_in *sin;
-        struct in_addr laddr;
-
-        inp->inp_laddr = sc->sc_laddr;
-        inp->inp_lport = sc->sc_lport;
-        in_pcbrehash(inp);
-
-        /* Wire up the foreign address and route, as the LISTEN path does. */
-        am = m_get(M_DONTWAIT, MT_SONAME);
-        if (am == NULL) {
-            (void) soabort(so);
-            return (NULL);
-        }
-        am->m_len = sizeof(struct sockaddr_in);
-        sin = mtod(am, struct sockaddr_in *);
-        sin->sin_family = AF_INET;
-        sin->sin_len = sizeof(*sin);
-        sin->sin_addr = sc->sc_faddr;
-        sin->sin_port = sc->sc_fport;
-        bzero((caddr_t)sin->sin_zero, sizeof(sin->sin_zero));
-        laddr = inp->inp_laddr;
-        if (inp->inp_laddr.s_addr == INADDR_ANY)
-            inp->inp_laddr = sc->sc_laddr;
-        if (in_pcbconnect(inp, am)) {
-            inp->inp_laddr = laddr;
-            (void) m_free(am);
-            (void) soabort(so);
-            return (NULL);
-        }
-        (void) m_free(am);
-#if INET6
-        /*
-         * An IPv4 connection accepted by a dual-stack AF_INET6 listener:
-         * describe it to the application as an IPv4-mapped address.
-         */
-        in_pcbsetv4mapped(inp);
-#endif
+    /*
+     * Give the PCB its addresses and ports. A connection of another
+     * family than the socket it was accepted by (an IPv4 connection on an
+     * IPv6 socket that listens for both) has a PCB of the connection's
+     * family; the socket's family describes it to the application. A peer
+     * without an address or a port is none - the PCB would read as not
+     * connected - and no second connection may have the same four: one
+     * can exist that the segment's look-up passed over (bound to another
+     * interface).
+     */
+    if ((inp->inp_family != sc->sc_inf &&
+         in_pcbsetfamily(inp, sc->sc_inf) != 0) ||
+        sc->sc_fport == 0 ||
+        inpcb_addrany(&sc->sc_fa, sc->sc_inf->inf_addrlen) ||
+        inpcb_lookup(&tcbinfo, sc->sc_inf, &sc->sc_fa, sc->sc_fport,
+                     &sc->sc_la, sc->sc_lport, (const struct ifnet *)NULL,
+                     INPLOOKUP_HASHED) != NULL) {
+        (void) soabort(so);
+        return (NULL);
     }
+    inpcb_setconn(inp, &sc->sc_la, sc->sc_lport, &sc->sc_fa, sc->sc_fport,
+                  (struct ifnet *)NULL);
 
     tp = intotcpcb(inp);
 
@@ -669,11 +629,11 @@ syncache_socket(struct syncache *sc, struct socket *lso, struct tcpiphdr *ti)
         tp->snd_scale = sc->sc_requested_s_scale;
         tp->rcv_scale = sc->sc_request_r_scale;
         tp->t_flags |= TF_RCVD_SCALE;	/* TF_REQ_SCALE already set */
-        tiwin = (u_long)ti->ti_win << sc->sc_requested_s_scale;
+        tiwin = (u_long)th->th_win << sc->sc_requested_s_scale;
     } else {
         tp->t_flags &= ~TF_REQ_SCALE;
         tp->snd_scale = tp->rcv_scale = 0;
-        tiwin = ti->ti_win;
+        tiwin = th->th_win;
     }
     if (sc->sc_flags & SCF_TIMESTAMP) {
         tp->t_flags |= TF_RCVD_TSTMP;
@@ -726,9 +686,9 @@ syncache_socket(struct syncache *sc, struct socket *lso, struct tcpiphdr *ti)
 }
 
 int
-syncache_expand(struct socket *lso, struct tcpiphdr *ti,
-    u_char *optp, int optlen, struct mbuf *m, struct socket **sop,
-    int isipv6, struct in6_addr *src6, struct in6_addr *dst6)
+syncache_expand(struct socket *lso, const struct inetfamily *inf,
+    const union inp_addr *src, const union inp_addr *dst, tcp_ahdr_t *th,
+    u_char *optp, int optlen, struct mbuf *m, struct socket **sop)
 {
     struct syncache_bucket *sch;
     struct syncache *sc;
@@ -736,7 +696,10 @@ syncache_expand(struct socket *lso, struct tcpiphdr *ti,
     struct sc_key key;
     int s;
 
-    syncache_key(&key, ti, isipv6, src6, dst6);
+    /* no table: nothing listens, the ACK completes nothing */
+    if (tcp_syncache_tbl == NULL)
+        return (0);
+    syncache_key(&key, inf, src, dst, th);
 
     s = splnet();
     sch = &tcp_syncache_tbl[syncache_hashidx(&key)];
@@ -748,18 +711,18 @@ syncache_expand(struct socket *lso, struct tcpiphdr *ti,
          * section 3.10.7.3 has it for SYN-RECEIVED - and be in sequence,
          * else it is dropped. The entry stays either way, for the right ACK.
          */
-        if (ti->ti_ack != sc->sc_iss + 1) {
+        if (th->th_ack != sc->sc_iss + 1) {
             splx(s);
             return (0);
         }
-        if (ti->ti_seq != sc->sc_irs + 1) {
+        if (th->th_seq != sc->sc_irs + 1) {
             splx(s);
             return (-1);
         }
         LIST_REMOVE(sc, sc_hash);
         sch->sch_length--;
         tcp_syncache_count--;
-        so = syncache_socket(sc, lso, ti);
+        so = syncache_socket(sc, lso, th);
         bsd_free((caddr_t)sc, M_PCB);
         if (so == NULL) {
             tcpstat.tcps_sc_aborted++;
@@ -780,25 +743,19 @@ syncache_expand(struct socket *lso, struct tcpiphdr *ti,
         u_int16_t mss;
 
         mss = tcp_syncookie_validate(SCK_HASHADDRS(&key),
-            key.lport, key.fport, ti->ti_ack);
+            key.lport, key.fport, th->th_ack);
         if (mss > 0) {
             struct syncache scs;
             bzero((caddr_t)&scs, sizeof(scs));
-            scs.sc_isipv6 = (isipv6 != 0);
-            if (isipv6) {
-                scs.sc_faddr6 = key.faddr6;
-                scs.sc_laddr6 = key.laddr6;
-            } else {
-                scs.sc_faddr = key.faddr;
-                scs.sc_laddr = key.laddr;
-            }
+            scs.sc_inf = key.inf;
+            scs.sc_fa = key.fa;
+            scs.sc_la = key.la;
             scs.sc_fport = key.fport;
             scs.sc_lport = key.lport;
-            scs.sc_irs = ti->ti_seq - 1;
-            scs.sc_iss = ti->ti_ack - 1;
+            scs.sc_irs = th->th_seq - 1;
+            scs.sc_iss = th->th_ack - 1;
             scs.sc_peer_mss = mss;
-            scs.sc_ip_ttl = ip_defttl;
-            so = syncache_socket(&scs, lso, ti);
+            so = syncache_socket(&scs, lso, th);
             if (so == NULL) {
                 splx(s);
                 return (-1);
@@ -817,21 +774,23 @@ syncache_expand(struct socket *lso, struct tcpiphdr *ti,
 }
 
 void
-syncache_chkrst(struct tcpiphdr *ti,
-    int isipv6, struct in6_addr *src6, struct in6_addr *dst6)
+syncache_chkrst(const struct inetfamily *inf, const union inp_addr *src,
+    const union inp_addr *dst, tcp_ahdr_t *th)
 {
     struct syncache_bucket *sch;
     struct syncache *sc;
     struct sc_key key;
     int s;
 
-    syncache_key(&key, ti, isipv6, src6, dst6);
+    if (tcp_syncache_tbl == NULL)       /* nothing listens */
+        return;
+    syncache_key(&key, inf, src, dst, th);
 
     s = splnet();
     sch = &tcp_syncache_tbl[syncache_hashidx(&key)];
     sc = syncache_lookup(sch, &key);
     /* Only honour a RST whose sequence is the one we expect next. */
-    if (sc != NULL && ti->ti_seq == sc->sc_irs + 1) {
+    if (sc != NULL && th->th_seq == sc->sc_irs + 1) {
         tcpstat.tcps_sc_reset++;
         syncache_drop(sc, sch);
     }
@@ -868,6 +827,56 @@ syncache_timer(void)
             (void) syncache_respond(sc);
         }
     }
+    splx(s);
+}
+
+/*
+ * syncache_flush - the half-open connections that came in by family inf
+ * are forgotten; inf NULL: all of them. An entry keeps the pointer to its
+ * family (sc_inf) and calls through it when its SYN-ACK is sent again, so
+ * none of a family's may be left when the family leaves the transports
+ * (inetfamily_unregister()); the peers get no answer and try again.
+ */
+void
+syncache_flush(const struct inetfamily *inf)
+{
+    struct syncache_bucket *sch;
+    struct syncache *sc, *nxt;
+    u_int32_t i;
+    int s;
+
+    if (tcp_syncache_tbl == NULL || tcp_syncache_count == 0)
+        return;
+
+    s = splnet();
+    for (i = 0; i <= tcp_syncache_hashmask; i++) {
+        sch = &tcp_syncache_tbl[i];
+        for (sc = sch->sch_bucket.lh_first; sc != NULL; sc = nxt) {
+            nxt = sc->sc_hash.le_next;
+            if (inf == NULL || sc->sc_inf == inf)
+                syncache_drop(sc, sch);
+        }
+    }
+    splx(s);
+}
+
+/*
+ * syncache_deinit - TCP stops: every entry and the table go back to the
+ * pool, and the cache's variables are as the file has them.
+ */
+void
+syncache_deinit(void)
+{
+    int s = splnet();
+
+    syncache_flush(NULL);
+    if (tcp_syncache_tbl != NULL)
+        bsd_free((caddr_t)tcp_syncache_tbl, M_PCB);
+    tcp_syncache_tbl = NULL;
+    tcp_syncache_hashmask = 0;
+    tcp_syncache_count = 0;
+    tcp_syncache_pause_until = 0;
+    tcp_syncookiesonly = 0;
     splx(s);
 }
 

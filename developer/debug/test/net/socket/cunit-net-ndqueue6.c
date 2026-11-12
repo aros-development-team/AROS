@@ -316,6 +316,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library not available - skipping NDQUEUE6 tests\n");
         return 0;
     }
+    if (st_skip_program("cunit-net-ndqueue6", ST_V6)) {
+        CloseLibrary(SocketBase);
+        return 0;
+    }
     have_if = setup();
     have_peer = have_if && find_peer();
     if (!have_if)

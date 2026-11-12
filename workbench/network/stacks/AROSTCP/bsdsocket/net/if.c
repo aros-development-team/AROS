@@ -73,6 +73,7 @@
 #include <sys/synch.h>
 
 #include <net/if.h>
+#include <net/netmodule.h>
 #include <net/if_dl.h>
 #include <netinet/in.h> /* for findid */
 #if INET6
@@ -107,10 +108,8 @@ void in_ifdetach(struct ifnet *ifp);    /* netinet/in.c */
 #endif
 #if INET6
 void in6_ifdetach(struct ifnet *ifp);   /* netinet6/in6.c */
-void rip6_ifgone(struct ifnet *ifp);    /* netinet6/raw_ip6.c */
 #endif
 void tcp_ifgone(struct ifnet *ifp);     /* netinet/tcp_subr.c */
-extern struct inpcbhead udb;            /* netinet/udp_usrreq.c */
 #include <net/rtsock_protos.h>
 
 static char *sprint_d(u_int n, char *buf, int buflen);
@@ -272,20 +271,45 @@ struct ifnet *ifp;
     }
     ifp->if_addrlist = 0;
 
-#ifdef ENABLE_MULTICAST
-    /* no group membership may go on naming this interface */
-    in_ifdetach(ifp);
-#endif
-#if INET6
-    in6_ifdetach(ifp);
-#endif
-    /* and no socket may go on naming it */
-    in_pcbifgone(&udb, ifp);
-    tcp_ifgone(ifp);
-#if INET6
-    rip6_ifgone(ifp);
-#endif
+    /* no group membership and no socket may go on naming this interface:
+     * each family, then the transports, see to their own */
+    (void)netfamily_if_event(NFE_DETACHED, ifp);
 
+    splx(s);
+}
+
+/*
+ * if_remove - take an interface that is not a SANA-II device's (a tunnel,
+ * a module's pseudo-interface) out of the running stack: what the reload
+ * does for a SANA-II interface that left the configuration
+ * (sana_remove_unseen(), kern/netconfig_iface.c), without the device. Every family
+ * is told in the order of the events (net/netmodule.h): it is going
+ * (NFE_REMOVING), give up what must go before the routes
+ * (NFE_UNCONFIGURE_PRE); then every route through it is deleted; then the
+ * families remove their addresses (NFE_UNCONFIGURE), it is marked down,
+ * they drop their per-interface state (NFE_DETACHING), and if_detach()
+ * unlinks it, frees its link-level address and has every family and the
+ * transports forget it (NFE_DETACHED).
+ *
+ * After it nothing in the core or in a family names the interface, and
+ * the caller - who made it with if_attach() - frees its structure. With
+ * the stack fenced, in the stack's task.
+ */
+void
+if_remove(struct ifnet *ifp)
+{
+    extern void ifnet_clear_dns(struct ifnet *ifp);     /* kern/amiga_netdb.c */
+    spl_t s = splimp();
+
+    ifnet_clear_dns(ifp);
+    (void)netfamily_if_event(NFE_REMOVING, ifp);
+    (void)netfamily_if_event(NFE_UNCONFIGURE_PRE, ifp);
+    rt_purgeif(ifp, AF_UNSPEC);
+    (void)netfamily_if_event(NFE_UNCONFIGURE, ifp);
+    ifp->if_flags &= ~IFF_UP;
+    if_qflush(&ifp->if_snd);
+    (void)netfamily_if_event(NFE_DETACHING, ifp);
+    if_detach(ifp);
     splx(s);
 }
 
@@ -614,7 +638,6 @@ caddr_t data;
 #ifndef AMITCP
     int error;
 #endif
-    extern int arpioctl(int cmd, caddr_t data);
 
     switch(cmd) {
 
@@ -622,10 +645,8 @@ caddr_t data;
         return (ifconf(cmd, data));
 
 #if INET6
-    case SIOCGLIFADDR: {
-        int in6_ifconf(int, caddr_t);
-        return (in6_ifconf(cmd, data));
-    }
+    case SIOCGLIFADDR:
+        return (netfamily_control(AF_INET6, so, cmd, data, NULL));
 #endif
 
 #ifdef COMPAT_AMITCP2
@@ -644,7 +665,8 @@ caddr_t data;
     case SIOCGARPT:
 #endif /* AMITCP */
     case SIOCGARP:
-        return (arpioctl(cmd, data));
+        /* the ARP table is IPv4's; no IPv4 in the running stack, no table */
+        return (netfamily_control(AF_INET, so, cmd, data, NULL));
 #endif
     }
 
@@ -773,9 +795,8 @@ caddr_t data;
             if(!was_up && (ifp->if_flags & IFF_UP) &&
                     (ifp->if_flags & IFF_DRV_RUNNING) &&
                     !(ifp->if_flags & IFF_LOOPBACK)) {
-                void in6_if_up(struct ifnet *);
-                D(bug("[AROSTCP:IF] %s: SIOCSIFFLAGS calling in6_if_up\n", __func__));
-                in6_if_up(ifp);
+                D(bug("[AROSTCP:IF] %s: SIOCSIFFLAGS raising NFE_UP\n", __func__));
+                (void)netfamily_if_event(NFE_UP, ifp);
             }
 #endif
         }
@@ -796,10 +817,8 @@ caddr_t data;
     case SIOCDIFADDR_IN6:
     case SIOCGIFADDR_IN6:
     case SIOCGIFDSTADDR_IN6:
-    case SIOCGIFNETMASK_IN6: {
-        int in6_control(struct socket *, int, caddr_t, struct ifnet *);
-        return (in6_control(so, cmd, data, ifp));
-    }
+    case SIOCGIFNETMASK_IN6:
+        return (netfamily_control(AF_INET6, so, cmd, data, ifp));
 #endif /* INET6 */
 
     default:
@@ -960,4 +979,31 @@ int buflen;
         n /= 10;
     } while(n != 0);
     return (cp);
+}
+
+/*
+ * The name an interface goes by, "<name><unit>" ("eth0"), into buf as
+ * snprintf(buf, buflen, "%s%d", ...) would write it: cut to fit, always
+ * terminated. Returns the length of what is in buf.
+ *
+ * One copy, here, for every part of the stack: a module in a library file
+ * of its own that formats the name with snprintf() carries the C library's
+ * whole formatting code for it (about 6 KB on m68k).
+ */
+int
+if_fullname(const struct ifnet *ifp, char *buf, int buflen)
+{
+    char workbuf[12];
+    const char *cp;
+    int n = 0;
+
+    if(buflen <= 0)
+        return 0;
+    for(cp = ifp->if_name; cp && *cp && n < buflen - 1; cp++)
+        buf[n++] = *cp;
+    for(cp = sprint_d((u_int)ifp->if_unit, workbuf, sizeof(workbuf));
+            *cp && n < buflen - 1; cp++)
+        buf[n++] = *cp;
+    buf[n] = '\0';
+    return n;
 }

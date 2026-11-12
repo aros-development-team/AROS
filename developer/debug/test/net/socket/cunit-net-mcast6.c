@@ -171,7 +171,7 @@ void testMCAST6_MEMBER_RECEIVES(void)
     NEED_IF();
     r = listener();
     s = sender(1);
-    CU_ASSERT(r >= 0 && s >= 0);
+    CU_ASSERT_FATAL(r >= 0 && s >= 0);
     CU_ASSERT_EQUAL(join(r, "ff12::4d54:31"), 0);
     CU_ASSERT(send_group(s, "ff12::4d54:31", "member") > 0);
     CU_ASSERT(got(r, "member", 2));
@@ -187,7 +187,7 @@ void testMCAST6_EVERY_SOCKET(void)
     a = listener();
     b = listener();
     s = sender(1);
-    CU_ASSERT(a >= 0 && b >= 0 && s >= 0);
+    CU_ASSERT_FATAL(a >= 0 && b >= 0 && s >= 0);
     CU_ASSERT_EQUAL(join(a, "ff12::4d54:32"), 0);
     CU_ASSERT_EQUAL(join(b, "ff12::4d54:32"), 0);
     CU_ASSERT(send_group(s, "ff12::4d54:32", "both") > 0);
@@ -207,7 +207,7 @@ void testMCAST6_PORT_WITHOUT_MEMBERSHIP(void)
     member = listener();
     plain = listener();
     s = sender(1);
-    CU_ASSERT(member >= 0 && plain >= 0 && s >= 0);
+    CU_ASSERT_FATAL(member >= 0 && plain >= 0 && s >= 0);
     CU_ASSERT_EQUAL(join(member, "ff12::4d54:33"), 0);
     CU_ASSERT(send_group(s, "ff12::4d54:33", "port") > 0);
     CU_ASSERT(got(plain, "port", 2));
@@ -223,7 +223,7 @@ void testMCAST6_LOOP_OFF(void)
     NEED_IF();
     r = listener();
     s = sender(0);
-    CU_ASSERT(r >= 0 && s >= 0);
+    CU_ASSERT_FATAL(r >= 0 && s >= 0);
     CU_ASSERT_EQUAL(join(r, "ff12::4d54:34"), 0);
     CU_ASSERT(send_group(s, "ff12::4d54:34", "noloop") > 0);
     CU_ASSERT_FALSE(got(r, "noloop", 1));
@@ -238,7 +238,7 @@ void testMCAST6_NOT_A_MEMBER(void)
     NEED_IF();
     r = listener();
     s = sender(1);
-    CU_ASSERT(r >= 0 && s >= 0);
+    CU_ASSERT_FATAL(r >= 0 && s >= 0);
     CU_ASSERT(send_group(s, "ff12::4d54:35", "nobody") > 0);
     CU_ASSERT_FALSE(got(r, "nobody", 1));
     CloseSocket(s);
@@ -253,7 +253,7 @@ void testMCAST6_HOPS(void)
     NEED_IF();
     r = listener();
     s = sender(1);
-    CU_ASSERT(r >= 0 && s >= 0);
+    CU_ASSERT_FATAL(r >= 0 && s >= 0);
     CU_ASSERT_EQUAL(join(r, "ff12::4d54:36"), 0);
     CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IPV6, IPV6_RECVHOPLIMIT,
                               &on, sizeof(on)), 0);
@@ -276,6 +276,10 @@ int main(int argc, char **argv)
     SocketBase = OpenLibrary("bsdsocket.library", 3);
     if (SocketBase == NULL) {
         printf("bsdsocket.library not available - skipping MCAST6 tests\n");
+        return 0;
+    }
+    if (st_skip_program("cunit-net-mcast6", ST_V6)) {
+        CloseLibrary(SocketBase);
         return 0;
     }
 

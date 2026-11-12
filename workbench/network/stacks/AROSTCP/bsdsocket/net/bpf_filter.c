@@ -30,6 +30,8 @@
 #include <sys/types.h>
 #include "bpf.h"
 
+#include <net/netcore_map.h>        /* always the last include */
+
 #define EXTRACT_SHORT(p) \
 	((u_int16_t) \
 	 ((u_int16_t)*((const u_char *)(p) + 0) << 8 | \

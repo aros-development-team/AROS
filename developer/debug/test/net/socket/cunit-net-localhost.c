@@ -8,6 +8,12 @@
     AF_UNSPEC, one each for AF_INET and AF_INET6) and 127.0.0.1 from
     gethostbyname() and gethostbyname_r(). Address literals are still
     taken as they are. Usage:  cunit-net-localhost
+
+    getaddrinfo() offers the addresses of the families the running stack
+    has, and no others: on a stack with one family (PROTOCOLS=INET or
+    PROTOCOLS=INET6) AF_UNSPEC gives that family's loopback address alone,
+    and a request for the family that is left out fails. With both
+    families the assertions are what they always were.
 */
 
 #define __CONFIG_ROADSHOW__     /* getaddrinfo() */
@@ -57,25 +63,34 @@ int clean_suite(void)
     return 0;
 }
 
-/* AF_UNSPEC: the two loopback addresses, and nothing else. */
+/* AF_UNSPEC: the loopback address of each family the stack runs (the two
+ * of them on a stack with both), and nothing else. */
 void testLOCALHOST_UNSPEC(void)
 {
+    int have4 = st_have_family(AF_INET), have6 = st_have_family(AF_INET6);
     int n4, n6;
 
-    CU_ASSERT_EQUAL(lookup("localhost", AF_UNSPEC, &n4, &n6), 2);
-    CU_ASSERT_EQUAL(n4, 1);
-    CU_ASSERT_EQUAL(n6, 1);
+    CU_ASSERT_EQUAL(lookup("localhost", AF_UNSPEC, &n4, &n6), have4 + have6);
+    CU_ASSERT_EQUAL(n4, have4);
+    CU_ASSERT_EQUAL(n6, have6);
 }
 
-/* One family: its loopback address only. */
+/* One family: its loopback address only - and no answer at all for a
+ * family the stack does not run. */
 void testLOCALHOST_FAMILY(void)
 {
     int n4, n6;
 
-    CU_ASSERT_EQUAL(lookup("localhost", AF_INET, &n4, &n6), 1);
-    CU_ASSERT_EQUAL(n4, 1);
-    CU_ASSERT_EQUAL(lookup("localhost", AF_INET6, &n4, &n6), 1);
-    CU_ASSERT_EQUAL(n6, 1);
+    if (st_have_family(AF_INET)) {
+        CU_ASSERT_EQUAL(lookup("localhost", AF_INET, &n4, &n6), 1);
+        CU_ASSERT_EQUAL(n4, 1);
+    } else
+        CU_ASSERT_EQUAL(lookup("localhost", AF_INET, &n4, &n6), -1);
+    if (st_have_family(AF_INET6)) {
+        CU_ASSERT_EQUAL(lookup("localhost", AF_INET6, &n4, &n6), 1);
+        CU_ASSERT_EQUAL(n6, 1);
+    } else
+        CU_ASSERT_EQUAL(lookup("localhost", AF_INET6, &n4, &n6), -1);
 }
 
 /* Any case, the final dot, and names within .localhost. */
@@ -83,12 +98,13 @@ void testLOCALHOST_NAMES(void)
 {
     static const char *names[] = { "LocalHost", "localhost.", "app.localhost",
                                    "a.b.LOCALHOST." };
+    int have4 = st_have_family(AF_INET), have6 = st_have_family(AF_INET6);
     int i, n4, n6;
 
     for (i = 0; i < 4; i++) {
-        CU_ASSERT_EQUAL(lookup(names[i], AF_UNSPEC, &n4, &n6), 2);
-        CU_ASSERT_EQUAL(n4, 1);
-        CU_ASSERT_EQUAL(n6, 1);
+        CU_ASSERT_EQUAL(lookup(names[i], AF_UNSPEC, &n4, &n6), have4 + have6);
+        CU_ASSERT_EQUAL(n4, have4);
+        CU_ASSERT_EQUAL(n6, have6);
     }
 }
 
@@ -136,6 +152,12 @@ void testLOCALHOST_LITERALS(void)
     bzero(&hints, sizeof(hints));
     hints.ai_family = AF_INET6;
     hints.ai_socktype = SOCK_DGRAM;
+    if (!st_have_family(AF_INET6)) {
+        /* a literal of a family the stack does not run is no address here */
+        CU_ASSERT_NOT_EQUAL(getaddrinfo("2001:db8::7", NULL, &hints, &res), 0);
+        CU_ASSERT_PTR_NULL(res);
+        return;
+    }
     CU_ASSERT_EQUAL_FATAL(getaddrinfo("2001:db8::7", NULL, &hints, &res), 0);
     inet_pton(AF_INET6, "2001:db8::7", &a6);
     CU_ASSERT(IN6_ARE_ADDR_EQUAL(&((struct sockaddr_in6 *)res->ai_addr)->sin6_addr, &a6));

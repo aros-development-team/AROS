@@ -324,6 +324,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library not available - skipping PREFIX6IF tests\n");
         return 0;
     }
+    if (st_skip_program("cunit-net-prefix6if", ST_V6)) {
+        CloseLibrary(SocketBase);
+        return 0;
+    }
     ready = 1;
     for (i = 0; i < 2; i++)
         if (index_of(ifname[i], &ifindex[i]) != 0 || !get_linklocal(i, &linklocal[i]))

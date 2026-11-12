@@ -63,6 +63,7 @@
 #include <netinet/in.h>
 #include <netinet/in_pcb.h>
 #include <net/raw_cb.h>
+#include <net/netmodule.h>	/* netvar_find() */
 
 #if 0
 /*#if sizeof (fd_mask) != 4 || sizeof (long) != 4*/
@@ -582,8 +583,15 @@ AROS_LH0I(LONG, Null, struct Library *, libPtr, 0, LIB)
  */
 static void forgetSocketOwner(struct SocketBase *libPtr)
 {
-    extern struct inpcbhead tcb, udb;
+    /*
+     * The transports' PCB lists, by the names their transports registered
+     * them under (net/netmodule.h): the core names no transport's
+     * variable, and a list that is not registered - the transports are not
+     * part of the running stack - has no socket to look at.
+     */
+    static const char *const pcblists[] = { "tcb", "udb" };
     extern struct rawcb rawcb;
+    const struct netvar *nv;
     struct inpcb *inp;
     struct rawcb *rp;
     struct Node *n;
@@ -592,12 +600,15 @@ static void forgetSocketOwner(struct SocketBase *libPtr)
 
     s = splnet();
     /* Sockets with a pcb, those not accepted yet included */
-    for(inp = tcb.lh_first; inp; inp = inp->inp_list.le_next)
-        if(inp->inp_socket && inp->inp_socket->so_pgid == libPtr)
-            inp->inp_socket->so_pgid = NULL;
-    for(inp = udb.lh_first; inp; inp = inp->inp_list.le_next)
-        if(inp->inp_socket && inp->inp_socket->so_pgid == libPtr)
-            inp->inp_socket->so_pgid = NULL;
+    for(i = 0; i < (int)(sizeof(pcblists) / sizeof(pcblists[0])); i++) {
+        if((nv = netvar_find(pcblists[i])) == NULL ||
+                nv->nv_size != sizeof(struct inpcbhead))
+            continue;
+        for(inp = ((struct inpcbhead *)nv->nv_addr)->lh_first; inp;
+                inp = inp->inp_list.le_next)
+            if(inp->inp_socket && inp->inp_socket->so_pgid == libPtr)
+                inp->inp_socket->so_pgid = NULL;
+    }
     for(rp = rawcb.rcb_next; rp && rp != &rawcb; rp = rp->rcb_next)
         if(rp->rcb_socket && rp->rcb_socket->so_pgid == libPtr)
             rp->rcb_socket->so_pgid = NULL;

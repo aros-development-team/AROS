@@ -37,10 +37,7 @@
  */
 
 /*
- * conf.h is an aggregating wrapper: it defines INET6 (via conf/conf.h) and
- * then pulls in <netinet/in_pcb.h> with the IPv6 members of struct inpcb
- * (inp_laddr6, inp_faddr6, in6p_*) enabled - exactly what the dual-stack
- * output path below needs.  It also transitively includes
+ * conf.h is an aggregating wrapper that transitively includes
  * <netinet/tcp_fsm.h>, so TCPOUTFLAGS must be defined here, before conf.h,
  * for tcp_outflags[] to be declared at that first inclusion.
  */
@@ -62,26 +59,21 @@
 
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
-#include <netinet/ip.h>
-#include <netinet/ip6.h>
+#include <netinet/ip.h>		/* IPTOS_ECN_xxx */
 #include <netinet/in_pcb.h>
-#include <netinet/ip_var.h>
+#include <netinet/inetfamily.h>
+#include <stddef.h>		/* offsetof */
 #include <netinet/tcp.h>
 #include <netinet/tcp_fsm.h>
 #include <netinet/tcp_seq.h>
 #include <netinet/tcp_timer.h>
 #include <netinet/tcp_var.h>
-#include <netinet/tcpip.h>
-#ifdef TCPDEBUG
-#include <netinet/tcp_debug.h>
-#endif
 
 #include <netinet/tcp_cc.h>
-#include <netinet/in_cksum_protos.h>
 #include "tcp_compat.h"
+#include <net/netcore_map.h>        /* always the last include */
 
 extern int tcp_do_pmtud;
-void tcp_mtudisc(struct tcpcb *, u_int32_t);
 
 #ifdef notyet
 extern struct mbuf *m_copypack();
@@ -99,14 +91,17 @@ register struct tcpcb *tp;
     register long len, win;
     int off, flags, error;
     register struct mbuf *m;
-    register struct tcpiphdr *ti;
+    register tcp_ahdr_t *th;
+    struct inpcb *inp = tp->t_inpcb;
+    const struct inetfamily *inf = inp->inp_family;
     u_char opt[TCP_MAXOLEN];
-    unsigned optlen, hdrlen;
+    unsigned optlen, hdrlen;	/* TCP options; TCP header with them */
+    unsigned nethdr = max_linkhdr + inf->inf_hdrlen; /* room kept in front */
+    int oflags = 0;		/* INF_OUT_xxx */
     int idle, sendalot;
     int ecn_ect = 0;		/* set IP ECT(0) on this segment? */
     struct rmxp_tao *taop;
     struct rmxp_tao tao_noncached;
-    int isipv6 = tcp_isipv6(tp->t_inpcb);
 
     D(bug("[AROSTCP:TCP] %s: tp=0x%p state=%d flags=0x%x snd_una=%lu snd_nxt=%lu snd_max=%lu\n",
           __func__, tp, tp->t_state, tp->t_flags,
@@ -349,10 +344,10 @@ send:
      * NOTE: we assume that the IP/TCP header plus TCP options
      * always fit in a single mbuf, leaving room for a maximum
      * link header, i.e.
-     *	max_linkhdr + sizeof (struct tcpiphdr) + optlen <= MHLEN
+     *	max_linkhdr + network header + sizeof (struct tcphdr) + optlen <= MHLEN
      */
     optlen = 0;
-    hdrlen = sizeof(struct tcpiphdr);
+    hdrlen = sizeof(struct tcphdr);
     if(flags & TH_SYN) {
         tp->snd_nxt = tp->iss;
         if((tp->t_flags & TF_NOOPT) == 0) {
@@ -561,7 +556,7 @@ skip_sack:
     }
 
     /*#ifdef DIAGNOSTIC*/
-    if(max_linkhdr + hdrlen > MHLEN)
+    if(nethdr + hdrlen > MHLEN)
         panic("tcphdr too big");
     /*#endif*/
 
@@ -597,9 +592,9 @@ skip_sack:
             error = ENOBUFS;
             goto out;
         }
-        m->m_data += max_linkhdr;
+        m->m_data += nethdr;
         m->m_len = hdrlen;
-        if(len <= MHLEN - hdrlen - max_linkhdr) {
+        if(len <= MHLEN - hdrlen - nethdr) {
             m_copydata(so->so_snd.sb_mb, off, (int) len,
                        mtod(m, caddr_t) + hdrlen);
             m->m_len += len;
@@ -632,14 +627,15 @@ skip_sack:
             error = ENOBUFS;
             goto out;
         }
-        m->m_data += max_linkhdr;
+        m->m_data += nethdr;
         m->m_len = hdrlen;
     }
     m->m_pkthdr.rcvif = (struct ifnet *)0;
-    ti = mtod(m, struct tcpiphdr *);
+    th = mtod(m, tcp_ahdr_t *);
     if(tp->t_template == 0)
         panic("tcp_output");
-    (void)memcpy(ti, tp->t_template, sizeof(struct tcpiphdr));
+    /* (the template is at the start of an mbuf of its own: aligned too) */
+    *th = *(const tcp_ahdr_t *)tp->t_template;
 
     /*
      * Fill in fields, remembering maximum advertised
@@ -656,22 +652,22 @@ skip_sack:
      * retransmitted packet, we want the sequence number
      * of the next unsent octet.  So, if there is no data
      * (and no SYN or FIN), use snd_max instead of snd_nxt
-     * when filling in ti_seq.  But if we are in persist
+     * when filling in th_seq.  But if we are in persist
      * state, snd_max might reflect one byte beyond the
      * right edge of the window, so use snd_nxt in that
      * case, since we know we aren't doing a retransmission.
      * (retransmit and persist are mutually exclusive...)
      */
     if(len || (flags & (TH_SYN | TH_FIN)) || tp->t_timer[TCPT_PERSIST])
-        ti->ti_seq = htonl(tp->snd_nxt);
+        th->th_seq = htonl(tp->snd_nxt);
     else
-        ti->ti_seq = htonl(tp->snd_max);
-    ti->ti_ack = htonl(tp->rcv_nxt);
+        th->th_seq = htonl(tp->snd_max);
+    th->th_ack = htonl(tp->rcv_nxt);
     if(optlen) {
-        (void)memcpy(ti + 1, opt, optlen);
-        ti->ti_off = (sizeof(struct tcphdr) + optlen) >> 2;
+        (void)memcpy(th + 1, opt, optlen);
+        th->th_off = (sizeof(struct tcphdr) + optlen) >> 2;
     }
-    ti->ti_flags = flags;
+    th->th_flags = flags;
 
     /*
      * ECN (RFC 3168): Set ECN-related TCP flags and IP codepoint.
@@ -684,11 +680,11 @@ skip_sack:
     if(tp->t_flagsext & TF_ECN_PERMIT) {
         /* a SYN-ACK resent from SYN-RECEIVED agrees again (FreeBSD) */
         if((flags & (TH_SYN | TH_ACK)) == (TH_SYN | TH_ACK))
-            ti->ti_flags |= TH_ECE;
+            th->th_flags |= TH_ECE;
         /* CWR goes on the first new data after the reduction (6.1.2) */
         if((tp->t_flagsext & TF_ECN_SND_CWR) && len > 0 &&
                 SEQ_GEQ(tp->snd_nxt, tp->snd_max)) {
-            ti->ti_flags |= TH_CWR;
+            th->th_flags |= TH_CWR;
             tp->t_flagsext &= ~TF_ECN_SND_CWR;
             tcpstat.tcps_ecn_cwr++;
         }
@@ -698,7 +694,7 @@ skip_sack:
              * tcp_input() only once the peer acknowledges the signal
              * by setting CWR (RFC 3168).
              */
-            ti->ti_flags |= TH_ECE;
+            th->th_flags |= TH_ECE;
             tcpstat.tcps_ecn_ece++;
         }
     } else if((flags & (TH_SYN | TH_ACK)) == TH_SYN) {
@@ -710,7 +706,7 @@ skip_sack:
          * a passive open comes from the syncache.
          */
         if(tcp_do_ecn == 1 && tp->t_rxtshift <= 1) {
-            ti->ti_flags |= TH_ECE | TH_CWR;
+            th->th_flags |= TH_ECE | TH_CWR;
             tp->t_flagsext |= TF_ECN_SYN;
         } else
             tp->t_flagsext &= ~TF_ECN_SYN;
@@ -727,10 +723,10 @@ skip_sack:
      * never carries more than it can hold (else only its low 16 bits) */
     if(win > (long)TCP_MAXWIN << tp->rcv_scale)
         win = (long)TCP_MAXWIN << tp->rcv_scale;
-    ti->ti_win = htons((u_short)(win >> tp->rcv_scale));
+    th->th_win = htons((u_short)(win >> tp->rcv_scale));
     if(SEQ_GT(tp->snd_up, tp->snd_nxt)) {
-        ti->ti_urp = htons((u_short)(tp->snd_up - tp->snd_nxt));
-        ti->ti_flags |= TH_URG;
+        th->th_urp = htons((u_short)(tp->snd_up - tp->snd_nxt));
+        th->th_flags |= TH_URG;
     } else
         /*
          * If no urgent pointer to send, then we pull
@@ -741,21 +737,9 @@ skip_sack:
         tp->snd_up = tp->snd_una;		/* drag it along */
 
     /*
-     * Put TCP length in extended header, and then
-     * checksum extended header and data.
+     * The checksum, over the family's pseudo-header, is taken when the
+     * segment is handed to the family, below.
      */
-    if(len + optlen)
-        ti->ti_len = htons((u_short)(sizeof(struct tcphdr) +
-                                     optlen + len));
-    /*
-     * IPv4 uses the struct ipovly overlay as the checksum pseudo-header.
-     * For IPv6 the checksum is computed later (in6_cksum) once the real
-     * IPv6 header has been prepended, so just zero it here.
-     */
-    if(!isipv6)
-        ti->ti_sum = in_cksum(m, (int)(hdrlen + len));
-    else
-        ti->ti_sum = 0;
 
     /*
      * In transmit state, time the transmission and arrange for
@@ -832,87 +816,32 @@ skip_sack:
     } else if(SEQ_GT(tp->snd_nxt + len, tp->snd_max))
         tp->snd_max = tp->snd_nxt + len;
 
-#ifdef TCPDEBUG
     /*
-     * Trace.
-     */
-    if(so->so_options & SO_DEBUG)
-        tcp_trace(TA_OUTPUT, tp->t_state, tp, ti, 0);
-#endif
-
-    /*
-     * Fill in IP length and desired time to live and
-     * send to IP level.  There should be a better way
-     * to handle ttl and tos; we could keep them in
-     * the template, but need a way to checksum without them.
+     * The length is in the packet header; the family puts its header in
+     * front (in the room left for it), with the socket's time to live and
+     * type of service, takes the checksum and sends.
      */
     m->m_pkthdr.len = hdrlen + len;
 
     D(bug("[AROSTCP:TCP] %s: SEND mbuf=0x%p flags=0x%02x seq=%lu ack=%lu len=%ld optlen=%u hdrlen=%u\n",
-          __func__, m, flags, (unsigned long)ntohl(ti->ti_seq),
-          (unsigned long)ntohl(ti->ti_ack), len, optlen, hdrlen));
+          __func__, m, flags, (unsigned long)ntohl(th->th_seq),
+          (unsigned long)ntohl(th->th_ack), len, optlen, hdrlen));
 
-#ifdef TUBA
-    if(tp->t_tuba_pcb)
-        error = tuba_output(m, tp);
-    else
-#endif
-#if INET6
-    if(isipv6) {
-        /*
-         * IPv6 send path.
-         *
-         * The segment was assembled with the IPv4 struct ipovly overlay in
-         * front of the TCP header (so the generic header-building code above
-         * could be shared).  Slide the mbuf forward over that overlay so it
-         * starts at the TCP header, then let tcp_v6output() prepend a real
-         * IPv6 header, checksum and transmit it (RFC 8200 / KAME style).
-         */
-        struct inpcb *inp = tp->t_inpcb;
-        int           tlen = sizeof(struct tcphdr) + optlen + len;
-
-        m->m_data       += sizeof(struct ipovly);
-        m->m_len        -= sizeof(struct ipovly);
-        m->m_pkthdr.len -= sizeof(struct ipovly);
-
-        D(bug("[AROSTCP:TCP] %s: SEND6 mbuf=0x%p plen=%d\n",
-              __func__, m, tlen));
-
-        /* the socket's IPV6_TCLASS; the ECN field is TCP's, as for IPv4 */
-        int tclass = inp->in6p_tclass & ~IPTOS_ECN_MASK;
-
-        if((tp->t_flagsext & TF_ECN_PERMIT) && ecn_ect &&
-                !(flags & (TH_SYN | TH_RST)))
-            tclass |= IPTOS_ECN_ECT0;
-        error = tcp_v6output(m, &inp->inp_laddr6, &inp->inp_faddr6,
-                             inp->in6p_hops, tlen, tclass, inp);
-    } else
-#endif /* INET6 */
-    {
-        ((struct ip *)ti)->ip_len = m->m_pkthdr.len;
-        ((struct ip *)ti)->ip_ttl = tp->t_inpcb->inp_ip.ip_ttl;	/* XXX */
-        /* the ECN field is TCP's (RFC 3168 section 6.1), not IP_TOS's */
-        ((struct ip *)ti)->ip_tos = tp->t_inpcb->inp_ip.ip_tos & ~IPTOS_ECN_MASK;
-        if(tcp_do_pmtud &&	/* path MTU discovery (RFC 1191) */
-                !(tp->t_flagsext & TF_PMTUD_NODF))
-            ((struct ip *)ti)->ip_off |= IP_DF;
-        /*
-         * ECN (RFC 3168): Set the ECT(0) codepoint in the IP header
-         * for ECN-capable connections, but only on freshly transmitted
-         * data segments (ecn_ect).  Retransmissions, pure ACKs, window
-         * probes, SYN and RST are sent Not-ECT.
-         */
-        if((tp->t_flagsext & TF_ECN_PERMIT) && ecn_ect &&
-                !(flags & (TH_SYN | TH_RST)))
-            ((struct ip *)ti)->ip_tos |= IPTOS_ECN_ECT0;
-#if BSD >= 43
-        error = ip_output(m, tp->t_inpcb->inp_options, &tp->t_inpcb->inp_route,
-                          so->so_options & SO_DONTROUTE, 0);
-#else
-        error = ip_output(m, (struct mbuf *)0, &tp->t_inpcb->inp_route,
-                          so->so_options & SO_DONTROUTE);
-#endif
-    }
+    /* path MTU discovery (RFC 1191), where there is a DF bit to set */
+    if(tcp_do_pmtud && !(tp->t_flagsext & TF_PMTUD_NODF))
+        oflags |= INF_OUT_DF;
+    /*
+     * ECN (RFC 3168): Set the ECT(0) codepoint in the network header
+     * for ECN-capable connections, but only on freshly transmitted
+     * data segments (ecn_ect).  Retransmissions, pure ACKs, window
+     * probes, SYN and RST are sent Not-ECT. (The rest of the TOS or
+     * traffic class is the socket's; the ECN field is TCP's.)
+     */
+    if(!(tp->t_flagsext & TF_ECN_PERMIT) || (flags & (TH_SYN | TH_RST)))
+        ecn_ect = 0;
+    error = (*inf->inf_output)(m, inp, &inp->inp_la, &inp->inp_fa, IPPROTO_TCP,
+                               offsetof(struct tcphdr, th_sum),
+                               ecn_ect ? IPTOS_ECN_ECT0 : 0, 0, oflags);
     if(error) {
         D(bug("[AROSTCP:TCP] %s: ip_output error=%d len=%ld\n", __func__, error, len));
 out:
@@ -933,7 +862,7 @@ out:
             }
             return (0);
         }
-        if(error == EMSGSIZE && !isipv6) {
+        if(error == EMSGSIZE && (inf->inf_flags & INF_HASDF)) {
             /* DF set, and larger than the path MTU the route now has
              * (RFC 1191): resend in segments that fit */
             tcp_mtudisc(tp, 0);

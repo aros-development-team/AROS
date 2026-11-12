@@ -188,4 +188,15 @@ struct nat;
 #define SIOCCNATL	_IOWR('r', 85, int)               /* flush NAT entries*/
 #define SIOCPURGENAT	_IOWR('r', 86, int)               /* purge NAT */
 
+/*
+ * AROSTCP: the IPv6 filter rules (struct ipf_rule6, net/ipfilter.h - to
+ * be included where these are used: the number carries the structure's
+ * size). The data is the rule itself.
+ */
+struct ipf_rule6;
+
+#define SIOCADAFR6	_IOW ('r', 90, struct ipf_rule6)  /* add IPv6 rule (append) */
+#define SIOCINAFR6	_IOW ('r', 91, struct ipf_rule6)  /* insert IPv6 rule */
+#define SIOCRMAFR6	_IOW ('r', 92, struct ipf_rule6)  /* remove IPv6 rule */
+
 #endif /* !SYS_IOCTL_H */

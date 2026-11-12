@@ -36,6 +36,8 @@
  * $Id$
  */
 
+#include <conf.h>
+
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/malloc.h>
@@ -43,41 +45,46 @@
 #include <sys/socket.h>
 #include <sys/socketvar.h>
 #include <sys/protosw.h>
+#include <sys/domain.h>
 #include <sys/errno.h>
 #include <sys/stat.h>
 #include <sys/queue.h>
 #include <sys/synch.h>
-#include <string.h>      /* memcpy */
-#ifdef ENABLE_SYSCTL
-#include <sys/sysctl.h>
-#endif
+#include <stddef.h>      /* offsetof */
 
 #include <net/route.h>
 #include <net/if.h>
+#include <net/netmodule.h>
 
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
-#include <netinet/ip.h>
+#include <netinet/ip.h>         /* struct inpcb holds one; not used here */
 #include <netinet/in_pcb.h>
-#include <netinet/in_var.h>
-#include <netinet/ip_var.h>
-#include <netinet/ip_icmp.h>
+#include <netinet/inetfamily.h>
+#include <netinet/inet_transport.h>
 #include <netinet/udp.h>
-#include <netinet/in_protos.h>
 #include <netinet/udp_var.h>
 
 #include <kern/kern_subr_protos.h>
 #include <kern/uipc_socket2_protos.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 /*
  * UDP protocol implementation.
  * Per RFC 768, August, 1980.
+ *
+ * One implementation for every address family. What a family alone knows
+ * - its header, its pseudo-header, its socket address, which destinations
+ * are shared by several sockets, its ancillary data, its source address
+ * selection, its ICMP - is asked of the family of the packet or of the PCB
+ * (netinet/inetfamily.h). Nothing here tests which family that is.
  */
 #ifndef	COMPAT_42
-int	udpcksum = 1;
+#define	UDPCKSUM_DFLT	1
 #else
-int	udpcksum = 0;		/* XXX */
+#define	UDPCKSUM_DFLT	0		/* XXX */
 #endif
+int	udpcksum = UDPCKSUM_DFLT;
 
 struct	inpcbhead udb;		/* from udp_var.h */
 struct	inpcbinfo udbinfo;
@@ -86,56 +93,64 @@ struct	inpcbinfo udbinfo;
 #define UDBHASHSIZE 64
 #endif
 
-struct	udpstat udpstat;	/* from udp_var.h */
-
-struct	sockaddr_in udp_in = { sizeof(udp_in), AF_INET };
-
-extern struct in_addr zeroin_addr;
-extern u_char inetctlerrmap[];
-extern int ip_defttl;
+struct	udpstat udpstat;	/* from udp_var.h: datagrams of every family */
 
 static	void udp_detach __P((struct inpcb *));
 static	void udp_notify __P((struct inpcb *, int));
+static	int udp_output __P((struct inpcb *, struct mbuf *, struct mbuf *,
+	    struct mbuf *));
+
+#define	UDP_SENDSPACE_DFLT	9216
+#define	UDP_RECVSPACE_DFLT	(256 * (1024 + 16))
+u_long	udp_sendspace = UDP_SENDSPACE_DFLT;	/* really max datagram size */
+u_long	udp_recvspace = UDP_RECVSPACE_DFLT;
+/* 256 1K datagrams, each with a 16 byte socket address: a deeper socket
+ * receive buffer lets the UDP receiver absorb bursts (e.g. sockperf
+ * under-load) while the owning task is briefly off-CPU, instead of
+ * overflowing at ~40 datagrams and dropping the flood. */
 
 /*
- * udp_savecontrol - the ancillary data inp asked for, from the IP header ip
- * of the datagram (as it arrived: before the checksum overwrote part of
- * it): its receive time (SO_TIMESTAMP), IP_RECVDSTADDR, IP_RECVTOS,
- * IP_RECVTTL. NULL when it asked for none.
+ * UDP's variables and statistics, for whoever reaches them from outside
+ * UDP: the configuration and ARexx variables (UDP), programs that look the
+ * stack's symbols up (netstat: "_udb", "_udpstat") and sysctl
+ * (net.inet.udp.<id>). None of them names UDP: the table is registered
+ * when UDP starts and each looks its name up (net/netmodule.h). The names
+ * under net.inet.udp are UDP's, whichever families the stack runs.
  */
-static struct mbuf *
-udp_savecontrol(const struct inpcb *inp, const struct ip *ip)
-{
-    struct mbuf *opts = sbcreatetimestamp(inp->inp_socket), **mp = &opts;
+static const struct netvar udp_netvars[] = {
+    { "udpstat",  &udpstat,  sizeof(udpstat), NVT_STATS, PF_INET, IPPROTO_UDP, UDPCTL_STATS },
+    /* the list of UDP's PCBs, which netstat walks: a block read from
+     * outside, as the statistics are */
+    { "udb",      &udb,      sizeof(udb),     NVT_STATS },
+    { "udpcksum", &udpcksum, sizeof(int),     NVT_INT,   PF_INET, IPPROTO_UDP, UDPCTL_CHECKSUM },
+    /* (the two buffer sizes are u_long; what is read and set is an int's
+     * worth of them, as it always was) */
+    { "udp_sendspace", &udp_sendspace, sizeof(int), NVT_INT, PF_INET, IPPROTO_UDP, UDPCTL_MAXDGRAM },
+    { "udp_recvspace", &udp_recvspace, sizeof(int), NVT_INT, PF_INET, IPPROTO_UDP, UDPCTL_RECVSPACE },
+};
 
-    if(opts)
-        mp = &opts->m_next;
-    if(!(inp->inp_flags & INP_CONTROLOPTS))
-        return opts;
-    if(inp->inp_flags & INP_RECVDSTADDR) {
-        struct in_addr dst = ip->ip_dst;
+/*
+ * The UDP header of a datagram in an mbuf, behind a network header that
+ * starts at an even address and is a multiple of 4 bytes long, or where
+ * udp_output() puts it: at an even address. struct udphdr is packed, so
+ * through a plain pointer to it each field is read and written a byte at a
+ * time on machines that cannot access a word at an odd address (the
+ * 68000).
+ */
+typedef struct udphdr udp_ahdr_t __attribute__((__aligned__(2)));
 
-        *mp = sbcreatecontrol((caddr_t)&dst, sizeof(struct in_addr),
-                              IP_RECVDSTADDR, IPPROTO_IP);
-        if(*mp)
-            mp = &(*mp)->m_next;
-    }
-    if(inp->inp_flags & INP_RECVTOS) {      /* one byte, as FreeBSD */
-        u_char tos = ip->ip_tos;
-
-        *mp = sbcreatecontrol((caddr_t)&tos, sizeof(tos), IP_RECVTOS, IPPROTO_IP);
-        if(*mp)
-            mp = &(*mp)->m_next;
-    }
-    if(inp->inp_flags & INP_RECVTTL) {      /* one byte, as FreeBSD */
-        u_char ttl = ip->ip_ttl;
-
-        *mp = sbcreatecontrol((caddr_t)&ttl, sizeof(ttl), IP_RECVTTL, IPPROTO_IP);
-        if(*mp)
-            mp = &(*mp)->m_next;
-    }
-    return opts;
-}
+/*
+ * A datagram on its way to the sockets: what udp_input() found out about
+ * it once, for each socket it is given to.
+ */
+struct udp_rcv {
+    const struct inetfamily *ur_family;
+    const struct ifnet *ur_rcvif;
+    union inp_addr ur_src, ur_dst;      /* copies: inf_addrlen bytes are set */
+    u_short     ur_sport;               /* network byte order */
+    int         ur_tos, ur_hlim;
+    struct sockaddr_storage ur_from;    /* the sender, in the family's form */
+};
 
 void
 udp_init()
@@ -143,87 +158,161 @@ udp_init()
     LIST_INIT(&udb);
     udbinfo.listhead = &udb;
     udbinfo.hashbase = phashinit(UDBHASHSIZE, M_PCB, &udbinfo.hashsize);
+    (void)netvar_register(udp_netvars, sizeof(udp_netvars) / sizeof(udp_netvars[0]));
 }
 
-void udp_input(void *args, ...)
+/*
+ * UDP stops: the reverse of udp_init(), called by the transport module's
+ * stop (netinet/inet_transport.c) with no socket or PCB left. The
+ * variables are taken back, the PCB hash table goes back to the pool, and
+ * UDP's variables are what the file gives them.
+ */
+void
+udp_deinit()
 {
-    register struct ip *ip;
-    register struct udphdr *uh;
-    register struct inpcb *inp;
-    struct mbuf *opts = 0;
-    int len;
-    struct ip save_ip;
-    const struct inpcb *lastinp;
-    register struct mbuf *m = args;
-    int iphlen;
-    va_list va;
+    (void)netvar_unregister(udp_netvars);
+    if(udbinfo.hashbase != NULL)
+        bsd_free((caddr_t)udbinfo.hashbase, M_PCB);
+    bzero((caddr_t)&udbinfo, sizeof(udbinfo));
+    bzero((caddr_t)&udb, sizeof(udb));
+    bzero((caddr_t)&udpstat, sizeof(udpstat));
+    udpcksum = UDPCKSUM_DFLT;
+    udp_sendspace = UDP_SENDSPACE_DFLT;
+    udp_recvspace = UDP_RECVSPACE_DFLT;
+}
 
-    va_start(va, args);
-    iphlen = va_arg(va, int);
-    va_end(va);
+/*
+ * udp_append - hand one datagram to one socket. m is its data, the headers
+ * already taken off; with it go the sender's address and the ancillary
+ * data the socket asked for: the receive time (SO_TIMESTAMP) first, then
+ * what its family makes of the packet. m is consumed.
+ */
+static void
+udp_append(struct inpcb *inp, struct mbuf *m, struct udp_rcv *ur)
+{
+    const struct inetfamily *inf = ur->ur_family;
+    struct socket *so = inp->inp_socket;
+    struct sockaddr *from = (struct sockaddr *)&ur->ur_from;
+    struct sockaddr_storage mapped;
+    struct mbuf *opts, **mp = &opts;
+
+    opts = sbcreatetimestamp(so);
+    if(opts)
+        mp = &opts->m_next;
+    if(inp->inp_family == inf) {
+        if(INF_WANTSCONTROL(inp, inf))
+            (void)(*inf->inf_savecontrol)(inp, ur->ur_rcvif, &ur->ur_dst,
+                                          ur->ur_tos, ur->ur_hlim, mp);
+    } else {
+        /*
+         * A socket of another family that listens for this one too: it is
+         * told the sender in its own family's form, as the PCB layer names
+         * the peer of such a connection. (A family that has no form for
+         * the address leaves it as it came.)
+         */
+        const struct inetfamily *sof = inp->inp_family;
+        union inp_addr a;
+
+        bzero((caddr_t)&a, sizeof(a));
+        if((*sof->inf_addr_from)(&a, inf, &ur->ur_src) == 0) {
+            (*sof->inf_mksockaddr)((struct sockaddr *)&mapped, &a, ur->ur_sport,
+                                   (const struct ifnet *)NULL);
+            from = (struct sockaddr *)&mapped;
+        }
+    }
+    if(sbappendaddr(&so->so_rcv, from, m, opts) == 0) {
+        m_freem(m);
+        if(opts)
+            m_freem(opts);
+        udpstat.udps_fullsock++;
+    } else
+        sorwakeup(so);
+}
+
+/*
+ * udp_input - a datagram of family inf has arrived: m starts at the
+ * family's network header, the UDP header is at off. Called by each
+ * family's input with its own instance of the family interface.
+ */
+void
+udp_input(struct mbuf *m, int off, const struct inetfamily *inf)
+{
+    register udp_ahdr_t *uh;
+    register struct inpcb *inp;
+    struct udp_rcv ur;
+    const void *srcp, *dstp;
+    u_int alen = inf->inf_addrlen;
+    u_short dport;
+    int len, avail, hdrs;
 
     udpstat.udps_ipackets++;
 
     /*
-     * Strip IP options, if any; should skip this,
-     * make available to user, and use on returned packets,
-     * but we don't yet have a way to check the checksum
-     * with options still present.
+     * Get network and UDP header together in first mbuf.
      */
-    if(iphlen > sizeof(struct ip)) {
-        ip_stripoptions(m, (struct mbuf *)0);
-        iphlen = sizeof(struct ip);
-    }
-
-    /*
-     * Get IP and UDP header together in first mbuf.
-     */
-    ip = mtod(m, struct ip *);
-    if(m->m_len < iphlen + sizeof(struct udphdr)) {
-        if((m = m_pullup(m, iphlen + sizeof(struct udphdr))) == 0) {
+    if(m->m_len < off + (int)sizeof(struct udphdr)) {
+        if((m = m_pullup(m, off + sizeof(struct udphdr))) == 0) {
             udpstat.udps_hdrops++;
             return;
         }
-        ip = mtod(m, struct ip *);
     }
-    uh = (struct udphdr *)((caddr_t)ip + iphlen);
+
+    /*
+     * What the network header says: who it is from and to, its TOS and
+     * TTL for the sockets that want them, and how much there is from the
+     * UDP header on. The addresses are copied: the family may use its
+     * header's room for the checksum.
+     */
+    if((*inf->inf_rcvinfo)(m, off, &srcp, &dstp, &ur.ur_tos, &ur.ur_hlim, &avail) != 0) {
+        udpstat.udps_hdrops++;
+        goto bad;
+    }
+    /* a word at a time: a network header is even-aligned in its mbuf */
+    inpcb_addrcopy(&ur.ur_src, srcp, alen);
+    inpcb_addrcopy(&ur.ur_dst, dstp, alen);
+    uh = (udp_ahdr_t *)(mtod(m, caddr_t) + off);
 
     /*
      * Make mbuf data length reflect UDP length.
      * If not enough data to reflect UDP length, drop.
      */
     len = ntohs((u_short)uh->uh_ulen);
-    if(ip->ip_len != len) {
-        if(len > ip->ip_len) {
-            udpstat.udps_badlen++;
+    if(len > avail || len < (int)sizeof(struct udphdr)) {
+        udpstat.udps_badlen++;
+        goto bad;
+    }
+    if(len != avail)
+        m_adj(m, len - avail);
+
+    /*
+     * Checksum extended UDP header and data. A checksum of zero is "none
+     * was made": taken as it is where the family allows that, a bad
+     * datagram where the checksum is required.
+     */
+    if(uh->uh_sum == 0) {
+        if(inf->inf_flags & INF_CKSUM_REQUIRED) {
+            udpstat.udps_badsum++;
             goto bad;
         }
-        m_adj(m, len - ip->ip_len);
-        /* ip->ip_len = len; */
-    }
-    /*
-     * Save a copy of the IP header in case we want restore it
-     * for sending an ICMP error message in response.
-     */
-    save_ip = *ip;
-
-    /*
-     * Checksum extended UDP header and data.
-     */
-    if(udpcksum && uh->uh_sum) {
-        bzero(((struct ipovly *)ip)->ih_x1, 9);
-        ((struct ipovly *)ip)->ih_len = uh->uh_ulen;
-        uh->uh_sum = in_cksum(m, len + sizeof(struct ip));
-        if(uh->uh_sum) {
-            udpstat.udps_badsum++;
-            m_freem(m);
-            return;
-        }
+    } else if((udpcksum || (inf->inf_flags & INF_CKSUM_REQUIRED)) &&
+              (*inf->inf_cksum)(m, IPPROTO_UDP, off, len, &ur.ur_src, &ur.ur_dst) != 0) {
+        udpstat.udps_badsum++;
+        goto bad;
     }
 
-    if(IN_MULTICAST(ntohl(ip->ip_dst.s_addr)) ||
-            in_broadcast(ip->ip_dst)) {
-        struct socket *last;
+    /*
+     * The sender as a socket address of the family, and whether the
+     * destination is one that several sockets share.
+     */
+    ur.ur_family = inf;
+    ur.ur_rcvif = m->m_pkthdr.rcvif;
+    ur.ur_sport = uh->uh_sport;
+    dport = uh->uh_dport;
+    hdrs = off + sizeof(struct udphdr);
+
+    if((*inf->inf_rcvfrom)(m, &ur.ur_src, ur.ur_sport, &ur.ur_dst,
+                           (struct sockaddr *)&ur.ur_from)) {
+        struct inpcb *last = NULL;
         /*
          * Deliver a multicast or broadcast datagram to *all* sockets
          * for which the local and remote addresses and ports match
@@ -238,57 +327,44 @@ void udp_input(void *args, ...)
          * inadequacy of the UDP socket interface, but for backwards
          * compatibility we avoid the problem here rather than
          * fixing the interface.  Maybe 4.5BSD will remedy this?)
+         *
+         * The family's input has already checked that the host listens
+         * to the address on the receiving interface; the sockets are not
+         * filtered by their own memberships.
          */
-
-        /*
-         * Construct sockaddr format source address.
-         */
-        udp_in.sin_port = uh->uh_sport;
-        udp_in.sin_addr = ip->ip_src;
-        m->m_len -= sizeof(struct udpiphdr);
-        m->m_data += sizeof(struct udpiphdr);
+        m->m_len -= hdrs;
+        m->m_pkthdr.len -= hdrs;
+        m->m_data += hdrs;
         /*
          * Locate pcb(s) for datagram.
          * (Algorithm copied from raw_intr().)
          */
-        last = NULL;
-        lastinp = NULL;
         for(inp = udb.lh_first; inp != NULL; inp = inp->inp_list.le_next) {
-            if(inp->inp_lport != uh->uh_dport)
+            if(inp->inp_lport != dport)
                 continue;
-            /* a socket bound to an interface only hears that interface */
-            if(inp->inp_boundif && inp->inp_boundif != m->m_pkthdr.rcvif)
+            /* a socket of the family, or one that stands for every family */
+            if(inp->inp_family != inf && !inpcb_anyfamily(inp))
                 continue;
-            if(inp->inp_laddr.s_addr != INADDR_ANY) {
-                if(inp->inp_laddr.s_addr !=
-                        ip->ip_dst.s_addr)
-                    continue;
-            }
-            if(inp->inp_faddr.s_addr != INADDR_ANY) {
-                if(inp->inp_faddr.s_addr !=
-                        ip->ip_src.s_addr ||
-                        inp->inp_fport != uh->uh_sport)
-                    continue;
-            }
+            /* a socket bound to an interface only hears that interface,
+             * and nothing once the interface is gone */
+            if((inp->inp_boundif && inp->inp_boundif != ur.ur_rcvif) ||
+                    (inp->inp_flags & INP_BOUNDGONE))
+                continue;
+            if(!inpcb_addrany(&inp->inp_la, alen) &&
+                    !inpcb_addreq(&inp->inp_la, &ur.ur_dst, alen))
+                continue;
+            if(!inpcb_addrany(&inp->inp_fa, alen) &&
+                    (!inpcb_addreq(&inp->inp_fa, &ur.ur_src, alen) ||
+                     inp->inp_fport != ur.ur_sport))
+                continue;
 
             if(last != NULL) {
                 struct mbuf *n;
 
-                if((n = m_copy(m, 0, M_COPYALL)) != NULL) {
-                    opts = udp_savecontrol(lastinp, &save_ip);
-                    if(sbappendaddr(&last->so_rcv,
-                                    (struct sockaddr *)&udp_in,
-                                    n, opts) == 0) {
-                        m_freem(n);
-                        if(opts)
-                            m_freem(opts);
-                        udpstat.udps_fullsock++;
-                    } else
-                        sorwakeup(last);
-                }
+                if((n = m_copy(m, 0, M_COPYALL)) != NULL)
+                    udp_append(last, n, &ur);
             }
-            last = inp->inp_socket;
-            lastinp = inp;
+            last = inp;
             /*
              * Don't look for additional matches if this one does
              * not have either the SO_REUSEPORT or SO_REUSEADDR
@@ -297,105 +373,51 @@ void udp_input(void *args, ...)
              * port.  It * assumes that an application will never
              * clear these options after setting them.
              */
-            if((last->so_options & (SO_REUSEPORT | SO_REUSEADDR)) == 0)
+            if((last->inp_socket->so_options & (SO_REUSEPORT | SO_REUSEADDR)) == 0)
                 break;
         }
 
         if(last == NULL) {
             /*
              * No matching pcb found; discard datagram.
-             * (No need to send an ICMP Port Unreachable
-             * for a broadcast or multicast datgram.)
+             * (No need to tell the sender about a broadcast
+             * or multicast datgram.)
              */
             udpstat.udps_noportbcast++;
             goto bad;
         }
-        opts = udp_savecontrol(lastinp, &save_ip);
-        if(sbappendaddr(&last->so_rcv, (struct sockaddr *)&udp_in,
-                        m, opts) == 0) {
-            udpstat.udps_fullsock++;
-            goto bad;
-        }
-        sorwakeup(last);
+        udp_append(last, m, &ur);
         return;
     }
-    /*
-     * Locate pcb for datagram. First look for an exact match.
-     */
-    inp = in_pcblookuphash(&udbinfo, ip->ip_src, uh->uh_sport,
-                           ip->ip_dst, uh->uh_dport);
-    /*
-     * ...and if that fails, do a wildcard search.
-     */
-    if(inp == NULL) {
-        inp = in_pcblookup(&udb, ip->ip_src, uh->uh_sport, ip->ip_dst,
-                           uh->uh_dport, INPLOOKUP_WILDCARD);
-    }
-    if(inp != NULL && ((inp->inp_flags & INP_BOUNDGONE) ||
-                       (inp->inp_boundif && inp->inp_boundif != m->m_pkthdr.rcvif))) {
-        /*
-         * The best match is bound to another interface (SO_BINDTODEVICE):
-         * take the socket on this port that listens on the interface the
-         * datagram came in by, or failing that one not bound at all.
-         */
-        struct inpcb *t, *unbound = NULL;
 
-        for(t = udb.lh_first; t != NULL; t = t->inp_list.le_next) {
-            if(t->inp_lport != uh->uh_dport)
-                continue;
-            if(t->inp_laddr.s_addr != INADDR_ANY &&
-                    t->inp_laddr.s_addr != ip->ip_dst.s_addr)
-                continue;
-            if(t->inp_faddr.s_addr != INADDR_ANY &&
-                    (t->inp_faddr.s_addr != ip->ip_src.s_addr ||
-                     t->inp_fport != uh->uh_sport))
-                continue;
-            if(t->inp_flags & INP_BOUNDGONE)
-                continue;
-            if(t->inp_boundif == m->m_pkthdr.rcvif)
-                break;
-            if(t->inp_boundif == NULL && unbound == NULL)
-                unbound = t;
-        }
-        inp = t ? t : unbound;
-        if(inp == NULL) {
-            udpstat.udps_noport++;
-            goto bad;       /* not for anybody on this interface */
-        }
-    }
+    /*
+     * Locate pcb for datagram: the exact match, else the best of those
+     * that listen on the port, among the sockets that hear the interface
+     * it came in by (SO_BINDTODEVICE, a zone).
+     */
+    inp = inpcb_lookup(&udbinfo, inf, &ur.ur_src, ur.ur_sport, &ur.ur_dst, dport,
+                       ur.ur_rcvif, INPLOOKUP_WILDCARD | INPLOOKUP_ATSPLNET);
     if(inp == NULL) {
         udpstat.udps_noport++;
         if(m->m_flags & (M_BCAST | M_MCAST)) {
             udpstat.udps_noportbcast++;
             goto bad;
         }
-        *ip = save_ip;
-        icmp_error(m, ICMP_UNREACH, ICMP_UNREACH_PORT, zeroin_addr);
+        /* "port unreachable", as the family says it; it takes the packet */
+        (*inf->inf_unreach)(m, off);
         return;
     }
 
     /*
-     * Construct sockaddr format source address.
      * Stuff source address and datagram in user buffer.
      */
-    udp_in.sin_port = uh->uh_sport;
-    udp_in.sin_addr = ip->ip_src;
-    opts = udp_savecontrol(inp, &save_ip);
-    iphlen += sizeof(struct udphdr);
-    m->m_len -= iphlen;
-    m->m_pkthdr.len -= iphlen;
-    m->m_data += iphlen;
-    if(sbappendaddr(&inp->inp_socket->so_rcv, (struct sockaddr *)&udp_in,
-                    m, opts) == 0) {
-        udpstat.udps_fullsock++;
-        goto bad;
-    }
-    sorwakeup(inp->inp_socket);
+    m->m_len -= hdrs;
+    m->m_pkthdr.len -= hdrs;
+    m->m_data += hdrs;
+    udp_append(inp, m, &ur);
     return;
 bad:
     m_freem(m);
-    if(opts)
-        m_freem(opts);
 }
 
 /*
@@ -412,203 +434,143 @@ int _errno;
     sowwakeup(inp->inp_socket);
 }
 
+/*
+ * udp_ctlnotify - what a family's ICMP says about a datagram we sent
+ * (struct inctlparam, netinet/inetfamily.h).
+ *
+ * "Too big" (PRC_MSGSIZE) is not an error for a datagram socket: the
+ * route keeps the path MTU and the family's output fragments to it, or
+ * says EMSGSIZE to a socket that forbids fragmenting. Where the family
+ * has a notification for it (inf_pmtunotify), each socket that may have
+ * sent the datagram is offered the new path MTU; the family gives it to
+ * those that asked.
+ */
 void
-udp_ctlinput(cmd, sa, arg)
-int cmd;
-struct sockaddr *sa;
-void *arg;
+udp_ctlnotify(int cmd, const struct inctlparam *cp)
 {
-    register struct ip *ip = arg;
-    register struct udphdr *uh;
+    const struct inetfamily *inf = cp->icp_family;
 
-    /* "fragmentation needed": UDP sends without DF, and the route keeps
-     * the path MTU (icmp_mtudisc()); not an error for the socket */
-    if(cmd == PRC_MSGSIZE)
+    if((unsigned)cmd >= PRC_NCMDS)
         return;
-    if(!PRC_IS_REDIRECT(cmd) &&
-            ((unsigned)cmd >= PRC_NCMDS || inetctlerrmap[cmd] == 0))
+    if(cmd == PRC_MSGSIZE) {
+        u_int alen = inf->inf_addrlen;
+        struct inpcb *inp;
+
+        if(inf->inf_pmtunotify == NULL || cp->icp_laddr == NULL ||
+                cp->icp_dst == NULL)
+            return;
+        for(inp = udb.lh_first; inp != NULL; inp = inp->inp_list.le_next) {
+            if(inp->inp_family != inf || inp->inp_lport != cp->icp_lport)
+                continue;
+            if(!inpcb_addrany(&inp->inp_la, alen) &&
+                    !inpcb_addreq(&inp->inp_la, cp->icp_laddr, alen))
+                continue;
+            if(!inpcb_addrany(&inp->inp_fa, alen) &&
+                    (!inpcb_addreq(&inp->inp_fa, cp->icp_faddr, alen) ||
+                     inp->inp_fport != cp->icp_fport))
+                continue;
+            (*inf->inf_pmtunotify)(inp, cp->icp_dst, cp->icp_mtu);
+        }
         return;
-    if(ip) {
-        uh = (struct udphdr *)((caddr_t)ip + (ip->ip_hl << 2));
-        in_pcbnotify(&udb, sa, uh->uh_dport, ip->ip_src, uh->uh_sport,
-                     cmd, udp_notify);
-    } else
-        in_pcbnotify(&udb, sa, 0, zeroin_addr, 0, cmd, udp_notify);
+    }
+    /* only what is an error for the socket, or a redirect (its route) */
+    if(!PRC_IS_REDIRECT(cmd) && inf->inf_ctlerrmap[cmd] == 0)
+        return;
+    inpcb_notify(&udb, inf, cp->icp_faddr, cp->icp_fport, cp->icp_laddr,
+                 cp->icp_lport, cmd, udp_notify);
 }
 
-int
-udp_output(void *arg, ...)
+/*
+ * udp_output - send the datagram m from inp's socket: to the address in
+ * addr, or with addr NULL to the peer the socket is connected to.
+ *
+ * A datagram sent with an address leaves the PCB as it is: the
+ * destination, and the source address if the socket is bound to none, are
+ * this datagram's only, so the socket goes on receiving on every address
+ * it listens on. Only a port it lacks is bound for good.
+ */
+static int
+udp_output(struct inpcb *inp, struct mbuf *m, struct mbuf *addr,
+           struct mbuf *control)
 {
-    register struct inpcb *inp = arg;
-    register struct mbuf *m;
-    struct mbuf *addr, *control;
-    register struct udpiphdr *ui;
-    register int len;
-    struct in_addr laddr;
-    int s = 0, error = 0;
-    u_char tos;
-    va_list va;
+    const struct inetfamily *inf = inp->inp_family;
+    register udp_ahdr_t *uh;
+    register int len = m->m_pkthdr.len;
+    const void *faddr = NULL;           /* NULL: the PCB's peer */
+    struct ifnet *zone = NULL;
+    u_short fport;
+    int error, s;
 
-    va_start(va, arg);
-    m       = va_arg(va, struct mbuf *);
-    addr    = va_arg(va, struct mbuf *);
-    control = va_arg(va, struct mbuf *);
-    va_end(va);
-
-    len = m->m_pkthdr.len;
-    tos = inp->inp_ip.ip_tos;
     if(inp->inp_flags & INP_BOUNDGONE) {
-        if(control)
-            m_freem(control);
         error = ENXIO;                  /* its interface went away */
         goto release;
     }
-
-    /*
-     * Ancillary data: IP_TOS for this datagram (a byte, as FreeBSD, or an
-     * int, as Linux), so an application can set the ECN field per packet
-     * (RFC 9000 section 13.4). Anything else is ignored, as before.
-     */
-    if(control) {
-        struct cmsghdr *cm = mtod(control, struct cmsghdr *);
-        int left = control->m_len;
-
-        while(left >= (int)sizeof(*cm) && cm->cmsg_len >= sizeof(*cm) &&
-                (int)cm->cmsg_len <= left) {
-            if(cm->cmsg_level == IPPROTO_IP && cm->cmsg_type == IP_TOS) {
-                if(cm->cmsg_len == CMSG_LEN(sizeof(u_char)))
-                    tos = *(u_char *)CMSG_DATA(cm);
-                else if(cm->cmsg_len == CMSG_LEN(sizeof(int))) {
-                    int v;
-
-                    memcpy(&v, CMSG_DATA(cm), sizeof(v));
-                    tos = v & 0xff;
-                }
-            }
-            if(left < (int)_ALIGN(cm->cmsg_len))
-                break;
-            left -= _ALIGN(cm->cmsg_len);
-            cm = (struct cmsghdr *)((caddr_t)cm + _ALIGN(cm->cmsg_len));
-        }
-        m_freem(control);
-    }
-
     if(addr) {
-        int tobroadcast = (mtod(addr, struct sockaddr_in *)->sin_addr.s_addr ==
-                           (u_long)INADDR_BROADCAST);
-
-        laddr = inp->inp_laddr;
-        if(inp->inp_faddr.s_addr != INADDR_ANY) {
+        if(!inpcb_addrany(&inp->inp_fa, inf->inf_addrlen)) {
             error = EISCONN;
             goto release;
         }
-        /*
-         * Must block input while temporarily connected.
-         */
-        s = splnet();
-        error = in_pcbconnect(inp, addr);
-        if(error) {
-            splx(s);
+        if((error = (*inf->inf_sockaddr_parse)(addr, &faddr, &fport, &zone)) != 0)
+            goto release;
+        if(fport == 0) {
+            error = EADDRNOTAVAIL;
             goto release;
         }
-        if(inp->inp_boundif) {
-            /*
-             * Bound to an interface (SO_BINDTODEVICE): in_pcbconnect()
-             * chose the source by the routing table and may have turned a
-             * limited broadcast into the primary interface's broadcast
-             * address. The source is this interface's own address - none
-             * yet for a DHCP client - and 255.255.255.255 stays as it is.
-             */
-            if(laddr.s_addr == INADDR_ANY) {
-                struct in_ifaddr *ia;
-
-                inp->inp_laddr.s_addr = INADDR_ANY;
-                for(ia = in_ifaddr; ia; ia = ia->ia_next)
-                    if(ia->ia_ifp == inp->inp_boundif) {
-                        inp->inp_laddr = IA_SIN(ia)->sin_addr;
-                        break;
-                    }
-            }
-            if(tobroadcast)
-                inp->inp_faddr.s_addr = INADDR_BROADCAST;
+        if(inp->inp_lport == 0) {
+            s = splnet();
+            error = inpcb_bind(inp, (struct mbuf *)0);
+            splx(s);
+            if(error)
+                goto release;
         }
     } else {
-        if(inp->inp_faddr.s_addr == INADDR_ANY) {
+        if(inpcb_addrany(&inp->inp_fa, inf->inf_addrlen)) {
             error = ENOTCONN;
             goto release;
         }
+        fport = inp->inp_fport;
     }
+
     /*
-     * Calculate data length and get a mbuf
-     * for UDP and IP headers.
+     * Get room for the UDP header and, in the same mbuf, for the family's
+     * network header in front of it, which is left to the family.
      */
-    M_PREPEND(m, sizeof(struct udpiphdr), M_DONTWAIT);
+    M_PREPEND(m, sizeof(struct udphdr) + inf->inf_hdrlen, M_DONTWAIT);
     if(m == 0) {
         error = ENOBUFS;
-        if(addr)
-            splx(s);
         goto release;
     }
+    m->m_data += inf->inf_hdrlen;
+    m->m_len -= inf->inf_hdrlen;
+    m->m_pkthdr.len -= inf->inf_hdrlen;
 
     /*
-     * Fill in mbuf with extended UDP header
-     * and addresses and length put into network format.
+     * Fill in the UDP header, ports and length put into network format.
      */
-    ui = mtod(m, struct udpiphdr *);
-    bzero(ui->ui_x1, sizeof(ui->ui_x1));
-    ui->ui_pr = IPPROTO_UDP;
-    ui->ui_len = htons((u_short)len + sizeof(struct udphdr));
-    ui->ui_src = inp->inp_laddr;
-    ui->ui_dst = inp->inp_faddr;
-    ui->ui_sport = inp->inp_lport;
-    ui->ui_dport = inp->inp_fport;
-    ui->ui_ulen = ui->ui_len;
+    uh = mtod(m, udp_ahdr_t *);
+    uh->uh_sport = inp->inp_lport;
+    uh->uh_dport = fport;
+    uh->uh_ulen = htons((u_short)(len + sizeof(struct udphdr)));
+    uh->uh_sum = 0;
 
     /*
-     * Stuff checksum and output datagram.
+     * The family makes the checksum over its pseudo-header, puts its
+     * header in front and sends. Where the checksum is optional it is left
+     * out (zero) when UDP checksums are turned off.
      */
-    ui->ui_sum = 0;
-    if(udpcksum) {
-        if((ui->ui_sum = in_cksum(m, sizeof(struct udpiphdr) + len)) == 0)
-            ui->ui_sum = 0xffff;
-    }
-    ((struct ip *)ui)->ip_len = sizeof(struct udpiphdr) + len;
-    ((struct ip *)ui)->ip_ttl = inp->inp_ip.ip_ttl;	/* XXX */
-    ((struct ip *)ui)->ip_tos = tos;
-    /* IP_DONTFRAG: DF, so ip_output() says EMSGSIZE above the path MTU
-     * instead of fragmenting (RFC 9000 section 14, FreeBSD) */
-    if(inp->inp_flags & INP_DONTFRAG)
-        ((struct ip *)ui)->ip_off = IP_DF;
     udpstat.udps_opackets++;
-    {
-        int ipflags = inp->inp_socket->so_options & (SO_DONTROUTE | SO_BROADCAST);
-
-        if(inp->inp_boundif) {
-            /* SO_BINDTODEVICE: ip_output() takes the interface from the header */
-            m->m_pkthdr.rcvif = inp->inp_boundif;
-            ipflags |= IP_BOUNDIF;
-        }
-        error = ip_output(m, inp->inp_options, &inp->inp_route, ipflags,
-                          inp->inp_moptions);
-    }
-
-    if(addr) {
-        in_pcbdisconnect(inp);
-        inp->inp_laddr = laddr;
-        splx(s);
-    }
-    return (error);
+    return ((*inf->inf_dgoutput)(m, inp, faddr, zone, control, IPPROTO_UDP,
+                                 (udpcksum || (inf->inf_flags & INF_CKSUM_REQUIRED)) ?
+                                 (int)offsetof(struct udphdr, uh_sum) : -1,
+                                 INF_DG_ROOM | INF_DG_NOTZERO));
 
 release:
-    m_freem(m);
+    if(control)
+        m_freem(control);
+    if(m)
+        m_freem(m);
     return (error);
 }
-
-u_long	udp_sendspace = 9216;		/* really max datagram size */
-u_long	udp_recvspace = 256 * (1024 + sizeof(struct sockaddr_in));
-/* 256 1K datagrams: a deeper socket receive buffer lets the UDP receiver
- * absorb bursts (e.g. sockperf under-load) while the owning task is briefly
- * off-CPU, instead of overflowing at ~40 datagrams and dropping the flood. */
 
 /*ARGSUSED*/
 int
@@ -621,9 +583,16 @@ struct mbuf *m, *addr, *control;
     int error = 0;
     int s;
 
-    if(req == PRU_CONTROL)
-        return (in_control(so, (int)(long)m, (caddr_t)addr,
-                           (struct ifnet *)control));
+    if(req == PRU_CONTROL) {
+        /* an ioctl: the family of the socket knows its address requests */
+        const struct inetfamily *inf = inp ? inp->inp_family :
+            inetfamily_find(so->so_proto->pr_domain->dom_family);
+
+        if(inf == NULL || inf->inf_control == NULL)
+            return (EOPNOTSUPP);
+        return ((*inf->inf_control)(so, (int)(long)m, (caddr_t)addr,
+                                    (struct ifnet *)control));
+    }
     if(inp == NULL && req != PRU_ATTACH) {
         error = EINVAL;
         goto release;
@@ -640,14 +609,12 @@ struct mbuf *m, *addr, *control;
             break;
         }
         s = splnet();
+        /* the PCB starts with its family's defaults (inf_pcbinit) */
         error = in_pcballoc(so, &udbinfo);
         splx(s);
         if(error)
             break;
         error = soreserve(so, udp_sendspace, udp_recvspace);
-        if(error)
-            break;
-        ((struct inpcb *) so->so_pcb)->inp_ip.ip_ttl = ip_defttl;
         break;
 
     case PRU_DETACH:
@@ -656,7 +623,7 @@ struct mbuf *m, *addr, *control;
 
     case PRU_BIND:
         s = splnet();
-        error = in_pcbbind(inp, addr);
+        error = inpcb_bind(inp, addr);
         splx(s);
         break;
 
@@ -665,12 +632,12 @@ struct mbuf *m, *addr, *control;
         break;
 
     case PRU_CONNECT:
-        if(inp->inp_faddr.s_addr != INADDR_ANY) {
+        if(!inpcb_addrany(&inp->inp_fa, inp->inp_family->inf_addrlen)) {
             error = EISCONN;
             break;
         }
         s = splnet();
-        error = in_pcbconnect(inp, addr);
+        error = inpcb_connect(inp, addr, NULL);
         splx(s);
         if(error == 0)
             soisconnected(so);
@@ -685,13 +652,18 @@ struct mbuf *m, *addr, *control;
         break;
 
     case PRU_DISCONNECT:
-        if(inp->inp_faddr.s_addr == INADDR_ANY) {
+        if(inpcb_addrany(&inp->inp_fa, inp->inp_family->inf_addrlen)) {
             error = ENOTCONN;
             break;
         }
         s = splnet();
-        in_pcbdisconnect(inp);
-        inp->inp_laddr.s_addr = INADDR_ANY;
+        /*
+         * The local address goes with the peer: it may have been chosen
+         * for that peer, and the socket listens on every address again.
+         * (It is not part of what the PCB is filed under.)
+         */
+        bzero((caddr_t)&inp->inp_la, sizeof(inp->inp_la));
+        inpcb_disconnect(inp);
         splx(s);
         so->so_state &= ~SS_ISCONNECTED;		/* XXX */
         break;
@@ -709,11 +681,11 @@ struct mbuf *m, *addr, *control;
         break;
 
     case PRU_SOCKADDR:
-        in_setsockaddr(inp, addr);
+        inpcb_setsockaddr(inp, addr);
         break;
 
     case PRU_PEERADDR:
-        in_setpeeraddr(inp, addr);
+        inpcb_setpeeraddr(inp, addr);
         break;
 
     case PRU_SENSE:
@@ -739,10 +711,8 @@ struct mbuf *m, *addr, *control;
     }
 
 release:
-    if(control) {
-        printf("udp control data unexpectedly retained\n");
+    if(control)
         m_freem(control);
-    }
     if(m)
         m_freem(m);
     return (error);
@@ -757,40 +727,3 @@ struct inpcb *inp;
     in_pcbdetach(inp);
     splx(s);
 }
-
-#ifdef ENABLE_SYSCTL
-/*
- * Sysctl for udp variables.
- */
-int
-udp_sysctl(name, namelen, oldp, oldlenp, newp, newlen)
-int *name;
-u_int namelen;
-void *oldp;
-size_t *oldlenp;
-void *newp;
-size_t newlen;
-{
-    /* All sysctl names at this level are terminal. */
-    if(namelen != 1)
-        return (ENOTDIR);
-
-    switch(name[0]) {
-    case UDPCTL_CHECKSUM:
-        return (sysctl_int(oldp, oldlenp, newp, newlen, &udpcksum));
-    case UDPCTL_STATS:
-        return (sysctl_rdstruct(oldp, oldlenp, newp, &udpstat,
-                                sizeof udpstat));
-    case UDPCTL_MAXDGRAM:
-        return (sysctl_int(oldp, oldlenp, newp, newlen,
-                           (int *)&udp_sendspace)); /* XXX */
-    case UDPCTL_RECVSPACE:
-        return (sysctl_int(oldp, oldlenp, newp, newlen,
-                           (int *)&udp_recvspace)); /* XXX */
-    default:
-        return (ENOPROTOOPT);
-    }
-    /* NOTREACHED */
-}
-#endif
-

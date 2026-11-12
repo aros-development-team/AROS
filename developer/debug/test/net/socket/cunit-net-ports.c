@@ -165,16 +165,16 @@ int main(void)
     }
     p = CU_add_suite("PORTS_Suite", init_suite, clean_suite);
     if (p == NULL ||
-        !CU_add_test(p, "TCP bind to port 0", testPORTS_TCP_BIND) ||
-        !CU_add_test(p, "UDP bind to port 0", testPORTS_UDP_BIND) ||
-        !CU_add_test(p, "TCP6 bind to port 0", testPORTS_TCP6_BIND) ||
-        !CU_add_test(p, "UDP6 bind to port 0", testPORTS_UDP6_BIND) ||
-        !CU_add_test(p, "bind to an address and port 0", testPORTS_ADDR_BIND) ||
-        !CU_add_test(p, "bind to an IPv6 address and port 0", testPORTS_ADDR6_BIND) ||
-        !CU_add_test(p, "connect() without bind", testPORTS_CONNECT) ||
-        !CU_add_test(p, "connect() without bind (IPv6)", testPORTS_CONNECT6) ||
-        !CU_add_test(p, "sendto() without bind", testPORTS_SENDTO) ||
-        !CU_add_test(p, "sendto() without bind (IPv6)", testPORTS_SENDTO6))
+        !st_add_test(p, "TCP bind to port 0", testPORTS_TCP_BIND, ST_V4) ||
+        !st_add_test(p, "UDP bind to port 0", testPORTS_UDP_BIND, ST_V4) ||
+        !st_add_test(p, "TCP6 bind to port 0", testPORTS_TCP6_BIND, ST_V6) ||
+        !st_add_test(p, "UDP6 bind to port 0", testPORTS_UDP6_BIND, ST_V6) ||
+        !st_add_test(p, "bind to an address and port 0", testPORTS_ADDR_BIND, ST_V4) ||
+        !st_add_test(p, "bind to an IPv6 address and port 0", testPORTS_ADDR6_BIND, ST_V6) ||
+        !st_add_test(p, "connect() without bind", testPORTS_CONNECT, ST_V4) ||
+        !st_add_test(p, "connect() without bind (IPv6)", testPORTS_CONNECT6, ST_V6) ||
+        !st_add_test(p, "sendto() without bind", testPORTS_SENDTO, ST_V4) ||
+        !st_add_test(p, "sendto() without bind (IPv6)", testPORTS_SENDTO6, ST_V6))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

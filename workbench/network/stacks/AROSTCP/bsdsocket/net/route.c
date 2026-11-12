@@ -109,6 +109,7 @@
 #include <netns/ns.h>
 #endif
 #include <net/netisr.h>
+#include <net/netmodule.h>
 
 #include <net/rtsock_protos.h>
 #include <net/radix_protos.h>
@@ -373,26 +374,17 @@ caddr_t data;
         entry->rt_gateway.sa_len = sizeof(struct sockaddr);
     if((entry->rt_flags & RTF_HOST) == 0)
         switch(entry->rt_dst.sa_family) {
-#if INET
-        case AF_INET: {
-#if 0
+        default:
             /*
-             * Should not use icmpmask, since it is accessed from
-             * different tasks!
+             * This old request names no mask: the destination's family
+             * gives the one of its network (IPv4: by address class and the
+             * subnets of the interfaces). A family that is not part of the
+             * running stack, or has no such rule, cannot have the route.
              */
-            extern struct sockaddr_in icmpmask;
-            struct sockaddr_in *dst_in =
-                (struct sockaddr_in *)&entry->rt_dst;
-
-            in_sockmaskof(dst_in->sin_addr, &icmpmask);
-            netmask = (struct sockaddr *)&icmpmask;
-#else
-            struct sockaddr_in *dst_saddr = (struct sockaddr_in *)&entry->rt_dst;
-            in_sockmaskof(dst_saddr->sin_addr, (struct sockaddr_in *)&netmask);
-#endif
-        }
-        break;
-#endif
+            if(netfamily_addrquery(entry->rt_dst.sa_family, NFQ_NETMASK,
+                                   &entry->rt_dst, &netmask) <= 0)
+                return (EAFNOSUPPORT);
+            break;
 #if NS
         case AF_NS: {
             extern struct sockaddr_ns ns_netmask;
@@ -423,31 +415,37 @@ struct sockaddr	*dst, *gateway;
     if(gateway == NULL)
         return ((struct ifaddr *)0);
 
-#if INET6
     /*
-     * A link-local gateway is on the link its zone names (RFC 4007
-     * section 6): the route takes that interface and its link-local
-     * address - not whichever interface's fe80::/64 the address happens to
-     * match first (ifa_ifwithnet()), which sent the traffic of a route
-     * through fe80::1%eth1 out by eth0, to another neighbour.
+     * A gateway address that names its link itself (an IPv6 link-local
+     * address with a zone, RFC 4007 section 6) is on that link: the route
+     * takes that interface and the address this host has on it - not
+     * whichever interface's network the address happens to match first
+     * (ifa_ifwithnet()), which sent the traffic of a route through
+     * fe80::1%eth1 out by eth0, to another neighbour. Which addresses do
+     * so is the family's to say (NFQ_GATEWAYLINK).
      */
-    if(gateway->sa_family == AF_INET6 && dst->sa_family == AF_INET6) {
-        struct sockaddr_in6 *g6 = (struct sockaddr_in6 *)gateway;
+    if(gateway->sa_family == dst->sa_family) {
+        struct sockaddr_storage own;
+        int idx;
 
-        if(g6->sin6_scope_id != 0 && (IN6_IS_ADDR_LINKLOCAL(&g6->sin6_addr) ||
-                                     IN6_IS_ADDR_MC_LINKLOCAL(&g6->sin6_addr))) {
+        idx = netfamily_addrquery(gateway->sa_family, NFQ_GATEWAYLINK, gateway,
+                                  (struct sockaddr *)&own);
+        if(idx > 0) {
             struct ifnet *ifp;
-            struct in6_ifaddr *ia;
 
             for(ifp = ifnet; ifp; ifp = ifp->if_next)
-                if(ifp->if_index == g6->sin6_scope_id)
+                if(ifp->if_index == idx)
                     break;
-            if(ifp == NULL || (ia = in6_ifaof_ifpforlinklocal(ifp)) == NULL)
+            if(ifp == NULL || own.ss_len == 0)
                 return ((struct ifaddr *)0);
-            return (&ia->ia_ifa);
+            for(ifa = ifp->if_addrlist; ifa; ifa = ifa->ifa_next)
+                if(ifa->ifa_addr->sa_family == own.ss_family &&
+                        ifa->ifa_addr->sa_len == own.ss_len &&
+                        bcmp((caddr_t)ifa->ifa_addr, (caddr_t)&own, own.ss_len) == 0)
+                    return (ifa);
+            return ((struct ifaddr *)0);
         }
     }
-#endif
 
     if((flags & RTF_GATEWAY) == 0) {
         /*
@@ -889,6 +887,75 @@ pmtu_keep(struct rtentry *rt, u_long old_mtu, int added)
     }
     pmtu_routes[slot].expire = pmtu_now() + PMTU_EXPIRE;
     rt->rt_rmx.rmx_expire = pmtu_routes[slot].expire;
+}
+
+/*
+ * rt_flushfamily - address family af is leaving the running stack: every
+ * route of its table goes, and the path MTU slots that hold one of them.
+ *
+ * The family has taken its addresses off the interfaces before (each with
+ * the routes that used it: rt_purgeifa()); what is left are routes that
+ * name no address of the family's own - through the loopback, through a
+ * gateway on an interface whose address is another family's, added by an
+ * application - and the PMTU slots, each of which holds a reference.
+ * Deleting a route calls its address's ifa_rtrequest one last time, which
+ * frees the link information the family hung on it (rt_llinfo); a route
+ * somebody still holds a reference to leaves the table now and is freed by
+ * the last rtfree(), which calls nothing. So when this returns, no route of
+ * the table can lead back into the family's code.
+ *
+ * The table itself (its radix head) stays: the core made it and the core
+ * keeps it, empty, for the next start of the family. One route for each
+ * scan, as rt_purge() does; a route that will not go ends the loop.
+ */
+static struct rtentry *
+rt_find_first(struct radix_node *rn)
+{
+    struct rtentry *rt;
+
+    if(rn == 0)
+        return (0);
+    if(rn->rn_b >= 0) {
+        if((rt = rt_find_first(rn->rn_l)))
+            return (rt);
+        return (rt_find_first(rn->rn_r));
+    }
+    for(; rn; rn = rn->rn_dupedkey)
+        if(!(rn->rn_flags & RNF_ROOT))
+            return ((struct rtentry *)rn);
+    return (0);
+}
+
+void
+rt_flushfamily(int af)
+{
+    register struct radix_node_head *rnh;
+    spl_t s;
+    int i;
+
+    if(af == AF_UNSPEC)
+        return;
+    s = splnet();
+    for(i = 0; i < PMTU_ROUTES; i++)
+        if(pmtu_routes[i].rt != NULL &&
+                rt_key(pmtu_routes[i].rt)->sa_family == af)
+            pmtu_restore(i);
+    for(rnh = radix_node_head; rnh; rnh = rnh->rnh_next) {
+        struct rtentry *rt, *last = 0;
+
+        if(rnh->rnh_af != af)
+            continue;
+        while((rt = rt_find_first(rnh->rnh_treetop)) != 0 && rt != last) {
+            last = rt;
+            (void)rtrequest(RTM_DELETE, rt_key(rt), rt->rt_gateway,
+                            rt_mask(rt), (int)rt->rt_flags,
+                            (struct rtentry **)0);
+        }
+        if(rt != 0)
+            log(LOG_ERR, "rt_flushfamily: a route of family %ld could not be deleted\n",
+                (long)af);
+    }
+    splx(s);
 }
 
 /* From ip_slowtimo(): give back the path MTUs whose time is up. */

@@ -76,13 +76,24 @@
 #include <net/raw_usrreq_protos.h>
 #include <net/route_protos.h>
 #include <net/if_protos.h>
+#include <net/radix_protos.h>
 
 #include <net/if_dl.h>
+#include <net/netmodule.h>
+#include <kern/admin_ops.h>
 
+#include <net/netcore_map.h>        /* always the last include */
+
+/*
+ * The routing socket, in the administration module (kern/admin_ops.h).
+ * The core counts the routing sockets (route_cb, here `route_counts') and
+ * sends the routing messages through rt_missmsg(), rt_ifmsg() and
+ * rt_newaddrmsg(): stubs of kern/admin_stubs.c that call the functions
+ * below only while a routing socket exists.
+ */
 struct sockaddr route_dst = { 2, PF_ROUTE, };
 struct sockaddr route_src = { 2, PF_ROUTE, };
 struct sockproto route_proto = { PF_ROUTE, };
-extern struct route_cb route_cb;
 
 #define ROUNDUP(a) \
 	((a) > 0 ? (1 + (((a) - 1) | (sizeof(long) - 1))) : sizeof(long))
@@ -107,14 +118,14 @@ struct mbuf *m, *nam, *control;
     if(req == PRU_DETACH && rp) {
         int af = rp->rcb_proto.sp_protocol;
         if(af == AF_INET)
-            route_cb.ip_count--;
+            route_counts.ip_count--;
 #ifdef AF_NS
         else if(af == AF_NS)
-            route_cb.ns_count--;
+            route_counts.ns_count--;
 #endif
         else if(af == AF_ISO)
-            route_cb.iso_count--;
-        route_cb.any_count--;
+            route_counts.iso_count--;
+        route_counts.any_count--;
     }
     s = splnet();
     error = raw_usrreq(so, req, m, nam, control);
@@ -127,15 +138,15 @@ struct mbuf *m, *nam, *control;
             return (error);
         }
         if(af == AF_INET)
-            route_cb.ip_count++;
+            route_counts.ip_count++;
 #ifdef AF_NS
         else if(af == AF_NS)
-            route_cb.ns_count++;
+            route_counts.ns_count++;
 #endif
         else if(af == AF_ISO)
-            route_cb.iso_count++;
+            route_counts.iso_count++;
         rp->rcb_faddr = &route_src;
-        route_cb.any_count++;
+        route_counts.any_count++;
         soisconnected(so);
         so->so_options |= SO_USELOOPBACK;
     }
@@ -192,10 +203,10 @@ struct socket *so;
         ADVANCE(cp, netmask);
     }
     if((rtm->rtm_addrs & RTA_GENMASK) && cp < lim)  {
-        struct radix_node *t, *rn_addmask();
+        struct radix_node *t;
         genmask = (struct sockaddr *)cp;
         ADVANCE(cp, genmask);
-        t = rn_addmask(genmask, 1, 2);
+        t = rn_addmask((caddr_t)genmask, 1, 2);
         if(t && Bcmp(genmask, t->rn_key, *(u_char *)genmask) == 0)
             genmask = (struct sockaddr *)(t->rn_key);
         else
@@ -387,7 +398,7 @@ cleanup:
          * Check to see if we don't want our own messages.
          */
         if((so->so_options & SO_USELOOPBACK) == 0) {
-            if(route_cb.any_count <= 1) {
+            if(route_counts.any_count <= 1) {
                 if(rtm)
                     Free(rtm);
                 m_freem(m);
@@ -430,66 +441,11 @@ register struct rt_metrics *in, *out;
 }
 
 /*
- * Copy data from a buffer back into the indicated mbuf chain,
- * starting "off" bytes from the beginning, extending the mbuf
- * chain if necessary.
- */
-void
-m_copyback(m0, off, len, cp)
-struct	mbuf *m0;
-register int off;
-register int len;
-caddr_t cp;
-
-{
-    register int mlen;
-    register struct mbuf *m = m0, *n;
-    int totlen = 0;
-
-    if(m0 == 0)
-        return;
-    while(off > (mlen = m->m_len)) {
-        off -= mlen;
-        totlen += mlen;
-        if(m->m_next == 0) {
-            n = m_getclr(M_DONTWAIT, m->m_type);
-            if(n == 0)
-                goto out;
-            n->m_len = MIN(MLEN, len + off);
-            m->m_next = n;
-        }
-        m = m->m_next;
-    }
-    while(len > 0) {
-        mlen = MIN(m->m_len - off, len);
-        bcopy(cp, off + mtod(m, caddr_t), (unsigned)mlen);
-        cp += mlen;
-        len -= mlen;
-        mlen += off;
-        off = 0;
-        totlen += mlen;
-        if(len == 0)
-            break;
-        if(m->m_next == 0) {
-            n = m_get(M_DONTWAIT, m->m_type);
-            if(n == 0)
-                break;
-            n->m_len = MIN(MLEN, len);
-            m->m_next = n;
-        }
-        m = m->m_next;
-    }
-out:
-    if(((m = m0)->m_flags & M_PKTHDR) && (m->m_pkthdr.len < totlen))
-        m->m_pkthdr.len = totlen;
-}
-
-/*
  * The miss message and losing message are very similar.
  */
 
 void
-rt_missmsg(type, dst, gate, mask, src, flags, error)
+rts_missmsg(type, dst, gate, mask, src, flags, error)
 int type;
 register struct sockaddr *dst;
 struct sockaddr *gate, *mask, *src;
@@ -500,7 +456,7 @@ int error;
     register struct mbuf *m;
     int dlen = ROUNDUP(dst->sa_len);
     int len = dlen + sizeof(*rtm);
-    if(route_cb.any_count == 0)
+    if(route_counts.any_count == 0)
         return;
     m = m_gethdr(M_DONTWAIT, MT_DATA);
     if(m == 0)
@@ -551,7 +507,7 @@ int error;
  * interface goes up/down or its flags change.
  */
 void
-rt_ifmsg(ifp)
+rts_ifmsg(ifp)
 struct ifnet *ifp;
 {
     struct if_msghdr *ifm;
@@ -559,7 +515,7 @@ struct ifnet *ifp;
     struct sockaddr_dl *sdl;
     int len, sdl_len;
 
-    if(route_cb.any_count == 0)
+    if(route_counts.any_count == 0)
         return;
 
     sdl_len = sizeof(struct sockaddr_dl);
@@ -605,10 +561,12 @@ struct ifnet *ifp;
  * rt_newaddrmsg - generate RTM_NEWADDR or RTM_DELADDR routing
  * socket messages when interface addresses are added or removed.
  * If a non-NULL rtentry is provided, also send an RTM_ADD/RTM_DELETE
- * message for the associated route.
+ * message for the associated route. (The signal to the applications
+ * that asked for address changes is sent by the core's rt_newaddrmsg(),
+ * kern/admin_stubs.c, whether this module is loaded or not.)
  */
 void
-rt_newaddrmsg(cmd, ifa, error, rt)
+rts_newaddrmsg(cmd, ifa, error, rt)
 int cmd;
 struct ifaddr *ifa;
 int error;
@@ -620,16 +578,8 @@ struct rtentry *rt;
     struct ifnet *ifp = ifa->ifa_ifp;
     struct sockaddr *sa, *mask;
     int len, sa_len;
-    extern void api_sendaddrchange(void);
 
-    /*
-     * Wake SBTC_SIG_ADDRESS_CHANGE_MASK subscribers on every address add/remove,
-     * independent of whether a routing socket is listening (the any_count==0
-     * early return below skips only the PF_ROUTE message, not this).
-     */
-    api_sendaddrchange();
-
-    if(route_cb.any_count == 0)
+    if(route_counts.any_count == 0)
         return;
 
     /* Send ifa_msghdr for the address change */
@@ -881,18 +831,43 @@ struct walkarg *w;
  */
 extern	struct domain routedomain;		/* or at least forward */
 
+/*
+ * The entries that are functions of the core (raw_input, raw_ctlinput,
+ * raw_init) are filled in by rts_attach(): in a module library they are
+ * known only when the library has its table of the core, not when it is
+ * linked.
+ */
 struct protosw routesw[] = {
     {
         SOCK_RAW,	&routedomain,	0,		PR_ATOMIC | PR_ADDR,
-        (void (*)(APTR args, ...))raw_input,	(APTR)route_output,	(APTR)raw_ctlinput,	0,
+        NULL,	(APTR)route_output,	NULL,	0,
         route_usrreq,
-        raw_init,	0,		0,		        0,
+        NULL,	0,		0,		        0,
     }
 };
-
-int	unp_externalize(), unp_dispose();
 
 struct domain routedomain = {
     PF_ROUTE, "route", NULL, NULL, NULL,
     routesw, &routesw[sizeof(routesw) / sizeof(routesw[0])], NULL
 };
+
+/*
+ * The routing domain in and out of the stack's list (the module's start
+ * and stop). Attaching it initialises the list of raw sockets
+ * (raw_init()), which only routing sockets are on: there is none while the
+ * domain is not attached.
+ */
+int
+rts_attach(void)
+{
+    routesw[0].pr_input = (void (*)(APTR args, ...))raw_input;
+    routesw[0].pr_ctlinput = (APTR)raw_ctlinput;
+    routesw[0].pr_init = raw_init;
+    return (domain_attach(&routedomain));
+}
+
+int
+rts_detach(void)
+{
+    return (domain_detach(&routedomain));
+}

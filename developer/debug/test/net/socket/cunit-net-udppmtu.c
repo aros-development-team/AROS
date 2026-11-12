@@ -626,12 +626,12 @@ int main(int argc, char **argv)
     }
     p = CU_add_suite("UDPPMTU_Suite", init_suite, clean_suite);
     if (p == NULL ||
-        !CU_add_test(p, "the IPv6 path MTU options and their defaults", testUDPPMTU_V6_OPTIONS) ||
-        !CU_add_test(p, "IPV6_PATHMTU gives the peer's path MTU", testUDPPMTU_V6_PATHMTU) ||
-        !CU_add_test(p, "IPV6_RECVPATHMTU tells the sender of a Packet Too Big", testUDPPMTU_V6_RECVPATHMTU) ||
-        !CU_add_test(p, "IPV6_DONTFRAG refuses a datagram above the link MTU", testUDPPMTU_V6_DONTFRAG) ||
-        !CU_add_test(p, "IPV6_USE_MIN_MTU and IPV6_DONTFRAG for multicast", testUDPPMTU_V6_MINMTU) ||
-        !CU_add_test(p, "IP_DONTFRAG sets DF and refuses above the path MTU", testUDPPMTU_V4_DONTFRAG))
+        !st_add_test(p, "the IPv6 path MTU options and their defaults", testUDPPMTU_V6_OPTIONS, ST_V6) ||
+        !st_add_test(p, "IPV6_PATHMTU gives the peer's path MTU", testUDPPMTU_V6_PATHMTU, ST_V6) ||
+        !st_add_test(p, "IPV6_RECVPATHMTU tells the sender of a Packet Too Big", testUDPPMTU_V6_RECVPATHMTU, ST_V6) ||
+        !st_add_test(p, "IPV6_DONTFRAG refuses a datagram above the link MTU", testUDPPMTU_V6_DONTFRAG, ST_V6) ||
+        !st_add_test(p, "IPV6_USE_MIN_MTU and IPV6_DONTFRAG for multicast", testUDPPMTU_V6_MINMTU, ST_V6) ||
+        !st_add_test(p, "IP_DONTFRAG sets DF and refuses above the path MTU", testUDPPMTU_V4_DONTFRAG, ST_V4))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

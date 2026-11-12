@@ -30,29 +30,19 @@
 #include <kern/amiga_includes.h>
 #include <kern/amiga_netdb.h>
 #include <api/resolv.h>
+#include <api/resolver_ops.h>
+
+#include <net/netcore_map.h>        /* always the last include */
 
 #ifndef AMITCP /* AmiTCP has this in the SocketBase */
 struct state _res;
 #endif
 
-void res_cleanup_db(struct state *state)
-{
-#if defined(__AROS__)
-    D(bug("[AROSTCP](res_init.c) res_cleanup_db()\n"));
-#endif
-
-    if(state->dnsrch) {
-        char **domain;
-
-        for(domain = state->dnsrch; *domain; domain++)
-            bsd_free(*domain, NULL);
-        bsd_free(state->dnsrch, NULL);
-        state->dnsrch = NULL;
-    }
-    if(state->nsaddr_list)
-        bsd_free(state->nsaddr_list, NULL);
-    state->options = 0;
-}
+/*
+ * res_cleanup_db(), which frees what res_update_db() allocates, is the
+ * core's (api/resolver_stubs.c): a base's state must be freed at its close
+ * also when this module has been unloaded.
+ */
 
 /*
  * Fill one nsaddr_list slot from a nameserver node as a fully-formed sockaddr

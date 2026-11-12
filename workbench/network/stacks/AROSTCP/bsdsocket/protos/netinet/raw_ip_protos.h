@@ -2,8 +2,6 @@
 raw_ip.c
  */
 
-void rip_input(void *args, ...);
-
 int rip_output(void *args,...);
 
 int rip_ctloutput(int op,

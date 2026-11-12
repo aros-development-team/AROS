@@ -75,9 +75,6 @@ UBYTE ERR_NONETDB[]     = "No active net database";
 UBYTE ERR_VALUE[]       = "Illegal value";
 UBYTE ERR_NOWRITE[]     = "%s: Variable %s is not writeable";
 
-/* Command-line template */
-const TEXT cmd_template[] = "WITH/K,NOO=NOCONFIG/S,DEBUG/S";
-
 /* Array of parsing functions. Note that the order is same as in the
  * enum keyword.
  */
@@ -383,19 +380,12 @@ reterr:
 }
 
 /*
- * SET WITH a file
+ * (SET WITH=file - read_sets() - and the reading of the command line and
+ * general.config - readconfig(), parsefile() - are the configuration
+ * reader's, module "netconfig": kern/netconfig_stubs.c,
+ * kern/netconfig_module.c. QUERY and SET of the variables stay here: they
+ * are what the stack answers while it runs.)
  */
-LONG read_sets(struct CSource *args, UBYTE **errstrp, struct CSource *res)
-{
-    UBYTE *buf = res->CS_Buffer;
-
-    if(ReadItem(buf, res->CS_Length, args) < 0) {
-        *errstrp = ERR_SYNTAX;
-        return RETURN_WARN;
-    } else {
-        return parsefile(buf, errstrp, res);
-    }
-}
 
 /*
  * Parse a 'WITH' command
@@ -405,135 +395,6 @@ readfile(struct CSource *args, UBYTE **errstrp, struct CSource *res)
 {
     *errstrp = "readfile() is currently unimplemented\n";
     return RETURN_WARN;
-}
-
-#define CMDLINETEMP "WITH/K,NOO=NOCONFIG/S,DEBUG/S"
-
-#define CL_WITH   0
-#define CL_NOCFG  1
-#define CL_DEBUG  2		/* Currently default, does nothing */
-#define CL_SIZE   3
-
-/*
- * Read command file
- */
-LONG
-parsefile(UBYTE const *name, UBYTE **errstrp, struct CSource *res)
-{
-    LONG retval = RETURN_OK, ioerr = 0;
-    struct CSource arg;
-    int line = 0;
-    BPTR fh;
-    UBYTE *buf;
-#if defined(__AROS__)
-    D(bug("[AROSTCP](amiga_config.c) parsefile('%s')\n", name));
-#endif
-
-    D(Printf("Loading config file: %s\n", name);)
-    buf = AllocMem(CONFIGLINELEN, MEMF_PUBLIC);
-
-    if(buf) {
-        arg.CS_Buffer = buf;
-        if(fh = Open(name, MODE_OLDFILE)) {
-            while(FGets(fh, buf, CONFIGLINELEN)) {
-                line++;
-                if(*buf == '#')
-                    continue;
-                arg.CS_Length = strnlen(buf, CONFIGLINELEN);
-                arg.CS_CurChr = 0;
-                retval = setvalue(&arg, errstrp, res);
-
-                if(retval == RETURN_OK)
-                    continue;
-                if(retval != RETURN_WARN) {  /* severe error */
-                    error_request("Fatal configuration error in file %s at line %ld, col %ld\n%s\nAROSTCP will quit", (IPTR)name,
-                                  (IPTR)line, (IPTR)arg.CS_CurChr, (IPTR)*errstrp);
-                    break;
-                }
-
-                /* Print the error to the "stdout" */
-#if defined(__AROS__)
-                D(bug("[AROSTCP](amiga_config.c) parsefile: %s: line %ld, col %ld: %s",
-                      name, line, arg.CS_CurChr, *errstrp));
-#endif
-                error_request("Configuration error in file %s at line %ld, col %ld\n%s", (IPTR)name, (IPTR)line, (IPTR)arg.CS_CurChr,
-                              (IPTR)*errstrp);
-                retval = RETURN_OK;
-            }
-            /* Check file error */
-            ioerr = IoErr();
-
-            Close(fh);
-        } else {
-            ioerr = IoErr();
-        }
-
-        if(ioerr) {
-            Fault(ioerr, name, res->CS_Buffer, res->CS_Length);
-            *errstrp = res->CS_Buffer;
-            retval = RETURN_ERROR;
-        }
-        if(!fh)
-            error_request("Unable to open configuration file\n%s", (IPTR)*errstrp);
-
-        FreeMem(buf, CONFIGLINELEN);
-    } else {
-        *errstrp = ERR_MEMORY;
-        retval = RETURN_FAIL;
-    }
-
-    return retval;
-}
-
-/*
- * Read command line arguments and configuration file
- */
-BOOL
-readconfig(void)
-{
-    UBYTE result[REPLYBUFLEN + 1]; /* for error returns */
-    struct CSource res;
-    struct RDArgs *rdargs = NULL;
-    IPTR args[CL_SIZE] = { 0 };
-    UBYTE *errstr;
-    LONG error = 0;
-#if defined(__AROS__)
-    D(bug("[AROSTCP](amiga_config.c) readconfig()\n"));
-#endif
-
-    res.CS_Buffer = result;
-    res.CS_Length = sizeof(result);
-    res.CS_CurChr = 0;
-
-    /* Parse command line arguments, if any */
-    rdargs = ReadArgs(cmd_template, args, NULL);
-
-    if(!rdargs) {
-#if defined(__AROS__)
-        D(bug("[AROSTCP](amiga_config.c) readconfig: Bad Args\n"));
-#endif
-        Printf("Argument error. Template: %s\n", cmd_template);
-        return FALSE;
-    }
-
-    if(!args[CL_NOCFG])
-        /* Read default configuration file */
-        error = parsefile(config_path, &errstr, &res);
-
-    if(!error && args[CL_WITH])
-        /* Read given file */
-        error = parsefile((STRPTR)args[CL_WITH], &errstr, &res);
-
-    FreeArgs(rdargs);
-
-    if(error) {
-#if defined(__AROS__)
-        D(bug("[AROSTCP](amiga_config.c) readconfig: TCP/IP Configuration: %s\n", errstr));
-#endif
-        Printf("TCP/IP Configuration: %s\n", errstr);
-    }
-
-    return ((BOOL)!error);
 }
 
 #if 0

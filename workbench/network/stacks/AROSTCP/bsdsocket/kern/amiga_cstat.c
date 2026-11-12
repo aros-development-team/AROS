@@ -89,76 +89,38 @@
 
 long count = 0;
 
-int
-ultoa(unsigned long ul, char *buffer)
-{
-    static char buf[10];
-    char *p;
-    int len;
-
-    p = buf;
-    *p = '\0';
-
-    do {
-        *++p = (ul % 10) + '0';
-    } while(ul /= 10);
-
-    len = p - buf;
-
-    while(*buffer++ = *p--)
-        ;
-    return(len);
-}
-
-int
-ltoa(long l, char *buffer)
-{
-    int len = 0;
-
-    if(l < 0) {
-        *buffer++ = '-';
-        l = -l;
-        len++;
-    }
-    return (len + ultoa((unsigned long)l, buffer));
-}
-
-/*
- * Allocate big enough buffer for reply
- */
-LONG
-CS_Alloc(struct CSource *reply, size_t size)
-{
-    /* do we have enough space? */
-    if(reply->CS_Length < size) {
-        char *buffer;
-        if((buffer = bsd_malloc(size, M_TEMP, 0)) == NULL) {
-            return 0;
-        }
-        /*
-         * Old buffer will be freed by caller
-         */
-        reply->CS_Buffer = buffer;
-        reply->CS_Length = size;
-    }
-
-    return 1;
-}
 
 /*
  * getsockets(): a reply statics for all sockets
  *
  */
 struct printsocket {
-    struct in_addr  inp_faddr;	/* u_long, far addr */
+    struct in_addr  ps_faddr;	/* u_long, far addr */
     u_short         inp_fport;
-    struct in_addr  inp_laddr;	/* u_long, local addr */
+    struct in_addr  ps_laddr;	/* u_long, local addr */
     u_short         inp_lport;
     short           so_type;	/* SOCK_STREAM, _DGRAM... */
     u_short         so_rcv_sb_cc;	/* Recv queue size */
     u_short         so_snd_sb_cc;	/* Send queue */
     short           inp_ppcb_t_state; /* State of TCP connection */
 };
+
+#include <net/netmodule.h>
+
+/*
+ * A PCB list of the transports, by the name its transport registered it
+ * under (net/netmodule.h): the core names no transport's variable. An
+ * empty list when the transports are not part of the running stack.
+ */
+static struct inpcb *
+pcblist_first(const char *name)
+{
+    const struct netvar *nv = netvar_find(name);
+
+    if(nv == NULL || nv->nv_size != sizeof(struct inpcbhead))
+        return NULL;
+    return ((struct inpcbhead *)nv->nv_addr)->lh_first;
+}
 
 LONG
 getsockets(struct CSource *args, UBYTE **errstrp, struct CSource *res)
@@ -170,11 +132,9 @@ getsockets(struct CSource *args, UBYTE **errstrp, struct CSource *res)
     spl_t s = splnet();		/* Critical section starts here */
 
     /* Count number of connections */
-//for(pcb = udb.inp_next; pcb != &udb ; pcb = pcb->inp_next)
-    for(pcb = udb.lh_first; pcb != NULL; pcb = pcb->inp_list.le_next)
+    for(pcb = pcblist_first("udb"); pcb != NULL; pcb = pcb->inp_list.le_next)
         ++count;
-//for(pcb = tcb.inp_next; pcb != &tcb ; pcb = pcb->inp_next)
-    for(pcb = tcb.lh_first; pcb != NULL; pcb = pcb->inp_list.le_next)
+    for(pcb = pcblist_first("tcb"); pcb != NULL; pcb = pcb->inp_list.le_next)
         ++count;
 
     if(count == 0) {		/* return now if nothing to print */
@@ -204,11 +164,11 @@ getsockets(struct CSource *args, UBYTE **errstrp, struct CSource *res)
     }
 
     /* Copy information, TCP first.. */
-//for(pcb = tcb.inp_next, pps = mem; pcb != &tcb; pcb = pcb->inp_next, ++pps){
-    for(pcb = tcb.lh_first, pps = mem; pcb != NULL; pcb = pcb->inp_list.le_next) {
-        pps->inp_faddr = pcb->inp_faddr;
+    for(pcb = pcblist_first("tcb"), pps = mem; pcb != NULL; pcb = pcb->inp_list.le_next) {
+        /* the report has room for IPv4 addresses only: others as "any" */
+        pps->ps_faddr.s_addr = pcb->inp_af == AF_INET ? pcb->inp_faddr.s_addr : INADDR_ANY;
         pps->inp_fport = pcb->inp_fport;
-        pps->inp_laddr = pcb->inp_laddr;
+        pps->ps_laddr.s_addr = pcb->inp_af == AF_INET ? pcb->inp_laddr.s_addr : INADDR_ANY;
         pps->inp_lport = pcb->inp_lport;
         pps->so_type = pcb->inp_socket->so_type;
         pps->so_rcv_sb_cc = pcb->inp_socket->so_rcv.sb_cc;
@@ -216,11 +176,11 @@ getsockets(struct CSource *args, UBYTE **errstrp, struct CSource *res)
         pps->inp_ppcb_t_state = ((struct tcpcb *)(pcb->inp_ppcb))->t_state;
     }
     /* ...then UDP */
-//for(pcb = udb.inp_next; pcb != &udb; pcb = pcb->inp_next, ++pps){
-    for(pcb = udb.lh_first; pcb != NULL; pcb = pcb->inp_list.le_next) {
-        pps->inp_faddr = pcb->inp_faddr;
+    for(pcb = pcblist_first("udb"); pcb != NULL; pcb = pcb->inp_list.le_next) {
+        /* the report has room for IPv4 addresses only: others as "any" */
+        pps->ps_faddr.s_addr = pcb->inp_af == AF_INET ? pcb->inp_faddr.s_addr : INADDR_ANY;
         pps->inp_fport = pcb->inp_fport;
-        pps->inp_laddr = pcb->inp_laddr;
+        pps->ps_laddr.s_addr = pcb->inp_af == AF_INET ? pcb->inp_laddr.s_addr : INADDR_ANY;
         pps->inp_lport = pcb->inp_lport;
         pps->so_type = pcb->inp_socket->so_type;
         pps->so_rcv_sb_cc = pcb->inp_socket->so_rcv.sb_cc;
@@ -237,8 +197,8 @@ getsockets(struct CSource *args, UBYTE **errstrp, struct CSource *res)
         csprintf(res, "%lc %04lx %04lx %08lx %04lx %08lx %04lx %1lx%s",
                  mem[i].so_type == SOCK_STREAM ? 't' : 'u',
                  mem[i].so_rcv_sb_cc, mem[i].so_snd_sb_cc,
-                 mem[i].inp_laddr.s_addr, mem[i].inp_lport,
-                 mem[i].inp_faddr.s_addr, mem[i].inp_fport,
+                 mem[i].ps_laddr.s_addr, mem[i].inp_lport,
+                 mem[i].ps_faddr.s_addr, mem[i].inp_fport,
                  mem[i].inp_ppcb_t_state,
                  (i < count - 1) ? " " : "");
 
@@ -262,21 +222,28 @@ getsockets(struct CSource *args, UBYTE **errstrp, struct CSource *res)
 #include <netinet/icmp_var.h>
 #include <netinet/ip_icmp.h>
 
-extern struct icmpstat icmpstat;
-
 LONG
 read_icmphist(struct CSource *args, UBYTE **errstrp, struct CSource *res)
 {
     int i;
     UBYTE *p = res->CS_Buffer;
+    /* IPv4's, by name: not there when IPv4 is not part of the running stack */
+    const struct netvar *nv = netvar_find("icmpstat");
+    struct icmpstat *icmpstatp;
+
+    if(nv == NULL || nv->nv_size != sizeof(struct icmpstat)) {
+        *errstrp = ERR_ILLEGAL_VAR;
+        return RETURN_ERROR;
+    }
+    icmpstatp = (struct icmpstat *)nv->nv_addr;
 
     for(i = 0; i <= ICMP_MAXTYPE; i++) {
-        p += ultoa(icmpstat.icps_outhist[i], p);
+        p += ultoa(icmpstatp->icps_outhist[i], p);
         *p++ = ' ';
     }
 
     for(i = 0; i <= ICMP_MAXTYPE; i++) {
-        p += ultoa(icmpstat.icps_inhist[i], p);
+        p += ultoa(icmpstatp->icps_inhist[i], p);
         *p++ = ' ';
     }
     *--p = '\0';

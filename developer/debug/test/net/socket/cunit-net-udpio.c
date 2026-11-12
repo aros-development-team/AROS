@@ -200,7 +200,7 @@ void testUDPIO_NONBLOCK(void)
     long on = 1;
     int r, s;
 
-    CU_ASSERT_EQUAL_FATAL(pair(AF_INET6, &r, &s, &dst, &dlen), 0);
+    CU_ASSERT_EQUAL_FATAL(pair(st_prefer_family(AF_INET6), &r, &s, &dst, &dlen), 0);
     CU_ASSERT_EQUAL(IoctlSocket(r, FIONBIO, (char *)&on), 0);
     CU_ASSERT_EQUAL(recv(r, rbuf, sizeof(rbuf), 0), -1);
     CU_ASSERT_EQUAL(Errno(), EWOULDBLOCK);
@@ -273,18 +273,18 @@ int main(void)
     }
     p = CU_add_suite("UDPIO_Suite", init_suite, clean_suite);
     if (p == NULL ||
-        !CU_add_test(p, "1200 to 9000 bytes, whole (IPv4)", testUDPIO_SIZES4) ||
-        !CU_add_test(p, "1200 to 9000 bytes, whole (IPv6)", testUDPIO_SIZES6) ||
-        !CU_add_test(p, "above the send buffer: EMSGSIZE, until SO_SNDBUF (IPv4)", testUDPIO_SNDBUF4) ||
-        !CU_add_test(p, "above the send buffer: EMSGSIZE, until SO_SNDBUF (IPv6)", testUDPIO_SNDBUF6) ||
-        !CU_add_test(p, "a short buffer cuts with MSG_TRUNC (IPv4)", testUDPIO_TRUNC4) ||
-        !CU_add_test(p, "a short buffer cuts with MSG_TRUNC (IPv6)", testUDPIO_TRUNC6) ||
-        !CU_add_test(p, "a burst that fits SO_RCVBUF arrives whole (IPv4)", testUDPIO_BURST4) ||
-        !CU_add_test(p, "a burst that fits SO_RCVBUF arrives whole (IPv6)", testUDPIO_BURST6) ||
-        !CU_add_test(p, "an empty non-blocking socket says EWOULDBLOCK", testUDPIO_NONBLOCK) ||
-        !CU_add_test(p, "consecutive small datagrams arrive whole (IPv6)", testUDPIO_CONSECUTIVE6) ||
-        !CU_add_test(p, "every datagram has its ancillary data (IPv4)", testUDPIO_ANCILLARY4) ||
-        !CU_add_test(p, "every datagram has its ancillary data (IPv6)", testUDPIO_ANCILLARY6))
+        !st_add_test(p, "1200 to 9000 bytes, whole (IPv4)", testUDPIO_SIZES4, ST_V4) ||
+        !st_add_test(p, "1200 to 9000 bytes, whole (IPv6)", testUDPIO_SIZES6, ST_V6) ||
+        !st_add_test(p, "above the send buffer: EMSGSIZE, until SO_SNDBUF (IPv4)", testUDPIO_SNDBUF4, ST_V4) ||
+        !st_add_test(p, "above the send buffer: EMSGSIZE, until SO_SNDBUF (IPv6)", testUDPIO_SNDBUF6, ST_V6) ||
+        !st_add_test(p, "a short buffer cuts with MSG_TRUNC (IPv4)", testUDPIO_TRUNC4, ST_V4) ||
+        !st_add_test(p, "a short buffer cuts with MSG_TRUNC (IPv6)", testUDPIO_TRUNC6, ST_V6) ||
+        !st_add_test(p, "a burst that fits SO_RCVBUF arrives whole (IPv4)", testUDPIO_BURST4, ST_V4) ||
+        !st_add_test(p, "a burst that fits SO_RCVBUF arrives whole (IPv6)", testUDPIO_BURST6, ST_V6) ||
+        !st_add_test(p, "an empty non-blocking socket says EWOULDBLOCK", testUDPIO_NONBLOCK, ST_ANY) ||
+        !st_add_test(p, "consecutive small datagrams arrive whole (IPv6)", testUDPIO_CONSECUTIVE6, ST_V6) ||
+        !st_add_test(p, "every datagram has its ancillary data (IPv4)", testUDPIO_ANCILLARY4, ST_V4) ||
+        !st_add_test(p, "every datagram has its ancillary data (IPv6)", testUDPIO_ANCILLARY6, ST_V6))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

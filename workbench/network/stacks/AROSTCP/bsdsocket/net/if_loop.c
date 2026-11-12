@@ -72,6 +72,7 @@
 #include <net/if.h>
 #include <net/if_types.h>
 #include <net/netisr.h>
+#include <net/netmodule.h>
 #include <net/route.h>
 
 
@@ -128,7 +129,8 @@ void loconfig()
     ifr.ifr_addr.sa_len = sizeof(struct sockaddr_in);
     ifr.ifr_addr.sa_family = AF_INET;
     ifr_saddr->sin_addr.s_addr = htonl(0x7F000001);
-    in_control(NULL, SIOCSIFADDR, &ifr, &loif);
+    /* 127.0.0.1, when IPv4 is part of the running stack */
+    (void)netfamily_control(AF_INET, NULL, SIOCSIFADDR, (caddr_t)&ifr, &loif);
 
 #if INET6
     {
@@ -142,7 +144,7 @@ void loconfig()
         /* /128 prefix mask: all bits set */
         memset(&ifra6.ifra_prefixmask.sin6_addr, 0xff,
                sizeof(ifra6.ifra_prefixmask.sin6_addr));
-        in6_control(NULL, SIOCAIFADDR_IN6, (caddr_t)&ifra6, &loif);
+        (void)netfamily_control(AF_INET6, NULL, SIOCAIFADDR_IN6, (caddr_t)&ifra6, &loif);
     }
 #endif
 }
@@ -169,37 +171,18 @@ register struct rtentry *rt;
     }
     ifp->if_opackets++;
     ifp->if_obytes += m->m_pkthdr.len;
-    switch(dst->sa_family) {
+    /* the input queue of the destination's family, if one is registered */
+    {
+        const struct netinput *ni = netinput_find(dst->sa_family);
 
-#if INET
-    case AF_INET:
-        ifq = &ipintrq;
-        isr = NETISR_IP;
-        break;
-#endif
-#if INET6
-    case AF_INET6:
-        ifq = &ip6intrq;
-        isr = NETISR_IPV6;
-        break;
-#endif
-#if NS
-    case AF_NS:
-        ifq = &nsintrq;
-        isr = NETISR_NS;
-        break;
-#endif
-#if ISO
-    case AF_ISO:
-        ifq = &clnlintrq;
-        isr = NETISR_ISO;
-        break;
-#endif
-    default:
-        printf("lo%ld: can't handle af%ld\n", (long)ifp->if_unit,
-               (long)dst->sa_family);
-        m_freem(m);
-        return (EAFNOSUPPORT);
+        if(ni == NULL) {
+            printf("lo%ld: can't handle af%ld\n", (long)ifp->if_unit,
+                   (long)dst->sa_family);
+            m_freem(m);
+            return (EAFNOSUPPORT);
+        }
+        ifq = ni->ni_queue;
+        isr = ni->ni_isr;
     }
     s = splimp();
     if(IF_QFULL(ifq)) {

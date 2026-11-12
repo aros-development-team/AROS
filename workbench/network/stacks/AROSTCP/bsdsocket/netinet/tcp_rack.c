@@ -46,6 +46,7 @@
 
 #include <sys/malloc.h>
 #include <kern/amiga_includes.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 int tcp_do_rack = 1;
 
@@ -63,6 +64,14 @@ int tcp_do_rack = 1;
 #define RACK_MAP_PER    (256 * 1024)
 
 int tcp_rack_maplen = RACK_MAP_MIN;
+
+/* TCP stops (tcp_deinit()): this file's variables as the file has them */
+void
+tcp_rack_defaults(void)
+{
+    tcp_do_rack = 1;
+    tcp_rack_maplen = RACK_MAP_MIN;
+}
 
 void
 tcp_rack_init(void)

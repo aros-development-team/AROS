@@ -1,8 +1,9 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    CUnit tests for bsdsocket.library UDP (IPv4) over the loopback interface:
-    sendto/recvfrom, connected UDP, multiple datagrams and bound names; and
+    CUnit tests for bsdsocket.library UDP over the loopback interface (IPv4,
+    or IPv6 where the stack has no IPv4): sendto/recvfrom, connected UDP,
+    multiple datagrams and bound names; and, over IPv4,
     a connected socket that keeps sending to a closed port, at a pace well
     under the ICMP error rate limit, keeps getting ECONNREFUSED: the limit
     refills as time passes, also while no TCP connection exists.
@@ -12,6 +13,9 @@
 #include <proto/dos.h>
 
 struct Library *SocketBase = NULL;
+
+/* The family of the tests that are about UDP, not about a family. */
+#define FAM st_any_family()
 
 int init_suite(void) { return (SocketBase != NULL) ? 0 : -1; }
 int clean_suite(void) { return 0; }
@@ -24,17 +28,17 @@ void testUDP_SENDTO(void)
     socklen_t len;
     char buf[32];
 
-    rfd = st_bound(AF_INET, SOCK_DGRAM, &nport);
+    rfd = st_bound(FAM, SOCK_DGRAM, &nport);
     CU_ASSERT(rfd >= 0);
     if (rfd < 0)
         return;
-    cfd = socket(AF_INET, SOCK_DGRAM, 0);
+    cfd = socket(FAM, SOCK_DGRAM, 0);
     CU_ASSERT(cfd >= 0);
     if (cfd < 0) {
         CloseSocket(rfd);
         return;
     }
-    len = st_loopback(AF_INET, &dst, nport);
+    len = st_loopback(FAM, &dst, nport);
     CU_ASSERT_EQUAL(sendto(cfd, "ping", 4, 0, (struct sockaddr *)&dst, len), 4);
 
     CU_ASSERT(sock_wait(rfd, 0, 3) > 0);
@@ -42,7 +46,7 @@ void testUDP_SENDTO(void)
     r = recvfrom(rfd, buf, sizeof(buf), 0, (struct sockaddr *)&src, &len);
     CU_ASSERT_EQUAL(r, 4);
     CU_ASSERT(r == 4 && memcmp(buf, "ping", 4) == 0);
-    CU_ASSERT_EQUAL(src.ss_family, AF_INET);
+    CU_ASSERT_EQUAL(src.ss_family, FAM);
     CloseSocket(cfd);
     CloseSocket(rfd);
 }
@@ -55,17 +59,17 @@ void testUDP_CONNECTED(void)
     socklen_t len;
     char buf[32];
 
-    rfd = st_bound(AF_INET, SOCK_DGRAM, &nport);
+    rfd = st_bound(FAM, SOCK_DGRAM, &nport);
     CU_ASSERT(rfd >= 0);
     if (rfd < 0)
         return;
-    cfd = socket(AF_INET, SOCK_DGRAM, 0);
+    cfd = socket(FAM, SOCK_DGRAM, 0);
     CU_ASSERT(cfd >= 0);
     if (cfd < 0) {
         CloseSocket(rfd);
         return;
     }
-    len = st_loopback(AF_INET, &dst, nport);
+    len = st_loopback(FAM, &dst, nport);
     /* connect() on a datagram socket fixes the default destination. */
     CU_ASSERT_EQUAL(connect(cfd, (struct sockaddr *)&dst, len), 0);
     CU_ASSERT_EQUAL(send(cfd, "data", 4, 0), 4);
@@ -85,16 +89,17 @@ void testUDP_MULTI(void)
     socklen_t len;
     char buf[32];
 
-    rfd = st_bound(AF_INET, SOCK_DGRAM, &nport);
+    rfd = st_bound(FAM, SOCK_DGRAM, &nport);
     CU_ASSERT(rfd >= 0);
     if (rfd < 0)
         return;
-    cfd = socket(AF_INET, SOCK_DGRAM, 0);
+    cfd = socket(FAM, SOCK_DGRAM, 0);
+    CU_ASSERT(cfd >= 0);
     if (cfd < 0) {
         CloseSocket(rfd);
         return;
     }
-    len = st_loopback(AF_INET, &dst, nport);
+    len = st_loopback(FAM, &dst, nport);
     for (i = 0; i < 4; i++)
         CU_ASSERT_EQUAL(sendto(cfd, "x", 1, 0,
             (struct sockaddr *)&dst, len), 1);
@@ -112,7 +117,7 @@ void testUDP_MULTI(void)
 void testUDP_GETSOCKNAME(void)
 {
     unsigned short nport = 0;
-    int rfd = st_bound(AF_INET, SOCK_DGRAM, &nport);
+    int rfd = st_bound(FAM, SOCK_DGRAM, &nport);
 
     CU_ASSERT(rfd >= 0);
     if (rfd < 0)
@@ -169,11 +174,11 @@ int main(void)
     }
     p = CU_add_suite("UDP_Suite", init_suite, clean_suite);
     if (p == NULL ||
-        !CU_add_test(p, "sendto/recvfrom", testUDP_SENDTO) ||
-        !CU_add_test(p, "connected UDP", testUDP_CONNECTED) ||
-        !CU_add_test(p, "multiple datagrams", testUDP_MULTI) ||
-        !CU_add_test(p, "bind/getsockname", testUDP_GETSOCKNAME) ||
-        !CU_add_test(p, "a closed port keeps refusing, paced", testUDP_REFUSED_PACED))
+        !st_add_test(p, "sendto/recvfrom", testUDP_SENDTO, ST_ANY) ||
+        !st_add_test(p, "connected UDP", testUDP_CONNECTED, ST_ANY) ||
+        !st_add_test(p, "multiple datagrams", testUDP_MULTI, ST_ANY) ||
+        !st_add_test(p, "bind/getsockname", testUDP_GETSOCKNAME, ST_ANY) ||
+        !st_add_test(p, "a closed port keeps refusing, paced", testUDP_REFUSED_PACED, ST_V4))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

@@ -34,6 +34,8 @@
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip6.h>
+#include <sys/syslog.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 /* ------------------------------------------------------------------
  * in6_cksum - compute the Internet checksum for IPv6 upper layers.
@@ -121,8 +123,8 @@ in6_cksum(struct mbuf *m, u_int8_t nxt, u_int32_t off, u_int32_t len)
             mp = mp->m_next;
         }
         if(mp == NULL) {
-            printf("in6_cksum: offset %u past end of chain\n",
-                   (unsigned)off);
+            log(LOG_ERR, "in6_cksum: offset %lu past end of chain\n",
+                   (unsigned long)off);
             return 0;
         }
     }

@@ -46,11 +46,12 @@
 #include <netinet6/nd6.h>
 
 /* Forward declarations */
-struct rtentry *rtalloc1(struct sockaddr *, int);
 int ip6_output(void *, ...);
 
 #include <protos/netinet/in_cksum_protos.h>
 #include <protos/net/rtsock_protos.h>
+#include <protos/net/route_protos.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 /* DAD queue - singly-linked list */
 static struct dadq *dadq_head = NULL;
@@ -704,6 +705,23 @@ nd6_dad_stop(struct in6_ifaddr *ia)
             FREE(dp, M_PCB);
             return;
         }
+    }
+}
+
+/* ------------------------------------------------------------------
+ * nd6_dad_flush - IPv6 stops: no address is being probed for any more.
+ * Each address took its entry with it when it was removed
+ * (in6_purgeaddr() -> nd6_dad_stop()); an entry found here has lost its
+ * address, and holds a pointer to nothing.
+ * ------------------------------------------------------------------ */
+void
+nd6_dad_flush(void)
+{
+    struct dadq *dp;
+
+    while((dp = dadq_head) != NULL) {
+        dadq_head = dp->next;
+        FREE(dp, M_PCB);
     }
 }
 

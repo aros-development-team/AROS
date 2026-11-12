@@ -27,13 +27,115 @@
 
 extern struct Library *SocketBase;
 
+/*
+ * Which address families the running stack has.
+ *
+ * The stack is built from modules and either family may be left out, so a
+ * test says which it needs and is left out of the run - not failed - when
+ * the stack does not have it. One line tells of each test (or whole
+ * program) left out, always in this form, so a log can be searched for it:
+ *
+ *     SKIP <test or program name>: no IPv6 in the running stack
+ *     SKIP <test or program name>: no IPv4 in the running stack
+ *
+ * A test is left out by not adding it to its suite (st_add_test()); a
+ * program that is all about one family leaves before it makes a suite
+ * (st_skip_program()). Nothing is skipped from inside a test function.
+ */
+#define ST_NONE     0   /* needs no family: resolver, conversions, ... */
+#define ST_V4       1   /* needs IPv4 */
+#define ST_V6       2   /* needs IPv6 */
+#define ST_BOTH     3   /* needs both */
+#define ST_ANY      4   /* needs one, whichever: see st_any_family() */
+
+/* Whether the stack has the family (AF_INET or AF_INET6): whether it makes
+ * a socket of it. Asked once for each. Only "no such family" counts as
+ * absent; a socket refused for another reason (no memory, no descriptor)
+ * leaves the family present, so that the tests that need it fail loudly. */
+static int st_have_family(int family)
+{
+    static int known[2], have[2];
+    int i = family == AF_INET6, s;
+
+    if (!known[i]) {
+        s = socket(family, SOCK_DGRAM, 0);
+        if (s >= 0) {
+            CloseSocket(s);
+            have[i] = 1;
+        } else {
+            LONG e = Errno();
+
+            have[i] = !(e == EAFNOSUPPORT || e == EPROTONOSUPPORT || e == EPFNOSUPPORT);
+        }
+        known[i] = 1;
+    }
+    return have[i];
+}
+
+/* The family for a test that is not about a family (the socket layer, TCP,
+ * UDP): the one preferred if the stack has it, else the other one. */
+static int st_prefer_family(int family)
+{
+    int other = family == AF_INET6 ? AF_INET : AF_INET6;
+
+    return st_have_family(family) || !st_have_family(other) ? family : other;
+}
+
+/* ...IPv4 if the stack has it, as these tests always used, else IPv6. */
+static int st_any_family(void)
+{
+    return st_prefer_family(AF_INET);
+}
+
+/* What a need (ST_*) lacks in the running stack, NULL if nothing. */
+static const char *st_missing(int need)
+{
+    int v4 = st_have_family(AF_INET), v6 = st_have_family(AF_INET6);
+
+    if (need == ST_ANY)
+        return v4 || v6 ? NULL : "IPv4 or IPv6";
+    if ((need & ST_V4) && !v4)
+        return "IPv4";
+    if ((need & ST_V6) && !v6)
+        return "IPv6";
+    return NULL;
+}
+
+/* CU_add_test() for a test with a need: added if the stack has what it
+ * needs, else reported as skipped and left out. 0 only if CUnit fails. */
+static int st_add_test(CU_pSuite suite, const char *name, CU_TestFunc func, int need)
+{
+    const char *missing = st_missing(need);
+
+    if (missing != NULL) {
+        printf("SKIP %s: no %s in the running stack\n", name, missing);
+        return 1;
+    }
+    return CU_add_test(suite, name, func) != NULL;
+}
+
+/* For a program that is all about one family: whether to leave at once,
+ * having said so. Call after bsdsocket.library is open. */
+static int st_skip_program(const char *name, int need)
+{
+    const char *missing = st_missing(need);
+
+    if (missing == NULL)
+        return 0;
+    printf("SKIP %s: no %s in the running stack\n", name, missing);
+    return 1;
+}
+
 /* Wait up to secs for fd to become readable (forwrite=0) or writable
- * (forwrite=1).  Returns the WaitSelect() result (>0 ready, 0 timeout). */
+ * (forwrite=1).  Returns the WaitSelect() result (>0 ready, 0 timeout);
+ * -1 for a descriptor that is none (a set-up step that failed). */
 static int sock_wait(int fd, int forwrite, int secs)
 {
     fd_set fs;
     struct timeval tv;
 
+    if (fd < 0)
+        return -1;
     FD_ZERO(&fs);
     FD_SET(fd, &fs);
     tv.tv_sec = secs;
@@ -64,6 +166,32 @@ static socklen_t st_loopback(int family, struct sockaddr_storage *ss,
         s4->sin_port = nport;
         return sizeof(*s4);
     }
+}
+
+/* Fill the "any" address of the given family.  Returns the address len. */
+static socklen_t st_wildcard(int family, struct sockaddr_storage *ss,
+    unsigned short nport)
+{
+    socklen_t len = st_loopback(family, ss, nport);
+
+    if (family == AF_INET6)
+        bzero(&((struct sockaddr_in6 *)ss)->sin6_addr, sizeof(struct in6_addr));
+    else
+        ((struct sockaddr_in *)ss)->sin_addr.s_addr = htonl(INADDR_ANY);
+    return len;
+}
+
+/* Whether two socket names are the same: family, address and port. */
+static int st_same_name(struct sockaddr_storage *a, struct sockaddr_storage *b)
+{
+    if (a->ss_family != b->ss_family)
+        return 0;
+    if (a->ss_family == AF_INET6)
+        return ((struct sockaddr_in6 *)a)->sin6_port == ((struct sockaddr_in6 *)b)->sin6_port &&
+               memcmp(&((struct sockaddr_in6 *)a)->sin6_addr,
+                      &((struct sockaddr_in6 *)b)->sin6_addr, sizeof(struct in6_addr)) == 0;
+    return ((struct sockaddr_in *)a)->sin_port == ((struct sockaddr_in *)b)->sin_port &&
+           ((struct sockaddr_in *)a)->sin_addr.s_addr == ((struct sockaddr_in *)b)->sin_addr.s_addr;
 }
 
 /* Return the port (network order) stored in a sockaddr of either family. */

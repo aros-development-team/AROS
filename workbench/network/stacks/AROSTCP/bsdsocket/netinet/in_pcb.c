@@ -57,17 +57,10 @@
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <netinet/in_pcb.h>
-#include "in_var.h"
-#include <netinet/ip_var.h>
-#include <netinet/ip_output_protos.h>
+#include <netinet/inetfamily.h>
+#include <netinet/inet_transport.h>
 #include <protos/kern/kern_random_protos.h>
-#if INET6
-#include <netinet6/in6_var.h>
-#endif
-
-extern u_char inetctlerrmap[];
-
-struct	in_addr zeroin_addr;
+#include <net/netcore_map.h>        /* always the last include */
 
 /*
  * Ephemeral ports (RFC 6056): a random one from the IANA dynamic range
@@ -79,93 +72,192 @@ struct	in_addr zeroin_addr;
 #define EPHEMERAL_FIRST	49152
 #define EPHEMERAL_LAST	65535
 
-/* The random start of the search: arc4random_buf(), through kern_random.c. */
-static u_int32_t
-in_pcbrandom(void)
+/* ------------------------------------------------------------------ *
+ * Addresses, for every family: inf_addrlen bytes, all zero meaning "any";
+ * compared and tested with inpcb_addreq() and inpcb_addrany()
+ * (netinet/in_pcb.h).
+ * ------------------------------------------------------------------ */
+
+/* Store an address in a PCB; NULL is "any". (src may be the place itself.) */
+static __inline void
+inpcb_addrset(union inp_addr *dst, const void *src, u_int len)
 {
-    return kern_random32();
-}
+    if(src == NULL)
+        bzero((caddr_t)dst, sizeof(*dst));
+    else if(src != (const void *)dst) {
+        const inp_word_t *w = (const inp_word_t *)src;
+        inp_word_t *d = (inp_word_t *)dst;
 
-/*
- * Pick an ephemeral port for inp that taken() says is free; arg is passed
- * on to it. The port is stored in network byte order in *lportp. Returns
- * EADDRNOTAVAIL if every port in the range is taken.
- */
-int
-in_pcbpickport(struct inpcb *inp, int (*taken)(struct inpcb *, u_short, void *),
-               void *arg, u_short *lportp)
-{
-    u_int32_t num = EPHEMERAL_LAST - EPHEMERAL_FIRST + 1, offset, count;
-
-    offset = in_pcbrandom() % num;
-    for(count = num; count > 0; count--) {
-        u_short lport = htons((u_short)(EPHEMERAL_FIRST + offset));
-
-        if(!taken(inp, lport, arg)) {
-            *lportp = lport;
-            return 0;
-        }
-        offset = (offset + 1) % num;
+        for(; len != 0; len -= sizeof(inp_word_t))
+            *d++ = *w++;
     }
-    return EADDRNOTAVAIL;
-}
-
-/* Whether lport is in use for inp's local address; arg is the wildcard
- * flag for in_pcblookup(). */
-static int
-in_porttaken(struct inpcb *inp, u_short lport, void *arg)
-{
-    return in_pcblookup(inp->inp_pcbinfo->listhead, zeroin_addr, 0,
-                        inp->inp_laddr, lport, *(int *)arg) != NULL;
 }
 
 /*
- * IPv4 and IPv6 PCBs share one list, and an IPv6 PCB leaves the IPv4
- * address fields zeroed, so a wildcard-bound IPv6 socket would look to
- * in_pcblookup() like a wildcard IPv4 one and take IPv4 connections
- * meant for the AF_INET socket on the same port. Match on the socket's
- * address family instead; in6_pcblookup() applies the mirror test.
- * This is also what makes IPV6_V6ONLY real - IPv4-mapped addresses are
- * not implemented, so an AF_INET6 socket is always IPv6-only here.
+ * The families the transports can serve (netinet/inetfamily.h).
+ */
+static const struct inetfamily *inetfamilies[INETFAMILY_MAX];
+
+int
+inetfamily_register(const struct inetfamily *inf)
+{
+    int i, slot = -1;
+
+    if(inf == NULL || inf->inf_size < sizeof(struct inetfamily))
+        return (EINVAL);
+    /*
+     * What the PCB layer and the transports call without a test. A family
+     * that lacks any of it is refused here - its sockets then cannot be
+     * made - instead of failing at the first call through a missing
+     * operation. (What may be NULL is said in netinet/inetfamily.h.)
+     */
+    if(inf->inf_addrlen <= 0 || inf->inf_addrlen > INP_ADDRMAX ||
+            (inf->inf_addrlen & (sizeof(inp_word_t) - 1)) != 0 ||
+            inf->inf_salen <= 0 ||
+            inf->inf_salen > (int)sizeof(struct sockaddr_storage) ||
+            inf->inf_hdrlen <= 0 || inf->inf_mssdflt == NULL ||
+            inf->inf_ctlerrmap == NULL)
+        return (EINVAL);
+    /* every socket */
+    if(inf->inf_ctloutput == NULL || inf->inf_sa_multicast == NULL ||
+            inf->inf_peer_local == NULL || inf->inf_pcbfree == NULL ||
+            inf->inf_pcbinit == NULL || inf->inf_pcbanyfamily == NULL ||
+            inf->inf_sockaddr_parse == NULL || inf->inf_mksockaddr == NULL ||
+            inf->inf_addr_from == NULL || inf->inf_pcbzone == NULL ||
+            inf->inf_ownaddr == NULL || inf->inf_selectsrc == NULL ||
+            inf->inf_pcbbindaddr == NULL || inf->inf_pcbladdr == NULL)
+        return (EINVAL);
+    /* per packet, and connections */
+    if(inf->inf_rcvinfo == NULL || inf->inf_cksum == NULL ||
+            inf->inf_output == NULL || inf->inf_addr_multicast == NULL ||
+            inf->inf_acceptok == NULL || inf->inf_mtu == NULL ||
+            inf->inf_pcbroute == NULL)
+        return (EINVAL);
+    /* datagrams; ancillary data if any socket option asks for it */
+    if(inf->inf_rcvfrom == NULL || inf->inf_unreach == NULL ||
+            inf->inf_dgoutput == NULL ||
+            (inf->inf_rcvopt_mask != 0 && inf->inf_savecontrol == NULL))
+        return (EINVAL);
+    for(i = 0; i < INETFAMILY_MAX; i++) {
+        if(inetfamilies[i] == NULL) {
+            if(slot < 0)
+                slot = i;
+        } else if(inetfamilies[i]->inf_family == inf->inf_family)
+            return (EEXIST);
+    }
+    if(slot < 0)
+        return (ENOSPC);
+    inetfamilies[slot] = inf;
+    return (0);
+}
+
+int
+inetfamily_unregister(const struct inetfamily *inf)
+{
+    int i;
+
+    for(i = 0; i < INETFAMILY_MAX; i++)
+        if(inetfamilies[i] == inf) {
+            inetfamilies[i] = NULL;
+            return (0);
+        }
+    return (ENOENT);
+}
+
+/* The first registered family, or NULL: is any left? */
+const struct inetfamily *
+inetfamily_any(void)
+{
+    int i;
+
+    for(i = 0; i < INETFAMILY_MAX; i++)
+        if(inetfamilies[i] != NULL)
+            return (inetfamilies[i]);
+    return (NULL);
+}
+
+/* The transports stop: the table is as the file has it (it is empty by then). */
+void
+inetfamily_forget(void)
+{
+    int i;
+
+    for(i = 0; i < INETFAMILY_MAX; i++)
+        inetfamilies[i] = NULL;
+}
+
+/*
+ * How many PCBs of a list still use family inf: are of it, or carry
+ * something of its own (holds(), the family's to say; may be NULL). For a
+ * family that is asked to stop (ti_family_pcbs, netinet/inet_transport.h).
+ */
+long
+in_pcbcount(const struct inpcbhead *head, const struct inetfamily *inf,
+            int (*holds)(const struct inpcb *inp))
+{
+    const struct inpcb *inp;
+    long n = 0;
+
+    for(inp = head->lh_first; inp != NULL; inp = inp->inp_list.le_next)
+        if(inp->inp_family == inf || (holds != NULL && (*holds)(inp)))
+            n++;
+    return (n);
+}
+
+const struct inetfamily *
+inetfamily_find(int family)
+{
+    int i;
+
+    for(i = 0; i < INETFAMILY_MAX; i++)
+        if(inetfamilies[i] != NULL && inetfamilies[i]->inf_family == family)
+            return (inetfamilies[i]);
+    return (NULL);
+}
+
+const struct inetfamily *
+inetfamily_bylevel(int optlevel)
+{
+    int i;
+
+    for(i = 0; i < INETFAMILY_MAX; i++)
+        if(inetfamilies[i] != NULL && inetfamilies[i]->inf_optlevel == optlevel)
+            return (inetfamilies[i]);
+    return (NULL);
+}
+
+/*
+ * Make a PCB one of another family than its socket's: the IPv4 connection
+ * accepted on an IPv6 socket that listens for both. Its addresses start
+ * out as "any"; the socket's own family presents them to the application
+ * (in IPv4-mapped form). Refused when that family is not part of the
+ * running stack.
  */
 int
-in_pcbisipv6(struct inpcb *inp)
+in_pcbsetfamily(struct inpcb *inp, const struct inetfamily *inf)
 {
-#if INET6
-    struct socket *so = inp->inp_socket;
+    int s;
 
-    if(so != NULL && so->so_proto != NULL && so->so_proto->pr_domain != NULL)
-        return (so->so_proto->pr_domain->dom_family == AF_INET6);
-#endif
+    if(inf == NULL)
+        return (EAFNOSUPPORT);
+    s = splnet();
+    inp->inp_family = inf;
+    inp->inp_af = inf->inf_family;
+    bzero((caddr_t)&inp->inp_la, sizeof(inp->inp_la));
+    bzero((caddr_t)&inp->inp_fa, sizeof(inp->inp_fa));
+    /* what a PCB of that family starts with (IPv4: its TTL) */
+    (*inf->inf_pcbinit)(inp);
+    splx(s);
     return (0);
 }
 
 /*
- * Mirror an AF_INET6 PCB's IPv4 four-tuple into its IPv6 address fields
- * as IPv4-mapped addresses (::ffff:a.b.c.d), so getpeername()/getsockname()
- * on a dual-stack socket describe the connection the way the application
- * expects. Harmless for AF_INET PCBs, which never read those fields.
+ * May a look-up on behalf of family inf consider this PCB? One of the
+ * family, or one that stands for every family (inpcb_anyfamily(),
+ * netinet/in_pcb.h).
  */
-void
-in_pcbsetv4mapped(struct inpcb *inp)
-{
-#if INET6
-    if(!in_pcbisipv6(inp))
-        return;
-
-    bzero(&inp->inp_laddr6, sizeof(inp->inp_laddr6));
-    inp->inp_laddr6.s6_addr[10] = 0xff;
-    inp->inp_laddr6.s6_addr[11] = 0xff;
-    bcopy(&inp->inp_laddr, &inp->inp_laddr6.s6_addr[12],
-          sizeof(inp->inp_laddr));
-
-    bzero(&inp->inp_faddr6, sizeof(inp->inp_faddr6));
-    inp->inp_faddr6.s6_addr[10] = 0xff;
-    inp->inp_faddr6.s6_addr[11] = 0xff;
-    bcopy(&inp->inp_faddr, &inp->inp_faddr6.s6_addr[12],
-          sizeof(inp->inp_faddr));
-#endif
-}
+#define INPCB_VISIBLE(inp, inf) \
+    ((inp)->inp_family == (inf) || inpcb_anyfamily(inp))
 
 int
 in_pcballoc(so, pcbinfo)
@@ -175,61 +267,342 @@ struct inpcbinfo *pcbinfo;
     register struct inpcb *inp;
     int s;
 
+    const struct inetfamily *inf = NULL;
+
+    /* a PCB belongs to the family of its socket, which must be there */
+    if(so != NULL && so->so_proto != NULL && so->so_proto->pr_domain != NULL)
+        inf = inetfamily_find(so->so_proto->pr_domain->dom_family);
+    if(inf == NULL)
+        return (EAFNOSUPPORT);
     MALLOC(inp, struct inpcb *, sizeof(*inp), M_PCB, M_NOWAIT);
     if(inp == NULL)
         return (ENOBUFS);
     bzero((caddr_t)inp, sizeof(*inp));
     inp->inp_pcbinfo = pcbinfo;
     inp->inp_socket = so;
-#if INET6
-    /* Default AF_INET6 sockets to v6-only; IPV6_V6ONLY can clear it */
-    if(so != NULL && so->so_proto != NULL && so->so_proto->pr_domain != NULL &&
-            so->so_proto->pr_domain->dom_family == AF_INET6)
-        inp->in6p_v6only = 1;
-#endif
+    inp->inp_family = inf;
+    inp->inp_af = inf->inf_family;
+    /* the family's defaults (IPv6: restricted to its own family until
+     * IPV6_V6ONLY is cleared) */
+    (*inf->inf_pcbinit)(inp);
     s = splnet();
     LIST_INSERT_HEAD(pcbinfo->listhead, inp, inp_list);
-    in_pcbinshash(inp);
+    inpcb_inshash(inp);
     splx(s);
     so->so_pcb = (caddr_t)inp;
     return (0);
 }
 
-int
-in_pcbbind(inp, nam)
-register struct inpcb *inp;
-struct mbuf *nam;
+/* ------------------------------------------------------------------ *
+ * The hash: over the bytes of the foreign address and both ports, for
+ * PCBs of every family. (For an IPv4 address this is the sum it always
+ * was.) A PCB is filed under its own family's address length; one that
+ * stands for every family has no address, so it hashes alike for all.
+ * ------------------------------------------------------------------ */
+
+/* Expanded in the look-up, which every packet goes through. */
+INP_ALWAYS_INLINE struct inpcbhead *
+inpcb_hashhead(struct inpcbinfo *pcbinfo, const void *faddr, u_int alen,
+               u_int fport, u_int lport)
 {
+    u_int32_t h = (u_short)fport + (u_short)lport;
+    const inp_word_t *w = (const inp_word_t *)faddr;
+
+    for(; alen != 0; alen -= sizeof(inp_word_t))
+        h += *w++;
+    return (&pcbinfo->hashbase[h % pcbinfo->hashsize]);
+}
+
+struct inpcbhead *
+inpcb_hash(struct inpcbinfo *pcbinfo, const struct inetfamily *inf,
+           const void *faddr, u_int fport, u_int lport)
+{
+    return (inpcb_hashhead(pcbinfo, faddr, faddr != NULL ? inf->inf_addrlen : 0,
+                           fport, lport));
+}
+
+/*
+ * Insert PCB into hash chain. Must be called at splnet.
+ */
+void
+inpcb_inshash(struct inpcb *inp)
+{
+    struct inpcbhead *head;
+
+    head = inpcb_hashhead(inp->inp_pcbinfo, &inp->inp_fa,
+                          inp->inp_family->inf_addrlen,
+                          inp->inp_fport, inp->inp_lport);
+    LIST_INSERT_HEAD(head, inp, inp_hash);
+}
+
+/* The PCB's foreign address or one of its ports has changed. */
+void
+inpcb_rehash(struct inpcb *inp)
+{
+    int s;
+
+    s = splnet();
+    LIST_REMOVE(inp, inp_hash);
+    inpcb_inshash(inp);
+    splx(s);
+}
+
+/* ------------------------------------------------------------------ *
+ * Look-up.
+ * ------------------------------------------------------------------ */
+
+/*
+ * Does the interface a packet came in by rule this PCB out? A socket bound
+ * to an interface (SO_BINDTODEVICE, or a zone) only hears that interface,
+ * and one whose interface went away hears nothing. rcvif NULL: not asked.
+ */
+#define INPCB_DEAF(inp, rcvif) \
+    ((rcvif) != NULL && \
+     (((inp)->inp_boundif != NULL && (inp)->inp_boundif != (rcvif)) || \
+      ((inp)->inp_flags & INP_BOUNDGONE)))
+
+/*
+ * The best PCB for these addresses and ports by a walk of the list: each
+ * address that is "any" on one side only counts as one wildcard, the PCB
+ * with the fewest wins, and without INPLOOKUP_WILDCARD only one with none
+ * will do. A PCB of another family is considered when it stands for every
+ * family (inpcb_anyfamily()). Must be called at splnet.
+ */
+static struct inpcb *
+inpcb_walklist(struct inpcbhead *head, const struct inetfamily *inf,
+               const void *faddr, u_int fport_arg,
+               const void *laddr, u_int lport_arg,
+               const struct ifnet *rcvif, int flags)
+{
+    register struct inpcb *inp, *match = NULL;
+    int matchwild = 3, wildcard;
+    u_short fport = fport_arg, lport = lport_arg;
+    u_int alen = inf->inf_addrlen;
+    int fany, lany;
+
+    fany = (faddr == NULL || inpcb_addrany(faddr, alen));
+    lany = (laddr == NULL || inpcb_addrany(laddr, alen));
+
+    for(inp = head->lh_first; inp != NULL; inp = inp->inp_list.le_next) {
+        if(inp->inp_lport != lport)
+            continue;
+        if(!INPCB_VISIBLE(inp, inf) || INPCB_DEAF(inp, rcvif))
+            continue;
+        wildcard = 0;
+        if(!inpcb_addrany(&inp->inp_fa, alen)) {
+            if(fany)
+                wildcard++;
+            else if(inp->inp_fport != fport ||
+                    !inpcb_addreq(&inp->inp_fa, faddr, alen))
+                continue;
+        } else {
+            if(!fany)
+                wildcard++;
+        }
+        if(!inpcb_addrany(&inp->inp_la, alen)) {
+            if(lany)
+                wildcard++;
+            else if(!inpcb_addreq(&inp->inp_la, laddr, alen))
+                continue;
+        } else {
+            if(!lany)
+                wildcard++;
+        }
+        if(wildcard && (flags & INPLOOKUP_WILDCARD) == 0)
+            continue;
+        if(wildcard < matchwild) {
+            match = inp;
+            matchwild = wildcard;
+            if(matchwild == 0) {
+                break;
+            }
+        }
+    }
+    return (match);
+}
+
+/* The same for those that are not at splnet: bind and connect. */
+static struct inpcb *
+inpcb_lookuplist(struct inpcbhead *head, const struct inetfamily *inf,
+                 const void *faddr, u_int fport,
+                 const void *laddr, u_int lport,
+                 const struct ifnet *rcvif, int flags)
+{
+    struct inpcb *inp;
+    int s;
+
+    s = splnet();
+    inp = inpcb_walklist(head, inf, faddr, fport, laddr, lport, rcvif, flags);
+    splx(s);
+    return (inp);
+}
+
+/*
+ * inpcb_lookup - the PCB a packet of family inf belongs to, or that holds
+ * the given addresses and ports: the one with exactly these four through
+ * the hash, else the best one of the list (inpcb_walklist(); flags:
+ * INPLOOKUP_WILDCARD) - or, with INPLOOKUP_HASHED, the exact one through
+ * the hash or none.
+ * rcvif: the interface the packet came in by - PCBs bound to another one
+ * are passed over - or NULL when that is not to be looked at.
+ *
+ * Every segment and datagram that arrives comes through here, so the way
+ * to a connection's PCB is kept short: the hash and the comparisons are
+ * expanded in place - for a 4-byte address, one addition and two
+ * comparisons - and the interrupt level is raised once for the whole
+ * look-up, or not at all for a caller that says it is at splnet already
+ * (INPLOOKUP_ATSPLNET: the input of a packet, which sana_poll() runs at
+ * splnet as a whole). Each change of the level is two calls into exec.
+ */
+struct inpcb *
+inpcb_lookup(struct inpcbinfo *pcbinfo, const struct inetfamily *inf,
+             const void *faddr, u_int fport_arg, const void *laddr,
+             u_int lport_arg, const struct ifnet *rcvif, int flags)
+{
+    static const union inp_addr any;
+    struct inpcbhead *head;
+    register struct inpcb *inp;
+    u_short fport = fport_arg, lport = lport_arg;
+    u_int alen = inf->inf_addrlen;
+    int s;
+
+    if(faddr == NULL)
+        faddr = &any;
+    if(laddr == NULL)
+        laddr = &any;
+    s = (flags & INPLOOKUP_ATSPLNET) ? 0 : splnet();
+    head = inpcb_hashhead(pcbinfo, faddr, alen, fport, lport);
+    for(inp = head->lh_first; inp != NULL; inp = inp->inp_hash.le_next) {
+        if(inp->inp_fport != fport || inp->inp_lport != lport ||
+                !inpcb_addreq(&inp->inp_fa, faddr, alen) ||
+                !inpcb_addreq(&inp->inp_la, laddr, alen))
+            continue;
+        if(!INPCB_VISIBLE(inp, inf) || INPCB_DEAF(inp, rcvif))
+            continue;
+        /*
+         * Move PCB to head of this hash chain so that it can be
+         * found more quickly in the future.
+         */
+        if(inp != head->lh_first) {
+            LIST_REMOVE(inp, inp_hash);
+            LIST_INSERT_HEAD(head, inp, inp_hash);
+        }
+        break;
+    }
+    if(inp == NULL && !(flags & INPLOOKUP_HASHED)) {
+        inp = inpcb_walklist(pcbinfo->listhead, inf, faddr, fport,
+                             laddr, lport, rcvif, flags);
+        /*
+         * A PCB with both its addresses that the hash did not give: they
+         * were set without telling the hash (code that writes the fields
+         * and does not call inpcb_rehash()). File it where it belongs, at
+         * the head, so that the next packet finds it at once. (One whose
+         * local address is "any" is never an exact match, wherever it is
+         * filed: it is left alone, and found by the list every time.)
+         */
+        if(inp != NULL && inp->inp_family == inf &&
+                !inpcb_addrany(&inp->inp_fa, alen) &&
+                !inpcb_addrany(&inp->inp_la, alen)) {
+            LIST_REMOVE(inp, inp_hash);
+            inpcb_inshash(inp);
+        }
+    }
+    if(!(flags & INPLOOKUP_ATSPLNET))
+        splx(s);
+    return (inp);
+}
+
+/* ------------------------------------------------------------------ *
+ * Local and foreign address of a PCB.
+ * ------------------------------------------------------------------ */
+
+/*
+ * inpcb_setconn - give a PCB its addresses and ports, all four at once,
+ * and file it under them. An address that is NULL is "any" (it may also
+ * be the PCB's own field: unchanged). zone: the interface the PCB is to
+ * be bound to with them, or NULL to leave that as it is.
+ */
+void
+inpcb_setconn(struct inpcb *inp, const void *laddr, u_int lport,
+              const void *faddr, u_int fport, struct ifnet *zone)
+{
+    u_int alen = inp->inp_family->inf_addrlen;
+    int s;
+
+    s = splnet();
+    inpcb_addrset(&inp->inp_la, laddr, alen);
+    inp->inp_lport = lport;
+    inpcb_addrset(&inp->inp_fa, faddr, alen);
+    inp->inp_fport = fport;
+    if(zone != NULL)
+        inp->inp_boundif = zone;
+    inpcb_rehash(inp);
+    splx(s);
+}
+
+/*
+ * Pick an ephemeral port for inp on the local address laddr (NULL: any).
+ * A port is taken when any PCB the family can see has it with a local
+ * address that could be the same one (either is "any", or they are equal),
+ * connected or not, whatever its reuse options: connections - those in
+ * TIME_WAIT too - must be seen, or a new connection to the same peer could
+ * be given a port one of them still holds. The port is stored in network
+ * byte order in *lportp. Returns EADDRNOTAVAIL if every port in the range
+ * is taken.
+ */
+static int
+inpcb_pickport(struct inpcb *inp, const void *laddr, u_short *lportp)
+{
+    u_int32_t num = EPHEMERAL_LAST - EPHEMERAL_FIRST + 1, offset, count;
+
+    offset = kern_random32() % num;
+    for(count = num; count > 0; count--) {
+        u_short lport = htons((u_short)(EPHEMERAL_FIRST + offset));
+
+        if(inpcb_lookuplist(inp->inp_pcbinfo->listhead, inp->inp_family,
+                            NULL, 0, laddr, lport, NULL,
+                            INPLOOKUP_WILDCARD) == NULL) {
+            *lportp = lport;
+            return (0);
+        }
+        offset = (offset + 1) % num;
+    }
+    return (EADDRNOTAVAIL);
+}
+
+/*
+ * inpcb_bind - bind a PCB to the local address and port in nam, or with
+ * nam NULL to an ephemeral port on "any". The family says whether the
+ * address will do (inf_pcbbindaddr); who may share an address and port is
+ * decided here, for every family alike:
+ * a port given explicitly is refused (EADDRINUSE) when another PCB has it
+ * on the same address - or, if this socket set neither SO_REUSEADDR nor
+ * SO_REUSEPORT, on an address that could be the same one - unless both
+ * sockets set SO_REUSEPORT; for a multicast address SO_REUSEADDR counts
+ * as SO_REUSEPORT.
+ */
+int
+inpcb_bind(struct inpcb *inp, struct mbuf *nam)
+{
+    const struct inetfamily *inf = inp->inp_family;
     register struct socket *so = inp->inp_socket;
-    struct inpcbhead *head = inp->inp_pcbinfo->listhead;
-    struct sockaddr_in *sin;
-//	struct proc *p = curproc;		/* XXX */
+    const void *laddr = NULL;           /* NULL: any */
+    struct ifnet *zone = NULL;
     u_short lport = 0;
     int wild = 0, reuseport = (so->so_options & SO_REUSEPORT);
-//	int error;
+    int error;
 
-    if(in_ifaddr == 0)
-        return (EADDRNOTAVAIL);
-    if(inp->inp_lport || inp->inp_laddr.s_addr != INADDR_ANY)
+    if(inp->inp_lport || !inpcb_addrany(&inp->inp_la, inf->inf_addrlen))
         return (EINVAL);
     if((so->so_options & (SO_REUSEADDR | SO_REUSEPORT)) == 0 &&
             ((so->so_proto->pr_flags & PR_CONNREQUIRED) == 0 ||
              (so->so_options & SO_ACCEPTCONN) == 0))
         wild = INPLOOKUP_WILDCARD;
-    if(nam) {
-        sin = mtod(nam, struct sockaddr_in *);
-        if(nam->m_len != sizeof(*sin))
-            return (EINVAL);
-#ifdef notdef
-        /*
-         * We should check the family, but old programs
-         * incorrectly fail to initialize it.
-         */
-        if(sin->sin_family != AF_INET)
-            return (EAFNOSUPPORT);
-#endif
-        lport = sin->sin_port;
-        if(IN_MULTICAST(ntohl(sin->sin_addr.s_addr))) {
+    error = (*inf->inf_pcbbindaddr)(inp, nam, &laddr, &lport, &zone);
+    if(error)
+        return (error);
+    if(nam != NULL && laddr != NULL) {
+        if((*inf->inf_addr_multicast)(laddr)) {
             /*
              * Treat SO_REUSEADDR as SO_REUSEPORT for multicast;
              * allow complete duplication of binding if
@@ -239,210 +612,125 @@ struct mbuf *nam;
              */
             if(so->so_options & SO_REUSEADDR)
                 reuseport = SO_REUSEADDR | SO_REUSEPORT;
-        } else if(sin->sin_addr.s_addr != INADDR_ANY) {
-            sin->sin_port = 0;		/* yech... */
-            if(ifa_ifwithaddr((struct sockaddr *)sin) == 0)
-                return (EADDRNOTAVAIL);
         }
         if(lport) {
             struct inpcb *t;
 
-            /* GROSS */
-            /*			if (ntohs(lport) < IPPORT_RESERVED &&
-            			    (error = suser(p->p_ucred, &p->p_acflag)))
-            				return (error);*/
-            t = in_pcblookup(head, zeroin_addr, 0,
-                             sin->sin_addr, lport, wild);
+            t = inpcb_lookuplist(inp->inp_pcbinfo->listhead, inf, NULL, 0,
+                                 laddr, lport, NULL, wild);
             if(t && (reuseport & t->inp_socket->so_options) == 0)
                 return (EADDRINUSE);
         }
-        inp->inp_laddr = sin->sin_addr;
     }
-    if(lport == 0) {
-        int error = in_pcbpickport(inp, in_porttaken, &wild, &lport);
-
-        if(error) {
-            inp->inp_laddr.s_addr = INADDR_ANY;
-            return (error);
-        }
-    }
-    inp->inp_lport = lport;
-    in_pcbrehash(inp);
+    /* the port is picked before the PCB changes: an error leaves it unbound */
+    if(lport == 0 && (error = inpcb_pickport(inp, laddr, &lport)) != 0)
+        return (error);
+    inpcb_setconn(inp, laddr, lport, &inp->inp_fa, inp->inp_fport, zone);
     return (0);
 }
 
 /*
- *   Transform old in_pcbconnect() into an inner subroutine for new
- *   in_pcbconnect(): Do some validity-checking on the remote
- *   address (in mbuf 'nam') and then determine local host address
- *   (i.e., which interface) to use to access that remote host.
- *
- *   This preserves definition of in_pcbconnect(), while supporting a
- *   slightly different version for T/TCP.  (This is more than
- *   a bit of a kludge, but cleaning up the internal interfaces would
- *   have forced minor changes in every protocol).
- */
-
-int
-in_pcbladdr(inp, nam, plocal_sin)
-register struct inpcb *inp;
-struct mbuf *nam;
-struct sockaddr_in **plocal_sin;
-{
-    struct in_ifaddr *ia;
-    register struct sockaddr_in *sin = mtod(nam, struct sockaddr_in *);
-
-    if(nam->m_len != sizeof(*sin))
-        return (EINVAL);
-    if(sin->sin_family != AF_INET)
-        return (EAFNOSUPPORT);
-    if(sin->sin_port == 0)
-        return (EADDRNOTAVAIL);
-    if(in_ifaddr) {
-        /*
-         * If the destination address is INADDR_ANY,
-         * use the primary local address.
-         * If the supplied address is INADDR_BROADCAST,
-         * and the primary interface supports broadcast,
-         * choose the broadcast address for that interface.
-         */
-#define	satosin(sa)	((struct sockaddr_in *)(sa))
-#define sintosa(sin)	((struct sockaddr *)(sin))
-#define ifatoia(ifa)	((struct in_ifaddr *)(ifa))
-        if(sin->sin_addr.s_addr == INADDR_ANY)
-            sin->sin_addr = IA_SIN(in_ifaddr)->sin_addr;
-        else if(sin->sin_addr.s_addr == (u_long)INADDR_BROADCAST &&
-                (in_ifaddr->ia_ifp->if_flags & IFF_BROADCAST))
-            sin->sin_addr = satosin(&in_ifaddr->ia_broadaddr)->sin_addr;
-    }
-    if(inp->inp_laddr.s_addr == INADDR_ANY) {
-        register struct route *ro;
-        struct sockaddr_in *rodst_saddr;
-
-        ia = (struct in_ifaddr *)0;
-        /*
-         * If route is known or can be allocated now,
-         * our src addr is taken from the i/f, else punt.
-         */
-        ro = &inp->inp_route;
-        rodst_saddr = (struct sockaddr_in *)&ro->ro_dst;
-
-        if(ro->ro_rt &&
-                (rodst_saddr->sin_addr.s_addr !=
-                 sin->sin_addr.s_addr ||
-                 inp->inp_socket->so_options & SO_DONTROUTE)) {
-            RTFREE(ro->ro_rt);
-            ro->ro_rt = (struct rtentry *)0;
-        }
-        if((inp->inp_socket->so_options & SO_DONTROUTE) == 0 &&  /*XXX*/
-                (ro->ro_rt == (struct rtentry *)0 ||
-                 ro->ro_rt->rt_ifp == (struct ifnet *)0)) {
-            /* No route yet, so try to acquire one */
-            ro->ro_dst.sa_family = AF_INET;
-            ro->ro_dst.sa_len = sizeof(struct sockaddr_in);
-            rodst_saddr->sin_addr = sin->sin_addr;
-            rtalloc(ro);
-        }
-        /*
-         * If we found a route, use the address
-         * corresponding to the outgoing interface
-         * unless it is the loopback (in case a route
-         * to our address on another net goes to loopback).
-         */
-        if(ro->ro_rt && !(ro->ro_rt->rt_ifp->if_flags & IFF_LOOPBACK))
-            ia = ifatoia(ro->ro_rt->rt_ifa);
-        if(ia == 0) {
-            u_short fport = sin->sin_port;
-
-            sin->sin_port = 0;
-            ia = ifatoia(ifa_ifwithdstaddr(sintosa(sin)));
-            if(ia == 0)
-                ia = ifatoia(ifa_ifwithnet(sintosa(sin)));
-            sin->sin_port = fport;
-            if(ia == 0)
-                ia = in_ifaddr;
-            if(ia == 0)
-                return (EADDRNOTAVAIL);
-        }
-#ifdef ENABLE_MULTICAST
-        /*
-         * If the destination address is multicast and an outgoing
-         * interface has been set as a multicast option, use the
-         * address of that interface as our source address.
-         */
-        if(IN_MULTICAST(ntohl(sin->sin_addr.s_addr)) &&
-                inp->inp_moptions != NULL) {
-            struct ip_moptions *imo;
-            struct ifnet *ifp;
-
-            imo = inp->inp_moptions;
-            if(imo->imo_multicast_ifp != NULL) {
-                ifp = imo->imo_multicast_ifp;
-                for(ia = in_ifaddr; ia; ia = ia->ia_next)
-                    if(ia->ia_ifp == ifp)
-                        break;
-                if(ia == 0)
-                    return (EADDRNOTAVAIL);
-            }
-        }
-#endif
-        /*
-         * Don't do pcblookup call here; return interface in plocal_sin
-         * and exit to caller, that will do the lookup.
-         */
-        *plocal_sin = &ia->ia_addr;
-
-    }
-    return(0);
-}
-
-/*
- * Outer subroutine:
- * Connect from a socket to a specified address.
- * Both address and port must be specified in argument sin.
- * If don't have a local address for this socket yet,
- * then pick one.
+ * inpcb_connect - connect a PCB to the address and port in nam. The family
+ * checks the address and finds the local address to use if the PCB has
+ * none (inf_pcbladdr); a PCB without a port gets an ephemeral one. Refused
+ * with EADDRINUSE when another PCB already has the same four addresses
+ * and ports - unless the caller's `inuse' (NULL: none), asked about that
+ * PCB, returns not 0: it has then disposed of it (TCP: an earlier
+ * incarnation of the connection whose TIME_WAIT may be cut short) and the
+ * connect goes on.
  */
 int
-in_pcbconnect(inp, nam)
-register struct inpcb *inp;
-struct mbuf *nam;
+inpcb_connect(struct inpcb *inp, struct mbuf *nam,
+              int (*inuse) __P((struct inpcb *)))
 {
-    struct sockaddr_in *ifaddr;
-    register struct sockaddr_in *sin = mtod(nam, struct sockaddr_in *);
+    const struct inetfamily *inf = inp->inp_family;
+    union inp_addr laddr;
+    const void *faddr;
+    struct ifnet *zone = NULL, *named;
+    struct inpcb *t;
+    u_short fport, lport;
     int error;
 
+    if(nam == NULL)
+        return (EINVAL);
+    bzero((caddr_t)&laddr, sizeof(laddr));
     /*
      *   Call inner routine, to assign local interface address.
      */
-    if(error = in_pcbladdr(inp, nam, &ifaddr))
-        return(error);
+    if((error = (*inf->inf_pcbladdr)(inp, nam, &laddr, &zone)) != 0)
+        return (error);
+    /* where the (possibly rewritten) address and the port are in nam */
+    if((error = (*inf->inf_sockaddr_parse)(nam, &faddr, &fport, &named)) != 0)
+        return (error);
 
-    if(in_pcblookuphash(inp->inp_pcbinfo, sin->sin_addr, sin->sin_port,
-                        inp->inp_laddr.s_addr ? inp->inp_laddr : ifaddr->sin_addr,
-                        inp->inp_lport) != NULL)
+    t = inpcb_lookup(inp->inp_pcbinfo, inf, faddr, fport,
+                     &laddr, inp->inp_lport, NULL, INPLOOKUP_HASHED);
+    if(t != NULL && t != inp && (inuse == NULL || !(*inuse)(t)))
         return (EADDRINUSE);
-    if(inp->inp_laddr.s_addr == INADDR_ANY) {
-        if(inp->inp_lport == 0 && (error = in_pcbbind(inp, (struct mbuf *)0)) != 0)
+    lport = inp->inp_lport;
+    if(lport == 0) {
+        if(inpcb_addrany(&inp->inp_la, inf->inf_addrlen)) {
+            if((error = inpcb_bind(inp, (struct mbuf *)0)) != 0)
+                return (error);
+            lport = inp->inp_lport;
+        } else if((error = inpcb_pickport(inp, &inp->inp_la, &lport)) != 0)
             return (error);
-        inp->inp_laddr = ifaddr->sin_addr;
     }
-    inp->inp_faddr = sin->sin_addr;
-    inp->inp_fport = sin->sin_port;
-    in_pcbrehash(inp);
+    inpcb_setconn(inp, &laddr, lport, faddr, fport, zone);
     return (0);
 }
 
 void
-in_pcbdisconnect(inp)
-struct inpcb *inp;
+inpcb_disconnect(struct inpcb *inp)
 {
-
-    inp->inp_faddr.s_addr = INADDR_ANY;
-    inp->inp_fport = 0;
-    in_pcbrehash(inp);
+    inpcb_setconn(inp, &inp->inp_la, inp->inp_lport, NULL, 0, NULL);
     if(inp->inp_socket->so_state & SS_NOFDREF)
         in_pcbdetach(inp);
+}
+
+/*
+ * Write one of the PCB's addresses into nam as a socket address of the
+ * family of its socket. That is the PCB's own family, except for the
+ * connection of one family that a socket of another accepted (the IPv4
+ * connection of an IPv6 socket): there the socket's family says how
+ * it presents the address.
+ */
+static void
+inpcb_mkname(struct inpcb *inp, struct mbuf *nam, const union inp_addr *addr,
+             u_int port)
+{
+    const struct inetfamily *inf = inp->inp_family, *sof = inf;
+    struct socket *so = inp->inp_socket;
+    union inp_addr other;
+    const struct ifnet *zone = NULL;
+
+    if(so != NULL && so->so_proto != NULL && so->so_proto->pr_domain != NULL &&
+            so->so_proto->pr_domain->dom_family != inf->inf_family) {
+        sof = inetfamily_find(so->so_proto->pr_domain->dom_family);
+        if(sof == NULL)
+            sof = inf;
+    }
+    if(sof != inf) {
+        bzero((caddr_t)&other, sizeof(other));
+        if((*sof->inf_addr_from)(&other, inf, addr) != 0)
+            bzero((caddr_t)&other, sizeof(other));
+        addr = &other;
+    } else
+        zone = (*inf->inf_pcbzone)(inp);
+    nam->m_len = sof->inf_salen;
+    (*sof->inf_mksockaddr)(mtod(nam, struct sockaddr *), addr, port, zone);
+}
+
+void
+inpcb_setsockaddr(struct inpcb *inp, struct mbuf *nam)
+{
+    inpcb_mkname(inp, nam, &inp->inp_la, inp->inp_lport);
+}
+
+void
+inpcb_setpeeraddr(struct inpcb *inp, struct mbuf *nam)
+{
+    inpcb_mkname(inp, nam, &inp->inp_fa, inp->inp_fport);
 }
 
 /*
@@ -452,24 +740,25 @@ struct inpcb *inp;
  * to it gone, INP_BOUNDGONE: what it sends fails with ENXIO and it hears
  * nothing, as a Linux socket bound to a device that went away does, until
  * it is bound again. A multicast interface chosen for it is forgotten: it
- * was a preference, and the default applies again.
+ * was a preference, and the default applies again. That is in what the
+ * families hung on the PCB, and every family is asked: a socket's options
+ * are found by their level, so a PCB may carry those of a family that is
+ * not its own.
  */
 void
 in_pcbifgone(const struct inpcbhead *head, const struct ifnet *ifp)
 {
     struct inpcb *inp;
+    int i;
 
     for(inp = head->lh_first; inp != NULL; inp = inp->inp_list.le_next) {
         if(inp->inp_boundif == ifp) {
             inp->inp_boundif = NULL;
             inp->inp_flags |= INP_BOUNDGONE;
         }
-        if(inp->inp_moptions && inp->inp_moptions->imo_multicast_ifp == ifp)
-            inp->inp_moptions->imo_multicast_ifp = NULL;
-#if INET6
-        if(inp->in6p_moptions && inp->in6p_moptions->im6o_multicast_ifp == ifp)
-            inp->in6p_moptions->im6o_multicast_ifp = NULL;
-#endif
+        for(i = 0; i < INETFAMILY_MAX; i++)
+            if(inetfamilies[i] != NULL && inetfamilies[i]->inf_pcbifgone != NULL)
+                (*inetfamilies[i]->inf_pcbifgone)(inp, ifp);
     }
 }
 
@@ -486,12 +775,24 @@ struct inpcb *inp;
         (void)m_free(inp->inp_options);
     if(inp->inp_route.ro_rt)
         rtfree(inp->inp_route.ro_rt);
-#ifdef ENABLE_MULTICAST
-    ip_freemoptions(inp->inp_moptions);
-#endif
-#if INET6
-    ip6_freemoptions(inp->in6p_moptions);
-#endif
+    /*
+     * What the families hung on it (their multicast options): its own
+     * family's, and - a socket's options are found by their level, so a
+     * PCB may carry those of a family that is not its own - every other
+     * registered family's. (Only the PCB's own family used to be asked:
+     * the group memberships an AF_INET6 socket had taken with IPv4's
+     * options were never left. A family that is asked to stop refuses
+     * while a PCB carries something of it - ti_family_pcbs - so the one
+     * that hung something here is still registered.)
+     */
+    (*inp->inp_family->inf_pcbfree)(inp);
+    {
+        int i;
+
+        for(i = 0; i < INETFAMILY_MAX; i++)
+            if(inetfamilies[i] != NULL && inetfamilies[i] != inp->inp_family)
+                (*inetfamilies[i]->inf_pcbfree)(inp);
+    }
     s = splnet();
     LIST_REMOVE(inp, inp_hash);
     LIST_REMOVE(inp, inp_list);
@@ -499,69 +800,34 @@ struct inpcb *inp;
     FREE(inp, M_PCB);
 }
 
-void
-in_setsockaddr(inp, nam)
-register struct inpcb *inp;
-struct mbuf *nam;
-{
-    register struct sockaddr_in *sin;
-
-    nam->m_len = sizeof(*sin);
-    sin = mtod(nam, struct sockaddr_in *);
-    bzero((caddr_t)sin, sizeof(*sin));
-    sin->sin_family = AF_INET;
-    sin->sin_len = sizeof(*sin);
-    sin->sin_port = inp->inp_lport;
-    sin->sin_addr = inp->inp_laddr;
-}
-
-void
-in_setpeeraddr(inp, nam)
-struct inpcb *inp;
-struct mbuf *nam;
-{
-    register struct sockaddr_in *sin;
-
-    nam->m_len = sizeof(*sin);
-    sin = mtod(nam, struct sockaddr_in *);
-    bzero((caddr_t)sin, sizeof(*sin));
-    sin->sin_family = AF_INET;
-    sin->sin_len = sizeof(*sin);
-    sin->sin_port = inp->inp_fport;
-    sin->sin_addr = inp->inp_faddr;
-}
-
 /*
- * Pass some notification to all connections of a protocol
- * associated with address dst.  The local address and/or port numbers
- * may be specified to limit the search.  The "usual action" will be
- * taken, depending on the ctlinput cmd.  The caller must filter any
- * cmds that are uninteresting (e.g., no error in the map).
- * Call the protocol specific routine (if any) to report
- * any errors for each matching socket.
- *
- * Must be called at splnet.
+ * inpcb_notify - pass some notification to all connections of a protocol
+ * associated with the address faddr of family inf. The local address
+ * and/or port numbers may be specified to limit the search (laddr NULL or
+ * "any", ports 0: not specified). The "usual action" will be taken,
+ * depending on the ctlinput cmd. The caller must filter any cmds that are
+ * uninteresting (e.g., no error in the family's map: notify is then called
+ * with 0). Call the protocol specific routine (if any) to report any
+ * errors for each matching socket.
  */
 void
-in_pcbnotify(head, dst, fport_arg, laddr, lport_arg, cmd, notify)
-struct inpcbhead *head;
-struct sockaddr *dst;
-u_int fport_arg, lport_arg;
-struct in_addr laddr;
-int cmd;
-void (*notify) __P((struct inpcb *, int));
+inpcb_notify(struct inpcbhead *head, const struct inetfamily *inf,
+             const void *faddr, u_int fport_arg,
+             const void *laddr, u_int lport_arg, int cmd,
+             void (*notify) __P((struct inpcb *, int)))
 {
     register struct inpcb *inp, *oinp;
-    struct in_addr faddr;
     u_short fport = fport_arg, lport = lport_arg;
+    u_int alen;
     int _errno, s;
 
-    /* only an IPv4 destination: an IPv6 one goes to in6_pcbnotify() */
-    if((unsigned)cmd >= PRC_NCMDS || dst == NULL || dst->sa_family != AF_INET)
+    if((unsigned)cmd >= PRC_NCMDS || inf == NULL || faddr == NULL)
         return;
-    faddr = ((struct sockaddr_in *)dst)->sin_addr;
-    if(faddr.s_addr == INADDR_ANY)
+    alen = inf->inf_addrlen;
+    if(inpcb_addrany(faddr, alen))
         return;
+    if(laddr != NULL && inpcb_addrany(laddr, alen))
+        laddr = NULL;
 
     /*
      * Redirects go to all references to the destination,
@@ -573,23 +839,22 @@ void (*notify) __P((struct inpcb *, int));
     if(PRC_IS_REDIRECT(cmd) || cmd == PRC_HOSTDEAD) {
         fport = 0;
         lport = 0;
-        laddr.s_addr = 0;
+        laddr = NULL;
         if(cmd != PRC_HOSTDEAD)
             notify = in_rtchange;
     }
-    _errno = inetctlerrmap[cmd];
+    _errno = inf->inf_ctlerrmap[cmd];
     s = splnet();
     for(inp = head->lh_first; inp != NULL;) {
-        if(inp->inp_faddr.s_addr != faddr.s_addr ||
-                inp->inp_socket == 0 ||
-                (lport && inp->inp_lport != lport) ||
-                (laddr.s_addr && inp->inp_laddr.s_addr != laddr.s_addr) ||
-                (fport && inp->inp_fport != fport)) {
-            inp = inp->inp_list.le_next;
-            continue;
-        }
         oinp = inp;
-        inp = inp->inp_list.le_next;
+        inp = inp->inp_list.le_next;    /* notify may free oinp */
+        if(oinp->inp_family != inf || oinp->inp_socket == 0 ||
+                !inpcb_addreq(&oinp->inp_fa, faddr, alen) ||
+                (lport && oinp->inp_lport != lport) ||
+                (laddr != NULL && !inpcb_addrany(&oinp->inp_la, alen) &&
+                 !inpcb_addreq(&oinp->inp_la, laddr, alen)) ||
+                (fport && oinp->inp_fport != fport))
+            continue;
         if(notify)
             (*notify)(oinp, _errno);
     }
@@ -643,131 +908,4 @@ int _errno;
          * output is attempted.
          */
     }
-}
-
-struct inpcb *
-in_pcblookup(head, faddr, fport_arg, laddr, lport_arg, flags)
-struct inpcbhead *head;
-struct in_addr faddr, laddr;
-u_int fport_arg, lport_arg;
-int flags;
-{
-    register struct inpcb *inp, *match = NULL;
-    int matchwild = 3, wildcard;
-    u_short fport = fport_arg, lport = lport_arg;
-    int s;
-
-    s = splnet();
-
-    for(inp = head->lh_first; inp != NULL; inp = inp->inp_list.le_next) {
-        if(inp->inp_lport != lport)
-            continue;
-        if(in_pcbisipv6(inp) && inp->in6p_v6only)
-            continue;
-        wildcard = 0;
-        if(inp->inp_faddr.s_addr != INADDR_ANY) {
-            if(faddr.s_addr == INADDR_ANY)
-                wildcard++;
-            else if(inp->inp_faddr.s_addr != faddr.s_addr ||
-                    inp->inp_fport != fport)
-                continue;
-        } else {
-            if(faddr.s_addr != INADDR_ANY)
-                wildcard++;
-        }
-        if(inp->inp_laddr.s_addr != INADDR_ANY) {
-            if(laddr.s_addr == INADDR_ANY)
-                wildcard++;
-            else if(inp->inp_laddr.s_addr != laddr.s_addr)
-                continue;
-        } else {
-            if(laddr.s_addr != INADDR_ANY)
-                wildcard++;
-        }
-        if(wildcard && (flags & INPLOOKUP_WILDCARD) == 0)
-            continue;
-        if(wildcard < matchwild) {
-            match = inp;
-            matchwild = wildcard;
-            if(matchwild == 0) {
-                break;
-            }
-        }
-    }
-    splx(s);
-    return (match);
-}
-
-/*
- * Lookup PCB in hash list.
- */
-struct inpcb *
-in_pcblookuphash(pcbinfo, faddr, fport_arg, laddr, lport_arg)
-struct inpcbinfo *pcbinfo;
-struct in_addr faddr, laddr;
-u_int fport_arg, lport_arg;
-{
-    struct inpcbhead *head;
-    register struct inpcb *inp;
-    u_short fport = fport_arg, lport = lport_arg;
-    int s;
-
-    s = splnet();
-    /*
-     * First look for an exact match.
-     */
-    head = &pcbinfo->hashbase[(faddr.s_addr + lport + fport) % pcbinfo->hashsize];
-
-    for(inp = head->lh_first; inp != NULL; inp = inp->inp_hash.le_next) {
-        if(inp->inp_faddr.s_addr != faddr.s_addr ||
-                inp->inp_fport != fport ||
-                inp->inp_lport != lport ||
-                inp->inp_laddr.s_addr != laddr.s_addr)
-            continue;
-        if(in_pcbisipv6(inp) && inp->in6p_v6only)
-            continue;
-        /*
-         * Move PCB to head of this hash chain so that it can be
-         * found more quickly in the future.
-         */
-        if(inp != head->lh_first) {
-            LIST_REMOVE(inp, inp_hash);
-            LIST_INSERT_HEAD(head, inp, inp_hash);
-        }
-        break;
-    }
-    splx(s);
-    return (inp);
-}
-
-/*
- * Insert PCB into hash chain. Must be called at splnet.
- */
-void
-in_pcbinshash(inp)
-struct inpcb *inp;
-{
-    struct inpcbhead *head;
-
-    head = &inp->inp_pcbinfo->hashbase[(inp->inp_faddr.s_addr +
-                                        inp->inp_lport + inp->inp_fport) % inp->inp_pcbinfo->hashsize];
-
-    LIST_INSERT_HEAD(head, inp, inp_hash);
-}
-
-void
-in_pcbrehash(inp)
-struct inpcb *inp;
-{
-    struct inpcbhead *head;
-    int s;
-
-    s = splnet();
-    LIST_REMOVE(inp, inp_hash);
-
-    head = &inp->inp_pcbinfo->hashbase[(inp->inp_faddr.s_addr +
-                                        inp->inp_lport + inp->inp_fport) % inp->inp_pcbinfo->hashsize];
-
-    LIST_INSERT_HEAD(head, inp, inp_hash);
-    splx(s);
 }

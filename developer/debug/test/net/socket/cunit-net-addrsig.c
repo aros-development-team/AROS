@@ -7,8 +7,10 @@
     added and deleted, and an address stateless autoconfiguration makes
     from a Router Advertisement (the test sends it itself to the
     interface's own link-local address, as cunit-net-slaac6 does).
-    Usage:  cunit-net-addrsig [IFNAME]  (default eth0). Without an
-    interface with a link-local address the tests are skipped.
+    Usage:  cunit-net-addrsig [IFNAME]  (default eth0). Without the
+    interface the tests are skipped; the IPv6 ones also without a
+    link-local address on it. The IPv4 test needs no IPv6 in the stack,
+    the IPv6 tests no IPv4.
 */
 
 #define __CONFIG_ROADSHOW__     /* inet_pton(), SocketBaseTags() */
@@ -25,15 +27,18 @@ struct Library *SocketBase = NULL;
 static const char *ifname = "eth0";
 static unsigned ifindex;
 static struct in6_addr linklocal;
-static int ready;
+static int ready;        /* the interface is there and the signal is ours */
+static int ready6;       /* ...and it has a link-local address */
 static ULONG sigmask;
 
 #define NEED_IF() do { if (!ready) { CU_PASS("no suitable interface - skipping"); return; } } while (0)
+#define NEED_IF6() do { if (!ready6) { CU_PASS("no link-local address on the interface - skipping"); return; } } while (0)
 
+/* The interface's index: asked of a socket of whichever family there is. */
 static int index_of(const char *name, unsigned *index)
 {
     struct ifreq ifr;
-    int s = socket(AF_INET6, SOCK_DGRAM, 0), r;
+    int s = socket(st_any_family(), SOCK_DGRAM, 0), r;
 
     if (s < 0)
         return -1;
@@ -216,7 +221,7 @@ void testADDRSIG_IPV6(void)
 {
     struct in6_addr a;
 
-    NEED_IF();
+    NEED_IF6();
     inet_pton(AF_INET6, "2001:db8:4d54:c1::1", &a);
     SetSignal(0, sigmask);
     CU_ASSERT_EQUAL_FATAL(addr6(1, &a), 0);
@@ -232,7 +237,7 @@ void testADDRSIG_SLAAC(void)
 {
     struct in6_addr a;
 
-    NEED_IF();
+    NEED_IF6();
     inet_pton(AF_INET6, "2001:db8:4d54:c2::", &a);
     memcpy(&a.s6_addr[8], &linklocal.s6_addr[8], 8);
     SetSignal(0, sigmask);
@@ -255,21 +260,23 @@ int main(int argc, char **argv)
         printf("bsdsocket.library 4 not available - skipping ADDRSIG tests\n");
         return 0;
     }
-    ready = index_of(ifname, &ifindex) == 0 && get_linklocal(&linklocal) &&
-            (sig = AllocSignal(-1)) != -1;
+    ready = index_of(ifname, &ifindex) == 0 && (sig = AllocSignal(-1)) != -1;
+    ready6 = ready && st_have_family(AF_INET6) && get_linklocal(&linklocal);
     if (ready) {
         sigmask = 1UL << sig;
         SocketBaseTags(SBTM_SETVAL(SBTC_SIG_ADDRESS_CHANGE_MASK), sigmask, TAG_END);
+        if (!ready6 && st_have_family(AF_INET6))
+            printf("%s: no link-local address - skipping the IPv6 ADDRSIG tests\n", ifname);
     } else
-        printf("%s: no interface with a link-local address - skipping ADDRSIG tests\n", ifname);
+        printf("%s: no such interface - skipping ADDRSIG tests\n", ifname);
 
     if (CU_initialize_registry() != CUE_SUCCESS)
         goto out;
     p = CU_add_suite("ADDRSIG_Suite", init_suite, clean_suite);
     if (p == NULL ||
-        !CU_add_test(p, "an IPv4 alias added and deleted", testADDRSIG_IPV4) ||
-        !CU_add_test(p, "an IPv6 address added and deleted", testADDRSIG_IPV6) ||
-        !CU_add_test(p, "an address SLAAC makes", testADDRSIG_SLAAC))
+        !st_add_test(p, "an IPv4 alias added and deleted", testADDRSIG_IPV4, ST_V4) ||
+        !st_add_test(p, "an IPv6 address added and deleted", testADDRSIG_IPV6, ST_V6) ||
+        !st_add_test(p, "an address SLAAC makes", testADDRSIG_SLAAC, ST_V6))
     {
         CU_cleanup_registry();
         goto out;

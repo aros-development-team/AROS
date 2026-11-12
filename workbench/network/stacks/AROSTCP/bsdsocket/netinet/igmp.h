@@ -75,6 +75,7 @@ struct igmp {
 
 #ifdef KERNEL
 void igmp_init(void);
+void igmp_defaults(void);	/* IPv4 stops: IGMP's variables as the file has them */
 void igmp_input(void *, ...);
 void igmp_joingroup(struct in_multi *);
 void igmp_leavegroup(struct in_multi *);

@@ -6,7 +6,7 @@
 #include <kern/amiga_dhcp.h>
 #include <net/if.h>
 #include <net/if_sana.h>
-#include <net/sana2arp.h>   /* for autoip_start() */
+#include <net/netmodule.h>
 #include <api/netservice_api.h>
 
 extern struct ifnet *ifnet;
@@ -65,7 +65,8 @@ void run_dhcp(void)
             ssc->ss_cflags &= ~SSF_DELAYUP;
             if(!ifp->if_data.ifi_aros_usedhcp &&
                     ssc->ss_ipaddr.s_addr == INADDR_ANY)
-                autoip_start(ifp);  /* no DHCPv4 and no address assigned */
+                /* no DHCPv4 and no address assigned: IPv4 finds one itself */
+                (void)netfamily_if_event_to(AF_INET, NFE_AUTOADDR, ifp);
         }
     }
 }

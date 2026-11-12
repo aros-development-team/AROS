@@ -437,6 +437,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library not available - skipping REDIRECT6 tests\n");
         return 0;
     }
+    if (st_skip_program("cunit-net-redirect6", ST_V6)) {
+        CloseLibrary(SocketBase);
+        return 0;
+    }
     ready = setup();
     if (!ready)
         printf("%s: no interface without a router - skipping REDIRECT6 tests\n", ifname);

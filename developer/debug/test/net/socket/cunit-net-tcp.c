@@ -1,9 +1,10 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    CUnit tests for bsdsocket.library TCP (IPv4) over the loopback interface:
+    CUnit tests for bsdsocket.library TCP over the loopback interface:
     handshake, names, echo, large transfer (window scaling), multiple
-    simultaneous connections (SYN cache), half-close, refused connect and MSS;
+    simultaneous connections (SYN cache), half-close, refused connect and MSS
+    - over IPv4, or over IPv6 where the stack has no IPv4;
     and, over IPv4 and IPv6, closing a connection with data still unread
     resets it (RFC 9293 section 3.6.1), while closing one with all data read
     ends it with a FIN.
@@ -12,6 +13,9 @@
 #include "socktest.h"
 
 struct Library *SocketBase = NULL;
+
+/* The family of the tests that are about TCP, not about a family. */
+#define FAM st_any_family()
 
 int init_suite(void) { return (SocketBase != NULL) ? 0 : -1; }
 int clean_suite(void) { return 0; }
@@ -22,7 +26,7 @@ void testHANDSHAKE(void)
     struct sockaddr_storage ss;
     socklen_t len = sizeof(ss);
 
-    CU_ASSERT_EQUAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL(st_tcp_pair(FAM, &c, &s), 0);
     if (c < 0 || s < 0)
         return;
     /* Both ends must report a connected peer. */
@@ -36,10 +40,10 @@ void testHANDSHAKE(void)
 void testNAMES(void)
 {
     int c = -1, s = -1;
-    struct sockaddr_in cl, sp;
+    struct sockaddr_storage cl, sp;
     socklen_t len;
 
-    CU_ASSERT_EQUAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL(st_tcp_pair(FAM, &c, &s), 0);
     if (c < 0 || s < 0)
         return;
     /* The client's local name must equal the server's peer name. */
@@ -47,8 +51,8 @@ void testNAMES(void)
     CU_ASSERT_EQUAL(getsockname(c, (struct sockaddr *)&cl, &len), 0);
     len = sizeof(sp);
     CU_ASSERT_EQUAL(getpeername(s, (struct sockaddr *)&sp, &len), 0);
-    CU_ASSERT_EQUAL(cl.sin_port, sp.sin_port);
-    CU_ASSERT_EQUAL(cl.sin_addr.s_addr, sp.sin_addr.s_addr);
+    CU_ASSERT_EQUAL(st_port(&cl), st_port(&sp));
+    CU_ASSERT(st_same_name(&cl, &sp));
     CloseSocket(c);
     CloseSocket(s);
 }
@@ -58,7 +62,7 @@ void testECHO(void)
     int c = -1, s = -1, r;
     char buf[16];
 
-    CU_ASSERT_EQUAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL(st_tcp_pair(FAM, &c, &s), 0);
     if (c < 0 || s < 0)
         return;
     CU_ASSERT_EQUAL(send(c, "hello", 5, 0), 5);
@@ -79,7 +83,7 @@ void testLARGE(void)
 {
     int c = -1, s = -1;
 
-    CU_ASSERT_EQUAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL(st_tcp_pair(FAM, &c, &s), 0);
     if (c < 0 || s < 0)
         return;
     /* 256 KB exceeds a single unscaled window: exercises RFC 1323 scaling. */
@@ -96,7 +100,7 @@ void testMULTI(void)
     struct sockaddr_storage ss;
     socklen_t len;
 
-    lfd = st_bound(AF_INET, SOCK_STREAM, &nport);
+    lfd = st_bound(FAM, SOCK_STREAM, &nport);
     CU_ASSERT(lfd >= 0);
     if (lfd < 0)
         return;
@@ -104,9 +108,11 @@ void testMULTI(void)
 
     /* Fire 8 simultaneous connects; the half-opens live in the SYN cache. */
     for (i = 0; i < 8; i++) {
-        clients[i] = socket(AF_INET, SOCK_STREAM, 0);
+        clients[i] = socket(FAM, SOCK_STREAM, 0);
+        if (clients[i] < 0)
+            continue;
         IoctlSocket(clients[i], FIONBIO, (char *)&on);
-        len = st_loopback(AF_INET, &ss, nport);
+        len = st_loopback(FAM, &ss, nport);
         connect(clients[i], (struct sockaddr *)&ss, len);
     }
     for (i = 0; i < 8; i++) {
@@ -121,7 +127,8 @@ void testMULTI(void)
     CU_ASSERT_EQUAL(naccepted, 8);
 
     for (i = 0; i < 8; i++)
-        CloseSocket(clients[i]);
+        if (clients[i] >= 0)
+            CloseSocket(clients[i]);
     for (i = 0; i < naccepted; i++)
         CloseSocket(accepted[i]);
     CloseSocket(lfd);
@@ -132,7 +139,7 @@ void testHALFCLOSE(void)
     int c = -1, s = -1, r;
     char buf[8];
 
-    CU_ASSERT_EQUAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL(st_tcp_pair(FAM, &c, &s), 0);
     if (c < 0 || s < 0)
         return;
     CU_ASSERT_EQUAL(send(c, "AB", 2, 0), 2);
@@ -160,15 +167,16 @@ void testREFUSED(void)
     struct sockaddr_storage ss;
 
     /* Bind then close a socket to obtain a port with no listener. */
-    tmp = st_bound(AF_INET, SOCK_STREAM, &nport);
+    tmp = st_bound(FAM, SOCK_STREAM, &nport);
     CU_ASSERT(tmp >= 0);
     if (tmp < 0)
         return;
     CloseSocket(tmp);
 
-    c = socket(AF_INET, SOCK_STREAM, 0);
+    c = socket(FAM, SOCK_STREAM, 0);
+    CU_ASSERT_FATAL(c >= 0);
     IoctlSocket(c, FIONBIO, (char *)&on);
-    len = st_loopback(AF_INET, &ss, nport);
+    len = st_loopback(FAM, &ss, nport);
     r = connect(c, (struct sockaddr *)&ss, len);
     if (r == 0) {
         CU_FAIL("connect to a closed port unexpectedly succeeded");
@@ -187,7 +195,7 @@ void testMAXSEG(void)
     int c = -1, s = -1, mss = 0;
     socklen_t len = sizeof(mss);
 
-    CU_ASSERT_EQUAL(st_tcp_pair(AF_INET, &c, &s), 0);
+    CU_ASSERT_EQUAL(st_tcp_pair(FAM, &c, &s), 0);
     if (c < 0 || s < 0)
         return;
     CU_ASSERT_EQUAL(getsockopt(c, IPPROTO_TCP, TCP_MAXSEG, &mss, &len), 0);
@@ -267,18 +275,18 @@ int main(void)
     }
     p = CU_add_suite("TCP_Suite", init_suite, clean_suite);
     if (p == NULL ||
-        !CU_add_test(p, "handshake", testHANDSHAKE) ||
-        !CU_add_test(p, "getsockname/getpeername", testNAMES) ||
-        !CU_add_test(p, "echo", testECHO) ||
-        !CU_add_test(p, "large transfer (window scaling)", testLARGE) ||
-        !CU_add_test(p, "multiple connections (SYN cache)", testMULTI) ||
-        !CU_add_test(p, "half-close (shutdown)", testHALFCLOSE) ||
-        !CU_add_test(p, "connect refused", testREFUSED) ||
-        !CU_add_test(p, "TCP_MAXSEG", testMAXSEG) ||
-        !CU_add_test(p, "close with data unread resets", testCLOSE_UNREAD) ||
-        !CU_add_test(p, "close with data unread resets (IPv6)", testCLOSE_UNREAD6) ||
-        !CU_add_test(p, "close with all data read sends FIN", testCLOSE_READ) ||
-        !CU_add_test(p, "close with all data read sends FIN (IPv6)", testCLOSE_READ6))
+        !st_add_test(p, "handshake", testHANDSHAKE, ST_ANY) ||
+        !st_add_test(p, "getsockname/getpeername", testNAMES, ST_ANY) ||
+        !st_add_test(p, "echo", testECHO, ST_ANY) ||
+        !st_add_test(p, "large transfer (window scaling)", testLARGE, ST_ANY) ||
+        !st_add_test(p, "multiple connections (SYN cache)", testMULTI, ST_ANY) ||
+        !st_add_test(p, "half-close (shutdown)", testHALFCLOSE, ST_ANY) ||
+        !st_add_test(p, "connect refused", testREFUSED, ST_ANY) ||
+        !st_add_test(p, "TCP_MAXSEG", testMAXSEG, ST_ANY) ||
+        !st_add_test(p, "close with data unread resets", testCLOSE_UNREAD, ST_V4) ||
+        !st_add_test(p, "close with data unread resets (IPv6)", testCLOSE_UNREAD6, ST_V6) ||
+        !st_add_test(p, "close with all data read sends FIN", testCLOSE_READ, ST_V4) ||
+        !st_add_test(p, "close with all data read sends FIN (IPv6)", testCLOSE_READ6, ST_V6))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

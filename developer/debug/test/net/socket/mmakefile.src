@@ -15,12 +15,15 @@ CUNITSOCKETTESTFILES := \
     cunit-net-addr6 \
     cunit-net-addrflags6 \
     cunit-net-addrsig \
+    cunit-net-adminmod \
     cunit-net-arpqueue \
     cunit-net-bindtodev6 \
     cunit-net-canforward \
     cunit-net-clockstep \
     cunit-net-cmsg \
+    cunit-net-demand \
     cunit-net-dontwait \
+    cunit-net-filter6 \
     cunit-net-frag6 \
     cunit-net-icmp6err \
     cunit-net-iflist \
@@ -30,28 +33,37 @@ CUNITSOCKETTESTFILES := \
     cunit-net-mcast6 \
     cunit-net-mcast6if \
     cunit-net-mld6 \
+    cunit-net-modlib \
+    cunit-net-modstop \
+    cunit-net-module \
     cunit-net-naflags6 \
     cunit-net-narouter6 \
     cunit-net-ndqueue6 \
+    cunit-net-netconfig \
     cunit-net-netdb \
     cunit-net-nud6 \
+    cunit-net-packetmod \
+    cunit-net-pfil \
     cunit-net-pmtu4 \
     cunit-net-pmtu6 \
     cunit-net-ports \
     cunit-net-prefix6if \
+    cunit-net-protocols \
     cunit-net-raw6 \
     cunit-net-rdnss \
     cunit-net-redirect6 \
     cunit-net-resolver \
+    cunit-net-resolvermod \
     cunit-net-rio6 \
     cunit-net-route6 \
     cunit-net-sblock \
     cunit-net-scope6 \
     cunit-net-sendto6 \
-    cunit-net-slaaclife \
     cunit-net-slaac6 \
+    cunit-net-slaaclife \
     cunit-net-socket \
     cunit-net-srcaddr6 \
+    cunit-net-synalloc \
     cunit-net-sysctl \
     cunit-net-tcp \
     cunit-net-tcpinfo \

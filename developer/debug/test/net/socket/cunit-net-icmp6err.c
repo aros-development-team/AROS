@@ -229,6 +229,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library not available - skipping ICMP6ERR tests\n");
         return 0;
     }
+    if (st_skip_program("cunit-net-icmp6err", ST_V6)) {
+        CloseLibrary(SocketBase);
+        return 0;
+    }
     ready = index_of(ifname, &ifindex) == 0 && find_linklocal(&linklocal);
     if (!ready)
         printf("%s: no interface with a link-local address - skipping ICMP6ERR tests\n", ifname);

@@ -131,6 +131,129 @@ void testV6_V6ONLY(void)
     CloseSocket(s);
 }
 
+/*
+ * An AF_INET6 socket that listens on "any" with IPV6_V6ONLY off accepts
+ * IPv4 connections too. Such a connection is an IPv4 one: the application
+ * sees its two ends as IPv4-mapped addresses, data flows both ways, and an
+ * IPv6 connection to the same listener still works. With IPV6_V6ONLY on,
+ * the IPv4 connection is refused.
+ */
+static int mapped_loopback(const struct sockaddr_in6 *a)
+{
+    static const unsigned char want[16] =
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 127, 0, 0, 1 };
+
+    return a->sin6_family == AF_INET6 && memcmp(&a->sin6_addr, want, 16) == 0;
+}
+
+static int dual_listener(int v6only, unsigned short *nport)
+{
+    struct sockaddr_in6 a;
+    socklen_t len = sizeof(a);
+    int l = socket(AF_INET6, SOCK_STREAM, 0), on = 1;
+
+    if (l < 0)
+        return -1;
+    setsockopt(l, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+    if (setsockopt(l, IPPROTO_IPV6, IPV6_V6ONLY, &v6only, sizeof(v6only)) != 0) {
+        CloseSocket(l);
+        return -1;
+    }
+    bzero(&a, sizeof(a));
+    a.sin6_family = AF_INET6;
+    a.sin6_len = sizeof(a);
+    if (bind(l, (struct sockaddr *)&a, sizeof(a)) != 0 || listen(l, 4) != 0 ||
+        getsockname(l, (struct sockaddr *)&a, &len) != 0) {
+        CloseSocket(l);
+        return -1;
+    }
+    *nport = a.sin6_port;
+    return l;
+}
+
+void testV6_DUAL_ACCEPT(void)
+{
+    struct sockaddr_storage ss;
+    struct sockaddr_in6 name;
+    struct timeval tv = { 3, 0 };
+    socklen_t len;
+    unsigned short port = 0;
+    char b = 0;
+    int l, c4, c6, a;
+
+    l = dual_listener(0, &port);
+    if (l < 0) {
+        CU_PASS("IPV6_V6ONLY cannot be cleared - skipping");
+        return;
+    }
+
+    /* an IPv4 client */
+    c4 = socket(AF_INET, SOCK_STREAM, 0);
+    CU_ASSERT_FATAL(c4 >= 0);
+    len = st_loopback(AF_INET, &ss, port);
+    CU_ASSERT_EQUAL_FATAL(connect(c4, (struct sockaddr *)&ss, len), 0);
+    len = sizeof(name);
+    bzero(&name, sizeof(name));
+    a = accept(l, (struct sockaddr *)&name, &len);
+    CU_ASSERT(a >= 0);
+    if (a >= 0) {
+        CU_ASSERT_EQUAL(len, sizeof(struct sockaddr_in6));
+        CU_ASSERT(mapped_loopback(&name));              /* the peer, from accept() */
+        len = sizeof(name); bzero(&name, sizeof(name));
+        CU_ASSERT_EQUAL(getpeername(a, (struct sockaddr *)&name, &len), 0);
+        CU_ASSERT(mapped_loopback(&name));
+        len = sizeof(name); bzero(&name, sizeof(name));
+        CU_ASSERT_EQUAL(getsockname(a, (struct sockaddr *)&name, &len), 0);
+        CU_ASSERT(mapped_loopback(&name));
+        CU_ASSERT_EQUAL(name.sin6_port, port);
+
+        setsockopt(a, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+        setsockopt(c4, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+        CU_ASSERT_EQUAL(send(c4, "4", 1, 0), 1);
+        CU_ASSERT_EQUAL(recv(a, &b, 1, 0), 1);
+        CU_ASSERT_EQUAL(b, '4');
+        CU_ASSERT_EQUAL(send(a, "6", 1, 0), 1);
+        CU_ASSERT_EQUAL(recv(c4, &b, 1, 0), 1);
+        CU_ASSERT_EQUAL(b, '6');
+        CloseSocket(a);
+    }
+    CloseSocket(c4);
+
+    /* an IPv6 client to the same listener */
+    c6 = socket(AF_INET6, SOCK_STREAM, 0);
+    CU_ASSERT_FATAL(c6 >= 0);
+    len = st_loopback(AF_INET6, &ss, port);
+    CU_ASSERT_EQUAL_FATAL(connect(c6, (struct sockaddr *)&ss, len), 0);
+    len = sizeof(name); bzero(&name, sizeof(name));
+    a = accept(l, (struct sockaddr *)&name, &len);
+    CU_ASSERT(a >= 0);
+    if (a >= 0) {
+        CU_ASSERT_FALSE(mapped_loopback(&name));
+        CU_ASSERT(IN6_IS_ADDR_LOOPBACK(&name.sin6_addr));
+        CloseSocket(a);
+    }
+    CloseSocket(c6);
+    CloseSocket(l);
+}
+
+void testV6_V6ONLY_REFUSES_V4(void)
+{
+    struct sockaddr_storage ss;
+    socklen_t len;
+    unsigned short port = 0;
+    int l, c4;
+
+    l = dual_listener(1, &port);
+    CU_ASSERT_FATAL(l >= 0);
+    c4 = socket(AF_INET, SOCK_STREAM, 0);
+    CU_ASSERT_FATAL(c4 >= 0);
+    len = st_loopback(AF_INET, &ss, port);
+    CU_ASSERT(connect(c4, (struct sockaddr *)&ss, len) != 0);
+    CU_ASSERT_EQUAL(Errno(), ECONNREFUSED);
+    CloseSocket(c4);
+    CloseSocket(l);
+}
+
 void testV6_HOPS(void)
 {
     int s = socket(AF_INET6, SOCK_STREAM, 0);
@@ -167,6 +290,7 @@ void testV6_REFUSED(void)
     CloseSocket(tmp);
 
     c = socket(AF_INET6, SOCK_STREAM, 0);
+    CU_ASSERT_FATAL(c >= 0);
     IoctlSocket(c, FIONBIO, (char *)&on);
     len = st_loopback(AF_INET6, &ss, nport);
     r = connect(c, (struct sockaddr *)&ss, len);
@@ -191,6 +315,10 @@ int main(void)
         printf("bsdsocket.library not available - skipping IPv6 tests\n");
         return 0;
     }
+    if (st_skip_program("cunit-net-inet6", ST_V6)) {
+        CloseLibrary(SocketBase);
+        return 0;
+    }
     if (CU_initialize_registry() != CUE_SUCCESS) {
         CloseLibrary(SocketBase);
         return CU_get_error();
@@ -203,6 +331,8 @@ int main(void)
         !CU_add_test(p, "large transfer over ::1", testV6_LARGE) ||
         !CU_add_test(p, "UDP over ::1", testV6_UDP) ||
         !CU_add_test(p, "IPV6_V6ONLY", testV6_V6ONLY) ||
+        !st_add_test(p, "IPv4 and IPv6 connections on one AF_INET6 listener", testV6_DUAL_ACCEPT, ST_BOTH) ||
+        !st_add_test(p, "IPV6_V6ONLY refuses an IPv4 connection", testV6_V6ONLY_REFUSES_V4, ST_BOTH) ||
         !CU_add_test(p, "IPV6_UNICAST_HOPS", testV6_HOPS) ||
         !CU_add_test(p, "connect refused over ::1", testV6_REFUSED))
     {

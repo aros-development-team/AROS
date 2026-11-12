@@ -34,3 +34,8 @@ void ip_stripoptions(register struct mbuf * m,
 
 void ip_forward(struct mbuf * m,
 		int srcrt);
+
+/* IPv4 stops (netinet/in_proto.c inet_stop()) */
+void ip_input_stop(void);
+void ip_flush(void);
+void ip_deinit(void);

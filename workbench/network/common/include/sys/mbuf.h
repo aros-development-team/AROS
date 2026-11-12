@@ -221,7 +221,7 @@ struct mbuf {
 	if (m) { \
 		mfree = (m)->m_next; \
 		(m)->m_type = (type); \
-		mbstat.m_mtypes[type]++; \
+		mbstats.m_mtypes[type]++; \
 		(m)->m_next = NULL; \
 		(m)->m_nextpkt = NULL; \
 		(m)->m_data = (m)->m_dat; \
@@ -251,9 +251,9 @@ struct mbuf {
 #define	MCLALLOC(p, canwait) \
 	{ spl_t ms = splimp(); \
 	  if (mclfree == 0) \
-		(void)m_clalloc(mbconf.clusterchunk, (canwait)); \
+		(void)m_clalloc(mbconfig.clusterchunk, (canwait)); \
 	  if ((p) = mclfree) { \
-		mbstat.m_clfree--; \
+		mbstats.m_clfree--; \
 		mclfree = (p)->mcl.mcl_next; \
 		(p)->mcl.mcl_refcnt = 1; \
 	  } \
@@ -265,7 +265,7 @@ struct mbuf {
 	  if ((m)->m_ext.ext_buf != NULL) { \
 		(m)->m_data = (m)->m_ext.ext_buf->mcl_buf; \
 		(m)->m_flags |= M_EXT; \
-		(m)->m_ext.ext_size = mbconf.mclbytes; \
+		(m)->m_ext.ext_size = mbconfig.mclbytes; \
 /*	        (m)->m_ext.ext_free = mcl_free_routine; */ \
 	  } \
 	}
@@ -275,7 +275,7 @@ struct mbuf {
 	  if (--((p)->mcl.mcl_refcnt) == 0) { \
 		(p)->mcl.mcl_next = mclfree; \
 		mclfree = (p); \
-		mbstat.m_clfree++; \
+		mbstats.m_clfree++; \
 	  } \
 	  splx(ms); \
 	}
@@ -287,7 +287,7 @@ struct mbuf {
  */
 #define	MFREE(m, n) \
 	{ spl_t ms = splimp(); \
-	  mbstat.m_mtypes[(m)->m_type]--; \
+	  mbstats.m_mtypes[(m)->m_type]--; \
 	  if ((m)->m_flags & M_EXT) { \
 /*		if ((m)->m_ext.ext_free) */ \
 /*			(*((m)->m_ext.ext_free))((m)->m_ext.ext_buf, */ \
@@ -359,8 +359,8 @@ struct mbuf {
 
 /* change mbuf to new type */
 #define MCHTYPE(m, t) { \
-	mbstat.m_mtypes[(m)->m_type]--; \
-	mbstat.m_mtypes[t]++; \
+	mbstats.m_mtypes[(m)->m_type]--; \
+	mbstats.m_mtypes[t]++; \
 	(m)->m_type = t;\
 }
 
@@ -406,6 +406,16 @@ struct mbstat {
 extern struct mcluster *mclfree;
 extern struct mbconf   mbconf;
 extern struct mbstat   mbstat;
+/*
+ * These two variables have the names of their structures. A module in a
+ * library file of its own reaches the core's variables through macros of
+ * their names (net/netcore_map.h), and a macro called `mbstat' would
+ * replace the word after `struct' as well. So the variables have a second
+ * name that is not a tag, and the macros above - which are compiled into
+ * such modules - use it. In the stack program the names mean the same.
+ */
+#define mbstats        mbstat
+#define mbconfig       mbconf
 extern int             max_linkhdr;	/* largest link-level header */
 extern int             max_protohdr;	/* largest protocol header */
 extern int             max_hdr;		/* largest link+protocol header */

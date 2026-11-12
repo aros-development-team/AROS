@@ -50,7 +50,7 @@ int clean_suite(void)
 /* Before anything is set, the system values. */
 void testKEEPALIVE_DEFAULTS(void)
 {
-    int s = socket(AF_INET, SOCK_STREAM, 0);
+    int s = socket(st_any_family(), SOCK_STREAM, 0);
 
     CU_ASSERT_FATAL(s >= 0);
     CU_ASSERT_EQUAL(geti(s, TCP_KEEPIDLE), SYS_IDLE);
@@ -88,7 +88,7 @@ void testKEEPALIVE_ROUNDTRIP6(void) { roundtrip(AF_INET6); }
  * the value as it was. */
 void testKEEPALIVE_BOUNDS(void)
 {
-    int s = socket(AF_INET, SOCK_STREAM, 0);
+    int s = socket(st_any_family(), SOCK_STREAM, 0);
 
     CU_ASSERT_FATAL(s >= 0);
     CU_ASSERT_NOT_EQUAL(seti(s, TCP_KEEPIDLE, -1), 0);
@@ -118,8 +118,8 @@ static void inherited(int family)
     c = socket(family, SOCK_STREAM, 0);
     CU_ASSERT_FATAL(c >= 0);
     len = st_loopback(family, &ss, port);
-    CU_ASSERT_EQUAL(connect(c, (struct sockaddr *)&ss, len), 0);
-    CU_ASSERT(sock_wait(l, 0, 3) > 0);
+    CU_ASSERT_EQUAL_FATAL(connect(c, (struct sockaddr *)&ss, len), 0);
+    CU_ASSERT_FATAL(sock_wait(l, 0, 3) > 0);        /* else accept() waits for ever */
     a = accept(l, NULL, NULL);
     CU_ASSERT_FATAL(a >= 0);
     CU_ASSERT_EQUAL(geti(a, TCP_KEEPIDLE), 40);
@@ -149,12 +149,12 @@ int main(void)
     }
     p = CU_add_suite("KEEPALIVE_Suite", init_suite, clean_suite);
     if (p == NULL ||
-        !CU_add_test(p, "the system values until set", testKEEPALIVE_DEFAULTS) ||
-        !CU_add_test(p, "set, read back, 0 for the system value (IPv4)", testKEEPALIVE_ROUNDTRIP4) ||
-        !CU_add_test(p, "set, read back, 0 for the system value (IPv6)", testKEEPALIVE_ROUNDTRIP6) ||
-        !CU_add_test(p, "negative and too large are refused", testKEEPALIVE_BOUNDS) ||
-        !CU_add_test(p, "an accepted connection has the listener's values (IPv4)", testKEEPALIVE_INHERITED4) ||
-        !CU_add_test(p, "an accepted connection has the listener's values (IPv6)", testKEEPALIVE_INHERITED6))
+        !st_add_test(p, "the system values until set", testKEEPALIVE_DEFAULTS, ST_ANY) ||
+        !st_add_test(p, "set, read back, 0 for the system value (IPv4)", testKEEPALIVE_ROUNDTRIP4, ST_V4) ||
+        !st_add_test(p, "set, read back, 0 for the system value (IPv6)", testKEEPALIVE_ROUNDTRIP6, ST_V6) ||
+        !st_add_test(p, "negative and too large are refused", testKEEPALIVE_BOUNDS, ST_ANY) ||
+        !st_add_test(p, "an accepted connection has the listener's values (IPv4)", testKEEPALIVE_INHERITED4, ST_V4) ||
+        !st_add_test(p, "an accepted connection has the listener's values (IPv6)", testKEEPALIVE_INHERITED6, ST_V6))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

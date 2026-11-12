@@ -51,7 +51,9 @@
 #include <net/if.h>
 #include <net/if_protos.h>
 #include <net/pfil.h>
-#include "../net/ipfilter.h"
+
+/* IPv4's packet hook point (netinet/in_proto.c) */
+extern struct pfil_point ip_pfil;
 
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
@@ -63,6 +65,7 @@
 #include <kern/amiga_subr.h>
 #include <kern/amiga_includes.h>
 #include <protos/kern/kern_random_protos.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 /*
  * Random IP IDs, against ID prediction (idle scans, blind fragment
@@ -81,10 +84,6 @@ ip_randomid(void)
 
 #ifdef vax
 #include <machine/mtpr.h>
-#endif
-
-#ifndef IP_RAWOUTPUT
-#define IP_RAWOUTPUT 0
 #endif
 
 static struct mbuf *ip_insertoptions __P((struct mbuf *, struct mbuf *, int *));
@@ -284,7 +283,6 @@ int	STKARGFUN ip_output(void *args, ...)
 #ifdef ENABLE_MULTICAST
     if(IN_MULTICAST(ntohl(ip->ip_dst.s_addr))) {
         struct in_multi *inm;
-        extern struct ifnet loif;
 
         m->m_flags |= M_MCAST;
         /*
@@ -412,12 +410,21 @@ int	STKARGFUN ip_output(void *args, ...)
 #ifdef ENABLE_MULTICAST
 sendit:
 #endif
-    /* Run through list of hooks and IP filter engine */
-    if(pfil_run_hooks(m, ifp, MIAMIPFBPT_IP, IPF_OUT)) {
-        DIPF(log(LOG_DEBUG, "ipfilter: dropped outgoing packet on %s%d\n",
-                 ifp->if_name, ifp->if_unit);)
-        error = EHOSTUNREACH;
-        goto bad;
+    /*
+     * The packet hooks (the filter engine, Miami hooks): one word tested
+     * while nothing is hooked (net/pfil.h). A dropped packet is freed
+     * already, and the send fails with what the hook said (the filter
+     * engine: EHOSTUNREACH). A hook may have replaced the chain.
+     */
+    if(PFIL_HOOKED(&ip_pfil, PFIL_OUT)) {
+        struct mbuf *hm = m;    /* m itself stays a register for the paths without hooks */
+
+        if((error = pfil_run(&ip_pfil, &hm, ifp, PFIL_OUT)) != 0) {
+            DIPF(log(LOG_DEBUG, "ipfilter: dropped an outgoing packet\n");)
+            goto done;
+        }
+        m0 = m = hm;
+        ip = mtod(m, struct ip *);
     }
 
     /*

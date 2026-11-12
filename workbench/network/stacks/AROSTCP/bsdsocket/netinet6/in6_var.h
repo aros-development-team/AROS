@@ -198,6 +198,14 @@ void in6_delmulti(struct in6_multi *);
 struct ip6_moptions;
 void ip6_freemoptions(struct ip6_moptions *);
 void in6_ifdetach(struct ifnet *);
+/* IPv6 starts and stops while the stack runs (netinet6/in6_proto.c) */
+void in6_attach_running(void);
+int  in6_detach_all(void);
+void ip6_input_stop(void);		/* ip6_input.c */
+void ip6_flush(void);
+void ip6_deinit(void);
+void icmp6_defaults(void);		/* icmp6.c */
+void in6_family_defaults(void);		/* in6_family.c */
 
 /*
  * The stack's own view of an IPv6 interface address. The public record
@@ -230,17 +238,11 @@ struct ip6ctlparam {
 	u_int32_t ip6c_mtu;		/* PRC_MSGSIZE: the path MTU, >= IPV6_MMTU */
 };
 struct inpcb;
-struct inpcbhead;
 struct sockaddr;
 struct sockaddr_in6;
-void in6_pcbnotify(struct inpcbhead *, const struct sockaddr_in6 *, u_int,
-                   const struct in6_addr *, u_int, int,
-                   void (*)(struct inpcb *, int));
-void udp6_ctlinput(int, struct sockaddr *, void *);
 int  ip6_outflags(int, int, const struct in6_addr *);
 void ip6_notify_pmtu(const struct inpcb *, const struct sockaddr_in6 *, u_int32_t);
 u_int32_t ip6_pathmtu(const struct inpcb *);
-void tcp6_ctlinput(int, struct sockaddr *, void *);
 
 /* Privacy extensions (RFC 4941) */
 extern int ip6_use_tempaddr;   /* enable temporary addresses (0=off, 1=on) */

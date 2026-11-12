@@ -5,6 +5,10 @@ void ifinit(void);
 
 void if_attach(struct ifnet * ifp);
 
+void if_detach(struct ifnet * ifp);
+
+void if_remove(struct ifnet * ifp);
+
 struct ifaddr * ifa_ifwithaddr(register struct sockaddr * addr);
 
 struct ifaddr * ifa_ifwithdstaddr(register struct sockaddr * addr);

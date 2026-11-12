@@ -49,10 +49,7 @@
 #include <assert.h>
 
 #if INET
-#include <netinet/in.h>
-#include <netinet/in_systm.h>
-#include <netinet/in_var.h>
-#include <netinet/ip.h>
+#include <netinet/in.h>		/* struct in_addr in struct sana_softc */
 #endif
 
 #if NS
@@ -66,10 +63,12 @@
 #include <netinet6/nd6.h>
 #endif
 
+#include <stdio.h>
 #include <net/if_sana.h>
+#include <net/netmodule.h>
 #include <net/if_types.h>
-#include <net/sana2arp.h>
 #include "bpf.h"
+#include <net/packet_ops.h>      /* the capture tap */
 
 #include <net/sana2config.h>
 #include <net/sana2request.h>
@@ -79,8 +78,6 @@
 #include <libraries/bsdsocket.h>
 #include <libraries/miamipanel.h>
 #include <proto/dos.h>
-
-#define ARP_MTU (sizeof(struct s2_arppkt))
 
 int debug_sana = 1;
 
@@ -98,15 +95,13 @@ struct sana_softc *ssq = NULL;
 /*
  * Local prototypes
  */
-struct ifnet *iface_make(struct ssconfig *ifc);
 extern void if_detach(struct ifnet *ifp);       /* net/if.c */
 static void sana_run(struct sana_softc *ssc, int requests, struct ifaddr *ifa);
-static void sana_unrun(struct sana_softc *ssc);
 static void sana_up(struct sana_softc *ssc);
-static BOOL sana_down(struct sana_softc *ssc);
 static struct mbuf *
 sana_read(struct sana_softc *ssc, struct IOIPReq *req,
           UWORD  flags, UWORD *sent, const char *banner, size_t mtu);
+static void sana_linktype_builtin(void);
 static void sana_ip_read(struct sana_softc *ssc, struct IOIPReq *req);
 static void sana_arp_read(struct sana_softc *ssc, struct IOIPReq *req);
 #if INET6
@@ -116,6 +111,23 @@ static void sana_online(struct sana_softc *ssc, struct IOIPReq *req);
 static void sana_connect(struct sana_softc *ssc, struct IOIPReq *req);
 static void free_written_packet(struct sana_softc *ssc, struct IOIPReq *req);
 static void sana_start(struct sana_softc *ssc);
+static int sana_linktype_wanted(int i);
+
+/*
+ * Whether the interface has been brought online by sana_up(): it has read
+ * requests with its driver. Of any link type - which families are part of
+ * the running stack decides which types are read.
+ */
+static inline int
+sana_reading(struct sana_softc *ssc)
+{
+    int i;
+
+    for(i = 0; i < SANA_PT_MAX; i++)
+        if(ssc->ss_pt[i].sent != 0)
+            return 1;
+    return 0;
+}
 
 /*
  * Prepended (as a short mbuf) to a packet held on the interface send queue so
@@ -128,7 +140,6 @@ struct sana_sendtag {
     BYTE  st_pri;                  /* request message priority         */
     UBYTE st_dstaddr[MAXADDRSANA]; /* resolved destination address     */
 };
-static int sana_query(struct ifnet *ifn, struct TagItem *tag);
 
 /*
  * Initialize Sana-II interface
@@ -145,6 +156,7 @@ sana_init(void)
 
     if(SanaPort) {
         SanaPort->mp_Node.ln_Name = (void *)"sana_if.port";
+        sana_linktype_builtin();
         loattach();
         return (ULONG) 1 << SanaPort->mp_SigBit;
     }
@@ -195,7 +207,8 @@ sana_deinit(void)
  * Drop all of an interface's live layer-3 configuration - DNS, autoip, every
  * route, and every address (IPv6 then IPv4) - WITHOUT closing the device or
  * freeing the ifnet.  Shared by the reload teardown (which re-applies the
- * config afterwards) and the dropped-interface path (which leaves it bare).
+ * config afterwards) and the dropped-interface path (which leaves it bare;
+ * sana_remove_unseen() of the configuration reader, kern/netconfig_iface.c).
  *
  * rt_purgeif() removes every route that resolves through the interface first -
  * including the IPv6 RTF_CLONING prefix route that in6_ifscrub() alone did not
@@ -204,48 +217,25 @@ sana_deinit(void)
  *
  * Returns the number of addresses removed (for logging).
  */
-static int
+int
 sana_if_deconfigure(struct ifnet *ifp)
 {
-    struct sana_softc *ssc = (struct sana_softc *)ifp;
-    struct ifreq ifr;
     int deleted = 0;
 
     ifnet_clear_dns(ifp);
-    if(ssc->ss_autoip.state != AUTOIP_DISABLED)
-        autoip_stop(ifp);
 
-#if INET6
-    /* Forget the routers heard on it and the routes they gave, and the
-     * prefixes: the routes and addresses go below anyway, and an entry left
-     * marked installed (or its address made) would never be put back when
-     * the router advertises again after a reload. */
-    nd6_purge_routers(ifp);
-    nd6_purge_prefixes(ifp);
-#endif
+    /* Each family first drops what must go before the routes do (IPv4 its
+     * link-local claim; IPv6 the routers heard on the interface, the routes
+     * they gave and the prefixes - an entry left marked installed, or its
+     * address made, would never be put back when the router advertises
+     * again after a reload). */
+    (void)netfamily_if_event(NFE_UNCONFIGURE_PRE, ifp);
+
     /* Flush all routes on the interface before dropping its addresses, so no
      * live route is left referencing an ifaddr we are about to free. */
     rt_purgeif(ifp, AF_UNSPEC);
 
-#if INET6
-    {
-        struct ifaddr *ifa, *nifa;
-        for(ifa = ifp->if_addrlist; ifa; ifa = nifa) {
-            nifa = ifa->ifa_next;       /* in6_purgeaddr() unlinks+frees ifa */
-            if(ifa->ifa_addr &&
-                    ifa->ifa_addr->sa_family == AF_INET6) {
-                in6_purgeaddr(ifa);
-                deleted++;
-            }
-        }
-    }
-#endif
-    while(1) {
-        bzero(&ifr, sizeof(ifr));
-        if(in_control(NULL, SIOCDIFADDR, (caddr_t)&ifr, ifp) != 0)
-            break;
-        deleted++;
-    }
+    deleted = netfamily_if_event(NFE_UNCONFIGURE, ifp);
     return deleted;
 }
 
@@ -273,102 +263,14 @@ sana_reconfig_teardown(void)
 }
 
 /*
- * In-place reload: handle interfaces dropped from the new configuration.
- *
- * sana_reload_begin() bumps a generation; addifent() marks each interface it
- * (re)configures via sana_mark_seen(); sana_remove_unseen() then disables any
- * interface still carrying an older generation (i.e. no longer in the config).
- *
- * Removal is a full teardown: stop DHCP, release DNS/autoip, flush routes and
- * delete every address (sana_if_deconfigure()), take the device offline and
- * drain all its I/O requests (sana_down() + sana_unrun() - every request buffer
- * is chained in ss_reqs, so this clears SanaPort of anything that references the
- * softc), detach the per-interface nd6 state, unlink the ifnet from the global
- * list and free its link-level ifaddr (if_detach()), unlink from ssq,
- * CloseDevice() and finally free the softc.  Order mirrors sana_deinit(), with
- * the list-unlink + free added for a single live interface.
+ * In-place reload: the generation of the configuration read last. The
+ * configuration reader (module "netconfig", kern/netconfig_iface.c) raises
+ * it at the start of a reload, stamps every interface a line names with it
+ * (ss_reloadseen, and the tunnels' own records) and removes the interfaces
+ * left with an older one. It is kept here, not in the reader, because the
+ * reader is unloaded between two reads and the stamps outlive it.
  */
-static ULONG sana_reload_gen = 0;
-
-void sana_reload_begin(void)
-{
-    sana_reload_gen++;
-}
-
-void sana_mark_seen(struct ifnet *ifp)
-{
-    struct sana_softc *ssc;
-
-    /* Only SANA interfaces (those in ssq) are tracked; a tunnel/pseudo ifnet
-     * is not a sana_softc and must not be cast/written as one. */
-    for(ssc = ssq; ssc; ssc = ssc->ss_next) {
-        if((struct ifnet *)ssc == ifp) {
-            ssc->ss_reloadseen = sana_reload_gen;
-            return;
-        }
-    }
-}
-
-void sana_remove_unseen(void)
-{
-    struct sana_softc *ssc, *next;
-    struct sana_softc **prev = &ssq;
-
-    for(ssc = ssq; ssc; ssc = next) {
-        struct ifnet *ifp = (struct ifnet *)ssc;
-        struct IOSana2Req *req;
-
-        next = ssc->ss_next;
-
-        if(ssc->ss_reloadseen == sana_reload_gen) {
-            prev = &ssc->ss_next;       /* kept: advance the unlink cursor */
-            continue;
-        }
-
-        /* interface no longer in the config: full teardown and free */
-        ifp->if_data.ifi_aros_usedhcp = 0;
-#if INET6 && DHCP6
-        ifp->if_data.ifi_aros_usedhcp6 = 0;
-#endif
-        kill_dhclient(ifp);
-#if INET6 && DHCP6
-        kill_dhclient6(ifp);
-#endif
-        sana_if_deconfigure(ifp);       /* DNS, autoip, routes, all addresses */
-
-        /* take the device offline and drain/free all of its I/O requests
-         * before anything that references the softc is torn down.  (A compliant
-         * SANA-II driver must return parked CMD_READs on AbortIO; tap.device
-         * now does.) */
-        sana_down(ssc);
-        if(ssc->ss_if.if_flags & IFF_DRV_RUNNING)
-            sana_unrun(ssc);
-        ifp->if_flags &= ~IFF_UP;
-
-#if INET6
-        nd6_ifdetach(ifp);
-#endif
-        if_detach(ifp);                 /* global-list unlink + free link ifaddr */
-
-        *prev = next;                   /* unlink from ssq (prev still points here) */
-
-        /* close the device (ss_dev/ss_unit are still valid in the softc) */
-        req = CreateIOSana2Req(ssc);
-        if(req) {
-            CloseDevice((struct IORequest *)req);
-            DeleteIOSana2Req(req);
-        } else {
-            __log(LOG_ERR, "sana_remove_unseen: couldn't close device %s\n",
-                  ssc->ss_name);
-        }
-
-        __log(LOG_NOTICE, "%s%d: removed from configuration, interface detached",
-              ifp->if_name, ifp->if_unit);
-
-        bsd_free((caddr_t)ssc, M_IFNET);
-        /* prev is unchanged: it now holds `next`, the new current node */
-    }
-}
+ULONG sana_reload_gen = 0;
 
 /*
  * sana_poll()
@@ -513,137 +415,11 @@ aiface_find(char *name, long unit)
 }
 #endif
 
-struct ifnet *
-iface_make(struct ssconfig *ifc)
-{
-    register struct sana_softc *ssc = NULL;
-    register struct IOSana2Req *req;
-    struct Sana2DeviceQuery devicequery;
-
-    /* Allocate the request for opening the device */
-    if((req = CreateIOSana2Req(NULL)) == NULL) {
-        __log(LOG_ERR, "iface_find(): CreateIOSana2Req failed\n");
-    } else {
-        req->ios2_BufferManagement = buffermanagement;
-
-        DSANA(__log(LOG_DEBUG, "Opening device %s unit %ld", ifc->args->a_dev, (long)*ifc->args->a_unit);)
-        if(OpenDevice(ifc->args->a_dev, *ifc->args->a_unit,
-                      (struct IORequest *)req, 0L)) {
-            /* OpenDevice() returns non-zero on FAILURE: only report the
-             * error and clean up.  ssc stays NULL so this function returns
-             * NULL; req is released by DeleteIOSana2Req() below. */
-            sana2perror("OpenDevice", req);
-
-            D(bug("[AROSTCP:SANA] %s: device '%s' unit %u", __func__, ifc->args->a_dev, *ifc->args->a_unit));
-        } else {
-            /* Ask for our type, address length, MTU
-            * Obl. bitch: nobody tells, WHO is supplying
-            * DevQueryFormat and DeviceLevel
-            */
-            req->ios2_Req.io_Command   = S2_DEVICEQUERY;
-            req->ios2_StatData         = &devicequery;
-            devicequery.SizeAvailable  = sizeof(devicequery);
-            devicequery.DevQueryFormat = 0L;
-
-            DoIO((struct IORequest *)req);
-            if(req->ios2_Req.io_Error) {
-                sana2perror("S2_DEVICEQUERY", req);
-            } else {
-                /* Get Our Station address */
-                req->ios2_StatData = NULL;
-                req->ios2_Req.io_Command = S2_GETSTATIONADDRESS;
-                DoIO((struct IORequest *)req);
-
-                if(req->ios2_Req.io_Error) {
-                    sana2perror("S2_GETSTATIONADDRESS", req);
-                } else {
-                    req->ios2_Req.io_Command = 0;
-
-                    /* Allocate the interface structure */
-                    ssc = (struct sana_softc *)
-                          bsd_malloc(sizeof(*ssc) + strnlen(ifc->args->a_dev, FILENAME_MAX) + 1,
-                                     M_IFNET, M_WAITOK);
-
-                    if(!ssc) {
-                        __log(LOG_ERR, "iface_find: out of memory\n");
-                    } else {
-                        aligned_bzero_const(ssc, sizeof(*ssc));
-
-                        /* Save request pointers */
-                        ssc->ss_dev     = req->ios2_Req.io_Device;
-                        ssc->ss_unit    = req->ios2_Req.io_Unit;
-                        ssc->ss_bufmgnt = req->ios2_BufferManagement;
-
-                        /* Address must be full bytes */
-                        ssc->ss_if.if_addrlen  = (devicequery.AddrFieldSize + 7) >> 3;
-                        bcopy(req->ios2_DstAddr, ssc->ss_hwaddr, ssc->ss_if.if_addrlen);
-                        ssc->ss_if.if_mtu      = devicequery.MTU;
-                        ssc->ss_maxmtu         = devicequery.MTU;
-                        ssc->ss_if.if_baudrate = devicequery.BPS;
-                        ssc->ss_hwtype         = devicequery.HardwareType;
-
-                        /* A jumbo interface needs proportionally more mbuf
-                         * clusters; grow the pool cap for the advertised MTU
-                         * (bounded by free memory). */
-                        mb_autosize(devicequery.MTU);
-
-                        /* These might be different on different hwtypes */
-                        ssc->ss_if.if_output = sana_output;
-                        ssc->ss_if.if_ioctl  = sana_ioctl;
-                        ssc->ss_if.if_query  = sana_query;
-
-                        /* Map SANA-II hardware types to RFC1573 standard */
-                        switch(ssc->ss_hwtype) {
-                        case S2WireType_Ethernet:
-                            ssc->ss_if.if_type = IFT_ETHER;
-                            break;
-                        case S2WireType_IEEE802:
-                            ssc->ss_if.if_type = IFT_IEEE80211;
-                            break;
-                        case S2WireType_Arcnet:
-                            ssc->ss_if.if_type = IFT_ARCNET;
-                            break;
-                        case S2WireType_LocalTalk:
-                            ssc->ss_if.if_type = IFT_LOCALTALK;
-                            break;
-                        case S2WireType_PPP:
-                            ssc->ss_if.if_type = IFT_PPP;
-                            break;
-                        case S2WireType_SLIP:
-                        case S2WireType_CSLIP:
-                            ssc->ss_if.if_type = IFT_SLIP;
-                            break;
-                        case S2WireType_PLIP:
-                            ssc->ss_if.if_type = IFT_PARA;
-                            break;
-                        default:
-                            ssc->ss_if.if_type = IFT_OTHER;
-                        }
-
-                        /* Initialize */
-                        ssconfig(ssc, ifc);
-
-                        NewList((struct List *)&ssc->ss_freereq);
-
-                        /* depth of the transmit queue that sana_start() drains */
-                        ssc->ss_if.if_snd.ifq_maxlen = IFQ_MAXLEN;
-
-                        if_attach((struct ifnet *)ssc);
-                        ifinit();
-
-                        ssc->ss_next = ssq;
-                        ssq = ssc;
-                    }
-                }
-            }
-            if(!ssc)
-                CloseDevice((struct IORequest *)req);
-        }
-        DeleteIOSana2Req(req);
-    }
-
-    return (struct ifnet *)ssc;
-}
+/*
+ * The interfaces of the configuration are made by iface_make() of the
+ * configuration reader (kern/netconfig_iface.c), with sana_output,
+ * sana_ioctl and sana_query below as their functions.
+ */
 
 /*
  * Allocate Sana-II IORequests for TCP/IP process
@@ -673,34 +449,26 @@ sana_run(struct sana_softc *ssc, int requests, struct ifaddr *ifa)
                 /* Mark us as running */
                 ssc->ss_if.if_flags |= IFF_DRV_RUNNING;
                 if(ssc->ss_cflags & SSF_TRACK) {
-#ifdef INET
                     /* Ask for packet type specific statistics */
-                    req->ios2_Req.io_Command = S2_TRACKTYPE;
-                    req->ios2_PacketType = ssc->ss_ip.type;
-                    DoIO((struct IORequest *)req);
-                    /* It is *not* safe to turn tracking off */
-                    if(req->ios2_Req.io_Error &&
-                            req->ios2_WireError != S2WERR_ALREADY_TRACKED)
-                        sana2perror("S2_TRACKTYPE for IP", req);
-                    if(ssc->ss_arp.reqno) {
+                    int i;
+
+                    for(i = 0; i < SANA_PT_MAX; i++) {
+                        if(sana_linktypes[i] == NULL ||
+                                (ssc->ss_pt[i].reqno == 0 && i != SANA_PT_IP))
+                            continue;
                         req->ios2_Req.io_Command = S2_TRACKTYPE;
-                        req->ios2_PacketType = ssc->ss_arp.type;
+                        req->ios2_PacketType = ssc->ss_pt[i].type;
                         DoIO((struct IORequest *)req);
+                        /* It is *not* safe to turn tracking off */
                         if(req->ios2_Req.io_Error &&
-                                req->ios2_WireError != S2WERR_ALREADY_TRACKED)
-                            sana2perror("S2_TRACKTYPE for ARP", req);
+                                req->ios2_WireError != S2WERR_ALREADY_TRACKED) {
+                            char what[40];
+
+                            snprintf(what, sizeof(what), "S2_TRACKTYPE for %s",
+                                     sana_linktypes[i]->lt_name);
+                            sana2perror(what, req);
+                        }
                     }
-#endif
-#if INET6
-                    if(ssc->ss_ip6.reqno) {
-                        req->ios2_Req.io_Command = S2_TRACKTYPE;
-                        req->ios2_PacketType = ssc->ss_ip6.type;
-                        DoIO((struct IORequest *)req);
-                        if(req->ios2_Req.io_Error &&
-                                req->ios2_WireError != S2WERR_ALREADY_TRACKED)
-                            sana2perror("S2_TRACKTYPE for IPv6", req);
-                    }
-#endif
                 }
             } else {
                 sana2perror("S2_CONFIGINTERFACE", req);
@@ -773,7 +541,7 @@ AbortSanaIO(register __a1 struct IORequest *ioRequest)
  * Free Sana-II IO Requests
  * Note: this is protected by splimp();
  */
-static void
+void
 sana_unrun(struct sana_softc *ssc)
 {
     struct IOIPReq *req, *next;
@@ -831,7 +599,7 @@ sana_ioctl(register struct ifnet *ifp, int cmd, caddr_t data)
          */
         if((ifr->ifr_flags & IFF_UP) &&
                 (ssc->ss_if.if_flags & IFF_DRV_RUNNING) &&
-                (ssc->ss_ip.sent == 0)) {
+                !sana_reading(ssc)) {
             D(bug("[AROSTCP:SANA] %s: SIFFLAGS bringing interface up .. \n", __func__));
             sana_up(ssc);
         }
@@ -840,10 +608,9 @@ sana_ioctl(register struct ifnet *ifp, int cmd, caddr_t data)
             D(bug("[AROSTCP:SANA] %s: SIFFLAGS bringing interface DOWN .. \n", __func__));
             sana_down(ssc);
         }
-        if((ifr->ifr_flags & IFF_NOARP) == 0) {
-            D(bug("[AROSTCP:SANA] %s: SIFFLAGS Allocating interface ARP tables .. \n", __func__));
-            alloc_arptable(ssc, 0);
-        }
+        /* (What a family keeps per interface for its address resolution -
+         * IPv4 its ARP table - it makes itself: on NFE_UP, with its first
+         * address, or when it first resolves one.) */
         break;
 
     case SIOCSIFMTU:		/* Set Interface MTU */
@@ -875,12 +642,12 @@ sana_ioctl(register struct ifnet *ifp, int cmd, caddr_t data)
             sana_run(ssc, ssc->ss_reqno, ifa);
         }
         /*
-         * Use ss_ip.sent==0 instead of !IFF_UP to detect whether the device
-         * has actually been brought online.  IFF_UP may already be set by a
-         * prior SIOCSIFFLAGS from the DHCP client's PREINIT phase, but that
-         * does not mean sana_up() (CmdOnline + CmdRead) has been called.
+         * Use "no read requests sent" instead of !IFF_UP to detect whether
+         * the device has actually been brought online.  IFF_UP may already be
+         * set by a prior SIOCSIFFLAGS from the DHCP client's PREINIT phase, but
+         * that does not mean sana_up() (CmdOnline + CmdRead) has been called.
          */
-        if((ssc->ss_if.if_flags & IFF_DRV_RUNNING) && (ssc->ss_ip.sent == 0)) {
+        if((ssc->ss_if.if_flags & IFF_DRV_RUNNING) && !sana_reading(ssc)) {
             if(ssc->ss_cflags & SSF_NOUP) {
                 D(bug("[AROSTCP:SANA] %s: SIFADDR Clearing interface NOUP flag .. \n", __func__));
                 ssc->ss_cflags &= ~SSF_NOUP;
@@ -889,20 +656,11 @@ sana_ioctl(register struct ifnet *ifp, int cmd, caddr_t data)
                 sana_up(ssc);
             }
         }
-        if((ssc->ss_if.if_flags & IFF_NOARP) == 0) {
-            D(bug("[AROSTCP:SANA] %s: SIFADDR Allocating interface ARP tables .. \n", __func__));
-            alloc_arptable(ssc, 0);
-        }
+        /* (The family that sets the address keeps what it needs of it
+         * itself: IPv4 its copy in ss_ipaddr and its ARP table.) */
 
     case SIOCAIFADDR:		/* Alter Interface Address */
         D(bug("[AROSTCP:SANA] %s: SIOCAIFADDR - Alter Interface Address\n", __func__));
-        switch(ifa->ifa_addr->sa_family) {
-#if INET
-        case AF_INET:
-            ssc->ss_ipaddr = IA_SIN(ifa)->sin_addr;
-            break;
-#endif
-        }
         break;
 
 #if INET6
@@ -913,7 +671,7 @@ sana_ioctl(register struct ifnet *ifp, int cmd, caddr_t data)
             D(bug("[AROSTCP:SANA] %s: SIOCAIFADDR_IN6 set interface as running ..\n", __func__));
             sana_run(ssc, ssc->ss_reqno, ifa);
         }
-        if((ssc->ss_if.if_flags & IFF_DRV_RUNNING) && (ssc->ss_ip.sent == 0)) {
+        if((ssc->ss_if.if_flags & IFF_DRV_RUNNING) && !sana_reading(ssc)) {
             if(ssc->ss_cflags & SSF_NOUP) {
                 D(bug("[AROSTCP:SANA] %s: SIOCAIFADDR_IN6 Clearing interface NOUP flag ..\n", __func__));
                 ssc->ss_cflags &= ~SSF_NOUP;
@@ -936,6 +694,211 @@ sana_ioctl(register struct ifnet *ifp, int cmd, caddr_t data)
     }
     splx(s);
     return (error);
+}
+
+/*
+ * Start an interface for the configuration, whatever families the running
+ * stack has: configure its device and make its requests (sana_run()) and,
+ * with `online', put it online and post the reads (sana_up(), which raises
+ * NFE_UP - IPv6 makes its link-local address there). Until this existed
+ * only a family setting an address did it (SIOCSIFADDR, SIOCAIFADDR_IN6
+ * above), so an interface without an address of a family that is part of
+ * the stack never came up. Does nothing that is already done. EOPNOTSUPP
+ * for an interface that is not a SANA-II one, ENXIO when the device does
+ * not configure.
+ */
+int
+sana_bringup(struct ifnet *ifp, int online)
+{
+    struct sana_softc *ssc = sana_softc_of(ifp);
+    spl_t s;
+    int error;
+
+    if(ssc == NULL)
+        return (EOPNOTSUPP);
+    s = splimp();
+    if(!(ssc->ss_if.if_flags & IFF_DRV_RUNNING))
+        sana_run(ssc, ssc->ss_reqno, NULL);
+    if(online && (ssc->ss_if.if_flags & IFF_DRV_RUNNING) && !sana_reading(ssc)) {
+        /* the line said UP: nothing is left for a first address to hold back */
+        ssc->ss_cflags &= ~SSF_NOUP;
+        sana_up(ssc);
+    }
+    error = (ssc->ss_if.if_flags & IFF_DRV_RUNNING) ? 0 : ENXIO;
+    splx(s);
+    return (error);
+}
+
+/*
+ * The registered link types (net/if_sana.h).
+ */
+const struct sana_linktype *sana_linktypes[SANA_PT_MAX];
+
+#if INET
+static struct sana_linktype sana_lt_ip  = { "IP",  AF_INET,   sana_ip_read,  NULL, 0, SANA_PT_IP };
+/* ARP is spoken by IPv4, which gives its input and packet size: sana_linktype_handler() */
+static struct sana_linktype sana_lt_arp = { "ARP", AF_UNSPEC, sana_arp_read, NULL, 0, SANA_PT_ARP };
+#endif
+#if INET6
+static struct sana_linktype sana_lt_ip6 = { "IPv6", AF_INET6, sana_ip6_read, NULL, 0, SANA_PT_IP6 };
+#endif
+
+static void
+sana_linktype_builtin(void)
+{
+#if INET
+    sana_linktypes[SANA_PT_IP] = &sana_lt_ip;
+    sana_linktypes[SANA_PT_ARP] = &sana_lt_arp;
+#endif
+#if INET6
+    sana_linktypes[SANA_PT_IP6] = &sana_lt_ip6;
+#endif
+}
+
+/*
+ * Register a link type; its place is returned in lt->lt_index. The three
+ * built-in places are not given out.
+ */
+int
+sana_linktype_register(struct sana_linktype *lt)
+{
+    int i;
+
+    if(lt == NULL || lt->lt_read == NULL || lt->lt_config == NULL)
+        return (EINVAL);
+    for(i = SANA_PT_IP6 + 1; i < SANA_PT_MAX; i++)
+        if(sana_linktypes[i] == NULL) {
+            lt->lt_index = i;
+            sana_linktypes[i] = lt;
+            return (0);
+        }
+    return (ENOSPC);
+}
+
+/*
+ * Take a link type out. The caller has brought down, or reloaded, the
+ * interfaces that had requests of this type with their drivers.
+ */
+int
+sana_linktype_unregister(struct sana_linktype *lt)
+{
+    struct sana_softc *ssc;
+    int i = lt ? lt->lt_index : -1;
+
+    if(i <= SANA_PT_IP6 || i >= SANA_PT_MAX || sana_linktypes[i] != lt)
+        return (ENOENT);
+    for(ssc = ssq; ssc; ssc = ssc->ss_next)
+        if(ssc->ss_pt[i].sent != 0)
+            return (EBUSY);
+    sana_linktypes[i] = NULL;
+    return (0);
+}
+
+int
+sana_linktype_resolver(int family,
+                       int (*resolve)(struct ifnet *, struct rtentry *, struct mbuf *,
+                                      struct sockaddr *, u_char *))
+{
+    int i;
+
+    for(i = 0; i < SANA_PT_MAX; i++)
+        if(sana_linktypes[i] != NULL && sana_linktypes[i]->lt_family == family &&
+                family != AF_UNSPEC) {
+            ((struct sana_linktype *)sana_linktypes[i])->lt_resolve = resolve;
+            return (0);
+        }
+    return (ENOENT);
+}
+
+int
+sana_linktype_handler(int index,
+                      void (*input)(struct sana_softc *, struct mbuf *, caddr_t), ULONG mtu)
+{
+    struct sana_linktype *lt;
+    spl_t s;
+
+    if(index < 0 || index >= SANA_PT_MAX ||
+            (lt = (struct sana_linktype *)sana_linktypes[index]) == NULL ||
+            lt->lt_family != AF_UNSPEC)
+        return (ENOENT);
+    if(input != NULL && lt->lt_input != NULL && lt->lt_input != input)
+        return (EEXIST);
+    s = splimp();
+    lt->lt_input = input;
+    if(input != NULL)
+        lt->lt_mtu = mtu;
+    splx(s);
+    return (0);
+}
+
+/*
+ * A packet of link type `i' was read: put it on the input queue of the
+ * family the type carries (looked up once), for the stack's task.
+ *
+ * What is kept is a pointer into the table of input queues
+ * (net/netisr.c), which is kept sorted: an entry MOVES when another queue
+ * is registered or unregistered, and one that is unregistered is gone
+ * while the slot it had now holds another family's queue. So the table's
+ * owner empties this cache whenever the table changes
+ * (sana_linktype_uncache(), called by netinput_register(),
+ * netinput_unregister() and netinput_forget_all()), and the next packet
+ * of each type looks its queue up again. A packet costs what it did: one
+ * pointer loaded and tested.
+ */
+static const struct netinput *sana_lt_input[SANA_PT_MAX];
+
+void
+sana_linktype_uncache(void)
+{
+    spl_t s = splimp();
+    int i;
+
+    for(i = 0; i < SANA_PT_MAX; i++)
+        sana_lt_input[i] = NULL;
+    splx(s);
+}
+
+static void
+sana_linktype_enqueue(struct sana_softc *ssc, struct mbuf *m, int i)
+{
+    const struct netinput *ni = sana_lt_input[i];
+    spl_t s;
+
+    if(ni == NULL &&
+            (ni = sana_lt_input[i] = netinput_find(sana_linktypes[i]->lt_family)) == NULL) {
+        m_freem(m);             /* the family is not part of the running stack */
+        return;
+    }
+    s = splimp();
+    if(IF_QFULL(ni->ni_queue)) {
+        IF_DROP(ni->ni_queue);
+        m_freem(m);
+    } else {
+        /* Set interface pointer (needed for broadcasts) */
+        m->m_pkthdr.rcvif = (struct ifnet *)ssc;
+        IF_ENQUEUE(ni->ni_queue, m);
+        /* A signal might be needed if we use PA_EXCEPTION port */
+        schednetisr_nosignal(ni->ni_isr);
+    }
+    splx(s);
+}
+
+/* An interface is being configured: the types the configuration does not set itself. */
+LONG
+sana_linktype_config(struct sana_softc *ssc)
+{
+    LONG total = 0;
+    int i;
+
+    for(i = SANA_PT_IP6 + 1; i < SANA_PT_MAX; i++) {
+        ssc->ss_pt[i].reqno = ssc->ss_pt[i].sent = 0;
+        ssc->ss_pt[i].type = 0;
+        if(sana_linktypes[i] != NULL) {
+            (*sana_linktypes[i]->lt_config)(ssc, &ssc->ss_pt[i]);
+            total += ssc->ss_pt[i].reqno;
+        }
+    }
+    return (total);
 }
 
 /*
@@ -972,6 +935,111 @@ no_resources:
 }
 
 /*
+ * Whether read requests of link type `i' are to be with the drivers: none
+ * for a family that is not part of the running stack, nor of a built-in
+ * type nobody takes.
+ */
+static int
+sana_linktype_wanted(int i)
+{
+    const struct sana_linktype *lt = sana_linktypes[i];
+
+    if(lt == NULL)
+        return 0;
+    if(lt->lt_family != AF_UNSPEC)
+        return netinput_find(lt->lt_family) != NULL;
+    return lt->lt_input != NULL || i > SANA_PT_IP6;
+}
+
+/*
+ * The read requests of one link type taken back on every interface, and
+ * sent again (net/if_sana.h).
+ *
+ * A read request of the type is one whose completion is the type's
+ * lt_read and whose packet type is the interface's for it. It is with the
+ * driver, or replied and waiting on SanaPort - never taken off the port
+ * and not yet handled, because this runs in the stack's task outside
+ * sana_poll(), which finishes with each reply (sends the request again, or
+ * puts it with the free ones) before it takes the next. AbortIO() and
+ * WaitIO() therefore collect it in either state, WaitIO() taking a replied
+ * one off the port, as sana_down() and sana_unrun() do for all of an
+ * interface's requests at once.
+ */
+int
+sana_linktype_quiesce(int index)
+{
+    const struct sana_linktype *lt;
+    struct sana_softc *ssc;
+    struct IOIPReq *req;
+    int n = 0;
+    spl_t s;
+
+    if(index < 0 || index >= SANA_PT_MAX || (lt = sana_linktypes[index]) == NULL)
+        return 0;
+    s = splimp();
+    for(ssc = ssq; ssc; ssc = ssc->ss_next) {
+        struct sana_ptype *pt = &ssc->ss_pt[index];
+
+        for(req = ssc->ss_reqs; req != NULL && pt->sent != 0; req = req->ioip_next) {
+            if(req->ioip_dispatch != lt->lt_read || req->ioip_Command != CMD_READ ||
+                    req->ioip_s2.ios2_PacketType != pt->type)
+                continue;
+            if(!CheckIO((struct IORequest *)req))
+                AbortSanaIO((struct IORequest *)req);
+            WaitIO((struct IORequest *)req);
+            /* a packet that had arrived, and the buffer it was read into */
+            if(req->ioip_packet != NULL) {
+                m_freem(req->ioip_packet);
+                req->ioip_packet = NULL;
+            }
+            if(req->ioip_reserved != NULL) {
+                m_freem(req->ioip_reserved);
+                req->ioip_reserved = NULL;
+            }
+            req->ioip_dispatch = NULL;
+            AddHead((struct List *)&ssc->ss_freereq, (struct Node *)req);
+            pt->sent--;
+            n++;
+        }
+        /* requests are free: what waited for one to be sent with goes out */
+        if((ssc->ss_if.if_flags & (IFF_UP | IFF_DRV_RUNNING)) == (IFF_UP | IFF_DRV_RUNNING))
+            sana_start(ssc);
+    }
+    splx(s);
+    return n;
+}
+
+int
+sana_linktype_resume(int index)
+{
+    const struct sana_linktype *lt;
+    struct sana_softc *ssc;
+    int n = 0;
+    spl_t s;
+
+    if(index < 0 || index >= SANA_PT_MAX || (lt = sana_linktypes[index]) == NULL ||
+            !sana_linktype_wanted(index))
+        return 0;
+    s = splimp();
+    for(ssc = ssq; ssc; ssc = ssc->ss_next) {
+        struct sana_ptype *pt = &ssc->ss_pt[index];
+        WORD sent;
+
+        /* online: put there by sana_up(), and reading */
+        if((ssc->ss_if.if_flags & (IFF_UP | IFF_DRV_RUNNING)) != (IFF_UP | IFF_DRV_RUNNING) ||
+                !sana_reading(ssc) || pt->reqno <= pt->sent)
+            continue;
+        sent = sana_send_read(ssc, pt->reqno - pt->sent, pt->type,
+                              lt->lt_mtu ? lt->lt_mtu : ssc->ss_if.if_mtu,
+                              lt->lt_read, CMD_READ, 0);
+        pt->sent += sent;
+        n += sent;
+    }
+    splx(s);
+    return n;
+}
+
+/*
  * Called when interface goes online
  */
 static void
@@ -992,24 +1060,25 @@ sana_restore(struct sana_softc *ssc)
     gui_set_interface_state(&ssc->ss_if, MIAMIPANELV_AddInterface_State_Online);
     rt_ifmsg(&ssc->ss_if);
     /* Send read requests to device driver */
-#if	INET
-    /* IP */
-    ssc->ss_ip.sent +=
-        sana_send_read(ssc, ssc->ss_ip.reqno - ssc->ss_ip.sent, ssc->ss_ip.type,
-                       ssc->ss_if.if_mtu, sana_ip_read, CMD_READ, 0);
+    /* every registered link type that has requests on this interface */
+    {
+        int i;
 
-    ssc->ss_arp.sent +=
-        sana_send_read(ssc, ssc->ss_arp.reqno - ssc->ss_arp.sent, ssc->ss_arp.type,
-                       ARP_MTU, sana_arp_read, CMD_READ, 0);
+        for(i = 0; i < SANA_PT_MAX; i++) {
+            const struct sana_linktype *lt = sana_linktypes[i];
+            struct sana_ptype *pt = &ssc->ss_pt[i];
 
-#endif /* INET */
-#if INET6
-    if(ssc->ss_ip6.reqno > 0)
-        ssc->ss_ip6.sent +=
-            sana_send_read(ssc, ssc->ss_ip6.reqno - ssc->ss_ip6.sent,
-                           ssc->ss_ip6.type,
-                           ssc->ss_if.if_mtu, sana_ip6_read, CMD_READ, 0);
-#endif /* INET6 */
+            if(lt == NULL || pt->reqno <= pt->sent)
+                continue;
+            /* no reads for a family that is not part of the running stack,
+             * nor of a type nobody takes */
+            if(!sana_linktype_wanted(i))
+                continue;
+            pt->sent += sana_send_read(ssc, pt->reqno - pt->sent, pt->type,
+                                       lt->lt_mtu ? lt->lt_mtu : ssc->ss_if.if_mtu,
+                                       lt->lt_read, CMD_READ, 0);
+        }
+    }
 #if	ISO
 #endif /* ISO */
 #if	CCITT
@@ -1024,17 +1093,9 @@ sana_restore(struct sana_softc *ssc)
 #endif
     splx(s);
 
-#if INET6
-    /* Auto-configure link-local IPv6 address (EUI-64) for this interface */
-    {
-        void in6_if_up(struct ifnet *);
-        D(bug("[AROSTCP:SANA] %s: calling in6_if_up for %s%d (flags=0x%x)\n",
-              __func__, ssc->ss_if.if_name, ssc->ss_if.if_unit, ssc->ss_if.if_flags));
-        in6_if_up(&ssc->ss_if);
-        D(bug("[AROSTCP:SANA] %s: in6_if_up returned for %s%d\n",
-              __func__, ssc->ss_if.if_name, ssc->ss_if.if_unit));
-    }
-#endif
+    /* The interface is up with its device running: each family makes what
+     * it makes itself (IPv6 its link-local address). */
+    (void)netfamily_if_event(NFE_UP, &ssc->ss_if);
     return;
 }
 
@@ -1071,7 +1132,7 @@ sana_up(struct sana_softc *ssc)
 /*
  * sana_down(): Mark interface as down, abort all pending requests
  */
-static BOOL
+BOOL
 sana_down(struct sana_softc *ssc)
 {
     struct IOSana2Req *sreq;
@@ -1215,6 +1276,10 @@ sana_read(struct sana_softc *ssc, struct IOIPReq *req,
  * rebuild in general; there the capture is DLT_RAW, which holds IPv4 and
  * IPv6 alone, so another packet (ARP) is not shown. bpf_dlt_for_ifp() in
  * bpf.c reports the same choice.
+ *
+ * Capture is part of the packet services module (net/packet_ops.h): the
+ * tap is called through the core's two pointers, which the module sets
+ * while it runs - and a capture can be open (if_bpf set) only then.
  */
 static void
 sana_bpf_tap(struct sana_softc *ssc, struct mbuf *m, int direction,
@@ -1227,9 +1292,9 @@ sana_bpf_tap(struct sana_softc *ssc, struct mbuf *m, int direction,
         bcopy(srchw, eh + SANA_ETHER_ADDRLEN, SANA_ETHER_ADDRLEN);
         eh[12] = (UBYTE)(type >> 8);
         eh[13] = (UBYTE)type;
-        bpf_mtap2(&ssc->ss_if, eh, sizeof(eh), m, direction);
+        (*nettap_mtap2)(&ssc->ss_if, eh, sizeof(eh), m, direction);
     } else if(ip) {
-        bpf_mtap(&ssc->ss_if, m, direction);
+        (*nettap_mtap)(&ssc->ss_if, m, direction);
     }
 }
 
@@ -1260,7 +1325,6 @@ sana_ip_read(struct sana_softc *ssc, struct IOIPReq *req)
     struct mbuf *m;
     struct sana_rxaddr ra;
     int tap = ssc->ss_if.if_bpf != NULL;
-    spl_t s;
 
     D(bug("[AROSTCP:SANA] %s: %s%d ioError=%d wireError=%ld len=%ld\n",
           __func__, ssc->ss_if.if_name, ssc->ss_if.if_unit,
@@ -1281,19 +1345,7 @@ sana_ip_read(struct sana_softc *ssc, struct IOIPReq *req)
         if(tap)
             sana_bpf_tap(ssc, m, BPF_D_IN, ra.ra_dst, ra.ra_src,
                          ssc->ss_ip.type, TRUE);
-        s = splimp();
-        if(IF_QFULL(&ipintrq)) {
-            IF_DROP(&ipintrq);
-            m_freem(m);
-            D(bug("[AROSTCP:SANA] %s: ipintrq FULL, dropped\n", __func__));
-        } else {
-            /* Set interface pointer (needed for broadcasts) */
-            m->m_pkthdr.rcvif = (struct ifnet *)ssc;
-            IF_ENQUEUE(&ipintrq, m);
-            /* A signal might be needed if we use PA_EXCEPTION port */
-            schednetisr_nosignal(NETISR_IP);
-        }
-        splx(s);
+        sana_linktype_enqueue(ssc, m, SANA_PT_IP);
     } else {
         D(bug("[AROSTCP:SANA] %s: sana_read returned NULL\n", __func__));
     }
@@ -1306,6 +1358,7 @@ sana_ip_read(struct sana_softc *ssc, struct IOIPReq *req)
 static void
 sana_arp_read(struct sana_softc *ssc, struct IOIPReq *req)
 {
+    const struct sana_linktype *lt = sana_linktypes[SANA_PT_ARP];
     struct mbuf *m;
     UBYTE hwaddr[MAXADDRSANA];
     struct sana_rxaddr ra;
@@ -1315,14 +1368,19 @@ sana_arp_read(struct sana_softc *ssc, struct IOIPReq *req)
     if(tap)
         sana_rxaddr_save(ssc, req, &ra);
 
-    m = sana_read(ssc, req, 0, &ssc->ss_arp.sent, "sana_arp_read", ARP_MTU);
+    m = sana_read(ssc, req, 0, &ssc->ss_arp.sent, "sana_arp_read",
+                  lt->lt_mtu ? lt->lt_mtu : ssc->ss_if.if_mtu);
 
     if(m) {
         /* BPF tap: let packet filters see incoming ARP packets */
         if(tap)
             sana_bpf_tap(ssc, m, BPF_D_IN, ra.ra_dst, ra.ra_src,
                          ssc->ss_arp.type, FALSE);
-        arpinput(ssc, m, hwaddr);
+        /* to the module that speaks ARP, if it is part of the running stack */
+        if(lt->lt_input != NULL)
+            (*lt->lt_input)(ssc, m, (caddr_t)hwaddr);
+        else
+            m_freem(m);
     }
 }
 
@@ -1337,7 +1395,6 @@ sana_ip6_read(struct sana_softc *ssc, struct IOIPReq *req)
     struct mbuf *m;
     struct sana_rxaddr ra;
     int tap = ssc->ss_if.if_bpf != NULL;
-    spl_t s;
 
     D(bug("[AROSTCP:SANA] %s: %s%d ioError=%d wireError=%ld len=%ld\n",
           __func__, ssc->ss_if.if_name, ssc->ss_if.if_unit,
@@ -1358,17 +1415,7 @@ sana_ip6_read(struct sana_softc *ssc, struct IOIPReq *req)
         if(tap)
             sana_bpf_tap(ssc, m, BPF_D_IN, ra.ra_dst, ra.ra_src,
                          ssc->ss_ip6.type, TRUE);
-        s = splimp();
-        if(IF_QFULL(&ip6intrq)) {
-            IF_DROP(&ip6intrq);
-            m_freem(m);
-            D(bug("[AROSTCP:SANA] %s: ip6intrq FULL, dropped\n", __func__));
-        } else {
-            m->m_pkthdr.rcvif = (struct ifnet *)ssc;
-            IF_ENQUEUE(&ip6intrq, m);
-            schednetisr_nosignal(NETISR_IPV6);
-        }
-        splx(s);
+        sana_linktype_enqueue(ssc, m, SANA_PT_IP6);
     } else {
         D(bug("[AROSTCP:SANA] %s: sana_read returned NULL\n", __func__));
     }
@@ -1418,28 +1465,11 @@ static void
 sana_linkdown(struct sana_softc *ssc)
 {
     struct ifnet *ifp = (struct ifnet *)ssc;
-    struct ifreq ifr;
-    int deleted = 0;
+    int deleted;
 
-    kill_dhclient(ifp);
     ifnet_clear_dns(ifp);       /* drop this interface's DNS servers with its addresses */
-    if(ssc->ss_autoip.state != AUTOIP_DISABLED)
-        autoip_stop(ifp);
-
-    /* in_control() scrubs only each address's interface route: a gateway
-     * route (the DHCP default) would keep rt_ifa on the freed address. */
-    rt_purgeif(ifp, AF_INET);
-
-    /*
-     * A request naming no address means "the first one on this interface", so
-     * this deletes them all.
-     */
-    while(1) {
-        bzero(&ifr, sizeof(ifr));
-        if(in_control(NULL, SIOCDIFADDR, (caddr_t)&ifr, ifp) != 0)
-            break;
-        deleted++;
-    }
+    /* each family gives up what belonged to the network that went */
+    deleted = netfamily_if_event(NFE_LINKDOWN, ifp);
 
     __log(LOG_NOTICE, "%s%d: link lost, dropped %d address(es).",
           ifp->if_name, ifp->if_unit, deleted);
@@ -1458,10 +1488,7 @@ sana_connect(struct sana_softc *ssc, struct IOIPReq *req)
             events == S2EVENT_CONNECT) {
 
         /* New network -> new address */
-        kill_dhclient((struct ifnet *) ssc);
-        run_dhclient((struct ifnet *) ssc);
-        if(ssc->ss_autoip.state != AUTOIP_DISABLED)
-            autoip_start((struct ifnet *) ssc);
+        (void)netfamily_if_event(NFE_LINKUP, (struct ifnet *) ssc);
     } else if(req->ioip_s2.ios2_Req.io_Error == 0 &&
               (events & S2EVENT_DISCONNECT)) {
         sana_linkdown(ssc);
@@ -1551,6 +1578,7 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
     UBYTE dst_hw[MAXADDRSANA] = { 0 };	/* a broadcast leaves it unset */
     UWORD ioflags = 0;
     BYTE  pri = 0;
+    int   ip = FALSE;			/* a family's packet, as DLT_RAW holds */
 
     spl_t s = splimp();
 
@@ -1571,41 +1599,6 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
      */
 
     switch(dst->sa_family) {
-#if INET
-    case AF_INET: {
-        struct in_addr idst = ((struct sockaddr_in *)dst)->sin_addr;
-
-        /* If the address is not resolved, arpresolve
-         * stores the packet to its private queue for
-         * later transmit and broadcasts the resolve
-         * request packet to the (ether)net.
-         * (Now ARP works only with IP and ethernet.)
-         */
-        if((ssc->ss_if.if_flags & IFF_NOARP) != IFF_NOARP &&
-                /* ssc = network interface
-                 * m = Packet to send
-                 * idst = destination IP address
-                 * ios2_DestAddr = destination hw address
-                 * error = error return
-                 */
-                !arpresolve(ssc, m, &idst, dst_hw, &error)) {
-            /* arpresolve queued the packet; it re-enters once resolved */
-            splx(s);
-            return (0);
-        }
-        type = ssc->ss_ip.type;
-
-        /* Send to loopback if we do not hear our broadcasts */
-        if((ssc->ss_if.if_flags & IFF_SIMPLEX) && (m->m_flags & M_BCAST)) {
-            /* If a broadcast, send a copy to ourself too */
-            struct mbuf *mcopy = m_copy(m, 0, (int)M_COPYALL);
-            (void) looutput(&ssc->ss_if, mcopy, dst, rt);
-        }
-        /* Set the message priority */
-        pri = (IPTOS_LOWDELAY & mtod(m, struct ip *)->ip_tos) ? 1 : 0;
-    }
-    break;
-#endif
 #if NS
 #error NS unimplemented!!!
     case AF_NS:
@@ -1623,23 +1616,6 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
         req->ioip_s2.ios2_Req.io_Message.mn_Node.ln_Pri = 0;
         break;
 #endif
-#if INET6
-    case AF_INET6: {
-        int nd_error;
-        type = ssc->ss_ip6.type;
-        nd_error = nd6_resolve(ifp, rt, m, dst, dst_hw);
-        if(nd_error == EAGAIN) {
-            /* packet queued by nd6_resolve, will be sent after NA arrives */
-            splx(s);
-            return 0;
-        }
-        if(nd_error) {
-            error = nd_error;
-            goto bad;
-        }
-    }
-    break;
-#endif /* INET6 */
     case AF_UNSPEC:
         /* Raw packets. Sana-II address (a tuple of type and host)
          * specifies the destination
@@ -1660,11 +1636,47 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
     case AF_RMP:
 #endif
 
-    default:
+    default: {
+        /*
+         * A family that registered a link type with a resolver (IPv4 with
+         * ARP, IPv6 with neighbour discovery): its wire type on this
+         * interface, and the link address of the next hop from its
+         * resolver. What else a family does for a packet on its way out
+         * (IPv4: a copy of its own broadcast for itself where the device
+         * does not hear it) its resolver does.
+         */
+        const struct sana_linktype *lt = NULL;
+        int i, lt_error;
+
+        for(i = 0; i < SANA_PT_MAX; i++)
+            if((lt = sana_linktypes[i]) != NULL && lt->lt_family == dst->sa_family &&
+                    lt->lt_resolve != NULL)
+                break;
+        if(i < SANA_PT_MAX) {
+            type = ssc->ss_pt[i].type;
+            lt_error = (*lt->lt_resolve)(ifp, rt, m, dst, dst_hw);
+            if(lt_error == EAGAIN) {
+                /* kept by the resolver, sent when the address is known */
+                splx(s);
+                return 0;
+            }
+            if(lt_error) {
+                error = lt_error;
+                goto bad;
+            }
+            /* the resolver may ask for the packet to go ahead of others */
+            if(m->m_flags & M_LINKPRI) {
+                m->m_flags &= ~M_LINKPRI;
+                pri = 1;
+            }
+            ip = TRUE;
+            break;
+        }
         __log(LOG_ERR, "%s%d: can't handle af%d\n",
               ssc->ss_if.if_name, ssc->ss_if.if_unit, dst->sa_family);
         error = EAFNOSUPPORT;
         goto bad;
+    }
     }
 
     /*
@@ -1679,19 +1691,14 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
     if(ifp->if_bpf) {
         if(ioflags & SANA2IOF_RAW) {
             if(ssc->ss_hwtype == S2WireType_Ethernet)
-                bpf_mtap(ifp, m, BPF_D_OUT);
+                (*nettap_mtap)(ifp, m, BPF_D_OUT);
         } else {
             static const UBYTE bcast_hw[SANA_ETHER_ADDRLEN] =
                 { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
             sana_bpf_tap(ssc, m, BPF_D_OUT,
                          (m->m_flags & M_BCAST) ? bcast_hw : dst_hw,
-                         ssc->ss_hwaddr, type,
-                         dst->sa_family == AF_INET
-#if INET6
-                         || dst->sa_family == AF_INET6
-#endif
-                        );
+                         ssc->ss_hwaddr, type, ip);
         }
     }
 
@@ -1758,7 +1765,7 @@ free_written_packet(struct sana_softc *ssc, struct IOIPReq *req)
 /*
  * SANA-II-dependent part of QueryInterfaceTagList()
  */
-static int sana_query(struct ifnet *ifn, struct TagItem *tag)
+int sana_query(struct ifnet *ifn, struct TagItem *tag)
 {
     struct sana_softc *ssc = (struct sana_softc *)ifn;
 
@@ -1819,3 +1826,32 @@ static int sana_query(struct ifnet *ifn, struct TagItem *tag)
     return 0;
 }
 
+/*
+ * See net/if_sana.h. The one place a family's multicast group reaches the
+ * device's address filter: IPv4 and IPv6 differ only in the mapping.
+ */
+int
+sana_mcast(struct ifnet *ifp, const u_int8_t *lladdr, int add)
+{
+    struct sana_softc *ssc;
+    struct IOSana2Req *req;
+    int error = 0;
+
+    if(!sana_ether_mcast(ifp))
+        return 0;
+    ssc = (struct sana_softc *)ifp;
+
+    D(bug("[AROSTCP:SANA] %s: %s%d %s %02x:%02x:%02x:%02x:%02x:%02x\n",
+          __func__, ifp->if_name, ifp->if_unit, add ? "add" : "delete",
+          lladdr[0], lladdr[1], lladdr[2], lladdr[3], lladdr[4], lladdr[5]));
+
+    if((req = CreateIOSana2Req(ssc)) == NULL)
+        return ENOBUFS;
+    req->ios2_Req.io_Command = add ? S2_ADDMULTICASTADDRESS : S2_DELMULTICASTADDRESS;
+    bcopy(lladdr, req->ios2_SrcAddr, 6);
+    DoIO((struct IORequest *)req);
+    if(req->ios2_Req.io_Error)
+        error = EIO;
+    DeleteIOSana2Req(req);
+    return error;
+}

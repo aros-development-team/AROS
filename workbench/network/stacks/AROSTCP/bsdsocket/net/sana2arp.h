@@ -66,6 +66,8 @@ struct s2_arppkt {
 #define	ARPT_KILLI	3	/* kill incomplete entry in 3 minutes */
 
 #ifdef	KERNEL
+void arp_init(void);	/* from ip_init(): registers ARP and IPv4LL with the core */
+void arp_deinit(void);	/* IPv4 stops: takes them back, frees the interfaces' ARP tables */
 void alloc_arptable(struct sana_softc* ssc, int to_allocate);
 void arptimer(void);
 int arpresolve(register struct sana_softc *ssc, struct mbuf * m,
