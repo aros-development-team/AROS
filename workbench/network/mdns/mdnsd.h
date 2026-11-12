@@ -21,6 +21,7 @@
 
 #include "mdns_dns.h"
 #include "mdns_ipc.h"
+#include "dnssd_ipc.h"
 #include "dnssd_link.h"
 
 /* Bounded daemon policy; overflow is explicit and never publishes a partial
@@ -95,6 +96,7 @@ struct MDNSKnownAnswer
 
 struct MDNSDiscovery;
 struct MDNSQueryState;
+struct DNSSDServer;
 
 /* The daemon has one task and one of these. */
 struct MDNSDaemon
@@ -161,6 +163,8 @@ struct MDNSDaemon
 
     struct MDNSDiscovery   *md_Discovery;
     struct MDNSQueryState  *md_Query;
+    struct DNSSDServer     *md_DNSSD;   /* dnssd.library's sessions */
+    struct MsgPort         *md_DNSSDPort;
     ULONG                   md_DaemonID;
     struct MsgPort         *md_Port;        /* MDNS_IPC_PORT, the clients' */
     struct List             md_Services;    /* MDNSRegisteredService */
@@ -224,6 +228,19 @@ void mdnsQueryRelease(struct MDNSDaemon *md, ULONG owner);
 void mdnsQueryReap(struct MDNSDaemon *md);
 void mdnsQueryCancel(struct MDNSDaemon *md);
 void mdnsQueryFree(struct MDNSDaemon *md);
+/* A question of the daemon's own: each answering record, then (record NULL)
+ * the end, with its result. */
+typedef void (*MDNSQuerySink)(APTR data, const struct MDNSRecordEvent *record,
+    LONG result);
+LONG mdnsQueryStartSink(struct MDNSDaemon *md, CONST_STRPTR name, UWORD type,
+    UWORD timeout, MDNSQuerySink sink, APTR data, APTR *handle);
+void mdnsQueryStopSink(struct MDNSDaemon *md, APTR handle);
+
+/* dnssd_server.c: dnssd.library's sessions and operations. */
+void dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg);
+void dnssdServerReap(struct MDNSDaemon *md);
+void dnssdServerCancel(struct MDNSDaemon *md);
+void dnssdServerFree(struct MDNSDaemon *md);
 
 /* mdnsd.c */
 ULONG mdnsNow(void);            /* seconds */

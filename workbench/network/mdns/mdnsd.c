@@ -238,7 +238,9 @@ main(void)
     struct MDNSDSignals sig;
     struct MDNSIPCMsg *msg;
     struct MsgPort *port;
-    ULONG portmask;
+    ULONG portmask, dportmask;
+    struct DNSSDIPCMsg *dmsg;
+    struct MsgPort *dport;
     ULONG lastScan = 0, lastReap = 0;
     ULONG addressMask = 0;
     BYTE addressSignal = -1;
@@ -268,7 +270,9 @@ main(void)
     md->md_RxBuf = (UBYTE *)AllocMem(MDNS_MAX_PACKET, MEMF_CLEAR);
     md->md_TxBuf = (UBYTE *)AllocMem(MDNS_MAX_PACKET, MEMF_CLEAR);
     port = CreateMsgPort();
-    if (md->md_RxBuf == NULL || md->md_TxBuf == NULL || port == NULL) {
+    dport = CreateMsgPort();
+    if (md->md_RxBuf == NULL || md->md_TxBuf == NULL || port == NULL ||
+        dport == NULL) {
         if (md->md_RxBuf != NULL) {
             FreeMem(md->md_RxBuf, MDNS_MAX_PACKET);
         }
@@ -278,10 +282,15 @@ main(void)
         if (port != NULL) {
             DeleteMsgPort(port);
         }
+        if (dport != NULL) {
+            DeleteMsgPort(dport);
+        }
         return RETURN_FAIL;
     }
     md->md_Port = port;
+    md->md_DNSSDPort = dport;
     portmask = 1UL << port->mp_SigBit;
+    dportmask = 1UL << dport->mp_SigBit;
 
     /* Without the service registry, for example when started by hand, it
      * still runs and Ctrl-C stops it. */
@@ -293,10 +302,13 @@ main(void)
     net_up(md, addressMask);
     port->mp_Node.ln_Name = (STRPTR)MDNS_IPC_PORT;
     AddPort(port);
+    /* dnssd.library's port */
+    dport->mp_Node.ln_Name = (STRPTR)DNSSD_IPC_PORT;
+    AddPort(dport);
 
     while (running) {
         ULONG got = wait_and_receive(md,
-            portmask | sig.ms_Stop | sig.ms_Begin | sig.ms_End |
+            portmask | dportmask | sig.ms_Stop | sig.ms_Begin | sig.ms_End |
             addressMask | SIGBREAKF_CTRL_C, probing);
 
         if (got & (sig.ms_Stop | SIGBREAKF_CTRL_C)) {
@@ -324,10 +336,15 @@ main(void)
             mdnsClientMessage(md, msg);
             ReplyMsg(&msg->mi_Msg);
         }
+        while ((dmsg = (struct DNSSDIPCMsg *)GetMsg(dport)) != NULL) {
+            dnssdServerMessage(md, dmsg);
+            ReplyMsg(&dmsg->dm_Msg);
+        }
         if (running && mdnsNow() - lastReap >= MDNSD_REAP_SECONDS) {
             lastReap = mdnsNow();
             mdnsClientReap(md);
             mdnsDiscoveryReap(md);
+            dnssdServerReap(md);
         }
 
         mdnsDiscoveryTick(md);
@@ -347,6 +364,7 @@ main(void)
      * one. Messages still queued are not acted on, so none is lent again. */
     mdnsDiscoveryCancel(md);
     mdnsQueryCancel(md);
+    dnssdServerCancel(md);
 
     /* No client may find the port any more; whoever already sent is told
      * that mdnsd is gone. */
@@ -357,10 +375,18 @@ main(void)
     }
     DeleteMsgPort(port);
     md->md_Port = NULL;
+    RemPort(dport);
+    while ((dmsg = (struct DNSSDIPCMsg *)GetMsg(dport)) != NULL) {
+        dmsg->dm_Result = DNSSD_ERR_NOENGINE;
+        ReplyMsg(&dmsg->dm_Msg);
+    }
+    DeleteMsgPort(dport);
+    md->md_DNSSDPort = NULL;
 
     net_down(md);
     mdnsRegFree(md);
     mdnsDiscoveryFree(md);
+    dnssdServerFree(md);
     mdnsQueryFree(md);
     mdnsdServiceClose();
     if (addressSignal >= 0) {
