@@ -89,6 +89,12 @@ struct MyMidiMessage2{
 struct MyMidiCluster{
 	struct MidiCluster cluster;
 	struct SignalSemaphore semaphore;
+	char comment[35];	// Highest-priority link's MLINK_Comment, copied here.
+
+	/* Updated atomically; read as diagnostic snapshots by GetClusterAttrsA(). */
+	ULONG overflows;	// messages dropped because a receive queue was full
+	ULONG sysexdropped;	// SysEx dropped because a SysEx buffer was full
+	ULONG recverrors;	// driver receive errors and overruns
 };
 
 struct DriverData{
@@ -208,6 +214,22 @@ struct MyMidiNode{
 	BOOL sysex_started_empty;
 	BOOL sysex_discarding;
 	UBYTE lastreadstatus;
+
+	BOOL systemclock;	// MIDI_SystemClock: stamp with CamdTime()
+};
+
+/* A StartClusterWatchA() handle. Events past the queue are lost, and
+   the client is then told to look at every cluster again. */
+#define CLUSTERWATCH_QUEUE 32
+
+struct ClusterWatch{
+	struct MinNode node;
+	struct Task *task;
+	BYTE sigbit;
+	BOOL lost;
+	UWORD first;
+	UWORD count;
+	struct ClusterWatchEvent events[CLUSTERWATCH_QUEUE];
 };
 
 struct CamdBase_intern{
@@ -235,6 +257,9 @@ struct CamdBase_intern{
        that StartClusterNotify() and EndClusterNotify() work while the caller
        holds LockCAMD(). */
     struct SignalSemaphore NotifySemaphore;
+
+    /* StartClusterWatchA() handles, also under NotifySemaphore. */
+    struct MinList clusterwatches;
 
 };
 
@@ -397,7 +422,7 @@ BOOL AttachDriverData(struct Drivers *driver,
 void DetachDriverData(struct Drivers *driver,
 	struct CamdBase *CamdBase
 );
-void SignalClusterNotify(struct CamdBase *CamdBase);
+void SignalClusterNotify(struct CamdBase *CamdBase,ULONG event,struct MidiCluster *cluster);
 LONG ScanDrivers(struct CamdBase *CamdBase);
 #ifndef __amigaos4__
 void InitDriverWatch(struct CamdBase *CamdBase);
@@ -405,6 +430,14 @@ void DriversChanged(void);
 void StopDriverWatch(void);
 #endif
 void ClusterParticipantsChanged(struct MidiCluster *cluster,struct MidiNode *changer,struct CamdBase *CamdBase);
+void UpdateClusterComment(struct MidiCluster *cluster);
+BOOL InitCamdClock(void);
+void UninitCamdClock(void);
+ULONG CamdClock(void);
+
+/* The timestamp CAMD gives a message delivered to a node. */
+#define NodeTimeStamp(mymidinode) \
+	((mymidinode)->systemclock ? CamdClock() : *(mymidinode)->midinode.mi_TimeStamp)
 void LoadDriver(char *name,
 	struct CamdBase *CamdBase
 );
