@@ -33,7 +33,6 @@
 struct MDNSInterface
 {
     ULONG   mi_Index;           /* stack interface index: link identity */
-    LONG    mi_Socket;          /* IPv4, or -1 */
 };
 
 /* A name is asked for three times, 250 ms apart, before it is announced
@@ -102,9 +101,10 @@ struct DNSSDServer;
 struct MDNSDaemon
 {
     struct Library         *md_SocketBase;  /* opened by this task itself */
-    LONG                    md_Socket;      /* the first interface's, or -1:
-                                             * "is there a link at all" */
-    LONG                    md_Socket6;     /* shared IPv6 UDP socket, or -1 */
+    LONG                    md_Socket;      /* md_Socket4 or md_Socket6, -1
+                                             * while there is no link at all */
+    LONG                    md_Socket4;     /* the IPv4 UDP socket of every link, or -1 */
+    LONG                    md_Socket6;     /* the IPv6 UDP socket of every link, or -1 */
     struct dnssd_link_inventory md_LinkInventory;
     struct dnssd_link_entry md_Links[MDNS_IFS_MAX];
     struct dnssd_link_entry md_LinkScratch[MDNS_IFS_MAX];
