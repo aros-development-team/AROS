@@ -410,13 +410,13 @@ static LONG write(struct unit *unit, struct IOExtTD *iotd)
     LONG        size, subsize;
     ULONG       ioerr;
 
+    iotd->iotd_Req.io_Actual = 0;
     if (unit->flags & UNIT_READONLY)
         return TDERR_WriteProt;
 
     buf  = iotd->iotd_Req.io_Data;
     size = iotd->iotd_Req.io_Length;
 
-    iotd->iotd_Req.io_Actual = 0;
     while(size)
     {
         subsize = Host_Write(unit, buf, size, &ioerr);
@@ -592,6 +592,7 @@ static void unitentry(struct IOExtTD *iotd)
                     DREAD(bug("hostdisk/CMD_READ: offset = %u (0x%08X)  size = %d\n", iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
                     
                     err = Host_Seek(unit, iotd->iotd_Req.io_Offset);
+                    iotd->iotd_Req.io_Actual = 0;
                     if (!err)
                         err = read(unit, iotd);
                     DREAD(else bug("CMD_READ: Seek failed\n");)
@@ -603,6 +604,7 @@ static void unitentry(struct IOExtTD *iotd)
                               iotd->iotd_Req.io_Actual, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
 
                     err = Host_Seek64(unit, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Actual);
+                    iotd->iotd_Req.io_Actual = 0;
                     if (!err)
                         err = read(unit, iotd);
                     DREAD(else bug("CMD_READ64: Seek failed\n");)
@@ -614,6 +616,7 @@ static void unitentry(struct IOExtTD *iotd)
                     DWRITE(bug("hostdisk/CMD_WRITE: offset = %u (0x%08X)  size = %d\n", iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
 
                     err = Host_Seek(unit, iotd->iotd_Req.io_Offset);
+                    iotd->iotd_Req.io_Actual = 0;
                     if (!err)
                         err = write(unit, iotd);
                     break;
@@ -627,6 +630,7 @@ static void unitentry(struct IOExtTD *iotd)
                                iotd->iotd_Req.io_Actual, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
 
                     err = Host_Seek64(unit, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Actual);
+                    iotd->iotd_Req.io_Actual = 0;
                     if (!err)
                         err = write(unit, iotd);
                     break;
