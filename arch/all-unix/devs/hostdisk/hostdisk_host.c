@@ -223,6 +223,13 @@ ULONG Host_Seek64(struct unit *Unit, ULONG pos, ULONG pos_hi)
     struct HostDiskBase *hdskBase = Unit->hdskBase;
     off_t res;
 
+#ifndef HOST_LONG_ALIGNED
+    /* The ordinary lseek prototype must represent the full offset.
+     * The split-argument ABI already passes both halves explicitly. */
+    if (sizeof(off_t) < 8 && (pos_hi || pos > 0x7fffffffUL))
+        return TDERR_SeekError;
+#endif
+
     D(bug("hostdisk: Seek to block 0x%08X%08X (%llu)\n", pos_hi, pos, (((UQUAD)pos_hi) << 32) + pos));
 
     /*
