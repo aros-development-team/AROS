@@ -12,7 +12,7 @@
  * inetfamily (netinet/inetfamily.h), and the two entry points by which
  * IPv4 hands UDP a datagram and what ICMP said about one. Everything here
  * is what IPv4 alone does for a datagram socket: its socket address,
- * broadcast, IP_RECVDSTADDR / IP_RECVTOS / IP_RECVTTL, IP_TOS on one
+ * broadcast, IP_RECVDSTADDR / IP_RECVTOS / IP_RECVTTL / IP_RECVIF, IP_TOS on one
  * datagram, IP options, the limited broadcast of a socket bound to an
  * interface, ICMP port unreachable.
  *
@@ -41,6 +41,7 @@
 
 #include <net/if.h>
 #include <net/route.h>
+#include <net/if_dl.h>
 
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
@@ -91,7 +92,7 @@ in_rcvfrom(struct mbuf *m, const void *src, u_int sport, const void *dst,
 
 /*
  * inf_savecontrol: IP_RECVDSTADDR, IP_RECVTOS, IP_RECVTTL (the last two
- * one byte each, as FreeBSD).
+ * one byte each, as FreeBSD), IP_RECVIF.
  */
 struct mbuf **
 in_savecontrol(struct inpcb *inp, const struct ifnet *rcvif, const void *dst,
@@ -116,6 +117,33 @@ in_savecontrol(struct inpcb *inp, const struct ifnet *rcvif, const void *dst,
         u_char b = hlim;
 
         *mp = sbcreatecontrol((caddr_t)&b, sizeof(b), IP_RECVTTL, IPPROTO_IP);
+        if(*mp)
+            mp = &(*mp)->m_next;
+    }
+    if((inp->inp_flags & INP_RECVIF) && rcvif != NULL) {
+        /*
+         * The interface it came in by, as FreeBSD's ip_savecontrol() gives
+         * it: the interface's link-level address (if_attach() put it on
+         * if_addrlist) - index, name and hardware address - or a
+         * sockaddr_dl with the index alone.
+         */
+        const struct ifaddr *ifa;
+        struct sockaddr_dl sdl;
+        const struct sockaddr_dl *sdp = NULL;
+
+        for(ifa = rcvif->if_addrlist; ifa != NULL; ifa = ifa->ifa_next)
+            if(ifa->ifa_addr != NULL && ifa->ifa_addr->sa_family == AF_LINK) {
+                sdp = (const struct sockaddr_dl *)ifa->ifa_addr;
+                break;
+            }
+        if(sdp == NULL || CMSG_SPACE((u_int)sdp->sdl_len) > MLEN) {
+            memset(&sdl, 0, sizeof(sdl));
+            sdl.sdl_len = sizeof(sdl);
+            sdl.sdl_family = AF_LINK;
+            sdl.sdl_index = rcvif->if_index;
+            sdp = &sdl;
+        }
+        *mp = sbcreatecontrol((caddr_t)sdp, sdp->sdl_len, IP_RECVIF, IPPROTO_IP);
         if(*mp)
             mp = &(*mp)->m_next;
     }

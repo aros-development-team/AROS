@@ -580,7 +580,7 @@ ICMPv6 socket cannot set it (it reads 2).
   long. On LP64 `CMSG_DATA()` starts past padding after the 12-byte header, which a length of
   `sizeof(struct cmsghdr) + size` would cut from the data's end. `recvmsg()` copies the whole chain
   into the caller's buffer and reports what did not fit with `MSG_CTRUNC` in `msg_flags`. IPv4's
-  `IP_RECVDSTADDR`, `IP_RECVTOS` and `IP_RECVTTL` use the same helper.
+  `IP_RECVDSTADDR`, `IP_RECVTOS`, `IP_RECVTTL` and `IP_RECVIF` use the same helper.
 - **Receive time.** A UDP socket with `SO_TIMESTAMP` gets, first in each datagram's ancillary data,
   the time the stack handed it to the socket - before it waits in the buffer, so a late
   `recvmsg()` does not move it (`sbcreatetimestamp()`, `kern/uipc_socket2.c`, from
@@ -974,7 +974,10 @@ protocols keep up, and a device with no read request posted holds what follows. 
   byte, so the ECN field) and `IP_RECVTTL` (FreeBSD's: `cmsg_type` `IP_RECVTTL`, the TTL the
   datagram arrived with in one byte - not Linux's `IP_TTL` and int; an mDNS responder checks it is
   255, RFC 6762 section 11) - whether it was sent to one address or to a group or broadcast address
-  (`udp_savecontrol()`, from the header as it arrived). `IP_TOS` as ancillary data (a byte, or an int as Linux takes it) sets the
+  (`udp_savecontrol()`, from the header as it arrived) - and `IP_RECVIF` (FreeBSD's: the interface
+  it came in by, as that interface's `sockaddr_dl` - index, name and hardware address - so that one
+  socket bound to `INADDR_ANY` serves every link, as `IPV6_PKTINFO` lets an IPv6 one; raw sockets
+  too). `IP_TOS` as ancillary data (a byte, or an int as Linux takes it) sets the
   TOS byte of one datagram.
 - **IPv4 multicast** (built under `-DENABLE_MULTICAST`) provides host-side group membership,
   mirroring the IPv6 path. `in_addmulti`/`in_delmulti` (`in.c`) maintain the reference-counted
