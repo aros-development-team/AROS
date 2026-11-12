@@ -103,6 +103,8 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR hdskBase, struct IOExtTD *iotd, IP
 
     if (unit)
     {
+        if (unitflags & UNIT_FREENAME)
+            FreeVec(unitname);
         unit->usecount++;
         ReleaseSemaphore(&hdskBase->sigsem);
             
@@ -164,7 +166,11 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR hdskBase, struct IOExtTD *iotd, IP
         freeUnit(unit);
     }
     else
+    {
+        if (unitflags & UNIT_FREENAME)
+            FreeVec(unitname);
         iotd->iotd_Req.io_Error = TDERR_NoMem;
+    }
 
     ReleaseSemaphore(&hdskBase->sigsem);
 
