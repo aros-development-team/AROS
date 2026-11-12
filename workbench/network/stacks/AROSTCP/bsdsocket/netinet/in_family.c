@@ -93,12 +93,43 @@ in_pcbfree(struct inpcb *inp)
 #endif
 }
 
-/* inf_pcbifgone: the interface IP_MULTICAST_IF chose is forgotten */
+/*
+ * inf_pcbifgone: the interface IP_MULTICAST_IF chose is forgotten, and the
+ * group memberships taken on it are left, as FreeBSD's in_pcbpurgeif0():
+ * nothing could name the interface to leave them afterwards, and each
+ * would hold one of the socket's IP_MAX_MEMBERSHIPS for good. The
+ * interface is offline: the last holder of a group cuts it loose first, so
+ * that in_delmulti() sends nothing and does not ask the device (as
+ * in_ifdetach() does); an entry another holder shares is only released.
+ */
 static void
 in_pcbmoptifgone(struct inpcb *inp, const struct ifnet *ifp)
 {
-    if(inp->inp_moptions && inp->inp_moptions->imo_multicast_ifp == ifp)
-        inp->inp_moptions->imo_multicast_ifp = NULL;
+    struct ip_moptions *imo = inp->inp_moptions;
+#ifdef ENABLE_MULTICAST
+    int i, j;
+#endif
+
+    if(imo == NULL)
+        return;
+    if(imo->imo_multicast_ifp == ifp)
+        imo->imo_multicast_ifp = NULL;
+#ifdef ENABLE_MULTICAST
+    for(i = j = 0; i < imo->imo_num_memberships; i++) {
+        struct in_multi *inm = imo->imo_membership[i];
+
+        if(inm->inm_ifp != ifp && inm->inm_ifp != NULL) {
+            imo->imo_membership[j++] = inm;
+            continue;
+        }
+        if(inm->inm_refcount == 1) {
+            inm->inm_timer = 0;
+            inm->inm_ifp = NULL;
+        }
+        in_delmulti(inm);
+    }
+    imo->imo_num_memberships = j;
+#endif
 }
 
 /* ---- per packet: receive information, checksum, output ---- */
