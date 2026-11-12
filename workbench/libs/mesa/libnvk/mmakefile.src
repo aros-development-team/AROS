@@ -15,7 +15,7 @@
 #   libdrm's API over the DRM device nvgfx.hidd exports
 #   (hidds/nvgfx/include/libdrm/drm_entry.h). No device node, no mmap:
 #   the sources that opened and mapped the node carry __AROS__ paths in
-#   mesa-26.2.5-aros.diff.
+#   the mesa-$(MESAGLVERSION)-aros.diff patch.
 #
 #   NVK's two OpenCL C kernels need mesa_clc (clang + libclc on the host);
 #   nvkcl.c carries them as NIR builder code instead. nv_cubin needs

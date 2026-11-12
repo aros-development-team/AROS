@@ -1,6 +1,6 @@
-diff -ruN mesa-26.2.5/include/c99_alloca.h mesa-26.2.5.aros/include/c99_alloca.h
---- mesa-26.2.5/include/c99_alloca.h	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/include/c99_alloca.h	2026-10-24 22:32:44.543719807 +0100
+diff -ruN mesa-26.2.7/include/c99_alloca.h mesa-26.2.7.aros/include/c99_alloca.h
+--- mesa-26.2.7/include/c99_alloca.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/include/c99_alloca.h	2026-11-12 14:05:42.028769442 +0000
 @@ -35,7 +35,7 @@
  
  #  define alloca _alloca
@@ -10,9 +10,9 @@ diff -ruN mesa-26.2.5/include/c99_alloca.h mesa-26.2.5.aros/include/c99_alloca.h
  
  #  include <alloca.h>
  
-diff -ruN mesa-26.2.5/include/EGL/eglplatform.h mesa-26.2.5.aros/include/EGL/eglplatform.h
---- mesa-26.2.5/include/EGL/eglplatform.h	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/include/EGL/eglplatform.h	2026-10-24 22:32:44.542850007 +0100
+diff -ruN mesa-26.2.7/include/EGL/eglplatform.h mesa-26.2.7.aros/include/EGL/eglplatform.h
+--- mesa-26.2.7/include/EGL/eglplatform.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/include/EGL/eglplatform.h	2026-11-12 14:05:42.028836042 +0000
 @@ -145,6 +145,13 @@
  typedef khronos_uintptr_t  EGLNativePixmapType;
  typedef khronos_uintptr_t  EGLNativeWindowType;
@@ -27,25 +27,25 @@ diff -ruN mesa-26.2.5/include/EGL/eglplatform.h mesa-26.2.5.aros/include/EGL/egl
  #else
  #error "Platform not recognized"
  #endif
-diff -ruN mesa-26.2.5/include/math.h mesa-26.2.5.aros/include/math.h
---- mesa-26.2.5/include/math.h	1970-01-01 01:00:00.000000000 +0100
-+++ mesa-26.2.5.aros/include/math.h	2026-10-24 22:32:44.543659907 +0100
+diff -ruN mesa-26.2.7/include/math.h mesa-26.2.7.aros/include/math.h
+--- mesa-26.2.7/include/math.h	1970-01-01 01:00:00.000000000 +0100
++++ mesa-26.2.7.aros/include/math.h	2026-11-12 14:05:42.028874442 +0000
 @@ -0,0 +1,4 @@
 +#ifndef AROS_MESA_LOCAL_MATH_H
 +#define AROS_MESA_LOCAL_MATH_H
 +#include_next <math.h>
 +#endif
-diff -ruN mesa-26.2.5/include/stdlib.h mesa-26.2.5.aros/include/stdlib.h
---- mesa-26.2.5/include/stdlib.h	1970-01-01 01:00:00.000000000 +0100
-+++ mesa-26.2.5.aros/include/stdlib.h	2026-10-24 22:32:44.543687707 +0100
+diff -ruN mesa-26.2.7/include/stdlib.h mesa-26.2.7.aros/include/stdlib.h
+--- mesa-26.2.7/include/stdlib.h	1970-01-01 01:00:00.000000000 +0100
++++ mesa-26.2.7.aros/include/stdlib.h	2026-11-12 14:05:42.028903942 +0000
 @@ -0,0 +1,4 @@
 +#ifndef AROS_MESA_LOCAL_STDLIB_H
 +#define AROS_MESA_LOCAL_STDLIB_H
 +#include_next <stdlib.h>
 +#endif
-diff -ruN mesa-26.2.5/src/c11/threads.h mesa-26.2.5.aros/src/c11/threads.h
---- mesa-26.2.5/src/c11/threads.h	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/c11/threads.h	2026-10-24 22:32:44.541407308 +0100
+diff -ruN mesa-26.2.7/src/c11/threads.h mesa-26.2.7.aros/src/c11/threads.h
+--- mesa-26.2.7/src/c11/threads.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/c11/threads.h	2026-11-12 14:05:42.029067142 +0000
 @@ -47,6 +47,20 @@
  #  error Not supported on this platform.
  #endif
@@ -67,9 +67,9 @@ diff -ruN mesa-26.2.5/src/c11/threads.h mesa-26.2.5.aros/src/c11/threads.h
  #if defined(HAVE_THRD_CREATE)
  #include <threads.h>
  #else
-diff -ruN mesa-26.2.5/src/c11/time.h mesa-26.2.5.aros/src/c11/time.h
---- mesa-26.2.5/src/c11/time.h	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/c11/time.h	2026-10-24 22:32:44.541459808 +0100
+diff -ruN mesa-26.2.7/src/c11/time.h mesa-26.2.7.aros/src/c11/time.h
+--- mesa-26.2.7/src/c11/time.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/c11/time.h	2026-11-12 14:05:42.029116342 +0000
 @@ -10,6 +10,10 @@
  
  #include <time.h>
@@ -81,9 +81,9 @@ diff -ruN mesa-26.2.5/src/c11/time.h mesa-26.2.5.aros/src/c11/time.h
  /*---------------------------- macros ---------------------------*/
  
  /* Refer to https://htmlpreview.github.io/?https://icube-forge.unistra.fr/icps/c23-library/-/raw/main/README.html#time_monotonic-time_active-time_thread_active */
-diff -ruN mesa-26.2.5/src/compiler/glsl/glsl_lexer.ll mesa-26.2.5.aros/src/compiler/glsl/glsl_lexer.ll
---- mesa-26.2.5/src/compiler/glsl/glsl_lexer.ll	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/compiler/glsl/glsl_lexer.ll	2026-10-24 22:32:44.541533908 +0100
+diff -ruN mesa-26.2.7/src/compiler/glsl/glsl_lexer.ll mesa-26.2.7.aros/src/compiler/glsl/glsl_lexer.ll
+--- mesa-26.2.7/src/compiler/glsl/glsl_lexer.ll	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/compiler/glsl/glsl_lexer.ll	2026-11-12 14:05:42.029260442 +0000
 @@ -23,9 +23,27 @@
   */
  #include <ctype.h>
@@ -112,9 +112,9 @@ diff -ruN mesa-26.2.5/src/compiler/glsl/glsl_lexer.ll mesa-26.2.5.aros/src/compi
  #include "glsl_parser.h"
  #include "main/consts_exts.h"
  
-diff -ruN mesa-26.2.5/src/compiler/glsl/glsl_parser_extras.cpp mesa-26.2.5.aros/src/compiler/glsl/glsl_parser_extras.cpp
---- mesa-26.2.5/src/compiler/glsl/glsl_parser_extras.cpp	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/compiler/glsl/glsl_parser_extras.cpp	2026-10-24 22:32:44.541925508 +0100
+diff -ruN mesa-26.2.7/src/compiler/glsl/glsl_parser_extras.cpp mesa-26.2.7.aros/src/compiler/glsl/glsl_parser_extras.cpp
+--- mesa-26.2.7/src/compiler/glsl/glsl_parser_extras.cpp	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/compiler/glsl/glsl_parser_extras.cpp	2026-11-12 14:05:42.029462042 +0000
 @@ -37,6 +37,23 @@
  #include "util/mesa-blake3.h"
  #include "ast.h"
@@ -139,9 +139,9 @@ diff -ruN mesa-26.2.5/src/compiler/glsl/glsl_parser_extras.cpp mesa-26.2.5.aros/
  #include "glsl_parser.h"
  #include "glsl_to_nir.h"
  #include "ir_optimization.h"
-diff -ruN mesa-26.2.5/src/compiler/glsl/glsl_parser.yy mesa-26.2.5.aros/src/compiler/glsl/glsl_parser.yy
---- mesa-26.2.5/src/compiler/glsl/glsl_parser.yy	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/compiler/glsl/glsl_parser.yy	2026-10-24 22:32:44.541748108 +0100
+diff -ruN mesa-26.2.7/src/compiler/glsl/glsl_parser.yy mesa-26.2.7.aros/src/compiler/glsl/glsl_parser.yy
+--- mesa-26.2.7/src/compiler/glsl/glsl_parser.yy	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/compiler/glsl/glsl_parser.yy	2026-11-12 14:05:42.029707142 +0000
 @@ -79,6 +79,24 @@
     else
        return strcasecmp(s1, s2);
@@ -167,26 +167,9 @@ diff -ruN mesa-26.2.5/src/compiler/glsl/glsl_parser.yy mesa-26.2.5.aros/src/comp
  %}
  
  %expect 0
-diff -ruN mesa-26.2.5/src/compiler/nir/nir_opt_varyings.c mesa-26.2.5.aros/src/compiler/nir/nir_opt_varyings.c
---- mesa-26.2.5/src/compiler/nir/nir_opt_varyings.c	2026-10-26 11:18:46.271315132 +0000
-+++ mesa-26.2.5.aros/src/compiler/nir/nir_opt_varyings.c	2026-10-26 11:18:46.296988831 +0000
-@@ -3204,8 +3204,13 @@
-  * over the full struct are correct and efficient.
-  * If this assert fires, audit all nir_scalar assignments below.
-  */
-+#if defined(__m68k__)
-+/* m68k aligns int and pointers to 2 bytes: no padding but the tail byte */
-+static_assert(sizeof(dedup_entry) == 26, "dedup_entry layout changed");
-+#else
- static_assert(sizeof(dedup_entry) == (sizeof(void *) == 8 ? 48 : 28),
-               "dedup_entry layout changed");
-+#endif
- 
- static uint32_t
- dedup_entry_hash_accum(const void *key, uint32_t hash)
-diff -ruN mesa-26.2.5/src/egl/main/egldisplay.c mesa-26.2.5.aros/src/egl/main/egldisplay.c
---- mesa-26.2.5/src/egl/main/egldisplay.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/egl/main/egldisplay.c	2026-10-24 22:32:44.543144607 +0100
+diff -ruN mesa-26.2.7/src/egl/main/egldisplay.c mesa-26.2.7.aros/src/egl/main/egldisplay.c
+--- mesa-26.2.7/src/egl/main/egldisplay.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/egl/main/egldisplay.c	2026-11-12 14:05:42.029838142 +0000
 @@ -84,6 +84,7 @@
     {_EGL_PLATFORM_SURFACELESS, "surfaceless"},
     {_EGL_PLATFORM_DEVICE, "device"},
@@ -195,9 +178,9 @@ diff -ruN mesa-26.2.5/src/egl/main/egldisplay.c mesa-26.2.5.aros/src/egl/main/eg
  };
  
  /**
-diff -ruN mesa-26.2.5/src/egl/main/egldisplay.h mesa-26.2.5.aros/src/egl/main/egldisplay.h
---- mesa-26.2.5/src/egl/main/egldisplay.h	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/egl/main/egldisplay.h	2026-10-24 22:32:44.542908807 +0100
+diff -ruN mesa-26.2.7/src/egl/main/egldisplay.h mesa-26.2.7.aros/src/egl/main/egldisplay.h
+--- mesa-26.2.7/src/egl/main/egldisplay.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/egl/main/egldisplay.h	2026-11-12 14:05:42.029920542 +0000
 @@ -55,6 +55,7 @@
     _EGL_PLATFORM_SURFACELESS,
     _EGL_PLATFORM_DEVICE,
@@ -206,9 +189,9 @@ diff -ruN mesa-26.2.5/src/egl/main/egldisplay.h mesa-26.2.5.aros/src/egl/main/eg
  
     _EGL_NUM_PLATFORMS,
     _EGL_INVALID_PLATFORM = -1
-diff -ruN mesa-26.2.5/src/gallium/auxiliary/cso_cache/cso_cache.h mesa-26.2.5.aros/src/gallium/auxiliary/cso_cache/cso_cache.h
---- mesa-26.2.5/src/gallium/auxiliary/cso_cache/cso_cache.h	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/auxiliary/cso_cache/cso_cache.h	2026-10-26 19:03:29.000000000 +0000
+diff -ruN mesa-26.2.7/src/gallium/auxiliary/cso_cache/cso_cache.h mesa-26.2.7.aros/src/gallium/auxiliary/cso_cache/cso_cache.h
+--- mesa-26.2.7/src/gallium/auxiliary/cso_cache/cso_cache.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/auxiliary/cso_cache/cso_cache.h	2026-11-12 14:05:42.029975042 +0000
 @@ -182,11 +182,17 @@
     const unsigned *ikey = (const unsigned *)key;
     unsigned num_elements = key_size / 4;
@@ -229,9 +212,9 @@ diff -ruN mesa-26.2.5/src/gallium/auxiliary/cso_cache/cso_cache.h mesa-26.2.5.ar
     return hash;
  }
  
-diff -ruN mesa-26.2.5/src/gallium/auxiliary/nir/nir_to_tgsi.c mesa-26.2.5.aros/src/gallium/auxiliary/nir/nir_to_tgsi.c
---- mesa-26.2.5/src/gallium/auxiliary/nir/nir_to_tgsi.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/auxiliary/nir/nir_to_tgsi.c	2026-10-24 22:33:57.364380604 +0100
+diff -ruN mesa-26.2.7/src/gallium/auxiliary/nir/nir_to_tgsi.c mesa-26.2.7.aros/src/gallium/auxiliary/nir/nir_to_tgsi.c
+--- mesa-26.2.7/src/gallium/auxiliary/nir/nir_to_tgsi.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/auxiliary/nir/nir_to_tgsi.c	2026-11-12 14:05:42.030206742 +0000
 @@ -801,7 +801,10 @@
     /* Look for a single use for try_store_in_tgsi_output */
     nir_src *use = NULL;
@@ -284,9 +267,9 @@ diff -ruN mesa-26.2.5/src/gallium/auxiliary/nir/nir_to_tgsi.c mesa-26.2.5.aros/s
        break;
  
     default:
-diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_fence.h mesa-26.2.5.aros/src/gallium/drivers/nouveau/nouveau_fence.h
---- mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_fence.h	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/drivers/nouveau/nouveau_fence.h	2026-10-24 22:33:57.364545204 +0100
+diff -ruN mesa-26.2.7/src/gallium/drivers/nouveau/nouveau_fence.h mesa-26.2.7.aros/src/gallium/drivers/nouveau/nouveau_fence.h
+--- mesa-26.2.7/src/gallium/drivers/nouveau/nouveau_fence.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/drivers/nouveau/nouveau_fence.h	2026-11-12 14:05:42.030494542 +0000
 @@ -61,6 +61,12 @@
  MUST_CHECK bool _nouveau_fence_next(struct nouveau_context *);
  void _nouveau_fence_ref(struct nouveau_fence *, struct nouveau_fence **);
@@ -300,9 +283,9 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_fence.h mesa-26.2.5.ar
  /** returns false on error */
  MUST_CHECK bool nouveau_fence_new(struct nouveau_context *, struct nouveau_fence **);
  void nouveau_fence_cleanup(struct nouveau_context *);
-diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_screen.c mesa-26.2.5.aros/src/gallium/drivers/nouveau/nouveau_screen.c
---- mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_screen.c
-+++ mesa-26.2.5.aros/src/gallium/drivers/nouveau/nouveau_screen.c
+diff -ruN mesa-26.2.7/src/gallium/drivers/nouveau/nouveau_screen.c mesa-26.2.7.aros/src/gallium/drivers/nouveau/nouveau_screen.c
+--- mesa-26.2.7/src/gallium/drivers/nouveau/nouveau_screen.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/drivers/nouveau/nouveau_screen.c	2026-11-12 14:05:42.030541742 +0000
 @@ -11,7 +11,9 @@
  #include "util/u_string.h"
  #include "util/hex.h"
@@ -388,9 +371,9 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_screen.c mesa-26.2.5.a
  
     disk_cache_destroy(screen->disk_shader_cache);
     nouveau_fence_list_destroy(&screen->fence);
-diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_vp3_video.c mesa-26.2.5.aros/src/gallium/drivers/nouveau/nouveau_vp3_video.c
---- mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_vp3_video.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/drivers/nouveau/nouveau_vp3_video.c	2026-10-24 22:32:44.544154907 +0100
+diff -ruN mesa-26.2.7/src/gallium/drivers/nouveau/nouveau_vp3_video.c mesa-26.2.7.aros/src/gallium/drivers/nouveau/nouveau_vp3_video.c
+--- mesa-26.2.7/src/gallium/drivers/nouveau/nouveau_vp3_video.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/drivers/nouveau/nouveau_vp3_video.c	2026-11-12 14:05:42.030616942 +0000
 @@ -20,7 +20,15 @@
   * OTHER DEALINGS IN THE SOFTWARE.
   */
@@ -407,9 +390,9 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nouveau_vp3_video.c mesa-26.2.
  #include <sys/stat.h>
  #include <stdio.h>
  #include <fcntl.h>
-diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nv50/nv84_video.c mesa-26.2.5.aros/src/gallium/drivers/nouveau/nv50/nv84_video.c
---- mesa-26.2.5/src/gallium/drivers/nouveau/nv50/nv84_video.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/drivers/nouveau/nv50/nv84_video.c	2026-10-24 22:32:44.544226007 +0100
+diff -ruN mesa-26.2.7/src/gallium/drivers/nouveau/nv50/nv84_video.c mesa-26.2.7.aros/src/gallium/drivers/nouveau/nv50/nv84_video.c
+--- mesa-26.2.7/src/gallium/drivers/nouveau/nv50/nv84_video.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/drivers/nouveau/nv50/nv84_video.c	2026-11-12 14:05:42.030687742 +0000
 @@ -20,7 +20,15 @@
   * OTHER DEALINGS IN THE SOFTWARE.
   */
@@ -426,9 +409,9 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nv50/nv84_video.c mesa-26.2.5.
  #include <sys/stat.h>
  #include <sys/types.h>
  #include <fcntl.h>
-diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c mesa-26.2.5.aros/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c
---- mesa-26.2.5/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c	2026-10-24 22:32:44.544286507 +0100
+diff -ruN mesa-26.2.7/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c mesa-26.2.7.aros/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c
+--- mesa-26.2.7/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c	2026-11-12 14:05:42.030752742 +0000
 @@ -21,7 +21,15 @@
   */
  
@@ -445,9 +428,9 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c mesa-26.2
  
  #if NOUVEAU_VP3_DEBUG_FENCE
  static void dump_comm_vp(struct nouveau_vp3_decoder *dec, struct comm *comm, u32 comm_seq,
-diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c mesa-26.2.5.aros/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c
---- mesa-26.2.5/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c	2026-10-24 22:32:44.544499007 +0100
+diff -ruN mesa-26.2.7/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c mesa-26.2.7.aros/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c
+--- mesa-26.2.7/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c	2026-11-12 14:05:42.030800342 +0000
 @@ -21,7 +21,15 @@
   */
  
@@ -464,9 +447,9 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c mesa-26.2
  
  #if NOUVEAU_VP3_DEBUG_FENCE
  static void dump_comm_vp(struct nouveau_vp3_decoder *dec, struct comm *comm, u32 comm_seq,
-diff -ruN mesa-26.2.5/src/gallium/drivers/radeonsi/si_pipe.c mesa-26.2.5.aros/src/gallium/drivers/radeonsi/si_pipe.c
---- mesa-26.2.5/src/gallium/drivers/radeonsi/si_pipe.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/drivers/radeonsi/si_pipe.c	2026-10-24 22:32:44.542729707 +0100
+diff -ruN mesa-26.2.7/src/gallium/drivers/radeonsi/si_pipe.c mesa-26.2.7.aros/src/gallium/drivers/radeonsi/si_pipe.c
+--- mesa-26.2.7/src/gallium/drivers/radeonsi/si_pipe.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/drivers/radeonsi/si_pipe.c	2026-11-12 14:05:42.030851742 +0000
 @@ -190,8 +190,8 @@
     FREE(sscreen);
  }
@@ -478,9 +461,9 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/radeonsi/si_pipe.c mesa-26.2.5.aros/sr
  {
     struct si_screen *sscreen = CALLOC_STRUCT(si_screen);
  
-diff -ruN mesa-26.2.5/src/gallium/drivers/svga/svgadump/svga_shader.h mesa-26.2.5.aros/src/gallium/drivers/svga/svgadump/svga_shader.h
---- mesa-26.2.5/src/gallium/drivers/svga/svgadump/svga_shader.h	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/drivers/svga/svgadump/svga_shader.h	2026-10-24 22:32:44.544038107 +0100
+diff -ruN mesa-26.2.7/src/gallium/drivers/svga/svgadump/svga_shader.h mesa-26.2.7.aros/src/gallium/drivers/svga/svgadump/svga_shader.h
+--- mesa-26.2.7/src/gallium/drivers/svga/svgadump/svga_shader.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/drivers/svga/svgadump/svga_shader.h	2026-11-12 14:05:42.030905042 +0000
 @@ -17,6 +17,11 @@
  
  #include "util/compiler.h"
@@ -493,9 +476,9 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/svga/svgadump/svga_shader.h mesa-26.2.
  struct sh_op
  {
     unsigned opcode:16;
-diff -ruN mesa-26.2.5/src/gallium/drivers/vc4/vc4_program.c mesa-26.2.5.aros/src/gallium/drivers/vc4/vc4_program.c
---- mesa-26.2.5/src/gallium/drivers/vc4/vc4_program.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/drivers/vc4/vc4_program.c	2026-10-24 22:32:44.546563706 +0100
+diff -ruN mesa-26.2.7/src/gallium/drivers/vc4/vc4_program.c mesa-26.2.7.aros/src/gallium/drivers/vc4/vc4_program.c
+--- mesa-26.2.7/src/gallium/drivers/vc4/vc4_program.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/drivers/vc4/vc4_program.c	2026-11-12 14:05:42.031017342 +0000
 @@ -396,6 +396,9 @@
          }
  }
@@ -524,7 +507,7 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/vc4/vc4_program.c mesa-26.2.5.aros/src
          struct qreg texture_u[] = {
                  qir_uniform(c, QUNIFORM_TEXTURE_CONFIG_P0, unit),
                  qir_uniform(c, QUNIFORM_TEXTURE_CONFIG_P1, unit),
-@@ -2737,6 +2751,18 @@
+@@ -2738,6 +2752,18 @@
                          key->tex[i].wrap_t = sampler_state->wrap_t;
                          key->tex[i].force_first_level =
                                  vc4_sampler->force_first_level;
@@ -543,9 +526,9 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/vc4/vc4_program.c mesa-26.2.5.aros/src
                  }
          }
  }
-diff -ruN mesa-26.2.5/src/gallium/drivers/vc4/vc4_qir.h mesa-26.2.5.aros/src/gallium/drivers/vc4/vc4_qir.h
---- mesa-26.2.5/src/gallium/drivers/vc4/vc4_qir.h	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/drivers/vc4/vc4_qir.h	2026-10-24 22:32:44.546425206 +0100
+diff -ruN mesa-26.2.7/src/gallium/drivers/vc4/vc4_qir.h mesa-26.2.7.aros/src/gallium/drivers/vc4/vc4_qir.h
+--- mesa-26.2.7/src/gallium/drivers/vc4/vc4_qir.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/drivers/vc4/vc4_qir.h	2026-11-12 14:05:42.031162142 +0000
 @@ -309,6 +309,13 @@
                                  unsigned wrap_s:3;
                                  unsigned wrap_t:3;
@@ -560,9 +543,9 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/vc4/vc4_qir.h mesa-26.2.5.aros/src/gal
                          };
                          struct {
                                  uint16_t msaa_width, msaa_height;
-diff -ruN mesa-26.2.5/src/gallium/drivers/vc4/vc4_uniforms.c mesa-26.2.5.aros/src/gallium/drivers/vc4/vc4_uniforms.c
---- mesa-26.2.5/src/gallium/drivers/vc4/vc4_uniforms.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/drivers/vc4/vc4_uniforms.c	2026-10-24 22:32:44.547071306 +0100
+diff -ruN mesa-26.2.7/src/gallium/drivers/vc4/vc4_uniforms.c mesa-26.2.7.aros/src/gallium/drivers/vc4/vc4_uniforms.c
+--- mesa-26.2.7/src/gallium/drivers/vc4/vc4_uniforms.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/drivers/vc4/vc4_uniforms.c	2026-11-12 14:05:42.031239442 +0000
 @@ -23,6 +23,7 @@
  
  #include "util/u_pack_color.h"
@@ -599,9 +582,9 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/vc4/vc4_uniforms.c mesa-26.2.5.aros/sr
  }
  
  static void
-diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_device_info.py mesa-26.2.5.aros/src/gallium/drivers/zink/zink_device_info.py
---- mesa-26.2.5/src/gallium/drivers/zink/zink_device_info.py
-+++ mesa-26.2.5.aros/src/gallium/drivers/zink/zink_device_info.py
+diff -ruN mesa-26.2.7/src/gallium/drivers/zink/zink_device_info.py mesa-26.2.7.aros/src/gallium/drivers/zink/zink_device_info.py
+--- mesa-26.2.7/src/gallium/drivers/zink/zink_device_info.py	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/drivers/zink/zink_device_info.py	2026-11-12 14:05:42.031308642 +0000
 @@ -858,6 +858,9 @@
                 %endif
              %endif
@@ -612,9 +595,9 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_device_info.py mesa-26.2.5.a
              #ifndef NDEBUG
                       screen->vk.${cmd.name()} = (PFN_${cmd.full_name})zink_stub_${cmd.name()};
              #else
-diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_public.h mesa-26.2.5.aros/src/gallium/drivers/zink/zink_public.h
---- mesa-26.2.5/src/gallium/drivers/zink/zink_public.h	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/drivers/zink/zink_public.h	2026-11-03 00:23:45.731176310 +0000
+diff -ruN mesa-26.2.7/src/gallium/drivers/zink/zink_public.h mesa-26.2.7.aros/src/gallium/drivers/zink/zink_public.h
+--- mesa-26.2.7/src/gallium/drivers/zink/zink_public.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/drivers/zink/zink_public.h	2026-11-12 14:05:42.031375942 +0000
 @@ -36,4 +36,14 @@
  zink_drm_create_screen(int fd, const struct pipe_screen_config *config, struct renderonly *ro);
  struct pipe_screen *
@@ -630,9 +613,9 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_public.h mesa-26.2.5.aros/sr
 +                             PFN_vkGetInstanceProcAddr gipa);
 +#endif
  #endif
-diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_resource.c mesa-26.2.5.aros/src/gallium/drivers/zink/zink_resource.c
---- mesa-26.2.5/src/gallium/drivers/zink/zink_resource.c
-+++ mesa-26.2.5.aros/src/gallium/drivers/zink/zink_resource.c
+diff -ruN mesa-26.2.7/src/gallium/drivers/zink/zink_resource.c mesa-26.2.7.aros/src/gallium/drivers/zink/zink_resource.c
+--- mesa-26.2.7/src/gallium/drivers/zink/zink_resource.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/drivers/zink/zink_resource.c	2026-11-12 14:05:42.031538142 +0000
 @@ -23,6 +23,17 @@
  
  #include "zink_resource.h"
@@ -696,10 +679,10 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_resource.c mesa-26.2.5.aros/
  #else
     CloseHandle(memobj->whandle.handle);
  #endif /* _WIN32 */
-diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_screen.c mesa-26.2.5.aros/src/gallium/drivers/zink/zink_screen.c
---- mesa-26.2.5/src/gallium/drivers/zink/zink_screen.c
-+++ mesa-26.2.5.aros/src/gallium/drivers/zink/zink_screen.c
-@@ -3395,7 +3395,8 @@
+diff -ruN mesa-26.2.7/src/gallium/drivers/zink/zink_screen.c mesa-26.2.7.aros/src/gallium/drivers/zink/zink_screen.c
+--- mesa-26.2.7/src/gallium/drivers/zink/zink_screen.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/drivers/zink/zink_screen.c	2026-11-12 14:05:42.031803442 +0000
+@@ -3418,7 +3418,8 @@
  }
  
  static struct zink_screen *
@@ -709,7 +692,7 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_screen.c mesa-26.2.5.aros/sr
  {
     if (os_get_option("ZINK_USE_LAVAPIPE")) {
        mesa_loge("ZINK_USE_LAVAPIPE is obsolete. Use LIBGL_ALWAYS_SOFTWARE\n");
-@@ -3428,6 +3429,14 @@
+@@ -3451,6 +3452,14 @@
  
     u_trace_state_init();
  
@@ -724,7 +707,7 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_screen.c mesa-26.2.5.aros/sr
     screen->loader_lib = util_dl_open(VK_LIBNAME);
     if (!screen->loader_lib) {
        if (!screen->driver_name_is_inferred)
-@@ -3443,7 +3452,12 @@
+@@ -3466,7 +3475,12 @@
           mesa_loge("ZINK: failed to get proc address");
        goto fail;
     }
@@ -737,7 +720,7 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_screen.c mesa-26.2.5.aros/sr
     if (config) {
        driParseConfigFiles(config->options, config->options_info,
                            &(driConfigFileParseParams) { .driverName = "zink" });
-@@ -3452,6 +3466,7 @@
+@@ -3475,6 +3489,7 @@
        screen->driconf.emulate_point_smooth = driQueryOptionb(config->options, "zink_emulate_point_smooth");
        screen->driconf.zink_shader_object_enable = driQueryOptionb(config->options, "zink_shader_object_enable");
     }
@@ -745,7 +728,7 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_screen.c mesa-26.2.5.aros/sr
  
     simple_mtx_lock(&instance_lock);
     if (++instance_refcount == 1) {
-@@ -3470,6 +3485,16 @@
+@@ -3493,6 +3508,16 @@
     screen->instance_info = &instance_info;
     simple_mtx_unlock(&instance_lock);
  
@@ -762,7 +745,7 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_screen.c mesa-26.2.5.aros/sr
     if (zink_debug & ZINK_DEBUG_VALIDATION) {
        if (!screen->instance_info->have_layer_KHRONOS_validation &&
            !screen->instance_info->have_layer_LUNARG_standard_validation) {
-@@ -3866,7 +3891,7 @@
+@@ -3899,7 +3924,7 @@
  struct pipe_screen *
  zink_create_screen(struct sw_winsys *winsys, const struct pipe_screen_config *config)
  {
@@ -771,7 +754,7 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_screen.c mesa-26.2.5.aros/sr
     if (ret) {
        ret->drm_fd = -1;
     }
-@@ -3874,6 +3899,20 @@
+@@ -3907,6 +3932,20 @@
     return &ret->base;
  }
  
@@ -792,7 +775,7 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_screen.c mesa-26.2.5.aros/sr
  static inline int
  zink_render_rdev(int fd, int64_t *dev_major, int64_t *dev_minor)
  {
-@@ -3918,7 +3957,7 @@
+@@ -3951,7 +3990,7 @@
     if (zink_render_rdev(fd, &dev_major, &dev_minor))
        return NULL;
  
@@ -801,7 +784,7 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_screen.c mesa-26.2.5.aros/sr
     if (!ret)
        return NULL;
  
-@@ -3953,7 +3992,7 @@
+@@ -3986,7 +4025,7 @@
  struct pipe_screen *
  zink_win32_create_screen(uint64_t adapter_luid)
  {
@@ -810,7 +793,7 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_screen.c mesa-26.2.5.aros/sr
     return ret ? &ret->base : NULL;
  }
  
-@@ -3962,7 +4001,13 @@
+@@ -3995,7 +4034,13 @@
     /* this will be used by the zink_verify_*_extensions() functions on a
      * release build
      */
@@ -824,9 +807,9 @@ diff -ruN mesa-26.2.5/src/gallium/drivers/zink/zink_screen.c mesa-26.2.5.aros/sr
     abort();
  }
  
-diff -ruN mesa-26.2.5/src/gallium/frontends/lavapipe/lvp_device.c mesa-26.2.5.aros/src/gallium/frontends/lavapipe/lvp_device.c
---- mesa-26.2.5/src/gallium/frontends/lavapipe/lvp_device.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/frontends/lavapipe/lvp_device.c	2026-11-03 00:34:37.071168419 +0000
+diff -ruN mesa-26.2.7/src/gallium/frontends/lavapipe/lvp_device.c mesa-26.2.7.aros/src/gallium/frontends/lavapipe/lvp_device.c
+--- mesa-26.2.7/src/gallium/frontends/lavapipe/lvp_device.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/frontends/lavapipe/lvp_device.c	2026-11-12 14:05:42.032237242 +0000
 @@ -48,6 +48,18 @@
  #include "nir.h"
  #include "nir_builder.h"
@@ -870,7 +853,7 @@ diff -ruN mesa-26.2.5/src/gallium/frontends/lavapipe/lvp_device.c mesa-26.2.5.ar
     .KHR_relaxed_block_layout              = true,
     .KHR_robustness2                       = true,
     .KHR_sampler_mirror_clamp_to_edge      = true,
-@@ -276,7 +288,7 @@
+@@ -278,7 +290,7 @@
  #endif
     .EXT_pipeline_creation_feedback        = true,
     .EXT_pipeline_creation_cache_control   = true,
@@ -879,7 +862,7 @@ diff -ruN mesa-26.2.5/src/gallium/frontends/lavapipe/lvp_device.c mesa-26.2.5.ar
     .EXT_pipeline_protected_access         = true,
     .EXT_pipeline_robustness               = true,
     .EXT_post_depth_coverage               = true,
-@@ -586,11 +598,11 @@
+@@ -588,11 +600,11 @@
        .pushDescriptor = true,
  
        /* VK_KHR_acceleration_structure */
@@ -893,7 +876,7 @@ diff -ruN mesa-26.2.5/src/gallium/frontends/lavapipe/lvp_device.c mesa-26.2.5.ar
  
        /* VK_EXT_descriptor_buffer */
        .descriptorBuffer = true,
-@@ -655,24 +667,24 @@
+@@ -659,24 +671,24 @@
        .advancedBlendCoherentOperations = true,
  
        /* VK_KHR_ray_query */
@@ -926,9 +909,9 @@ diff -ruN mesa-26.2.5/src/gallium/frontends/lavapipe/lvp_device.c mesa-26.2.5.ar
  
        /* VK_EXT_shader_object */
        .shaderObject = true,
-diff -ruN mesa-26.2.5/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c mesa-26.2.5.aros/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c
---- mesa-26.2.5/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c	2026-10-24 22:32:44.547182506 +0100
+diff -ruN mesa-26.2.7/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c mesa-26.2.7.aros/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c
+--- mesa-26.2.7/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c	2026-11-12 14:05:42.032397942 +0000
 @@ -156,8 +156,10 @@
     if (!locked)
        simple_mtx_unlock(&dev_tab_mutex);
@@ -953,9 +936,9 @@ diff -ruN mesa-26.2.5/src/gallium/winsys/amdgpu/drm/amdgpu_winsys.c mesa-26.2.5.
  
     sws->aws = aws;
  
-diff -ruN mesa-26.2.5/src/gallium/winsys/svga/drm/vmw_screen.c mesa-26.2.5.aros/src/gallium/winsys/svga/drm/vmw_screen.c
---- mesa-26.2.5/src/gallium/winsys/svga/drm/vmw_screen.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/winsys/svga/drm/vmw_screen.c	2026-10-24 22:32:44.545403806 +0100
+diff -ruN mesa-26.2.7/src/gallium/winsys/svga/drm/vmw_screen.c mesa-26.2.7.aros/src/gallium/winsys/svga/drm/vmw_screen.c
+--- mesa-26.2.7/src/gallium/winsys/svga/drm/vmw_screen.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/winsys/svga/drm/vmw_screen.c	2026-11-12 14:05:42.032468442 +0000
 @@ -25,8 +25,16 @@
  #include <sys/stat.h>
  #include <unistd.h>
@@ -1019,9 +1002,9 @@ diff -ruN mesa-26.2.5/src/gallium/winsys/svga/drm/vmw_screen.c mesa-26.2.5.aros/
        mtx_destroy(&vws->cs_mutex);
        cnd_destroy(&vws->cs_cond);
        FREE(vws);
-diff -ruN mesa-26.2.5/src/gallium/winsys/svga/drm/vmw_screen_ioctl.c mesa-26.2.5.aros/src/gallium/winsys/svga/drm/vmw_screen_ioctl.c
---- mesa-26.2.5/src/gallium/winsys/svga/drm/vmw_screen_ioctl.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/winsys/svga/drm/vmw_screen_ioctl.c	2026-10-24 22:32:44.545493606 +0100
+diff -ruN mesa-26.2.7/src/gallium/winsys/svga/drm/vmw_screen_ioctl.c mesa-26.2.7.aros/src/gallium/winsys/svga/drm/vmw_screen_ioctl.c
+--- mesa-26.2.7/src/gallium/winsys/svga/drm/vmw_screen_ioctl.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/winsys/svga/drm/vmw_screen_ioctl.c	2026-11-12 14:05:42.032543142 +0000
 @@ -28,7 +28,9 @@
  #include "svga3d_devcaps.h"
  #include "svga3d_reg.h"
@@ -1088,9 +1071,9 @@ diff -ruN mesa-26.2.5/src/gallium/winsys/svga/drm/vmw_screen_ioctl.c mesa-26.2.5
     region->data = NULL;
  }
  
-diff -ruN mesa-26.2.5/src/gallium/winsys/svga/drm/vmw_screen_svga.c mesa-26.2.5.aros/src/gallium/winsys/svga/drm/vmw_screen_svga.c
---- mesa-26.2.5/src/gallium/winsys/svga/drm/vmw_screen_svga.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/gallium/winsys/svga/drm/vmw_screen_svga.c	2026-10-24 22:32:44.545594206 +0100
+diff -ruN mesa-26.2.7/src/gallium/winsys/svga/drm/vmw_screen_svga.c mesa-26.2.7.aros/src/gallium/winsys/svga/drm/vmw_screen_svga.c
+--- mesa-26.2.7/src/gallium/winsys/svga/drm/vmw_screen_svga.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/gallium/winsys/svga/drm/vmw_screen_svga.c	2026-11-12 14:05:42.032716242 +0000
 @@ -16,8 +16,10 @@
  
  #include <libsync.h>
@@ -1102,9 +1085,9 @@ diff -ruN mesa-26.2.5/src/gallium/winsys/svga/drm/vmw_screen_svga.c mesa-26.2.5.
  
  #include "svga_cmd.h"
  #include "svga3d_devcaps.h"
-diff -ruN mesa-26.2.5/src/mesa/glapi/glapi/glapi.h mesa-26.2.5.aros/src/mesa/glapi/glapi/glapi.h
---- mesa-26.2.5/src/mesa/glapi/glapi/glapi.h	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/mesa/glapi/glapi/glapi.h	2026-10-24 22:32:44.545032407 +0100
+diff -ruN mesa-26.2.7/src/mesa/glapi/glapi/glapi.h mesa-26.2.7.aros/src/mesa/glapi/glapi/glapi.h
+--- mesa-26.2.7/src/mesa/glapi/glapi/glapi.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/mesa/glapi/glapi/glapi.h	2026-11-12 14:05:42.032787942 +0000
 @@ -69,10 +69,14 @@
  
  struct _glapi_table;
@@ -1121,9 +1104,9 @@ diff -ruN mesa-26.2.5/src/mesa/glapi/glapi/glapi.h mesa-26.2.5.aros/src/mesa/gla
  # define GET_DISPATCH() _mesa_glapi_get_dispatch()
  # define GET_CURRENT_CONTEXT(C)  struct gl_context *C = (struct gl_context *) _mesa_glapi_get_context()
  #else
-diff -ruN mesa-26.2.5/src/mesa/glapi/shared-glapi/core.c mesa-26.2.5.aros/src/mesa/glapi/shared-glapi/core.c
---- mesa-26.2.5/src/mesa/glapi/shared-glapi/core.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/mesa/glapi/shared-glapi/core.c	2026-10-24 22:32:44.545101307 +0100
+diff -ruN mesa-26.2.7/src/mesa/glapi/shared-glapi/core.c mesa-26.2.7.aros/src/mesa/glapi/shared-glapi/core.c
+--- mesa-26.2.7/src/mesa/glapi/shared-glapi/core.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/mesa/glapi/shared-glapi/core.c	2026-11-12 14:05:42.032840142 +0000
 @@ -148,9 +148,37 @@
  #endif /* defined(_GLAPI_ENTRY_ARCH_TLS_H) */
  
@@ -1220,9 +1203,9 @@ diff -ruN mesa-26.2.5/src/mesa/glapi/shared-glapi/core.c mesa-26.2.5.aros/src/me
     return _mesa_glapi_tls_Dispatch;
 +#endif
  }
-diff -ruN mesa-26.2.5/src/mesa/main/scissor.c mesa-26.2.5.aros/src/mesa/main/scissor.c
---- mesa-26.2.5/src/mesa/main/scissor.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/mesa/main/scissor.c	2026-10-24 22:32:44.546011506 +0100
+diff -ruN mesa-26.2.7/src/mesa/main/scissor.c mesa-26.2.7.aros/src/mesa/main/scissor.c
+--- mesa-26.2.7/src/mesa/main/scissor.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/mesa/main/scissor.c	2026-11-12 14:05:42.032903342 +0000
 @@ -66,6 +66,22 @@
     ctx->Scissor.ScissorArray[idx].Height = height;
  }
@@ -1258,9 +1241,9 @@ diff -ruN mesa-26.2.5/src/mesa/main/scissor.c mesa-26.2.5.aros/src/mesa/main/sci
  }
  
  /**
-diff -ruN mesa-26.2.5/src/mesa/main/viewport.c mesa-26.2.5.aros/src/mesa/main/viewport.c
---- mesa-26.2.5/src/mesa/main/viewport.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/mesa/main/viewport.c	2026-10-24 22:32:44.545929306 +0100
+diff -ruN mesa-26.2.7/src/mesa/main/viewport.c mesa-26.2.7.aros/src/mesa/main/viewport.c
+--- mesa-26.2.7/src/mesa/main/viewport.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/mesa/main/viewport.c	2026-11-12 14:05:42.032964641 +0000
 @@ -93,11 +93,33 @@
     GLdouble Near, Far;          /**< Depth buffer range */
  };
@@ -1296,9 +1279,9 @@ diff -ruN mesa-26.2.5/src/mesa/main/viewport.c mesa-26.2.5.aros/src/mesa/main/vi
  
     /* Clamp the viewport to the implementation dependent values. */
     clamp_viewport(ctx, &input.X, &input.Y, &input.Width, &input.Height);
-diff -ruN mesa-26.2.5/src/mesa/state_tracker/st_extensions.c mesa-26.2.5.aros/src/mesa/state_tracker/st_extensions.c
---- mesa-26.2.5/src/mesa/state_tracker/st_extensions.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/mesa/state_tracker/st_extensions.c	2026-10-24 22:32:44.546096706 +0100
+diff -ruN mesa-26.2.7/src/mesa/state_tracker/st_extensions.c mesa-26.2.7.aros/src/mesa/state_tracker/st_extensions.c
+--- mesa-26.2.7/src/mesa/state_tracker/st_extensions.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/mesa/state_tracker/st_extensions.c	2026-11-12 14:05:42.033097541 +0000
 @@ -791,10 +791,6 @@
          { PIPE_FORMAT_R32G32B32A32_UINT,
            PIPE_FORMAT_R32G32B32A32_SINT } },
@@ -1327,9 +1310,9 @@ diff -ruN mesa-26.2.5/src/mesa/state_tracker/st_extensions.c mesa-26.2.5.aros/sr
        { { o(OES_texture_float) },
          { PIPE_FORMAT_R32G32B32A32_FLOAT } },
  
-diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvk_device_memory.c mesa-26.2.5.aros/src/nouveau/vulkan/nvk_device_memory.c
---- mesa-26.2.5/src/nouveau/vulkan/nvk_device_memory.c
-+++ mesa-26.2.5.aros/src/nouveau/vulkan/nvk_device_memory.c
+diff -ruN mesa-26.2.7/src/nouveau/vulkan/nvk_device_memory.c mesa-26.2.7.aros/src/nouveau/vulkan/nvk_device_memory.c
+--- mesa-26.2.7/src/nouveau/vulkan/nvk_device_memory.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/nouveau/vulkan/nvk_device_memory.c	2026-11-12 14:05:42.033205541 +0000
 @@ -13,6 +13,7 @@
  #include "util/u_atomic.h"
  
@@ -1371,9 +1354,9 @@ diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvk_device_memory.c mesa-26.2.5.aros/sr
     }
  
     struct nvk_memory_heap *heap = &pdev->mem_heaps[type->heapIndex];
-diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvk_format.c mesa-26.2.5.aros/src/nouveau/vulkan/nvk_format.c
---- mesa-26.2.5/src/nouveau/vulkan/nvk_format.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/nouveau/vulkan/nvk_format.c	2026-11-03 01:25:14.441588603 +0000
+diff -ruN mesa-26.2.7/src/nouveau/vulkan/nvk_format.c mesa-26.2.7.aros/src/nouveau/vulkan/nvk_format.c
+--- mesa-26.2.7/src/nouveau/vulkan/nvk_format.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/nouveau/vulkan/nvk_format.c	2026-11-12 14:05:42.033267841 +0000
 @@ -55,6 +55,14 @@
  #define NV9097_SET_VERTEX_ATTRIBUTE_A_COMPONENT_BIT_WIDTHS_NONE \
     NVK_VA_BIT_WIDTH_NONE
@@ -1389,9 +1372,9 @@ diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvk_format.c mesa-26.2.5.aros/src/nouve
  #define VA_FMT64(vk_fmt, widths, widths_high, swap_rb, type) \
     [VK_FORMAT_##vk_fmt] = \
     { NV9097_SET_VERTEX_ATTRIBUTE_A_COMPONENT_BIT_WIDTHS_##widths, \
-diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvk_image.c mesa-26.2.5.aros/src/nouveau/vulkan/nvk_image.c
---- mesa-26.2.5/src/nouveau/vulkan/nvk_image.c
-+++ mesa-26.2.5.aros/src/nouveau/vulkan/nvk_image.c
+diff -ruN mesa-26.2.7/src/nouveau/vulkan/nvk_image.c mesa-26.2.7.aros/src/nouveau/vulkan/nvk_image.c
+--- mesa-26.2.7/src/nouveau/vulkan/nvk_image.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/nouveau/vulkan/nvk_image.c	2026-11-12 14:05:42.033365341 +0000
 @@ -844,6 +844,9 @@
     const struct nvk_physical_device *pdev = nvk_device_physical(dev);
  
@@ -1474,9 +1457,9 @@ diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvk_image.c mesa-26.2.5.aros/src/nouvea
              dedicated->prefersDedicatedAllocation = true;
              dedicated->requiresDedicatedAllocation = true;
           } else if (image->can_compress) {
-diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvk_image.h mesa-26.2.5.aros/src/nouveau/vulkan/nvk_image.h
---- mesa-26.2.5/src/nouveau/vulkan/nvk_image.h
-+++ mesa-26.2.5.aros/src/nouveau/vulkan/nvk_image.h
+diff -ruN mesa-26.2.7/src/nouveau/vulkan/nvk_image.h mesa-26.2.7.aros/src/nouveau/vulkan/nvk_image.h
+--- mesa-26.2.7/src/nouveau/vulkan/nvk_image.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/nouveau/vulkan/nvk_image.h	2026-11-12 14:05:42.033483841 +0000
 @@ -9,6 +9,7 @@
  #include "nvk_device_memory.h"
  
@@ -1510,9 +1493,9 @@ diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvk_image.h mesa-26.2.5.aros/src/nouvea
  VK_DEFINE_NONDISP_HANDLE_CASTS(nvk_image, vk.base, VkImage, VK_OBJECT_TYPE_IMAGE)
  
  static inline uint64_t
-diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvk_instance.c mesa-26.2.5.aros/src/nouveau/vulkan/nvk_instance.c
---- mesa-26.2.5/src/nouveau/vulkan/nvk_instance.c
-+++ mesa-26.2.5.aros/src/nouveau/vulkan/nvk_instance.c
+diff -ruN mesa-26.2.7/src/nouveau/vulkan/nvk_instance.c mesa-26.2.7.aros/src/nouveau/vulkan/nvk_instance.c
+--- mesa-26.2.7/src/nouveau/vulkan/nvk_instance.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/nouveau/vulkan/nvk_instance.c	2026-11-12 14:05:42.033529741 +0000
 @@ -16,6 +16,11 @@
  #include "util/os_misc.h"
  #include "util/u_debug.h"
@@ -1590,26 +1573,9 @@ diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvk_instance.c mesa-26.2.5.aros/src/nou
  
     *pInstance = nvk_instance_to_handle(instance);
     return VK_SUCCESS;
-diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvk_physical_device.c mesa-26.2.5.aros/src/nouveau/vulkan/nvk_physical_device.c
---- mesa-26.2.5/src/nouveau/vulkan/nvk_physical_device.c
-+++ mesa-26.2.5.aros/src/nouveau/vulkan/nvk_physical_device.c
-@@ -1660,8 +1660,13 @@
-        * snoops the CPU caches when it accesses memory across the PCI bus.
-        */
-       pdev->mem_types[pdev->mem_type_count++] = (VkMemoryType) {
-+         /* Not coherent where the bus does not snoop the CPU's caches:
-+          * system memory maps then get explicit cache maintenance (see
-+          * nvkmd_nouveau_alloc_tiled_mem()). */
-          .propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-+#ifndef NVKMD_NOUVEAU_SYSMEM_NONCOHERENT
-                           VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-+#endif
-                           VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
-          .heapIndex = sysmem_heap_idx,
-       };
-diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau.h mesa-26.2.5.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau.h
---- mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau.h
-+++ mesa-26.2.5.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau.h
+diff -ruN mesa-26.2.7/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau.h mesa-26.2.7.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau.h
+--- mesa-26.2.7/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau.h	2026-11-12 14:05:42.033713141 +0000
 @@ -14,6 +14,13 @@
  
  #include <sys/types.h>
@@ -1624,9 +1590,9 @@ diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau.h mesa-26.2
  struct nouveau_ws_bo;
  struct nouveau_ws_context;
  struct nouveau_ws_device;
-diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c mesa-26.2.5.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c
---- mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c
-+++ mesa-26.2.5.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c
+diff -ruN mesa-26.2.7/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c mesa-26.2.7.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c
+--- mesa-26.2.7/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c	2026-11-12 14:05:42.033761541 +0000
 @@ -7,8 +7,16 @@
  
  #include "nouveau_bo.h"
@@ -1807,9 +1773,9 @@ diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_mem.c mesa-
     .export_dma_buf = nvkmd_nouveau_mem_export_dma_buf,
     .log_handle = nvkmd_nouveau_mem_log_handle,
  };
-diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_pdev.c mesa-26.2.5.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_pdev.c
---- mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_pdev.c
-+++ mesa-26.2.5.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_pdev.c
+diff -ruN mesa-26.2.7/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_pdev.c mesa-26.2.7.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_pdev.c
+--- mesa-26.2.7/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_pdev.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_pdev.c	2026-11-12 14:05:42.033842841 +0000
 @@ -19,15 +19,36 @@
  #include "clc597.h"
  #include "clc697.h"
@@ -1925,9 +1891,26 @@ diff -ruN mesa-26.2.5/src/nouveau/vulkan/nvkmd/nouveau/nvkmd_nouveau_pdev.c mesa
  }
  
  const struct nvkmd_pdev_ops nvkmd_nouveau_pdev_ops = {
-diff -ruN mesa-26.2.5/src/nouveau/winsys/nouveau_bo.c mesa-26.2.5.aros/src/nouveau/winsys/nouveau_bo.c
---- mesa-26.2.5/src/nouveau/winsys/nouveau_bo.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/nouveau/winsys/nouveau_bo.c	2026-11-03 00:48:02.269988514 +0000
+diff -ruN mesa-26.2.7/src/nouveau/vulkan/nvk_physical_device.c mesa-26.2.7.aros/src/nouveau/vulkan/nvk_physical_device.c
+--- mesa-26.2.7/src/nouveau/vulkan/nvk_physical_device.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/nouveau/vulkan/nvk_physical_device.c	2026-11-12 14:05:42.033621141 +0000
+@@ -1660,8 +1660,13 @@
+        * snoops the CPU caches when it accesses memory across the PCI bus.
+        */
+       pdev->mem_types[pdev->mem_type_count++] = (VkMemoryType) {
++         /* Not coherent where the bus does not snoop the CPU's caches:
++          * system memory maps then get explicit cache maintenance (see
++          * nvkmd_nouveau_alloc_tiled_mem()). */
+          .propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
++#ifndef NVKMD_NOUVEAU_SYSMEM_NONCOHERENT
+                           VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
++#endif
+                           VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+          .heapIndex = sysmem_heap_idx,
+       };
+diff -ruN mesa-26.2.7/src/nouveau/winsys/nouveau_bo.c mesa-26.2.7.aros/src/nouveau/winsys/nouveau_bo.c
+--- mesa-26.2.7/src/nouveau/winsys/nouveau_bo.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/nouveau/winsys/nouveau_bo.c	2026-11-12 14:05:42.033901241 +0000
 @@ -281,18 +281,29 @@
        prot |= PROT_WRITE;
  
@@ -1958,9 +1941,9 @@ diff -ruN mesa-26.2.5/src/nouveau/winsys/nouveau_bo.c mesa-26.2.5.aros/src/nouve
  }
  
  bool
-diff -ruN mesa-26.2.5/src/nouveau/winsys/nouveau_device.c mesa-26.2.5.aros/src/nouveau/winsys/nouveau_device.c
---- mesa-26.2.5/src/nouveau/winsys/nouveau_device.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/nouveau/winsys/nouveau_device.c	2026-11-03 00:48:02.269668314 +0000
+diff -ruN mesa-26.2.7/src/nouveau/winsys/nouveau_device.c mesa-26.2.7.aros/src/nouveau/winsys/nouveau_device.c
+--- mesa-26.2.7/src/nouveau/winsys/nouveau_device.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/nouveau/winsys/nouveau_device.c	2026-11-12 14:05:42.033957241 +0000
 @@ -436,7 +436,13 @@
     uint64_t value = 0;
     drmVersionPtr ver = NULL;
@@ -2000,9 +1983,9 @@ diff -ruN mesa-26.2.5/src/nouveau/winsys/nouveau_device.c mesa-26.2.5.aros/src/n
     FREE(device);
  }
  
-diff -ruN mesa-26.2.5/src/util/compiler.h mesa-26.2.5.aros/src/util/compiler.h
---- mesa-26.2.5/src/util/compiler.h	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/util/compiler.h	2026-10-24 22:32:44.544814307 +0100
+diff -ruN mesa-26.2.7/src/util/compiler.h mesa-26.2.7.aros/src/util/compiler.h
+--- mesa-26.2.7/src/util/compiler.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/util/compiler.h	2026-11-12 14:05:42.034017241 +0000
 @@ -62,6 +62,9 @@
  #elif defined(__OpenBSD__)
  #include <sys/types.h>
@@ -2013,9 +1996,9 @@ diff -ruN mesa-26.2.5/src/util/compiler.h mesa-26.2.5.aros/src/util/compiler.h
  #else /*__linux__ */
  #include <sys/endian.h>
  #define CPU_TO_LE32( x ) bswap32( x )
-diff -ruN mesa-26.2.5/src/util/log.c mesa-26.2.5.aros/src/util/log.c
---- mesa-26.2.5/src/util/log.c
-+++ mesa-26.2.5.aros/src/util/log.c
+diff -ruN mesa-26.2.7/src/util/log.c mesa-26.2.7.aros/src/util/log.c
+--- mesa-26.2.7/src/util/log.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/util/log.c	2026-11-12 14:05:42.034062041 +0000
 @@ -50,6 +50,7 @@
     MESA_LOG_CONTROL_SYSLOG = 1 << 2,
     MESA_LOG_CONTROL_ANDROID = 1 << 3,
@@ -2083,7 +2066,7 @@ diff -ruN mesa-26.2.5/src/util/log.c mesa-26.2.5.aros/src/util/log.c
  static void
  logger_windbg(enum mesa_log_level level,
                const char *tag,
-@@ -461,6 +492,9 @@
+@@ -461,6 +498,9 @@
  #if DETECT_OS_WINDOWS
        { MESA_LOG_CONTROL_WINDBG, logger_windbg },
  #endif
@@ -2093,9 +2076,9 @@ diff -ruN mesa-26.2.5/src/util/log.c mesa-26.2.5.aros/src/util/log.c
     };
  
     mesa_log_init();
-diff -ruN mesa-26.2.5/src/util/os_drm.h mesa-26.2.5.aros/src/util/os_drm.h
---- mesa-26.2.5/src/util/os_drm.h	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/util/os_drm.h	2026-10-24 22:32:44.547133306 +0100
+diff -ruN mesa-26.2.7/src/util/os_drm.h mesa-26.2.7.aros/src/util/os_drm.h
+--- mesa-26.2.7/src/util/os_drm.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/util/os_drm.h	2026-11-12 14:05:42.034123241 +0000
 @@ -14,10 +14,32 @@
  #error "Windows shouldn't include this."
  #endif
@@ -2136,9 +2119,9 @@ diff -ruN mesa-26.2.5/src/util/os_drm.h mesa-26.2.5.aros/src/util/os_drm.h
  #endif
 +
 +#endif
-diff -ruN mesa-26.2.5/src/util/ralloc.c mesa-26.2.5.aros/src/util/ralloc.c
---- mesa-26.2.5/src/util/ralloc.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/util/ralloc.c	2026-10-26 18:49:10.000000000 +0000
+diff -ruN mesa-26.2.7/src/util/ralloc.c mesa-26.2.7.aros/src/util/ralloc.c
+--- mesa-26.2.7/src/util/ralloc.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/util/ralloc.c	2026-11-12 14:05:42.034197541 +0000
 @@ -23,6 +23,7 @@
  
  #include <assert.h>
@@ -2307,9 +2290,9 @@ diff -ruN mesa-26.2.5/src/util/ralloc.c mesa-26.2.5.aros/src/util/ralloc.c
  }
  
  void
-diff -ruN mesa-26.2.5/src/util/set.c mesa-26.2.5.aros/src/util/set.c
---- mesa-26.2.5/src/util/set.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/util/set.c	2026-10-24 22:32:44.542304208 +0100
+diff -ruN mesa-26.2.7/src/util/set.c mesa-26.2.7.aros/src/util/set.c
+--- mesa-26.2.7/src/util/set.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/util/set.c	2026-11-12 14:05:42.034300041 +0000
 @@ -48,8 +48,9 @@
   * free to avoid exponential performance degradation as the hash table fills
   */
@@ -2442,9 +2425,9 @@ diff -ruN mesa-26.2.5/src/util/set.c mesa-26.2.5.aros/src/util/set.c
           return entry;
        }
     }
-diff -ruN mesa-26.2.5/src/util/set.h mesa-26.2.5.aros/src/util/set.h
---- mesa-26.2.5/src/util/set.h	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/util/set.h	2026-10-24 22:32:44.542397508 +0100
+diff -ruN mesa-26.2.7/src/util/set.h mesa-26.2.7.aros/src/util/set.h
+--- mesa-26.2.7/src/util/set.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/util/set.h	2026-11-12 14:05:42.034377641 +0000
 @@ -45,6 +45,7 @@
     struct set_entry *table;
     uint32_t (*key_hash_function)(const void *key);
@@ -2453,9 +2436,9 @@ diff -ruN mesa-26.2.5/src/util/set.h mesa-26.2.5.aros/src/util/set.h
     uint32_t size;
     uint32_t rehash;
     uint64_t size_magic;
-diff -ruN mesa-26.2.5/src/util/u_endian.h mesa-26.2.5.aros/src/util/u_endian.h
---- mesa-26.2.5/src/util/u_endian.h	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/util/u_endian.h	2026-10-24 22:32:44.542627708 +0100
+diff -ruN mesa-26.2.7/src/util/u_endian.h mesa-26.2.7.aros/src/util/u_endian.h
+--- mesa-26.2.7/src/util/u_endian.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/util/u_endian.h	2026-11-12 14:05:42.034416941 +0000
 @@ -82,6 +82,16 @@
  # define UTIL_ARCH_BIG_ENDIAN 1
  #endif
@@ -2473,9 +2456,9 @@ diff -ruN mesa-26.2.5/src/util/u_endian.h mesa-26.2.5.aros/src/util/u_endian.h
  #elif defined(_WIN32) || defined(__ANDROID__)
  
  #define UTIL_ARCH_LITTLE_ENDIAN 1
-diff -ruN mesa-26.2.5/src/util/u_math.c mesa-26.2.5.aros/src/util/u_math.c
---- mesa-26.2.5/src/util/u_math.c	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/util/u_math.c	2026-10-26 13:40:12.542627708 +0100
+diff -ruN mesa-26.2.7/src/util/u_math.c mesa-26.2.7.aros/src/util/u_math.c
+--- mesa-26.2.7/src/util/u_math.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/util/u_math.c	2026-11-12 14:05:42.034461141 +0000
 @@ -86,7 +86,11 @@
        fpstate = _mm_getcsr();
     }
@@ -2499,9 +2482,9 @@ diff -ruN mesa-26.2.5/src/util/u_math.c mesa-26.2.5.aros/src/util/u_math.c
     if (util_get_cpu_caps()->has_neon) {
  #ifdef HAVE___BUILTIN_ARM_SET_FPSCR
        __builtin_arm_set_fpscr(fpstate);
-diff -ruN mesa-26.2.5/src/util/u_thread.h mesa-26.2.5.aros/src/util/u_thread.h
---- mesa-26.2.5/src/util/u_thread.h	2026-10-14 16:12:24.000000000 +0100
-+++ mesa-26.2.5.aros/src/util/u_thread.h	2026-10-24 22:32:44.543758407 +0100
+diff -ruN mesa-26.2.7/src/util/u_thread.h mesa-26.2.7.aros/src/util/u_thread.h
+--- mesa-26.2.7/src/util/u_thread.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/util/u_thread.h	2026-11-12 14:05:42.034509941 +0000
 @@ -45,9 +45,11 @@
   * still want to use normal TLS (which involves a function call, but not the
   * expensive pthread_getspecific() or its equivalent).
@@ -2516,9 +2499,9 @@ diff -ruN mesa-26.2.5/src/util/u_thread.h mesa-26.2.5.aros/src/util/u_thread.h
   */
  #define __THREAD_INITIAL_EXEC __thread
  #elif defined(__GLIBC__)
-diff -ruN mesa-26.2.5/src/vulkan/runtime/vk_image.c mesa-26.2.5.aros/src/vulkan/runtime/vk_image.c
---- mesa-26.2.5/src/vulkan/runtime/vk_image.c
-+++ mesa-26.2.5.aros/src/vulkan/runtime/vk_image.c
+diff -ruN mesa-26.2.7/src/vulkan/runtime/vk_image.c mesa-26.2.7.aros/src/vulkan/runtime/vk_image.c
+--- mesa-26.2.7/src/vulkan/runtime/vk_image.c	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/vulkan/runtime/vk_image.c	2026-11-12 14:05:42.034586341 +0000
 @@ -23,7 +23,7 @@
  
  #include "vk_image.h"
@@ -2546,9 +2529,9 @@ diff -ruN mesa-26.2.5/src/vulkan/runtime/vk_image.c mesa-26.2.5.aros/src/vulkan/
  VKAPI_ATTR VkResult VKAPI_CALL
  vk_common_GetImageDrmFormatModifierPropertiesEXT(UNUSED VkDevice device,
                                                   VkImage _image,
-diff -ruN mesa-26.2.5/src/vulkan/runtime/vk_image.h mesa-26.2.5.aros/src/vulkan/runtime/vk_image.h
---- mesa-26.2.5/src/vulkan/runtime/vk_image.h
-+++ mesa-26.2.5.aros/src/vulkan/runtime/vk_image.h
+diff -ruN mesa-26.2.7/src/vulkan/runtime/vk_image.h mesa-26.2.7.aros/src/vulkan/runtime/vk_image.h
+--- mesa-26.2.7/src/vulkan/runtime/vk_image.h	2026-11-11 16:03:52.000000000 +0000
++++ mesa-26.2.7.aros/src/vulkan/runtime/vk_image.h	2026-11-12 14:05:42.034664941 +0000
 @@ -77,7 +77,7 @@
     /* wsi_image_create_info::scanout */
     bool wsi_legacy_scanout;

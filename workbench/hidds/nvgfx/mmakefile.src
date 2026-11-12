@@ -21,7 +21,7 @@ include $(SRCDIR)/$(CURDIR)/sources.drm.mak
 # the driver out (the trick jpegxl.datatype uses for its own gcc floor).
 #MM- workbench-hidds-nvgfx : hidd-nvgfx-mesa$(OPT_MESAGL)
 #MM- hidd-nvgfx-mesa20.0.8 : hidd-nvgfx-$(AROS_TARGET_CPU)
-#MM- hidd-nvgfx-mesa26.2.5 : hidd-nvgfx-$(NOUVEAU_TOOLCHAINSUPPORT)$(AROS_TARGET_CPU)
+#MM- hidd-nvgfx-mesa26.2.7 : hidd-nvgfx-$(NOUVEAU_TOOLCHAINSUPPORT)$(AROS_TARGET_CPU)
 #MM- hidd-nvgfx-i386 : hidd-nvgfx
 #MM- hidd-nvgfx-x86_64 : hidd-nvgfx
 #MM- hidd-nvgfx-riscv64 : hidd-nvgfx

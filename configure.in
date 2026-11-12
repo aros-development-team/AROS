@@ -41,6 +41,7 @@ exp_gcc_version=`cat ${srcdir}/config/gcc_exp`
 default_llvm_version=`cat ${srcdir}/config/llvm_def`
 exp_binutils_version=`cat ${srcdir}/config/binutils_exp`
 default_grub2_version=`cat ${srcdir}/arch/all-pc/boot/grub2_def`
+default_mesagl_version=`cat ${srcdir}/workbench/libs/mesa/mesa_def`
 
 # The AROS target is slightly different to the normal GNU style
 # format. We don't have the middle part, and we reverse the order
@@ -3111,7 +3112,7 @@ fi
 AC_MSG_RESULT($aros_target_guitheme)
 
 AC_MSG_CHECKING([which version of mesa to build ...])
-AC_ARG_WITH(mesagl,AS_HELP_STRING([--with-mesagl=family],[Which version of MesaGL to build (defaults to 26.2.5)]),aros_mesagl="$withval",aros_mesagl="26.2.5")
+AC_ARG_WITH(mesagl,AS_HELP_STRING([--with-mesagl=family],[Which version of MesaGL to build (default=$default_mesagl_version)]),aros_mesagl="$withval",aros_mesagl="$default_mesagl_version")
 AC_MSG_RESULT($aros_mesagl)
 aros_target_options+="$export_newline""# Enable MesaGL$export_newline""OPT_MESAGL                    := $aros_mesagl$export_newline"
 
