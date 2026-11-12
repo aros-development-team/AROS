@@ -38,6 +38,11 @@
 #define DNSSD_IPC_BROWSE    7   /* dm_Data: [subtype._sub.]type.domain; dm_TypeOffset, dm_DomainOffset, dm_Interface */
 #define DNSSD_IPC_RESOLVE   8   /* dm_Data: instance.type.domain; dm_TypeOffset, dm_DomainOffset, dm_Interface, dm_Timeout */
 #define DNSSD_IPC_QUERY     9   /* dm_Data: the name; dm_RRType, dm_Interface, dm_Timeout (0: until cancelled) */
+#define DNSSD_IPC_REGISTER  10  /* dm_Data: instance.type.domain, offsets; dm_Port; dm_Extra: TXT
+                                 * (dm_TXTLength bytes) then each subtype as a label, then 0 */
+#define DNSSD_IPC_UPDATE    11  /* dm_Operation; dm_Extra: TXT if DNSSD_IPCF_TXT; dm_Port if not 0 */
+
+#define DNSSD_IPCF_TXT      1   /* dm_Flags: UPDATE carries TXT data */
 
 /* Names in dm_Data are DNS wire labels, uncompressed, dm_DataSize bytes
  * with the root label; the offsets are where a part's labels start. */
@@ -59,7 +64,11 @@ struct DNSSDIPCMsg
     UWORD           dm_RRType;
     UWORD           dm_TypeOffset;
     UWORD           dm_DomainOffset;
-    UWORD           dm_Reserved;
+    UWORD           dm_Port;
+    UWORD           dm_TXTLength;
+    UWORD           dm_Flags;
+    ULONG           dm_ExtraSize;
+    UBYTE          *dm_Extra;
     IPTR            dm_UserData;
     ULONG           dm_DataSize;    /* bytes of dm_Data used */
     ULONG           dm_DataMax;     /* bytes of dm_Data */

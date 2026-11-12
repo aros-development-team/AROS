@@ -40,6 +40,7 @@
 #define DNSSD_ERR_NOTFOUND  (-9)
 #define DNSSD_ERR_CANCELLED (-10)
 #define DNSSD_ERR_BADNAME   (-11)   /* not a name DNS can carry */
+#define DNSSD_ERR_EXISTS    (-12)   /* this host has that service registered already */
 
 /* Address families of struct DNSSDAddress (and of DNSSD_Family). */
 #define DNSSD_FAMILY_ANY    0
@@ -74,6 +75,8 @@ struct DNSSDAddress
 #define DNSSD_EVENT_ADD         4   /* Browse: an instance on de_Interface; QueryRecord: a record */
 #define DNSSD_EVENT_REMOVE      5   /* what an ADD said is gone */
 #define DNSSD_EVENT_RESOLVED    6   /* Resolve: target, port, TXT and every address known, again when they change */
+#define DNSSD_EVENT_REGISTERED  7   /* Register: the service is announced under de_Instance - again
+                                     * with another name if a conflict renamed it */
 
 #define DNSSD_EVENT_VERSION     1
 
@@ -124,7 +127,11 @@ struct DNSSDEvent
 #define DNSSD_Timeout       (DNSSD_Dummy + 3)   /* seconds, 1-60; LookupAddress default 3, Resolve 5; QueryRecord: none */
 #define DNSSD_UserData      (DNSSD_Dummy + 4)   /* IPTR returned in the operation's events */
 #define DNSSD_Domain        (DNSSD_Dummy + 5)   /* Browse, Resolve: default "local" */
-#define DNSSD_Subtype       (DNSSD_Dummy + 6)   /* Browse: only instances of this subtype ("_printer") */
+#define DNSSD_Subtype       (DNSSD_Dummy + 6)   /* Browse: only instances of this subtype ("_printer");
+                                                 * Register: a subtype it has (repeatable) */
+#define DNSSD_TXT           (DNSSD_Dummy + 7)   /* Register, Update: TXT data, length-prefixed strings */
+#define DNSSD_TXTLength     (DNSSD_Dummy + 8)   /* its length in bytes, at most 1300 */
+#define DNSSD_Port          (DNSSD_Dummy + 9)   /* Update: another port */
 
 /* DNSSD_GetStatusA() */
 #define DNSSD_Status_Incarnation (DNSSD_Dummy + 0x100)  /* ULONG *: mdnsd's incarnation */

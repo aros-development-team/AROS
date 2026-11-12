@@ -49,7 +49,16 @@ struct MDNSInterface
  * the life of the shortest-lived records, the host's */
 #define MDNS_UNICAST_SECONDS    (MDNS_TTL_HOST / 4)
 
-/* A service a client registered through bonami.library. */
+/* The TXT data of a registered service: length-prefixed strings, as a
+ * client gives them (RFC 6763 section 6.2 asks for no more than this). */
+#define MDNS_TXT_DATA_MAX       1300
+
+struct MDNSRegisteredService;
+/* Told when a registered service's name is announced (again, after a
+ * conflict renamed it). */
+typedef void (*MDNSRegNotify)(APTR data, const struct MDNSRegisteredService *rs);
+
+/* A service a client registered (dnssd.library, or bonami.library). */
 struct MDNSRegisteredService
 {
     struct Node     rs_Node;
@@ -58,7 +67,10 @@ struct MDNSRegisteredService
     UWORD           rs_SubtypeCount;
     char            rs_Subtypes[MDNS_MAX_SUBTYPES][MDNS_MAX_SUBTYPE + 1];
     char            rs_Domain[MDNS_MAX_DOMAIN + 1];
-    char            rs_TXT[MDNS_MAX_TXT + 1];
+    UWORD           rs_TXTLength;
+    UBYTE           rs_TXT[MDNS_TXT_DATA_MAX];
+    MDNSRegNotify   rs_Notify;      /* or NULL */
+    APTR            rs_NotifyData;
     UWORD           rs_Port;
     UWORD           rs_State;       /* MDNS_NAME_* */
     UWORD           rs_Step;        /* probes or announcements sent */
@@ -277,6 +289,14 @@ void mdnsQueryRelease(struct MDNSDaemon *md, ULONG owner);
 void mdnsQueryReap(struct MDNSDaemon *md);
 void mdnsQueryCancel(struct MDNSDaemon *md);
 void mdnsQueryFree(struct MDNSDaemon *md);
+
+LONG mdnsRegAddNative(struct MDNSDaemon *md, const char *instance,
+    const char *type, const char *domain, const char subtypes[][MDNS_MAX_SUBTYPE + 1],
+    UWORD subtypeCount, UWORD port, const UBYTE *txt, UWORD txtLength,
+    MDNSRegNotify notify, APTR data, APTR *ref);
+LONG mdnsRegUpdateRef(struct MDNSDaemon *md, APTR ref, const UBYTE *txt,
+    UWORD txtLength, UWORD port);
+void mdnsRegRemoveRef(struct MDNSDaemon *md, APTR ref);
 
 /* dnssd_server.c: dnssd.library's sessions and operations. */
 void dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg);

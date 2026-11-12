@@ -35,6 +35,7 @@
 #define OP_BROWSE               2
 #define OP_RESOLVE              3
 #define OP_QUERY                4
+#define OP_REGISTER             5
 
 #define RESOLVE_TXT_MAX         1024
 
@@ -82,6 +83,7 @@ struct ServerOperation
     ULONG           so_Reported;        /* Resolve: signature of what was said */
     IPTR            so_UserData;
     APTR            so_Watch[4];
+    APTR            so_Service;         /* Register: mdnsRegAddNative()'s ref */
     UBYTE           so_Name[256];       /* wire labels */
     UBYTE           so_Target[256];     /* Resolve: the SRV's target */
     struct DNSSDAddress so_Seen[LOOKUP_ADDRESSES];
@@ -287,6 +289,10 @@ end_operation(struct DNSSDServer *sv, struct ServerOperation *op)
             mdnsCacheUnwatch(op->so_Daemon, op->so_Watch[i]);
             op->so_Watch[i] = NULL;
         }
+    }
+    if (op->so_Service != NULL) {
+        mdnsRegRemoveRef(op->so_Daemon, op->so_Service);  /* with its goodbyes */
+        op->so_Service = NULL;
     }
     if (ss->ss_Operations != 0) {
         ss->ss_Operations--;
@@ -602,6 +608,89 @@ resolve_txt(APTR data, const struct MDNSCacheEntry *e, BOOL added)
     resolve_report(op);
 }
 
+/* Register: the service is announced, under the name it has now. */
+static void
+register_notify(APTR data, const struct MDNSRegisteredService *rs)
+{
+    struct ServerOperation *op = data;
+    struct EventParts ep;
+    UBYTE wire[256];
+    char full[256], type[256], domain[256], text[256];
+    LONG used, at, typeAt, domainAt, i;
+
+    /* the name as wire labels: the instance's label as it is */
+    at = 0;
+    for (i = 0; rs->rs_Instance[i] != '\0' && at < 64; i++) {
+        text[at++] = rs->rs_Instance[i];
+    }
+    wire[0] = (UBYTE)at;
+    memcpy(wire + 1, text, at);
+    typeAt = 1 + at;
+    if (mdnsNameToWire(rs->rs_Type, wire + typeAt, 256 - typeAt, &used) != 0) {
+        return;
+    }
+    domainAt = typeAt + used - 1;
+    if (mdnsNameToWire(rs->rs_Domain, wire + domainAt, 256 - domainAt,
+            &used) != 0) {
+        return;
+    }
+    memset(&ep, 0, sizeof(ep));
+    ep.ep_Kind = DNSSD_EVENT_REGISTERED;
+    ep.ep_Port = rs->rs_Port;
+    ep.ep_RRType = DNS_TYPE_SRV;
+    service_parts(&ep, wire, (UWORD)typeAt, (UWORD)domainAt, full, type, domain);
+    push_event(op->so_Daemon->md_DNSSD, op, &ep);
+}
+
+/* Register: the message's name, TXT and subtypes, checked; the service. */
+static LONG
+start_register(struct MDNSDaemon *md, struct ServerOperation *op,
+    const struct DNSSDIPCMsg *msg)
+{
+    char instance[64], type[MDNS_MAX_TYPE + 1], domain[MDNS_MAX_DOMAIN + 1];
+    char subtypes[MDNS_MAX_SUBTYPES][MDNS_MAX_SUBTYPE + 1];
+    const UBYTE *name = msg->dm_Data;
+    UWORD count = 0;
+    ULONG at;
+    LONG rc;
+
+    if (name[0] == 0 || name[0] > 63 || msg->dm_TypeOffset != 1 + name[0] ||
+        msg->dm_Port == 0 || msg->dm_TXTLength > msg->dm_ExtraSize ||
+        msg->dm_TXTLength > MDNS_TXT_DATA_MAX ||
+        (msg->dm_ExtraSize != 0 && msg->dm_Extra == NULL)) {
+        return DNSSD_ERR_BADPARAM;
+    }
+    memcpy(instance, name + 1, name[0]);
+    instance[name[0]] = '\0';
+    if (strlen(instance) != name[0] ||
+        name_text(name, msg->dm_TypeOffset, msg->dm_DomainOffset, type,
+            sizeof(type) - 1) >= sizeof(type) - 1 ||
+        name_text(name, msg->dm_DomainOffset, -1, domain,
+            sizeof(domain) - 1) >= sizeof(domain) - 1) {
+        return DNSSD_ERR_BADNAME;
+    }
+    type[name_text(name, msg->dm_TypeOffset, msg->dm_DomainOffset, type,
+        sizeof(type) - 1)] = '\0';
+    domain[name_text(name, msg->dm_DomainOffset, -1, domain,
+        sizeof(domain) - 1)] = '\0';
+    for (at = msg->dm_TXTLength; at < msg->dm_ExtraSize &&
+            msg->dm_Extra[at] != 0; at += 1 + msg->dm_Extra[at]) {
+        UBYTE len = msg->dm_Extra[at];
+
+        if (count == MDNS_MAX_SUBTYPES || len > MDNS_MAX_SUBTYPE ||
+            at + 1 + len > msg->dm_ExtraSize) {
+            return DNSSD_ERR_BADPARAM;
+        }
+        memcpy(subtypes[count], msg->dm_Extra + at + 1, len);
+        subtypes[count++][len] = '\0';
+    }
+    rc = mdnsRegAddNative(md, instance, type, domain, subtypes, count,
+        msg->dm_Port, msg->dm_Extra, msg->dm_TXTLength, register_notify, op,
+        &op->so_Service);
+    return rc == MDNS_OK ? DNSSD_OK : rc == MDNSERR_DUPLICATE ? DNSSD_ERR_EXISTS :
+        rc == MDNSERR_NOMEM ? DNSSD_ERR_NOMEM : DNSSD_ERR_BADPARAM;
+}
+
 /* Is the name in a message wire labels that end where it says? */
 static BOOL
 valid_name(const struct DNSSDIPCMsg *msg)
@@ -659,6 +748,10 @@ start_operation(struct MDNSDaemon *md, struct ServerSession *ss, LONG sslot,
         kind = OP_BROWSE;
         timeout = 0;
         break;
+    case DNSSD_IPC_REGISTER:
+        kind = OP_REGISTER;
+        timeout = 0;
+        break;
     default:
         kind = OP_RESOLVE;
         if (timeout == 0) {
@@ -669,7 +762,7 @@ start_operation(struct MDNSDaemon *md, struct ServerSession *ss, LONG sslot,
     if (!valid_name(msg) || timeout > 60) {
         return DNSSD_ERR_BADPARAM;
     }
-    if ((kind == OP_BROWSE || kind == OP_RESOLVE) &&
+    if ((kind == OP_BROWSE || kind == OP_RESOLVE || kind == OP_REGISTER) &&
         (!label_at(msg->dm_Data, msg->dm_DataSize, msg->dm_TypeOffset) ||
          !label_at(msg->dm_Data, msg->dm_DataSize, msg->dm_DomainOffset) ||
          msg->dm_DomainOffset <= msg->dm_TypeOffset)) {
@@ -719,6 +812,16 @@ start_operation(struct MDNSDaemon *md, struct ServerSession *ss, LONG sslot,
         op->so_Watch[0] = mdnsCacheWatch(md, op->so_Name, op->so_RRType,
             op->so_Interface, query_notify, op);
         break;
+    case OP_REGISTER: {
+        LONG rc = start_register(md, op, msg);
+
+        if (rc != DNSSD_OK) {
+            end_operation(sv, op);
+            msg->dm_Operation = 0;
+            return rc;
+        }
+        return DNSSD_OK;
+    }
     case OP_BROWSE:
         /* a subtype's PTRs name instances of the base type: the base is
          * what follows "<subtype>._sub" (RFC 6763 section 7.1) */
@@ -903,7 +1006,27 @@ dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg)
     case DNSSD_IPC_READ:
         msg->dm_Result = read_event(ss, msg);
         break;
+    case DNSSD_IPC_UPDATE: {
+        ULONG oslot = (msg->dm_Operation & 0xffff) - 1;
+        struct ServerOperation *op = oslot < SERVER_OPERATIONS ?
+            sv->sv_Operations[oslot] : NULL;
+
+        msg->dm_Result = DNSSD_ERR_STALE;
+        if (op != NULL && op->so_Session == slot && op->so_Kind == OP_REGISTER &&
+            op->so_Generation == (msg->dm_Operation >> 16)) {
+            BOOL txt = (msg->dm_Flags & DNSSD_IPCF_TXT) != 0;
+
+            msg->dm_Result = DNSSD_ERR_BADPARAM;
+            if ((!txt || msg->dm_TXTLength <= msg->dm_ExtraSize) &&
+                mdnsRegUpdateRef(md, op->so_Service, txt ? msg->dm_Extra : NULL,
+                    txt ? msg->dm_TXTLength : 0, msg->dm_Port) == MDNS_OK) {
+                msg->dm_Result = DNSSD_OK;
+            }
+        }
+        break;
+    }
     case DNSSD_IPC_LOOKUP:
+    case DNSSD_IPC_REGISTER:
     case DNSSD_IPC_BROWSE:
     case DNSSD_IPC_RESOLVE:
     case DNSSD_IPC_QUERY:
