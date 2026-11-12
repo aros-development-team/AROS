@@ -1468,17 +1468,16 @@ void FNAME_DEV(StartChannel)(struct USB2OTGUnit *otg_Unit, int chan, int quick)
             int timeout = 200000; /* ~200 µs */
             ULONG nptxsts;
 
+            /* FIFO empty only: a NAKed bulk IN keeps the request queue full. */
             do {
                 nptxsts = rd32le(USB2OTG_NONPERIFIFOSTATUS);
-                /* NPTxFSpcAvail==fifo_dwords → FIFO empty; QSpcAvail==8 → q empty. */
-                if (((nptxsts & 0xFFFF) >= fifo_dwords) &&
-                    (((nptxsts >> 16) & 0xFF) >= 8))
+                if ((nptxsts & 0xFFFF) >= fifo_dwords)
                     break;
             } while (--timeout > 0);
 
             if (timeout <= 0)
             {
-                bug("[USB2OTG] NPTxFIFO drain timeout chan=%d NPTXSTS=%08x (need fifo>=%04x qspc>=08)\n",
+                bug("[USB2OTG] NPTxFIFO drain timeout chan=%d NPTXSTS=%08x (need fifo>=%04x)\n",
                     chan, nptxsts, (unsigned)fifo_dwords);
                 /* Proceed anyway — better to try than to stall arming. */
             }
