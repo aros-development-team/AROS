@@ -779,13 +779,17 @@ static void usb2otg_split_giveup_recover(struct USB2OTGUnit *USBUnit, int chan,
 }
 
 /*
- * Non-split bulk-OUT progress accounting for mid-burst halts.
- * Reads HCTSIZ.PktCnt, advances iouh_Actual by ACKed × MaxPktSize,
- * toggles host PID, resets transient retry budget on progress.
+ * Non-split bulk progress accounting for mid-burst halts.
+ * OUT: reads HCTSIZ.PktCnt, advances iouh_Actual by ACKed × MaxPktSize,
+ * toggles host PID. IN: keeps the packets already received (copied
+ * back from the bounce buffer) and takes the next PID from HCTSIZ, or
+ * the resumed transfer would refetch with a stale toggle and the core
+ * would drop the device's next packet as a repeat. Resets the transient
+ * retry budget on progress.
  * Callers MUST gate on HCINT.CHHLTD — TSIZE only settles after halt;
  * acting on pre-halt PktCnt over-advances Actual. No locking.
  */
-static inline void usb2otg_bulk_out_advance_pktcnt(
+static inline void usb2otg_bulk_advance_pktcnt(
     struct USB2OTGUnit *USBUnit, int chan,
     struct IOUsbHWReq *req, ULONG tsize_snapshot)
 {
@@ -798,11 +802,42 @@ static inline void usb2otg_bulk_out_advance_pktcnt(
     ULONG act_before;
 
     if (req->iouh_Req.io_Command != UHCMD_BULKXFER ||
-        req->iouh_Dir != UHDIR_OUT ||
         (req->iouh_Flags & UHFF_SPLITTRANS))
         return;
 
     hc = &USBUnit->hu_Channel[chan];
+
+    if (req->iouh_Dir == UHDIR_IN)
+    {
+        /* Read after the halt; a short packet would have completed the
+         * transfer, so only whole packets are in. */
+        ULONG tsize = rd32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE));
+        ULONG left = tsize & 0x7FFFF;
+        ULONG got;
+
+        if (left > hc->hc_XferSize || req->iouh_MaxPktSize == 0)
+            return;
+        got = hc->hc_XferSize - left;
+        got -= got % req->iouh_MaxPktSize;
+        if (req->iouh_Actual + got > req->iouh_Length)
+            got = req->iouh_Length - req->iouh_Actual;
+        if (got == 0)
+            return;
+
+        if (hc->hc_OrigBuffer != NULL && hc->hc_BounceDir == 1)
+        {
+            CacheClearE(USBUnit->hu_BounceBuf[chan], got, CACRF_InvalidateD);
+            CopyMem(USBUnit->hu_BounceBuf[chan], hc->hc_OrigBuffer, got);
+            hc->hc_OrigBuffer = NULL;
+        }
+        else if (req->iouh_Data != NULL)
+            CacheClearE((UBYTE *)req->iouh_Data + req->iouh_Actual, got, CACRF_InvalidateD);
+        req->iouh_Actual += got;
+        USBUnit->hu_PIDBits[req->iouh_DevAddr] &= ~(3 << (2 * req->iouh_Endpoint));
+        USBUnit->hu_PIDBits[req->iouh_DevAddr] |= ((tsize >> 29) & 3) << (2 * req->iouh_Endpoint);
+        req->iouh_DriverPrivate2 = (APTR)0;
+        return;
+    }
 
     initial_pktcnt = (hc->hc_XferSize + req->iouh_MaxPktSize - 1)
         / (req->iouh_MaxPktSize ? req->iouh_MaxPktSize : 1);
@@ -908,6 +943,20 @@ void FNAME_DEV(WorkerTask)(struct USB2OTGUnit *otg_Unit)
         KrnSpinUnLock(&otg_Unit->hu_Lock);
 #endif
         Enable();
+        if (flags & USB2OTG_WORK_GATEARM)
+        {
+            /* Wake at the frame the IRQ aimed at, unless reopened since */
+            Disable();
+            if (otg_Unit->hu_SofGated && otg_Unit->hu_SofGateWakeFrame != 0xffff)
+            {
+                ULONG left = (otg_Unit->hu_SofGateWakeFrame -
+                              ((rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff) >> 3)) & 0x7ff;
+
+                if (left == 0 || left > 0x400 || !usb2otg_sof_gate_arm(otg_Unit, left))
+                    usb2otg_sof_gate_wake(otg_Unit);
+            }
+            Enable();
+        }
         if (flags & USB2OTG_WORK_NAKTIMEOUT)
             usb2otg_process_naktimeout(otg_Unit);
         if (flags & USB2OTG_WORK_PENDING)
@@ -1169,21 +1218,35 @@ static void usb2otg_sof_gate_try(struct USB2OTGUnit *USBUnit)
     {
         USBUnit->hu_SofGateWakeFrame = (frnm + mindist - 1) & 0x7ff;
         usb2otg_sof_gate_mask(USBUnit);
-        if (!usb2otg_sof_gate_arm(mindist - 1))
-        {
-            /* Already passed while arming. */
+#if defined(__AROSEXEC_SMP__)
+        /* The worker sends the timer request (see usb2otg_sof_gate_arm) */
+        KrnSpinLock(&USBUnit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+        USBUnit->hu_WorkFlags |= USB2OTG_WORK_GATEARM;
+        KrnSpinUnLock(&USBUnit->hu_Lock);
+        Signal(USBUnit->hu_WorkerTask, 1UL << USBUnit->hu_WorkerPort->mp_SigBit);
+#else
+        if (!usb2otg_sof_gate_arm(USBUnit, mindist - 1))
             usb2otg_sof_gate_wake(USBUnit);
-        }
+#endif
     }
 }
 
-/* Runs with interrupts disabled, so no locking against wake sites. */
+/* Softint on the gate's timer.device replies: free the request and reopen. */
 AROS_INTH1(FNAME_DEV(SofGateInt), struct USB2OTGUnit *, USBUnit)
 {
     AROS_INTFUNC_INIT
 
-    wr32le(SYSTIMER_CS, 1 << USB2OTG_SOF_GATE_TIMER);
-    usb2otg_sof_gate_wake(USBUnit);
+    struct timerequest *tr;
+
+    while ((tr = (struct timerequest *)GetMsg(&USBUnit->hu_SofGatePort)) != NULL)
+    {
+        UBYTE bit = (tr == &USBUnit->hu_SofGateReq[1]) ? 2 : 1;
+
+        Disable();
+        USBUnit->hu_SofGateBusy &= ~bit;
+        usb2otg_sof_gate_wake(USBUnit);
+        Enable();
+    }
 
     return FALSE;
 
@@ -1464,17 +1527,30 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                               chan, intr, tmp));
 
                         /*
-                         * Periodic INT split: issue the CSPLIT one microframe
-                         * later (hu_DelayedChannel[] ticks per SOF) so it lands in
-                         * the TT result window instead of hammering the same
-                         * uframe. Bulk keeps the immediate re-arm. Split ctrl
-                         * gets the full inter-transaction pace — see
+                         * Bulk keeps the immediate re-arm. Split ctrl gets
+                         * the full inter-transaction pace — see
                          * USB2OTG_CTRL_SPLIT_PACE_UFRAMES.
                          */
                         if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
                             USBUnit->hu_DelayedChannel[chan] = USB2OTG_CTRL_SPLIT_PACE_UFRAMES;
                         else if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST)
-                            USBUnit->hu_DelayedChannel[chan] = 1;
+                        {
+                            /*
+                             * Periodic INT split: first CSPLIT two microframes
+                             * after the SSPLIT (armed for the next one, so it
+                             * ran one after the arm), like dwc2: the TT has
+                             * the answer then. Arm on the SOF just before; an
+                             * immediate arm runs one too early, and under bulk
+                             * load the NYET retry often misses the answer.
+                             */
+                            ULONG target = (USBUnit->hu_Channel[chan].hc_SsArmUframe + 3) & 0x3fff;
+                            ULONG d = (target - (rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff)) & 0x3fff;
+
+                            if (d >= 2 && d < 8)
+                                USBUnit->hu_DelayedChannel[chan] = d - 1;
+                            else
+                                FNAME_DEV(StartChannel)(USBUnit, chan, 1);
+                        }
                         else
                             FNAME_DEV(StartChannel)(USBUnit, chan, 1);
                     }
@@ -1511,57 +1587,14 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                     }
                     else if (intr == USB2OTG_INTR_HALT_NYET && do_split == USB2OTG_HCSPLT_CSPLIT)
                     {
-                        /*
-                         * CHHLTD+ACK on a CSPLIT. If frame number passed
-                         * half-interval, TT cache is stale → requeue with
-                         * updated timing; otherwise re-arm/delay.
-                         */
-                        ULONG last = (ULONG)(IPTR)req->iouh_DriverPrivate1 >> 16;
-                        ULONG thresh = (last + (ULONG)req->iouh_Interval / 2) % 2047;
-
-                        if ((chan >= CHAN_INT1 && chan <= CHAN_INT_LAST) &&
-                            req->iouh_Req.io_Command == UHCMD_INTXFER &&
-                            ((frnm > thresh && frnm > last) ||
-                             (frnm < thresh && frnm < last) ||
-                             (frnm > thresh && frnm < last)))
-                        {
-                            D(bug("[USB2OTG] restarting transaction... %x, %x, %d\n", frnm, req->iouh_DriverPrivate1, req->iouh_DriverPrivate2));
-
-                            /* Disable channel without clearing MPS/ep metadata */
-                            usb2otg_halt_channel_preserve_char(chan);
-                            usb2otg_exorcise_channel(chan);
-
-                            /* Put transfer back into queue with updated timing */
-                            if (req->iouh_Req.io_Command == UHCMD_INTXFER)
-                            {
-                                ULONG interval = usb2otg_clamp_interval(req->iouh_Interval);
-                                if ((req->iouh_Flags & UHFF_SPLITTRANS) && interval < 2)
-                                    interval = 2;
-                                ULONG next = (frnm + interval) & 0x7ff;
-                                req->iouh_DriverPrivate1 = (APTR)(IPTR)((frnm << 16) | next);
-                                /* CSPLIT responded = liveness — reset wedge counter. */
-                                req->iouh_DriverPrivate2 = (APTR)0;
-                                ADDHEAD(&USBUnit->hu_IntXFerQueue, req);
-                            }
-                            else if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
-                                ADDHEAD(&USBUnit->hu_CtrlXFerQueue, req);
-                            else if (req->iouh_Req.io_Command == UHCMD_BULKXFER)
-                                ADDHEAD(&USBUnit->hu_BulkXFerQueue, req);
-
-                            /* Mark channel free */
-                            USBUnit->hu_Channel[chan].hc_Request = NULL;
-                            req = NULL;
-                        }
-                        else
+                        /* CHHLTD+NYET on a CSPLIT: the retry cap below bounds the TT window. */
                         {
                             if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST)
                             {
                                 /*
                                  * CSPLIT NYET = TT has not finished the
                                  * LS/FS transaction yet. Retry the CSPLIT
-                                 * one microframe later (hu_DelayedChannel
-                                 * ticks per SOF = per microframe in HS)
-                                 * rather than re-arming in the same uframe.
+                                 * in the next microframe (ODDFRM holds it).
                                  * Bound to ~8 uframes from the SSPLIT
                                  * (FreeBSD DWC_OTG_TT_SLOT_MAX); past that
                                  * the TT result window is gone, so requeue
@@ -1570,7 +1603,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 if (USBUnit->hu_Channel[chan].hc_CsplitRetry < 8)
                                 {
                                     USBUnit->hu_Channel[chan].hc_CsplitRetry++;
-                                    USBUnit->hu_DelayedChannel[chan] = 1;
+                                    FNAME_DEV(StartChannel)(USBUnit, chan, 1);
                                 }
                                 else if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
                                 {
@@ -1624,8 +1657,13 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                     {
                         /* Bare CHHLTD on SSPLIT INT: wrong OddFrame parity;
                          * restart, StartChannel re-predicts the frame. */
+                        ULONG uf = rd32le(USB2OTG_HOSTFRAMENO) & 7;
+
                         wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
-                        FNAME_DEV(StartChannel)(USBUnit, chan, 1);
+                        if (uf > USB2OTG_SSPLIT_LAST_UFRAME)
+                            USBUnit->hu_DelayedChannel[chan] = 8 - uf;   /* next frame */
+                        else
+                            FNAME_DEV(StartChannel)(USBUnit, chan, 1);
                         req = NULL;
                     }
                     else if ((intr == USB2OTG_INTR_HALT_NAK && do_split) &&
@@ -1971,7 +2009,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     why, chan, req->iouh_DevAddr, intr,
                                     retries + 1, USB2OTG_TRANSIENT_RETRY_LIMIT));
 
-                                usb2otg_bulk_out_advance_pktcnt(USBUnit, chan, req, tsize_snap);
+                                usb2otg_bulk_advance_pktcnt(USBUnit, chan, req, tsize_snap);
                                 /* retry++ after helper (helper may reset budget on progress). */
                                 req->iouh_DriverPrivate2 =
                                     (APTR)((IPTR)req->iouh_DriverPrivate2 + 1);
@@ -2202,7 +2240,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     rd32le(USB2OTG_CHANNEL_REG(chan, TRANSSIZE));
                                 wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
                                 usb2otg_halt_channel_preserve_char(chan);
-                                usb2otg_bulk_out_advance_pktcnt(USBUnit, chan, req, tsize_snap);
+                                usb2otg_bulk_advance_pktcnt(USBUnit, chan, req, tsize_snap);
                                 USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 0;
                                 usb2otg_bulk_requeue(USBUnit, chan, req, intr, "bulk-nak");
                                 usb2otg_nak_gate_set(USBUnit, req->iouh_DevAddr,
@@ -2507,7 +2545,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                             else if (req->iouh_Req.io_Command == UHCMD_BULKXFER)
                             {
                                 /* Multi-packet bulk-OUT progress accounting. */
-                                usb2otg_bulk_out_advance_pktcnt(USBUnit, chan, req, chhltd_tsize);
+                                usb2otg_bulk_advance_pktcnt(USBUnit, chan, req, chhltd_tsize);
 
                                 usb2otg_bulk_requeue(USBUnit, chan, req, intr,
                                     "bare-chhltd");
@@ -2684,6 +2722,19 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                             wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
                             usb2otg_halt_channel_preserve_char(chan);
                             usb2otg_exorcise_channel(chan);
+                            /* No data arrived: an INT poll must not complete as a report. */
+                            if (req->iouh_Req.io_Command == UHCMD_INTXFER)
+                            {
+                                ULONG interval = usb2otg_clamp_interval(req->iouh_Interval);
+
+                                if ((req->iouh_Flags & UHFF_SPLITTRANS) && interval < 2)
+                                    interval = 2;
+                                req->iouh_DriverPrivate1 =
+                                    (APTR)(IPTR)((frnm << 16) | ((frnm + interval) & 0x7ff));
+                                usb2otg_irq_finish_or_requeue(USBUnit, chan, req,
+                                    &USBUnit->hu_IntXFerQueue, FALSE);
+                                req = NULL;
+                            }
                         }
 
 
@@ -3461,7 +3512,7 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                     wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
 
                     /* Update Actual so class driver sees accurate progress. */
-                    usb2otg_bulk_out_advance_pktcnt(otg_Unit, chan, req, wd_tsize);
+                    usb2otg_bulk_advance_pktcnt(otg_Unit, chan, req, wd_tsize);
 
                     /*
                      * Wedged INT: requeue with fresh timing instead of

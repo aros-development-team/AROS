@@ -304,6 +304,22 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     }
                                     USB2OTGBase->hd_Unit->hu_SofGateWakeFrame = 0xffff;
 
+                                    /* The SOF gate's wakes come back here as a softint */
+                                    USB2OTGBase->hd_Unit->hu_SofGateInt.is_Node.ln_Type = NT_INTERRUPT;
+                                    USB2OTGBase->hd_Unit->hu_SofGateInt.is_Node.ln_Name = "OTG2USB SOF Gate Interrupt";
+                                    USB2OTGBase->hd_Unit->hu_SofGateInt.is_Node.ln_Pri  = 16;
+                                    USB2OTGBase->hd_Unit->hu_SofGateInt.is_Data = USB2OTGBase->hd_Unit;
+                                    USB2OTGBase->hd_Unit->hu_SofGateInt.is_Code = (VOID_FUNC)FNAME_DEV(SofGateInt);
+                                    USB2OTGBase->hd_Unit->hu_SofGatePort.mp_Node.ln_Type = NT_MSGPORT;
+                                    USB2OTGBase->hd_Unit->hu_SofGatePort.mp_Flags = PA_SOFTINT;
+                                    USB2OTGBase->hd_Unit->hu_SofGatePort.mp_SigTask = &USB2OTGBase->hd_Unit->hu_SofGateInt;
+                                    NEWLIST(&USB2OTGBase->hd_Unit->hu_SofGatePort.mp_MsgList);
+                                    for (i = 0; i < 2; i++)
+                                    {
+                                        CopyMem(USB2OTGBase->hd_TimerReq, &USB2OTGBase->hd_Unit->hu_SofGateReq[i], sizeof(struct timerequest));
+                                        USB2OTGBase->hd_Unit->hu_SofGateReq[i].tr_node.io_Message.mn_ReplyPort = &USB2OTGBase->hd_Unit->hu_SofGatePort;
+                                    }
+
                                     CopyMem(USB2OTGBase->hd_TimerReq, &USB2OTGBase->hd_Unit->hu_NakTimeoutReq, sizeof(struct timerequest));
                                     USB2OTGBase->hd_Unit->hu_NakTimeoutReq.tr_node.io_Message.mn_ReplyPort = USB2OTGBase->hd_Unit->hu_WorkerPort;
                                     USB2OTGBase->hd_Unit->hu_NakTimeoutReq.tr_time.tv_secs = 0;
@@ -327,10 +343,6 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
 
                                     USB2OTGBase->hd_Unit->hu_GlobalIRQHandle = KrnAddIRQHandler(IRQ_VC_USB, FNAME_DEV(GlobalIRQHandler), USB2OTGBase->hd_Unit, SysBase);
 
-                                    wr32le(SYSTIMER_CS, 1 << USB2OTG_SOF_GATE_TIMER);
-                                    USB2OTGBase->hd_Unit->hu_SofGateIRQHandle =
-                                        KrnAddIRQHandler(IRQ_TIMER0 + USB2OTG_SOF_GATE_TIMER,
-                                            FNAME_DEV(SofGateInt), USB2OTGBase->hd_Unit, SysBase);
                                     USB2OTGBase->hd_Unit->hu_USB2OTGBase = USB2OTGBase;
 
                                     D(bug("[USB2OTG] %s: Installed Global IRQ Handler [handle @ 0x%p] for IRQ #%ld\n",

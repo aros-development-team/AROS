@@ -239,7 +239,7 @@ static int usb2otg_tt_in_flight(struct USB2OTGUnit *otg_Unit,
 {
     int scan;
 
-    if (!(candidate->iouh_Flags & UHFF_SPLITTRANS))
+    if (!USB2OTG_TT_ONE_SPLIT || !(candidate->iouh_Flags & UHFF_SPLITTRANS))
         return 0;
 
     for (scan = 0; scan < 8; scan++)
@@ -1269,11 +1269,10 @@ void FNAME_DEV(StartChannel)(struct USB2OTGUnit *otg_Unit, int chan, int quick)
 
         /*
          * Enable HALT/XFERCOMPL/XactErr/DTERR. Intentionally NOT
-         * ACK/NAK — they fire before CHHLTD on splits and break the
-         * CSPLIT state machine. NYET only for splits (CSPLIT pacing):
-         * on non-split transfers the buffer-DMA core handles NAK/NYET/
-         * PING flow control itself; unmasking NYET and halting the
-         * channel mid-burst fights the core and opens wedge windows.
+         * ACK/NAK/NYET — they fire before CHHLTD on splits and break
+         * the CSPLIT state machine (a lone NYET under bulk load cut the
+         * CSPLIT and lost keyboard reports). HCINT still latches them,
+         * so the CHHLTD handler sees HALT|NYET.
          */
         {
             struct IOUsbHWReq *mask_req = otg_Unit->hu_Channel[chan].hc_Request;
@@ -1283,10 +1282,7 @@ void FNAME_DEV(StartChannel)(struct USB2OTGUnit *otg_Unit, int chan, int quick)
                  | USB2OTG_INTRCHAN_TRANSFERCOMPLETE
                  | USB2OTG_INTRCHAN_TRANSACTIONERROR      /* XactErr */
                  | USB2OTG_INTRCHAN_DATATOGGLEERROR;      /* DTERR */
-            if (mask_req != NULL && (mask_req->iouh_Flags & UHFF_SPLITTRANS))
-                tmp |= USB2OTG_INTRCHAN_NOTREADY;         /* NYET */
-            else
-                tmp &= ~USB2OTG_INTRCHAN_NOTREADY;
+            tmp &= ~USB2OTG_INTRCHAN_NOTREADY;           /* NYET */
             /*
              * Direct INT is armed as a BULK-type channel (see
              * SetupChannel), and the DMA core retries NAK internally
@@ -1307,23 +1303,27 @@ void FNAME_DEV(StartChannel)(struct USB2OTGUnit *otg_Unit, int chan, int quick)
         wr32le(USB2OTG_CHANNEL_REG(chan, INTR), 0x7ff);
 
         /* Enable channel IRQ; HAINT is RO, cleared via per-channel INTR. */
+        /* Atomic vs the IRQ: the SOF gate rewrites GINTMSK there, and a
+         * stale write-back here left SOF masked with the gate "open". */
+        Disable();
         tmp = rd32le(USB2OTG_HOSTINTRMASK);
         tmp |= 1 << chan;
         wr32le(USB2OTG_HOSTINTRMASK, tmp);
 
         tmp = rd32le(USB2OTG_INTRMASK);
-        tmp |= USB2OTG_INTRCORE_HOSTCHANNEL;
-        wr32le(USB2OTG_INTRMASK, tmp);
+        if (!(tmp & USB2OTG_INTRCORE_HOSTCHANNEL))
+            wr32le(USB2OTG_INTRMASK, tmp | USB2OTG_INTRCORE_HOSTCHANNEL);
+        Enable();
     }
 
     /* Finally enable the channel and thus start transaction */
     tmp = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
 
     /*
-     * Split-periodic channels: set OddFrm to match the frame parity
-     * SSPLIT will fire in. Predict via HFNUM.FRREM (PHY clocks left,
-     * HFIR=60000/ms) — if <20 % remains, target the next frame.
-     * Non-split must not have OddFrm set.
+     * Split-periodic channels: OddFrm selects the next microframe (HFNUM
+     * bit 0), as in dwc2; the core holds the split until then, so CSPLITs
+     * re-armed from the IRQ land in consecutive microframes. Non-split
+     * must not have OddFrm set.
      */
     {
         ULONG eptype = (tmp >> 18) & 3;
@@ -1332,16 +1332,11 @@ void FNAME_DEV(StartChannel)(struct USB2OTGUnit *otg_Unit, int chan, int quick)
         if ((eptype == USB2OTG_TYPE_INT || eptype == USB2OTG_TYPE_ISO) &&
             (splitctrl & (1 << 31)))
         {
-            ULONG hfnum = rd32le(USB2OTG_HOSTFRAMENO);
-            ULONG frame = (hfnum >> 3) & 0x7ff;         /* bits [13:3] */
-            ULONG frrem = (hfnum >> 16) & 0xffff;       /* PHY clocks left */
-            ULONG frint = rd32le(USB2OTG_HOSTFRAMEINTERV) & 0xffff;
+            ULONG uframe = rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff;
 
-            /* <20 % frame left → land in the next frame. */
-            if (frint > 0 && frrem < frint / 5)
-                frame++;
-
-            if (frame & 1)
+            if (!(splitctrl & USB2OTG_HCSPLT_COMPLSPLT))
+                otg_Unit->hu_Channel[chan].hc_SsArmUframe = uframe;
+            if ((uframe + 1) & 1)
                 tmp |= (1 << 29);   /* HCCHAR.OddFrm */
             else
                 tmp &= ~(1 << 29);
@@ -1779,6 +1774,8 @@ void FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *otg_Unit)
             struct IOUsbHWReq *candidate, *cnext;
             BOOL chan_is_direct = (chan >= CHAN_INT_DIRECT_FIRST);
             BOOL allow_overflow = FALSE;
+            /* Too late in the frame for an SSPLIT; the next frame's walk takes it */
+            BOOL ss_late = (rd32le(USB2OTG_HOSTFRAMENO) & 7) > USB2OTG_SSPLIT_LAST_UFRAME;
 
 #if USB2OTG_INT_POOL_OVERFLOW
             allow_overflow =
@@ -1792,6 +1789,8 @@ void FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *otg_Unit)
                     !(candidate->iouh_Flags & UHFF_SPLITTRANS);
 
                 if (cand_is_direct != chan_is_direct && !allow_overflow)
+                    continue;
+                if (!cand_is_direct && ss_late)
                     continue;
                 if (!usb2otg_endpoint_in_flight(otg_Unit, candidate) &&
                     !usb2otg_tt_in_flight(otg_Unit, candidate))

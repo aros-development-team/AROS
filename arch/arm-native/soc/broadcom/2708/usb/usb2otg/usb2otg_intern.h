@@ -318,6 +318,7 @@ struct USB2OTGUnit
         UBYTE               hc_CsplitRetry;    /* CSPLIT NYET retries this interval; caps to TT result window */
         UBYTE               hc_SplitState;     /* periodic-split SM: USB2OTG_SPLIT_{IDLE,SS,CS} */
         UWORD               hc_SplitSSUframe;  /* HFNUM&0x3fff uframe the SSPLIT was issued in */
+        UWORD               hc_SsArmUframe;    /* HFNUM&0x3fff at the last INT SSPLIT arm */
         struct IOUsbHWReq * hc_BulkReq;     /* Last bulk request tracked on this channel */
         ULONG               hc_BulkStartFrame;
         ULONG               hc_BulkLastProgressFrame;
@@ -367,7 +368,12 @@ struct USB2OTGUnit
     volatile UWORD      hu_SofGateWakeFrame;    /* frame the wake was aimed at */
     ULONG               hu_SofGateMasks;        /* census: gate closures */
     ULONG               hu_SofGateWakes;        /* census: wakes (timer or work) */
-    APTR                hu_SofGateIRQHandle;
+    /* timer.device reopens the gate; two requests so a later one can stay queued */
+    struct MsgPort      hu_SofGatePort;         /* PA_SOFTINT */
+    struct Interrupt    hu_SofGateInt;
+    struct timerequest  hu_SofGateReq[2];
+    ULONG               hu_SofGateDue[2];       /* SYSTIMER_CLO at expiry */
+    UBYTE               hu_SofGateBusy;         /* bit per request: sent, not replied */
     /* Wake lateness in frames: <1, <4, <16, more. */
     ULONG               hu_SofGateLate[4];
     ULONG               hu_SofGateLateMax;
@@ -601,6 +607,7 @@ void                    usb2otg_exorcise_channel(int chan);
 
 #define USB2OTG_WORK_PENDING    (1U << 0)
 #define USB2OTG_WORK_NAKTIMEOUT (1U << 1)
+#define USB2OTG_WORK_GATEARM    (1U << 2)   /* send the SOF gate's timer request */
 
 #ifdef UtilityBase
 #undef UtilityBase
@@ -633,6 +640,20 @@ void                    usb2otg_exorcise_channel(int chan);
  * Pi 3B+; suspicion is stale per-channel periodic-split state.
  */
 #define CHAN_INT_DIRECT_FIRST   CHAN_INT4
+
+/*
+ * One split transaction per TT hub at a time (usb2otg_tt_in_flight).
+ * 0 lets them overlap as dwc2 does; not tested since the CSPLIT timing
+ * fixes. Split iso runs on lent channels outside the rule.
+ */
+#define USB2OTG_TT_ONE_SPLIT    1
+
+/*
+ * Last microframe an INT SSPLIT may start in. Later ones leave too
+ * little of the frame for the CSPLITs: the TT answers NYET until we
+ * give up, and the report is lost. Later arms wait for the next frame.
+ */
+#define USB2OTG_SSPLIT_LAST_UFRAME  2
 
 /*
  * INT pool overflow: let a free channel take a request from the OTHER
@@ -883,26 +904,46 @@ static inline APTR usb2otg_ctrl_backoff(struct USB2OTGUnit *unit,
 #define USB2OTG_INT_NAK_BACKOFF_FRAMES  8
 
 /*
- * Shorter waits are cheaper on SOFs than re-arming the wake, which
- * runs off system timer channel 1 (0 and 2 are the firmware's, 3 is
- * the kernel VBlank).
+ * Shorter waits are cheaper on SOFs than re-arming the wake. The wake is
+ * a timer.device request: system timer channel 1 is timer.device's own.
  */
 #define USB2OTG_SOF_GATE                1
 #define USB2OTG_SOF_GATE_MIN_FRAMES     2
-#define USB2OTG_SOF_GATE_TIMER          1
 
 /*
- * The compare is an equality match, so a deadline already passed would
- * not fire for ~71 minutes. Report that and let the caller reopen.
+ * Ask for a wake in 'frames' ms. An earlier one already pending will do;
+ * a later one stays queued (an early wake is harmless). FALSE if no
+ * request is free: the caller reopens. Not from the IRQ: timer.device
+ * there can preempt timer.device's own handler (aarch64 Enable() in an
+ * IRQ unmasks), double-counting time or spinning in AbortIO. Caller
+ * holds Disable().
  */
-static inline BOOL usb2otg_sof_gate_arm(ULONG frames)
+static inline BOOL usb2otg_sof_gate_arm(struct USB2OTGUnit *unit, ULONG frames)
 {
-    ULONG target = rd32le(SYSTIMER_CLO) + frames * 1000;
+    ULONG due = rd32le(SYSTIMER_CLO) + frames * 1000;
+    struct timerequest *tr;
+    int i;
 
-    wr32le(SYSTIMER_CS, 1 << USB2OTG_SOF_GATE_TIMER);
-    wr32le(SYSTIMER_C0 + (USB2OTG_SOF_GATE_TIMER * 4), target);
-
-    return ((LONG)(rd32le(SYSTIMER_CLO) - target) < 0);
+    for (i = 0; i < 2; i++)
+    {
+        if ((unit->hu_SofGateBusy & (1 << i)) &&
+            (LONG)(unit->hu_SofGateDue[i] - due) <= 0)
+            return TRUE;
+    }
+    for (i = 0; i < 2; i++)
+    {
+        if (unit->hu_SofGateBusy & (1 << i))
+            continue;
+        tr = &unit->hu_SofGateReq[i];
+        tr->tr_node.io_Command = TR_ADDREQUEST;
+        tr->tr_time.tv_secs = frames / 1000;
+        tr->tr_time.tv_micro = (frames % 1000) * 1000;
+        unit->hu_SofGateBusy |= 1 << i;
+        unit->hu_SofGateDue[i] = due;
+        SendIO(&tr->tr_node);
+        return TRUE;
+    }
+    return FALSE;
 }
 
 /* Caller runs in the IRQ or holds Disable(). */
