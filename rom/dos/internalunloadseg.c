@@ -76,7 +76,7 @@
 
         while (seglist)
         {
-            next = *(BPTR *)BADDR(seglist);
+            CopyMem(BADDR(seglist), &next, sizeof(next));
             ilsFreeVec(BADDR(seglist));
             seglist = next;
         }
