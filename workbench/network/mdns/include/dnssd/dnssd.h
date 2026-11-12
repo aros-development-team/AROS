@@ -1,0 +1,110 @@
+/*
+ * SPDX-License-Identifier: BSD-2-Clause
+ * Copyright 2026 Jaime Dias
+ *
+ * dnssd/dnssd.h - dnssd.library, the system's DNS-SD service (RFC 6763 over
+ * multicast DNS, RFC 6762)
+ *
+ * A program opens a session with a message port of its own; each request
+ * (an address lookup, a browse, a resolve, a registration, a record query)
+ * is an operation of the session. mdnsd, the system's responder, keeps the
+ * results and tells the session's port when it has some: the program then
+ * reads them, one event at a time, into a buffer of its own
+ * (DNSSD_ReadEvent()). Nothing of the daemon's - no pointer, no message - is
+ * ever left with the program, and nothing arrives for an operation once it
+ * is cancelled or its session closed.
+ *
+ * Every structure here has a fixed layout of fixed-width fields, the same on
+ * every CPU, except de_UserData (an IPTR). Events say their own size and
+ * version; a program reads only what its version has.
+ */
+#ifndef DNSSD_DNSSD_H
+#define DNSSD_DNSSD_H
+
+#include <exec/types.h>
+#include <utility/tagitem.h>
+
+#define DNSSDNAME           "dnssd.library"
+#define DNSSD_VERSION       1
+
+/* Results: DNSSD_OK, or a negative error. */
+#define DNSSD_OK            0
+#define DNSSD_ERR_NOENGINE  (-1)    /* mdnsd is not running */
+#define DNSSD_ERR_BADPARAM  (-2)
+#define DNSSD_ERR_NOMEM     (-3)
+#define DNSSD_ERR_BUSY      (-4)    /* too many sessions or operations */
+#define DNSSD_ERR_STALE     (-5)    /* the session or operation is gone (mdnsd restarted) */
+#define DNSSD_ERR_EMPTY     (-6)    /* no event to read now */
+#define DNSSD_ERR_TOOSMALL  (-7)    /* the buffer is smaller than the event: *size says how big */
+#define DNSSD_ERR_TIMEOUT   (-8)
+#define DNSSD_ERR_NOTFOUND  (-9)
+#define DNSSD_ERR_CANCELLED (-10)
+
+/* Address families of struct DNSSDAddress (and of DNSSD_Family). */
+#define DNSSD_FAMILY_ANY    0
+#define DNSSD_FAMILY_IPV4   4
+#define DNSSD_FAMILY_IPV6   6
+
+/* Opaque handles. */
+typedef struct DNSSDSession   *DNSSDSessionRef;
+typedef struct DNSSDOperation *DNSSDOperationRef;
+
+/* A part of an event: dr_Size bytes at dr_Offset from the event's start. */
+struct DNSSDRef
+{
+    ULONG   dr_Offset;
+    ULONG   dr_Size;
+};
+
+/* One address: 4 bytes for IPv4, 16 for IPv6, and the interface index it
+ * was learned on (the zone of an IPv6 link-local address). */
+struct DNSSDAddress
+{
+    UWORD   da_Family;              /* DNSSD_FAMILY_IPV4 or DNSSD_FAMILY_IPV6 */
+    UWORD   da_Length;              /* 4 or 16 */
+    ULONG   da_Interface;
+    UBYTE   da_Bytes[16];
+};
+
+/* Event kinds. */
+#define DNSSD_EVENT_ADDRESS     1   /* LookupAddress: de_Addresses has one or more addresses of de_Name */
+#define DNSSD_EVENT_END         2   /* the operation is over: de_Result says how (DNSSD_OK, DNSSD_ERR_TIMEOUT, ...) */
+#define DNSSD_EVENT_LOST        3   /* events were dropped: start the operation again */
+
+#define DNSSD_EVENT_VERSION     1
+
+/*
+ * An event, as DNSSD_ReadEvent() copies it: this header, then its parts.
+ * Texts (de_Name...) are UTF-8, not terminated, de_Size bytes long; parts
+ * not used by a kind have size 0.
+ */
+struct DNSSDEvent
+{
+    ULONG           de_Size;        /* bytes of the whole event */
+    UWORD           de_Version;     /* DNSSD_EVENT_VERSION */
+    UWORD           de_Kind;        /* DNSSD_EVENT_* */
+    ULONG           de_Flags;
+    LONG            de_Result;      /* DNSSD_EVENT_END: how the operation ended */
+    ULONG           de_Sequence;    /* counts the operation's events from 1 */
+    ULONG           de_Interface;   /* the link it is about, 0 for none or all */
+    ULONG           de_TTL;         /* seconds */
+    UWORD           de_RRType;
+    UWORD           de_AddressCount;
+    struct DNSSDRef de_Name;
+    struct DNSSDRef de_Addresses;   /* de_AddressCount struct DNSSDAddress */
+    IPTR            de_UserData;    /* DNSSD_UserData of the operation */
+};
+
+/* Tags. */
+#define DNSSD_Dummy         (TAG_USER + 0x0d55d000)
+#define DNSSD_Family        (DNSSD_Dummy + 1)   /* LookupAddress: DNSSD_FAMILY_*, default ANY */
+#define DNSSD_Interface     (DNSSD_Dummy + 2)   /* only this interface index, default all */
+#define DNSSD_Timeout       (DNSSD_Dummy + 3)   /* seconds, 1-60, default 3 */
+#define DNSSD_UserData      (DNSSD_Dummy + 4)   /* IPTR returned in the operation's events */
+
+/* DNSSD_GetStatusA() */
+#define DNSSD_Status_Incarnation (DNSSD_Dummy + 0x100)  /* ULONG *: mdnsd's incarnation */
+#define DNSSD_Status_Sessions    (DNSSD_Dummy + 0x101)  /* ULONG *: open sessions */
+#define DNSSD_Status_Operations  (DNSSD_Dummy + 0x102)  /* ULONG *: operations in progress */
+
+#endif /* DNSSD_DNSSD_H */
