@@ -1000,8 +1000,9 @@ in6_delmulti(struct in6_multi *in6m)
  * By now its addresses are gone (sana_if_deconfigure()), and their
  * solicited-node memberships with them. The interface's own membership of
  * the all-nodes group, from in6_join_allnodes(), is released here. What
- * sockets still hold cannot be freed under them: those entries are cut
- * loose from the interface and go when their sockets drop them. Nothing is
+ * sockets hold is released by in_pcbifgone() (in6_family.c); an entry
+ * still held is cut loose from the interface and goes with its last
+ * holder. Nothing is
  * sent and the device is not asked to forget the addresses: it is offline
  * and about to be closed. The IPv6 counterpart of in_ifdetach().
  */

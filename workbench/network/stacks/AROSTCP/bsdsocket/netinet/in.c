@@ -921,9 +921,9 @@ in_delmulti(struct in_multi *inm)
  * device would never be told the group's address.
  *
  * The interface's own membership of the all-hosts group, from
- * in_join_allhosts(), is released here. What sockets still hold cannot be
- * freed under them: those entries are cut loose from the interface and go
- * when their sockets drop them. Nothing is sent and the device is not
+ * in_join_allhosts(), is released here. What sockets hold is released by
+ * in_pcbifgone() (in_family.c); an entry still held is cut loose from the
+ * interface and goes with its last holder. Nothing is sent and the device is not
  * asked to forget the addresses: it is offline and about to be closed.
  */
 void

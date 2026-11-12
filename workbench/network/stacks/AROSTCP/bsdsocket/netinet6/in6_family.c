@@ -98,12 +98,37 @@ in6_pcbfree(struct inpcb *inp)
     ip6_freemoptions(inp->in6p_moptions);
 }
 
-/* inf_pcbifgone: the interface IPV6_MULTICAST_IF chose is forgotten */
+/*
+ * inf_pcbifgone: the interface IPV6_MULTICAST_IF chose is forgotten, and
+ * the group memberships taken on it are left - as in_pcbmoptifgone(), the
+ * IPv4 counterpart: IPV6_LEAVE_GROUP could not name the interface any
+ * more. The last holder of a group cuts it loose from the offline
+ * interface first, so that in6_delmulti() sends no MLD Done.
+ */
 static void
 in6_pcbmoptifgone(struct inpcb *inp, const struct ifnet *ifp)
 {
-    if(inp->in6p_moptions && inp->in6p_moptions->im6o_multicast_ifp == ifp)
-        inp->in6p_moptions->im6o_multicast_ifp = NULL;
+    struct ip6_moptions *im6o = inp->in6p_moptions;
+    int i, j;
+
+    if(im6o == NULL)
+        return;
+    if(im6o->im6o_multicast_ifp == ifp)
+        im6o->im6o_multicast_ifp = NULL;
+    for(i = j = 0; i < im6o->im6o_num_memberships; i++) {
+        struct in6_multi *in6m = im6o->im6o_membership[i];
+
+        if(in6m->in6m_ifp != ifp && in6m->in6m_ifp != NULL) {
+            im6o->im6o_membership[j++] = in6m;
+            continue;
+        }
+        if(in6m->in6m_refcount == 1) {
+            in6m->in6m_timer = 0;
+            in6m->in6m_ifp = NULL;
+        }
+        in6_delmulti(in6m);
+    }
+    im6o->im6o_num_memberships = j;
 }
 
 /* ---- per packet: receive information, checksum, output ---- */

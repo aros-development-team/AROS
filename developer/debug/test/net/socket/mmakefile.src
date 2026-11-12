@@ -33,6 +33,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-localhost \
     cunit-net-mcast6 \
     cunit-net-mcast6if \
+    cunit-net-mcastgone \
     cunit-net-mld6 \
     cunit-net-modlib \
     cunit-net-modstop \
