@@ -78,6 +78,108 @@ notify_back(struct DNSSDSession *ds)
     return TRUE;
 }
 
+/*
+ * A name as text - labels between dots, "\." a dot and "\\" a backslash
+ * inside a label (RFC 1035 section 5.1), a trailing dot allowed - as DNS
+ * wire labels at wire + at, ended by the root label. The length of the
+ * whole, or -1 if it does not make a name.
+ */
+static LONG
+text_to_wire(const char *text, UBYTE *wire, LONG at)
+{
+    while (*text != '\0') {
+        LONG start = at++;
+
+        while (*text != '\0' && *text != '.') {
+            if (*text == '\\' && text[1] != '\0') {
+                text++;
+            }
+            if (at >= 255 || at - start > 63) {
+                return -1;
+            }
+            wire[at++] = (UBYTE)*text++;
+        }
+        if (at - start == 1) {
+            return -1;                  /* an empty label */
+        }
+        wire[start] = (UBYTE)(at - start - 1);
+        if (*text == '.') {
+            text++;
+        }
+    }
+    if (at == 0 || at >= 256) {
+        return -1;
+    }
+    wire[at++] = 0;
+    return at;
+}
+
+/* One label, as it is (an instance's name may hold dots), at wire + at;
+ * the length so far, or -1. */
+static LONG
+label_to_wire(const char *label, UBYTE *wire, LONG at)
+{
+    ULONG length = strnlen(label, 64);
+
+    if (length == 0 || length > 63 || at + 1 + length > 255) {
+        return -1;
+    }
+    wire[at] = (UBYTE)length;
+    memcpy(wire + at + 1, label, length);
+    return at + 1 + length;
+}
+
+/* An operation of session from msg, which names it; the tags every one
+ * takes. */
+static LONG
+start(struct DNSSDSession *session, struct DNSSDIPCMsg *msg,
+    struct TagItem *tags, DNSSDOperationRef *operation)
+{
+    struct DNSSDOperation *op;
+    LONG rc;
+
+    op = AllocVec(sizeof(*op), MEMF_PUBLIC | MEMF_CLEAR);
+    if (op == NULL) {
+        return DNSSD_ERR_NOMEM;
+    }
+    msg->dm_Interface = GetTagData(DNSSD_Interface, 0, tags);
+    msg->dm_UserData = GetTagData(DNSSD_UserData, 0, tags);
+    rc = dnssdSend(msg);
+    if (rc != DNSSD_OK) {
+        FreeVec(op);
+        return rc;
+    }
+    op->do_Session = session;
+    op->do_ID = msg->dm_Operation;
+    AddTail((struct List *)&session->ds_Operations, (struct Node *)op);
+    *operation = op;
+    return DNSSD_OK;
+}
+
+/*
+ * <type>.<domain> after wire + at (and "<subtype>._sub." before them): the
+ * offsets of the type and the domain, and the whole length, or -1.
+ */
+static LONG
+service_to_wire(const char *subtype, const char *type, const char *domain,
+    UBYTE *wire, LONG at, UWORD *typeOffset, UWORD *domainOffset)
+{
+    if (subtype != NULL) {
+        if ((at = label_to_wire(subtype, wire, at)) < 0 ||
+            (at = label_to_wire("_sub", wire, at)) < 0) {
+            return -1;
+        }
+    }
+    *typeOffset = (UWORD)at;
+    /* a type is two labels, "_name._tcp" or "_name._udp" */
+    if ((at = text_to_wire(type, wire, at)) < 0) {
+        return -1;
+    }
+    at--;                               /* the domain follows */
+    *domainOffset = (UWORD)at;
+    return text_to_wire(domain, wire, at);
+}
+
 static void
 init_msg(struct DNSSDIPCMsg *msg, const struct DNSSDSession *ds, UWORD command)
 {
@@ -318,43 +420,26 @@ init_msg(struct DNSSDIPCMsg *msg, const struct DNSSDSession *ds, UWORD command)
 {
     AROS_LIBFUNC_INIT
     struct DNSSDIPCMsg msg;
-    struct DNSSDOperation *op;
-    ULONG length;
-    LONG rc;
+    UBYTE wire[256];
+    LONG length;
 
     if (session == NULL || name == NULL || operation == NULL) {
         return DNSSD_ERR_BADPARAM;
     }
     *operation = NULL;
-    length = strlen(name);
-    if (length == 0 || length > 255) {
-        return DNSSD_ERR_BADPARAM;
-    }
-    op = AllocVec(sizeof(*op), MEMF_PUBLIC | MEMF_CLEAR);
-    if (op == NULL) {
-        return DNSSD_ERR_NOMEM;
+    length = text_to_wire(name, wire, 0);
+    if (length < 0) {
+        return DNSSD_ERR_BADNAME;
     }
     init_msg(&msg, session, DNSSD_IPC_LOOKUP);
-    msg.dm_Data = (UBYTE *)name;
+    msg.dm_Data = wire;
     msg.dm_DataSize = length;
     msg.dm_Family = GetTagData(DNSSD_Family, DNSSD_FAMILY_ANY, tags);
-    msg.dm_Interface = GetTagData(DNSSD_Interface, 0, tags);
     msg.dm_Timeout = GetTagData(DNSSD_Timeout, 3, tags);
-    msg.dm_UserData = GetTagData(DNSSD_UserData, 0, tags);
     if (msg.dm_Timeout < 1 || msg.dm_Timeout > 60) {
-        FreeVec(op);
         return DNSSD_ERR_BADPARAM;
     }
-    rc = dnssdSend(&msg);
-    if (rc != DNSSD_OK) {
-        FreeVec(op);
-        return rc;
-    }
-    op->do_Session = session;
-    op->do_ID = msg.dm_Operation;
-    AddTail((struct List *)&session->ds_Operations, (struct Node *)op);
-    *operation = op;
-    return DNSSD_OK;
+    return start(session, &msg, tags, operation);
     AROS_LIBFUNC_EXIT
 }
 
@@ -574,5 +659,171 @@ out:
         }
     }
     return DNSSD_OK;
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+
+    NAME */
+        AROS_LH4(LONG, DNSSD_BrowseA,
+
+/*  SYNOPSIS */
+        AROS_LHA(DNSSDSessionRef, session, A0),
+        AROS_LHA(CONST_STRPTR, type, A1),
+        AROS_LHA(DNSSDOperationRef *, operation, A2),
+        AROS_LHA(struct TagItem *, tags, A3),
+
+/*  LOCATION */
+        struct DNSSDIntern *, DNSSDBase, 12, DNSSD)
+
+/*  FUNCTION
+        Finds the instances of a service type ("_ipp._tcp") on the links,
+        until cancelled: DNSSD_EVENT_ADD for each instance on each link
+        (de_Instance, de_Type, de_Domain, de_Interface), DNSSD_EVENT_REMOVE
+        when it goes. What mdnsd knows already comes at once.
+
+    INPUTS
+        DNSSD_Domain - default "local"
+        DNSSD_Subtype - only the instances of this subtype ("_printer")
+        DNSSD_Interface - only this interface index
+        DNSSD_UserData - returned in the operation's events
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct DNSSDIPCMsg msg;
+    UBYTE wire[256];
+    LONG length;
+
+    if (session == NULL || type == NULL || operation == NULL) {
+        return DNSSD_ERR_BADPARAM;
+    }
+    *operation = NULL;
+    init_msg(&msg, session, DNSSD_IPC_BROWSE);
+    length = service_to_wire((CONST_STRPTR)GetTagData(DNSSD_Subtype, 0, tags),
+        type, (CONST_STRPTR)GetTagData(DNSSD_Domain, (IPTR)"local", tags),
+        wire, 0, &msg.dm_TypeOffset, &msg.dm_DomainOffset);
+    if (length < 0) {
+        return DNSSD_ERR_BADNAME;
+    }
+    msg.dm_Data = wire;
+    msg.dm_DataSize = length;
+    return start(session, &msg, tags, operation);
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+
+    NAME */
+        AROS_LH5(LONG, DNSSD_ResolveA,
+
+/*  SYNOPSIS */
+        AROS_LHA(DNSSDSessionRef, session, A0),
+        AROS_LHA(CONST_STRPTR, instance, A1),
+        AROS_LHA(CONST_STRPTR, type, A2),
+        AROS_LHA(DNSSDOperationRef *, operation, A3),
+        AROS_LHA(struct TagItem *, tags, A4),
+
+/*  LOCATION */
+        struct DNSSDIntern *, DNSSDBase, 13, DNSSD)
+
+/*  FUNCTION
+        What an instance (its own label, as Browse gave it in de_Instance)
+        of a type offers: DNSSD_EVENT_RESOLVED with the host (de_Target),
+        port, SRV priority and weight, the TXT record's data and every
+        address of the host known, each with its interface - again when
+        any of that changes, DNSSD_EVENT_REMOVE if the service goes. When
+        the time is up the operation ends (DNSSD_EVENT_END: DNSSD_OK if it
+        was resolved, DNSSD_ERR_TIMEOUT if not).
+
+    INPUTS
+        DNSSD_Domain - default "local"
+        DNSSD_Interface - only on this interface index
+        DNSSD_Timeout - seconds, 1 to 60, default 5
+        DNSSD_UserData - returned in the operation's events
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct DNSSDIPCMsg msg;
+    UBYTE wire[256];
+    LONG length;
+
+    if (session == NULL || instance == NULL || type == NULL ||
+        operation == NULL) {
+        return DNSSD_ERR_BADPARAM;
+    }
+    *operation = NULL;
+    init_msg(&msg, session, DNSSD_IPC_RESOLVE);
+    length = label_to_wire(instance, wire, 0);
+    if (length >= 0) {
+        length = service_to_wire(NULL, type,
+            (CONST_STRPTR)GetTagData(DNSSD_Domain, (IPTR)"local", tags),
+            wire, length, &msg.dm_TypeOffset, &msg.dm_DomainOffset);
+    }
+    if (length < 0) {
+        return DNSSD_ERR_BADNAME;
+    }
+    msg.dm_Data = wire;
+    msg.dm_DataSize = length;
+    msg.dm_Timeout = GetTagData(DNSSD_Timeout, 5, tags);
+    if (msg.dm_Timeout < 1 || msg.dm_Timeout > 60) {
+        return DNSSD_ERR_BADPARAM;
+    }
+    return start(session, &msg, tags, operation);
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+
+    NAME */
+        AROS_LH5(LONG, DNSSD_QueryRecordA,
+
+/*  SYNOPSIS */
+        AROS_LHA(DNSSDSessionRef, session, A0),
+        AROS_LHA(CONST_STRPTR, name, A1),
+        AROS_LHA(ULONG, rrtype, D0),
+        AROS_LHA(DNSSDOperationRef *, operation, A2),
+        AROS_LHA(struct TagItem *, tags, A3),
+
+/*  LOCATION */
+        struct DNSSDIntern *, DNSSDBase, 14, DNSSD)
+
+/*  FUNCTION
+        The records of a name and type (255 for every type) on the links:
+        DNSSD_EVENT_ADD for each (de_RRType, de_RData with the names in it
+        uncompressed, de_TTL, de_Interface), DNSSD_EVENT_REMOVE when it
+        goes - until cancelled, or until DNSSD_Timeout.
+
+    INPUTS
+        DNSSD_Interface - only on this interface index
+        DNSSD_Timeout - seconds, 1 to 60; none by default
+        DNSSD_UserData - returned in the operation's events
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct DNSSDIPCMsg msg;
+    UBYTE wire[256];
+    LONG length;
+
+    if (session == NULL || name == NULL || operation == NULL ||
+        rrtype == 0 || rrtype > 0xffff) {
+        return DNSSD_ERR_BADPARAM;
+    }
+    *operation = NULL;
+    length = text_to_wire(name, wire, 0);
+    if (length < 0) {
+        return DNSSD_ERR_BADNAME;
+    }
+    init_msg(&msg, session, DNSSD_IPC_QUERY);
+    msg.dm_Data = wire;
+    msg.dm_DataSize = length;
+    msg.dm_RRType = (UWORD)rrtype;
+    msg.dm_Timeout = GetTagData(DNSSD_Timeout, 0, tags);
+    if (msg.dm_Timeout > 60) {
+        return DNSSD_ERR_BADPARAM;
+    }
+    return start(session, &msg, tags, operation);
     AROS_LIBFUNC_EXIT
 }

@@ -103,6 +103,7 @@ net_up(struct MDNSDaemon *md, ULONG addressMask)
     /* An interface came, went or changed its address: the name is asked
      * for again with the addresses as they are now. */
     if (mdnsNetRescan(md)) {
+        mdnsCacheLinksChanged(md);
         mdnsDiscoveryReset(md);
         mdnsQueryReset(md);
         mdnsHostRestart(md);
@@ -319,7 +320,7 @@ main(void)
     port = CreateMsgPort();
     dport = CreateMsgPort();
     if (md->md_RxBuf == NULL || md->md_TxBuf == NULL || port == NULL ||
-        dport == NULL) {
+        dport == NULL || !mdnsCacheInit(md)) {
         if (md->md_RxBuf != NULL) {
             FreeMem(md->md_RxBuf, MDNS_MAX_PACKET);
         }
@@ -396,6 +397,8 @@ main(void)
 
         mdnsDiscoveryTick(md);
         mdnsQueryTick(md);
+        mdnsCacheTick(md);
+        dnssdServerTick(md);
         probing = FALSE;
         if (running && md->md_Socket >= 0) {
             /* the host's name first: no service is announced before it */
@@ -435,6 +438,7 @@ main(void)
     mdnsDiscoveryFree(md);
     dnssdServerFree(md);
     mdnsQueryFree(md);
+    mdnsCacheFree(md);
     mdnsdServiceClose();
     if (addressSignal >= 0) {
         FreeSignal(addressSignal);
