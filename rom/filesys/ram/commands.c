@@ -1906,8 +1906,8 @@ BOOL CmdSetComment(struct Handler *handler, struct Lock *lock,
 *
 */
 
-BOOL CmdRenameObject(struct Handler *handler, struct Lock *old_lock,
-   STRPTR old_name, struct Lock *new_lock, STRPTR new_name)
+static BOOL RenameObject(struct Handler *handler, struct Lock *old_lock,
+   STRPTR old_name, struct Lock *new_lock, STRPTR new_name, BOOL replace)
 {
    struct Object *parent, *object, *duplicate, *p;
    LONG error = 0;
@@ -1922,7 +1922,7 @@ BOOL CmdRenameObject(struct Handler *handler, struct Lock *old_lock,
       the target name */
 
    duplicate = GetObjectNoFollow(handler, new_lock, new_name, &parent);
-   if(duplicate && duplicate != object)
+   if(duplicate && duplicate != object && !replace)
       error = ERROR_OBJECT_EXISTS;
    if(parent == NULL)
    {
@@ -1957,6 +1957,24 @@ BOOL CmdRenameObject(struct Handler *handler, struct Lock *old_lock,
    if(error == 0)
       error = ramSecCheckObject(handler, parent, RAM_ACCESS_WRITE);
 
+   /* A replacement checks everything that could refuse the deletion of the
+      replaced file before anything changes: SetName() is then the only step
+      that can fail, and it fails with both names intact */
+
+   if(error == 0 && replace && ((struct Node *)object)->ln_Pri != ST_FILE)
+      error = ERROR_OBJECT_WRONG_TYPE;
+   if(error == 0 && replace && duplicate && duplicate != object)
+   {
+      if(((struct Node *)duplicate)->ln_Pri != ST_FILE)
+         error = ERROR_OBJECT_WRONG_TYPE;
+      else if(duplicate->lock != NULL)
+         error = ERROR_OBJECT_IN_USE;
+      else if((duplicate->protection & FIBF_DELETE) != 0)
+         error = ERROR_DELETE_PROTECTED;
+      if(error == 0)
+         error = ramSecCheckObject(handler, duplicate, RAM_ACCESS_DELETE);
+   }
+
    /* Give the object its new name */
 
    if(error == 0)
@@ -1967,6 +1985,19 @@ BOOL CmdRenameObject(struct Handler *handler, struct Lock *old_lock,
 
    if(error == 0)
    {
+      /* Delete the replaced file as AttemptDeleteObject() would. Nothing
+         else runs in the handler meanwhile, so no client sees the name
+         missing */
+
+      if(replace && duplicate && duplicate != object)
+      {
+         NotifyAll(handler, duplicate, FALSE);
+         UnmatchNotifyRequests(handler, duplicate);
+         AdjustExaminations(handler, duplicate);
+         DeleteObject(handler, duplicate);
+         duplicate = NULL;
+      }
+
       if(object->parent != parent)
       {
          /* Remove object from old parent and place it in new parent */
@@ -1998,6 +2029,58 @@ BOOL CmdRenameObject(struct Handler *handler, struct Lock *old_lock,
 
    SetIoErr(error);
    return error == 0;
+}
+
+
+
+BOOL CmdRenameObject(struct Handler *handler, struct Lock *old_lock,
+   STRPTR old_name, struct Lock *new_lock, STRPTR new_name)
+{
+   return RenameObject(handler, old_lock, old_name, new_lock, new_name,
+      FALSE);
+}
+
+
+
+/****i* ram.handler/CmdReplaceObject ***************************************
+*
+*   NAME
+*	CmdReplaceObject --
+*
+*   SYNOPSIS
+*	success = CmdReplaceObject(handler, old_lock, old_name,
+*	    new_lock, new_name)
+*
+*	BOOL CmdReplaceObject(struct Handler *, struct Lock *, STRPTR,
+*	    struct Lock *, STRPTR);
+*
+*   FUNCTION
+*	Renames a regular file, replacing a regular file that already has
+*	the new name. The replaced file must be neither locked nor delete
+*	protected. On failure neither file changes.
+*
+*   INPUTS
+*
+*   RESULT
+*
+*   EXAMPLE
+*
+*   NOTES
+*
+*   BUGS
+*
+*   SEE ALSO
+*	CmdRenameObject()
+*
+****************************************************************************
+*
+*/
+
+BOOL CmdReplaceObject(struct Handler *handler, struct Lock *old_lock,
+   STRPTR old_name, struct Lock *new_lock, STRPTR new_name)
+{
+   return RenameObject(handler, old_lock, old_name, new_lock, new_name,
+      TRUE);
 }
 
 

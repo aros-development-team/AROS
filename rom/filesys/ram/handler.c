@@ -332,6 +332,14 @@ LONG RAMMain(void)
                result = DOSFALSE;
             break;
 
+         case ACTION_REPLACE_OBJECT:
+
+            if(!CmdReplaceObject(handler, BADDR(packet->dp_Arg1),
+               BStr(handler, BADDR(packet->dp_Arg2)), BADDR(packet->dp_Arg3),
+               BStr2(handler, BADDR(packet->dp_Arg4))))
+               result = DOSFALSE;
+            break;
+
          case ACTION_RENAME_DISK:
 
             if(!CmdRenameDisk(handler, BStr(handler, BADDR(packet->dp_Arg1))))
@@ -547,6 +555,7 @@ static BOOL CheckNames(struct Handler *handler, struct DosPacket *packet)
       break;
 
    case ACTION_RENAME_OBJECT:
+   case ACTION_REPLACE_OBJECT:
       name = packet->dp_Arg2;
       name2 = packet->dp_Arg4;
       break;

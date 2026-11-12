@@ -76,6 +76,8 @@ BOOL CmdSetComment(struct Handler *handler, struct Lock *lock,
    const TEXT *name, const TEXT *comment);
 BOOL CmdRenameObject(struct Handler *handler, struct Lock *old_lock,
    STRPTR old_name, struct Lock *new_lock, STRPTR new_name);
+BOOL CmdReplaceObject(struct Handler *handler, struct Lock *old_lock,
+   STRPTR old_name, struct Lock *new_lock, STRPTR new_name);
 BOOL CmdRenameDisk(struct Handler *handler, STRPTR new_name);
 BOOL CmdSetDate(struct Handler *handler, struct Lock *lock, STRPTR name,
    struct DateStamp *date);
