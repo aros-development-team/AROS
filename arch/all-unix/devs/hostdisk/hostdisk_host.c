@@ -270,7 +270,7 @@ static ULONG InternalGetGeometry(int file, struct DriveGeometry *dg, struct Host
 
            /* If this routine is not implemented, use fstat() (worst case) */
            if (err != ENOSYS)
-               return error(err);
+               return err;
         }
 
         D(bug("hostdisk: Image file length: %ld\n", st.st_size));
