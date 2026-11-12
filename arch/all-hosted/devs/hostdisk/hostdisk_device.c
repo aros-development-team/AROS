@@ -60,6 +60,8 @@ static int HostDisk_Cleanup(struct HostDiskBase *hdskBase)
 /****************************************************************************************/
 
 static void unitentry(struct IOExtTD *iotd);
+static void addchangeint(struct unit *unit, struct IOExtTD *iotd);
+static void remchangeint(struct unit *unit, struct IOExtTD *iotd);
 
 static void freeUnit(struct unit *unit)
 {
@@ -256,6 +258,17 @@ AROS_LH1(void, beginio,
             iotd->iotd_Req.io_Error = 0;
             break;
 
+        case TD_ADDCHANGEINT:
+            iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
+            iotd->iotd_Req.io_Error = 0;
+            addchangeint((struct unit *)iotd->iotd_Req.io_Unit, iotd);
+            return;
+
+        case TD_REMCHANGEINT:
+            remchangeint((struct unit *)iotd->iotd_Req.io_Unit, iotd);
+            iotd->iotd_Req.io_Error = 0;
+            break;
+
         case CMD_READ:
         case CMD_WRITE:
         case TD_SEEK:
@@ -270,8 +283,6 @@ AROS_LH1(void, beginio,
         case NSCMD_TD_SEEK64:
         case TD_CHANGENUM:
         case TD_CHANGESTATE:
-        case TD_ADDCHANGEINT:
-        case TD_REMCHANGEINT:
         case TD_GETGEOMETRY:
         case TD_EJECT:
         case TD_PROTSTATUS:
@@ -482,10 +493,12 @@ void eject(struct unit *unit, BOOL eject)
 
     unit->changecount++;
 
+    Forbid();
     ForeachNode(&unit->changeints, iotd)
     {
         Cause((struct Interrupt *)iotd->iotd_Req.io_Data);
     }
+    Permit();
 }
 
 /****************************************************************************************/
@@ -604,16 +617,6 @@ static void unitentry(struct IOExtTD *iotd)
                 case TD_CHANGESTATE:
                     err = 0;
                     iotd->iotd_Req.io_Actual = (unit->file == INVALID_HANDLE_VALUE);
-                    break;
-
-                case TD_ADDCHANGEINT:
-                    addchangeint(unit, iotd);
-                    err = 0;
-                    break;
-
-                case TD_REMCHANGEINT:
-                    remchangeint(unit, iotd);
-                    err = 0;
                     break;
 
                 case TD_GETGEOMETRY:
