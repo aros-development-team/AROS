@@ -408,6 +408,7 @@ static BOOL usb2otg_core_reset_recover(struct USB2OTGUnit *USBUnit, int wedged_c
             asm volatile("yield\n");
         wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
     }
+    usb2otg_iso_reset(USBUnit);
 
     /*
      * The whole bus re-enumerates after the power cycle and device
@@ -763,7 +764,7 @@ static void usb2otg_split_giveup_recover(struct USB2OTGUnit *USBUnit, int chan,
         {
             for (i = 0; i < 5; i++)
             {
-                if (!(USBUnit->hu_BurnedChannels & (1 << candidates[i])))
+                if (!((USBUnit->hu_BurnedChannels | USBUnit->hu_IsoChanMask) & (1 << candidates[i])))
                 {
                     USBUnit->hu_CtrlSplitChan = candidates[i];
                     break;
@@ -1115,7 +1116,7 @@ static void usb2otg_sof_gate_try(struct USB2OTGUnit *USBUnit)
 #if !USB2OTG_SOF_GATE
     return;
 #endif
-    if (USBUnit->hu_SofGated ||
+    if (USBUnit->hu_SofGated || USBUnit->hu_IsoChanMask ||
         !IsListEmpty(&USBUnit->hu_IntXFerScheduled) ||
         !IsListEmpty(&USBUnit->hu_CtrlXFerQueue) ||
         !IsListEmpty(&USBUnit->hu_BulkXFerQueue))
@@ -1253,6 +1254,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
     if (otg_RegVal & USB2OTG_INTRCORE_DMASTARTOFFRAME)
     {
         handle_SOF(USBUnit, SysBase, frnm);
+        usb2otg_iso_sof(USBUnit, frnm);
         usb2otg_sof_gate_try(USBUnit);
     }
 
@@ -1291,6 +1293,14 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                 uint32_t intr = rd32le(USB2OTG_CHANNEL_REG(chan, INTR));
 
                 wr32le(USB2OTG_CHANNEL_REG(chan, INTR), intr);
+
+                /* A channel lent to iso, once its own work is done */
+                if ((USBUnit->hu_IsoChanMask & (1 << chan)) &&
+                    USBUnit->hu_Channel[chan].hc_Request == NULL)
+                {
+                    usb2otg_iso_chan_irq(USBUnit, chan, intr);
+                    continue;
+                }
                 /*
                  * IRQ handler runs on CPU 0 with interrupts disabled —
                  * no other code can preempt us here. The lock is only
@@ -2758,6 +2768,8 @@ static BOOL usb2otg_process_pending(struct USB2OTGUnit *otg_Unit)
         }
         FNAME_DEV(TermIO)(req, otg_Unit->hu_USB2OTGBase);
     }
+
+    usb2otg_iso_pending(otg_Unit);
 
     if (!IsListEmpty(&otg_Unit->hu_CtrlXFerQueue))
         FNAME_DEV(ScheduleCtrlTDs)(otg_Unit);

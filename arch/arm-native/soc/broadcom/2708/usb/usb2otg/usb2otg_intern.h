@@ -217,6 +217,74 @@ struct USBNSDeviceQueryResult
     const UWORD         *SupportedCommands;     /* 0 terminated list of cmd's   */
 };
 
+/*
+ * Isochronous transfers run on hardware channels lent by the bulk/INT
+ * pools while an iso endpoint is bound to them; the schedulers skip a
+ * lent channel (hu_IsoChanMask). One endpoint per channel, so a headset
+ * can stream both ways.
+ */
+#define USB2OTG_ISO_CHANS       2
+#define USB2OTG_ISO_BUFSIZE     3072    /* high-bandwidth: 3 x 1024 */
+#define USB2OTG_RT_SLOTS        4       /* packets a realtime stream keeps queued */
+
+struct USB2OTGIso
+{
+    struct List         is_Queue;       /* UHCMD_ISOXFER for the bound endpoint */
+    struct IOUsbHWReq   *is_Req;        /* request whose packets are going out */
+    struct IOUsbHWReq   *is_AbortReq;   /* is_Req, to be ended at the next halt */
+    ULONG               is_Offset;      /* bytes of is_Req handed to the channel */
+    ULONG               is_Pending;     /* channel intr bits seen before the halt */
+    UWORD               is_Next;        /* HFNUM the next packet is due */
+    UWORD               is_Len;         /* bytes of is_Req in this packet */
+    UWORD               is_Size;        /* XFERSIZE armed */
+    UWORD               is_PLen;        /* packet bytes: OUT to send, IN room */
+    UWORD               is_POff;        /* split: packet bytes sent/received */
+    UWORD               is_Chunk;       /* split: OUT bytes armed */
+    UWORD               is_At;          /* split: HFNUM of the next transaction */
+    UWORD               is_Frame;       /* split: frame of the packet */
+    UBYTE               is_Split;
+    UBYTE               is_Phase;
+    UBYTE               is_HubAddr;
+    UBYTE               is_HubPort;
+    UBYTE               is_Fresh;       /* bound, the channel not yet cleared */
+    UBYTE               is_OddFlip;     /* direct: this core's ODDFRM sense */
+    /* Census, reported when the channel is handed back */
+    ULONG               is_Pkts;
+    ULONG               is_Lost;
+    ULONG               is_DropOut;     /* split OUT start-split failed */
+    ULONG               is_DropSS;      /* split IN start-split failed */
+    ULONG               is_DropCS;      /* split IN complete-split failed */
+    ULONG               is_DropLate;    /* split sequence ran out of its frame */
+    UBYTE               is_Chan;
+    UBYTE               is_Bound;
+    UBYTE               is_Armed;
+    UBYTE               is_Dev;
+    UBYTE               is_Ep;
+    UBYTE               is_Dir;
+    UBYTE               is_Idle;        /* SOFs with nothing queued */
+    UBYTE               is_Age;         /* SOFs the armed packet has waited */
+    UBYTE               *is_Buf;        /* 64-aligned DMA bounce */
+};
+
+struct USB2OTGRTSlot
+{
+    struct IOUsbHWReq       rs_Req;     /* first: the done list hands it back */
+    struct IOUsbHWBufferReq rs_BufReq;
+    struct USB2OTGRTIso     *rs_RT;
+    UBYTE                   *rs_Buf;
+    BOOL                    rs_Busy;
+};
+
+struct USB2OTGRTIso
+{
+    struct IOUsbHWRTIso     *rt_URTI;
+    struct IOUsbHWBufferReq rt_BufReq;
+    ULONG                   rt_PktSize;
+    BOOL                    rt_Running;
+    BOOL                    rt_Dying;   /* removed: freed once no slot is busy */
+    struct USB2OTGRTSlot    rt_Slots[USB2OTG_RT_SLOTS];
+};
+
 struct USB2OTGUnit
 {
     struct Unit         hu_Unit;
@@ -303,6 +371,12 @@ struct USB2OTGUnit
     /* Wake lateness in frames: <1, <4, <16, more. */
     ULONG               hu_SofGateLate[4];
     ULONG               hu_SofGateLateMax;
+    /* Isochronous: see USB2OTG_ISO_CHANS */
+    struct USB2OTGIso   hu_Iso[USB2OTG_ISO_CHANS];
+    APTR                hu_IsoBufRaw;
+    UBYTE               hu_IsoChanMask;         /* hardware channels lent to iso */
+    struct List         hu_IsoDone;             /* finished iso requests and RT slots */
+    struct SignalSemaphore hu_IsoSem;           /* RT handler commands vs. completions */
     struct Task         *hu_WorkerTask;
     struct MsgPort      *hu_WorkerPort;
     cpumask_t           hu_WorkerAffinity;
@@ -1403,6 +1477,14 @@ void                    FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit,
 void                    FNAME_DEV(ScheduleCtrlTDs)(struct USB2OTGUnit *);
 void                    FNAME_DEV(ScheduleBulkTDs)(struct USB2OTGUnit *);
 void                    FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *);
+BOOL                    usb2otg_iso_init(struct USB2OTGUnit *);
+WORD                    FNAME_DEV(cmdIsoXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+WORD                    FNAME_DEV(cmdRTIso)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+BOOL                    usb2otg_iso_abort(struct USB2OTGUnit *, struct IOUsbHWReq *);
+void                    usb2otg_iso_sof(struct USB2OTGUnit *, ULONG hfnum);
+void                    usb2otg_iso_chan_irq(struct USB2OTGUnit *, int chan, ULONG intr);
+void                    usb2otg_iso_pending(struct USB2OTGUnit *);
+void                    usb2otg_iso_reset(struct USB2OTGUnit *);
 BOOL                    FNAME_DEV(SetupChannel)(struct USB2OTGUnit *, int chan);
 void                    FNAME_DEV(StartChannel)(struct USB2OTGUnit *, int chan, int quick);
 int                     FNAME_DEV(AdvanceChannel)(struct USB2OTGUnit *, int chan);

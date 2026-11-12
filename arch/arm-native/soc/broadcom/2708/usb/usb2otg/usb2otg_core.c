@@ -23,6 +23,11 @@ static const UWORD __suported_cmds[] =
     UHCMD_CONTROLXFER,
     UHCMD_INTXFER,
     UHCMD_BULKXFER,
+    UHCMD_ISOXFER,
+    UHCMD_ADDISOHANDLER,
+    UHCMD_REMISOHANDLER,
+    UHCMD_STARTRTISO,
+    UHCMD_STOPRTISO,
     NSCMD_DEVICEQUERY,
     0
 };
@@ -549,7 +554,7 @@ WORD FNAME_DEV(cmdQueryDevice)(struct IOUsbHWReq *ioreq,
 
     if (((tag = FindTagItem(UHA_Capabilities, taglist)) != NULL) && (tag->ti_Data))
     {
-        *((IPTR *) tag->ti_Data) = UHCF_USB20;
+        *((IPTR *) tag->ti_Data) = UHCF_USB20 | UHCF_ISO | UHCF_RT_ISO;
         count++;
     }
     ioreq->iouh_Actual = count;

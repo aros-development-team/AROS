@@ -91,7 +91,7 @@ static int usb2otg_claim_bulk_channel(struct USB2OTGUnit *otg_Unit,
     for (i = 0; i < 2; i++)
     {
         int chan = bulk_chans[i];
-        if (otg_Unit->hu_DeadChannels & (1 << chan))
+        if ((otg_Unit->hu_DeadChannels | otg_Unit->hu_IsoChanMask) & (1 << chan))
             continue;
         if (otg_Unit->hu_BulkOwnerDev[i] != req->iouh_DevAddr)
             continue;
@@ -115,7 +115,7 @@ static int usb2otg_claim_bulk_channel(struct USB2OTGUnit *otg_Unit,
         int chan = bulk_chans[i];
         UBYTE owner = otg_Unit->hu_BulkOwnerDev[i];
 
-        if (otg_Unit->hu_DeadChannels & (1 << chan))
+        if ((otg_Unit->hu_DeadChannels | otg_Unit->hu_IsoChanMask) & (1 << chan))
             continue;
         if (otg_Unit->hu_Channel[chan].hc_Request != NULL)
             continue;
@@ -1725,8 +1725,8 @@ static int usb2otg_int_pool_free_count(struct USB2OTGUnit *otg_Unit,
     {
         if (chan == otg_Unit->hu_CtrlSplitChan)
             continue;
-        if ((otg_Unit->hu_DeadChannels | otg_Unit->hu_BurnedChannels) &
-            (1 << chan))
+        if ((otg_Unit->hu_DeadChannels | otg_Unit->hu_BurnedChannels |
+             otg_Unit->hu_IsoChanMask) & (1 << chan))
             continue;
         if ((chan >= CHAN_INT_DIRECT_FIRST) != direct)
             continue;
@@ -1756,8 +1756,8 @@ void FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *otg_Unit)
         if (chan == otg_Unit->hu_CtrlSplitChan)
             continue;
 
-        if ((otg_Unit->hu_DeadChannels | otg_Unit->hu_BurnedChannels) &
-            (1 << chan))
+        if ((otg_Unit->hu_DeadChannels | otg_Unit->hu_BurnedChannels |
+             otg_Unit->hu_IsoChanMask) & (1 << chan))
             continue;
 
         /* If channel is in use unlock Enable() and continue checking, otherwise stay in Disable() state for a while */

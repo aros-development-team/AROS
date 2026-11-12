@@ -267,6 +267,8 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     NewList(&USB2OTGBase->hd_Unit->hu_PeriodicTDQueue);
                                     NewList(&USB2OTGBase->hd_Unit->hu_FinishedXfers);
                                     KrnSpinInit(&USB2OTGBase->hd_Unit->hu_Lock);
+                                    if (!usb2otg_iso_init(USB2OTGBase->hd_Unit))
+                                        return FALSE;
 
                                     USB2OTGBase->hd_Unit->hu_PendingInt.is_Node.ln_Type = NT_INTERRUPT;
                                     USB2OTGBase->hd_Unit->hu_PendingInt.is_Node.ln_Name = "OTG2USB Pending Work Interrupt";
@@ -610,6 +612,17 @@ AROS_LH1(void, FNAME_DEV(BeginIO),
                 ret = FNAME_DEV(cmdIntXFer)(ioreq, otg_Unit, USB2OTGBase);
                 break;
 
+            case UHCMD_ISOXFER:
+                ret = FNAME_DEV(cmdIsoXFer)(ioreq, otg_Unit, USB2OTGBase);
+                break;
+
+            case UHCMD_ADDISOHANDLER:
+            case UHCMD_REMISOHANDLER:
+            case UHCMD_STARTRTISO:
+            case UHCMD_STOPRTISO:
+                ret = FNAME_DEV(cmdRTIso)(ioreq, otg_Unit, USB2OTGBase);
+                break;
+
             default:
                 ret = IOERR_NOCMD;
                 break;
@@ -681,6 +694,10 @@ AROS_LH1(LONG, FNAME_DEV(AbortIO),
         const char *loc = "not-found";
         int chan_at = -1;
         BOOL aborted = FALSE;
+
+        /* Iso requests are replied aborted by their own done list */
+        if (ioreq->iouh_Req.io_Command == UHCMD_ISOXFER)
+            return usb2otg_iso_abort(unit, ioreq) ? 0 : -1;
 
         if (unit != NULL)
         {
