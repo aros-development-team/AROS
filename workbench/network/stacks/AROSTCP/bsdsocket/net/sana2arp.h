@@ -116,6 +116,7 @@ void arp_dad_linkup(const struct ifnet *ifp);
 void arp_dad_forget(struct in_ifaddr *ia);
 void arp_dad_reload(int begin);
 void arp_fasttimo(void);
+struct rtentry;
 #endif
 
 #endif /* !IF_ARPSANA_H */

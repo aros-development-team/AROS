@@ -1019,11 +1019,19 @@ locals before summing rather than reading them through a `u_int16_t *` taken fro
   issuing a SANA-II write inline, `sana_output` enqueues the packet on `if_snd` and `sana_start`
   feeds queued packets into the pool of write requests as earlier ones complete, so a burst of sends
   cannot drain the request or cluster pool and wedge the interface. `sana2arp.c` implements IPv4
-  ARP with a **per-interface** ARP table (each `sana_softc` has its own `ss_arp.table` under
+  ARP with a **per-interface** ARP table (each `sana_softc` has its own `ss_arp_table` under
   `ARPTAB_LOCK`). While an address is resolved, up to `ARP_MAXHOLD` (16) packets are queued on its
   entry (`at_hold`, chained through `m_nextpkt`, oldest dropped first) and all are sent when the reply
   comes, so the fragments of a datagram all leave; the request is sent again at most once a second
   (RFC 1122 section 2.3.2.1), not for every packet queued.
+  An entry's reachability is checked as IPv6's neighbour unreachability detection does (RFC 4861
+  section 7.3; RFC 1122's unicast poll): confirmed by an ARP reply to us, it is reachable for 30 s,
+  then stale; used while stale it waits 5 s for a confirmation, then is asked
+  with up to 3 ARP requests sent to its hardware address, a second apart; unanswered, the entry goes
+  and the next packet resolves the address again by broadcast. An entry not used is never probed.
+  Before, a used entry never aged: a neighbour that changed its hardware address without
+  announcing it was sent to at the old one for as long as traffic went to it. The times run on ARP's
+  monotonic clock (`arp_ticks`, fast ticks), as conflict detection's.
 - **IPv4 address conflict detection** (RFC 5227, as NetBSD; `sana2arp.c` `arp_dad_*`). An address
   added to an ARP interface - by hand, from `db/interfaces`, by DHCP or by autoip - is tentative
   (`IN_IFF_TENTATIVE` in `ia4_flags`) until `net.inet.ip.dad_count` (3) ARP probes from 0.0.0.0,
