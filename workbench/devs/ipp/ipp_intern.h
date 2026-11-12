@@ -43,6 +43,9 @@ struct IPPUnit {
     ULONG iu_JobId;
     BOOL iu_Started;                    /* the request is on its way: something was written */
     BOOL iu_Failed;
+    BOOL iu_Refused;                    /* the printer answered that it would not take the job */
+    BOOL iu_Ended;                      /* CMD_UPDATE finished the job */
+    BOOL iu_Unconfirmed;                /* all of it went out, but the printer did not say it took it */
     ULONG iu_Bytes;
     struct IPPConfig iu_Config;
     struct IPPTarget iu_Target;
@@ -83,6 +86,7 @@ BOOL IPP_Resolve(struct IPPBase *IPPBase, struct IPPUnit *iu);
 BOOL IPP_BeginJob(struct IPPBase *IPPBase, struct IPPUnit *iu, ULONG id);
 BOOL IPP_Send(struct IPPBase *IPPBase, struct IPPUnit *iu, const UBYTE *data, LONG len);
 BOOL IPP_EndJob(struct IPPBase *IPPBase, struct IPPUnit *iu);
+void IPP_ReadRefusal(struct IPPBase *IPPBase, struct IPPUnit *iu);
 void IPP_Disconnect(struct IPPBase *IPPBase, struct IPPUnit *iu);
 
 #endif /* IPP_INTERN_H */
