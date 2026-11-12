@@ -106,19 +106,19 @@ ULONG Host_Open(struct unit *Unit)
     int err;
 
     D(bug("hostdisk: Host_Open(%s)\n", Unit->filename));
-    Unit->flags = 0;
+    Unit->flags &= ~UNIT_READONLY;
 
     HostLib_Lock();
 
-    Unit->file = hdskBase->iface->open(Unit->filename, O_RDWR, 0755, &err);
+    Unit->file = hdskBase->iface->open(Unit->filename, O_RDWR, 0755);
     AROS_HOST_BARRIER
     err = *hdskBase->errnoPtr;
 
-    if (err == EBUSY || err == EROFS)
+    if (Unit->file == -1 && (err == EBUSY || err == EROFS || err == EACCES))
     {
         /* This allows to work on Darwin, at least in read-only mode */
         D(bug("hostdisk: EBUSY, retrying with read-only access\n", Unit->filename, Unit->file, err));
-        Unit->flags = UNIT_READONLY;
+        Unit->flags |= UNIT_READONLY;
 
         Unit->file = hdskBase->iface->open(Unit->filename, O_RDONLY, 0755);
         AROS_HOST_BARRIER
