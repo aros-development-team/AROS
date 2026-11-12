@@ -202,7 +202,7 @@ ULONG Host_Seek(struct unit *Unit, ULONG pos)
 ULONG Host_Seek64(struct unit *Unit, ULONG pos, ULONG pos_hi)
 {
     struct HostDiskBase *hdskBase = Unit->hdskBase;
-    int res;
+    off_t res;
 
     D(bug("hostdisk: Seek to block 0x%08X%08X (%llu)\n", pos_hi, pos, (((UQUAD)pos_hi) << 32) + pos));
 
