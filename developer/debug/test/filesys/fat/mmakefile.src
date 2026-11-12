@@ -46,3 +46,13 @@ USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
 %build_prog mmake=test-fat-writedate \
 	files="fatwritedate" \
 	progname=fatwritedate targetdir=$(AROS_TESTS)/filesys/fat
+
+#MM- test : test-fat-replace-host
+#MM- test-quick : test-fat-replace-host-quick
+
+#MM
+test-fat-replace-host:
+	$(PYTHON) $(SRCDIR)/$(CURDIR)/replace_host.py --cc "$(HOST_CC)"
+
+#MM
+test-fat-replace-host-quick: test-fat-replace-host

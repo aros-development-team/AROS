@@ -41,6 +41,7 @@ FILES := \
     readargs \
     readitem \
     readitemloop \
+    replaceobject \
     runcommand \
     run_redirection \
     rwverify \
@@ -98,5 +99,15 @@ USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
 %build_progs mmake=test-dos-yes-cunit \
     files=$(CUNITSTDCTESTFILES) targetdir=$(CUNITEXEDIR) \
     uselibs="cunit posixc"
+
+#MM- test-dos : test-dos-replaceobject-host
+#MM- test-dos-quick : test-dos-replaceobject-host-quick
+
+#MM
+test-dos-replaceobject-host:
+	$(PYTHON) $(SRCDIR)/$(CURDIR)/replaceobject_host.py --cc "$(HOST_CC)"
+
+#MM
+test-dos-replaceobject-host-quick: test-dos-replaceobject-host
 
 %common

@@ -1,0 +1,13 @@
+# Copyright (C) 2026 John KNIPPER <code@jkn.me>.
+# Distributed under the AROS Public License, version 1.1.
+include $(SRCDIR)/config/aros.cfg
+
+#MM- test-filesys : test-filesys-ram-replace
+#MM- test-filesys-quick : test-filesys-ram-replace-quick
+
+#MM
+test-filesys-ram-replace:
+	$(PYTHON) $(SRCDIR)/$(CURDIR)/replace_host.py --cc "$(HOST_CC)"
+
+#MM
+test-filesys-ram-replace-quick: test-filesys-ram-replace
