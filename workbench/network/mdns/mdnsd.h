@@ -95,6 +95,7 @@ struct MDNSKnownAnswer
 
 struct MDNSDiscovery;
 struct MDNSQueryState;
+struct MDNSCache;
 struct DNSSDServer;
 
 /* The daemon has one task and one of these. */
@@ -163,6 +164,7 @@ struct MDNSDaemon
 
     struct MDNSDiscovery   *md_Discovery;
     struct MDNSQueryState  *md_Query;
+    struct MDNSCache       *md_Cache;
     struct DNSSDServer     *md_DNSSD;   /* dnssd.library's sessions */
     struct MsgPort         *md_DNSSDPort;
     ULONG                   md_DaemonID;
@@ -215,6 +217,53 @@ void mdnsDiscoveryRelease(struct MDNSDaemon *md, ULONG taskID);
 void mdnsDiscoveryCancel(struct MDNSDaemon *md);
 void mdnsDiscoveryFree(struct MDNSDaemon *md);
 
+/* mdns_cache.c: the records heard on the links and the questions that
+ * keep them. */
+#ifndef MDNS_CACHE_BYTES
+#if defined(__mc68000__)
+#define MDNS_CACHE_BYTES    (24 * 1024)
+#else
+#define MDNS_CACHE_BYTES    (128 * 1024)
+#endif
+#endif
+#define MDNS_CACHE_LOCAL    1       /* one of the host's own records */
+
+struct MDNSCacheEntry
+{
+    struct MinNode  ce_Node;
+    ULONG           ce_Link;        /* interface index it was heard on */
+    ULONG           ce_Received;    /* mdnsTicks() */
+    ULONG           ce_Expires;     /* mdnsTicks() */
+    ULONG           ce_TTL;         /* seconds, as received */
+    ULONG           ce_Next;        /* the next refresh, 0 not set */
+    ULONG           ce_Size;        /* bytes allocated */
+    UBYTE          *ce_Name;        /* wire labels, uncompressed */
+    UBYTE          *ce_Data;        /* RDATA, its names expanded */
+    UWORD           ce_Type;
+    UWORD           ce_NameLength;
+    UWORD           ce_DataLength;
+    UBYTE           ce_Flags;
+    UBYTE           ce_Refresh;     /* refreshes asked: 0-4 */
+};
+
+/* Told of a record that matches a watch as it comes (added) and goes. */
+typedef void (*MDNSCacheNotify)(APTR data, const struct MDNSCacheEntry *entry,
+    BOOL added);
+
+BOOL mdnsCacheInit(struct MDNSDaemon *md);
+void mdnsCacheFree(struct MDNSDaemon *md);
+void mdnsCacheRecord(const struct MDNSDaemon *md, const UBYTE *pkt, LONG length,
+    LONG offset, ULONG link, BOOL local);
+void mdnsCacheTick(struct MDNSDaemon *md);
+void mdnsCacheLinksChanged(const struct MDNSDaemon *md);
+APTR mdnsCacheWatch(const struct MDNSDaemon *md, const UBYTE *name, UWORD type,
+    ULONG link, MDNSCacheNotify notify, APTR data);
+void mdnsCacheUnwatch(struct MDNSDaemon *md, APTR watch);
+LONG mdnsWireNameLength(const UBYTE *name);
+BOOL mdnsWireNameEqual(const UBYTE *a, const UBYTE *b);
+LONG mdnsWireNameRead(const UBYTE *pkt, LONG length, LONG offset, UBYTE *name);
+BOOL mdnsWireNameFromText(const char *text, UBYTE *name);
+
 /* mdns_query.c: generic record questions and their event queues. */
 LONG mdnsQueryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg);
 void mdnsQueryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
@@ -228,17 +277,11 @@ void mdnsQueryRelease(struct MDNSDaemon *md, ULONG owner);
 void mdnsQueryReap(struct MDNSDaemon *md);
 void mdnsQueryCancel(struct MDNSDaemon *md);
 void mdnsQueryFree(struct MDNSDaemon *md);
-/* A question of the daemon's own: each answering record, then (record NULL)
- * the end, with its result. */
-typedef void (*MDNSQuerySink)(APTR data, const struct MDNSRecordEvent *record,
-    LONG result);
-LONG mdnsQueryStartSink(struct MDNSDaemon *md, CONST_STRPTR name, UWORD type,
-    UWORD timeout, MDNSQuerySink sink, APTR data, APTR *handle);
-void mdnsQueryStopSink(struct MDNSDaemon *md, APTR handle);
 
 /* dnssd_server.c: dnssd.library's sessions and operations. */
 void dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg);
 void dnssdServerReap(struct MDNSDaemon *md);
+void dnssdServerTick(struct MDNSDaemon *md);
 void dnssdServerCancel(struct MDNSDaemon *md);
 void dnssdServerFree(struct MDNSDaemon *md);
 

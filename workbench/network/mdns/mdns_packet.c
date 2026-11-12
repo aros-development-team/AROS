@@ -156,6 +156,9 @@ handle_packet(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
         if (i < answers || i >= (UWORD)(answers + authorities)) {
             mdnsRegHandleRecord(md, &record, pkt, pktlen);
             if (srcport == MDNS_DNS_PORT && ntohs(hdr->id) == 0) {
+                mdnsCacheRecord(md, pkt, pktlen, offset,
+                    md->md_SendIf >= 0 ? md->md_Ifs[md->md_SendIf].mi_Index : 0,
+                    FALSE);
                 mdnsDiscoveryRecord(md, &record, pkt, pktlen, offset);
                 mdnsQueryRecord(md, &record, pkt, pktlen);
             }
@@ -219,6 +222,8 @@ mdnsReflectPacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
             break;
         }
         if (i < answers || i >= (UWORD)(answers + authorities)) {
+            mdnsCacheRecord(md, pkt, pktlen, offset,
+                md->md_Ifs[ifindex].mi_Index, TRUE);
             if (consumers & MDNS_REFLECT_DISCOVERY) {
                 mdnsDiscoveryRecord(md, &record, pkt, pktlen, offset);
             }

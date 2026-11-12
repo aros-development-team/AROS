@@ -19,9 +19,7 @@
 struct QuerySession
 {
     APTR handle;
-    ULONG owner;                /* 0: the daemon's own (sink) */
-    MDNSQuerySink sink;         /* records go here, not to the queue */
-    APTR sinkData;
+    ULONG owner;
     char name[256];
     UWORD type;
     UWORD head, count;
@@ -80,9 +78,6 @@ wake(struct QuerySession *session, LONG result)
 {
     struct MDNSEventRequest *request = session->request;
 
-    if (session->sink != NULL) {
-        return;
-    }
     if (request == NULL) {
         return;
     }
@@ -111,12 +106,6 @@ enqueue(struct QuerySession *session, const struct MDNSRecordEvent *event)
     UWORD i;
 
     if (session->failed) {
-        return;
-    }
-    /* A sink gets every record as it comes; it ends with its deadline, not
-     * with the first answer: a name may have several addresses. */
-    if (session->sink != NULL) {
-        session->sink(session->sinkData, event, MDNS_OK);
         return;
     }
     for (i = 0; i < session->count; i++) {
@@ -435,13 +424,6 @@ mdnsQueryTick(struct MDNSDaemon *md)
             session->ended = TRUE;
             session->endResult = MDNSERR_TIMEOUT;
             wake(session, MDNSERR_TIMEOUT);
-            if (session->sink != NULL) {
-                MDNSQuerySink sink = session->sink;
-                APTR data = session->sinkData;
-
-                memset(session, 0, sizeof(*session));
-                sink(data, NULL, MDNSERR_TIMEOUT);
-            }
             continue;
         }
         if (md->md_Socket < 0 || md->md_IfCount == 0 ||
@@ -503,8 +485,7 @@ mdnsQueryReap(struct MDNSDaemon *md)
     for (i = 0; i < QUERY_SESSIONS; i++) {
         struct QuerySession *session = &state->sessions[i];
 
-        if (session->handle != NULL && session->owner != 0 &&
-            FindTaskByPID(session->owner) == NULL) {
+        if (session->handle != NULL && FindTaskByPID(session->owner) == NULL) {
             memset(session, 0, sizeof(*session));
         }
     }
@@ -521,77 +502,6 @@ mdnsQueryCancel(struct MDNSDaemon *md)
     }
     for (i = 0; i < QUERY_SESSIONS; i++) {
         wake(&state->sessions[i], MDNSERR_NOENGINE);
-    }
-}
-
-/*
- * A question of the daemon's own (dnssd.library's operations): every record
- * that answers it is given to sink as it comes, and when timeout seconds are
- * up sink is called once more with no record and the session is gone. The
- * handle stops it before then (mdnsQueryStopSink(): sink is not called).
- */
-LONG
-mdnsQueryStartSink(struct MDNSDaemon *md, CONST_STRPTR name, UWORD type,
-    UWORD timeout, MDNSQuerySink sink, APTR data, APTR *handle)
-{
-    struct MDNSQueryState *state = md->md_Query;
-    struct QuerySession *session = NULL;
-    LONG i, rc;
-
-    if (name == NULL || type == 0 || sink == NULL || timeout == 0 ||
-        timeout > 60) {
-        return MDNSERR_BADPARAM;
-    }
-    if (state == NULL) {
-        state = AllocMem(sizeof(*state), MEMF_CLEAR);
-        if (state == NULL) {
-            return MDNSERR_NOMEM;
-        }
-        state->nextHandle = 1;
-        md->md_Query = state;
-    }
-    for (i = 0; i < QUERY_SESSIONS; i++) {
-        if (state->sessions[i].handle == NULL) {
-            session = &state->sessions[i];
-            break;
-        }
-    }
-    if (session == NULL || state->nextHandle == 0) {
-        return MDNSERR_BUSY;
-    }
-    memset(session, 0, sizeof(*session));
-    rc = normalize_name(session->name, sizeof(session->name), name);
-    if (rc != MDNS_OK) {
-        return rc;
-    }
-    session->handle = (APTR)state->nextHandle++;
-    session->type = type;
-    session->timed = TRUE;
-    session->deadline = mdnsTicks() + (ULONG)timeout * 50;
-    session->interval = 50;
-    session->nextQuery = mdnsTicks();
-    session->sink = sink;
-    session->sinkData = data;
-    *handle = session->handle;
-    answer_own_host(md, session);
-    mdnsRegAnswerLocal(md, MDNS_REFLECT_QUERY, session->handle);
-    return MDNS_OK;
-}
-
-void
-mdnsQueryStopSink(struct MDNSDaemon *md, APTR handle)
-{
-    struct MDNSQueryState *state = md->md_Query;
-    LONG i;
-
-    if (state == NULL || handle == NULL) {
-        return;
-    }
-    for (i = 0; i < QUERY_SESSIONS; i++) {
-        if (state->sessions[i].handle == handle &&
-            state->sessions[i].sink != NULL) {
-            memset(&state->sessions[i], 0, sizeof(state->sessions[i]));
-        }
     }
 }
 

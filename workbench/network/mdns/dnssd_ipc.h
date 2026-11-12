@@ -35,6 +35,12 @@
 #define DNSSD_IPC_READ      4   /* next event into dm_Data/dm_DataMax; EMPTY lends dm_Notify again */
 #define DNSSD_IPC_STATUS    5
 #define DNSSD_IPC_LOOKUP    6   /* dm_Data: the name; dm_Family, dm_Interface, dm_Timeout -> dm_Operation */
+#define DNSSD_IPC_BROWSE    7   /* dm_Data: [subtype._sub.]type.domain; dm_TypeOffset, dm_DomainOffset, dm_Interface */
+#define DNSSD_IPC_RESOLVE   8   /* dm_Data: instance.type.domain; dm_TypeOffset, dm_DomainOffset, dm_Interface, dm_Timeout */
+#define DNSSD_IPC_QUERY     9   /* dm_Data: the name; dm_RRType, dm_Interface, dm_Timeout (0: until cancelled) */
+
+/* Names in dm_Data are DNS wire labels, uncompressed, dm_DataSize bytes
+ * with the root label; the offsets are where a part's labels start. */
 
 struct DNSSDIPCMsg
 {
@@ -50,6 +56,10 @@ struct DNSSDIPCMsg
     ULONG           dm_Family;
     ULONG           dm_Interface;
     ULONG           dm_Timeout;     /* seconds */
+    UWORD           dm_RRType;
+    UWORD           dm_TypeOffset;
+    UWORD           dm_DomainOffset;
+    UWORD           dm_Reserved;
     IPTR            dm_UserData;
     ULONG           dm_DataSize;    /* bytes of dm_Data used */
     ULONG           dm_DataMax;     /* bytes of dm_Data */
