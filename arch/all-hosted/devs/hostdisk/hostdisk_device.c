@@ -286,6 +286,14 @@ AROS_LH1(void, beginio,
             commands supported
         */
         case NSCMD_DEVICEQUERY:
+            if (iotd->iotd_Req.io_Length < sizeof(*nsdq)) {
+                iotd->iotd_Req.io_Error = IOERR_BADLENGTH;
+                break;
+            }
+            if (!iotd->iotd_Req.io_Data) {
+                iotd->iotd_Req.io_Error = IOERR_BADADDRESS;
+                break;
+            }
             nsdq = iotd->iotd_Req.io_Data;
 
             nsdq->DevQueryFormat    = 0;
