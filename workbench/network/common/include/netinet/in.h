@@ -333,6 +333,7 @@ struct ip_opts {
 #define	IP_MULTICAST_LOOP	11	/* set/get IP multicast loopback */
 #define	IP_ADD_MEMBERSHIP	12	/* add an IP group membership */
 #define	IP_DROP_MEMBERSHIP	13	/* drop an IP group membership */
+#define	IP_RECVIF		20	/* bool; receive the interface (sockaddr_dl) w/datagram */
 #define	IP_ADD_SOURCE_MEMBERSHIP 25	/* add source-specific multicast */
 #define	IP_DROP_SOURCE_MEMBERSHIP 26	/* drop source-specific multicast */
 #define	IP_RECVTTL		65	/* bool; receive the TTL w/datagram */
