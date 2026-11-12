@@ -3,13 +3,17 @@
  * Copyright 2026 amigazen project
  * Copyright 2026 Jaime Dias
  *
- * mdns_net.c - IPv4/IPv6 UDP 5353 sockets for each interface
+ * mdns_net.c - the UDP 5353 sockets, one per address family
  *
  * mDNS is a protocol of the link: what is heard on an interface is answered
  * there, and an address record carries the address of the interface it is
- * sent on. Each interface that is up, can multicast and has an IPv4 address
- * and/or an IPv6 link-local address gets an IPv4 socket bound to it; one
- * IPv6 socket joins every link and obtains the input link from IPV6_PKTINFO.
+ * sent on. One socket per family serves every link: it joins the mDNS group
+ * on each link that is up, can multicast and has an address of the family,
+ * learns the link a datagram came by from IP_RECVIF (IPv4) or IPV6_PKTINFO
+ * (IPv6), and sends to a link's group by IP_MULTICAST_IF/IPV6_MULTICAST_IF.
+ * The sockets stay open while the stack is there: links coming, going or
+ * changing their addresses change only the memberships (the stack leaves
+ * those of an interface that goes away).
  */
 
 #include <exec/types.h>
@@ -27,38 +31,43 @@
 #include "mdnsd.h"
 #include "dnssd_link_aros.h"
 
+/* Options both sockets take; FALSE if one is refused. */
+static BOOL
+share_port(struct Library *SocketBase, int sock)
+{
+    int on = 1;
+
+    /* Every responder of the host shares the port. */
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&on,
+            sizeof(on)) < 0) {
+        return FALSE;
+    }
+#ifdef SO_REUSEPORT
+    setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (char *)&on, sizeof(on));
+#endif
+    return TRUE;
+}
+
 static LONG
-open_socket4(struct Library *SocketBase, const char *name, ULONG addr)
+open_socket4(struct Library *SocketBase)
 {
     struct sockaddr_in sin;
-    struct ip_mreq mreq;
-    int on;
+    unsigned char value;
+    int on = 1;
     int sock;
 
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
         return -1;
     }
-
-    /* Every responder of the host shares the port, here one per interface. */
-    on = 1;
-    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&on,
+    if (!share_port(SocketBase, sock) ||
+        setsockopt(sock, IPPROTO_IP, IP_RECVIF, (char *)&on,
             sizeof(on)) < 0) {
         CloseSocket(sock);
         return -1;
     }
-#ifdef SO_REUSEPORT
-    on = 1;
-    setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (char *)&on, sizeof(on));
-#endif
-    /* Only what arrives on this interface; what is sent leaves there. */
-    if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, (char *)name,
-            (int)mdnsTextLength(name, IFNAMSIZ)) < 0) {
-        CloseSocket(sock);
-        return -1;
-    }
-
     memset(&sin, 0, sizeof(sin));
+    sin.sin_len = sizeof(sin);
     sin.sin_family = AF_INET;
     sin.sin_port = htons(MDNS_DNS_PORT);
     sin.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -66,40 +75,22 @@ open_socket4(struct Library *SocketBase, const char *name, ULONG addr)
         CloseSocket(sock);
         return -1;
     }
-
-    memset(&mreq, 0, sizeof(mreq));
-    mreq.imr_multiaddr.s_addr = inet_addr(MDNS_MCAST_ADDR);
-    mreq.imr_interface.s_addr = htonl(addr);
-    if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&mreq,
-            sizeof(mreq)) < 0) {
+    /*
+     * BSD takes these two as one byte. No copy of what mdnsd sends comes
+     * back to it: a copy sent just after the interface changed its address
+     * would look like another host using this host's names.
+     */
+    value = 255;
+    if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, (char *)&value,
+            sizeof(value)) < 0) {
         CloseSocket(sock);
         return -1;
     }
-    if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,
-            (char *)&mreq.imr_interface, sizeof(mreq.imr_interface)) < 0) {
+    value = 0;
+    if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_LOOP, (char *)&value,
+            sizeof(value)) < 0) {
         CloseSocket(sock);
         return -1;
-    }
-    {
-        /*
-         * BSD takes these two as one byte. No copy of what mdnsd sends comes
-         * back to it: a copy sent just after the interface changed its
-         * address would look like another host using this host's names.
-         */
-        unsigned char value;
-
-        value = 255;
-        if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, (char *)&value,
-                sizeof(value)) < 0) {
-            CloseSocket(sock);
-            return -1;
-        }
-        value = 0;
-        if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_LOOP, (char *)&value,
-                sizeof(value)) < 0) {
-            CloseSocket(sock);
-            return -1;
-        }
     }
     return (LONG)sock;
 }
@@ -175,48 +166,23 @@ has_address6(const struct MDNSDaemon *md, LONG slot)
 }
 
 static LONG
-open_socket6(struct Library *SocketBase, const struct MDNSDaemon *md)
+open_socket6(struct Library *SocketBase)
 {
-    static const UBYTE group_bytes[16] = {
-        0xff, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xfb
-    };
     struct sockaddr_in6 sin6;
-    int on, sock;
-    LONG i;
-
-    for (i = 0; i < md->md_IfCount; i++) {
-        if (has_address6(md, i)) {
-            break;
-        }
-    }
-    if (i == md->md_IfCount) {
-        return -1;
-    }
+    int on = 1, sock;
 
     sock = socket(AF_INET6, SOCK_DGRAM, 0);
     if (sock < 0) {
         return -1;
     }
-    on = 1;
-    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&on,
-            sizeof(on)) < 0) {
-        CloseSocket(sock);
-        return -1;
-    }
-#ifdef SO_REUSEPORT
-    setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (char *)&on, sizeof(on));
-#endif
-    /* AROSTCP's SO_BINDTODEVICE is currently IPv4-only. One wildcard IPv6
-     * socket joins every link and IPV6_PKTINFO identifies the receiving
-     * link, including for unicast questions. */
-    if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&on,
+    if (!share_port(SocketBase, sock) ||
+        setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&on,
             sizeof(on)) < 0 ||
         setsockopt(sock, IPPROTO_IPV6, IPV6_RECVPKTINFO, (char *)&on,
             sizeof(on)) < 0) {
         CloseSocket(sock);
         return -1;
     }
-
     memset(&sin6, 0, sizeof(sin6));
     sin6.sin6_len = sizeof(sin6);
     sin6.sin6_family = AF_INET6;
@@ -224,22 +190,6 @@ open_socket6(struct Library *SocketBase, const struct MDNSDaemon *md)
     if (bind(sock, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
         CloseSocket(sock);
         return -1;
-    }
-
-    for (i = 0; i < md->md_IfCount; i++) {
-        struct ipv6_mreq mreq;
-
-        if (!has_address6(md, i)) {
-            continue;
-        }
-        memset(&mreq, 0, sizeof(mreq));
-        memcpy(&mreq.ipv6mr_multiaddr, group_bytes, sizeof(group_bytes));
-        mreq.ipv6mr_interface = (unsigned int)md->md_Ifs[i].mi_Index;
-        if (setsockopt(sock, IPPROTO_IPV6, IPV6_JOIN_GROUP, (char *)&mreq,
-                sizeof(mreq)) < 0) {
-            CloseSocket(sock);
-            return -1;
-        }
     }
     on = 255;
     if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, (char *)&on,
@@ -256,15 +206,51 @@ open_socket6(struct Library *SocketBase, const struct MDNSDaemon *md)
     return (LONG)sock;
 }
 
+/*
+ * Each link joins the group of each family it has an address of. A
+ * membership the socket has already is refused (EADDRINUSE) and kept; one
+ * of a link that lost its addresses stays until the interface goes, and
+ * hears nothing mdnsd answers: no slot names the link.
+ */
+static void
+join_links(struct Library *SocketBase, struct MDNSDaemon *md)
+{
+    static const UBYTE group_bytes[16] = {
+        0xff, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xfb
+    };
+    LONG i;
+
+    for (i = 0; i < md->md_IfCount; i++) {
+        ULONG address4 = mdnsNetAddress4(md, i);
+
+        if (md->md_Socket4 >= 0 && address4 != 0) {
+            struct ip_mreq mreq;
+
+            memset(&mreq, 0, sizeof(mreq));
+            mreq.imr_multiaddr.s_addr = inet_addr(MDNS_MCAST_ADDR);
+            mreq.imr_interface.s_addr = htonl(address4);
+            setsockopt((int)md->md_Socket4, IPPROTO_IP, IP_ADD_MEMBERSHIP,
+                (char *)&mreq, sizeof(mreq));
+        }
+        if (md->md_Socket6 >= 0 && has_address6(md, i)) {
+            struct ipv6_mreq mreq;
+
+            memset(&mreq, 0, sizeof(mreq));
+            memcpy(&mreq.ipv6mr_multiaddr, group_bytes, sizeof(group_bytes));
+            mreq.ipv6mr_interface = (unsigned int)md->md_Ifs[i].mi_Index;
+            setsockopt((int)md->md_Socket6, IPPROTO_IPV6, IPV6_JOIN_GROUP,
+                (char *)&mreq, sizeof(mreq));
+        }
+    }
+}
+
 static void
 set_primary(struct Library *SocketBase, struct MDNSDaemon *md)
 {
     LONG i;
 
-    md->md_Socket = md->md_Socket6;
-    for (i = 0; i < md->md_IfCount && md->md_Socket < 0; i++) {
-        md->md_Socket = md->md_Ifs[i].mi_Socket;
-    }
+    md->md_Socket = md->md_IfCount == 0 ? -1 :
+        md->md_Socket6 >= 0 ? md->md_Socket6 : md->md_Socket4;
     md->md_HostAddr = 0;
     for (i = 0; i < md->md_IfCount && md->md_HostAddr == 0; i++) {
         md->md_HostAddr = mdnsNetAddress4(md, i);
@@ -325,7 +311,8 @@ mdnsNetNameHost(struct MDNSDaemon *md)
 
 static void close_sockets(struct Library *SocketBase, struct MDNSDaemon *md);
 
-/* Rebuild the derived socket set after a complete canonical snapshot changes. */
+/* The links after a complete canonical snapshot changed: the sockets are
+ * opened the first time, and each link joins the groups. */
 BOOL
 mdnsNetRescan(struct MDNSDaemon *md)
 {
@@ -345,41 +332,29 @@ mdnsNetRescan(struct MDNSDaemon *md)
         md->md_LinkInventory.revision == previous_revision)
         return FALSE;
 
-    close_sockets(SocketBase, md);
+    if (md->md_Socket4 < 0) {
+        md->md_Socket4 = open_socket4(SocketBase);
+    }
+    if (md->md_Socket6 < 0) {
+        md->md_Socket6 = open_socket6(SocketBase);
+    }
+    md->md_IfCount = 0;
     for (i = 0; i < md->md_LinkInventory.link_count &&
             md->md_IfCount < MDNS_IFS_MAX; ++i) {
         const struct dnssd_link_entry *link = &md->md_LinkInventory.links[i];
-        struct MDNSInterface *active = &md->md_Ifs[md->md_IfCount];
-        char name[DNSSD_LINK_NAME_MAX + 1u];
-        ULONG address4;
+        LONG slot = md->md_IfCount;
 
         if (dnssd_link_usable_address_count(&md->md_LinkInventory,
                 link->value.interface_index) == 0u)
             continue;
-        memset(active, 0, sizeof(*active));
-        active->mi_Index = link->value.interface_index;
-        active->mi_Socket = -1;
+        md->md_Ifs[slot].mi_Index = link->value.interface_index;
         ++md->md_IfCount;
-        address4 = mdnsNetAddress4(md, md->md_IfCount - 1);
-        if (address4 != 0u) {
-            memset(name, 0, sizeof(name));
-            memcpy(name, link->value.name, link->value.name_length);
-            active->mi_Socket = open_socket4(SocketBase, name, address4);
-        }
-        if (active->mi_Socket < 0 && !has_address6(md, md->md_IfCount - 1))
+        /* a link is served in a family it has an address and a socket of */
+        if (!(md->md_Socket4 >= 0 && mdnsNetAddress4(md, slot) != 0u) &&
+            !(md->md_Socket6 >= 0 && has_address6(md, slot)))
             --md->md_IfCount;
     }
-    md->md_Socket6 = open_socket6(SocketBase, md);
-    if (md->md_Socket6 < 0) {
-        LONG slot;
-
-        for (slot = 0; slot < md->md_IfCount; ) {
-            if (md->md_Ifs[slot].mi_Socket < 0)
-                md->md_Ifs[slot] = md->md_Ifs[--md->md_IfCount];
-            else
-                ++slot;
-        }
-    }
+    join_links(SocketBase, md);
     set_primary(SocketBase, md);
     return TRUE;
 }
@@ -388,12 +363,10 @@ mdnsNetRescan(struct MDNSDaemon *md)
 static void
 close_sockets(struct Library *SocketBase, struct MDNSDaemon *md)
 {
-    while (md->md_IfCount > 0) {
-        struct MDNSInterface *mi = &md->md_Ifs[--md->md_IfCount];
-
-        if (mi->mi_Socket >= 0) {
-            CloseSocket((int)mi->mi_Socket);
-        }
+    md->md_IfCount = 0;
+    if (md->md_Socket4 >= 0) {
+        CloseSocket((int)md->md_Socket4);
+        md->md_Socket4 = -1;
     }
     if (md->md_Socket6 >= 0) {
         CloseSocket((int)md->md_Socket6);
@@ -464,8 +437,9 @@ send_on4(struct Library *SocketBase, struct MDNSDaemon *md, LONG index,
     const UBYTE *pkt, LONG pktlen)
 {
     struct sockaddr_in sin;
+    ULONG address4 = mdnsNetAddress4(md, index);
 
-    if (md->md_Ifs[index].mi_Socket < 0 ||
+    if (md->md_Socket4 < 0 || address4 == 0 ||
         (!mdnsReplyIsUnicast(md) && md->md_SendFamily != 0 &&
          md->md_SendFamily != AF_INET) ||
         (mdnsReplyIsUnicast(md) && md->md_ReplyFamily != 0 &&
@@ -473,16 +447,24 @@ send_on4(struct Library *SocketBase, struct MDNSDaemon *md, LONG index,
         return FALSE;
     }
     memset(&sin, 0, sizeof(sin));
+    sin.sin_len = sizeof(sin);
     sin.sin_family = AF_INET;
     if (mdnsReplyIsUnicast(md)) {
         /* an answer for the one who asked */
         sin.sin_port = htons(md->md_ReplyPort);
         sin.sin_addr.s_addr = htonl(md->md_ReplyAddr);
     } else {
+        struct in_addr link;
+
         sin.sin_port = htons(MDNS_DNS_PORT);
         sin.sin_addr.s_addr = inet_addr(MDNS_MCAST_ADDR);
+        link.s_addr = htonl(address4);
+        if (setsockopt((int)md->md_Socket4, IPPROTO_IP, IP_MULTICAST_IF,
+                (char *)&link, sizeof(link)) < 0) {
+            return FALSE;
+        }
     }
-    if (sendto((int)md->md_Ifs[index].mi_Socket, (char *)pkt, (int)pktlen, 0,
+    if (sendto((int)md->md_Socket4, (char *)pkt, (int)pktlen, 0,
             (struct sockaddr *)&sin, sizeof(sin)) < 0) {
         return FALSE;
     }

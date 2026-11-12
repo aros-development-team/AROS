@@ -27,7 +27,9 @@
 #include <proto/dos.h>
 #include <proto/bsdsocket.h>
 #include <libraries/bsdsocket.h>
+#include <net/if_dl.h>
 #include <netinet/in.h>
+#include <stddef.h>
 
 #include "mdnsd.h"
 
@@ -108,6 +110,78 @@ net_up(struct MDNSDaemon *md, ULONG addressMask)
     }
 }
 
+/* The slot of the link with this interface index, or -1. */
+static LONG
+link_slot(const struct MDNSDaemon *md, ULONG index)
+{
+    LONG i;
+
+    for (i = 0; index != 0 && i < md->md_IfCount; i++) {
+        if (md->md_Ifs[i].mi_Index == index) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* A datagram on the IPv4 socket: IP_RECVIF names the link it came by, and
+ * one of a link mdnsd does not serve is dropped. */
+static void
+receive4(struct MDNSDaemon *md, struct Library *SocketBase)
+{
+    union {
+        struct cmsghdr align;
+        UBYTE data[CMSG_SPACE(sizeof(struct sockaddr_dl) + 32)];
+    } control;
+    struct sockaddr_in from;
+    struct msghdr message;
+    struct iovec vector;
+    struct cmsghdr *header;
+    LONG slot = -1;
+    int got;
+
+    memset(&message, 0, sizeof(message));
+    memset(&from, 0, sizeof(from));
+    vector.iov_base = md->md_RxBuf;
+    vector.iov_len = MDNS_MAX_PACKET;
+    message.msg_name = &from;
+    message.msg_namelen = sizeof(from);
+    message.msg_iov = &vector;
+    message.msg_iovlen = 1;
+    message.msg_control = &control;
+    message.msg_controllen = sizeof(control);
+    got = recvmsg((int)md->md_Socket4, &message, 0);
+    if (got <= 0) {
+        return;
+    }
+    for (header = CMSG_FIRSTHDR(&message); header != NULL;
+            header = CMSG_NXTHDR(&message, header)) {
+        if (header->cmsg_level == IPPROTO_IP &&
+            header->cmsg_type == IP_RECVIF &&
+            header->cmsg_len >= CMSG_LEN(offsetof(struct sockaddr_dl,
+                sdl_index) + sizeof(((struct sockaddr_dl *)0)->sdl_index))) {
+            struct sockaddr_dl sdl;
+
+            memcpy(&sdl, CMSG_DATA(header),
+                header->cmsg_len - CMSG_LEN(0) < sizeof(sdl) ?
+                header->cmsg_len - CMSG_LEN(0) : sizeof(sdl));
+            slot = link_slot(md, sdl.sdl_index);
+            break;
+        }
+    }
+    if (slot < 0) {
+        return;
+    }
+    md->md_RxPackets++;
+    md->md_SendIf = slot;
+    md->md_SendFamily = AF_INET;
+    mdnsHandlePacket(md, md->md_RxBuf, (LONG)got,
+        (ULONG)ntohl((unsigned long)from.sin_addr.s_addr),
+        (UWORD)ntohs(from.sin_port));
+    md->md_SendIf = -1;
+    md->md_SendFamily = 0;
+}
+
 /* Waits for a signal, a datagram on any interface, or a second to pass: a
  * quarter of one while a name is being probed, and a fiftieth while an
  * answer is waiting to be sent. */
@@ -127,15 +201,9 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
     FD_ZERO(&readfds);
     tv.tv_sec = (probing || md->md_AnswerPending) ? 0 : 1;
     tv.tv_usec = md->md_AnswerPending ? 20000 : probing ? 250000 : 0;
-    for (i = 0; i < md->md_IfCount; i++) {
-        LONG sock = md->md_Ifs[i].mi_Socket;
-
-        if (sock >= 0) {
-            FD_SET(sock, &readfds);
-            if (sock > top) {
-                top = sock;
-            }
-        }
+    if (md->md_Socket4 >= 0) {
+        FD_SET(md->md_Socket4, &readfds);
+        top = md->md_Socket4;
     }
     if (md->md_Socket6 >= 0) {
         FD_SET(md->md_Socket6, &readfds);
@@ -148,26 +216,8 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
         return sigmask;
     }
 
-    for (i = 0; i < md->md_IfCount; i++) {
-        LONG sock = md->md_Ifs[i].mi_Socket;
-
-        if (sock >= 0 && FD_ISSET(sock, &readfds)) {
-            struct sockaddr_in from;
-            socklen_t fromlen = sizeof(from);
-            int got = recvfrom(sock, (char *)md->md_RxBuf, MDNS_MAX_PACKET,
-                0, (struct sockaddr *)&from, &fromlen);
-
-            if (got > 0) {
-                md->md_RxPackets++;
-                md->md_SendIf = i;
-                md->md_SendFamily = AF_INET;
-                mdnsHandlePacket(md, md->md_RxBuf, (LONG)got,
-                    (ULONG)ntohl((unsigned long)from.sin_addr.s_addr),
-                    (UWORD)ntohs(from.sin_port));
-                md->md_SendIf = -1;
-                md->md_SendFamily = 0;
-            }
-        }
+    if (md->md_Socket4 >= 0 && FD_ISSET(md->md_Socket4, &readfds)) {
+        receive4(md, SocketBase);
     }
     if (md->md_Socket6 >= 0 && FD_ISSET(md->md_Socket6, &readfds)) {
         union {
@@ -210,12 +260,8 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
             }
         }
 
-        for (i = 0; havePacketInfo && i < md->md_IfCount; i++) {
-            if (packetInfo.ipi6_ifindex == md->md_Ifs[i].mi_Index) {
-                break;
-            }
-        }
-        if (got > 0 && havePacketInfo && i < md->md_IfCount) {
+        i = havePacketInfo ? link_slot(md, packetInfo.ipi6_ifindex) : -1;
+        if (got > 0 && i >= 0) {
             md->md_RxPackets++;
             /* What this packet causes to be sent goes back to its link
              * and, for unicast, its address family. */
@@ -256,6 +302,7 @@ main(void)
     }
 
     md->md_Socket = -1;
+    md->md_Socket4 = -1;
     md->md_Socket6 = -1;
     md->md_SendIf = -1;
     md->md_NextHandle = 1;
