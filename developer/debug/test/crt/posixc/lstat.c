@@ -15,11 +15,14 @@
 
 static char target[] = "T:lstatXXXXXX";
 static const char *linkname = "T:lstat-link";
+static const char *dangling = "T:lstat-dangling";
 int fd = -1;
 
 int main()
 {
-    struct stat st;
+    struct stat st, st2;
+    char other[sizeof(target)];
+    unsigned int i;
 
     fd = mkstemp(target);
     TEST((fd != -1));
@@ -47,6 +50,31 @@ int main()
     TEST((S_ISDIR(st.st_mode)));
     TEST((lstat("T:lstat-does-not-exist", &st) == -1 && errno == ENOENT));
 
+    /* an ordinary object is the same object for stat() and lstat(),
+       however its path is written */
+    TEST((stat(target, &st) == 0));
+    TEST((lstat(target, &st2) == 0));
+    TEST((st2.st_dev == st.st_dev));
+    TEST((st2.st_ino == st.st_ino));
+
+    for (i = 0; i < sizeof(target); i++)
+        other[i] = (target[i] >= 'a' && target[i] <= 'z')
+            ? target[i] - 'a' + 'A' : target[i];
+    TEST((lstat(other, &st2) == 0));
+    TEST((st2.st_ino == st.st_ino));
+
+    TEST((chdir("T:") == 0));
+    TEST((lstat(target + 2, &st2) == 0));
+    TEST((st2.st_ino == st.st_ino));
+
+    /* a link whose target is missing is still a link */
+    unlink(dangling);
+    TEST((symlink("T:lstat-does-not-exist", dangling) == 0));
+    TEST((stat(dangling, &st) == -1 && errno == ENOENT));
+    TEST((lstat(dangling, &st) == 0));
+    TEST((S_ISLNK(st.st_mode)));
+
+    unlink(dangling);
     unlink(linkname);
     unlink(target);
 
@@ -57,6 +85,7 @@ void cleanup()
 {
     if (fd != -1)
         close(fd);
+    unlink(dangling);
     unlink(linkname);
     unlink(target);
 }

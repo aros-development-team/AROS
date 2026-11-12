@@ -49,9 +49,11 @@
         stat64(), fstat64(), readlink()
 
     INTERNALS
-        dos.library's Lock() resolves soft links, so the final component is
-        looked up as an entry of its parent directory by __stat64_from_path()
-        instead. Consult stat() documentation for details.
+        dos.library's Lock() resolves soft links, so the path is first
+        probed with ReadLink(). Only a soft link is then looked up as an
+        entry of its parent directory by __stat64_from_path(); any other
+        object is described through its lock, exactly as stat64() does.
+        Consult stat() documentation for details.
 
 ******************************************************************************/
 {
@@ -71,17 +73,33 @@
     if (path == NULL)
         return -1;
 
-    if (*FilePart((CONST_STRPTR)path) != '\0')
+    /* A root or a trailing separator leaves no final component to preserve */
+    if (*FilePart((CONST_STRPTR)path) != '\0' && __path_is_softlink(path))
     {
         /* Lock() would follow a soft link to its target: examine the
-           entry in its parent directory instead. */
-        return __stat64_from_path(path, sb);
+           entry in its parent directory instead. Keep that answer only
+           for a link; an ordinary object reached through a linked
+           directory is described through its lock, as stat() does. */
+        if (__stat64_from_path(path, sb) == 0 && S_ISLNK(sb->st_mode))
+            return 0;
     }
 
-    /* A root, or a trailing separator: no final component to preserve */
     lock = Lock(path, SHARED_LOCK);
     if (!lock)
     {
+        if (   IoErr() == ERROR_IS_SOFT_LINK
+            || IoErr() == ERROR_OBJECT_IN_USE)
+        {
+            /* either the file is already locked exclusively
+               or it is a soft link, in both cases only way
+               to get info about it is to find it in the
+               parent directory with the ExNext() function
+            */
+
+            SetIoErr(0);
+            return __stat64_from_path(path, sb);
+        }
+
         errno = __stdc_ioerr2errno(IoErr());
         return -1;
     }
