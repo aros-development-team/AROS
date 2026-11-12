@@ -382,7 +382,7 @@ int	STKARGFUN ip_output(void *args, ...)
      * of outgoing interface.
      */
     if(ip->ip_src.s_addr == INADDR_ANY && ia != NULL)
-        ip->ip_src = IA_SIN(ia)->sin_addr;
+        ip->ip_src = IA_SIN(in_readyia(ia))->sin_addr;  /* one that is ready */
 #endif
     /*
      * Look for broadcast address and
@@ -415,6 +415,25 @@ int	STKARGFUN ip_output(void *args, ...)
 #ifdef ENABLE_MULTICAST
 sendit:
 #endif
+    /*
+     * Only from an address that is ready (RFC 5227, as NetBSD's
+     * ip_ifaddrvalid()): from a tentative one the packet is dropped - a
+     * TCP SYN is sent again once it is ready - from a duplicated one the
+     * sender gets EADDRNOTAVAIL. A forwarded packet is not ours.
+     */
+    if(!(flags & IP_FORWARDING) && ip->ip_src.s_addr != INADDR_ANY) {
+        register struct in_ifaddr *sia;
+
+        for(sia = in_ifaddr; sia; sia = sia->ia_next)
+            if(IA_SIN(sia)->sin_addr.s_addr == ip->ip_src.s_addr)
+                break;
+        if(sia && (sia->ia4_flags & IN_IFF_NOTREADY)) {
+            ipstat.ips_odropped++;
+            error = (sia->ia4_flags & IN_IFF_DUPLICATED) ? EADDRNOTAVAIL : 0;
+            goto bad;
+        }
+    }
+
     /*
      * The packet hooks (the filter engine, Miami hooks): one word tested
      * while nothing is hooked (net/pfil.h). A dropped packet is freed

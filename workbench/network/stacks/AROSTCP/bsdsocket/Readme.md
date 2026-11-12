@@ -1024,6 +1024,46 @@ locals before summing rather than reading them through a `u_int16_t *` taken fro
   entry (`at_hold`, chained through `m_nextpkt`, oldest dropped first) and all are sent when the reply
   comes, so the fragments of a datagram all leave; the request is sent again at most once a second
   (RFC 1122 section 2.3.2.1), not for every packet queued.
+- **IPv4 address conflict detection** (RFC 5227, as NetBSD; `sana2arp.c` `arp_dad_*`). An address
+  added to an ARP interface - by hand, from `db/interfaces`, by DHCP or by autoip - is tentative
+  (`IN_IFF_TENTATIVE` in `ia4_flags`) until `net.inet.ip.dad_count` (3) ARP probes from 0.0.0.0,
+  after a random wait below 1 s and 1-2 s apart, and 2 s more, have gone unanswered: 3 to 7 s, while
+  the interface is up. Meanwhile it is not a source (`ip_output()` drops the packet: a TCP SYN goes
+  again once it is ready), not a destination (`ip_input()`), not answered for in ARP, and
+  `arpwhohas()` asks from a ready address of the interface (0.0.0.0 if none); it can be bound. Then
+  it is announced twice, 2 s apart. A host that answers a probe, or probes for the address at the
+  same time, makes it `IN_IFF_DUPLICATED`: not used, `bind()` gives `EADDRNOTAVAIL`, a send from it
+  too. An address that is not ready is not this host's: a socket with no address of its own takes
+  a ready address of the outgoing interface as its source instead (`in_readyia()`, as NetBSD's
+  `in_selectsrc()`), `arpresolve()` sends what is addressed to it out on the link, to its owner,
+  and the owner's ARP packets make its entry as any neighbour's. (A host address, /32, or one of a
+  /31 pair has no network or broadcast address of its own - `in_broadcast()` - so what goes to such
+  an alias is not taken for a broadcast.)
+  An address in use that another host claims is defended once in 10 s with an announcement; what a
+  second claim within them does depends on where the address came from (RFC 5227 section 2.4),
+  which each address keeps (`ia_origin`, `IN_ORIGIN_*` in `<netinet/in_var.h>`): one added with
+  `SIOCAIFADDR` or `SIOCSIFADDR` is configured by hand, and `SIOCAIFADDR_ORIGIN` (a
+  `struct in_originreq`: the `in_aliasreq` and the origin) adds one saying it is a DHCP lease or an
+  IPv4LL address. One configured by hand is kept - defended again once 10 s are past, never given
+  up once in use, so that no host on the link can take it away (2.4 (c)), on a DHCP interface too;
+  a DHCP lease is duplicated, and `dhclient` - woken by the `SBTC_SIG_ADDRESS_CHANGE_MASK` signal
+  in its `WaitSelect()`, reading the lease's flags with `SIOCGIFAFLAG_IN`, with no routing socket
+  - declines it and asks for another (2.4 (b)); an IPv4LL one goes back to autoip for another. A duplicated address is probed
+  again every minute and is ready once no one answers. An in-place reload deletes and adds the
+  addresses again: one that was in use and comes back within 30 s keeps its state and is not
+  probed again (`arp_dad_forget()`/`arp_dad_kept()`; the window covers `dhclient` applying its
+  lease again after the reload). Each change is an `RTM_NEWADDR` and the
+  `SBTC_SIG_ADDRESS_CHANGE_MASK` signal, as IPv6's DAD; `SIOCGIFAFLAG_IN` (NetBSD,
+  `ifr_addrflags`) reads the flags, and `ifconfig` shows `tentative` or `duplicated`.
+  `net.inet.ip.dad_count` 0 turns the probes off: an address is ready at once, announced, and a
+  conflict only logged. The timer is IP's `pr_fasttimo` (50 ms ticks).
+- **IPv4 link-local addresses** (RFC 3927, `IP=AUTO`): autoip picks a 169.254/16 address (seeded by
+  the hardware address, so the same one again after a restart) and adds it; conflict detection
+  probes, announces and defends it as any other - always, whatever `dad_count` says - and when it
+  is duplicated autoip takes it off and picks another; after 10 conflicts, one a minute. The link
+  coming back starts autoip again (`ss_autoip.wanted`). With two interfaces on `IP=AUTO` each gets
+  its address, probed, but the routing table holds 169.254/16 once: link-local peers are reached by
+  the interface that has the route (RFC 3927 section 3.2), as IPv6's `fe80::/64` before scopes.
 - **Tunnel pseudo-interface.** `if_stf.c` provides a deviceless 6in4 (SIT) interface that
   encapsulates IPv6 in IPv4 (protocol 41) over the existing IPv4 stack — no SANA-II device is bound.
   See §6.5.

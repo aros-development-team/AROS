@@ -12,6 +12,7 @@ EXEDIR := $(AROS_TESTS)/Socket
 CUNITEXEDIR := $(AROS_TESTS)/cunit/net/socket
 
 CUNITSOCKETTESTFILES := \
+    cunit-net-acd \
     cunit-net-addr6 \
     cunit-net-addrflags6 \
     cunit-net-addrsig \

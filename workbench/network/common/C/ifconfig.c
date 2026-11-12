@@ -1152,6 +1152,7 @@ in_status(force)
 	int force;
 {
 	struct sockaddr_in *sin;
+	struct in_addr addr;
 
 	getsock(AF_INET);
 	if (s < 0) {
@@ -1173,6 +1174,7 @@ in_status(force)
 	CopyMem(name, ifr.ifr_name, sizeof (ifr.ifr_name));
 	ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
 	sin = (struct sockaddr_in *)&ifr.ifr_addr;
+	addr = sin->sin_addr;
 	printf("\tinet %s ", inet_ntoa(sin->sin_addr));
 	CopyMem(name, ifr.ifr_name, sizeof (ifr.ifr_name));
 	ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
@@ -1211,6 +1213,20 @@ in_status(force)
 		sin = (struct sockaddr_in *)&ifr.ifr_addr;
 		if (sin->sin_addr.s_addr != 0)
 			printf("broadcast %s", inet_ntoa(sin->sin_addr));
+	}
+	/* conflict detection's state (RFC 5227; NetBSD's SIOCGIFAFLAG_IN) */
+	(void) memset(&ifr, 0, sizeof(ifr));
+	CopyMem(name, ifr.ifr_name, sizeof (ifr.ifr_name));
+	ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
+	sin = (struct sockaddr_in *)&ifr.ifr_addr;
+	sin->sin_len = sizeof(*sin);
+	sin->sin_family = AF_INET;
+	sin->sin_addr = addr;
+	if (IoctlSocket(s, SIOCGIFAFLAG_IN, (caddr_t)&ifr) == 0) {
+		if (ifr.ifr_addrflags & IN_IFF_TENTATIVE)
+			printf(" tentative");
+		if (ifr.ifr_addrflags & IN_IFF_DUPLICATED)
+			printf(" duplicated");
 	}
 	putchar('\n');
 }
