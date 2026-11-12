@@ -485,10 +485,13 @@ static ULONG getgeometry(struct unit *Unit, struct DriveGeometry *dg)
 
 /**************************************************************************/
 
-void eject(struct unit *unit, BOOL eject)
+static ULONG eject(struct unit *unit, BOOL eject)
 {
     struct IOExtTD *iotd;
     ULONG err;
+
+    if (!!eject == (unit->file == INVALID_HANDLE_VALUE))
+        return 0;
 
     if (eject)
     {
@@ -499,7 +502,7 @@ void eject(struct unit *unit, BOOL eject)
     {
         err = Host_Open(unit);
         if (err)
-            return;
+            return err;
     }
 
     unit->changecount++;
@@ -510,6 +513,7 @@ void eject(struct unit *unit, BOOL eject)
         Cause((struct Interrupt *)iotd->iotd_Req.io_Data);
     }
     Permit();
+    return 0;
 }
 
 /****************************************************************************************/
@@ -653,8 +657,7 @@ static void unitentry(struct IOExtTD *iotd)
                     break;
 
                 case TD_EJECT:
-                    eject(unit, iotd->iotd_Req.io_Length);
-                    err = 0;
+                    err = eject(unit, iotd->iotd_Req.io_Length);
                     break;
 
                 case TD_PROTSTATUS:
@@ -676,7 +679,8 @@ static void unitentry(struct IOExtTD *iotd)
         {
             D(bug("%s: Received EXIT signal.\n", me->tc_Node.ln_Name));
 
-            Host_Close(unit);
+            if (unit->file != INVALID_HANDLE_VALUE)
+                Host_Close(unit);
             DeleteMsgPort(unit->port);
 
             /* Do not execute device code after waking the final closer. */
