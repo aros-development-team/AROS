@@ -144,6 +144,7 @@ APTR vc4_hvs6_alloc_fb(struct VideoCoreGfx_staticdata *xsd, ULONG pitch, ULONG h
 void vc4_hvs6_latch_wait(struct VideoCoreGfx_staticdata *xsd);
 ULONG vc4_hvs6_latch_token(struct VideoCoreGfx_staticdata *xsd);
 void vc4_hvs6_latch_wait_for(struct VideoCoreGfx_staticdata *xsd, ULONG token);
+BOOL vc4_hvs6_latch_passed(struct VideoCoreGfx_staticdata *xsd, ULONG token);
 void vc4_hvs6_irq_init(struct VideoCoreGfx_staticdata *xsd);
 BOOL vc4_hvs6_init_cursor(struct VideoCoreGfx_staticdata *xsd);
 void vc4_hvs6_cursor(struct VideoCoreGfx_staticdata *xsd);

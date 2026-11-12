@@ -115,6 +115,15 @@ LONG vcgfx_plane_occlude(LONG px, LONG py, ULONG pw, ULONG ph,
     return bottom;
 }
 
+/* 1 MHz system timer */
+static inline ULONG planes_now_us(void)
+{
+    return *(volatile ULONG *)(ARM_PERIIOBASE + 0x3004);
+}
+
+/* A NoWait flip older than this has latched, whatever the counters say */
+#define VCGFX_FLIP_STALE_US 100000
+
 /*********** Scanout memory ******************************************/
 
 static void arena_free(struct vcgfx_arena *a)
@@ -905,12 +914,33 @@ BOOL vcgfx_plane_page(OOP_Class *cl, OOP_Object *bm, ULONG page, BOOL wait)
     data->flippending = shown && !wait && (old != page);
     data->flipbuf     = old;
     if (data->flippending)
+    {
         data->fliptoken = vc4_hvs_latch_token(xsd);
+        data->fliptime  = planes_now_us();
+    }
     VC4_MBOX_UNLOCK(xsd);
 
     if (shown && wait)
         vc4_hvs_latch_wait(xsd);
     return shown;
+}
+
+/* Is the last NoWait flip still waiting for the display to take it? Not
+ * after VCGFX_FLIP_STALE_US, so a counter that stopped cannot freeze the
+ * client's frames. */
+BOOL vcgfx_plane_flip_pending(OOP_Class *cl, OOP_Object *bm)
+{
+    struct BitmapData *data = OOP_INST_DATA(cl, bm);
+
+    if (!data->flippending)
+        return FALSE;
+    if (vc4_hvs_latch_passed(XSD(cl), data->fliptoken)
+        || ((planes_now_us() - data->fliptime) >= VCGFX_FLIP_STALE_US))
+    {
+        data->flippending = FALSE;
+        return FALSE;
+    }
+    return TRUE;
 }
 
 /* Before 'page' is written: off the display if a NoWait swap displaced it */

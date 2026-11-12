@@ -1588,6 +1588,14 @@ static BOOL hvs5_vsync_live(struct vc4_hvs_state *st)
 #endif
 }
 
+/* Has the latch of an earlier commit passed? Unpaced, it has. */
+BOOL vc4_hvs5_latch_passed(struct VideoCoreGfx_staticdata *xsd, ULONG armed)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+
+    return !st->hvs_Active || !hvs5_vsync_live(st) || ((LONG)(st->hvs_VSyncCount - armed) >= 0);
+}
+
 /* ------------------------------------------------------------------ */
 /* Screens as planes                                                   */
 /* ------------------------------------------------------------------ */

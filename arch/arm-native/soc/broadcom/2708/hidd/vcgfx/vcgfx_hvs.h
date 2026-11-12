@@ -339,6 +339,7 @@ void vc4_hvs_update_cursor(struct VideoCoreGfx_staticdata *xsd);
 void vc4_hvs_latch_wait(struct VideoCoreGfx_staticdata *xsd);
 ULONG vc4_hvs_latch_token(struct VideoCoreGfx_staticdata *xsd);
 void vc4_hvs_latch_wait_for(struct VideoCoreGfx_staticdata *xsd, ULONG token);
+BOOL vc4_hvs_latch_passed(struct VideoCoreGfx_staticdata *xsd, ULONG token);
 
 /* Screens as planes (vcgfx_planes.c), VideoCore IV. */
 BOOL vc4_hvs_planes_ok(void);

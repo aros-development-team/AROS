@@ -295,10 +295,15 @@ static void cgxv_ChainBackfill(struct VLayerHandle *vh, struct RastPort *rp,
 }
 
 /*
- * Layer backfill hook (VOA_UseBackfill): fills the key inside the surface
- * rectangle and chains to the previous hook outside it. Bounds are in the
- * coordinates of rp->BitMap, OffsetX/Y the layer relative position of
- * Bounds.MinX/MinY.
+ * Layer backfill hook, on every attached layer. Layers calls it for the
+ * parts of the window that become visible, also when only the depth order
+ * changed and nothing is drawn there: the one news of that the layer gets,
+ * so a part meeting the surface rectangle marks the geometry stale. It is
+ * computed again at the client's next cgxvideo call; a client that makes
+ * none (a paused player) stays without its plane until then. With
+ * VOA_UseBackfill and a key or underlay it fills inside that rectangle as
+ * well; all else goes to the previous hook. Bounds are in the coordinates
+ * of rp->BitMap, OffsetX/Y the layer relative position of Bounds.MinX/MinY.
  */
 AROS_UFH3(static void, cgxv_BackfillHook,
     AROS_UFHA(struct Hook *, hook, A0),
@@ -325,6 +330,14 @@ AROS_UFH3(static void, cgxv_BackfillHook,
     is.MaxY = key.MaxY < msg->Bounds.MaxY ? key.MaxY : msg->Bounds.MaxY;
 
     if (!(vh->flags & VHF_ATTACHED) || is.MinX > is.MaxX || is.MinY > is.MaxY)
+    {
+        cgxv_ChainBackfill(vh, rp, msg, &msg->Bounds);
+        return;
+    }
+
+    /* Inside a layers operation: computed again by the next call of the client */
+    st_SetStale(&vh->track);
+    if (!(vh->flags & VHF_BACKFILL) || !(vh->flags & (VHF_COLORKEY | VHF_UNDERLAY)))
     {
         cgxv_ChainBackfill(vh, rp, msg, &msg->Bounds);
         return;
@@ -436,18 +449,17 @@ ULONG cgxv_Attach(struct VLayerHandle *vh, struct Window *window, struct TagItem
     vh->flags |= VHF_ATTACHED;
     AddTail((struct List *)&base->handles, (struct Node *)&vh->node);
 
-    if ((vh->flags & (VHF_COLORKEY | VHF_UNDERLAY)) && !(vh->flags & VHF_NULL))
+    if (!(vh->flags & VHF_NULL))
     {
-        cgxv_FillKey(vh);
+        if (vh->flags & (VHF_COLORKEY | VHF_UNDERLAY))
+            cgxv_FillKey(vh);
 
-        if (vh->flags & VHF_BACKFILL)
-        {
-            vh->backfillHook.h_Entry    = (HOOKFUNC)AROS_ASMSYMNAME(cgxv_BackfillHook);
-            vh->backfillHook.h_SubEntry = NULL;
-            vh->backfillHook.h_Data     = vh;
-            vh->oldBackfill = InstallLayerHook(window->WLayer, &vh->backfillHook);
-            vh->flags |= VHF_BACKFILLHOOK;
-        }
+        /* Also without a fill: it tells of uncovered parts (cgxv_BackfillHook()) */
+        vh->backfillHook.h_Entry    = (HOOKFUNC)AROS_ASMSYMNAME(cgxv_BackfillHook);
+        vh->backfillHook.h_SubEntry = NULL;
+        vh->backfillHook.h_Data     = vh;
+        vh->oldBackfill = InstallLayerHook(window->WLayer, &vh->backfillHook);
+        vh->flags |= VHF_BACKFILLHOOK;
     }
 
     return 0;
@@ -463,7 +475,11 @@ void cgxv_Detach(struct VLayerHandle *vh)
 
     if (vh->flags & VHF_BACKFILLHOOK)
     {
-        InstallLayerHook(vh->window->WLayer, vh->oldBackfill);
+        /* Only ours goes: one installed over it since stays */
+        struct Hook *cur = InstallLayerHook(vh->window->WLayer, vh->oldBackfill);
+
+        if (cur != &vh->backfillHook)
+            InstallLayerHook(vh->window->WLayer, cur);
         vh->oldBackfill = NULL;
         vh->flags &= ~VHF_BACKFILLHOOK;
     }
