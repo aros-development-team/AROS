@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Convert a string into a long
 */
@@ -45,7 +45,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    LONG sign=0, v=0;
+    LONG sign=0;
+    ULONG v=0;
     CONST_STRPTR s=string;
 
     /* Skip leading whitespace characters */
@@ -65,15 +66,21 @@
 
     /* Calculate result */
     do
-        v=v*10+*s++-'0';
+        v=v*10+(ULONG)(*s++-'0');
     while(*s>='0'&&*s<='9');
 
     /* Negative? */
     if(sign=='-')
-        v=-v;
+        v=(ULONG)0-v;
 
     /* All done. */
-    *value=v;
+    /* Accumulate modulo ULONG, including the magnitude of LONG_MIN. Form
+       a negative LONG without overflowing or an out-of-range signed cast.
+       As before, numbers that are too large are not rejected. */
+    if(v > (~(ULONG)0 >> 1))
+        *value=-1-(LONG)~v;
+    else
+        *value=(LONG)v;
     return s-string;
     AROS_LIBFUNC_EXIT
 } /* StrToLong */
