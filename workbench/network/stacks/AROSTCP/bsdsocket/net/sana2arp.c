@@ -81,7 +81,32 @@ struct	arptab {
     u_char         at_holdlen;	/* packets in at_hold */
     struct mbuf   *at_hold;	/* packets until resolved/timeout (m_nextpkt) */
     ULONG          at_asked;	/* when the last request went out (seconds) */
+    u_char         at_nud;	/* reachability, ARP_NUD_* (complete entries) */
+    u_char         at_probes;	/* unicast probes sent (ARP_NUD_PROBE) */
+    ULONG          at_nudtime;	/* arp_ticks when the state's time is up */
 };
+
+/*
+ * Neighbour reachability for ARP entries, as IPv6's neighbour
+ * unreachability detection (RFC 4861 section 7.3; RFC 1122 section
+ * 2.3.2.1's unicast poll): an entry confirmed by an ARP reply is REACHABLE
+ * for 30 s, then STALE; used while STALE it waits 5 s (DELAY) for a
+ * confirmation, then is asked with up to 3 ARP requests sent to its
+ * hardware address, a second apart (PROBE); unanswered, the entry goes and
+ * the next packet resolves the address again. A neighbour that changed
+ * its hardware address without telling was otherwise sent to at the old
+ * one for as long as the entry was used: arpresolve() keeps a used entry.
+ * Times in fast ticks (ARP_HZ), a monotonic clock.
+ */
+#define ARP_NUD_NONE       0    /* incomplete, or permanent */
+#define ARP_NUD_REACHABLE  1
+#define ARP_NUD_STALE      2
+#define ARP_NUD_DELAY      3
+#define ARP_NUD_PROBE      4
+#define ARP_NUD_REACHABLE_TIME  (30 * ARP_HZ)
+#define ARP_NUD_DELAY_TIME      (5 * ARP_HZ)
+#define ARP_NUD_RETRANS_TIME    (1 * ARP_HZ)
+#define ARP_NUD_MAX_PROBES      3
 
 
 /*
@@ -106,7 +131,11 @@ struct arptable {
 
 int	useloopback = 0;	/* use loopback interface for local traffic */
 
-static void arpwhohas(register struct sana_softc *ssc, struct in_addr *addr);
+static void arpwhohas(register struct sana_softc *ssc, struct in_addr *addr, const u_char *to);
+static u_long arp_ticks;        /* ARP's monotonic clock: fast ticks (ARP_HZ)
+                                   since the stack started; conflict detection's
+                                   and reachability's times */
+static void arp_nud_timer(void);
 
 /*
  * While an address is resolved, up to ARP_MAXHOLD packets are kept for it,
@@ -172,7 +201,7 @@ arp_ask(struct sana_softc *ssc, struct arptab *at, struct in_addr *destip)
     if(at->at_asked != 0 && now - at->at_asked < 1)
         return;
     at->at_asked = now;
-    arpwhohas(ssc, destip);
+    arpwhohas(ssc, destip, NULL);
 }
 static void in_arpinput(register struct sana_softc *ssc, struct mbuf *m);
 static char *sana_sprintf(register u_char *ap, int len);
@@ -275,6 +304,7 @@ arptfree(register struct arptable *atb, register struct arptab *at)
     } else {
         at->at_asked = 0;
         at->at_timer = at->at_flags = 0;
+        at->at_nud = at->at_probes = 0;
         at->at_iaddr.s_addr = 0;
         at->at_succ = atb->atb_free;
         atb->atb_free = at;
@@ -630,8 +660,6 @@ autoip_timer(void)
  * a conflict only logged.
  */
 int ip_dad_count = 3;           /* PROBE_NUM */
-static u_long arp_ticks;        /* ARP's monotonic clock: fast ticks (ARP_HZ)
-                                   since the stack started */
 
 /* The SANA-II interface that resolves with ARP behind ifp, if any. */
 static struct sana_softc *
@@ -768,13 +796,16 @@ arp_dad_stop(struct in_ifaddr *ia)
     ia->ia_dad_defended = 0;
 }
 
-/* Every fast tick (ip's pr_fasttimo): ARP's clock, conflict detection */
+/* Every fast tick (ip's pr_fasttimo): ARP's clock, conflict detection,
+ * and once a second reachability */
 void
 arp_fasttimo(void)
 {
     struct in_ifaddr *ia;
 
     arp_ticks++;
+    if(arp_ticks % ARP_HZ == 0)
+        arp_nud_timer();
     for(ia = in_ifaddr; ia; ia = ia->ia_next) {
         struct sana_softc *ssc;
 
@@ -819,6 +850,41 @@ arp_fasttimo(void)
     }
 }
 
+/* Once a second (from arp_fasttimo()): DELAY and PROBE entries move on */
+static void
+arp_nud_timer(void)
+{
+    struct sana_softc *ssc;
+
+    for(ssc = ssq; ssc; ssc = ssc->ss_next) {
+        struct arptable *atb = ssc->ss_arp_table;
+        struct arptab *at, *next;
+        int i;
+
+        if(atb == NULL)
+            continue;
+        ARPTAB_LOCK(atb);
+        for(i = 0; i < ARPTAB_HSIZE; i++)
+            for(at = (struct arptab *)atb->atb_entries[i].mlh_Head; (next = at->at_succ) != NULL; at = next) {
+                if((at->at_nud != ARP_NUD_DELAY && at->at_nud != ARP_NUD_PROBE) ||
+                        (long)(arp_ticks - at->at_nudtime) < 0)
+                    continue;
+                if(at->at_nud == ARP_NUD_DELAY) {
+                    at->at_nud = ARP_NUD_PROBE;
+                    at->at_probes = 0;
+                }
+                if(at->at_probes >= ARP_NUD_MAX_PROBES) {
+                    arptfree(atb, at);          /* unreachable: resolve anew */
+                    continue;
+                }
+                at->at_probes++;
+                at->at_nudtime = arp_ticks + ARP_NUD_RETRANS_TIME;
+                arpwhohas(ssc, &at->at_iaddr, at->at_hwaddr);
+            }
+        ARPTAB_UNLOCK(atb);
+    }
+}
+
 /*
  * Another host (sha) has ia's address: it answered or sent a probe for it,
  * or uses it as its sender. 1 if the ARP packet is to be dropped.
@@ -857,10 +923,12 @@ arp_dad_conflict(struct sana_softc *ssc, struct in_ifaddr *ia, caddr_t sha)
 }
 
 /*
- * Broadcast an ARP packet, asking who has addr on interface ssc.
+ * Broadcast an ARP packet, asking who has addr on interface ssc; sent to
+ * the hardware address to instead if not NULL (a neighbour's reachability
+ * probe, RFC 1122 section 2.3.2.1).
  */
 static void
-arpwhohas(register struct sana_softc *ssc, struct in_addr *addr)
+arpwhohas(register struct sana_softc *ssc, struct in_addr *addr, const u_char *to)
 {
     register struct mbuf *m;
     register struct s2_arppkt *s2a;
@@ -873,7 +941,8 @@ arpwhohas(register struct sana_softc *ssc, struct in_addr *addr)
     MH_ALIGN(m, sizeof(*s2a));
     s2a = mtod(m, struct s2_arppkt *);
     aligned_bzero_const((caddr_t)s2a, sizeof(*s2a));
-    m->m_flags |= M_BCAST;
+    if(to == NULL)
+        m->m_flags |= M_BCAST;
 
     /* fill in header depending of the interface */
     s2a->arp_hrd = htons(ssc->ss_arp_hrd);
@@ -915,6 +984,8 @@ arpwhohas(register struct sana_softc *ssc, struct in_addr *addr)
     ss2.ss2_len = sizeof(ss2);
     ss2.ss2_family = AF_UNSPEC;
     ss2.ss2_type = ssc->ss_arp.type;
+    if(to != NULL)
+        bcopy((caddr_t)to, ss2.ss2_host, ssc->ss_if.if_addrlen);
     (*ssc->ss_if.if_output)(&ssc->ss_if, m, (struct sockaddr *)&ss2,
                             (struct rtentry *)0);
 }
@@ -1035,6 +1106,14 @@ arpresolve(register struct sana_softc *ssc,
 
     at->at_timer = 0;		/* restart the timer */
     if(at->at_flags & ATF_COM) {	/* entry IS complete */
+        /* reachability (RFC 4861 7.3.3): used after it went stale, it
+         * waits DELAY for a confirmation before it is probed */
+        if(at->at_nud == ARP_NUD_REACHABLE && (long)(arp_ticks - at->at_nudtime) >= 0)
+            at->at_nud = ARP_NUD_STALE;
+        if(at->at_nud == ARP_NUD_STALE) {
+            at->at_nud = ARP_NUD_DELAY;
+            at->at_nudtime = arp_ticks + ARP_NUD_DELAY_TIME;
+        }
         bcopy((caddr_t)at->at_hwaddr, (caddr_t)desten, ssc->ss_if.if_addrlen);
         ARPTAB_UNLOCK(atb);
         return 1;
@@ -1299,6 +1378,17 @@ in_arpinput(register struct sana_softc *ssc,
         at = arptab_look(atb, isaddr.s_addr);
 
         if(at) {
+            /* a reply to us confirms the neighbour; anything else from it
+             * with another hardware address makes the entry stale, to be
+             * checked before long (RFC 4861 7.2.5, 7.3.3) */
+            if(!(at->at_flags & ATF_PERM)) {
+                if(op == ARPOP_REPLY && itaddr.s_addr == myaddr.s_addr) {
+                    at->at_nud = ARP_NUD_REACHABLE;
+                    at->at_nudtime = arp_ticks + ARP_NUD_REACHABLE_TIME;
+                } else if(!(at->at_flags & ATF_COM) ||
+                          bcmp(sha, (caddr_t)at->at_hwaddr, len) != 0)
+                    at->at_nud = ARP_NUD_STALE;
+            }
             bcopy(sha, (caddr_t)at->at_hwaddr, len);
 #if 0 /* unused */
             if((at->at_flags & ATF_COM) == 0)
@@ -1324,6 +1414,7 @@ in_arpinput(register struct sana_softc *ssc,
         if(at == 0 && itaddr.s_addr == myaddr.s_addr) {
             /* ensure we have a table entry */
             if(at = arptnew(isaddr.s_addr, atb, FALSE)) {
+                at->at_nud = ARP_NUD_STALE;     /* unsolicited: not confirmed */
                 bcopy(sha, (caddr_t)at->at_hwaddr, len);
 #if 0 /* unused */
                 completed = 1;
