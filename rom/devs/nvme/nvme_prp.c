@@ -154,7 +154,7 @@ BOOL nvme_initprp(struct nvme_command *cmdio, struct completionevent_handler *io
                 goto fail;
             }
 
-            prp_storage = (UBYTE *)(((IPTR)ioehandle->ceh_IOMem.me_Un.meu_Addr + page_size - 1) & ~page_mask);
+            prp_storage = (UBYTE *)(((IPTR)ioehandle->ceh_IOMem.me_Un.meu_Addr + page_size - 1) & ~(IPTR)page_mask);
 
             entries_left = entries_needed;
             for (list_index = 0; list_index < lists_needed; list_index++) {
