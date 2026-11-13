@@ -55,6 +55,7 @@ OOP_Object *VirtIO__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         };
         struct virtio_Controller *data = OOP_INST_DATA(cl, vController);
         UQUAD wanted_features;
+        UWORD queue_size;
 
         D(bug("[VIRTIO:Controller] %s: Obj @ %p, dev=%p\n", __func__, vController, dev);)
 
@@ -102,7 +103,10 @@ OOP_Object *VirtIO__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         /*
          * Allocate and configure the single IO virtqueue.
          */
-        dev->dev_VQ = virtio_alloc_queue(dev, 0, 128);
+        dev->dev_CommonCfg->queue_select = 0;
+        queue_size = dev->dev_CommonCfg->queue_size;
+        if (queue_size > 128) queue_size = 128;
+        dev->dev_VQ = queue_size >= 4 ? virtio_alloc_queue(dev, 0, queue_size) : NULL;
         if (!dev->dev_VQ) {
             bug("[VIRTIO:Controller] %s: failed to allocate virtqueue\n", __func__);
             return vController;
