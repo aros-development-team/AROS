@@ -42,7 +42,7 @@ static BOOL virtio_blk_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     }
 
     if (is_write && dev->dev_ReadOnly) {
-        io->io_Error = IOERR_NOCMD;
+        io->io_Error = TDERR_WriteProt;
         return TRUE;
     }
 
@@ -194,8 +194,12 @@ AROS_LH1(void, BeginIO,
         done = TRUE;
         break;
 
-    case TD_CHANGESTATE:
     case TD_PROTSTATUS:
+        IOStdReq(io)->io_Actual = unit->au_Bus->ab_Dev->dev_ReadOnly ? -1 : 0;
+        done = TRUE;
+        break;
+
+    case TD_CHANGESTATE:
         IOStdReq(io)->io_Actual = 0;
         done = TRUE;
         break;
