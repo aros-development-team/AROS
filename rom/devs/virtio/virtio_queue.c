@@ -160,6 +160,8 @@ int virtio_submit_blk_request(struct virtio_queue *vq, struct virtio_request *te
     UWORD idxs[3];
     UQUAD hdr_phys, status_phys, data_phys = 0;
     UWORD avail_idx;
+    ULONG hdr_len = sizeof(slot->vr_Header), data_len = templ->vr_DataLength;
+    ULONG status_len = 1;
 
     if (!dev || !dev->dev_PCIDriverObject || !VirtIOBase) return -1;
 
@@ -178,26 +180,26 @@ int virtio_submit_blk_request(struct virtio_queue *vq, struct virtio_request *te
 
     /* Translate buffers to PCI-DMA addresses. */
     {
-        ULONG l = sizeof(slot->vr_Header);
-        APTR p = CachePreDMA(&slot->vr_Header, &l, DMA_ReadFromRAM);
+        APTR p = CachePreDMA(&slot->vr_Header, &hdr_len, DMA_ReadFromRAM);
         hdr_phys = (UQUAD)(IPTR)HIDD_PCIDriver_CPUtoPCI(dev->dev_PCIDriverObject, p);
     }
+    if (hdr_len != sizeof(slot->vr_Header))
+        goto undo_header;
     if (templ->vr_DataLength > 0) {
-        ULONG l = templ->vr_DataLength;
         ULONG f = templ->vr_IsWrite ? DMA_ReadFromRAM : 0;
-        APTR p = CachePreDMA(templ->vr_DataAddr, &l, f);
+        APTR p = CachePreDMA(templ->vr_DataAddr, &data_len, f);
         data_phys = (UQUAD)(IPTR)HIDD_PCIDriver_CPUtoPCI(dev->dev_PCIDriverObject, p);
-        if (l < templ->vr_DataLength) {
-            vq_free_chain(vq, idxs[0]);
-            slot->vr_InUse = 0;
-            ReleaseSemaphore(&vq->q_Lock);
-            return -1;
-        }
+        if (data_len != templ->vr_DataLength)
+            goto undo_data;
     }
     {
-        ULONG l = 1;
-        APTR p = CachePreDMA(&slot->vr_Status, &l, 0);
+        APTR p = CachePreDMA(&slot->vr_Status, &status_len, 0);
         status_phys = (UQUAD)(IPTR)HIDD_PCIDriver_CPUtoPCI(dev->dev_PCIDriverObject, p);
+    }
+
+    if (status_len != 1) {
+        CachePostDMA(&slot->vr_Status, &status_len, DMA_NoModify);
+        goto undo_data;
     }
 
     /* Build descriptors. */
@@ -241,6 +243,18 @@ int virtio_submit_blk_request(struct virtio_queue *vq, struct virtio_request *te
     }
 
     return idxs[0];
+
+undo_data:
+    if (templ->vr_DataLength)
+        CachePostDMA(templ->vr_DataAddr, &data_len,
+                     DMA_NoModify | (templ->vr_IsWrite ? DMA_ReadFromRAM : 0));
+undo_header:
+    CachePostDMA(&slot->vr_Header, &hdr_len, DMA_ReadFromRAM | DMA_NoModify);
+    /* Allocation detached the tail, but has not yet rebuilt the chain. */
+    vq_free_chain(vq, idxs[0]);
+    slot->vr_InUse = 0;
+    ReleaseSemaphore(&vq->q_Lock);
+    return -1;
 }
 
 ULONG virtio_process_used(struct virtio_queue *vq)
@@ -261,6 +275,16 @@ ULONG virtio_process_used(struct virtio_queue *vq)
             req = &vq->q_Reqs[head];
             if (req->vr_InUse) {
                 struct IORequest *io = req->vr_IORequest;
+
+                ULONG len = sizeof(req->vr_Header);
+                CachePostDMA(&req->vr_Header, &len, DMA_ReadFromRAM);
+                if (req->vr_DataLength) {
+                    len = req->vr_DataLength;
+                    CachePostDMA(req->vr_DataAddr, &len,
+                                 req->vr_IsWrite ? DMA_ReadFromRAM : 0);
+                }
+                len = 1;
+                CachePostDMA(&req->vr_Status, &len, 0);
 
                 /* Translate virtio status into AROS error. */
                 if (io) {
