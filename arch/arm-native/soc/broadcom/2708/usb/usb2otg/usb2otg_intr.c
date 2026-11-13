@@ -752,31 +752,11 @@ static void usb2otg_split_giveup_recover(struct USB2OTGUnit *USBUnit, int chan,
     if (hc->hc_GiveupStreak >= 4 && hc->hc_GiveupCross &&
         !(USBUnit->hu_BurnedChannels & (1 << chan)))
     {
-        /*
-         * Beyond revival — retire it, and if it carried split control
-         * move that to the next candidate. INT5/INT4 are a last
-         * resort.
-         */
-        static const UBYTE candidates[] =
-            { CHAN_INT3, CHAN_INT2, CHAN_INT1, CHAN_INT5, CHAN_INT4 };
-        int i;
-
+        /* Beyond revival: retire it. */
         USBUnit->hu_BurnedChannels |= (1 << chan);
-        if (chan == USBUnit->hu_CtrlSplitChan)
-        {
-            for (i = 0; i < 5; i++)
-            {
-                if (!((USBUnit->hu_BurnedChannels | USBUnit->hu_IsoChanMask) & (1 << candidates[i])))
-                {
-                    USBUnit->hu_CtrlSplitChan = candidates[i];
-                    break;
-                }
-            }
-        }
-        bug("[USB2OTG:BURN] chan %d burned after %d giveups (mask=%02x) ctrl-split now chan %d\n",
+        bug("[USB2OTG:BURN] chan %d burned after %d giveups (mask=%02x)\n",
             chan, (int)hc->hc_GiveupStreak,
-            (unsigned)USBUnit->hu_BurnedChannels,
-            (int)USBUnit->hu_CtrlSplitChan);
+            (unsigned)USBUnit->hu_BurnedChannels);
     }
 }
 
@@ -1385,7 +1365,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
 
 #if USB2OTG_DEBUG_FORCE_CTRL_NAK
                 /* Synthesise the TT NAK QEMU never produces — see the define. */
-                if (req != NULL && chan == USBUnit->hu_CtrlSplitChan &&
+                if (req != NULL &&
                     req->iouh_Req.io_Command == UHCMD_CONTROLXFER &&
                     (req->iouh_Flags & UHFF_SPLITTRANS) &&
                     (intr & USB2OTG_INTRCHAN_TRANSFERCOMPLETE) &&
@@ -1436,7 +1416,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                  * of a 64-halt give-up storm: XactErr, NAK-then-bare,
                  * or clean progress that suddenly deschedules.
                  */
-                if (req != NULL && chan == USBUnit->hu_CtrlSplitChan &&
+                if (req != NULL &&
                     req->iouh_Req.io_Command == UHCMD_CONTROLXFER &&
                     (req->iouh_Flags & UHFF_SPLITTRANS))
                 {

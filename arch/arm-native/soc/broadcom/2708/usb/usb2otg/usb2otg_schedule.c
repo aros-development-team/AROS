@@ -33,24 +33,27 @@ static int usb2otg_tt_in_flight(struct USB2OTGUnit *otg_Unit,
     struct IOUsbHWReq *candidate);
 
 /*
- * Free channel for a bulk or INT request. Bulk always leaves one
- * channel free, so a periodic poll never waits behind bulk work.
- * Caller holds hu_Lock.
+ * Free channel for a request of the given USB2OTG_HCT_* type. Bulk
+ * always leaves one channel free, so control and periodic work never
+ * wait behind it. Caller holds hu_Lock.
  */
-static int usb2otg_alloc_channel(struct USB2OTGUnit *otg_Unit, BOOL periodic)
+static int usb2otg_alloc_channel(struct USB2OTGUnit *otg_Unit, UBYTE type)
 {
-    static const UBYTE bulk_order[] = { CHAN_BULK, CHAN_BULK2,
-        CHAN_INT1, CHAN_INT2, CHAN_INT3, CHAN_INT4, CHAN_INT5 };
+    static const UBYTE ctrl_order[] = { CHAN_CTRL, CHAN_INT1, CHAN_INT2,
+        CHAN_INT3, CHAN_INT4, CHAN_INT5, CHAN_BULK, CHAN_BULK2 };
+    static const UBYTE bulk_order[] = { CHAN_BULK, CHAN_BULK2, CHAN_INT1,
+        CHAN_INT2, CHAN_INT3, CHAN_INT4, CHAN_INT5, CHAN_CTRL };
     static const UBYTE int_order[] = { CHAN_INT1, CHAN_INT2, CHAN_INT3,
-        CHAN_INT4, CHAN_INT5, CHAN_BULK, CHAN_BULK2 };
-    const UBYTE *order = periodic ? int_order : bulk_order;
+        CHAN_INT4, CHAN_INT5, CHAN_BULK, CHAN_BULK2, CHAN_CTRL };
+    const UBYTE *order = (type == USB2OTG_HCT_BULK) ? bulk_order :
+                         (type == USB2OTG_HCT_INT) ? int_order : ctrl_order;
     ULONG excl = otg_Unit->hu_DeadChannels | otg_Unit->hu_BurnedChannels |
-                 otg_Unit->hu_IsoChanMask | (1 << otg_Unit->hu_CtrlSplitChan);
+                 otg_Unit->hu_IsoChanMask;
     int found = -1;
     int nfree = 0;
     int i;
 
-    for (i = 0; i < sizeof(bulk_order); i++)
+    for (i = 0; i < sizeof(ctrl_order); i++)
     {
         int chan = order[i];
 
@@ -60,7 +63,7 @@ static int usb2otg_alloc_channel(struct USB2OTGUnit *otg_Unit, BOOL periodic)
             found = chan;
         nfree++;
     }
-    if (!periodic && nfree < 2)
+    if (type == USB2OTG_HCT_BULK && nfree < 2)
         return -1;
     return found;
 }
@@ -137,7 +140,7 @@ static struct IOUsbHWReq *usb2otg_find_schedulable_bulk_req(
             continue;
         }
 
-        chan = usb2otg_alloc_channel(otg_Unit, FALSE);
+        chan = usb2otg_alloc_channel(otg_Unit, USB2OTG_HCT_BULK);
         if (chan < 0)
             continue;
 
@@ -167,6 +170,24 @@ static int usb2otg_endpoint_in_flight(struct USB2OTGUnit *otg_Unit,
         {
             return 1;
         }
+    }
+    return 0;
+}
+
+/* 1 if a control transfer to candidate's device is already on a channel. */
+static int usb2otg_ctrl_dev_in_flight(struct USB2OTGUnit *otg_Unit,
+    struct IOUsbHWReq *candidate)
+{
+    int scan;
+
+    for (scan = 0; scan < 8; scan++)
+    {
+        struct IOUsbHWReq *active = otg_Unit->hu_Channel[scan].hc_Request;
+
+        if (active != NULL && active != candidate &&
+            active->iouh_Req.io_Command == UHCMD_CONTROLXFER &&
+            active->iouh_DevAddr == candidate->iouh_DevAddr)
+            return 1;
     }
     return 0;
 }
@@ -1451,55 +1472,30 @@ void FNAME_DEV(StartChannel)(struct USB2OTGUnit *otg_Unit, int chan, int quick)
 void FNAME_DEV(ScheduleCtrlTDs)(struct USB2OTGUnit *otg_Unit)
 {
     struct USB2OTGDevice *USB2OTGBase = otg_Unit->hu_USB2OTGBase;
-    struct IOUsbHWReq *req = NULL;
+    int slot;
 
     if (!usb2otg_require_cpu0(USB2OTGBase, __PRETTY_FUNCTION__))
         return;
 
-    /* CTRL channel quarantined — leave the queue for wedge-recovery. */
-    if (otg_Unit->hu_DeadChannels & (1 << CHAN_CTRL))
-    {
-        /* Blackout diag: first skip + every 32nd, with queue depth. */
-        D(
-            static ULONG ctrl_blackout_skips = 0;
-
-            if ((++ctrl_blackout_skips & 0x1f) == 1)
-            {
-                struct IOUsbHWReq *dreq;
-                int depth = 0;
-
-                Disable();
-                KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
-                ForeachNode(&otg_Unit->hu_CtrlXFerQueue, dreq)
-                    depth++;
-                KrnSpinUnLock(&otg_Unit->hu_Lock);
-                Enable();
-
-                bug("[USB2OTG:QUAR] CTRL blackout: scheduling skipped (n=%lu) qdepth=%d dark=%lu ticks\n",
-                    (unsigned long)ctrl_blackout_skips, depth,
-                    (unsigned long)(otg_Unit->hu_WdTicks
-                        - otg_Unit->hu_QuarSetTick[CHAN_CTRL]));
-            }
-        )
-        return;
-    }
-
     D(bug("[USB2OTG] %s(%p)\n", __PRETTY_FUNCTION__, otg_Unit));
 
-    D(
-        if (!IsListEmpty(&otg_Unit->hu_CtrlXFerQueue))
-            bug("[USB2OTG:SCHED] CtrlTDs: queue non-empty, chan_req=%p\n",
-                otg_Unit->hu_Channel[CHAN_CTRL].hc_Request);
-    )
-
-    /* First try to get head of the transfer queue */
-    Disable();
-    KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
-    req = (struct IOUsbHWReq *)REMHEAD(&otg_Unit->hu_CtrlXFerQueue);
-
-    /* If there was any request in the queue, try to put it into InProgress slot */
-    if (req)
+    /* Control takes any free channel, one transfer per device at a time. */
+    for (slot = 0; slot < 8; slot++)
     {
+        struct IOUsbHWReq *req;
+        int ctrl_chan = -1;
+        UBYTE new_role, old_role;
+
+        Disable();
+        KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+        req = (struct IOUsbHWReq *)REMHEAD(&otg_Unit->hu_CtrlXFerQueue);
+        if (req == NULL)
+        {
+            KrnSpinUnLock(&otg_Unit->hu_Lock);
+            Enable();
+            return;
+        }
+
         /*
          * Timed retry backoff: DriverPrivate1 = BACKOFF_FLAG | earliest
          * frame (11-bit). Wall-clock, so a Cause() storm cannot burn
@@ -1532,59 +1528,33 @@ void FNAME_DEV(ScheduleCtrlTDs)(struct USB2OTGUnit *otg_Unit)
             }
         }
 
-        /*
-         * Route split control to its own channel — see CHAN_CTRL_SPLIT
-         * for the poisoning rationale.
-         */
-        int ctrl_chan = (req->iouh_Flags & UHFF_SPLITTRANS)
-                            ? otg_Unit->hu_CtrlSplitChan : CHAN_CTRL;
-
-        /* Target channel quarantined — park the request for recovery. */
-        if (otg_Unit->hu_DeadChannels & (1 << ctrl_chan))
+        if (!usb2otg_ctrl_dev_in_flight(otg_Unit, req) &&
+            !usb2otg_tt_in_flight(otg_Unit, req))
+            ctrl_chan = usb2otg_alloc_channel(otg_Unit, USB2OTG_HCT_CTRL);
+        if (ctrl_chan < 0)
         {
-            ADDTAIL(&otg_Unit->hu_CtrlXFerQueue, req);
-            KrnSpinUnLock(&otg_Unit->hu_Lock);
-            Enable();
-            return;
-        }
-
-        /* Channel slot empty? If yes store the request there. Otherwise put it back to the queue */
-        if (otg_Unit->hu_Channel[ctrl_chan].hc_Request == NULL) {
-            /* Defer if another channel is mid-split to the same TT. */
-            if (usb2otg_tt_in_flight(otg_Unit, req))
-            {
-                ADDHEAD(&otg_Unit->hu_CtrlXFerQueue, req);
-                KrnSpinUnLock(&otg_Unit->hu_Lock);
-                Enable();
-                return;
-            }
-            otg_Unit->hu_Channel[ctrl_chan].hc_Request = req;
-            otg_Unit->hu_Channel[ctrl_chan].hc_Type =
-                (ctrl_chan == CHAN_CTRL) ? USB2OTG_HCT_CTRL : USB2OTG_HCT_CTRL_SPLIT;
-            otg_Unit->hu_Channel[ctrl_chan].hc_Armed = 0;
-        } else {
-            /* HOL diag: who holds the ctrl channel while this dev waits. */
-            D(
-                static ULONG ctrl_busy_defers = 0;
-                struct IOUsbHWReq *holder =
-                    otg_Unit->hu_Channel[ctrl_chan].hc_Request;
-
-                if ((++ctrl_busy_defers & 0x7f) == 1)
-                    bug("[USB2OTG:CTRLQ] defer (n=%lu): chan=%d busy dev=%d ep=%d bReq=%02x — waiting dev=%d bReq=%02x tick=%lu\n",
-                        (unsigned long)ctrl_busy_defers, ctrl_chan,
-                        holder ? (int)holder->iouh_DevAddr : -1,
-                        holder ? (int)holder->iouh_Endpoint : -1,
-                        holder ? (unsigned)holder->iouh_SetupData.bRequest : 0,
-                        (int)req->iouh_DevAddr,
-                        (unsigned)req->iouh_SetupData.bRequest,
-                        (unsigned long)otg_Unit->hu_WdTicks);
-            )
             ADDHEAD(&otg_Unit->hu_CtrlXFerQueue, req);
             KrnSpinUnLock(&otg_Unit->hu_Lock);
             Enable();
             return;
         }
+
+        new_role = (req->iouh_Flags & UHFF_SPLITTRANS)
+                       ? USB2OTG_CHANROLE_SPLIT : USB2OTG_CHANROLE_DIRECT;
+        old_role = otg_Unit->hu_Channel[ctrl_chan].hc_ArmedRole;
+        otg_Unit->hu_Channel[ctrl_chan].hc_Request = req;
+        otg_Unit->hu_Channel[ctrl_chan].hc_Type =
+            (req->iouh_Flags & UHFF_SPLITTRANS) ? USB2OTG_HCT_CTRL_SPLIT : USB2OTG_HCT_CTRL;
+        otg_Unit->hu_Channel[ctrl_chan].hc_Armed = 0;
+        otg_Unit->hu_Channel[ctrl_chan].hc_ArmedRole = new_role;
         KrnSpinUnLock(&otg_Unit->hu_Lock);
+
+        /* Split and direct arms must not share stale engine state. */
+        if (old_role != USB2OTG_CHANROLE_UNUSED && old_role != new_role)
+        {
+            usb2otg_exorcise_channel(ctrl_chan);
+            otg_Unit->hu_Channel[ctrl_chan].hc_OddfrmFlip = 0;
+        }
         Enable();
 
         D(bug("[USB2OTG:SCHED] CTRL-START: dev=%ld req=%02lx len=%ld\n",
@@ -1601,11 +1571,6 @@ void FNAME_DEV(ScheduleCtrlTDs)(struct USB2OTGUnit *otg_Unit)
         otg_Unit->hu_CtrlArmCount++;
         if (FNAME_DEV(SetupChannel)(otg_Unit, ctrl_chan))
             FNAME_DEV(StartChannel)(otg_Unit, ctrl_chan, 0);
-    }
-    else
-    {
-        KrnSpinUnLock(&otg_Unit->hu_Lock);
-        Enable();
     }
 }
 
@@ -1698,7 +1663,7 @@ void FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *otg_Unit)
             }
         }
         if (req != NULL)
-            chan = usb2otg_alloc_channel(otg_Unit, TRUE);
+            chan = usb2otg_alloc_channel(otg_Unit, USB2OTG_HCT_INT);
         if (chan < 0)
         {
             KrnSpinUnLock(&otg_Unit->hu_Lock);

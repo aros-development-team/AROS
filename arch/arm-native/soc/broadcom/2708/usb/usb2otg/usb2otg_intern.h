@@ -543,14 +543,7 @@ struct USB2OTGUnit
      */
     UBYTE               hu_DeadChannels;
 
-    /*
-     * Split-control channel, runtime: a channel whose split engine
-     * cannot be revived is retired and split control moves on. The
-     * order is INT3, INT2, INT1, then INT5 and INT4 as a last
-     * resort. hu_BurnedChannels is never cleared (unlike
-     * hu_DeadChannels) — a retired channel stays retired.
-     */
-    UBYTE               hu_CtrlSplitChan;
+    /* Channels whose split engine cannot be revived. Never cleared. */
     UBYTE               hu_BurnedChannels;
     BOOL                hu_IntAsBulk;       /* direct INT armed as BULK (BCM2835 workaround) */
     BOOL                hu_NPTxGate;        /* drain NPTxFIFO before bulk OUT (QEMU has no FIFO) */
@@ -651,18 +644,6 @@ void                    usb2otg_exorcise_channel(int chan);
 #define USB2OTG_CHANROLE_SPLIT  1
 #define USB2OTG_CHANROLE_DIRECT 2
 
-/*
- * Split-control channel. A halted/failed split sequence poisons its
- * channel: every subsequent NON-split arm on it bare-CHHLTDs in the
- * arming uframe (splits keep working). Observed twice on Pi 3B+:
- * chan 2 (split-INT vs hub polls) and CHAN_CTRL (dead-device split
- * ctrl vs live-device ctrl — froze ALL control traffic after unplug).
- * So control to LS/FS devices behind a TT gets its own channel,
- * taken out of the INT channels (INT3 until one is burned).
- */
-#define CHAN_CTRL_SPLIT         CHAN_INT3
-
-
 /* Periodic-split sequencer state (hc_SplitState). */
 #define USB2OTG_SPLIT_IDLE  0   /* not a split, or split sequence finished */
 #define USB2OTG_SPLIT_SS    1   /* SSPLIT issued, awaiting ACK */
@@ -698,8 +679,9 @@ void                    usb2otg_exorcise_channel(int chan);
  *  3: exorcise audit - 11 abandon sites + both in-place ctrl retries
  *  4: INT pool overflow (split<->direct) with exorcise on role flip
  *  5: bulk and INT channels allocated per request from one pool
+ *  6: control channels allocated per request as well
  */
-#define USB2OTG_BUILD_REV 5
+#define USB2OTG_BUILD_REV 6
 
 /*
  * Testing hook: after _AFTER split-interrupt HCINT events have passed
