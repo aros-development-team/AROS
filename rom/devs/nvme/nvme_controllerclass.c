@@ -200,7 +200,7 @@ static BOOL nvme_wait_ready(device_t dev, struct IORequest *tmr, UQUAD cap, ULON
         }
         if (!want && !(csts & NVME_CSTS_RDY))
             return TRUE;
-        if (csts & NVME_CSTS_CFS) {
+        if (want && (csts & NVME_CSTS_CFS)) {
             bug("[NVME:Controller] %s: controller reports fatal status\n", __func__);
             return FALSE;
         }
