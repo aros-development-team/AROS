@@ -11,9 +11,11 @@
  * Returns TRUE on success.
  */
 BOOL virtio_hw_map(device_t dev);
+void virtio_hw_unmap(device_t dev);
 
 /* Reset the device, walk through ACK -> DRIVER. */
 BOOL virtio_hw_reset(device_t dev);
+BOOL virtio_hw_stop(device_t dev);
 
 /* Read 64 bits of device features (using device_feature_select). */
 UQUAD virtio_hw_get_device_features(device_t dev);
@@ -31,6 +33,6 @@ BOOL  virtio_hw_setup_queue(device_t dev, UWORD qid, struct virtio_queue *vq);
 BOOL  virtio_hw_driver_ok(device_t dev);
 
 /* Read virtio-blk device cfg into dev cached fields. */
-void  virtio_hw_read_blk_config(device_t dev);
+BOOL  virtio_hw_read_blk_config(device_t dev);
 
 #endif

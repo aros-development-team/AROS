@@ -249,6 +249,8 @@ extern int ip6_use_tempaddr;   /* enable temporary addresses (0=off, 1=on) */
 struct nd_prefix;  /* forward declaration for prototype below */
 int  in6_tmpifadd(struct ifnet *, struct nd_prefix *);
 void in6_tmpaddrtimer(void);   /* called from slow timer */
+/* netinet6/ip6_output.c: (m, opt, ro, flags, im6o, ifpp, inp) */
+extern int ip6_output(void *, ...);
 #endif /* KERNEL */
 
 #endif /* NETINET6_IN6_VAR_H */

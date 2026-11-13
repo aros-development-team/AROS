@@ -39,6 +39,7 @@
 #include <netinet/in_var.h>
 #include <netinet6/in6_var.h>
 #include <netinet/inetfamily.h>
+#include <protos/net/route_protos.h>
 #include <net/netcore_map.h>        /* always the last include */
 
 

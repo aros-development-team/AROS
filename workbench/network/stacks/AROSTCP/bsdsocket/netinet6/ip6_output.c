@@ -47,6 +47,7 @@
 #include <net/if_loop_protos.h>
 #include <protos/kern/kern_random_protos.h>
 #include <kern/uipc_socket2_protos.h>
+#include <protos/net/route_protos.h>
 #include <net/netcore_map.h>        /* always the last include */
 
 /* IPv6's packet hook point (netinet6/in6_proto.c) */

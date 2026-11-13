@@ -51,6 +51,7 @@
 #include <protos/net/route_protos.h>
 #include <kern/uipc_socket2_protos.h>
 #include <protos/netinet/in_cksum_protos.h>
+#include "in6_var.h"
 #include <net/netcore_map.h>        /* always the last include */
 
 /* IP6_HDR_OFF macro: ip6 header is at offset 0 in mbuf after ip6_input */

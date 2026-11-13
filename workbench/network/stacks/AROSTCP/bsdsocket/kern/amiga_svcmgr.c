@@ -28,6 +28,7 @@
 #include <kern/amiga_svcmgr.h>
 #include <kern/amiga_log.h>
 #include <kern/netconfig_ops.h>
+#include <sys/systm.h>
 
 /* A launched daemon.  The seglist is freed by DOS on exit (NP_FreeSeglist
  * defaults TRUE), so we track only the process and an exit flag the NP_ExitCode

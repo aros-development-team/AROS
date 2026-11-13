@@ -61,6 +61,9 @@ extern struct hostent * __gethostbyaddr(UBYTE *, int, int, struct SocketBase *);
 extern LONG __gethostname(STRPTR, LONG, struct SocketBase *);
 extern LONG __SetErrnoPtr(VOID *, UBYTE, struct SocketBase *);
 extern LONG __inet_aton(CONST_STRPTR cp,  struct in_addr * addr);
+struct TagItem;
+extern long __QueryInterfaceTagList(STRPTR name, const struct TagItem *tags, struct SocketBase *libPtr); /* api/amiga_netstat.c */
+extern int sethostname(const char *name, size_t namelen);    /* api/amiga_hostname.c */
 extern ULONG __inet_network(const char *cp);
 extern char * __Inet_NtoA(ULONG, struct SocketBase *);
 #define __inet_ntoa __Inet_NtoA

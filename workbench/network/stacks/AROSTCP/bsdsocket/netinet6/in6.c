@@ -47,6 +47,7 @@
 
 #include <devices/sana2.h>
 #include <protos/kern/kern_random_protos.h>
+#include <protos/net/route_protos.h>
 #include <net/netcore_map.h>        /* always the last include */
 
 struct in6_ifaddr *in6_ifaddr = NULL;

@@ -96,6 +96,7 @@ BOOL readconfig(void);
 
 LONG parseline(struct CSource *args, UBYTE **errstrp, struct CSource *res);
 LONG readfile(struct CSource *args, UBYTE **errstrp, struct CSource *res);
+LONG CS_Alloc(struct CSource *reply, size_t size);  /* kern/amiga_cstr.c */
 LONG getvalue(struct CSource *args, UBYTE **errstrp, struct CSource *res);
 LONG setvalue(struct CSource *args, UBYTE **errstrp, struct CSource *res);
 LONG sendbreak(struct CSource *args, UBYTE **errstrp, struct CSource *res);

@@ -82,6 +82,8 @@
 #include <net/netmodule.h>
 #include <kern/admin_ops.h>
 
+#include <sys/systm.h>
+#include <protos/kern/uipc_socket2_protos.h>
 #include <net/netcore_map.h>        /* always the last include */
 
 /*

@@ -89,6 +89,7 @@
 #include <netinet/igmp.h>
 #endif
 #include <sys/syslog.h>
+#include <protos/net/route_protos.h>
 #include <net/netcore_map.h>        /* always the last include */
 
 #if INET

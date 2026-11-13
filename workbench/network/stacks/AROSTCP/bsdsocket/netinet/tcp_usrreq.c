@@ -75,6 +75,7 @@
 
 #include "tcp_compat.h"
 #include "tcp_syncache.h"           /* syncache_listen() */
+#include <protos/kern/uipc_socket2_protos.h>
 #include <net/netcore_map.h>        /* always the last include */
 
 /*

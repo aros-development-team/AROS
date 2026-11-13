@@ -72,6 +72,7 @@ BOOL sana_poll(void);
  * include prototypes for initialization functions
  */
 #include <kern/uipc_domain_protos.h>    /* domaininit() */
+#include <protos/net/if_loop_protos.h>
 
 /*
  * The main module of the AMITCP/IP.

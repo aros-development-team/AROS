@@ -45,6 +45,7 @@
 #include "miami_api.h"
 
 #include <proto/bsdsocket.h>
+#include <api/apicalls.h>
 
 extern const char *__inet_ntop(int af, const void *src, char *dst, socklen_t size, struct SocketBase *SocketBase);
 extern int __inet_pton(int af, const char *src, void *dst, struct SocketBase *SocketBase);
