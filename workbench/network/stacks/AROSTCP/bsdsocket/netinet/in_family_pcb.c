@@ -258,9 +258,10 @@ in_srcia(struct inpcb *inp, struct in_addr dst, struct in_ifaddr **iap)
 
 /*
  * inf_selectsrc. With the interface named (a socket bound to one,
- * SO_BINDTODEVICE) the source is that interface's own address - "any" if
- * it has none yet, which is how a DHCP client sends; otherwise in_srcia()
- * decides, which needs the PCB (its route, its multicast options).
+ * SO_BINDTODEVICE, or IP_PKTINFO's) the source is that interface's own
+ * address - its ready one on the destination's network, if it has one;
+ * "any" if it has none yet, which is how a DHCP client sends. Otherwise
+ * in_srcia() decides, which needs the PCB (its route, its multicast options).
  */
 int
 in_selectsrc(struct inpcb *inp, const void *dst, struct ifnet *oifp, void *src)
@@ -269,10 +270,20 @@ in_selectsrc(struct inpcb *inp, const void *dst, struct ifnet *oifp, void *src)
     int error;
 
     if(oifp != NULL) {
+        /* the first address of the interface, or the one on the
+         * destination's network */
+        struct in_ifaddr *first = NULL;
+        u_long d = ntohl(((const struct in_addr *)dst)->s_addr);
+
         for(ia = in_ifaddr; ia; ia = ia->ia_next)
-            if(ia->ia_ifp == oifp)
-                break;
-        ia = in_readyia(ia);
+            if(ia->ia_ifp == oifp) {
+                if(first == NULL)
+                    first = ia;
+                if((d & ia->ia_subnetmask) == ia->ia_subnet &&
+                        !(ia->ia4_flags & IN_IFF_NOTREADY))
+                    break;
+            }
+        ia = in_readyia(ia ? ia : first);
         ((struct in_addr *)src)->s_addr = ia ? IA_SIN(ia)->sin_addr.s_addr : INADDR_ANY;
         return (0);
     }
