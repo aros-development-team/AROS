@@ -45,7 +45,10 @@ static BOOL virtio_blk_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
         return TRUE;
     }
 
-    if ((off64 >> unit->au_SecShift) > unit->au_High) {
+    if ((off64 & ((1ULL << unit->au_SecShift) - 1)) ||
+        (off64 >> unit->au_SecShift) >= unit->au_SecCnt ||
+        (len >> unit->au_SecShift) >
+            unit->au_SecCnt - (off64 >> unit->au_SecShift)) {
         io->io_Error = IOERR_BADADDRESS;
         return TRUE;
     }
