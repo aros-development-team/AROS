@@ -253,6 +253,16 @@ ip6_output(void *args, ...)
         ro = (struct route *)&iproute;
     }
 
+    /*
+     * M_BCAST and M_MCAST tell how a frame was received. A packet made
+     * from one - the echo reply to a request sent to a group - must not
+     * leave as one: the interface would send it to its unicast
+     * destination as a multicast (S2_MULTICAST), which the device
+     * refuses. As FreeBSD's ip6_output() does, "just in case".
+     */
+    if(!IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst))
+        m->m_flags &= ~(M_BCAST | M_MCAST);
+
     /* Route lookup */
     dst = (struct sockaddr_in6 *)&ro->ro_dst;
 

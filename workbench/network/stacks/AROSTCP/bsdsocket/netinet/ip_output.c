@@ -285,6 +285,16 @@ int	STKARGFUN ip_output(void *args, ...)
         if(ro->ro_rt->rt_flags & RTF_GATEWAY)
             dst = (struct sockaddr_in *)ro->ro_rt->rt_gateway;
     }
+    /*
+     * M_MCAST tells how a frame was received. A packet made from one - the
+     * echo reply icmp_reflect() makes of a request sent to a group, in the
+     * request's own mbuf - must not leave as one: the interface would send
+     * it to its unicast destination as a multicast (S2_MULTICAST), which
+     * the device refuses. As in ip6_output(); M_BCAST is set or cleared
+     * below, by what the destination is.
+     */
+    if(!IN_MULTICAST(ntohl(ip->ip_dst.s_addr)))
+        m->m_flags &= ~M_MCAST;
 #ifdef ENABLE_MULTICAST
     if(IN_MULTICAST(ntohl(ip->ip_dst.s_addr))) {
         struct in_multi *inm;
