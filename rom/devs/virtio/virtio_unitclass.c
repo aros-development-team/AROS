@@ -22,11 +22,13 @@ extern const char GM_UNIQUENAME(LibName)[];
 
 static void virtio_strcpy(const UBYTE *src, UBYTE *dst, ULONG size)
 {
-    register int i = size;
-    while (i--) {
-        if (src[i] < ' ') dst[i] = '\0';
-        else              dst[i] = src[i];
+    ULONG i = 0;
+
+    while (i < size && src[i] >= ' ') {
+        dst[i] = src[i];
+        i++;
     }
+    dst[i] = '\0';
 }
 
 OOP_Object *VirtIOUnit__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
