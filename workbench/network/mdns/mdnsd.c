@@ -286,8 +286,8 @@ main(void)
     struct DNSSDIPCMsg *dmsg;
     struct MsgPort *dport;
     ULONG lastScan = 0, lastReap = 0;
-    ULONG addressMask = 0;
-    BYTE addressSignal = -1;
+    ULONG addressMask = 0, goneMask = 0;
+    BYTE addressSignal = -1, goneSignal = -1;
     BOOL running = TRUE, probing = FALSE;
 
     /* One responder owns the host's names. */
@@ -345,6 +345,14 @@ main(void)
         addressMask = 1UL << addressSignal;
     }
     net_up(md, addressMask);
+    /* dnssd.library's sessions, and the signal that a client task went */
+    goneSignal = AllocSignal(-1);
+    if (goneSignal >= 0) {
+        goneMask = 1UL << goneSignal;
+    }
+    if (!dnssdServerInit(md, goneMask)) {
+        PutStr("mdnsd: no memory for dnssd.library's sessions\n");
+    }
     port->mp_Node.ln_Name = (STRPTR)MDNS_IPC_PORT;
     AddPort(port);
     /* dnssd.library's port */
@@ -354,7 +362,7 @@ main(void)
     while (running) {
         ULONG got = wait_and_receive(md,
             portmask | dportmask | sig.ms_Stop | sig.ms_Begin | sig.ms_End |
-            addressMask | SIGBREAKF_CTRL_C, probing);
+            addressMask | goneMask | SIGBREAKF_CTRL_C, probing);
 
         if (got & (sig.ms_Stop | SIGBREAKF_CTRL_C)) {
             running = FALSE;
@@ -380,6 +388,9 @@ main(void)
         while ((msg = (struct MDNSIPCMsg *)GetMsg(port)) != NULL) {
             mdnsClientMessage(md, msg);
             ReplyMsg(&msg->mi_Msg);
+        }
+        if (got & goneMask) {
+            dnssdServerGone(md);        /* before a message of a new task */
         }
         while ((dmsg = (struct DNSSDIPCMsg *)GetMsg(dport)) != NULL) {
             dnssdServerMessage(md, dmsg);
@@ -441,6 +452,9 @@ main(void)
     mdnsdServiceClose();
     if (addressSignal >= 0) {
         FreeSignal(addressSignal);
+    }
+    if (goneSignal >= 0) {
+        FreeSignal(goneSignal);         /* the hook is off (dnssdServerFree()) */
     }
     FreeMem(md->md_RxBuf, MDNS_MAX_PACKET);
     FreeMem(md->md_TxBuf, MDNS_MAX_PACKET);

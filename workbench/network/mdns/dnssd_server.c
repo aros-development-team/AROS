@@ -18,11 +18,26 @@
  * Sessions and operations are slots named by a generation and the slot
  * (dnssd_ipc.h), under the daemon's incarnation: a name from before a
  * restart, or of a slot used since, is refused.
+ *
+ * A client task that ends - or is removed - without closing its session is
+ * told by task.resource (TNA_REMOVED), the coordinator's mechanism (D1):
+ * the hook runs in the context of whoever removes the task, before it goes,
+ * so it does the least - under Forbid(), it marks the task's sessions gone
+ * and takes their notification away, so that nothing is ever replied to a
+ * port that may be freed - and signals mdnsd, which closes them in its own
+ * task: their operations end, their services leave with their goodbyes.
+ * Without task.resource, and in case a notification is missed, the periodic
+ * reap by task ID (dnssdServerReap()) does the same.
  */
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/lists.h>
+#include <exec/tasks.h>
+#include <aros/asmcall.h>
+#include <utility/hooks.h>
+#include <resources/task.h>
 #include <proto/exec.h>
+#include <proto/task.h>
 #include <string.h>
 
 #include <stddef.h>
@@ -55,6 +70,7 @@ struct ServerSession
     UWORD           ss_Generation;
     UBYTE           ss_Active;
     UBYTE           ss_Lost;            /* events were dropped */
+    UBYTE           ss_Gone;            /* its task is gone: to be closed */
     ULONG           ss_Task;
     struct Message *ss_Notify;          /* lent, not yet replied to */
     struct MinList  ss_Queue;
@@ -100,7 +116,14 @@ struct DNSSDServer
     UWORD                   sv_NextGeneration;
     struct ServerSession    sv_Sessions[SERVER_SESSIONS];
     struct ServerOperation *sv_Operations[SERVER_OPERATIONS];
+    struct Hook             sv_TaskHook;    /* TNA_REMOVED */
+    BOOL                    sv_Hooked;
+    struct Task            *sv_Daemon;
+    ULONG                   sv_GoneMask;    /* signals sv_Daemon */
+    ULONG                   sv_Removed;     /* sessions the hook marked gone */
 };
+
+APTR TaskResBase;
 
 
 static UWORD
@@ -130,7 +153,7 @@ find_session(struct MDNSDaemon *md, const struct dnssd_ipc_request *r)
         return NULL;
     }
     ss = &sv->sv_Sessions[slot];
-    if (!ss->ss_Active || ss->ss_Generation != (r->session >> 16) ||
+    if (!ss->ss_Active || ss->ss_Gone || ss->ss_Generation != (r->session >> 16) ||
         ss->ss_Task != r->task) {
         return NULL;
     }
@@ -141,15 +164,16 @@ find_session(struct MDNSDaemon *md, const struct dnssd_ipc_request *r)
 static void
 notify(struct ServerSession *ss)
 {
-    struct Message *message = ss->ss_Notify;
+    /* the hook takes the notification of a task that is going, under
+     * Forbid(): with it held here too, the port it replies to is there */
+    Forbid();
+    if (ss->ss_Notify != NULL && !ss->ss_Gone) {
+        struct Message *message = ss->ss_Notify;
 
-    if (message == NULL) {
-        return;
-    }
-    ss->ss_Notify = NULL;
-    if (FindTaskByPID(ss->ss_Task) != NULL) {
+        ss->ss_Notify = NULL;
         ReplyMsg(message);
     }
+    Permit();
 }
 
 static void
@@ -950,6 +974,7 @@ close_session(struct DNSSDServer *sv, struct ServerSession *ss, LONG slot)
     drop_queue(ss);
     ss->ss_Notify = NULL;           /* given back: the client has it */
     ss->ss_Active = 0;
+    ss->ss_Gone = 0;
 }
 
 /*
@@ -986,9 +1011,11 @@ read_event(struct ServerSession *ss, struct DNSSDIPCMsg *msg, ULONG incarnation)
     }
     qe = (struct QueuedEvent *)ss->ss_Queue.mlh_Head;
     if (qe->qe_Node.mln_Succ == NULL) {
-        if (ss->ss_Notify == NULL && msg->dm_Notify != NULL) {
+        Forbid();
+        if (ss->ss_Notify == NULL && msg->dm_Notify != NULL && !ss->ss_Gone) {
             ss->ss_Notify = msg->dm_Notify;
         }
+        Permit();
         return DNSSD_ERR_EMPTY;
     }
     if (r->reply.size < qe->qe_Size) {
@@ -1020,15 +1047,8 @@ dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg)
         return;
     }
     if (sv == NULL) {
-        sv = AllocMem(sizeof(*sv), MEMF_CLEAR);
-        if (sv == NULL) {
-            r->result = DNSSD_ERR_NOMEM;
-            return;
-        }
-        for (i = 0; i < SERVER_SESSIONS; i++) {
-            NEWLIST((struct List *)&sv->sv_Sessions[i].ss_Queue);
-        }
-        md->md_DNSSD = sv;
+        r->result = DNSSD_ERR_NOMEM;    /* dnssdServerInit() failed */
+        return;
     }
     if (r->command == DNSSD_IPC_OPEN) {
         r->result = DNSSD_ERR_BUSY;
@@ -1041,6 +1061,7 @@ dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg)
             if (!ss->ss_Active) {
                 ss->ss_Active = 1;
                 ss->ss_Lost = 0;
+                ss->ss_Gone = 0;
                 ss->ss_Generation = next_generation(sv);
                 ss->ss_Task = r->task;
                 ss->ss_Notify = msg->dm_Notify;
@@ -1135,9 +1156,82 @@ dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg)
     }
 }
 
-/* Sessions of tasks that ended without closing them. */
+/*
+ * TNA_REMOVED: a task is about to go. In the context of whoever removes
+ * it, not under Forbid(), and it must not wait for another task: its
+ * sessions are marked gone and lose their notification under Forbid(), and
+ * mdnsd is signalled to close them (dnssdServerGone()).
+ */
+AROS_UFH3(static IPTR, task_removed,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(struct Task *, caller, A2),
+    AROS_UFHA(struct TaskNotifyMsg *, tnm, A1))
+{
+    AROS_USERFUNC_INIT
+    struct DNSSDServer *sv = hook->h_Data;
+    ULONG id, marked = 0;
+    LONG i;
+
+    (void)caller;
+    if (tnm == NULL || tnm->tnm_Action != TNA_REMOVED || tnm->tnm_Task == NULL) {
+        return 0;
+    }
+    id = GetETaskID(tnm->tnm_Task);
+    if (id == 0) {
+        return 0;
+    }
+    Forbid();
+    for (i = 0; i < SERVER_SESSIONS; i++) {
+        struct ServerSession *ss = &sv->sv_Sessions[i];
+
+        if (ss->ss_Active && !ss->ss_Gone && ss->ss_Task == id) {
+            ss->ss_Gone = 1;
+            ss->ss_Notify = NULL;       /* its port goes with it */
+            marked++;
+        }
+    }
+    sv->sv_Removed += marked;
+    Permit();
+    if (marked != 0) {
+        Signal(sv->sv_Daemon, sv->sv_GoneMask);
+    }
+    return 0;
+    AROS_USERFUNC_EXIT
+}
+
+/*
+ * The server, and the hook that tells it of client tasks that go; gone is
+ * the signal the hook gives mdnsd. FALSE without memory; without
+ * task.resource it runs on the reap alone.
+ */
+BOOL
+dnssdServerInit(struct MDNSDaemon *md, ULONG gone)
+{
+    struct DNSSDServer *sv;
+    LONG i;
+
+    sv = AllocMem(sizeof(*sv), MEMF_PUBLIC | MEMF_CLEAR);
+    if (sv == NULL) {
+        return FALSE;
+    }
+    for (i = 0; i < SERVER_SESSIONS; i++) {
+        NEWLIST((struct List *)&sv->sv_Sessions[i].ss_Queue);
+    }
+    sv->sv_Daemon = FindTask(NULL);
+    sv->sv_GoneMask = gone;
+    md->md_DNSSD = sv;
+    TaskResBase = OpenResource((CONST_STRPTR)"task.resource");
+    if (TaskResBase != NULL && gone != 0) {
+        sv->sv_TaskHook.h_Entry = (HOOKFUNC)task_removed;
+        sv->sv_TaskHook.h_Data = sv;
+        sv->sv_Hooked = AddTaskNotifyHook(&sv->sv_TaskHook);
+    }
+    return TRUE;
+}
+
+/* The sessions the hook marked gone, closed in mdnsd's task. */
 void
-dnssdServerReap(struct MDNSDaemon *md)
+dnssdServerGone(struct MDNSDaemon *md)
 {
     struct DNSSDServer *sv = md->md_DNSSD;
     LONG i;
@@ -1148,7 +1242,35 @@ dnssdServerReap(struct MDNSDaemon *md)
     for (i = 0; i < SERVER_SESSIONS; i++) {
         struct ServerSession *ss = &sv->sv_Sessions[i];
 
+        if (ss->ss_Active && ss->ss_Gone) {
+            close_session(sv, ss, i);
+        }
+    }
+}
+
+/*
+ * Sessions of tasks that ended without closing them and that the hook did
+ * not tell of (no task.resource, or a notification missed): found by
+ * task ID, as recovery.
+ */
+void
+dnssdServerReap(struct MDNSDaemon *md)
+{
+    struct DNSSDServer *sv = md->md_DNSSD;
+    LONG i;
+
+    if (sv == NULL) {
+        return;
+    }
+    dnssdServerGone(md);
+    for (i = 0; i < SERVER_SESSIONS; i++) {
+        struct ServerSession *ss = &sv->sv_Sessions[i];
+
         if (ss->ss_Active && FindTaskByPID(ss->ss_Task) == NULL) {
+            Forbid();
+            ss->ss_Gone = 1;
+            ss->ss_Notify = NULL;
+            Permit();
             close_session(sv, ss, i);
         }
     }
@@ -1180,6 +1302,10 @@ dnssdServerFree(struct MDNSDaemon *md)
 
     if (sv == NULL) {
         return;
+    }
+    if (sv->sv_Hooked) {                /* no call of it after this */
+        RemTaskNotifyHook(&sv->sv_TaskHook);
+        sv->sv_Hooked = FALSE;
     }
     for (i = 0; i < SERVER_SESSIONS; i++) {
         if (sv->sv_Sessions[i].ss_Active) {
