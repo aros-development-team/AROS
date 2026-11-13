@@ -38,6 +38,7 @@
 
 #include <string.h>
 
+#include <net/netcore.h>
 #include <net/netcore_map.h>        /* always the last include */
 
 /* Global filter and NAT state; the state requests copy ipf_global as it is */

@@ -60,6 +60,7 @@
 #include <net/netmodule.h>
 
 #include <net/if_loop_protos.h>
+#include <protos/netinet/in_protos.h>
 #include <net/netcore_map.h>        /* always the last include */
 
 /* ARP's packet hook point, registered by IPv4 (netinet/in_proto.c) */

@@ -37,6 +37,7 @@
 
 #include <string.h>
 
+#include <sys/systm.h>
 #include <net/netcore_map.h>        /* always the last include */
 
 /* BPF kernel functions (from net/bpf.c) */

@@ -54,6 +54,7 @@
 
 #include <kern/amiga_includes.h>
 #include <kern/uipc_socket2_protos.h>
+#include <protos/kern/uipc_socket_protos.h>
 #include <net/netcore_map.h>        /* always the last include */
 
 extern int tcp_do_pmtud;

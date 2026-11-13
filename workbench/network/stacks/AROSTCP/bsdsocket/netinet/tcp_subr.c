@@ -77,6 +77,7 @@
 #include <kern/kern_subr_protos.h>
 #include <protos/kern/kern_random_protos.h>
 #include <kern/uipc_socket2_protos.h>
+#include <sys/synch.h>
 #include <net/netcore_map.h>        /* always the last include */
 
 u_int32_t tcp_secret_key[4];

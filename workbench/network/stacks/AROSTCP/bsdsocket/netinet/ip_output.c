@@ -65,6 +65,11 @@ extern struct pfil_point ip_pfil;
 #include <kern/amiga_subr.h>
 #include <kern/amiga_includes.h>
 #include <protos/kern/kern_random_protos.h>
+#include <protos/netinet/in_protos.h>
+#include <protos/netinet/in_cksum_protos.h>
+#include <protos/netinet/ip_output_protos.h>
+#include <protos/net/if_loop_protos.h>
+#include <protos/net/route_protos.h>
 #include <net/netcore_map.h>        /* always the last include */
 
 /*

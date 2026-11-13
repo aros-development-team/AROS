@@ -78,6 +78,8 @@
 #include <libraries/bsdsocket.h>
 #include <libraries/miamipanel.h>
 #include <proto/dos.h>
+#include <protos/net/if_protos.h>
+#include <protos/net/if_loop_protos.h>
 
 int debug_sana = 1;
 

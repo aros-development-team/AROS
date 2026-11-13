@@ -97,6 +97,7 @@ tcp_input_defaults(void)
 #endif /* TUBA_INCLUDE */
 
 #include <kern/uipc_socket2_protos.h>
+#include <protos/kern/uipc_socket_protos.h>
 #include <net/netcore_map.h>        /* always the last include */
 //#include <netinet/tcp_subr_protos.h>
 

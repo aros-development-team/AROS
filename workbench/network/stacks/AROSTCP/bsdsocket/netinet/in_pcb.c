@@ -60,6 +60,9 @@
 #include <netinet/inetfamily.h>
 #include <netinet/inet_transport.h>
 #include <protos/kern/kern_random_protos.h>
+#include <protos/net/route_protos.h>
+#include <protos/net/rtsock_protos.h>
+#include <protos/kern/uipc_socket_protos.h>
 #include <net/netcore_map.h>        /* always the last include */
 
 /*
