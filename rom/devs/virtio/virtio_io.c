@@ -32,6 +32,7 @@ static BOOL virtio_blk_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     struct virtio_Unit *unit = (struct virtio_Unit *)io->io_Unit;
     device_t dev = unit->au_Bus->ab_Dev;
     struct virtio_request templ;
+    UBYTE flags = io->io_Flags;
     APTR data = iotd->iotd_Req.io_Data;
     ULONG len = iotd->iotd_Req.io_Length;
 
@@ -76,12 +77,11 @@ static BOOL virtio_blk_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     templ.vr_Header.ioprio = 0;
     templ.vr_Header.sector = off64 >> 9;        /* 512-byte units */
 
-    /* Remove from pending list while we own it (matches NVMe pattern) */
-    ObtainSemaphore(&unit->au_Lock);
-    Remove(&io->io_Message.mn_Node);
-    ReleaseSemaphore(&unit->au_Lock);
+    /* The completion task may reply as soon as the request is published. */
+    io->io_Flags &= ~IOF_QUICK;
 
     if (virtio_submit_blk_request(dev->dev_VQ, &templ) < 0) {
+        io->io_Flags = flags;
         io->io_Error = IOERR_ABORTED;
         return TRUE;
     }
@@ -94,6 +94,7 @@ static BOOL virtio_blk_flush(struct IORequest *io)
     struct virtio_Unit *unit = (struct virtio_Unit *)io->io_Unit;
     device_t dev = unit->au_Bus->ab_Dev;
     struct virtio_request templ;
+    UBYTE flags = io->io_Flags;
 
     if (!dev || !dev->dev_VQ) {
         io->io_Error = IOERR_OPENFAIL;
@@ -113,11 +114,10 @@ static BOOL virtio_blk_flush(struct IORequest *io)
     templ.vr_Header.type = VIRTIO_BLK_T_FLUSH;
     templ.vr_Header.sector = 0;
 
-    ObtainSemaphore(&unit->au_Lock);
-    Remove(&io->io_Message.mn_Node);
-    ReleaseSemaphore(&unit->au_Lock);
+    io->io_Flags &= ~IOF_QUICK;
 
     if (virtio_submit_blk_request(dev->dev_VQ, &templ) < 0) {
+        io->io_Flags = flags;
         io->io_Error = IOERR_ABORTED;
         return TRUE;
     }
@@ -152,9 +152,6 @@ AROS_LH1(void, BeginIO,
     io->io_Error = 0;
     iotd->iotd_Req.io_Actual = 0;
 
-    ObtainSemaphore(&unit->au_Lock);
-    AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
-    ReleaseSemaphore(&unit->au_Lock);
 
     switch (io->io_Command) {
     case CMD_READ:
@@ -240,6 +237,9 @@ AROS_LH1(void, BeginIO,
 
     case TD_ADDCHANGEINT:
         if (io->io_Flags & IOF_QUICK) goto bad_cmd;
+        ObtainSemaphore(&unit->au_Lock);
+        AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
+        ReleaseSemaphore(&unit->au_Lock);
         break;
     case TD_REMCHANGEINT:
         if (io->io_Flags & IOF_QUICK) goto bad_cmd;
@@ -267,14 +267,6 @@ bad_length:
         io->io_Error = IOERR_BADLENGTH;
         done = TRUE;
         break;
-    }
-
-    if (done) {
-        ObtainSemaphore(&unit->au_Lock);
-        Remove(&io->io_Message.mn_Node);
-        ReleaseSemaphore(&unit->au_Lock);
-    } else {
-        io->io_Flags &= ~IOF_QUICK;
     }
 
     if (done && !(io->io_Flags & IOF_QUICK))
