@@ -369,7 +369,7 @@ int smp_Initialize(void)
             {
                 hooks[i].ih_CPUDone = KrnAllocCPUMask();
                 hooks[i].ih_CPURequested = KrnAllocCPUMask();
-                KrnSpinInit(&hooks[i].ih_Lock);
+                hooks[i].ih_CPUClaimed = KrnAllocCPUMask();
 
                 ADDHEAD(&pdata->kb_FreeIPIHooks, &hooks[i]);
             }

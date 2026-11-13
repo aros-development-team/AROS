@@ -49,6 +49,8 @@ struct CPUData
     UBYTE                       cpu_PerfMaxRatio;
     UBYTE                       cpu_PerfCurRatio;
     UBYTE                       cpu_PerfCapable;
+    volatile ULONG              cpu_IPIPending;     /* Calls queued for this CPU and not claimed yet; written
+                                                       under kb_BusyIPIHooksLock, read without it            */
 };
 
 struct APICData
