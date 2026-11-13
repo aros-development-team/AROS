@@ -261,12 +261,12 @@ static void usb2otg_recover_periodic_queue(struct USB2OTGUnit *USBUnit)
     bug("[USB2OTG] PTXQ-RECOVERY: HPTX=%08x — halting periodic channels, flushing PTX queue\n",
         hptx_before);
 
-    for (chan = CHAN_INT1; chan <= CHAN_INT_LAST; chan++)
+    for (chan = 0; chan < 8; chan++)
     {
         struct IOUsbHWReq *req = USBUnit->hu_Channel[chan].hc_Request;
 
-        /* Bulk borrows INT channels; the periodic queue is not its business. */
-        if (req != NULL && !usb2otg_chan_periodic(USBUnit, chan))
+        /* Channels last used for periodic work only. */
+        if (!usb2otg_chan_periodic(USBUnit, chan))
             continue;
 
         if (rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)) & USB2OTG_HOSTCHAR_ENABLE)
@@ -754,9 +754,8 @@ static void usb2otg_split_giveup_recover(struct USB2OTGUnit *USBUnit, int chan,
     {
         /*
          * Beyond revival — retire it, and if it carried split control
-         * move that to the next candidate. INT5/INT4 come from the
-         * direct-INT pool and are a last resort: taking one shrinks
-         * the pool that serves hub status polling.
+         * move that to the next candidate. INT5/INT4 are a last
+         * resort.
          */
         static const UBYTE candidates[] =
             { CHAN_INT3, CHAN_INT2, CHAN_INT1, CHAN_INT5, CHAN_INT4 };
@@ -1094,7 +1093,7 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
         {
             int chan;
 
-            for (chan = CHAN_INT1; chan <= CHAN_INT_LAST; chan++)
+            for (chan = 0; chan < 8; chan++)
             {
                 struct USB2OTGChannel *hc = &USBUnit->hu_Channel[chan];
                 struct IOUsbHWReq *sreq = hc->hc_Request;
@@ -1271,7 +1270,7 @@ static BOOL usb2otg_periodic_idle(struct USB2OTGUnit *USBUnit)
             return FALSE;
     }
 
-    for (chan = CHAN_INT1; chan <= CHAN_INT_LAST; chan++)
+    for (chan = 0; chan < 8; chan++)
     {
         if (USBUnit->hu_Channel[chan].hc_Request != NULL &&
             usb2otg_chan_periodic(USBUnit, chan))

@@ -32,35 +32,37 @@ static int usb2otg_endpoint_in_flight(struct USB2OTGUnit *otg_Unit,
 static int usb2otg_tt_in_flight(struct USB2OTGUnit *otg_Unit,
     struct IOUsbHWReq *candidate);
 
-static int usb2otg_int_pool_free_count(struct USB2OTGUnit *otg_Unit,
-    BOOL direct);
-
 /*
- * Free channel for a bulk request, one per endpoint. The bulk channels
- * first, then the INT pool while each INT partition keeps one channel
- * for its own role. Caller holds hu_Lock.
+ * Free channel for a bulk or INT request. Bulk always leaves one
+ * channel free, so a periodic poll never waits behind bulk work.
+ * Caller holds hu_Lock.
  */
-static int usb2otg_alloc_bulk_channel(struct USB2OTGUnit *otg_Unit)
+static int usb2otg_alloc_channel(struct USB2OTGUnit *otg_Unit, BOOL periodic)
 {
-    static const UBYTE order[] = { CHAN_BULK, CHAN_BULK2,
+    static const UBYTE bulk_order[] = { CHAN_BULK, CHAN_BULK2,
         CHAN_INT1, CHAN_INT2, CHAN_INT3, CHAN_INT4, CHAN_INT5 };
+    static const UBYTE int_order[] = { CHAN_INT1, CHAN_INT2, CHAN_INT3,
+        CHAN_INT4, CHAN_INT5, CHAN_BULK, CHAN_BULK2 };
+    const UBYTE *order = periodic ? int_order : bulk_order;
     ULONG excl = otg_Unit->hu_DeadChannels | otg_Unit->hu_BurnedChannels |
-                 otg_Unit->hu_IsoChanMask;
+                 otg_Unit->hu_IsoChanMask | (1 << otg_Unit->hu_CtrlSplitChan);
+    int found = -1;
+    int nfree = 0;
     int i;
 
-    for (i = 0; i < sizeof(order); i++)
+    for (i = 0; i < sizeof(bulk_order); i++)
     {
         int chan = order[i];
 
         if ((excl & (1 << chan)) || otg_Unit->hu_Channel[chan].hc_Request != NULL)
             continue;
-        if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST &&
-            (chan == otg_Unit->hu_CtrlSplitChan ||
-             usb2otg_int_pool_free_count(otg_Unit, chan >= CHAN_INT_DIRECT_FIRST) < 2))
-            continue;
-        return chan;
+        if (found < 0)
+            found = chan;
+        nfree++;
     }
-    return -1;
+    if (!periodic && nfree < 2)
+        return -1;
+    return found;
 }
 
 /*
@@ -135,7 +137,7 @@ static struct IOUsbHWReq *usb2otg_find_schedulable_bulk_req(
             continue;
         }
 
-        chan = usb2otg_alloc_bulk_channel(otg_Unit);
+        chan = usb2otg_alloc_channel(otg_Unit, FALSE);
         if (chan < 0)
             continue;
 
@@ -1662,102 +1664,48 @@ void FNAME_DEV(ScheduleBulkTDs)(struct USB2OTGUnit *otg_Unit)
     }
 }
 
-/*
- * Free usable channels in one INT partition (split or direct home
- * role). Feeds the overflow decision in ScheduleIntTDs. Caller holds
- * hu_Lock.
- */
-static int usb2otg_int_pool_free_count(struct USB2OTGUnit *otg_Unit,
-    BOOL direct)
-{
-    int chan;
-    int count = 0;
-
-    for (chan = CHAN_INT1; chan <= CHAN_INT_LAST; chan++)
-    {
-        if (chan == otg_Unit->hu_CtrlSplitChan)
-            continue;
-        if ((otg_Unit->hu_DeadChannels | otg_Unit->hu_BurnedChannels |
-             otg_Unit->hu_IsoChanMask) & (1 << chan))
-            continue;
-        if ((chan >= CHAN_INT_DIRECT_FIRST) != direct)
-            continue;
-        if (otg_Unit->hu_Channel[chan].hc_Request == NULL)
-            count++;
-    }
-    return count;
-}
-
 /* Schedule INT transfers from Scheduled list (SOF maintains IntXferQueue). */
 void FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *otg_Unit)
 {
     struct USB2OTGDevice *USB2OTGBase = otg_Unit->hu_USB2OTGBase;
-    int chan = 0;
+    int slot;
 
     if (!usb2otg_require_cpu0(USB2OTGBase, __PRETTY_FUNCTION__))
         return;
 
     ULONG frnm = (rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff) >> 3;
 
-    /* Check if any of INT channels is free */
-    for (chan = CHAN_INT1; chan <= CHAN_INT_LAST; chan++)
+    /* Every ready INT request gets a channel while one is free. */
+    for (slot = 0; slot < 8; slot++)
     {
         struct IOUsbHWReq *req = NULL;
+        struct IOUsbHWReq *candidate, *cnext;
+        int chan = -1;
+        /* Too late in the frame for an SSPLIT; the next frame's walk takes it */
+        BOOL ss_late = (rd32le(USB2OTG_HOSTFRAMENO) & 7) > USB2OTG_SSPLIT_LAST_UFRAME;
 
-        /* Reserved for split control transfers (rotates on burn). */
-        if (chan == otg_Unit->hu_CtrlSplitChan)
-            continue;
-
-        if ((otg_Unit->hu_DeadChannels | otg_Unit->hu_BurnedChannels |
-             otg_Unit->hu_IsoChanMask) & (1 << chan))
-            continue;
-
-        /* If channel is in use unlock Enable() and continue checking, otherwise stay in Disable() state for a while */
         Disable();
         KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
-        if (otg_Unit->hu_Channel[chan].hc_Request != NULL)
+        ForeachNodeSafe(&otg_Unit->hu_IntXFerScheduled, candidate, cnext)
+        {
+            if ((candidate->iouh_Flags & UHFF_SPLITTRANS) && ss_late)
+                continue;
+            if (!usb2otg_endpoint_in_flight(otg_Unit, candidate) &&
+                !usb2otg_tt_in_flight(otg_Unit, candidate))
+            {
+                req = candidate;
+                break;
+            }
+        }
+        if (req != NULL)
+            chan = usb2otg_alloc_channel(otg_Unit, TRUE);
+        if (chan < 0)
         {
             KrnSpinUnLock(&otg_Unit->hu_Lock);
             Enable();
-            continue;
+            return;
         }
-        /* Pick first INT req not already in flight (shared TT state).
-         * Partitioned: split reqs below CHAN_INT_DIRECT_FIRST, direct
-         * reqs at/above it — see the define for the rationale. With
-         * USB2OTG_INT_POOL_OVERFLOW an off-role candidate is taken
-         * when its home pool is full, as long as this pool keeps one
-         * other channel free for its home role (see the define). */
-        {
-            struct IOUsbHWReq *candidate, *cnext;
-            BOOL chan_is_direct = (chan >= CHAN_INT_DIRECT_FIRST);
-            BOOL allow_overflow = FALSE;
-            /* Too late in the frame for an SSPLIT; the next frame's walk takes it */
-            BOOL ss_late = (rd32le(USB2OTG_HOSTFRAMENO) & 7) > USB2OTG_SSPLIT_LAST_UFRAME;
-
-#if USB2OTG_INT_POOL_OVERFLOW
-            allow_overflow =
-                usb2otg_int_pool_free_count(otg_Unit, !chan_is_direct) == 0 &&
-                usb2otg_int_pool_free_count(otg_Unit, chan_is_direct) > 1;
-#endif
-            req = NULL;
-            ForeachNodeSafe(&otg_Unit->hu_IntXFerScheduled, candidate, cnext)
-            {
-                BOOL cand_is_direct =
-                    !(candidate->iouh_Flags & UHFF_SPLITTRANS);
-
-                if (cand_is_direct != chan_is_direct && !allow_overflow)
-                    continue;
-                if (!cand_is_direct && ss_late)
-                    continue;
-                if (!usb2otg_endpoint_in_flight(otg_Unit, candidate) &&
-                    !usb2otg_tt_in_flight(otg_Unit, candidate))
-                {
-                    REMOVE(candidate);
-                    req = candidate;
-                    break;
-                }
-            }
-        }
+        REMOVE(req);
 
         if (req)
         {
@@ -1781,9 +1729,8 @@ void FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *otg_Unit)
             /*
              * Role changed since the last arm: reset the split engine
              * before reprogramming. Stale per-channel periodic-split
-             * state kills direct arms with bare CHHLTD (the reason the
-             * partition exists); the forced disable cycle is the bet
-             * that makes mixing roles safe. The ODDFRM calibration
+             * state kills direct arms with bare CHHLTD; the forced
+             * disable cycle clears it. The ODDFRM calibration
              * belonged to the previous role's endpoint, so drop it.
              * Still inside Disable(): the forced disable raises a
              * CHHLTD, and the IRQ handler must not see it half-done on
@@ -1831,13 +1778,6 @@ void FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *otg_Unit)
                 otg_Unit->hu_IntArmChar[req->iouh_DevAddr] =
                     rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
             }
-        }
-        else
-        {
-            /* No request for this channel's pool — try the next pool. */
-            KrnSpinUnLock(&otg_Unit->hu_Lock);
-            Enable();
-            continue;
         }
     }
 }

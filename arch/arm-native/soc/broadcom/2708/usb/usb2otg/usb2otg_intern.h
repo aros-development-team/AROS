@@ -546,7 +546,7 @@ struct USB2OTGUnit
     /*
      * Split-control channel, runtime: a channel whose split engine
      * cannot be revived is retired and split control moves on. The
-     * order is INT3, INT2, INT1, then the direct-INT pool as a last
+     * order is INT3, INT2, INT1, then INT5 and INT4 as a last
      * resort. hu_BurnedChannels is never cleared (unlike
      * hu_DeadChannels) — a retired channel stays retired.
      */
@@ -627,16 +627,6 @@ void                    usb2otg_exorcise_channel(int chan);
 #define CHAN_BULK2      7
 
 /*
- * INT channel partition: split transfers on CHAN_INT1..INT3, direct
- * (non-split) on CHAN_INT4..INT5. Sharing one channel between
- * periodic-split and direct arms made the core kill every direct arm
- * with bare CHHLTD in the arming uframe (hub status polls dead from
- * the moment a LS/FS device enumerated — hotplug blind). Observed on
- * Pi 3B+; suspicion is stale per-channel periodic-split state.
- */
-#define CHAN_INT_DIRECT_FIRST   CHAN_INT4
-
-/*
  * One split transaction per TT hub at a time (usb2otg_tt_in_flight).
  * 0 lets them overlap as dwc2 does; not tested since the CSPLIT timing
  * fixes. Split iso runs on lent channels outside the rule.
@@ -649,20 +639,6 @@ void                    usb2otg_exorcise_channel(int chan);
  * give up, and the report is lost. Later arms wait for the next frame.
  */
 #define USB2OTG_SSPLIT_LAST_UFRAME  2
-
-/*
- * INT pool overflow: let a free channel take a request from the OTHER
- * partition when that partition has no free usable channel, guarded by
- * an exorcise on every role change (the historical mixed-role poisoning
- * above predates usb2otg_exorcise_channel — the bet, to be proven on
- * hardware, is that the forced disable cycle clears the stale split
- * state). One channel of the target pool is always left free for its
- * home role: a split INT can park in SSPLIT/CSPLIT for a long time,
- * and letting two of those fill the direct pool would starve the HS
- * hub's status-change poll — hotplug blind again, by a new mechanism.
- * 0 restores the strict partition for A/B testing.
- */
-#define USB2OTG_INT_POOL_OVERFLOW 1
 
 /* hc_Type values. */
 #define USB2OTG_HCT_CTRL        1
@@ -682,8 +658,7 @@ void                    usb2otg_exorcise_channel(int chan);
  * chan 2 (split-INT vs hub polls) and CHAN_CTRL (dead-device split
  * ctrl vs live-device ctrl — froze ALL control traffic after unplug).
  * So control to LS/FS devices behind a TT gets its own channel,
- * taken out of the split-INT pool (splits: INT1-2, split-ctrl: INT3,
- * direct INT: INT4-5).
+ * taken out of the INT channels (INT3 until one is burned).
  */
 #define CHAN_CTRL_SPLIT         CHAN_INT3
 
@@ -722,8 +697,9 @@ void                    usb2otg_exorcise_channel(int chan);
  *  2: burn only on cross-device give-up streaks; TT-clear pending queue
  *  3: exorcise audit - 11 abandon sites + both in-place ctrl retries
  *  4: INT pool overflow (split<->direct) with exorcise on role flip
+ *  5: bulk and INT channels allocated per request from one pool
  */
-#define USB2OTG_BUILD_REV 4
+#define USB2OTG_BUILD_REV 5
 
 /*
  * Testing hook: after _AFTER split-interrupt HCINT events have passed
