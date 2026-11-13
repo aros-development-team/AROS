@@ -45,6 +45,7 @@
 #include <netinet6/in6_var.h>
 #include <netinet6/nd6.h>
 #include <net/if_loop_protos.h>
+#include <net/route_protos.h>
 #include <protos/kern/kern_random_protos.h>
 #include <kern/uipc_socket2_protos.h>
 #include <protos/net/route_protos.h>
@@ -144,22 +145,48 @@ ip6_notify_pmtu(const struct inpcb *inp, const struct sockaddr_in6 *dst,
 }
 
 /*
+ * A link-local destination's own route on ifp, the one a Packet Too Big
+ * about it puts its path MTU on (rt_pmtu_update()), with a reference held;
+ * NULL if there is none. The routing table keys it by address alone, so
+ * one on another interface is another zone's.
+ */
+static struct rtentry *
+ip6_llroute(const struct in6_addr *dst, const struct ifnet *ifp)
+{
+    struct sockaddr_in6 sin6;
+    struct rtentry *rt;
+
+    bzero(&sin6, sizeof(sin6));
+    sin6.sin6_family = AF_INET6;
+    sin6.sin6_len = sizeof(sin6);
+    sin6.sin6_addr = *dst;
+    rt = rtalloc1((struct sockaddr *)&sin6, 0);
+    if(rt != NULL && ((rt->rt_flags & (RTF_HOST | RTF_GATEWAY)) != RTF_HOST ||
+                      rt->rt_ifp != ifp)) {
+        rtfree(rt);
+        rt = NULL;
+    }
+    return rt;
+}
+
+/*
  * ip6_pathmtu - the path MTU to a connected socket's peer, as ip6_output()
- * finds it: a link-local peer on the socket's zone, through its neighbour
- * entry; any other through the routing table. 0 if there is no way there.
+ * finds it: for a link-local peer, on the socket's zone, the link's MTU or
+ * the one a Packet Too Big set (ip6_llroute()); any other through the
+ * routing table. 0 if there is no way there.
  */
 u_int32_t
 ip6_pathmtu(const struct inpcb *inp)
 {
     struct in6_addr dst = inp->inp_faddr6;
     struct rtentry *rt = NULL;
-    struct ifnet *ifp = NULL;
+    const struct ifnet *ifp = NULL;
     u_int32_t mtu;
 
     if(IN6_IS_ADDR_LINKLOCAL(&dst) || IN6_IS_ADDR_MULTICAST(&dst)) {
         ifp = inp->inp_boundif;
         if(ifp != NULL && IN6_IS_ADDR_LINKLOCAL(&dst))
-            rt = nd6_lookup(&dst, 0, ifp);
+            rt = ip6_llroute(&dst, ifp);
     } else {
         struct route_in6 ro;
 
@@ -298,21 +325,19 @@ ip6_output(void *args, ...)
                 lifp = NULL;
         if(lifp != NULL && !(lifp->if_flags & (IFF_LOOPBACK | IFF_POINTOPOINT))) {
             struct in6_addr nbr = ip6->ip6_dst;     /* the header is packed */
-            struct rtentry *nrt;
 
-            /* the neighbour's cache entry, on that link (nd6_lookup() moves
-             * it there if it was cloned for another interface) */
-            if((nrt = nd6_lookup(&nbr, 1, lifp)) != NULL) {
-                if(ro->ro_rt)
-                    RTFREE(ro->ro_rt);
-                ro->ro_rt = nrt;
-                dst->sin6_family = AF_INET6;
-                dst->sin6_len    = sizeof(*dst);
-                dst->sin6_addr   = nbr;
-                rt  = nrt;
-                ifp = lifp;
-                goto multicast_output;
-            }
+            /* straight to the neighbour on that link: the interface
+             * resolves it in that link's neighbour cache; a route of its
+             * own there only brings a path MTU */
+            if(ro->ro_rt)
+                RTFREE(ro->ro_rt);
+            ro->ro_rt = ip6_llroute(&nbr, lifp);
+            dst->sin6_family = AF_INET6;
+            dst->sin6_len    = sizeof(*dst);
+            dst->sin6_addr   = nbr;
+            rt  = NULL;
+            ifp = lifp;
+            goto multicast_output;
         }
     }
 
