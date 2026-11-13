@@ -310,6 +310,7 @@ struct nvme_queue {
     UQUAD cq_dma;
     UWORD cq_head;
     UWORD cq_phase;
+    BOOL cq_processing;             /* one walker owns callbacks and the head doorbell */
     UWORD cmdid_hint;
     UBYTE *cmdid_busy;
 };

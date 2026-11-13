@@ -155,6 +155,15 @@ int nvme_process_cq(struct nvme_queue *nvmeq)
         KrnSpinLock(&nvmeq->q_lock, NULL, SPINLOCK_MODE_WRITE);
 #endif
 
+    if (nvmeq->cq_processing) {
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&nvmeq->q_lock);
+#endif
+        Enable();
+        return 0;
+    }
+    nvmeq->cq_processing = TRUE;
+
     head = nvmeq->cq_head;
     phase = nvmeq->cq_phase;
 
@@ -171,15 +180,9 @@ int nvme_process_cq(struct nvme_queue *nvmeq)
             phase = !phase;
         }
 
-        /*
-         * The completion hook takes the queue lock itself - it frees the
-         * command id - so it must not be called with the lock held, or the
-         * first completion deadlocks the CPU against itself. Publish what
-         * we have consumed first, so another core walking the queue cannot
-         * hand the same entry out twice while the hook runs, then drop the
-         * lock across the call. The controller cannot reuse the entry yet:
-         * that needs the head doorbell, which is only rung below.
-         */
+        /* The callback can take q_lock itself. Keep ownership of the whole
+           walk while it runs: another walker must not ring the doorbell and
+           allow the controller to overwrite the entry passed to the hook. */
         nvmeq->cq_head = head;
         nvmeq->cq_phase = phase;
 #if defined(__AROSEXEC_SMP__)
@@ -206,6 +209,7 @@ int nvme_process_cq(struct nvme_queue *nvmeq)
         nvmeq->cq_head = head;
         nvmeq->cq_phase = phase;
     }
+    nvmeq->cq_processing = FALSE;
 #if defined(__AROSEXEC_SMP__)
         KrnSpinUnLock(&nvmeq->q_lock);
     }
