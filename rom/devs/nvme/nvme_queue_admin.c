@@ -33,10 +33,12 @@ void nvme_complete_adminevent(struct nvme_queue *nvmeq, struct nvme_completion *
         handler->ceh_Status = AROS_LE2WORD(cqe->status) >> 1;
         nvmeq->cehandlers[cqe->command_id] = NULL;
         nvme_dma_release(handler, TRUE);
-        D(bug ("[NVME:ADMINQ] %s: Signaling 0x%p (%08x)\n", __func__, handler->ceh_Task, handler->ceh_SigSet);)
-        Signal(handler->ceh_Task, handler->ceh_SigSet);
+        struct Task *task = handler->ceh_Task;
+        ULONG sigs = handler->ceh_SigSet;
         nvmeq->cehooks[cqe->command_id] = NULL;
         nvme_release_cmdid(nvmeq, cqe->command_id);
+        /* The waiter may return and reuse its stack as soon as it wakes. */
+        Signal(task, sigs);
     }
 }
 
