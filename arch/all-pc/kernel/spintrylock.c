@@ -51,44 +51,26 @@ AROS_LH2(spinlock_t *, KrnSpinTryLock,
     }
     else
     {
-        UBYTE tmp;
         /*
-        Check if upper 8 bits of lock->lock are all 0, which means spinlock is not in UPDATING state and it is not
-        in the WRITE state. If we manage to obtain it, we set the UPDATING flag. Until we release UPDATING state
-        we are free to do whatever we want with the spinlock
+        Add one reader with a single compare and exchange (see KrnSpinLock). Fail if the lock is in WRITE mode.
+
+        WARNING: What to do if the 24-bit counter wraps?!
         */
-        while (!compare_and_exchange_byte((UBYTE*)&lock->block[3], 0, SPINLOCKF_UPDATING >> 24, &tmp))
+        for (;;)
         {
-            /*
-            Obtaining lock in UPDATING mode failed. This can have two reasons - either the lock is in WRITE mode, in
-            which case we fail and return NULL. Eventually the lock can be in UPDATING mode already, in this case we
-            spin for a while...
-            */
-            if (tmp & (SPINLOCKF_WRITE >> 24))
+            ULONG old = lock->lock;
+
+            if (old & SPINLOCKF_WRITE)
             {
                 D(bug("[Kernel] %s: lock is held in WRITE mode (value %08x). Failing to obtain it in READ mode...\n", __func__, lock->lock));
                 return NULL;
             }
-            else
-            {
-                // Tell CPU we are spinning, it shouldn't take long - someone is just updating the lock in READ mode
-                asm volatile("pause");
+            if (!(old & SPINLOCKF_UPDATING) &&
+                compare_and_exchange_long((ULONG*)&lock->lock, old, old + 1, NULL))
+                break;
 
-                D(bug("[Kernel] %s: spinning on updating lock ...\n", __func__));
-            }
-        };
-        /*
-        At this point we have the spinlock in UPDATING state. So, update readcount field (no worry with atomic add,
-        spinlock is for our exclusive use here), and then release it just by setting updating flag to 0
-
-        WARNING: What to do if the 24-bit counter wraps?!
-        */
-        lock->slock.readcount++;
-#if defined(AROS_NO_ATOMIC_OPERATIONS)
-        lock->slock.updating = 0;
-#else
-        __AROS_ATOMIC_AND_L(lock->lock, ~SPINLOCKF_UPDATING);
-#endif
+            asm volatile("pause");
+        }
     }
 
     D(bug("[Kernel] %s: lock = %08x\n", __func__, lock->lock));
