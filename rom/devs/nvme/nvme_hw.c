@@ -109,6 +109,13 @@ int nvme_submit_cmd(struct nvme_queue *nvmeq, struct nvme_command *cmd)
 
     CopyMem(cmd, &nvmeq->sqba[tail], sizeof(struct nvme_command));
     nvmeq->sq_tail = next;
+#if defined(__aarch64__)
+    __asm__ __volatile__("dmb oshst" ::: "memory");
+#elif defined(__arm__)
+    __asm__ __volatile__("dmb sy" ::: "memory");
+#else
+    __atomic_thread_fence(__ATOMIC_RELEASE);
+#endif
     *nvmeq->q_db = next;
 
 #if defined(__AROSEXEC_SMP__)
@@ -126,9 +133,10 @@ void nvme_complete_event(struct nvme_queue *nvmeq, struct nvme_completion *cqe)
     D(bug("[NVME:HW] %s: cmd id = %u\n", __func__, cqe->command_id);)
     D(bug("[NVME:HW] %s:     status = %04x\n", __func__, AROS_LE2WORD(cqe->status) >> 1);)
 
-    if (nvmeq->cehooks[cqe->command_id]) {
+    UWORD cmdid = AROS_LE2WORD(cqe->command_id);
+    if (cmdid < nvmeq->q_depth && nvmeq->cehooks[cmdid]) {
         D(bug ("[NVME:HW] %s: calling completion hook\n", __func__);)
-        nvmeq->cehooks[cqe->command_id](nvmeq, cqe);
+        nvmeq->cehooks[cmdid](nvmeq, cqe);
     }
 }
 
@@ -175,6 +183,13 @@ int nvme_process_cq(struct nvme_queue *nvmeq)
         if ((AROS_LE2WORD(cqe->status) & 1) != phase) {
             break;
         }
+#if defined(__aarch64__)
+        __asm__ __volatile__("dmb oshld" ::: "memory");
+#elif defined(__arm__)
+        __asm__ __volatile__("dmb sy" ::: "memory");
+#else
+        __atomic_thread_fence(__ATOMIC_ACQUIRE);
+#endif
         nvmeq->sq_head = AROS_LE2WORD(cqe->sq_head);
         if (++head == nvmeq->q_depth) {
             head = 0;

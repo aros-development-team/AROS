@@ -29,10 +29,10 @@
 void nvme_complete_ioevent(struct nvme_queue *nvmeq, struct nvme_completion *cqe)
 {
     D(bug ("[NVME:IOQ] %s(0x%p)\n", __func__, cqe);)
-    if (nvmeq->cehandlers[cqe->command_id]) {
-        struct completionevent_handler *slot = nvmeq->cehandlers[cqe->command_id];
+    if (nvmeq->cehandlers[AROS_LE2WORD(cqe->command_id)]) {
+        struct completionevent_handler *slot = nvmeq->cehandlers[AROS_LE2WORD(cqe->command_id)];
 
-        D(bug ("[NVME:IOQ] %s: completing queue entry #%u\n", __func__, cqe->command_id);)
+        D(bug ("[NVME:IOQ] %s: completing queue entry #%u\n", __func__, AROS_LE2WORD(cqe->command_id));)
 
         struct IOExtTD *iotd = (struct IOExtTD *)slot->ceh_Msg;
         struct Task *sigtask = slot->ceh_Task;

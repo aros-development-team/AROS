@@ -27,16 +27,16 @@ void nvme_complete_adminevent(struct nvme_queue *nvmeq, struct nvme_completion *
 
     D(bug("[NVME:ADMINQ] %s(0x%p)\n", __func__, cqe);)
 
-    if ((handler = nvmeq->cehandlers[cqe->command_id]) != NULL) {
+    if ((handler = nvmeq->cehandlers[AROS_LE2WORD(cqe->command_id)]) != NULL) {
         D(bug ("[NVME:ADMINQ] %s: cehandler @ 0x%p\n", __func__, handler);)
         handler->ceh_Result = AROS_LE2LONG(cqe->result);
         handler->ceh_Status = AROS_LE2WORD(cqe->status) >> 1;
-        nvmeq->cehandlers[cqe->command_id] = NULL;
+        nvmeq->cehandlers[AROS_LE2WORD(cqe->command_id)] = NULL;
         nvme_dma_release(handler, TRUE);
         struct Task *task = handler->ceh_Task;
         ULONG sigs = handler->ceh_SigSet;
-        nvmeq->cehooks[cqe->command_id] = NULL;
-        nvme_release_cmdid(nvmeq, cqe->command_id);
+        nvmeq->cehooks[AROS_LE2WORD(cqe->command_id)] = NULL;
+        nvme_release_cmdid(nvmeq, AROS_LE2WORD(cqe->command_id));
         /* The waiter may return and reuse its stack as soon as it wakes. */
         Signal(task, sigs);
     }
