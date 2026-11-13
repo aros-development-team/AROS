@@ -11,6 +11,7 @@
  * Returns TRUE on success.
  */
 BOOL virtio_hw_map(device_t dev);
+void virtio_hw_unmap(device_t dev);
 
 /* Reset the device, walk through ACK -> DRIVER. */
 BOOL virtio_hw_reset(device_t dev);

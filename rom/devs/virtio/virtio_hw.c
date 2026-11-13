@@ -18,34 +18,25 @@
 #define PCI_STATUS              0x06
 #define PCI_STATUS_CAP_LIST     0x10
 
-/*
- * Read a base address out of the PCI device by index, masking off the
- * type bits (we only support memory BARs for modern virtio).
- */
-static APTR virtio_get_bar(struct VirtIOBase *VirtIOBase, OOP_Object *pciDev, UBYTE bar)
+void virtio_hw_unmap(device_t dev)
 {
-    static const ULONG base_attrs[6] = {
-        aoHidd_PCIDevice_Base0,
-        aoHidd_PCIDevice_Base1,
-        aoHidd_PCIDevice_Base2,
-        aoHidd_PCIDevice_Base3,
-        aoHidd_PCIDevice_Base4,
-        aoHidd_PCIDevice_Base5,
-    };
-    IPTR base = 0;
-
-    if (bar > 5) return NULL;
-
-    OOP_GetAttr(pciDev, HiddPCIDeviceAttrBase + base_attrs[bar], &base);
-
-    /* Mask off type bits, just in case. */
-    return (APTR)(base & ~(IPTR)0xF);
+    struct VirtIOBase *VirtIOBase = dev->dev_VirtIOBase;
+    ULONG i;
+    for (i = 0; i < 4; i++) {
+        if (dev->dev_Windows[i]) {
+            HIDD_PCIDriver_UnmapPCI(dev->dev_PCIDriverObject,
+                                   dev->dev_Windows[i], dev->dev_WindowSizes[i]);
+            dev->dev_Windows[i] = NULL;
+        }
+    }
+    dev->dev_CommonCfg = NULL;
+    dev->dev_NotifyBase = dev->dev_DeviceCfg = dev->dev_ISR = NULL;
 }
 
 BOOL virtio_hw_map(device_t dev)
 {
     struct VirtIOBase *VirtIOBase = dev ? dev->dev_VirtIOBase : NULL;
-    OOP_Object *pdev = dev->dev_Object;
+    OOP_Object *pdev = dev ? dev->dev_Object : NULL;
     UBYTE cap_ptr;
     UBYTE i;
 
@@ -56,7 +47,7 @@ BOOL virtio_hw_map(device_t dev)
     /* Walk the cap chain. */
     for (i = 0; cap_ptr && i < 64; i++) {
         struct virtio_pci_cap cap;
-        APTR    bar_base;
+        IPTR base, size, type;
         UBYTE   *region;
         UBYTE   ctype;
         UBYTE   cur = cap_ptr;
@@ -71,18 +62,39 @@ BOOL virtio_hw_map(device_t dev)
         }
 
         cap.cap_len  = HIDD_PCIDevice_ReadConfigByte(pdev, cur + 2);
+        if (cur < 0x40 || (cur & 3) || cap.cap_len < sizeof(cap) ||
+            cap.cap_len > 256U - cur)
+            goto next_cap;
         cap.cfg_type = HIDD_PCIDevice_ReadConfigByte(pdev, cur + 3);
         cap.bar      = HIDD_PCIDevice_ReadConfigByte(pdev, cur + 4);
         cap.offset   = HIDD_PCIDevice_ReadConfigLong(pdev, cur + 8);
         cap.length   = HIDD_PCIDevice_ReadConfigLong(pdev, cur + 12);
 
-        bar_base = virtio_get_bar(VirtIOBase, pdev, cap.bar);
-        if (!bar_base) {
+        ctype = cap.cfg_type;
+        if (ctype < VIRTIO_PCI_CAP_COMMON_CFG || ctype > VIRTIO_PCI_CAP_DEVICE_CFG ||
+            cap.bar > 5 || dev->dev_Windows[ctype - 1]) {
             cap_ptr = cap.cap_next;
             continue;
         }
-        region = (UBYTE *)bar_base + cap.offset;
-        ctype  = cap.cfg_type;
+        if (!cap.length ||
+            (ctype == VIRTIO_PCI_CAP_COMMON_CFG && cap.length < sizeof(struct virtio_pci_common_cfg)) ||
+            (ctype == VIRTIO_PCI_CAP_DEVICE_CFG && cap.length < 8) ||
+            (ctype == VIRTIO_PCI_CAP_NOTIFY_CFG && (cap.length < 2 || cap.cap_len < sizeof(struct virtio_pci_notify_cap))))
+            goto next_cap;
+        OOP_GetAttr(pdev, HiddPCIDeviceAttrBase + aoHidd_PCIDevice_Base0 + cap.bar * 3, &base);
+        OOP_GetAttr(pdev, HiddPCIDeviceAttrBase + aoHidd_PCIDevice_Size0 + cap.bar * 3, &size);
+        OOP_GetAttr(pdev, HiddPCIDeviceAttrBase + aoHidd_PCIDevice_Type0 + cap.bar * 3, &type);
+        if ((type & 1) || cap.offset > size || cap.length > size - cap.offset ||
+            base > (IPTR)-1 - cap.offset ||
+            ((ctype == VIRTIO_PCI_CAP_COMMON_CFG || ctype == VIRTIO_PCI_CAP_DEVICE_CFG) && (cap.offset & 3)) ||
+            (ctype == VIRTIO_PCI_CAP_NOTIFY_CFG && (cap.offset & 1)))
+            goto next_cap;
+        region = HIDD_PCIDriver_MapPCI(dev->dev_PCIDriverObject,
+                                      (APTR)(base + cap.offset), cap.length);
+        if (!region || region == (APTR)-1)
+            goto next_cap;
+        dev->dev_Windows[ctype - 1] = region;
+        dev->dev_WindowSizes[ctype - 1] = cap.length;
 
         switch (ctype) {
         case VIRTIO_PCI_CAP_COMMON_CFG:
@@ -106,6 +118,7 @@ BOOL virtio_hw_map(device_t dev)
             break;
         }
 
+next_cap:
         cap_ptr = cap.cap_next;
     }
 
@@ -114,6 +127,7 @@ BOOL virtio_hw_map(device_t dev)
         return TRUE;
     }
 
+    virtio_hw_unmap(dev);
     D(bug("[VIRTIO:HW] %s: missing one or more required capabilities (legacy device?)\n", __func__);)
     return FALSE;
 }
@@ -230,8 +244,12 @@ BOOL virtio_hw_setup_queue(device_t dev, UWORD qid, struct virtio_queue *vq)
     dev->dev_CommonCfg->queue_device = vq->q_UsedPhys;
 
     notify_off = dev->dev_CommonCfg->queue_notify_off;
-    vq->q_Notify = (volatile UWORD *)(dev->dev_NotifyBase +
-                                      (ULONG)notify_off * dev->dev_NotifyOffMultiplier);
+    {
+        UQUAD offset = (UQUAD)notify_off * dev->dev_NotifyOffMultiplier;
+        if ((offset & 1) || offset > dev->dev_WindowSizes[VIRTIO_PCI_CAP_NOTIFY_CFG - 1] - 2)
+            return FALSE;
+        vq->q_Notify = (volatile UWORD *)(dev->dev_NotifyBase + (ULONG)offset);
+    }
 
     /* No MSI-X for first version. */
     dev->dev_CommonCfg->queue_msix_vector = 0xFFFF;

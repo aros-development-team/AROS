@@ -133,6 +133,8 @@ typedef struct {
     volatile UBYTE                        *dev_NotifyBase;
     volatile UBYTE                        *dev_ISR;
     ULONG                                  dev_NotifyOffMultiplier;
+    APTR                                   dev_Windows[4];
+    ULONG                                  dev_WindowSizes[4];
 
     UQUAD               dev_Features;
 

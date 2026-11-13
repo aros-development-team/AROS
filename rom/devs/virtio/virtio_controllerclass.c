@@ -186,6 +186,7 @@ VOID VirtIO__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
             virtio_free_queue(dev->dev_VQ);
             dev->dev_VQ = NULL;
         }
+        virtio_hw_unmap(dev);
         dev->dev_Controller = NULL;
     }
 
