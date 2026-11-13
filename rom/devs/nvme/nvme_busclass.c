@@ -323,14 +323,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 
         D(bug ("[NVME:Bus] NVMEBus_Start: sending nvme_admin_set_features(NVME_FEAT_NUM_QUEUES, %u)\n", c.features.dword11 & 0xFF);)
 
-        ULONG signals = SetSignal(0, 0);
-        if (nvme_submit_admincmd(data->ab_Dev, &c, &busehandle) != 0) {
-            sigs = 0;
-            busehandle.ceh_Status = 1;
-        } else {
-            sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
-        }
-        SetSignal(signals, signals);
+        sigs = nvme_exec_admincmd(data->ab_Dev, nvmeTimer, &c, &busehandle) ? busehandle.ceh_SigSet : 0;
         if (!(sigs & busehandle.ceh_SigSet) || busehandle.ceh_Status)
             goto failed;
 
@@ -426,14 +419,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                     c.create_cq.cq_flags = AROS_WORD2LE(flags);
                     c.create_cq.irq_vector = AROS_WORD2LE(nn);
 
-                    signals = SetSignal(0, 0);
-                    if (nvme_submit_admincmd(data->ab_Dev, &c, &busehandle) != 0) {
-                        sigs = 0;
-                        busehandle.ceh_Status = 1;
-                    } else {
-                        sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
-                    }
-                    SetSignal(signals, signals);
+                    sigs = nvme_exec_admincmd(data->ab_Dev, nvmeTimer, &c, &busehandle) ? busehandle.ceh_SigSet : 0;
                     if ((sigs & busehandle.ceh_SigSet) &&  (!busehandle.ceh_Status)) {
                         flags = NVME_QUEUE_PHYS_CONTIG | NVME_SQ_PRIO_MEDIUM;
 
@@ -445,14 +431,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                         c.create_sq.sq_flags = AROS_WORD2LE(flags);
                         c.create_sq.cqid = AROS_WORD2LE(nn + 1);
 
-                        signals = SetSignal(0, 0);
-                        if (nvme_submit_admincmd(data->ab_Dev, &c, &busehandle) != 0) {
-                            sigs = 0;
-                            busehandle.ceh_Status = 1;
-                        } else {
-                            sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
-                        }
-                        SetSignal(signals, signals);
+                        sigs = nvme_exec_admincmd(data->ab_Dev, nvmeTimer, &c, &busehandle) ? busehandle.ceh_SigSet : 0;
                         if ((sigs & busehandle.ceh_SigSet) &&  (!busehandle.ceh_Status)) {
                             data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler.is_Node.ln_Name = "NVME IO Interrupt";
                             data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler.is_Node.ln_Pri = 0;
@@ -509,15 +488,8 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
             c.identify.cns = 0;
 
             D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u sending nvme_admin_identify\n", nn + 1);)
-            signals = SetSignal(0, 0);
-            if (nvme_submit_admincmd(data->ab_Dev, &c, &busehandle) != 0) {
-                sigs = 0;
-                busehandle.ceh_Status = 1;
-            } else {
-                sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
-            }
-            SetSignal(signals, signals);
-            if (!(sigs & busehandle.ceh_SigSet) && !busehandle.ceh_Status)
+            sigs = nvme_exec_admincmd(data->ab_Dev, nvmeTimer, &c, &busehandle) ? busehandle.ceh_SigSet : 0;
+            if (!(sigs & busehandle.ceh_SigSet))
                 goto failed;
             if ((!busehandle.ceh_Status) && (AROS_LE2QUAD(id_ns->ncap) != 0)) {
                 int i, lbaf = id_ns->flbas & 0xf;
@@ -552,15 +524,8 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                 c.features.nsid = AROS_LONG2LE(nn + 1);
 
                 D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u sending nvme_admin_get_features\n", nn + 1);)
-                signals = SetSignal(0, 0);
-                if (nvme_submit_admincmd(data->ab_Dev, &c, &busehandle) != 0) {
-                    sigs = 0;
-                    busehandle.ceh_Status = 1;
-                } else {
-                    sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
-                }
-                SetSignal(signals, signals);
-                if (!(sigs & busehandle.ceh_SigSet) && !busehandle.ceh_Status)
+                sigs = nvme_exec_admincmd(data->ab_Dev, nvmeTimer, &c, &busehandle) ? busehandle.ceh_SigSet : 0;
+                if (!(sigs & busehandle.ceh_SigSet))
                     goto failed;
                 if (!busehandle.ceh_Status) {
                     D(

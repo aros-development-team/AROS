@@ -16,6 +16,7 @@
 #include "nvme_debug.h"
 #include "nvme_intern.h"
 #include "nvme_hw.h"
+#include "nvme_timer.h"
 
 /*
     Admin Queue Support Functions
@@ -103,4 +104,27 @@ int nvme_submit_admincmd(device_t dev, struct nvme_command *cmd, struct completi
     }
 
     return retval;
+}
+
+/* A timed-out command still owns its buffer and can signal its waiter late.
+   Stop callbacks before restoring SIGF_SINGLE and returning to code that may
+   use that signal for an Exec semaphore. The caller frees DMA only if quiesced. */
+BOOL nvme_exec_admincmd(device_t dev, struct IORequest *tmr,
+    struct nvme_command *cmd, struct completionevent_handler *handler)
+{
+    ULONG saved = SetSignal(0, handler->ceh_SigSet) & handler->ceh_SigSet;
+    BOOL completed = TRUE;
+
+    if (nvme_submit_admincmd(dev, cmd, handler) != 0) {
+        handler->ceh_Status = 1;
+    } else if (!(nvme_WaitTO(tmr, 1, 0, handler->ceh_SigSet) & handler->ceh_SigSet)) {
+        /* An interrupt may have been missed while another queue held the pin. */
+        nvme_process_cq(dev->dev_Queues[0]);
+        if (!(SetSignal(0, handler->ceh_SigSet) & handler->ceh_SigSet)) {
+            nvme_quiesce(dev, tmr);
+            completed = FALSE;
+        }
+    }
+    SetSignal(saved, handler->ceh_SigSet);
+    return completed;
 }

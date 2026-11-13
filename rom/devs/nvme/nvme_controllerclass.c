@@ -502,14 +502,7 @@ resetfailed:
                     c.identify.cns = 1;
 
                     D(bug ("[NVME:Controller] %s: sending nvme_admin_identify\n", __func__);)
-                    ULONG signals = SetSignal(0, 0);
-                    if (nvme_submit_admincmd(dev, &c, &cehandle) != 0) {
-                        sigs = 0;
-                        cehandle.ceh_Status = 1;
-                    } else {
-                        sigs = nvme_WaitTO(nvmeTimer, 1, 0, cehandle.ceh_SigSet);
-                    }
-                    SetSignal(signals, signals);
+                    sigs = nvme_exec_admincmd(dev, nvmeTimer, &c, &cehandle) ? cehandle.ceh_SigSet : 0;
                     if ((sigs & cehandle.ceh_SigSet) && (!cehandle.ceh_Status)) {
                         D(bug ("[NVME:Controller] %s:     Model '%s'\n", __func__, ctrl->mn);)
                         D(bug ("[NVME:Controller] %s:     Serial '%s'\n", __func__, ctrl->sn);)
