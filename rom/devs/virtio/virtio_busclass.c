@@ -213,7 +213,7 @@ BOOL Hidd_VirtIOBus_Start(OOP_Object *o, struct VirtIOBase *VirtIOBase)
         };
         struct DeviceNode *devnode;
         const ULONG IdDOS = AROS_MAKE_ID('D','O','S','\001');
-        IPTR pp[4 + DE_BOOTBLOCKS + 1];
+        IPTR pp[4 + DE_BOOTBLOCKS + 1] = {0};
         struct virtio_Unit *unit;
         ULONG sshift = 0;
         ULONG sz;
