@@ -133,15 +133,6 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     ioehandle.ceh_SigSet = SIGF_SINGLE;
     ioehandle.ceh_Msg = io;
 
-    /*
-     * Take the request off the unit's list before it is submitted: once the
-     * controller has it, it may be answered and replied at any moment, and
-     * its node then belongs to the caller's reply port.
-     */
-    ObtainSemaphore(&unit->au_Lock);
-    Remove(&io->io_Message.mn_Node);
-    ReleaseSemaphore(&unit->au_Lock);
-
     if (is_write) {
         cmdio.rw.op.opcode = nvme_cmd_write;
     } else {
@@ -166,16 +157,6 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
         }
         nvme_dma_release(&ioehandle, TRUE);
         io->io_Error = IOERR_ABORTED;
-
-        /*
-         * The command never reached the controller, so BeginIO() finishes
-         * the request itself and removes it from the unit's list. Put it
-         * back there first - it was taken off above - or that would be a
-         * second Remove() of the same node, through stale links.
-         */
-        ObtainSemaphore(&unit->au_Lock);
-        AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
-        ReleaseSemaphore(&unit->au_Lock);
 
         return TRUE;
     }
@@ -242,20 +223,12 @@ static BOOL nvme_flush(struct IORequest *io)
     ioehandle.ceh_SigSet = SIGF_SINGLE;
     ioehandle.ceh_Msg = io;
 
-    /* Off the unit's list before submission, as for a transfer */
-    ObtainSemaphore(&unit->au_Lock);
-    Remove(&io->io_Message.mn_Node);
-    ReleaseSemaphore(&unit->au_Lock);
-
     cmdio.common.op.opcode = nvme_cmd_flush;
     cmdio.common.nsid = AROS_LONG2LE(nsid);
 
     io->io_Flags &= ~IOF_QUICK;
     if (nvme_submit_iocmd(nvmeq, &cmdio, &ioehandle) != 0) {
         io->io_Error = IOERR_ABORTED;
-        ObtainSemaphore(&unit->au_Lock);
-        AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
-        ReleaseSemaphore(&unit->au_Lock);
         return TRUE;
     }
 
@@ -317,10 +290,6 @@ AROS_LH1(void, BeginIO,
     io->io_Error = 0;
 
     D(bug("[NVME%02ld] IO %p Start, io_Flags = %d, io_Command = %d\n", unit->au_UnitNum, io, io->io_Flags, io->io_Command));
-    ObtainSemaphore(&unit->au_Lock);
-    AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
-    ReleaseSemaphore(&unit->au_Lock);
-
     switch (io->io_Command) {
     case CMD_READ:
         D(bug("[NVME%02ld] CMD_READ ", unit->au_UnitNum);)
@@ -442,12 +411,25 @@ AROS_LH1(void, BeginIO,
         D(bug("[NVME%02ld] TD_ADDCHANGEINT\n", unit->au_UnitNum);)
         if (io->io_Flags & IOF_QUICK)
             goto bad_cmd;
+        ObtainSemaphore(&unit->au_Lock);
+        AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
+        ReleaseSemaphore(&unit->au_Lock);
+        done = FALSE;
         break;
 
     case TD_REMCHANGEINT:
         D(bug("[NVME%02ld] TD_REMCHANGEINT\n", unit->au_UnitNum);)
-        if (io->io_Flags & IOF_QUICK)
-            goto bad_cmd;
+        ObtainSemaphore(&unit->au_Lock);
+        {
+            struct Node *node;
+            for (node = unit->au_IOs.lh_Head; node->ln_Succ; node = node->ln_Succ) {
+                if (node == &io->io_Message.mn_Node) {
+                    Remove(node);
+                    break;
+                }
+            }
+        }
+        ReleaseSemaphore(&unit->au_Lock);
         done = TRUE;
         break;
 
@@ -487,19 +469,14 @@ bad_address:
         break;
     }
 
-    /* The IO is finished, so no need to keep it around anymore */
-    if (done) {
-        ObtainSemaphore(&unit->au_Lock);
-        Remove(&io->io_Message.mn_Node);
-        ReleaseSemaphore(&unit->au_Lock);
-    }
+    if (done)
+        D(bug("[NVME%02ld] IO %p Quick, io_Flags = %d, io_Comand = %d, io_Error = %d\n", unit->au_UnitNum, io, io->io_Flags, io->io_Command, io->io_Error));
 
     /* Need a reply now? */
     if (done && !(io->io_Flags & IOF_QUICK))
         ReplyMsg(&io->io_Message);
 
-    if (done)
-        D(bug("[NVME%02ld] IO %p Quick, io_Flags = %d, io_Comand = %d, io_Error = %d\n", unit->au_UnitNum, io, io->io_Flags, io->io_Command, io->io_Error));
+
 
     AROS_LIBFUNC_EXIT
 }
