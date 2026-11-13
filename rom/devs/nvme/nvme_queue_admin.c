@@ -49,6 +49,11 @@ int nvme_submit_admincmd(device_t dev, struct nvme_command *cmd, struct completi
 
     D(bug("[NVME:ADMINQ] %s(0x%p, 0x%p)\n", __func__, dev, cmd);)
 
+    if (handler) {
+        handler->ceh_Status = 0;
+        handler->ceh_Result = 0;
+    }
+
     cmdid = nvme_alloc_cmdid(dev->dev_Queues[0]);
     if (cmdid < 0) {
         return -1;
