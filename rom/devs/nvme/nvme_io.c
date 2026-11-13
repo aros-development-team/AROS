@@ -60,6 +60,8 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     int queueno;
     BOOL setup_ok = FALSE;
 
+    iotd->iotd_Req.io_Actual = 0;
+
     D(
         bug("[NVME%02ld] %s(%08x%08x, 0x%p, %u) %s\n", unit->au_UnitNum, __func__, (off64 >> 32), off64 & 0xFFFFFFFF, data, len, is_write ? "WRITE" : "READ");
 
@@ -225,6 +227,8 @@ static BOOL nvme_flush(struct IORequest *io)
     struct nvme_queue *nvmeq;
     ULONG nsid = (unit->au_UnitNum & ((1 << 12) - 1)) + 1;
     int queueno;
+
+    IOStdReq(io)->io_Actual = 0;
 
     memset(&cmdio, 0, sizeof(cmdio));
     memset(&ioehandle, 0, sizeof(ioehandle));

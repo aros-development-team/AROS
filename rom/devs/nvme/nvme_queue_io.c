@@ -52,10 +52,12 @@ void nvme_complete_ioevent(struct nvme_queue *nvmeq, struct nvme_completion *cqe
         if (slot->ceh_Status) {
             D(UBYTE sct = (slot->ceh_Status >> 7) & 0x7, sc = (slot->ceh_Status) & 0x7F;)
             iotd->iotd_Req.io_Error = IOERR_ABORTED;
+            iotd->iotd_Req.io_Actual = 0;
             D(bug("[NVME:IOQ] %s: NVME IO Error %u:%u\n", __func__, sct, sc);)
         } else {
             iotd->iotd_Req.io_Error = 0;
-            iotd->iotd_Req.io_Actual = iotd->iotd_Req.io_Length;
+            iotd->iotd_Req.io_Actual = iotd->iotd_Req.io_Command == CMD_UPDATE ?
+                0 : iotd->iotd_Req.io_Length;
         }
 
         /*
