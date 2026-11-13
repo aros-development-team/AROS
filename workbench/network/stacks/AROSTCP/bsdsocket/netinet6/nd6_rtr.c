@@ -279,17 +279,9 @@ defrouter_live(const struct nd_defrouter *dr)
 static int
 defrouter_isreachable(struct nd_defrouter *dr)
 {
-    struct rtentry *rt = nd6_lookup(&dr->rtaddr, 0, dr->ifp);
-    int reach = 0;
+    const struct llinfo_nd6 *ln = nd6_nbr_lookup(dr->ifp, &dr->rtaddr, 0);
 
-    if(rt) {
-        const struct llinfo_nd6 *ln = (const struct llinfo_nd6 *)rt->rt_llinfo;
-
-        reach = (rt->rt_flags & RTF_LLINFO) && ln != NULL &&
-                ln->ln_state > ND6_LLINFO_INCOMPLETE;
-        rtfree(rt);
-    }
-    return reach;
+    return ln != NULL && ln->ln_state > ND6_LLINFO_INCOMPLETE;
 }
 
 /* ------------------------------------------------------------------
@@ -804,18 +796,18 @@ nd6_prefix_onlink(struct nd_prefix *pr)
      * The route is put on the prefix's interface: with a link-local address
      * for gateway, rtrequest() would take whichever interface registered
      * fe80::/64 first, as for the routes through a router (nd6_router_route()).
+     * Its neighbours are in the neighbour cache, not cloned from it.
      */
     if(rtrequest(RTM_ADD, (struct sockaddr *)&prefix,
                  ifa->ifa_addr, (struct sockaddr *)&mask,
-                 RTF_UP | RTF_CLONING, &rt) == 0) {
+                 RTF_UP, &rt) == 0) {
         pr->ndpr_onlink = 1;
         if(rt != NULL) {
             if(rt->rt_ifp != pr->ndpr_ifp) {
                 rt->rt_ifp = pr->ndpr_ifp;
                 rt->rt_ifa = ifa;
-                /* the link-layer gateway its neighbours are cloned with
-                 * (nd6_rtrequest()) names the interface: edited in place,
-                 * as nd6_lookup() does */
+                /* its link-layer gateway (nd6_rtrequest()) names the
+                 * interface: edited in place */
                 if(rt->rt_gateway && rt->rt_gateway->sa_family == AF_LINK) {
                     struct sockaddr_dl *sdl = (struct sockaddr_dl *)rt->rt_gateway;
 
@@ -858,7 +850,7 @@ nd6_prefix_offlink(struct nd_prefix *pr)
         prefix.sin6_addr.s6_addr[i] &= mask.sin6_addr.s6_addr[i];
 
     rtrequest(RTM_DELETE, (struct sockaddr *)&prefix,
-              NULL, (struct sockaddr *)&mask, RTF_UP | RTF_CLONING, NULL);
+              NULL, (struct sockaddr *)&mask, RTF_UP, NULL);
     pr->ndpr_onlink = 0;
 }
 

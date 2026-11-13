@@ -164,10 +164,11 @@ void icmp6_drain(void)    {}
 /* ------------------------------------------------------------------
  * icmp6_update_pmtu - record the path MTU a Packet Too Big reports for dst
  * (RFC 8201): clamped to the IPv6 minimum; rt_pmtu_update() (route.c) puts
- * it on dst's own route and gives it back after a while.
+ * it on dst's own route and gives it back after a while. ifp, the link the
+ * report came in by, is a link-local dst's zone.
  * ------------------------------------------------------------------ */
 static void
-icmp6_update_pmtu(struct in6_addr *dst, u_int32_t mtu)
+icmp6_update_pmtu(const struct in6_addr *dst, u_int32_t mtu, struct ifnet *ifp)
 {
     struct sockaddr_in6 sin6;
 
@@ -177,7 +178,7 @@ icmp6_update_pmtu(struct in6_addr *dst, u_int32_t mtu)
     sin6.sin6_family = AF_INET6;
     sin6.sin6_len    = sizeof(sin6);
     sin6.sin6_addr   = *dst;
-    rt_pmtu_update((struct sockaddr *)&sin6, mtu);
+    rt_pmtu_update_if((struct sockaddr *)&sin6, mtu, ifp);
 }
 
 /* ------------------------------------------------------------------
@@ -403,7 +404,7 @@ icmp6_input(void *args, ...)
             /* the route keeps the path MTU, which ip6_output() and a new
              * connection's tcp_mss() use; a TCP connection under way is
              * told too, to send smaller segments (icmp6_notify_error()) */
-            icmp6_update_pmtu(&odst, ntohl(omtu));
+            icmp6_update_pmtu(&odst, ntohl(omtu), m->m_pkthdr.rcvif);
             icmp6_notify_error(m, off, PRC_MSGSIZE);
             break;
         }

@@ -464,6 +464,13 @@ ip6_forward(struct mbuf *m, struct ifnet *srcifp)
 static const struct netvar ip6_netvars[] = {
     { "ip6stat",   &ip6stat,   sizeof(ip6stat),   NVT_STATS },
     { "icmp6stat", &icmp6stat, sizeof(icmp6stat), NVT_STATS },
+    /* the neighbour cache's limits (nd6.c) */
+    { "nd6_maxqueuelen", (void *)nd6_sysctl_maxqueuelen, 0, NVT_SYSCTL,
+      PF_INET6, IPPROTO_ICMPV6, ICMPV6CTL_ND6_MAXQLEN },
+    { "nd6_maxnbrs",     (void *)nd6_sysctl_maxnbrs, 0, NVT_SYSCTL,
+      PF_INET6, IPPROTO_ICMPV6, ICMPV6CTL_ND6_MAXNBRS },
+    { "nd6_maxheld",     (void *)nd6_sysctl_maxheld, 0, NVT_SYSCTL,
+      PF_INET6, IPPROTO_ICMPV6, ICMPV6CTL_ND6_MAXHELD },
 };
 
 /* ------------------------------------------------------------------
@@ -519,7 +526,7 @@ ip6_init(void)
         (void)(*in6_transports->ti_family_register)(&in6_family);
     }
     /* neighbour discovery finds link addresses for the SANA-II interfaces */
-    (void)sana_linktype_resolver(AF_INET6, nd6_resolve);
+    (void)sana_linktype_resolver(AF_INET6, nd6_lt_resolve);
     /* what netstat finds by name */
     (void)netvar_register(ip6_netvars, sizeof(ip6_netvars) / sizeof(ip6_netvars[0]));
 }

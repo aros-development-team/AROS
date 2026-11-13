@@ -43,9 +43,6 @@
 #include <net/radix.h>
 #include <net/if_sana.h>
 #include <net/netmodule.h>
-#if INET6
-#include <netinet6/nd6.h>	/* struct llinfo_nd6 (ND6 neighbour expiry) */
-#endif
 #include <sys/ioctl.h>
 #include <protos/net/route_protos.h>
 #include <syslog.h>
@@ -343,23 +340,6 @@ getri_callback(struct radix_node *rn, void *arg)
             rtm->rtm_use     = rt->rt_use;
             rtm->rtm_rmx     = rt->rt_rmx;
             rtm->rtm_rmx.rmx_expire = rt_expire_out(rt->rt_rmx.rmx_expire);
-#if INET6
-            /*
-             * IPv6 neighbour (ND6) entries keep their expiry time in
-             * llinfo_nd6.ln_expire, not in rt_rmx.  Surface it as
-             * rmx_expire so userland (ip neigh / ndp) can distinguish a
-             * dynamically resolved REACHABLE neighbour (non-zero expiry)
-             * from a permanent one (zero).  RTF_LLINFO is only ever set
-             * by nd6 in this stack, and we additionally guard on the
-             * AF_INET6 key so an IPv4 llinfo could never be misread.
-             */
-            if((rt->rt_flags & RTF_LLINFO) && rt->rt_llinfo != NULL) {
-                struct sockaddr *rk = rt_key(rt);
-                if(rk != NULL && rk->sa_family == AF_INET6)
-                    rtm->rtm_rmx.rmx_expire = rt_expire_out(
-                        ((struct llinfo_nd6 *)rt->rt_llinfo)->ln_expire);
-            }
-#endif
             if(rt->rt_ifp)
                 rtm->rtm_index = rt->rt_ifp->if_index;
 
@@ -390,6 +370,28 @@ getri_callback(struct radix_node *rn, void *arg)
     return 0;
 }
 
+/*
+ * IPv6's neighbours are not in the routing table: with RTF_LLINFO asked
+ * for, IPv6 gives them as rows of their own (NFC_LLINFO_ROWS,
+ * net/netmodule.h). Without IPv6 there are none.
+ */
+static void
+getri_neighbours(struct getri_ctx *ctx, LONG address_family, LONG flags)
+{
+    struct nfc_llinfo_rows rows;
+
+    if(!(flags & RTF_LLINFO) || (address_family != 0 && address_family != AF_INET6))
+        return;
+    rows.nr_size = 0;
+    rows.nr_buf = ctx->pass == 0 ? NULL : ctx->buf;
+    if(netfamily_control(AF_INET6, NULL, NFC_LLINFO_ROWS, (caddr_t)&rows, NULL) != 0)
+        return;
+    if(ctx->pass == 0)
+        ctx->size += rows.nr_size;
+    else
+        ctx->buf = rows.nr_buf;
+}
+
 struct rt_msghdr *
 rsadm_GetRouteInfo(LONG address_family, LONG flags, struct SocketBase *libPtr)
 {
@@ -414,6 +416,7 @@ rsadm_GetRouteInfo(LONG address_family, LONG flags, struct SocketBase *libPtr)
         if(rnh->rnh_treetop)
             route_walk(rnh->rnh_treetop, getri_callback, &ctx);
     }
+    getri_neighbours(&ctx, address_family, flags);
 
     total_size = ctx.size;
     if(total_size == 0) {
@@ -449,6 +452,7 @@ rsadm_GetRouteInfo(LONG address_family, LONG flags, struct SocketBase *libPtr)
         if(rnh->rnh_treetop)
             route_walk(rnh->rnh_treetop, getri_callback, &ctx);
     }
+    getri_neighbours(&ctx, address_family, flags);
     splx(s);
 
     /* Write sentinel: zero-length rt_msghdr marks end of list */

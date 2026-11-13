@@ -40,6 +40,8 @@ CUNITSOCKETTESTFILES := \
     cunit-net-module \
     cunit-net-naflags6 \
     cunit-net-narouter6 \
+    cunit-net-nd6cache \
+    cunit-net-nd6limits \
     cunit-net-ndqueue6 \
     cunit-net-netconfig \
     cunit-net-netdb \

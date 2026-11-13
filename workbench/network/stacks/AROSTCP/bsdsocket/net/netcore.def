@@ -283,3 +283,6 @@ NC(sana_linktype_config)
 NC(sana_query)
 NC(sana_reload_gen)
 NC(sana_unrun)
+/* version 11: the path MTU of a destination on the link, told with the interface the report
+ * came in by (IPv6: a link-local destination's zone) */
+NC(rt_pmtu_update_if)
