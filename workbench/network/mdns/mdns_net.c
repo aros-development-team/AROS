@@ -9,8 +9,12 @@
  * there, and an address record carries the address of the interface it is
  * sent on. One socket per family serves every link: it joins the mDNS group
  * on each link that is up, can multicast and has an address of the family,
- * learns the link a datagram came by from IP_RECVIF (IPv4) or IPV6_PKTINFO
- * (IPv6), and sends to a link's group by IP_MULTICAST_IF/IPV6_MULTICAST_IF.
+ * learns the link a datagram came by from IP_PKTINFO or IPV6_PKTINFO, and
+ * sends on a link - to its group, or to the one who asked - with the same
+ * ancillary data naming the link: the datagram leaves there whatever the
+ * routing table says (a host route to the asker through another link; two
+ * IPv4 link-local links, 169.254/16 routed by one), and an IPv4 one from
+ * the address its records carry.
  * The sockets stay open while the stack is there: links coming, going or
  * changing their addresses change only the memberships (the stack leaves
  * those of an interface that goes away).
@@ -61,7 +65,7 @@ open_socket4(struct Library *SocketBase)
         return -1;
     }
     if (!share_port(SocketBase, sock) ||
-        setsockopt(sock, IPPROTO_IP, IP_RECVIF, (char *)&on,
+        setsockopt(sock, IPPROTO_IP, IP_PKTINFO, (char *)&on,
             sizeof(on)) < 0) {
         CloseSocket(sock);
         return -1;
@@ -431,12 +435,45 @@ mdnsNetIsOwn6(struct MDNSDaemon *md, const struct in6_addr *addr)
     return FALSE;
 }
 
+/* Sends pkt to sa with one ancillary message of the given level and type. */
+static BOOL
+send_with(struct Library *SocketBase, LONG sock, struct sockaddr *sa,
+    LONG salen, const UBYTE *pkt, LONG pktlen, int level, int type,
+    const void *info, LONG infolen)
+{
+    union {
+        struct cmsghdr align;
+        UBYTE data[CMSG_SPACE(sizeof(struct in6_pktinfo))];
+    } control;
+    struct msghdr message;
+    struct iovec vector;
+    struct cmsghdr *header;
+
+    memset(&message, 0, sizeof(message));
+    memset(&control, 0, sizeof(control));
+    vector.iov_base = (APTR)pkt;
+    vector.iov_len = pktlen;
+    message.msg_name = sa;
+    message.msg_namelen = salen;
+    message.msg_iov = &vector;
+    message.msg_iovlen = 1;
+    message.msg_control = &control;
+    message.msg_controllen = CMSG_SPACE(infolen);
+    header = CMSG_FIRSTHDR(&message);
+    header->cmsg_level = level;
+    header->cmsg_type = type;
+    header->cmsg_len = CMSG_LEN(infolen);
+    memcpy(CMSG_DATA(header), info, infolen);
+    return sendmsg((int)sock, &message, 0) >= 0;
+}
+
 /* Sends on one interface: to the mDNS groups, or to the one who asked. */
 static BOOL
 send_on4(struct Library *SocketBase, struct MDNSDaemon *md, LONG index,
     const UBYTE *pkt, LONG pktlen)
 {
     struct sockaddr_in sin;
+    struct in_pktinfo info;
     ULONG address4 = mdnsNetAddress4(md, index);
 
     if (md->md_Socket4 < 0 || address4 == 0 ||
@@ -454,18 +491,16 @@ send_on4(struct Library *SocketBase, struct MDNSDaemon *md, LONG index,
         sin.sin_port = htons(md->md_ReplyPort);
         sin.sin_addr.s_addr = htonl(md->md_ReplyAddr);
     } else {
-        struct in_addr link;
-
         sin.sin_port = htons(MDNS_DNS_PORT);
         sin.sin_addr.s_addr = inet_addr(MDNS_MCAST_ADDR);
-        link.s_addr = htonl(address4);
-        if (setsockopt((int)md->md_Socket4, IPPROTO_IP, IP_MULTICAST_IF,
-                (char *)&link, sizeof(link)) < 0) {
-            return FALSE;
-        }
     }
-    if (sendto((int)md->md_Socket4, (char *)pkt, (int)pktlen, 0,
-            (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+    /* out by this link, from its address */
+    memset(&info, 0, sizeof(info));
+    info.ipi_ifindex = (int)md->md_Ifs[index].mi_Index;
+    info.ipi_spec_dst.s_addr = htonl(address4);
+    if (!send_with(SocketBase, md->md_Socket4, (struct sockaddr *)&sin,
+            sizeof(sin), pkt, pktlen, IPPROTO_IP, IP_PKTINFO, &info,
+            sizeof(info))) {
         return FALSE;
     }
     md->md_TxPackets++;
@@ -480,6 +515,7 @@ send_on6(struct Library *SocketBase, struct MDNSDaemon *md, LONG index,
         0xff, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xfb
     };
     struct sockaddr_in6 sin6;
+    struct in6_pktinfo info;
 
     if (md->md_Socket6 < 0 || !has_address6(md, index) ||
         (!mdnsReplyIsUnicast(md) && md->md_SendFamily != 0 &&
@@ -497,14 +533,13 @@ send_on6(struct Library *SocketBase, struct MDNSDaemon *md, LONG index,
     } else {
         sin6.sin6_port = htons(MDNS_DNS_PORT);
         memcpy(&sin6.sin6_addr, group_bytes, sizeof(group_bytes));
-        if (setsockopt((int)md->md_Socket6, IPPROTO_IPV6,
-                IPV6_MULTICAST_IF, (char *)&md->md_Ifs[index].mi_Index,
-                sizeof(md->md_Ifs[index].mi_Index)) < 0) {
-            return FALSE;
-        }
     }
-    if (sendto((int)md->md_Socket6, (char *)pkt,
-            (int)pktlen, 0, (struct sockaddr *)&sin6, sizeof(sin6)) < 0) {
+    /* out by this link; the stack takes the source from it */
+    memset(&info, 0, sizeof(info));
+    info.ipi6_ifindex = md->md_Ifs[index].mi_Index;
+    if (!send_with(SocketBase, md->md_Socket6, (struct sockaddr *)&sin6,
+            sizeof(sin6), pkt, pktlen, IPPROTO_IPV6, IPV6_PKTINFO, &info,
+            sizeof(info))) {
         return FALSE;
     }
     md->md_TxPackets++;

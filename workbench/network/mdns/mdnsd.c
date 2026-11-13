@@ -27,9 +27,7 @@
 #include <proto/dos.h>
 #include <proto/bsdsocket.h>
 #include <libraries/bsdsocket.h>
-#include <net/if_dl.h>
 #include <netinet/in.h>
-#include <stddef.h>
 
 #include "mdnsd.h"
 
@@ -125,14 +123,14 @@ link_slot(const struct MDNSDaemon *md, ULONG index)
     return -1;
 }
 
-/* A datagram on the IPv4 socket: IP_RECVIF names the link it came by, and
+/* A datagram on the IPv4 socket: IP_PKTINFO names the link it came by, and
  * one of a link mdnsd does not serve is dropped. */
 static void
 receive4(struct MDNSDaemon *md, struct Library *SocketBase)
 {
     union {
         struct cmsghdr align;
-        UBYTE data[CMSG_SPACE(sizeof(struct sockaddr_dl) + 32)];
+        UBYTE data[CMSG_SPACE(sizeof(struct in_pktinfo))];
     } control;
     struct sockaddr_in from;
     struct msghdr message;
@@ -158,15 +156,12 @@ receive4(struct MDNSDaemon *md, struct Library *SocketBase)
     for (header = CMSG_FIRSTHDR(&message); header != NULL;
             header = CMSG_NXTHDR(&message, header)) {
         if (header->cmsg_level == IPPROTO_IP &&
-            header->cmsg_type == IP_RECVIF &&
-            header->cmsg_len >= CMSG_LEN(offsetof(struct sockaddr_dl,
-                sdl_index) + sizeof(((struct sockaddr_dl *)0)->sdl_index))) {
-            struct sockaddr_dl sdl;
+            header->cmsg_type == IP_PKTINFO &&
+            header->cmsg_len == CMSG_LEN(sizeof(struct in_pktinfo))) {
+            struct in_pktinfo info;
 
-            memcpy(&sdl, CMSG_DATA(header),
-                header->cmsg_len - CMSG_LEN(0) < sizeof(sdl) ?
-                header->cmsg_len - CMSG_LEN(0) : sizeof(sdl));
-            slot = link_slot(md, sdl.sdl_index);
+            memcpy(&info, CMSG_DATA(header), sizeof(info));
+            slot = link_slot(md, (ULONG)info.ipi_ifindex);
             break;
         }
     }
@@ -192,7 +187,7 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
     struct Library *SocketBase = md->md_SocketBase;
     struct timeval tv;
     fd_set readfds;
-    LONG i, top = -1;
+    LONG top = -1;
 
     if (SocketBase == NULL) {
         /* Between "reconfigure begin" and "end" there is no stack to ask. */
@@ -230,8 +225,10 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
         struct msghdr message;
         struct iovec vector;
         BOOL havePacketInfo = FALSE;
+        LONG i;
         int got;
 
+        memset(&packetInfo, 0, sizeof(packetInfo));
         memset(&message, 0, sizeof(message));
         memset(&from6, 0, sizeof(from6));
         vector.iov_base = md->md_RxBuf;
