@@ -126,9 +126,9 @@ static LONG lamp_draw_pen(const struct Lamp_DATA *data, unsigned int region)
     return p != -1 ? p : -1;
 }
 
-static void lamp_draw_led(Object *obj, struct Lamp_DATA *data, ULONG size)
+static void lamp_draw_led(Object *obj, const struct Lamp_DATA *data, ULONG size)
 {
-    LONG x, y, r, inner, dy;
+    LONG x, y, r, inner;
     LONG left = _mleft(obj), top = _mtop(obj);
     LONG base = data->lmp_PenNr;
     LONG bezel = lamp_draw_pen(data, 0);
@@ -152,7 +152,7 @@ static void lamp_draw_led(Object *obj, struct Lamp_DATA *data, ULONG size)
     {
         LONG current = -2;
         LONG runstart = 0;
-        dy = 2 * y + 1 - (LONG)size;
+        LONG dy = 2 * y + 1 - (LONG)size;
         for (x = 0; x <= (LONG)size; ++x)
         {
             LONG next = -2;
