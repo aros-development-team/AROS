@@ -240,13 +240,24 @@ AROS_LH1(void, BeginIO,
         break;
 
     case TD_ADDCHANGEINT:
-        if (io->io_Flags & IOF_QUICK) goto bad_cmd;
+        io->io_Flags &= ~IOF_QUICK;
+        done = FALSE;
         ObtainSemaphore(&unit->au_Lock);
         AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
         ReleaseSemaphore(&unit->au_Lock);
         break;
     case TD_REMCHANGEINT:
-        if (io->io_Flags & IOF_QUICK) goto bad_cmd;
+        ObtainSemaphore(&unit->au_Lock);
+        {
+            struct Node *node;
+            for (node = unit->au_IOs.lh_Head; node->ln_Succ; node = node->ln_Succ) {
+                if (node == &io->io_Message.mn_Node) {
+                    Remove(node);
+                    break;
+                }
+            }
+        }
+        ReleaseSemaphore(&unit->au_Lock);
         done = TRUE;
         break;
 
@@ -285,8 +296,26 @@ AROS_LH1(LONG, AbortIO,
 {
     AROS_LIBFUNC_INIT
 
-    /* Aborting in-flight virtio-blk IOs is not supported. */
-    return 0;
+    struct virtio_Unit *unit = (struct virtio_Unit *)io->io_Unit;
+    struct Node *node;
+    BOOL removed = FALSE;
+
+    ObtainSemaphore(&unit->au_Lock);
+    for (node = unit->au_IOs.lh_Head; node->ln_Succ; node = node->ln_Succ) {
+        if (node == &io->io_Message.mn_Node) {
+            Remove(node);
+            removed = TRUE;
+            break;
+        }
+    }
+    ReleaseSemaphore(&unit->au_Lock);
+    if (removed) {
+        io->io_Error = IOERR_ABORTED;
+        ReplyMsg(&io->io_Message);
+        return 0;
+    }
+    /* Requests already owned by the device must finish normally. */
+    return IOERR_NOCMD;
 
     AROS_LIBFUNC_EXIT
 }
