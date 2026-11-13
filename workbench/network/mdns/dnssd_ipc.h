@@ -43,6 +43,7 @@
 #define DNSSD_IPC_UPDATE    11  /* dm_Operation; dm_Extra: TXT if DNSSD_IPCF_TXT; dm_Port if not 0 */
 
 #define DNSSD_IPCF_TXT      1   /* dm_Flags: UPDATE carries TXT data */
+#define DNSSD_IPCF_ADDRESSES 2  /* dm_Flags: UPDATE carries the proxied host's addresses */
 
 /* Names in dm_Data are DNS wire labels, uncompressed, dm_DataSize bytes
  * with the root label; the offsets are where a part's labels start. */
@@ -70,7 +71,9 @@ struct DNSSDIPCMsg
     ULONG           dm_ExtraSize;
     UBYTE          *dm_Extra;
     UBYTE           dm_Host[64];    /* REGISTER for another host: its name's first label */
-    struct DNSSDAddress dm_HostAddress;
+    UWORD           dm_HostAddressCount;
+    UWORD           dm_Reserved2;
+    struct DNSSDAddress *dm_HostAddresses;  /* REGISTER, UPDATE (DNSSD_IPCF_ADDRESSES): its addresses */
     IPTR            dm_UserData;
     ULONG           dm_DataSize;    /* bytes of dm_Data used */
     ULONG           dm_DataMax;     /* bytes of dm_Data */

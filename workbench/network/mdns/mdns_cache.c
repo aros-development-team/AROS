@@ -17,7 +17,8 @@
  * (TTL 0), goes a second later (sections 10.2, 10.1).
  *
  * The host's own records come in as they are announced (mdnsReflectPacket())
- * and stay until their goodbye: nobody refreshes them.
+ * and stay until their goodbye, which ends them a second later as any:
+ * nobody refreshes them.
  *
  * Memory: each record is allocated by itself, within MDNS_CACHE_BYTES; when
  * that is full, the record nearest its end goes first.
@@ -176,7 +177,7 @@ mdnsWireNameFromText(const char *text, UBYTE *name)
 
 /*
  * The RDATA of a record at rdoffset (rdlength bytes) with the names in it
- * expanded, into data (at most 512 bytes); its length, or -1.
+ * expanded, into data (MDNS_MAX_PACKET bytes); its length, or -1.
  */
 static LONG
 expand_rdata(UWORD type, const UBYTE *pkt, LONG length, LONG rdoffset,
@@ -206,7 +207,7 @@ expand_rdata(UWORD type, const UBYTE *pkt, LONG length, LONG rdoffset,
         n = mdnsWireNameLength(data + 6);
         return n < 0 ? -1 : 6 + n;
     default:
-        if (rdlength > 512) {
+        if (rdlength > MDNS_MAX_PACKET) {
             return -1;
         }
         memcpy(data, pkt + rdoffset, rdlength);
@@ -296,7 +297,11 @@ mdnsCacheRecord(const struct MDNSDaemon *md, const UBYTE *pkt, LONG length,
     LONG offset, ULONG link, BOOL local)
 {
     struct MDNSCache *c = md->md_Cache;
-    UBYTE name[256], data[512];
+    /* RDATA up to a packet's size (a TXT may be 8900 bytes, RFC 6763
+     * section 6.2), in storage of its own: mdnsd has one task, and the
+     * stack of a 68000's task is small */
+    static UBYTE data[MDNS_MAX_PACKET];
+    UBYTE name[256];
     struct MDNSCacheEntry *e, *next, *same = NULL;
     LONG consumed, namelen, datalen;
     UWORD type, rclass, rdlength;
@@ -510,8 +515,11 @@ mdnsCacheTick(struct MDNSDaemon *md)
     }
     for (e = (struct MDNSCacheEntry *)c->mc_Records.mlh_Head;
          (next = (struct MDNSCacheEntry *)e->ce_Node.mln_Succ) != NULL; e = next) {
+        /* one of the host's own goes with its goodbye (TTL 0), the others
+         * when their time is up */
         if (!link_active(md, e->ce_Link) ||
-            (!(e->ce_Flags & MDNS_CACHE_LOCAL) && due(now, e->ce_Expires))) {
+            ((!(e->ce_Flags & MDNS_CACHE_LOCAL) || e->ce_TTL == 0) &&
+             due(now, e->ce_Expires))) {
             drop(c, e);
             continue;
         }

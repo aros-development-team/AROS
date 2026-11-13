@@ -255,12 +255,16 @@ mdnsParseRecord(const UBYTE *pkt, LONG pktlen, LONG offset,
     r->rdlength = (UWORD)((pkt[end + 8] << 8) | pkt[end + 9]);
     rdlen = (LONG)r->rdlength;
 
-    if (end + 10 + rdlen > pktlen || rdlen > (LONG)sizeof(r->rdata)) {
+    if (end + 10 + rdlen > pktlen) {
         return -1;
     }
 
+    /* a record longer than rdata (a TXT may be 8900 bytes, RFC 6763
+     * section 6.2) is taken all the same: rdata holds its start, the
+     * whole is at rdoffset in the packet */
     r->rdoffset = end + 10;
-    memcpy(r->rdata, pkt + end + 10, (size_t)rdlen);
+    memcpy(r->rdata, pkt + end + 10,
+        (size_t)(rdlen < (LONG)sizeof(r->rdata) ? rdlen : (LONG)sizeof(r->rdata)));
     *consumed = (end + 10 + rdlen) - offset;
     return 0;
 }

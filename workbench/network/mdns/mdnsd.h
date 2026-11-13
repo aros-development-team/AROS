@@ -50,13 +50,24 @@ struct MDNSInterface
 #define MDNS_UNICAST_SECONDS    (MDNS_TTL_HOST / 4)
 
 /* The TXT data of a registered service: length-prefixed strings, as a
- * client gives them (RFC 6763 section 6.2 asks for no more than this). */
-#define MDNS_TXT_DATA_MAX       1300
+ * client gives them. RFC 6763 section 6.2: it should not exceed 1300
+ * bytes, and may be up to 8900 when it has to. */
+#define MDNS_TXT_DATA_MAX       8900
+
+/* The addresses of a host a service is registered for (a proxy). */
+#define MDNS_PROXY_ADDRESSES    8
+
+/* Its name is unique: three probes, then announced (RFC 6762 section 8);
+ * a conflict over a proxied host's name, which is not this host's to
+ * rename, ends the registration. */
+#define MDNS_NAME_CONFLICT      2
 
 struct MDNSRegisteredService;
-/* Told when a registered service's name is announced (again, after a
- * conflict renamed it). */
-typedef void (*MDNSRegNotify)(APTR data, const struct MDNSRegisteredService *rs);
+/* Told when a registered service's name is announced (MDNS_OK; again,
+ * after a conflict renamed it), or that another host has the name of the
+ * host it stands in for (MDNSERR_DUPLICATE): it is then withdrawn. */
+typedef void (*MDNSRegNotify)(APTR data, const struct MDNSRegisteredService *rs,
+    LONG result);
 
 /* A service a client registered (dnssd.library, or bonami.library). */
 struct MDNSRegisteredService
@@ -68,7 +79,7 @@ struct MDNSRegisteredService
     char            rs_Subtypes[MDNS_MAX_SUBTYPES][MDNS_MAX_SUBTYPE + 1];
     char            rs_Domain[MDNS_MAX_DOMAIN + 1];
     UWORD           rs_TXTLength;
-    UBYTE           rs_TXT[MDNS_TXT_DATA_MAX];
+    UBYTE          *rs_TXT;         /* AllocVec()'d, rs_TXTLength bytes, or NULL */
     MDNSRegNotify   rs_Notify;      /* or NULL */
     APTR            rs_NotifyData;
     UWORD           rs_Port;
@@ -78,7 +89,9 @@ struct MDNSRegisteredService
                                      * address were given by the client */
     char            rs_HostTarget[MDNS_MAX_HOST + 8];
                                     /* that host, "name.local" */
-    ULONG           rs_HostAddr;    /* and its address */
+    UWORD           rs_HostAddrCount;   /* and its addresses, IPv4 and IPv6; */
+    struct DNSSDAddress rs_HostAddrs[MDNS_PROXY_ADDRESSES];
+                                    /* da_Interface: only on that link */
     ULONG           rs_TTL;         /* of its records, 0 for the defaults */
     APTR            rs_ClientRef;   /* the handle the client has */
     ULONG           rs_TaskID;      /* stable ID of the registering task */
@@ -293,10 +306,11 @@ void mdnsQueryFree(struct MDNSDaemon *md);
 LONG mdnsRegAddNative(struct MDNSDaemon *md, const char *instance,
     const char *type, const char *domain, const char subtypes[][MDNS_MAX_SUBTYPE + 1],
     UWORD subtypeCount, UWORD port, const UBYTE *txt, UWORD txtLength,
-    const char *host, ULONG hostAddr, MDNSRegNotify notify, APTR data,
-    APTR *ref);
+    const char *host, const struct DNSSDAddress *addrs, UWORD addrCount,
+    MDNSRegNotify notify, APTR data, APTR *ref);
 LONG mdnsRegUpdateRef(struct MDNSDaemon *md, APTR ref, const UBYTE *txt,
-    UWORD txtLength, UWORD port);
+    UWORD txtLength, UWORD port, const struct DNSSDAddress *addrs,
+    LONG addrCount);
 void mdnsRegRemoveRef(struct MDNSDaemon *md, APTR ref);
 
 /* dnssd_server.c: dnssd.library's sessions and operations. */
