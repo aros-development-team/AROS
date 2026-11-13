@@ -1,0 +1,31 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+NOTOMONOREV := 8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5
+NOTOMONOSRC := $(PORTSSOURCEDIR)/noto-monoemoji-$(NOTOMONOREV)
+NOTOMONOURL := https://raw.githubusercontent.com/google/fonts/$(NOTOMONOREV)/ofl/notoemoji
+
+#MM- fonts-truetype : fonts-truetype-notomonoemoji
+#MM- fonts-truetype-quick : fonts-truetype-notomonoemoji
+#MM fonts-truetype-notomonoemoji : fonts-truetype-notomonoemoji-fetch fonts-truetype-notomonoemoji-fetch-license
+#MM fonts-truetype-notomonoemoji-fetch : fonts-truetype-notomonoemoji-srcdir
+#MM fonts-truetype-notomonoemoji-fetch-license : fonts-truetype-notomonoemoji-srcdir
+
+%fetch mmake=fonts-truetype-notomonoemoji-fetch archive=NotoEmoji%5Bwght%5D.ttf suffixes= \
+    location=$(NOTOMONOSRC) archive_origins="$(NOTOMONOURL)"
+
+%fetch mmake=fonts-truetype-notomonoemoji-fetch-license archive=OFL.txt suffixes= \
+    location=$(NOTOMONOSRC) archive_origins="$(NOTOMONOURL)"
+
+#MM
+fonts-truetype-notomonoemoji : | $(AROSDIR)/Fonts/TrueType
+	$(CP) $(NOTOMONOSRC)/NotoEmoji%5Bwght%5D.ttf $(AROSDIR)/Fonts/TrueType/NotoEmoji.ttf
+	$(CP) $(NOTOMONOSRC)/OFL.txt $(AROSDIR)/Fonts/TrueType/LICENSE-NotoMonoEmoji.txt
+
+#MM
+fonts-truetype-notomonoemoji-srcdir : | $(NOTOMONOSRC)
+
+%rule_makedirs dirs="$(AROSDIR)/Fonts/TrueType $(NOTOMONOSRC)"
+
+%common
