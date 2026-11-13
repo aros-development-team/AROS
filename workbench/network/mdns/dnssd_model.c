@@ -8,8 +8,8 @@
 #include <limits.h>
 #include <string.h>
 
-typedef char dnssd_model_message_size_must_be_96[
-    sizeof(struct dnssd_model_message) == 96u ? 1 : -1];
+typedef char dnssd_model_message_size_must_be_116[
+    sizeof(struct dnssd_model_message) == 116u ? 1 : -1];
 typedef char dnssd_model_address_size_must_be_24[
     sizeof(struct dnssd_model_wire_address) == 24u ? 1 : -1];
 
@@ -36,7 +36,17 @@ static int valid_span(struct dnssd_model_span span)
 static int valid_kind(uint16_t kind)
 {
     return kind >= DNSSD_MODEL_EVENT_ADD &&
-        kind <= DNSSD_MODEL_EVENT_TYPE;
+        kind <= DNSSD_MODEL_EVENT_LOST;
+}
+
+/* The kinds about a service instance: they name it by instance, type and
+ * domain. */
+static int instance_kind(uint16_t kind)
+{
+    return kind == DNSSD_MODEL_EVENT_ADD || kind == DNSSD_MODEL_EVENT_REMOVE ||
+        kind == DNSSD_MODEL_EVENT_RESOLVED ||
+        kind == DNSSD_MODEL_EVENT_RESOLVE_FAILED ||
+        kind == DNSSD_MODEL_EVENT_REGISTERED;
 }
 
 static int valid_wire_name(const uint8_t *name, uint32_t size)
@@ -82,21 +92,60 @@ static int valid_address(const struct dnssd_model_address *address)
              address->length == 16u));
 }
 
+/* An optional wire name: none, or a valid one. */
+static int valid_optional_name(const uint8_t *name, uint32_t size)
+{
+    return size == 0u || valid_wire_name(name, size);
+}
+
+/*
+ * What each kind must carry: an instance's kinds its instance, type and
+ * domain; TYPE a type and domain and no instance; ADDRESS and RECORD a
+ * name, RECORD a record type; END and LOST nothing. Names present are
+ * valid wire names whatever the kind.
+ */
+static int valid_parts(uint16_t kind, uint16_t rrtype,
+                       const uint8_t *name, uint32_t name_size,
+                       uint32_t instance_size,
+                       const uint8_t *type, uint32_t type_size,
+                       const uint8_t *domain, uint32_t domain_size,
+                       const uint8_t *target, uint32_t target_size,
+                       const uint8_t *txt, uint32_t txt_size)
+{
+    if (instance_size > 63u ||
+        !valid_optional_name(name, name_size) ||
+        !valid_optional_name(type, type_size) ||
+        !valid_optional_name(domain, domain_size) ||
+        !valid_optional_name(target, target_size) ||
+        !valid_txt(txt, txt_size))
+        return 0;
+    if (instance_kind(kind))
+        return instance_size != 0u && type_size != 0u && domain_size != 0u;
+    if (kind == DNSSD_MODEL_EVENT_TYPE)
+        return instance_size == 0u && type_size != 0u && domain_size != 0u;
+    if (kind == DNSSD_MODEL_EVENT_ADDRESS)
+        return name_size != 0u;
+    if (kind == DNSSD_MODEL_EVENT_RECORD)
+        return name_size != 0u && rrtype != 0u;
+    return 1;
+}
+
 static int valid_service(const struct dnssd_model_service *service)
 {
     uint32_t i;
 
     if (service == NULL || !valid_kind(service->kind) ||
-        !valid_span(service->instance) ||
+        !valid_span(service->name) || !valid_span(service->instance) ||
         !valid_span(service->service_type) ||
         !valid_span(service->domain) || !valid_span(service->target) ||
-        !valid_span(service->txt) || service->instance.size > 63u ||
-        !valid_wire_name(service->service_type.data,
-                         service->service_type.size) ||
-        !valid_wire_name(service->domain.data, service->domain.size) ||
-        (service->target.size != 0u &&
-            !valid_wire_name(service->target.data, service->target.size)) ||
-        !valid_txt(service->txt.data, service->txt.size) ||
+        !valid_span(service->txt) || !valid_span(service->rdata) ||
+        !valid_parts(service->kind, service->rrtype,
+                     service->name.data, service->name.size,
+                     service->instance.size,
+                     service->service_type.data, service->service_type.size,
+                     service->domain.data, service->domain.size,
+                     service->target.data, service->target.size,
+                     service->txt.data, service->txt.size) ||
         service->address_count > UINT16_MAX ||
         (service->address_count != 0u && service->addresses == NULL))
         return 0;
@@ -128,7 +177,9 @@ int dnssd_model_measure(const struct dnssd_model_service *service,
 
     if (required == NULL || !valid_service(service))
         return DNSSD_MODEL_BAD_ARGUMENT;
-    result = measure_span(&total, service->instance);
+    result = measure_span(&total, service->name);
+    if (result == DNSSD_MODEL_OK)
+        result = measure_span(&total, service->instance);
     if (result == DNSSD_MODEL_OK)
         result = measure_span(&total, service->service_type);
     if (result == DNSSD_MODEL_OK)
@@ -137,6 +188,8 @@ int dnssd_model_measure(const struct dnssd_model_service *service,
         result = measure_span(&total, service->target);
     if (result == DNSSD_MODEL_OK)
         result = measure_span(&total, service->txt);
+    if (result == DNSSD_MODEL_OK)
+        result = measure_span(&total, service->rdata);
     if (result != DNSSD_MODEL_OK)
         return result;
     result = align_size(&total);
@@ -251,7 +304,9 @@ int dnssd_model_build(const struct dnssd_model_service *service,
     message->version = DNSSD_MODEL_VERSION;
     message->header_size = (uint16_t)sizeof(*message);
     message->kind = service->kind;
+    message->rrtype = service->rrtype;
     message->flags = service->flags;
+    message->result = service->result;
     message->incarnation = service->incarnation;
     message->session = service->session;
     message->operation = service->operation;
@@ -261,12 +316,14 @@ int dnssd_model_build(const struct dnssd_model_service *service,
     message->priority = service->priority;
     message->weight = service->weight;
     message->port = service->port;
+    append_span(bytes, &cursor, &message->name, service->name);
     append_span(bytes, &cursor, &message->instance, service->instance);
     append_span(bytes, &cursor, &message->service_type,
                 service->service_type);
     append_span(bytes, &cursor, &message->domain, service->domain);
     append_span(bytes, &cursor, &message->target, service->target);
     append_span(bytes, &cursor, &message->txt, service->txt);
+    append_span(bytes, &cursor, &message->rdata, service->rdata);
     message->address_count = append_addresses(bytes, &cursor,
         &message->addresses, service->addresses, service->address_count);
     message->size = (uint32_t)cursor;
@@ -299,8 +356,9 @@ static int refs_overlap(struct dnssd_model_ref left,
 static int validate_refs(const struct dnssd_model_message *message)
 {
     const struct dnssd_model_ref refs[] = {
-        message->instance, message->service_type, message->domain,
-        message->target, message->txt, message->addresses
+        message->name, message->instance, message->service_type,
+        message->domain, message->target, message->txt, message->rdata,
+        message->addresses
     };
     size_t i, j;
 
@@ -328,18 +386,18 @@ int dnssd_model_validate(const void *buffer, size_t capacity)
         message.header_size != sizeof(message) ||
         !valid_kind(message.kind) ||
         message.size < sizeof(message) || message.size > capacity ||
-        !validate_refs(&message) || message.instance.size > 63u ||
+        !validate_refs(&message) ||
         message.addresses.size != (uint32_t)message.address_count *
             sizeof(struct dnssd_model_wire_address) ||
-        !valid_wire_name(bytes + message.service_type.offset,
-                         message.service_type.size) ||
-        !valid_wire_name(bytes + message.domain.offset, message.domain.size) ||
-        (message.target.size != 0u &&
-            !valid_wire_name(bytes + message.target.offset,
-                             message.target.size)) ||
-        !valid_txt(message.txt.size == 0u ? NULL :
-                      bytes + message.txt.offset,
-                   message.txt.size))
+        !valid_parts(message.kind, message.rrtype,
+                     bytes + message.name.offset, message.name.size,
+                     message.instance.size,
+                     bytes + message.service_type.offset,
+                     message.service_type.size,
+                     bytes + message.domain.offset, message.domain.size,
+                     bytes + message.target.offset, message.target.size,
+                     message.txt.size == 0u ? NULL : bytes + message.txt.offset,
+                     message.txt.size))
         return DNSSD_MODEL_BAD_MESSAGE;
     for (i = 0; i < message.address_count; ++i) {
         struct dnssd_model_wire_address address;

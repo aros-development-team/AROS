@@ -164,7 +164,6 @@ start(struct DNSSDSession *session, struct DNSSDIPCMsg *msg,
         return DNSSD_ERR_NOMEM;
     }
     msg->dm_Interface = GetTagData(DNSSD_Interface, 0, tags);
-    msg->dm_UserData = GetTagData(DNSSD_UserData, 0, tags);
     rc = dnssdSend(msg);
     if (rc != DNSSD_OK) {
         FreeVec(op);
@@ -432,7 +431,6 @@ init_msg(struct DNSSDIPCMsg *msg, const struct DNSSDSession *ds, UWORD command)
         DNSSD_Family - DNSSD_FAMILY_IPV4, _IPV6 or _ANY (the default)
         DNSSD_Interface - only addresses learned on this interface index
         DNSSD_Timeout - seconds, 1 to 60, default 3
-        DNSSD_UserData - returned in the operation's events
 
     RESULT
         DNSSD_OK and *operation, or an error.
@@ -707,7 +705,6 @@ out:
         DNSSD_Domain - default "local"
         DNSSD_Subtype - only the instances of this subtype ("_printer")
         DNSSD_Interface - only this interface index
-        DNSSD_UserData - returned in the operation's events
 
 *****************************************************************************/
 {
@@ -761,7 +758,6 @@ out:
         DNSSD_Domain - default "local"
         DNSSD_Interface - only on this interface index
         DNSSD_Timeout - seconds, 1 to 60, default 5
-        DNSSD_UserData - returned in the operation's events
 
 *****************************************************************************/
 {
@@ -819,7 +815,6 @@ out:
     INPUTS
         DNSSD_Interface - only on this interface index
         DNSSD_Timeout - seconds, 1 to 60; none by default
-        DNSSD_UserData - returned in the operation's events
 
 *****************************************************************************/
 {
@@ -890,7 +885,6 @@ out:
             AAAA records are probed, announced, answered and defended with
             the service's; if another host has the name, the operation
             ends with DNSSD_EVENT_END, DNSSD_ERR_CONFLICT.
-        DNSSD_UserData - returned in the operation's events
 
     RESULT
         DNSSD_OK and *operation; DNSSD_ERR_EXISTS if this host has that
@@ -1027,5 +1021,93 @@ out:
         msg.dm_HostAddressCount = (UWORD)count;
     }
     return dnssdSend(&msg);
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+
+    NAME */
+        AROS_LH4(LONG, DNSSD_NameToText,
+
+/*  SYNOPSIS */
+        AROS_LHA(CONST_APTR, name, A0),
+        AROS_LHA(ULONG, size, D0),
+        AROS_LHA(STRPTR, text, A1),
+        AROS_LHA(ULONG, max, D1),
+
+/*  LOCATION */
+        struct DNSSDIntern *, DNSSDBase, 17, DNSSD)
+
+/*  FUNCTION
+        A name of an event (DNS wire labels, size bytes: de_Name, de_Type,
+        de_Domain, de_Target) as text: its labels with a dot between them,
+        a dot or backslash inside a label written with a backslash before
+        it (RFC 1035 section 5.1), terminated, in text (max bytes).
+
+    RESULT
+        The text's length, or -1 if name is not a name or text is too small.
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    const UBYTE *wire = name;
+    ULONG at = 0, n = 0;
+
+    if (wire == NULL || text == NULL || max == 0) {
+        return -1;
+    }
+    while (at < size && wire[at] != 0) {
+        ULONG len = wire[at++], i;
+
+        if (len > 63 || at + len > size) {
+            return -1;
+        }
+        if (n != 0) {
+            if (n + 1 >= max) {
+                return -1;
+            }
+            text[n++] = '.';
+        }
+        for (i = 0; i < len; i++, at++) {
+            if (wire[at] == '.' || wire[at] == '\\') {
+                if (n + 1 >= max) {
+                    return -1;
+                }
+                text[n++] = '\\';
+            }
+            if (n + 1 >= max) {
+                return -1;
+            }
+            text[n++] = (char)wire[at];
+        }
+    }
+    if (at >= size) {
+        return -1;                      /* no root label */
+    }
+    text[n] = '\0';
+    return (LONG)n;
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(ULONG, DNSSD_OperationID,
+
+/*  SYNOPSIS */
+        AROS_LHA(DNSSDOperationRef, operation, A0),
+
+/*  LOCATION */
+        struct DNSSDIntern *, DNSSDBase, 18, DNSSD)
+
+/*  FUNCTION
+        The number mdnsd gave the operation: the de_Operation of its events,
+        so that a program with several operations on one session can tell
+        whose an event is. 0 for NULL.
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    return operation != NULL ? operation->do_ID : 0;
     AROS_LIBFUNC_EXIT
 }

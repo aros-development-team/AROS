@@ -74,7 +74,6 @@ struct DNSSDIPCMsg
     UWORD           dm_HostAddressCount;
     UWORD           dm_Reserved2;
     struct DNSSDAddress *dm_HostAddresses;  /* REGISTER, UPDATE (DNSSD_IPCF_ADDRESSES): its addresses */
-    IPTR            dm_UserData;
     ULONG           dm_DataSize;    /* bytes of dm_Data used */
     ULONG           dm_DataMax;     /* bytes of dm_Data */
     UBYTE          *dm_Data;

@@ -23,7 +23,10 @@
 #include <proto/exec.h>
 #include <string.h>
 
+#include <stddef.h>
+
 #include "mdnsd.h"
+#include "dnssd_model.h"
 
 #define SERVER_SESSIONS         16
 #define SERVER_OPERATIONS       32
@@ -55,6 +58,7 @@ struct ServerSession
     struct MinList  ss_Queue;
     ULONG           ss_Queued;
     ULONG           ss_Operations;
+    ULONG           ss_Sequence;        /* events queued for it so far */
 };
 
 /*
@@ -81,7 +85,6 @@ struct ServerOperation
     ULONG           so_Deadline;        /* mdnsTicks(), 0: none */
     ULONG           so_TTL;
     ULONG           so_Reported;        /* Resolve: signature of what was said */
-    IPTR            so_UserData;
     APTR            so_Watch[4];
     APTR            so_Service;         /* Register: mdnsRegAddNative()'s ref */
     UBYTE           so_Name[256];       /* wire labels */
@@ -97,25 +100,6 @@ struct DNSSDServer
     struct ServerOperation *sv_Operations[SERVER_OPERATIONS];
 };
 
-/* The parts of an event (dnssd/dnssd.h), each a pointer and a length. */
-struct EventParts
-{
-    UWORD           ep_Kind;
-    UWORD           ep_RRType;
-    LONG            ep_Result;
-    ULONG           ep_Interface, ep_TTL;
-    UWORD           ep_Port, ep_Priority, ep_Weight, ep_AddressCount;
-    const UBYTE    *ep_Part[7];         /* name, instance, type, domain, target, TXT, RDATA */
-    ULONG           ep_Length[7];
-    const struct DNSSDAddress *ep_Addresses;
-};
-#define PART_NAME       0
-#define PART_INSTANCE   1
-#define PART_TYPE       2
-#define PART_DOMAIN     3
-#define PART_TARGET     4
-#define PART_TXT        5
-#define PART_RDATA      6
 
 static UWORD
 next_generation(struct DNSSDServer *sv)
@@ -180,102 +164,77 @@ drop_queue(struct ServerSession *ss)
 
 
 /*
- * Queue an event of op made of parts. A queue already full drops what it
- * holds: the client reads DNSSD_EVENT_LOST and starts again.
+ * Every event is mdnsd's canonical message (dnssd_model.h), built by
+ * dnssd_model_build() - which checks what each kind carries, and sorts and
+ * deduplicates the addresses - and handed to the client as it is: struct
+ * DNSSDEvent has its layout. The session's sequence and the daemon's ids
+ * are filled in here. A queue already full drops what it holds: the client
+ * reads DNSSD_EVENT_LOST and starts again.
  */
+typedef char dnssd_event_is_the_model_message[
+    sizeof(struct DNSSDEvent) == sizeof(struct dnssd_model_message) &&
+    offsetof(struct DNSSDEvent, de_Addresses) ==
+        offsetof(struct dnssd_model_message, addresses) &&
+    sizeof(struct DNSSDAddress) == sizeof(struct dnssd_model_address) ? 1 : -1];
+
+static struct dnssd_model_span
+span(const void *data, ULONG size)
+{
+    struct dnssd_model_span s;
+
+    s.data = data;
+    s.size = size;
+    return s;
+}
+
+/* The wire labels of name from offset from to offset to (or to its end),
+ * ended by the root label, into out; their length. */
+static ULONG
+wire_part(const UBYTE *name, LONG from, LONG to, UBYTE *out)
+{
+    ULONG n = 0;
+
+    while (name[from] != 0 && (to < 0 || from < to) && n + name[from] + 2 <= 256) {
+        UBYTE len = name[from];
+
+        memcpy(out + n, name + from, len + 1);
+        n += len + 1;
+        from += len + 1;
+    }
+    out[n++] = 0;
+    return n;
+}
+
 static void
 push_event(struct DNSSDServer *sv, struct ServerOperation *op,
-    const struct EventParts *ep)
+    struct dnssd_model_service *m)
 {
     struct ServerSession *ss = &sv->sv_Sessions[op->so_Session];
-    struct QueuedEvent *qe;
-    struct DNSSDEvent *event;
-    struct DNSSDRef *refs[7];
-    ULONG size = sizeof(*event), at, i;
+    struct QueuedEvent *qe = NULL;
+    size_t required = 0, written;
 
-    for (i = 0; i < 7; i++) {
-        size += ep->ep_Length[i];
-    }
-    size = (size + 3) & ~3UL;
-    size += (ULONG)ep->ep_AddressCount * sizeof(struct DNSSDAddress);
+    m->incarnation = op->so_Daemon->md_DaemonID;
+    m->session = make_id(ss->ss_Generation, op->so_Session);
+    m->operation = make_id(op->so_Generation, op->so_Slot);
+    m->sequence = ss->ss_Sequence + 1;
     if (ss->ss_Queued >= SESSION_EVENTS ||
-        (qe = AllocVec(sizeof(*qe) + size, MEMF_ANY | MEMF_CLEAR)) == NULL) {
+        dnssd_model_measure(m, &required) != DNSSD_MODEL_OK ||
+        (qe = AllocVec(sizeof(*qe) + required, MEMF_ANY)) == NULL ||
+        dnssd_model_build(m, qe + 1, required, &written) != DNSSD_MODEL_OK) {
+        if (qe != NULL) {
+            FreeVec(qe);
+        }
         drop_queue(ss);
         ss->ss_Lost = 1;
         notify(ss);
         return;
     }
-    qe->qe_Size = size;
-    event = (struct DNSSDEvent *)(qe + 1);
-    event->de_Size = size;
-    event->de_Version = DNSSD_EVENT_VERSION;
-    event->de_Kind = ep->ep_Kind;
-    event->de_Result = ep->ep_Result;
-    event->de_Sequence = ++op->so_Sequence;
-    event->de_Interface = ep->ep_Interface;
-    event->de_TTL = ep->ep_TTL;
-    event->de_RRType = ep->ep_RRType;
-    event->de_Port = ep->ep_Port;
-    event->de_Priority = ep->ep_Priority;
-    event->de_Weight = ep->ep_Weight;
-    event->de_UserData = op->so_UserData;
-    refs[PART_NAME] = &event->de_Name;
-    refs[PART_INSTANCE] = &event->de_Instance;
-    refs[PART_TYPE] = &event->de_Type;
-    refs[PART_DOMAIN] = &event->de_Domain;
-    refs[PART_TARGET] = &event->de_Target;
-    refs[PART_TXT] = &event->de_TXT;
-    refs[PART_RDATA] = &event->de_RData;
-    at = sizeof(*event);
-    for (i = 0; i < 7; i++) {
-        if (ep->ep_Length[i] != 0) {
-            refs[i]->dr_Offset = at;
-            refs[i]->dr_Size = ep->ep_Length[i];
-            memcpy((UBYTE *)event + at, ep->ep_Part[i], ep->ep_Length[i]);
-            at += ep->ep_Length[i];
-        }
-    }
-    if (ep->ep_AddressCount != 0) {
-        at = (at + 3) & ~3UL;
-        event->de_AddressCount = ep->ep_AddressCount;
-        event->de_Addresses.dr_Offset = at;
-        event->de_Addresses.dr_Size =
-            (ULONG)ep->ep_AddressCount * sizeof(struct DNSSDAddress);
-        memcpy((UBYTE *)event + at, ep->ep_Addresses,
-            event->de_Addresses.dr_Size);
-    }
+    ss->ss_Sequence++;
+    qe->qe_Size = (ULONG)written;
     AddTail((struct List *)&ss->ss_Queue, (struct Node *)qe);
     if (ss->ss_Queued++ == 0) {
         notify(ss);
     }
-}
-
-/*
- * Wire labels from at to the end (or to stop, an offset) as text: dots
- * between labels, a dot or backslash in a label escaped (RFC 1035 section
- * 5.1). Its length.
- */
-static ULONG
-name_text(const UBYTE *wire, LONG at, LONG stop, char *text, ULONG max)
-{
-    ULONG n = 0;
-
-    while (wire[at] != 0 && (stop < 0 || at < stop)) {
-        UBYTE len = wire[at++], i;
-
-        if (n != 0 && n < max) {
-            text[n++] = '.';
-        }
-        for (i = 0; i < len; i++, at++) {
-            if ((wire[at] == '.' || wire[at] == '\\') && n + 1 < max) {
-                text[n++] = '\\';
-            }
-            if (n < max) {
-                text[n++] = (char)wire[at];
-            }
-        }
-    }
-    return n;
 }
 
 static void
@@ -308,12 +267,12 @@ end_operation(struct DNSSDServer *sv, struct ServerOperation *op)
 static void
 end_with(struct DNSSDServer *sv, struct ServerOperation *op, LONG result)
 {
-    struct EventParts ep;
+    struct dnssd_model_service m;
 
-    memset(&ep, 0, sizeof(ep));
-    ep.ep_Kind = DNSSD_EVENT_END;
-    ep.ep_Result = result;
-    push_event(sv, op, &ep);
+    memset(&m, 0, sizeof(m));
+    m.kind = DNSSD_EVENT_END;
+    m.result = result;
+    push_event(sv, op, &m);
     end_operation(sv, op);
 }
 
@@ -353,10 +312,8 @@ static void
 lookup_notify(APTR data, const struct MDNSCacheEntry *e, BOOL added)
 {
     struct ServerOperation *op = data;
-    struct DNSSDServer *sv = op->so_Daemon->md_DNSSD;
     struct DNSSDAddress address;
-    struct EventParts ep;
-    char text[256];
+    struct dnssd_model_service m;
 
     if (!added || !address_of(e, &address) ||
         (op->so_Interface != 0 && op->so_Interface != e->ce_Link) ||
@@ -364,16 +321,15 @@ lookup_notify(APTR data, const struct MDNSCacheEntry *e, BOOL added)
         return;
     }
     op->so_Seen[op->so_Found++] = address;
-    memset(&ep, 0, sizeof(ep));
-    ep.ep_Kind = DNSSD_EVENT_ADDRESS;
-    ep.ep_Interface = e->ce_Link;
-    ep.ep_TTL = e->ce_TTL;
-    ep.ep_RRType = e->ce_Type;
-    ep.ep_Part[PART_NAME] = (const UBYTE *)text;
-    ep.ep_Length[PART_NAME] = name_text(e->ce_Name, 0, -1, text, sizeof(text));
-    ep.ep_Addresses = &address;
-    ep.ep_AddressCount = 1;
-    push_event(sv, op, &ep);
+    memset(&m, 0, sizeof(m));
+    m.kind = DNSSD_EVENT_ADDRESS;
+    m.interface_index = e->ce_Link;
+    m.ttl = e->ce_TTL;
+    m.rrtype = e->ce_Type;
+    m.name = span(e->ce_Name, e->ce_NameLength);
+    m.addresses = (const struct dnssd_model_address *)&address;
+    m.address_count = 1;
+    push_event(op->so_Daemon->md_DNSSD, op, &m);
 }
 
 /* QueryRecord: each record as it comes and as it goes. */
@@ -381,38 +337,34 @@ static void
 query_notify(APTR data, const struct MDNSCacheEntry *e, BOOL added)
 {
     struct ServerOperation *op = data;
-    struct EventParts ep;
-    char text[256];
+    struct dnssd_model_service m;
 
     if (op->so_Interface != 0 && op->so_Interface != e->ce_Link) {
         return;
     }
-    memset(&ep, 0, sizeof(ep));
-    ep.ep_Kind = added ? DNSSD_EVENT_ADD : DNSSD_EVENT_REMOVE;
-    ep.ep_Interface = e->ce_Link;
-    ep.ep_TTL = added ? e->ce_TTL : 0;
-    ep.ep_RRType = e->ce_Type;
-    ep.ep_Part[PART_NAME] = (const UBYTE *)text;
-    ep.ep_Length[PART_NAME] = name_text(e->ce_Name, 0, -1, text, sizeof(text));
-    ep.ep_Part[PART_RDATA] = e->ce_Data;
-    ep.ep_Length[PART_RDATA] = e->ce_DataLength;
-    push_event(op->so_Daemon->md_DNSSD, op, &ep);
+    memset(&m, 0, sizeof(m));
+    m.kind = DNSSD_EVENT_RECORD;
+    m.flags = added ? 0 : DNSSD_EVENTF_REMOVED;
+    m.interface_index = e->ce_Link;
+    m.ttl = added ? e->ce_TTL : 0;
+    m.rrtype = e->ce_Type;
+    m.name = span(e->ce_Name, e->ce_NameLength);
+    m.rdata = span(e->ce_Data, e->ce_DataLength);
+    push_event(op->so_Daemon->md_DNSSD, op, &m);
 }
 
-/* The parts that name a service instance (wire labels at name): instance
- * label, type, domain, and the full name as text. */
+/*
+ * The parts of an instance's name (wire labels at name, its type at
+ * typeOffset and its domain at domainOffset): its own label, and its type
+ * and domain as names of their own, in type[] and domain[].
+ */
 static void
-service_parts(struct EventParts *ep, const UBYTE *name, UWORD typeOffset,
-    UWORD domainOffset, char *full, char *type, char *domain)
+instance_parts(struct dnssd_model_service *m, const UBYTE *name,
+    LONG typeOffset, LONG domainOffset, UBYTE *type)
 {
-    ep->ep_Part[PART_INSTANCE] = name + 1;
-    ep->ep_Length[PART_INSTANCE] = name[0];
-    ep->ep_Part[PART_NAME] = (const UBYTE *)full;
-    ep->ep_Length[PART_NAME] = name_text(name, 0, -1, full, 256);
-    ep->ep_Part[PART_TYPE] = (const UBYTE *)type;
-    ep->ep_Length[PART_TYPE] = name_text(name, typeOffset, domainOffset, type, 256);
-    ep->ep_Part[PART_DOMAIN] = (const UBYTE *)domain;
-    ep->ep_Length[PART_DOMAIN] = name_text(name, domainOffset, -1, domain, 256);
+    m->instance = span(name + 1, name[0]);
+    m->service_type = span(type, wire_part(name, typeOffset, domainOffset, type));
+    m->domain = span(name + domainOffset, (ULONG)mdnsWireNameLength(name + domainOffset));
 }
 
 static BOOL label_at(const UBYTE *name, ULONG size, UWORD offset);
@@ -420,13 +372,15 @@ static BOOL label_at(const UBYTE *name, ULONG size, UWORD offset);
 /*
  * Browse: a PTR whose target is <instance>.<type>.<domain> is an instance
  * on the link it was heard on (RFC 6763 section 4.1); it comes and goes.
+ * Of "_services._dns-sd._udp" the targets are the service types on the link
+ * (section 9).
  */
 static void
 browse_notify(APTR data, const struct MDNSCacheEntry *e, BOOL added)
 {
     struct ServerOperation *op = data;
-    struct EventParts ep;
-    char full[256], type[256], domain[256];
+    struct dnssd_model_service m;
+    UBYTE type[256];
     const UBYTE *target = e->ce_Data;
     const UBYTE *base = op->so_Name + op->so_TypeOffset;
     LONG baseLength = mdnsWireNameLength(base);
@@ -434,9 +388,11 @@ browse_notify(APTR data, const struct MDNSCacheEntry *e, BOOL added)
     if (op->so_Interface != 0 && op->so_Interface != e->ce_Link) {
         return;
     }
+    memset(&m, 0, sizeof(m));
+    m.interface_index = e->ce_Link;
+    m.ttl = added ? e->ce_TTL : 0;
+    m.rrtype = DNS_TYPE_PTR;
     if (op->so_Enumerate) {
-        /* the service types on the link (RFC 6763 section 9): a PTR to
-         * <type>.<domain>, its domain the one browsed */
         LONG domainLength = baseLength - (op->so_DomainOffset - op->so_TypeOffset);
         LONG typeEnd = (LONG)e->ce_DataLength - domainLength;
 
@@ -444,18 +400,11 @@ browse_notify(APTR data, const struct MDNSCacheEntry *e, BOOL added)
             !mdnsWireNameEqual(target + typeEnd, op->so_Name + op->so_DomainOffset)) {
             return;
         }
-        memset(&ep, 0, sizeof(ep));
-        ep.ep_Kind = added ? DNSSD_EVENT_ADD : DNSSD_EVENT_REMOVE;
-        ep.ep_Interface = e->ce_Link;
-        ep.ep_TTL = added ? e->ce_TTL : 0;
-        ep.ep_RRType = DNS_TYPE_PTR;
-        ep.ep_Part[PART_NAME] = (const UBYTE *)full;
-        ep.ep_Length[PART_NAME] = name_text(target, 0, -1, full, sizeof(full));
-        ep.ep_Part[PART_TYPE] = (const UBYTE *)type;
-        ep.ep_Length[PART_TYPE] = name_text(target, 0, typeEnd, type, sizeof(type));
-        ep.ep_Part[PART_DOMAIN] = (const UBYTE *)domain;
-        ep.ep_Length[PART_DOMAIN] = name_text(target, typeEnd, -1, domain, sizeof(domain));
-        push_event(op->so_Daemon->md_DNSSD, op, &ep);
+        m.kind = DNSSD_EVENT_TYPE;
+        m.flags = added ? 0 : DNSSD_EVENTF_REMOVED;
+        m.service_type = span(type, wire_part(target, 0, typeEnd, type));
+        m.domain = span(target + typeEnd, (ULONG)domainLength);
+        push_event(op->so_Daemon->md_DNSSD, op, &m);
         return;
     }
     if (e->ce_DataLength < 2 || target[0] == 0 ||
@@ -463,15 +412,10 @@ browse_notify(APTR data, const struct MDNSCacheEntry *e, BOOL added)
         !mdnsWireNameEqual(target + 1 + target[0], base)) {
         return;
     }
-    memset(&ep, 0, sizeof(ep));
-    ep.ep_Kind = added ? DNSSD_EVENT_ADD : DNSSD_EVENT_REMOVE;
-    ep.ep_Interface = e->ce_Link;
-    ep.ep_TTL = added ? e->ce_TTL : 0;
-    ep.ep_RRType = DNS_TYPE_PTR;
-    service_parts(&ep, target, (UWORD)(1 + target[0]),
-        (UWORD)(1 + target[0] + op->so_DomainOffset - op->so_TypeOffset),
-        full, type, domain);
-    push_event(op->so_Daemon->md_DNSSD, op, &ep);
+    m.kind = added ? DNSSD_EVENT_ADD : DNSSD_EVENT_REMOVE;
+    instance_parts(&m, target, 1 + target[0],
+        1 + target[0] + op->so_DomainOffset - op->so_TypeOffset, type);
+    push_event(op->so_Daemon->md_DNSSD, op, &m);
 }
 
 /* A signature of what a resolve knows: it is said again only when that
@@ -503,8 +447,8 @@ resolve_signature(const struct ServerOperation *op)
 static void
 resolve_report_when(struct ServerOperation *op, BOOL final)
 {
-    struct EventParts ep;
-    char full[256], type[256], domain[256], target[256];
+    struct dnssd_model_service m;
+    UBYTE type[256];
     ULONG signature;
 
     if (!op->so_HaveSRV || op->so_Found == 0 ||
@@ -516,26 +460,22 @@ resolve_report_when(struct ServerOperation *op, BOOL final)
         return;
     }
     op->so_Reported = signature;
-    memset(&ep, 0, sizeof(ep));
-    ep.ep_Kind = DNSSD_EVENT_RESOLVED;
-    ep.ep_Interface = op->so_Interface;
-    ep.ep_TTL = op->so_TTL;
-    ep.ep_RRType = DNS_TYPE_SRV;
-    ep.ep_Port = op->so_Port;
-    ep.ep_Priority = op->so_Priority;
-    ep.ep_Weight = op->so_Weight;
-    service_parts(&ep, op->so_Name, op->so_TypeOffset, op->so_DomainOffset,
-        full, type, domain);
-    ep.ep_Part[PART_TARGET] = (const UBYTE *)target;
-    ep.ep_Length[PART_TARGET] = name_text(op->so_Target, 0, -1, target,
-        sizeof(target));
+    memset(&m, 0, sizeof(m));
+    m.kind = DNSSD_EVENT_RESOLVED;
+    m.interface_index = op->so_Interface;
+    m.ttl = op->so_TTL;
+    m.rrtype = DNS_TYPE_SRV;
+    m.port = op->so_Port;
+    m.priority = op->so_Priority;
+    m.weight = op->so_Weight;
+    instance_parts(&m, op->so_Name, op->so_TypeOffset, op->so_DomainOffset, type);
+    m.target = span(op->so_Target, (ULONG)mdnsWireNameLength(op->so_Target));
     if (op->so_HaveTXT) {
-        ep.ep_Part[PART_TXT] = op->so_TXT;
-        ep.ep_Length[PART_TXT] = op->so_TXTLength;
+        m.txt = span(op->so_TXT, op->so_TXTLength);
     }
-    ep.ep_Addresses = op->so_Seen;
-    ep.ep_AddressCount = op->so_Found;
-    push_event(op->so_Daemon->md_DNSSD, op, &ep);
+    m.addresses = (const struct dnssd_model_address *)op->so_Seen;
+    m.address_count = op->so_Found;
+    push_event(op->so_Daemon->md_DNSSD, op, &m);
 }
 
 static void
@@ -579,18 +519,18 @@ resolve_srv(APTR data, const struct MDNSCacheEntry *e, BOOL added)
     }
     if (!added) {
         if (op->so_HaveSRV && mdnsWireNameEqual(op->so_Target, d + 6)) {
-            struct EventParts ep;
-            char full[256], type[256], domain[256];
+            struct dnssd_model_service m;
+            UBYTE type[256];
 
             op->so_HaveSRV = FALSE;
             op->so_Reported = 0;
-            memset(&ep, 0, sizeof(ep));
-            ep.ep_Kind = DNSSD_EVENT_REMOVE;
-            ep.ep_Interface = e->ce_Link;
-            ep.ep_RRType = DNS_TYPE_SRV;
-            service_parts(&ep, op->so_Name, op->so_TypeOffset,
-                op->so_DomainOffset, full, type, domain);
-            push_event(md->md_DNSSD, op, &ep);
+            memset(&m, 0, sizeof(m));
+            m.kind = DNSSD_EVENT_REMOVE;
+            m.interface_index = e->ce_Link;
+            m.rrtype = DNS_TYPE_SRV;
+            instance_parts(&m, op->so_Name, op->so_TypeOffset,
+                op->so_DomainOffset, type);
+            push_event(md->md_DNSSD, op, &m);
         }
         return;
     }
@@ -621,7 +561,6 @@ static void
 resolve_txt(APTR data, const struct MDNSCacheEntry *e, BOOL added)
 {
     struct ServerOperation *op = data;
-
     UBYTE *copy;
 
     if (op->so_Interface != 0 && op->so_Interface != e->ce_Link) {
@@ -654,23 +593,21 @@ static void
 register_notify(APTR data, const struct MDNSRegisteredService *rs, LONG result)
 {
     struct ServerOperation *op = data;
-    struct EventParts ep;
-    UBYTE wire[256];
-    char full[256], type[256], domain[256], text[256];
-    LONG used, at, typeAt, domainAt, i;
+    struct dnssd_model_service m;
+    UBYTE wire[256], type[256];
+    LONG used, at, typeAt, domainAt;
 
     if (result != MDNS_OK) {
         end_with(op->so_Daemon->md_DNSSD, op, DNSSD_ERR_CONFLICT);
         return;
     }
-
     /* the name as wire labels: the instance's label as it is */
-    at = 0;
-    for (i = 0; rs->rs_Instance[i] != '\0' && at < 64; i++) {
-        text[at++] = rs->rs_Instance[i];
+    at = (LONG)strlen(rs->rs_Instance);
+    if (at > 63) {
+        return;
     }
     wire[0] = (UBYTE)at;
-    memcpy(wire + 1, text, at);
+    memcpy(wire + 1, rs->rs_Instance, at);
     typeAt = 1 + at;
     if (mdnsNameToWire(rs->rs_Type, wire + typeAt, 256 - typeAt, &used) != 0) {
         return;
@@ -680,12 +617,40 @@ register_notify(APTR data, const struct MDNSRegisteredService *rs, LONG result)
             &used) != 0) {
         return;
     }
-    memset(&ep, 0, sizeof(ep));
-    ep.ep_Kind = DNSSD_EVENT_REGISTERED;
-    ep.ep_Port = rs->rs_Port;
-    ep.ep_RRType = DNS_TYPE_SRV;
-    service_parts(&ep, wire, (UWORD)typeAt, (UWORD)domainAt, full, type, domain);
-    push_event(op->so_Daemon->md_DNSSD, op, &ep);
+    memset(&m, 0, sizeof(m));
+    m.kind = DNSSD_EVENT_REGISTERED;
+    m.port = rs->rs_Port;
+    m.rrtype = DNS_TYPE_SRV;
+    instance_parts(&m, wire, typeAt, domainAt, type);
+    push_event(op->so_Daemon->md_DNSSD, op, &m);
+}
+
+/*
+ * Wire labels from at to the end (or to stop, an offset) as text, for the
+ * responder's registration, which still keeps text: dots between labels,
+ * a dot or backslash in a label escaped (RFC 1035 section 5.1). Its length.
+ */
+static ULONG
+name_text(const UBYTE *wire, LONG at, LONG stop, char *text, ULONG max)
+{
+    ULONG n = 0;
+
+    while (wire[at] != 0 && (stop < 0 || at < stop)) {
+        UBYTE len = wire[at++], i;
+
+        if (n != 0 && n < max) {
+            text[n++] = '.';
+        }
+        for (i = 0; i < len; i++, at++) {
+            if ((wire[at] == '.' || wire[at] == '\\') && n + 1 < max) {
+                text[n++] = '\\';
+            }
+            if (n < max) {
+                text[n++] = (char)wire[at];
+            }
+        }
+    }
+    return n;
 }
 
 /* Register: the message's name, TXT and subtypes, checked; the service. */
@@ -847,7 +812,6 @@ start_operation(struct MDNSDaemon *md, struct ServerSession *ss, LONG sslot,
     op->so_Kind = kind;
     op->so_Session = (UWORD)sslot;
     op->so_Interface = msg->dm_Interface;
-    op->so_UserData = msg->dm_UserData;
     op->so_RRType = msg->dm_RRType;
     op->so_TypeOffset = msg->dm_TypeOffset;
     op->so_DomainOffset = msg->dm_DomainOffset;
@@ -964,23 +928,28 @@ close_session(struct DNSSDServer *sv, struct ServerSession *ss, LONG slot)
 
 /* The READ of a session: the next event, or the notification lent again. */
 static LONG
-read_event(struct ServerSession *ss, struct DNSSDIPCMsg *msg)
+read_event(struct ServerSession *ss, struct DNSSDIPCMsg *msg, ULONG incarnation,
+    ULONG session)
 {
     struct QueuedEvent *qe;
 
     if (ss->ss_Lost) {
-        struct DNSSDEvent lost;
+        struct dnssd_model_service m;
+        size_t written;
 
-        if (msg->dm_DataMax < sizeof(lost) || msg->dm_Data == NULL) {
-            msg->dm_DataSize = sizeof(lost);
+        memset(&m, 0, sizeof(m));
+        m.kind = DNSSD_EVENT_LOST;
+        m.flags = DNSSD_MODEL_FLAG_LOST;
+        m.incarnation = incarnation;
+        m.session = session;
+        m.sequence = ++ss->ss_Sequence;
+        if (dnssd_model_build(&m, msg->dm_Data, msg->dm_Data == NULL ? 0 :
+                msg->dm_DataMax, &written) != DNSSD_MODEL_OK) {
+            ss->ss_Sequence--;
+            msg->dm_DataSize = (ULONG)written;
             return DNSSD_ERR_TOOSMALL;
         }
-        memset(&lost, 0, sizeof(lost));
-        lost.de_Size = sizeof(lost);
-        lost.de_Version = DNSSD_EVENT_VERSION;
-        lost.de_Kind = DNSSD_EVENT_LOST;
-        memcpy(msg->dm_Data, &lost, sizeof(lost));
-        msg->dm_DataSize = sizeof(lost);
+        msg->dm_DataSize = (ULONG)written;
         ss->ss_Lost = 0;
         return DNSSD_OK;
     }
@@ -1040,6 +1009,7 @@ dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg)
                 ss->ss_Task = msg->dm_TaskID;
                 ss->ss_Notify = msg->dm_Notify;
                 ss->ss_Queued = 0;
+                ss->ss_Sequence = 0;
                 ss->ss_Operations = 0;
                 msg->dm_Session = make_id(ss->ss_Generation, i);
                 msg->dm_Incarnation = md->md_DaemonID;
@@ -1074,7 +1044,7 @@ dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg)
         msg->dm_Result = DNSSD_OK;
         break;
     case DNSSD_IPC_READ:
-        msg->dm_Result = read_event(ss, msg);
+        msg->dm_Result = read_event(ss, msg, md->md_DaemonID, msg->dm_Session);
         break;
     case DNSSD_IPC_UPDATE: {
         ULONG oslot = (msg->dm_Operation & 0xffff) - 1;
