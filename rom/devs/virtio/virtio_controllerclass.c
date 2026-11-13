@@ -96,7 +96,8 @@ OOP_Object *VirtIO__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             goto fail;
         }
 
-        virtio_hw_read_blk_config(dev);
+        if (!virtio_hw_read_blk_config(dev))
+            goto fail;
 
         /*
          * Allocate and configure the single IO virtqueue.

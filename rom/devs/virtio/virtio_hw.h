@@ -33,6 +33,6 @@ BOOL  virtio_hw_setup_queue(device_t dev, UWORD qid, struct virtio_queue *vq);
 BOOL  virtio_hw_driver_ok(device_t dev);
 
 /* Read virtio-blk device cfg into dev cached fields. */
-void  virtio_hw_read_blk_config(device_t dev);
+BOOL  virtio_hw_read_blk_config(device_t dev);
 
 #endif

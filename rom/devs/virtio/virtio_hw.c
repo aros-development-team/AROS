@@ -239,9 +239,16 @@ BOOL virtio_hw_setup_queue(device_t dev, UWORD qid, struct virtio_queue *vq)
     /* Tell the device our chosen size */
     dev->dev_CommonCfg->queue_size = vq->q_Size;
 
-    dev->dev_CommonCfg->queue_desc   = vq->q_DescPhys;
-    dev->dev_CommonCfg->queue_driver = vq->q_AvailPhys;
-    dev->dev_CommonCfg->queue_device = vq->q_UsedPhys;
+    /* The PCI transport defines 64-bit fields as two 32-bit accesses. */
+    {
+        volatile ULONG *addr = (volatile ULONG *)&dev->dev_CommonCfg->queue_desc;
+        addr[0] = (ULONG)vq->q_DescPhys;
+        addr[1] = (ULONG)(vq->q_DescPhys >> 32);
+        addr[2] = (ULONG)vq->q_AvailPhys;
+        addr[3] = (ULONG)(vq->q_AvailPhys >> 32);
+        addr[4] = (ULONG)vq->q_UsedPhys;
+        addr[5] = (ULONG)(vq->q_UsedPhys >> 32);
+    }
 
     notify_off = dev->dev_CommonCfg->queue_notify_off;
     {
@@ -271,9 +278,10 @@ BOOL virtio_hw_driver_ok(device_t dev)
     return TRUE;
 }
 
-void virtio_hw_read_blk_config(device_t dev)
+BOOL virtio_hw_read_blk_config(device_t dev)
 {
     volatile struct virtio_blk_config *cfg;
+    UBYTE generation;
 
     if (!dev->dev_DeviceCfg) {
         /* Use defaults */
@@ -282,31 +290,49 @@ void virtio_hw_read_blk_config(device_t dev)
         dev->dev_Heads    = 16;
         dev->dev_Sectors  = 63;
         dev->dev_Cylinders = 0;
-        return;
+        return FALSE;
     }
 
     cfg = (volatile struct virtio_blk_config *)dev->dev_DeviceCfg;
-    dev->dev_Capacity = cfg->capacity;     /* in 512-byte sectors */
+    if ((dev->dev_Features & ((UQUAD)1 << VIRTIO_BLK_F_GEOMETRY)) &&
+        dev->dev_WindowSizes[VIRTIO_PCI_CAP_DEVICE_CFG - 1] < 20)
+        return FALSE;
+    if ((dev->dev_Features & ((UQUAD)1 << VIRTIO_BLK_F_BLK_SIZE)) &&
+        dev->dev_WindowSizes[VIRTIO_PCI_CAP_DEVICE_CFG - 1] < 24)
+        return FALSE;
 
-    if (dev->dev_Features & ((UQUAD)1 << VIRTIO_BLK_F_BLK_SIZE)) {
-        dev->dev_BlkSize = cfg->blk_size ? cfg->blk_size : VIRTIO_BLK_SECTOR_SIZE;
-    } else {
-        dev->dev_BlkSize = VIRTIO_BLK_SECTOR_SIZE;
-    }
+    do {
+        volatile ULONG *capacity = (volatile ULONG *)dev->dev_DeviceCfg;
+        ULONG low, high;
+        generation = dev->dev_CommonCfg->config_generation;
+        __sync_synchronize();
+        low = capacity[0];
+        high = capacity[1];
+        dev->dev_Capacity = low | ((UQUAD)high << 32);
 
-    if (dev->dev_Features & ((UQUAD)1 << VIRTIO_BLK_F_GEOMETRY)) {
-        dev->dev_Cylinders = cfg->geometry.cylinders;
-        dev->dev_Heads     = cfg->geometry.heads;
-        dev->dev_Sectors   = cfg->geometry.sectors;
-    } else {
-        dev->dev_Heads     = 16;
-        dev->dev_Sectors   = 63;
-        dev->dev_Cylinders = 0;
-    }
+        if (dev->dev_Features & ((UQUAD)1 << VIRTIO_BLK_F_BLK_SIZE)) {
+            dev->dev_BlkSize = cfg->blk_size ? cfg->blk_size : VIRTIO_BLK_SECTOR_SIZE;
+        } else {
+            dev->dev_BlkSize = VIRTIO_BLK_SECTOR_SIZE;
+        }
+
+        if (dev->dev_Features & ((UQUAD)1 << VIRTIO_BLK_F_GEOMETRY)) {
+            dev->dev_Cylinders = cfg->geometry.cylinders;
+            dev->dev_Heads     = cfg->geometry.heads;
+            dev->dev_Sectors   = cfg->geometry.sectors;
+        } else {
+            dev->dev_Heads     = 16;
+            dev->dev_Sectors   = 63;
+            dev->dev_Cylinders = 0;
+        }
+
+        __sync_synchronize();
+    } while (generation != dev->dev_CommonCfg->config_generation);
 
     dev->dev_ReadOnly = (dev->dev_Features & ((UQUAD)1 << VIRTIO_BLK_F_RO)) ? 1 : 0;
 
     D(bug("[VIRTIO:HW] %s: capacity=%llu sectors, blk_size=%u, geom=%u/%u/%u, RO=%u\n",
           __func__, (unsigned long long)dev->dev_Capacity, dev->dev_BlkSize,
           dev->dev_Cylinders, dev->dev_Heads, dev->dev_Sectors, dev->dev_ReadOnly);)
+    return TRUE;
 }
