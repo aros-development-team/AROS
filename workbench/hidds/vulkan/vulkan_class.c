@@ -220,7 +220,8 @@ APTR METHOD(HiddVulkan, Hidd_Vulkan, CreateInstance)
 
     D(bug("[Vulkan] %s(app='%s')\n", __func__,
           msg->applicationName ? msg->applicationName : "(null)"));
-    if (!fn || fn(&info, NULL, &instance) != VK_SUCCESS)
+    if (!fn || fn(msg->createInfo ? (const VkInstanceCreateInfo *)msg->createInfo : &info,
+                  NULL, &instance) != VK_SUCCESS)
         return NULL;
     /* the first instance is the one device commands resolve through */
     if (!data->instance)

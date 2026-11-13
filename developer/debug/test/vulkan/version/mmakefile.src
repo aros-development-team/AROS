@@ -1,0 +1,13 @@
+include $(SRCDIR)/config/aros.cfg
+
+# instanceversion - the Vulkan functions of the version an application asks for
+%build_prog mmake=test-vulkan-instanceversion \
+    progname=instanceversion \
+    files=instanceversion \
+    targetdir=$(AROS_TESTS)/vulkan \
+    uselibs="vulkan"
+
+#MM- test : test-vulkan-instanceversion
+#MM test-vulkan-instanceversion : includes hidd-vulkan-loader
+
+%common
