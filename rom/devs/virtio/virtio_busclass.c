@@ -46,14 +46,14 @@ static AROS_INTH1(VIRTIO_IOIntCode, struct virtio_queue *, vq)
     if (vq->dev && vq->dev->dev_ISR) {
         (void) *vq->dev->dev_ISR;
     }
-    Signal(vq->q_IOTask, SIGBREAKF_CTRL_F);
+    if (vq->q_IOTask)
+        Signal(vq->q_IOTask, SIGBREAKF_CTRL_F);
     return TRUE;
     AROS_INTFUNC_EXIT
 }
 
 static void virtio_iotask(struct virtio_queue *vq)
 {
-    SetSignal(0, SIGBREAKF_CTRL_F);
     for (;;) {
         Wait(SIGBREAKF_CTRL_F);
         virtio_process_used(vq);
@@ -94,6 +94,11 @@ OOP_Object *VirtIOBus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 
         data->ab_UnitMax = maxUnits;
         data->ab_Units = AllocMem(sizeof(OOP_Object *) * maxUnits, MEMF_CLEAR);
+        if (!data->ab_Units || (devName && !data->ab_DevName) ||
+            (devSer && !data->ab_DevSer) || (devFW && !data->ab_DevFW)) {
+            OOP_DisposeObject(o);
+            return NULL;
+        }
     }
     return o;
 }
@@ -101,6 +106,17 @@ OOP_Object *VirtIOBus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 void VirtIOBus__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct virtio_Bus *data = OOP_INST_DATA(cl, o);
+
+    struct VirtIOBase *VirtIOBase = data->ab_Base;
+    ULONG i;
+
+    if (data->ab_Units) {
+        for (i = 0; i < data->ab_UnitMax; i++)
+            if (data->ab_Units[i]) OOP_DisposeObject(data->ab_Units[i]);
+        FreeMem(data->ab_Units, sizeof(OOP_Object *) * data->ab_UnitMax);
+    }
+    if (data->ab_IDNode)
+        HIDD_Storage_ReleaseID(VirtIOBase->storageRoot, data->ab_IDNode);
 
     if (data->ab_DevName) FreeVec(data->ab_DevName);
     if (data->ab_DevSer)  FreeVec(data->ab_DevSer);
@@ -152,6 +168,9 @@ BOOL Hidd_VirtIOBus_Start(OOP_Object *o, struct VirtIOBase *VirtIOBase)
     UQUAD secCnt = dev->dev_Capacity;       /* in 512-byte sectors */
     ULONG secSize = dev->dev_BlkSize ? dev->dev_BlkSize : VIRTIO_BLK_SECTOR_SIZE;
 
+    if (secSize < VIRTIO_BLK_SECTOR_SIZE || (secSize & (secSize - 1)))
+        return FALSE;
+
     /* Sector count in unit terms (logical-block sized): */
     if (secSize > VIRTIO_BLK_SECTOR_SIZE) {
         secCnt = secCnt / (secSize / VIRTIO_BLK_SECTOR_SIZE);
@@ -159,34 +178,6 @@ BOOL Hidd_VirtIOBus_Start(OOP_Object *o, struct VirtIOBase *VirtIOBase)
 
     if (secCnt == 0) {
         bug("[VIRTIO:Bus] %s: zero capacity, refusing to attach unit\n", __func__);
-        return FALSE;
-    }
-
-    /* Spin up IO completion task */
-    dev->dev_VQ->q_IOTask = NewCreateTask(TASKTAG_NAME, "VirtIO IO task",
-                                          TASKTAG_PC,   virtio_iotask,
-                                          TASKTAG_PRI,  21,
-                                          TASKTAG_ARG1, dev->dev_VQ,
-                                          TAG_END);
-    if (!dev->dev_VQ->q_IOTask) {
-        bug("[VIRTIO:Bus] %s: failed to spawn IO task\n", __func__);
-        return FALSE;
-    }
-
-    /* Hook the device's PCI INTx line to the IO interrupt handler. */
-    dev->dev_VQ->q_IntHandler.is_Node.ln_Name = "VirtIO Block IRQ";
-    dev->dev_VQ->q_IntHandler.is_Node.ln_Pri  = 0;
-    dev->dev_VQ->q_IntHandler.is_Code = (VOID_FUNC)VIRTIO_IOIntCode;
-    dev->dev_VQ->q_IntHandler.is_Data = dev->dev_VQ;
-    if (!HIDD_PCIDriver_AddInterrupt(dev->dev_PCIDriverObject, dev->dev_Object,
-                                     &dev->dev_VQ->q_IntHandler)) {
-        bug("[VIRTIO:Bus] %s: failed to register PCI interrupt handler\n", __func__);
-        return FALSE;
-    }
-
-    /* Mark the device as DRIVER_OK now we have everything wired up. */
-    if (!virtio_hw_driver_ok(dev)) {
-        bug("[VIRTIO:Bus] %s: device transition to DRIVER_OK failed\n", __func__);
         return FALSE;
     }
 
@@ -244,6 +235,30 @@ BOOL Hidd_VirtIOBus_Start(OOP_Object *o, struct VirtIOBase *VirtIOBase)
         if (unit->nu_Cyl == 0) unit->nu_Cyl = 1;
 
         data->ab_IDNode = HIDD_Storage_AllocateID(VirtIOBase->storageRoot, VIDTags);
+
+        if (!data->ab_IDNode) {
+            CloseLibrary((struct Library *)ExpansionBase);
+            return FALSE;
+        }
+
+        /* All allocation failures above precede activation of the device. */
+        dev->dev_VQ->q_IntHandler.is_Node.ln_Name = "VirtIO Block IRQ";
+        dev->dev_VQ->q_IntHandler.is_Code = (VOID_FUNC)VIRTIO_IOIntCode;
+        dev->dev_VQ->q_IntHandler.is_Data = dev->dev_VQ;
+        if (!HIDD_PCIDriver_AddInterrupt(dev->dev_PCIDriverObject, dev->dev_Object,
+                                        &dev->dev_VQ->q_IntHandler)) {
+            CloseLibrary((struct Library *)ExpansionBase);
+            return FALSE;
+        }
+        dev->dev_VQ->q_IntInstalled = TRUE;
+        dev->dev_VQ->q_IOTask = NewCreateTask(TASKTAG_NAME, "VirtIO IO task",
+                                             TASKTAG_PC, virtio_iotask,
+                                             TASKTAG_PRI, 21,
+                                             TASKTAG_ARG1, dev->dev_VQ, TAG_END);
+        if (!dev->dev_VQ->q_IOTask || !virtio_hw_driver_ok(dev)) {
+            CloseLibrary((struct Library *)ExpansionBase);
+            return FALSE;
+        }
 
         pp[0]                   = (IPTR)data->ab_IDNode->ln_Name;
         pp[1]                   = (IPTR)MOD_NAME_STRING;

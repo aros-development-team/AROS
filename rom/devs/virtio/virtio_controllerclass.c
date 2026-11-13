@@ -65,7 +65,7 @@ OOP_Object *VirtIO__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
         if (!dev) {
             bug("[VIRTIO:Controller] %s: device data missing\n", __func__);
-            return vController;
+            goto fail;
         }
 
         dev->dev_Controller = vController;
@@ -73,14 +73,14 @@ OOP_Object *VirtIO__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         /* Modern transport: walk capability list and map common/notify/ISR/device cfg. */
         if (!virtio_hw_map(dev)) {
             D(bug("[VIRTIO:Controller] %s: hw_map failed (legacy device unsupported)\n", __func__);)
-            return vController;
+            goto fail;
         }
 
         OOP_SetAttrs(dev->dev_Object, (struct TagItem *)pciActivateBusmaster);
 
         if (!virtio_hw_reset(dev)) {
             bug("[VIRTIO:Controller] %s: device reset failed\n", __func__);
-            return vController;
+            goto fail;
         }
 
         wanted_features =
@@ -93,7 +93,7 @@ OOP_Object *VirtIO__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
         if (!virtio_hw_negotiate_features(dev, wanted_features)) {
             bug("[VIRTIO:Controller] %s: feature negotiation failed\n", __func__);
-            return vController;
+            goto fail;
         }
 
         virtio_hw_read_blk_config(dev);
@@ -107,13 +107,13 @@ OOP_Object *VirtIO__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         dev->dev_VQ = queue_size >= 4 ? virtio_alloc_queue(dev, 0, queue_size) : NULL;
         if (!dev->dev_VQ) {
             bug("[VIRTIO:Controller] %s: failed to allocate virtqueue\n", __func__);
-            return vController;
+            goto fail;
         }
         if (!virtio_hw_setup_queue(dev, 0, dev->dev_VQ)) {
             bug("[VIRTIO:Controller] %s: failed to register virtqueue with device\n", __func__);
             virtio_free_queue(dev->dev_VQ);
             dev->dev_VQ = NULL;
-            return vController;
+            goto fail;
         }
 
         /* Now publish the bus. We always advertise exactly one unit per controller. */
@@ -131,12 +131,11 @@ OOP_Object *VirtIO__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
                 {aHidd_StorageUnit_Revision,(IPTR)"1.0"                                     },
                 {TAG_DONE,                  0                                               }
             };
-            attrs[VBUS_HARDWARENAME].ti_Data = (IPTR)AllocVec(40, MEMF_CLEAR);
-            if (attrs[VBUS_HARDWARENAME].ti_Data) {
-                sprintf((char *)attrs[VBUS_HARDWARENAME].ti_Data,
-                        "VirtIO Block Bus (vid:%04x did:%04x)",
-                        dev->dev_VendorID, dev->dev_DeviceID);
-            }
+            sprintf(data->ac_BusName, "VirtIO Block Bus (vid:%04x did:%04x)",
+                    dev->dev_VendorID, dev->dev_DeviceID);
+            attrs[VBUS_HARDWARENAME].ti_Data = (IPTR)data->ac_BusName;
+            if (!HW_AddDriver(dev->dev_Controller, VirtIOBase->busClass, attrs))
+                goto fail;
 
             data->ac_ResetHandler.is_Node.ln_Pri  = SD_PRI_DOS - 1;
             data->ac_ResetHandler.is_Node.ln_Name = ((struct Node *)dev->dev_Controller)->ln_Name;
@@ -144,30 +143,50 @@ OOP_Object *VirtIO__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             data->ac_ResetHandler.is_Data         = dev;
             AddResetCallback(&data->ac_ResetHandler);
 
-            HW_AddDriver(dev->dev_Controller, VirtIOBase->busClass, attrs);
         }
 
         AddTail(&VirtIOBase->virtio_Controllers, &data->ac_Node);
+        data->ac_Registered = TRUE;
     }
 
     return vController;
+
+fail:
+    OOP_DisposeObject(vController);
+    return NULL;
 }
 
 VOID VirtIO__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct VirtIOBase *VirtIOBase = cl->UserData;
-    struct virtio_Controller *cn, *tmp;
+    struct virtio_Controller *data = OOP_INST_DATA(cl, o);
+    device_t dev = data->ac_dev;
 
-    ForeachNodeSafe(&VirtIOBase->virtio_Controllers, cn, tmp) {
-        if (cn->ac_Object == o) {
-            Remove(&cn->ac_Node);
-            if (cn->ac_dev) {
-                if (cn->ac_dev->dev_VQ) {
-                    virtio_free_queue(cn->ac_dev->dev_VQ);
-                    cn->ac_dev->dev_VQ = NULL;
-                }
-            }
+    if (data->ac_Registered) {
+        Remove(&data->ac_Node);
+        RemResetCallback(&data->ac_ResetHandler);
+    }
+    if (dev) {
+        /* Failed startup has not published a bus or submitted any requests.
+         * Stop the device and its consumers before releasing queue memory. */
+        if (dev->dev_CommonCfg && !virtio_hw_stop(dev)) {
+            struct TagItem disableMaster[] = {
+                {aHidd_PCIDevice_isMaster, FALSE}, {TAG_DONE, 0}
+            };
+            /* Startup has published no buffers. If reset fails, prevent
+             * further DMA before freeing the otherwise unused queue. */
+            OOP_SetAttrs(dev->dev_Object, disableMaster);
         }
+        if (dev->dev_VQ) {
+            if (dev->dev_VQ->q_IntInstalled)
+                HIDD_PCIDriver_RemoveInterrupt(dev->dev_PCIDriverObject, dev->dev_Object,
+                                               &dev->dev_VQ->q_IntHandler);
+            if (dev->dev_VQ->q_IOTask)
+                RemTask(dev->dev_VQ->q_IOTask);
+            virtio_free_queue(dev->dev_VQ);
+            dev->dev_VQ = NULL;
+        }
+        dev->dev_Controller = NULL;
     }
 
     OOP_DoSuperMethod(cl, o, msg);

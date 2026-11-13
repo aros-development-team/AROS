@@ -118,7 +118,7 @@ BOOL virtio_hw_map(device_t dev)
     return FALSE;
 }
 
-BOOL virtio_hw_reset(device_t dev)
+BOOL virtio_hw_stop(device_t dev)
 {
     if (!dev->dev_CommonCfg) return FALSE;
 
@@ -130,6 +130,13 @@ BOOL virtio_hw_reset(device_t dev)
             if (spin-- == 0) return FALSE;
         }
     }
+
+    return TRUE;
+}
+
+BOOL virtio_hw_reset(device_t dev)
+{
+    if (!virtio_hw_stop(dev)) return FALSE;
 
     dev->dev_CommonCfg->device_status = VIRTIO_CONFIG_S_ACKNOWLEDGE;
     dev->dev_CommonCfg->device_status =

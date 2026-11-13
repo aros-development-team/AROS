@@ -297,7 +297,11 @@ static int VIRTIO_Probe(struct VirtIOBase *VirtIOBase)
         virtio_tags[VIRTIO_TAG_DEVICE].ti_Data = (IPTR)dev->dev_Object;
         OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_Driver,    (IPTR *)&dev->dev_PCIDriverObject);
 
-        HW_AddDriver(VirtIOBase->storageRoot, VirtIOBase->virtioClass, virtio_tags);
+        if (!HW_AddDriver(VirtIOBase->storageRoot, VirtIOBase->virtioClass, virtio_tags)) {
+            HIDD_PCIDevice_Release(dev->dev_Object);
+            FreePooled(VirtIOBase->virtio_MemPool, dev, sizeof(*dev));
+            continue;
+        }
         D(
             if (dev->dev_Controller) {
                 bug("[VIRTIO:PCI] %s: VirtIO Controller Object @ 0x%p\n", __func__, dev->dev_Controller);

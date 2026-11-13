@@ -189,6 +189,7 @@ struct virtio_queue {
     volatile UWORD          *q_Notify;
 
     struct Interrupt        q_IntHandler;
+    BOOL                    q_IntInstalled;
 
     struct Task             *q_IOTask;
 
@@ -203,6 +204,8 @@ struct virtio_Controller
     OOP_Object          *ac_Object;
     struct Interrupt    ac_ResetHandler;
     device_t            ac_dev;
+    BOOL                ac_Registered;
+    char                ac_BusName[40];
 };
 
 struct virtio_Bus
